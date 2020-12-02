@@ -22,4 +22,4 @@ jobs:
       run: docker build . --file DockerTestFile --tag framework-test-image
         
     - name: Run the test image
-      run: docker run --rm framework-test-image |& tee testLog.log || echo "::error $( sed -ne '/The following tests FAILED/,$ p' testLog.log)"
+      run: docker run --rm framework-test-image || echo "::error Unit and Integration tests have failed!"
