@@ -12,7 +12,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Build & Run the Docker test image
-      run: |
-        docker build . --file DockerTestFile --tag framework-test-image
-        docker run -it --rm framework-test-image
+    
+    - name: Log into registry
+        run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u mtmcgurn-buffalo --password-stdin
+
+    - name: Build the Docker test image
+      run: docker build . --file DockerTestFile --tag framework-test-image
+        
+    - name: Run the test image
+      run: docker run -it --rm framework-test-image
