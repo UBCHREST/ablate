@@ -47,7 +47,7 @@ jobs:
     - name: Run tests
       run: docker run --rm framework-test-image
 
-  tag:
+  tag-version:
     # Ensure test job passes before pushing image.
     needs: test
 
