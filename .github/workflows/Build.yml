@@ -23,6 +23,7 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: recursive
+        fetch-depth: 0
 
     - name: Log into registry
       run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USER }}" --password-stdin
@@ -42,7 +43,7 @@ jobs:
           echo "tag does not exist"
         fi
 
-    - name: Running tests
+    - name: Run tests
       run: docker run --rm framework-test-image
 
   tag:
