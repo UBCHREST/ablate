@@ -39,6 +39,7 @@ jobs:
         echo "Checking version: v$VERSION"
         if git rev-parse "v$VERSION" >/dev/null 2>&1; then
           echo "::error file=CMakeLists.txt::The version already exists!"
+          exit 1
         else
           echo "version does not exist"
         fi
