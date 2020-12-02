@@ -13,4 +13,4 @@ run cmake -S /source/ -B .
 run make -j 8
 
 # Specify Entry Point for tests
-CMD ["./tests/tests"]
+CMD ["ctest"]
