@@ -1,0 +1,18 @@
+name: Testing
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build & Run the Docker test image
+      run: |
+        docker build . --file DockerTestFile --tag framework-test-image
+        docker run -it --rm framework-test-image
