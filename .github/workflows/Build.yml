@@ -12,7 +12,8 @@ on:
 
   # Run tests for any PRs.
   pull_request:
-    - main
+    branches:
+      - main
 jobs:
 
   test:
