@@ -12,6 +12,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
     - name: Log into registry
       run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USER }}" --password-stdin
