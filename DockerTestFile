@@ -1,0 +1,16 @@
+FROM ghcr.io/ubchrest/petsc-docker/petsc-build:v3.14.1
+
+# Install dependencies
+RUN apt-get update
+RUN apt-get install -y cmake
+
+# Copy over the source
+COPY . /source
+WORKDIR /build
+
+# Configure & build
+run cmake -S /source/ -B .
+run make -j 8
+
+# Specify Entry Point for tests
+CMD ["./tests/tests"]

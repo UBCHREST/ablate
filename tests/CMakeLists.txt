@@ -6,7 +6,7 @@ target_link_libraries(tests gtest gmock gtest_main frameworkLibrary)
 target_sources(tests
         PRIVATE
         demoTestA.cpp
-        demotestB.cpp
+        demoTestB.cpp
         )
 gtest_discover_tests(tests
         # set a working directory so your project root so that you can find test data via paths relative to the project root
