@@ -36,11 +36,11 @@ jobs:
 
     - name: Check for version
       run: |
-        echo "version: $VERSION"
+        echo "Checking version: v$VERSION"
         if git rev-parse "v$VERSION" >/dev/null 2>&1; then
-          echo "tag exists";
+          echo "::error file=CMakeLists.txt::The version already exists!"
         else
-          echo "tag does not exist"
+          echo "version does not exist"
         fi
 
     - name: Run tests
