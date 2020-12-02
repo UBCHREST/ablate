@@ -12,3 +12,9 @@ target_sources(frameworkLibrary
 
 # Allow public access to the header files in the directory
 target_include_directories(frameworkLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+
+# Tag the version file
+configure_file (
+        "version.h.in"
+        "version.h"
+)
