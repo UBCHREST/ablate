@@ -15,6 +15,20 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Setup the framework library
 add_library(frameworkLibrary "")
 
+# Check if we should enable testing options
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
+    include(CTest)
+endif()
+
+# Setup and configure testing
+MESSAGE("BUILD_TESTING ${BUILD_TESTING}")
+if(BUILD_TESTING)
+    enable_testing()
+    include(GoogleTest)
+    add_subdirectory(tests)
+endif()
+
 # Load in the subdirectories
 add_subdirectory(src)
 
