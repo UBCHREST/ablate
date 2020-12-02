@@ -22,7 +22,6 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 
 # Setup and configure testing
-MESSAGE("BUILD_TESTING ${BUILD_TESTING}")
 if(BUILD_TESTING)
     enable_testing()
     include(GoogleTest)
