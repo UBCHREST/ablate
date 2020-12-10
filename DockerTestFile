@@ -1,8 +1,9 @@
-FROM ghcr.io/ubchrest/petsc-docker/petsc-build:v3.14.1
+FROM ghcr.io/ubchrest/petsc-docker/petsc-build:v3.14.2
 
-# Install dependencies
-RUN apt-get update
-RUN apt-get install -y cmake
+# Setup the petsc env
+ENV PETSC_ARCH=arch-opt
+ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
+ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
 
 # Copy over the source
 COPY . /source
@@ -10,7 +11,7 @@ WORKDIR /build
 
 # Configure & build
 run cmake -S /source/ -B .
-run make -j 8
+run make
 
 # Specify Entry Point for tests
 CMD ["ctest"]
