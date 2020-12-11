@@ -11,7 +11,7 @@ WORKDIR /build
 
 # Configure & build
 run cmake -S /source/ -B .
-run make
+run make -j $(nproc)
 
 # Specify Entry Point for tests
 CMD ["ctest"]
