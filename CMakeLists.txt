@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(CHREST VERSION 0.0.1)
+project(CHREST VERSION 0.0.2)
 
 # Load the Required 3rd Party Libaries
 find_package(PkgConfig REQUIRED)
