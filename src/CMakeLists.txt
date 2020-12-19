@@ -8,6 +8,8 @@ target_sources(frameworkLibrary
         PRIVATE
         demo.c
         demo.h
+        example76.c
+        ex11.c
         )
 
 # Allow public access to the header files in the directory

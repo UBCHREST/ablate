@@ -1,203 +1,385 @@
 #include "demo.h"
 
-static char help[] = "Solves a linear system in parallel with KSP.\n\
-Input parameters include:\n\
-  -view_exact_sol   : write exact solution vector to stdout\n\
-  -m <mesh_x>       : number of mesh points in x-direction\n\
-  -n <mesh_y>       : number of mesh points in y-direction\n\n";
+static char help[] = "Simple 2D Transient Head Conduction";
 
-/*T
-   Concepts: KSP^basic parallel example;
-   Concepts: KSP^Laplacian, 2d
-   Concepts: Laplacian, 2d
-   Processors: n
-T*/
+#include <petscbag.h>
+#include <petscts.h>
+#include <petscdmplex.h>
+#include <petscds.h>
 
-/*
-  Include "petscksp.h" so that we can use KSP solvers.
-*/
-#include <petscksp.h>
-#include <unistd.h>
+static const PetscBool SIMPLEX = PETSC_TRUE;
+
+typedef struct {
+    PetscReal rhoCp;
+    PetscReal k; /* Thermal diffusivity */
+} Parameter;
+
+typedef struct {
+    /* Problem definition */
+    PetscBag bag;     /* Holds problem parameters */
+} AppCtx;
+
+static void g3_temp(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                    const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                    const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                    PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[])
+{
+    PetscInt d;
+    for (d = 0; d < dim; ++d) g3[d*dim+d] = 1.0;
+}
+
+static void g0_temp(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                    const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                    const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                    PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[])
+{
+    g0[0] = u_tShift*1.0;
+}
+
+
+static PetscErrorCode SetupParameters(AppCtx *user)
+{
+    PetscBag       bag;
+    Parameter     *p;
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+    /* setup PETSc parameter bag */
+    ierr = PetscBagGetData(user->bag, (void **) &p);CHKERRQ(ierr);
+    ierr = PetscBagSetName(user->bag, "par", "Thermal field parameters");CHKERRQ(ierr);
+    bag  = user->bag;
+    ierr = PetscBagRegisterReal(bag, &p->k,    1.0, "k",    "thermal conductivity");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(bag, &p->rhoCp, 100.0, "rhoCp", "rhoCp");CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode boundary(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx)
+{
+    u[0] = 1000;
+    return 0;
+}
+
+
+static PetscErrorCode CreateMesh(MPI_Comm comm, const char meshFile[], AppCtx *user, DM *dm)
+{
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+
+    /* Create mesh */
+    {
+        size_t len,i;
+        ierr = PetscStrlen(meshFile,&len);CHKERRQ(ierr);
+        if (!len) { /* a null name means just do a hex box */
+            ierr = DMPlexCreateBoxMesh(
+                    comm,
+                    2,// the number of dimensions
+                    SIMPLEX,// PETSC_TRUE for simplices, PETSC_FALSE for tensor cells
+                    NULL, // Number of faces per dimension, or NULL for (1,) in 1D and (2, 2) in 2D and (1, 1, 1) in 3D
+                    NULL, // The lower left corner, or NULL for (0, 0, 0)
+                    NULL, // The upper right corner, or NULL for (1, 1, 1)
+                    NULL, // The boundary type for the X,Y,Z direction, or NULL for
+                    PETSC_TRUE, // Flag to create intermediate mesh pieces
+                    dm);CHKERRQ(ierr);
+        } else {
+            ierr = DMPlexCreateFromFile(comm, meshFile, PETSC_TRUE, dm);CHKERRQ(ierr);
+        }
+    }
+
+    // distribute the mesh
+    {
+        PetscPartitioner part;
+        DM distributedMesh = NULL;
+
+        /* Distribute mesh over processes */
+        ierr = DMPlexGetPartitioner(*dm, &part);CHKERRQ(ierr);
+        ierr = PetscPartitionerSetFromOptions(part);CHKERRQ(ierr);
+        ierr = DMPlexDistribute(*dm, 0, NULL, &distributedMesh);CHKERRQ(ierr);
+        if (distributedMesh) {
+            ierr = DMDestroy(dm);
+            CHKERRQ(ierr);
+            *dm = distributedMesh;
+        }
+    }
+
+
+    // sets parameters in a DM from the options database
+    ierr = DMSetFromOptions(*dm);CHKERRQ(ierr);
+
+    // print the mesh based upon command line parameters
+    ierr = DMViewFromOptions(*dm, NULL, "-dm_view");CHKERRQ(ierr);
+
+    // Debug code, get the labels
+    int rank;
+    MPI_Comm_rank(comm, &rank);
+    if(rank == 0) {
+        PetscInt numberLabels;
+        DMGetNumLabels(*dm, &numberLabels);
+        printf("Number Labels: %d\n", numberLabels);
+        for (PetscInt labelId = 0; labelId < numberLabels; ++labelId) {
+            const char *labelName;
+            DMGetLabelName(*dm, labelId, &labelName);
+            printf("%d: %s\n", labelId, labelName);
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
+// integrand for test function
+static void f0_heat_conduction(PetscInt dim, PetscInt nf, PetscInt nfAux,
+                           const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                           const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                           PetscReal t, const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[])
+{
+    if(dim != 2){
+        printf("Error: the number of dims should be 2");
+    }
+    if(nf != 1){
+        printf("Error: The number of fields should be 1");
+    }
+    if(nfAux != 0){
+        printf("Error: The number of aux fields should be 0");
+    }
+    if(numConstants != 2){
+        printf("Error: The number of numConstants should be 2");
+    }
+
+    // extract the constants
+    const PetscReal rhoCp = PetscRealPart(constants[0]);
+    f0[0] = rhoCp*u_t[uOff[0]];// + (X[0] > .1 ? 100 : 0.0);
+}
+
+// integrand for test function gradient term
+static void f1_heat_conduction(PetscInt dim, PetscInt nf, PetscInt nfAux,
+                               const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                               const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                               PetscReal t, const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f1[])
+{
+    if(dim != 2){
+        printf("Error: the number of dims should be 2");
+    }
+    if(nf != 1){
+        printf("Error: The number of fields should be 1");
+    }
+    if(nfAux != 0){
+        printf("Error: The number of aux fields should be 0");
+    }
+    if(numConstants != 2){
+        printf("Error: The number of numConstants should be 2");
+    }
+
+    const PetscReal k = PetscRealPart(constants[1]);
+    const PetscInt    Nc = dim;
+
+    for (PetscInt d = 0; d < dim; ++d) {
+        f1[d] = k*u_x[d];
+    }
+
+}
+
+static PetscErrorCode SetupProblem(DM dm, AppCtx *user)
+{
+    PetscErrorCode   ierr;
+
+    PetscFunctionBeginUser;
+
+    // get the discrete system from the domain
+    PetscDS ds;
+    ierr = DMGetDS(dm, &ds);CHKERRQ(ierr);
+
+    // setup the residual for the discrete system
+    ierr = PetscDSSetResidual(
+            ds,
+            0,// the test field number
+            f0_heat_conduction, // f0	- integrand for the test function term
+            f1_heat_conduction    //f1	- integrand for the test function gradient term
+    );CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(ds, 0, 0, g0_temp, NULL, NULL, g3_temp);CHKERRQ(ierr);
+
+    /* Setup constants */
+    {
+        Parameter  *param;
+        PetscScalar constants[2];
+
+        ierr = PetscBagGetData(user->bag, (void **) &param);CHKERRQ(ierr);
+        constants[0] = param->rhoCp;
+        constants[1] = param->k;
+        ierr = PetscDSSetConstants(ds, 2, constants);CHKERRQ(ierr);
+    }
+
+    Parameter *ctx;
+    ierr = PetscBagGetData(user->bag, (void **) &ctx);CHKERRQ(ierr);
+
+
+    // setup boundary
+    const PetscInt ids[] = {4,5};
+    ierr = PetscDSAddBoundary(ds,
+                              DM_BC_ESSENTIAL,// A Dirichlet condition using a function of the coordinates
+                              "bottom wall velocity",
+                              "Face Sets",//The label defining constrained points
+                              0,//The first field id temperature
+                              0,//The number of components, could be 1 or 0 (0 == all)
+                              NULL, // The components to constrain
+                              (void (*)(void))boundary,
+                              NULL, // A pointwise function giving the time derviative of the boundary values, or NULL
+                              2,
+                              ids,
+                              ctx);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+
+static PetscErrorCode SetupDiscretization(DM dm, AppCtx *user) {
+
+    PetscFunctionBeginUser;
+    DM             cdm = dm;
+    // Get the number of dimensions
+    PetscInt dim;
+    PetscErrorCode ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+    PetscPrintf(PETSC_COMM_WORLD, "Number of Dim: %d", dim);
+
+    PetscInt cStart;
+    ierr = DMPlexGetHeightStratum(dm, 0, &cStart, NULL);CHKERRQ(ierr);
+
+    /* Create finite element */
+    PetscFE fe; // PETSc object that manages a finite element space, e.g. the P_1 Lagrange element, this is the element!!!
+    MPI_Comm        comm;
+    ierr = PetscObjectGetComm((PetscObject) dm, &comm);CHKERRQ(ierr);
+
+    // determine if it a simplex element
+    DMPolytopeType ct;
+    ierr = DMPlexGetHeightStratum(dm, 0, &cStart, NULL);CHKERRQ(ierr);
+    ierr = DMPlexGetCellType(dm, cStart, &ct);CHKERRQ(ierr);
+    PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct)+1 ? PETSC_TRUE : PETSC_FALSE;
+
+    ierr = PetscFECreateDefault(
+            comm,//The comm
+            dim,//the spatial dimension
+            1, // the number of components, 1 for T
+            simplex,
+            "temp_",//The prefix for options
+            PETSC_DEFAULT,//The quadrature order, 1 is default
+            &fe);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject) fe, "temperature");CHKERRQ(ierr);
+    /* Set discretization and boundary conditions for each mesh */
+    ierr = DMSetField(dm,
+                      0,// The field number
+                      NULL, // The label indicating the support of the field, or NULL for the entire mesh
+                      (PetscObject) fe);CHKERRQ(ierr);
+
+    // Create the discrete systems for the DM based upon the fields added to the DM
+    ierr = DMCreateDS(dm);CHKERRQ(ierr);
+
+    // Setup the real problem space
+    ierr = SetupProblem(dm, user);CHKERRQ(ierr);
+    ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);//Calculate an index for the given PetscSection for the closure operation on the DM
+
+//    while (cdm) {
+////        ierr = CreateBCLabel(cdm, "marker");CHKERRQ(ierr);
+//        ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
+//        ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
+//    }
+
+    // remove one reference to FE
+    ierr = PetscFEDestroy(&fe);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal time, Vec u, void *ctx)
+{
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g\n", (int) step, (double) time);CHKERRQ(ierr);
+
+    ierr = PetscObjectSetName((PetscObject) u, "Numerical Solution");CHKERRQ(ierr);
+    ierr = VecViewFromOptions(u, NULL, "-sol_vec_view");CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
 
 int demo(int argc,char **args)
 {
-    Vec            x,b,u;    /* approx solution, RHS, exact solution */
-    Mat            A;        /* linear system matrix */
-    KSP            ksp;      /* linear solver context */
-    PetscReal      norm;     /* norm of solution error */
-    PetscInt       i,j,Ii,J,Istart,Iend,m = 8,n = 7,its;
-    PetscErrorCode ierr;
-    PetscBool      flg;
-    PetscScalar    v;
+    AppCtx          user; /* user-defined work context */
+    PetscErrorCode ierr = PetscInitialize(&argc,&args,(char*)0,help);if (ierr) return ierr;
+    // Check to see if there is a file for the mesh
+    char meshFile[PETSC_MAX_PATH_LEN] = "";
 
-    ierr = PetscInitialize(&argc,&args,(char*)0,help);if (ierr) return ierr;
-    ierr = PetscOptionsGetInt(NULL,NULL,"-m",&m,NULL);CHKERRQ(ierr);
-    ierr = PetscOptionsGetInt(NULL,NULL,"-n",&n,NULL);CHKERRQ(ierr);
-    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-           Compute the matrix and right-hand-side vector that define
-           the linear system, Ax = b.
-       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-    /*
-       Create parallel matrix, specifying only its global dimensions.
-       When using MatCreate(), the matrix format can be specified at
-       runtime. Also, the parallel partitioning of the matrix is
-       determined by PETSc at runtime.
-
-       Performance tuning note:  For problems of substantial size,
-       preallocation of matrix memory is crucial for attaining good
-       performance. See the matrix chapter of the users manual for details.
-    */
-    ierr = MatCreate(PETSC_COMM_WORLD,&A);CHKERRQ(ierr);
-    ierr = MatSetSizes(A,PETSC_DECIDE,PETSC_DECIDE,m*n,m*n);CHKERRQ(ierr);
-    ierr = MatSetFromOptions(A);CHKERRQ(ierr);
-    ierr = MatMPIAIJSetPreallocation(A,5,NULL,5,NULL);CHKERRQ(ierr);
-    ierr = MatSeqAIJSetPreallocation(A,5,NULL);CHKERRQ(ierr);
-    ierr = MatSeqSBAIJSetPreallocation(A,1,5,NULL);CHKERRQ(ierr);
-    ierr = MatMPISBAIJSetPreallocation(A,1,5,NULL,5,NULL);CHKERRQ(ierr);
-    ierr = MatMPISELLSetPreallocation(A,5,NULL,5,NULL);CHKERRQ(ierr);
-    ierr = MatSeqSELLSetPreallocation(A,5,NULL);CHKERRQ(ierr);
-
-    /*
-       Currently, all PETSc parallel matrix formats are partitioned by
-       contiguous chunks of rows across the processors.  Determine which
-       rows of the matrix are locally owned.
-    */
-    ierr = MatGetOwnershipRange(A,&Istart,&Iend);CHKERRQ(ierr);
-
-    /*
-       Set matrix elements for the 2-D, five-point stencil in parallel.
-        - Each processor needs to insert only elements that it owns
-          locally (but any non-local elements will be sent to the
-          appropriate processor during matrix assembly).
-        - Always specify global rows and columns of matrix entries.
-
-       Note: this uses the less common natural ordering that orders first
-       all the unknowns for x = h then for x = 2h etc; Hence you see J = Ii +- n
-       instead of J = I +- m as you might expect. The more standard ordering
-       would first do all variables for y = h, then y = 2h etc.
-
-     */
-    for (Ii=Istart; Ii<Iend; Ii++) {
-        v = -1.0; i = Ii/n; j = Ii - i*n;
-        if (i>0)   {J = Ii - n; ierr = MatSetValues(A,1,&Ii,1,&J,&v,ADD_VALUES);CHKERRQ(ierr);}
-        if (i<m-1) {J = Ii + n; ierr = MatSetValues(A,1,&Ii,1,&J,&v,ADD_VALUES);CHKERRQ(ierr);}
-        if (j>0)   {J = Ii - 1; ierr = MatSetValues(A,1,&Ii,1,&J,&v,ADD_VALUES);CHKERRQ(ierr);}
-        if (j<n-1) {J = Ii + 1; ierr = MatSetValues(A,1,&Ii,1,&J,&v,ADD_VALUES);CHKERRQ(ierr);}
-        v = 4.0; ierr = MatSetValues(A,1,&Ii,1,&Ii,&v,ADD_VALUES);CHKERRQ(ierr);
+    // Create a bag for the parameters, this allows them to be serialized
+    ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(Parameter), &user.bag);CHKERRQ(ierr);
+    ierr = SetupParameters(&user);CHKERRQ(ierr);
+    {
+        Parameter     *p;
+        char *name;
+        ierr = PetscBagGetData(user.bag, (void **) &p);CHKERRQ(ierr);
+        PetscBagGetName(user.bag, &name);
+        PetscPrintf(PETSC_COMM_WORLD, "Input Parameters in %s:\n\t k: %f \n\t rhoCp: %f\n", name, p->k, p->rhoCp );
     }
 
-    /*
-       Assemble matrix, using the 2-step process:
-         MatAssemblyBegin(), MatAssemblyEnd()
-       Computations can be done while messages are in transition
-       by placing code between these two statements.
-    */
-    ierr = MatAssemblyBegin(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
-    ierr = MatAssemblyEnd(A,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+    // check for options not in bag
+    ierr = PetscOptionsBegin(PETSC_COMM_WORLD, NULL,"Mesh Options","");CHKERRQ(ierr);
+    ierr = PetscOptionsString("-f","Mesh","",meshFile,meshFile,sizeof(meshFile),NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsEnd();CHKERRQ(ierr);
 
-    /* A is symmetric. Set symmetric flag to enable ICC/Cholesky preconditioner */
-    ierr = MatSetOption(A,MAT_SYMMETRIC,PETSC_TRUE);CHKERRQ(ierr);
+    // Create the time stepper
+    TS ts;
+    ierr = TSCreate(PETSC_COMM_WORLD, &ts);CHKERRQ(ierr);
 
-    /*
-       Create parallel vectors.
-        - We form 1 vector from scratch and then duplicate as needed.
-        - When using VecCreate(), VecSetSizes and VecSetFromOptions()
-          in this example, we specify only the
-          vector's global dimension; the parallel partitioning is determined
-          at runtime.
-        - When solving a linear system, the vectors and matrices MUST
-          be partitioned accordingly.  PETSc automatically generates
-          appropriately partitioned matrices and vectors when MatCreate()
-          and VecCreate() are used with the same communicator.
-        - The user can alternatively specify the local vector and matrix
-          dimensions when more sophisticated partitioning is needed
-          (replacing the PETSC_DECIDE argument in the VecSetSizes() statement
-          below).
-    */
-    ierr = VecCreate(PETSC_COMM_WORLD,&u);CHKERRQ(ierr);
-    ierr = VecSetSizes(u,PETSC_DECIDE,m*n);CHKERRQ(ierr);
-    ierr = VecSetFromOptions(u);CHKERRQ(ierr);
-    ierr = VecDuplicate(u,&b);CHKERRQ(ierr);
-    ierr = VecDuplicate(b,&x);CHKERRQ(ierr);
+    // Create the dm, kinda of like a domain
+    DM dm;
+    CreateMesh(PETSC_COMM_WORLD, meshFile, &user, &dm);
 
-    /*
-       Set exact solution; then compute right-hand-side vector.
-       By default we use an exact solution of a vector with all
-       elements of 1.0;
-    */
-    ierr = VecSet(u,1.0);CHKERRQ(ierr);
-    ierr = MatMult(A,u,b);CHKERRQ(ierr);
+    // Sets the DM that may be used by some nonlinear solvers or preconditioners under the TS
+    ierr = TSSetDM(ts, dm);CHKERRQ(ierr);
+    // Set a user context into a DM object, this results in it being passed into other calls
+    ierr = DMSetApplicationContext(dm, &user);CHKERRQ(ierr);
 
-    /*
-       View the exact solution vector if desired
-    */
-    flg  = PETSC_FALSE;
-    ierr = PetscOptionsGetBool(NULL,NULL,"-view_exact_sol",&flg,NULL);CHKERRQ(ierr);
-    if (flg) {ierr = VecView(u,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);}
+    // Setup the domain
+    ierr = SetupDiscretization(dm, &user);CHKERRQ(ierr);
+    ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
 
-    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                  Create the linear solver and set various options
-       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-    ierr = KSPCreate(PETSC_COMM_WORLD,&ksp);CHKERRQ(ierr);
+    // get the vector
+    Vec T;
+    ierr = DMCreateGlobalVector(dm, &T);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject) T, "Numerical Solution");CHKERRQ(ierr);
 
-    /*
-       Set operators. Here the matrix that defines the linear system
-       also serves as the preconditioning matrix.
-    */
-    ierr = KSPSetOperators(ksp,A,A);CHKERRQ(ierr);
+    // Tell the DMTS to use the FE functions
+    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, &user);CHKERRQ(ierr);
+    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, &user);CHKERRQ(ierr);
+     ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, &user);CHKERRQ(ierr);
 
-    /*
-       Set linear solver defaults for this problem (optional).
-       - By extracting the KSP and PC contexts from the KSP context,
-         we can then directly call any KSP and PC routines to set
-         various options.
-       - The following two statements are optional; all of these
-         parameters could alternatively be specified at runtime via
-         KSPSetFromOptions().  All of these defaults can be
-         overridden at runtime, as indicated below.
-    */
-    ierr = KSPSetTolerances(ksp,1.e-2/((m+1)*(n+1)),1.e-50,PETSC_DEFAULT,PETSC_DEFAULT);CHKERRQ(ierr);
+    // Setup the time stepper
+    ierr = TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
+    ierr = TSSetMaxTime(ts, 10.0);CHKERRQ(ierr);
+    ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
 
-    /*
-      Set runtime options, e.g.,
-          -ksp_type <type> -pc_type <type> -ksp_monitor -ksp_rtol <rtol>
-      These options will override those specified above as long as
-      KSPSetFromOptions() is called _after_ any other customization
-      routines.
-    */
-    ierr = KSPSetFromOptions(ksp);CHKERRQ(ierr);
+    // update the time step for the current time
+    PetscReal t;
+    ierr = TSGetTime(ts, &t);CHKERRQ(ierr);
+    ierr = DMSetOutputSequenceNumber(dm, 0, t);CHKERRQ(ierr);
 
-    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        Solve the linear system
-       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+    VecSet(T, 1.0);
+    VecAssemblyBegin(T);
+    VecAssemblyEnd(T);
+    ierr = VecViewFromOptions(T, NULL, "-sol_start");CHKERRQ(ierr);
 
-    ierr = KSPSolve(ksp,b,x);CHKERRQ(ierr);
 
-    /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                        Check the solution and clean up
-       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-    ierr = VecAXPY(x,-1.0,u);CHKERRQ(ierr);
-    ierr = VecNorm(x,NORM_2,&norm);CHKERRQ(ierr);
-    ierr = KSPGetIterationNumber(ksp,&its);CHKERRQ(ierr);
+    ierr = TSMonitorSet(
+            ts,
+            MonitorError,
+            &user,
+            NULL
+            );CHKERRQ(ierr);CHKERRQ(ierr);
 
-    /*
-       Print convergence information.  PetscPrintf() produces a single
-       print statement from all processes that share a communicator.
-       An alternative is PetscFPrintf(), which prints to a file.
-    */
-    int size;
-    MPI_Comm_size(PETSC_COMM_WORLD, &size);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"Size %i\n", size);CHKERRQ(ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,"Norm of error %g iterations %D\n",(double)norm,its);CHKERRQ(ierr);
 
-    /*
-       Free work space.  All PETSc objects should be destroyed when they
-       are no longer needed.
-    */
-    ierr = KSPDestroy(&ksp);CHKERRQ(ierr);
-    ierr = VecDestroy(&u);CHKERRQ(ierr);  ierr = VecDestroy(&x);CHKERRQ(ierr);
-    ierr = VecDestroy(&b);CHKERRQ(ierr);  ierr = MatDestroy(&A);CHKERRQ(ierr);
+    ierr = TSSolve(ts, T);CHKERRQ(ierr);
 
+    ierr = PetscObjectSetName((PetscObject) T, "final_temp");CHKERRQ(ierr);
+    ierr = VecViewFromOptions(T, NULL, "-sol_final");CHKERRQ(ierr);
+
+    ierr = TSDestroy(&ts);CHKERRQ(ierr);
+    ierr = DMDestroy(&dm);CHKERRQ(ierr);
     /*
        Always call PetscFinalize() before exiting a program.  This routine
          - finalizes the PETSc libraries as well as MPI
@@ -208,138 +390,14 @@ int demo(int argc,char **args)
     return ierr;
 }
 
-/*TEST
+/*
+Options:
+    -dm_refine 1 :// sets the refine level on the mesh in the DM
 
-   build:
-      requires: !single
 
-   test:
-      suffix: chebyest_1
-      args: -m 80 -n 80 -ksp_pc_side right -pc_type ksp -ksp_ksp_type chebyshev -ksp_ksp_max_it 5 -ksp_ksp_chebyshev_esteig 0.9,0,0,1.1 -ksp_monitor_short
+ -dm_plex_separate_marker -snes_converged_reason  -dm_view vtk:sol.vtk  -sol_final vtk:sol.vtk::append -temp_petscspace_degree 1 -ts_monitor_solution draw -draw_pause 1 -snes_fd_color -snes_rtol 1E-10 -ts_monitor_solution_vtk filename-%03D.vtu -ts_fd_color
 
-   test:
-      suffix: chebyest_2
-      args: -m 80 -n 80 -ksp_pc_side right -pc_type ksp -ksp_ksp_type chebyshev -ksp_ksp_max_it 5 -ksp_ksp_chebyshev_esteig 0.9,0,0,1.1 -ksp_esteig_ksp_type cg -ksp_monitor_short
+  ${PETSC_DIR}/arch-darwin-c-debug/bin/mpirun -n 4  ./Framework -dm_plex_separate_marker -snes_converged_reason  -sol_final vtk:sol.vtk::append -temp_petscspace_degree 1 -ts_monitor_solution draw -draw_pause 1 -snes_fd_color -snes_rtol 1E-10 -ts_monitor_solution_vtk filename-%03D.vtu -ts_fd_color -f "/Users/mcgurn/Desktop/test3.msh" -dm_view
 
-   test:
-      args: -ksp_monitor_short -m 5 -n 5 -ksp_gmres_cgs_refinement_type refine_always
 
-   test:
-      suffix: 2
-      nsize: 2
-      args: -ksp_monitor_short -m 5 -n 5 -ksp_gmres_cgs_refinement_type refine_always
-
-   test:
-      suffix: 3
-      args: -pc_type sor -pc_sor_symmetric -ksp_monitor_short -ksp_gmres_cgs_refinement_type refine_always
-
-   test:
-      suffix: 4
-      args: -pc_type eisenstat -ksp_monitor_short -ksp_gmres_cgs_refinement_type refine_always
-
-   test:
-      suffix: 5
-      nsize: 2
-      args: -ksp_monitor_short -m 5 -n 5 -mat_view draw -ksp_gmres_cgs_refinement_type refine_always -nox
-      output_file: output/ex2_2.out
-
-   test:
-      suffix: bjacobi
-      nsize: 4
-      args: -pc_type bjacobi -pc_bjacobi_blocks 1 -ksp_monitor_short -sub_pc_type jacobi -sub_ksp_type gmres
-
-   test:
-      suffix: bjacobi_2
-      nsize: 4
-      args: -pc_type bjacobi -pc_bjacobi_blocks 2 -ksp_monitor_short -sub_pc_type jacobi -sub_ksp_type gmres -ksp_view
-
-   test:
-      suffix: bjacobi_3
-      nsize: 4
-      args: -pc_type bjacobi -pc_bjacobi_blocks 4 -ksp_monitor_short -sub_pc_type jacobi -sub_ksp_type gmres
-
-   test:
-      suffix: fbcgs
-      args: -ksp_type fbcgs -pc_type ilu
-
-   test:
-      suffix: fbcgs_2
-      nsize: 3
-      args: -ksp_type fbcgsr -pc_type bjacobi
-
-   test:
-      suffix: groppcg
-      args: -ksp_monitor_short -ksp_type groppcg -m 9 -n 9
-
-   test:
-      suffix: mkl_pardiso_cholesky
-      requires: mkl_pardiso
-      args: -ksp_type preonly -pc_type cholesky -mat_type sbaij -pc_factor_mat_solver_type mkl_pardiso
-
-   test:
-      suffix: mkl_pardiso_lu
-      requires: mkl_pardiso
-      args: -ksp_type preonly -pc_type lu -pc_factor_mat_solver_type mkl_pardiso
-
-   test:
-      suffix: pipebcgs
-      args: -ksp_monitor_short -ksp_type pipebcgs -m 9 -n 9
-
-   test:
-      suffix: pipecg
-      args: -ksp_monitor_short -ksp_type pipecg -m 9 -n 9
-
-   test:
-      suffix: pipecgrr
-      args: -ksp_monitor_short -ksp_type pipecgrr -m 9 -n 9
-
-   test:
-      suffix: pipecr
-      args: -ksp_monitor_short -ksp_type pipecr -m 9 -n 9
-
-   test:
-      suffix: pipelcg
-      args: -ksp_monitor_short -ksp_type pipelcg -m 9 -n 9 -pc_type none -ksp_pipelcg_pipel 2 -ksp_pipelcg_lmax 2
-      filter: grep -v "sqrt breakdown in iteration"
-
-   test:
-      suffix: sell
-      args: -ksp_monitor_short -ksp_gmres_cgs_refinement_type refine_always -m 9 -n 9 -mat_type sell
-
-   test:
-      requires: mumps
-      suffix: sell_mumps
-      args: -ksp_type preonly -m 9 -n 12 -mat_type sell -pc_type lu -pc_factor_mat_solver_type mumps -pc_factor_mat_ordering_type natural
-
-   test:
-      suffix: telescope
-      nsize: 4
-      args: -m 100 -n 100 -ksp_converged_reason -pc_type telescope -pc_telescope_reduction_factor 4 -telescope_pc_type bjacobi
-
-   test:
-      suffix: umfpack
-      requires: suitesparse
-      args: -ksp_type preonly -pc_type lu -pc_factor_mat_solver_type umfpack
-
-   test:
-     suffix: pc_symmetric
-     args: -m 10 -n 9 -ksp_converged_reason -ksp_type gmres -ksp_pc_side symmetric -pc_type cholesky
-
-   test:
-      suffix: pipeprcg
-      args: -ksp_monitor_short -ksp_type pipeprcg -m 9 -n 9
-
-   test:
-      suffix: pipeprcg_rcw
-      args: -ksp_monitor_short -ksp_type pipeprcg -recompute_w false -m 9 -n 9
-
-   test:
-      suffix: pipecg2
-      args: -ksp_monitor_short -ksp_type pipecg2 -m 9 -n 9 -ksp_norm_type {{preconditioned unpreconditioned natural}}
-
-   test:
-      suffix: pipecg2_2
-      nsize: 4
-      args: -ksp_monitor_short -ksp_type pipecg2 -m 15 -n 9 -ksp_norm_type {{preconditioned unpreconditioned natural}}
-
- TEST*/
+ */
