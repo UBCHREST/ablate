@@ -178,6 +178,13 @@ void QIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux,
     }
 }
 
+static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx)
+{
+    PetscInt d;
+    for (d = 0; d < Nc; ++d) u[d] = 0.0;
+    return 0;
+}
+
 static PetscErrorCode constant(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx)
 {
     PetscInt d;
@@ -203,6 +210,32 @@ static PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt n
     ierr = VecViewFromOptions(vec, NULL, "-pressure_nullspace_view");CHKERRQ(ierr);
     ierr = MatNullSpaceCreate(PetscObjectComm((PetscObject) dm), PETSC_FALSE, 1, &vec, nullSpace);CHKERRQ(ierr);
     ierr = VecDestroy(&vec);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode RemoveDiscretePressureNullspace_Private(TS ts, Vec u)
+{
+    DM             dm;
+    MatNullSpace   nullsp;
+    PetscErrorCode ierr;
+
+    PetscFunctionBegin;
+    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+    ierr = CreatePressureNullSpace(dm, 1, 1, &nullsp);CHKERRQ(ierr);
+    ierr = MatNullSpaceRemove(nullsp, u);CHKERRQ(ierr);
+    ierr = MatNullSpaceDestroy(&nullsp);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+/* Make the discrete pressure discretely divergence free */
+PetscErrorCode RemoveDiscretePressureNullspace(TS ts)
+{
+    Vec            u;
+    PetscErrorCode ierr;
+
+    PetscFunctionBegin;
+    ierr = TSGetSolution(ts, &u);CHKERRQ(ierr);
+    ierr = RemoveDiscretePressureNullspace_Private(ts, u);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
