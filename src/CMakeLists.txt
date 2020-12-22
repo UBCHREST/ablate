@@ -10,6 +10,10 @@ target_sources(frameworkLibrary
         demo.h
         example76.c
         ex11.c
+        lowMachFlow.c
+        lowMachFlow.h
+        mesh.c
+        mesh.h
         )
 
 # Allow public access to the header files in the directory

@@ -790,6 +790,7 @@ int ex76(int argc, char **argv)
     ierr = CreateMesh(PETSC_COMM_WORLD, &user, &dm);CHKERRQ(ierr);
     ierr = TSSetDM(ts, dm);CHKERRQ(ierr);
     ierr = DMSetApplicationContext(dm, &user);CHKERRQ(ierr);
+
     /* Setup problem */
     ierr = SetupDiscretization(dm, &user);CHKERRQ(ierr);
     ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
