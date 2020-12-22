@@ -34,4 +34,7 @@ TEST_P(DemoTestA, DemoTesta1) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(TestOne, DemoTestA, testing::Values((MpiTestParameter){.nproc = 3, .expectedOutputFile="outputs/output.test.112"}));
+INSTANTIATE_TEST_SUITE_P(TestOne, DemoTestA, testing::Values(
+        (MpiTestParameter){.nproc = 3, .expectedOutputFile="outputs/output.test.112", .arguments="one two three"},
+        (MpiTestParameter){.nproc = 1, .expectedOutputFile="outputs/output.test.112", .arguments=""}
+));

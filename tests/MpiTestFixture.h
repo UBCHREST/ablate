@@ -8,13 +8,16 @@ struct MpiTestParameter
 {
     int nproc;
     std::string expectedOutputFile;
+    std::string arguments;
 };
 
 class MpiTestFixture : public ::testing::TestWithParam<MpiTestParameter> {
+private:
+    static bool inMpiTestRun;
+
 protected:
     static int* argc;
     static char*** argv;
-    static bool inMpiTestRun;
     static const std::string InTestRunFlag;
 
     void SetUp() override;
@@ -39,6 +42,10 @@ protected:
         return fileName;
     }
 
+    bool ShouldRunMpiCode() const{
+        return inMpiTestRun || GetParam().nproc == 0;
+    }
+
 public:
     static bool InitializeTestingEnvironment(int* argc, char***argv);
 };
@@ -46,7 +53,7 @@ public:
 std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params);
 
 // Define macros to simplify the setup and running of mpi based code
-#define StartWithMPI if(inMpiTestRun){
+#define StartWithMPI if(ShouldRunMpiCode()){
 #define EndWithMPI  }else{RunWithMPI();CompareOutputFiles();}
 
 #endif //mpitestfixture_h

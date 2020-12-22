@@ -11,9 +11,18 @@ bool MpiTestFixture::InitializeTestingEnvironment(int* argc, char***argv){
     MpiTestFixture::argc = argc;
     MpiTestFixture::argv = argv;
 
-    for(auto i =0; i < *MpiTestFixture::argc; i++){
-        if(strcmp(MpiTestFixture::InTestRunFlag.c_str(), (*MpiTestFixture::argv)[i]) == 0){
+    int inMpiTestRunLocation = -1;
+    for(auto i =0; i < *argc; i++){
+        if(strcmp(MpiTestFixture::InTestRunFlag.c_str(), (*argv)[i]) == 0){
             inMpiTestRun = true;
+            inMpiTestRunLocation = i;
+        }
+    }
+
+    if(inMpiTestRunLocation >= 0){
+        *argc = (*argc)-1;
+        for(auto i = inMpiTestRunLocation; i < *argc; i++ ){
+            (*argv)[i] = (*argv)[i+1];
         }
     }
 
@@ -37,7 +46,8 @@ void MpiTestFixture::RunWithMPI() const {
     mpiCommand << ExecutablePath() << " ";
     mpiCommand << InTestRunFlag << " ";
     mpiCommand << "--gtest_filter=" << TestName() << " ";
-    mpiCommand << " >> " << OutputFile();
+    mpiCommand << GetParam().arguments << " ";
+    mpiCommand << " > " << OutputFile();
 
     std::system(mpiCommand.str().c_str());
 }
