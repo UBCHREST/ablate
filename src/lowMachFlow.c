@@ -77,15 +77,13 @@ PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user)
         ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
     }
 
-    ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode SetupParameters(LowMachFlowContext *user)
 {
     PetscBag       bag;
-    Parameter     *p;
+    Parameters     *p;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
@@ -95,7 +93,6 @@ PetscErrorCode SetupParameters(LowMachFlowContext *user)
     bag  = user->parameters;
     ierr = PetscBagRegisterReal(bag, &p->nu,    1.0, "nu",    "Kinematic viscosity");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(bag, &p->alpha, 1.0, "alpha", "Thermal diffusivity");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(bag, &p->T_in,  1.0, "T_in",  "Inlet temperature");CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -104,7 +101,6 @@ void VIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux,
                            const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
                            const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
                            PetscReal t, const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
-    const PetscReal nu = PetscRealPart(constants[NU]);
     PetscInt Nc = dim;
     PetscInt c, d;
 
@@ -194,7 +190,7 @@ static PetscErrorCode constant(PetscInt dim, PetscReal time, const PetscReal x[]
     return 0;
 }
 
-static PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace)
+PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace)
 {
     Vec              vec;
     PetscErrorCode (*funcs[3])(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *) = {zero, zero, zero};
@@ -213,7 +209,7 @@ static PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt n
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode RemoveDiscretePressureNullspace_Private(TS ts, Vec u)
+PetscErrorCode RemoveDiscretePressureNullspace_Private(TS ts, Vec u)
 {
     DM             dm;
     MatNullSpace   nullsp;
@@ -221,7 +217,7 @@ static PetscErrorCode RemoveDiscretePressureNullspace_Private(TS ts, Vec u)
 
     PetscFunctionBegin;
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
-    ierr = CreatePressureNullSpace(dm, 1, 1, &nullsp);CHKERRQ(ierr);
+    ierr = CreatePressureNullSpace(dm, PRES, PRES, &nullsp);CHKERRQ(ierr);
     ierr = MatNullSpaceRemove(nullsp, u);CHKERRQ(ierr);
     ierr = MatNullSpaceDestroy(&nullsp);CHKERRQ(ierr);
     PetscFunctionReturn(0);
@@ -239,6 +235,120 @@ PetscErrorCode RemoveDiscretePressureNullspace(TS ts)
     PetscFunctionReturn(0);
 }
 
+
+/*Jacobians*/
+static void g1_qu(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                  PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[])
+{
+    PetscInt d;
+    for (d = 0; d < dim; ++d) g1[d*dim+d] = 1.0;
+}
+
+static void g0_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                  PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[])
+{
+    PetscInt c, d;
+    const PetscInt  Nc = dim;
+
+    for (d = 0; d < dim; ++d) g0[d*dim+d] = u_tShift;
+
+    for (c = 0; c < Nc; ++c) {
+        for (d = 0; d < dim; ++d) {
+            g0[c*Nc+d] += u_x[ c*Nc+d];
+        }
+    }
+}
+
+static void g1_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                  PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[])
+{
+    PetscInt NcI = dim;
+    PetscInt NcJ = dim;
+    PetscInt c, d, e;
+
+    for (c = 0; c < NcI; ++c) {
+        for (d = 0; d < NcJ; ++d) {
+            for (e = 0; e < dim; ++e) {
+                if (c == d) {
+                    g1[(c*NcJ+d)*dim+e] += u[e];
+                }
+            }
+        }
+    }
+}
+
+
+static void g2_vp(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                  PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g2[])
+{
+    PetscInt d;
+    for (d = 0; d < dim; ++d) g2[d*dim+d] = -1.0;
+}
+
+static void g3_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                  PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[])
+{
+    const PetscReal nu = PetscRealPart(constants[NU]);
+    const PetscInt  Nc = dim;
+    PetscInt        c, d;
+
+    for (c = 0; c < Nc; ++c) {
+        for (d = 0; d < dim; ++d) {
+            g3[((c*Nc+c)*dim+d)*dim+d] += nu; // gradU
+            g3[((c*Nc+d)*dim+d)*dim+c] += nu; // gradU transpose
+        }
+    }
+}
+
+static void g0_wT(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                  PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[])
+{
+    PetscInt d;
+    for (d = 0; d < dim; ++d) g0[d] = u_tShift;
+}
+
+static void g0_wu(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                  PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[])
+{
+    PetscInt d;
+    for (d = 0; d < dim; ++d) g0[d] = u_x[uOff_x[2]+d];
+}
+
+static void g1_wT(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                  PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[])
+{
+    PetscInt d;
+    for (d = 0; d < dim; ++d) g1[d] = u[uOff[0]+d];
+}
+
+static void g3_wT(PetscInt dim, PetscInt Nf, PetscInt NfAux,
+                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
+                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                  PetscReal t, PetscReal u_tShift, const PetscReal x[], PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[])
+{
+    const PetscReal alpha = PetscRealPart(constants[ALPHA]);
+    PetscInt               d;
+
+    for (d = 0; d < dim; ++d) g3[d*dim+d] = alpha;
+}
+
+
 PetscErrorCode SetupProblem(DM dm, LowMachFlowContext *ctx) {
     PetscErrorCode ierr;
 
@@ -251,9 +361,15 @@ PetscErrorCode SetupProblem(DM dm, LowMachFlowContext *ctx) {
     ierr = PetscDSSetResidual(prob, W, WIntegrandTestFunction, WIntegrandTestGradientFunction);CHKERRQ(ierr);
     ierr = PetscDSSetResidual(prob, Q, QIntegrandTestFunction, NULL);CHKERRQ(ierr);
 
+    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu,  NULL,  g3_vu);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL,  g2_vp, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, Q, VEL, NULL, g1_qu, NULL,  NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL,  NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL,  g3_wT);CHKERRQ(ierr);
+
     /* Setup constants */
     {
-        Parameter *param;
+        Parameters *param;
         PetscScalar constants[2];
 
         ierr = PetscBagGetData(ctx->parameters, (void **) &param);CHKERRQ(ierr);
@@ -262,11 +378,4 @@ PetscErrorCode SetupProblem(DM dm, LowMachFlowContext *ctx) {
         ierr = PetscDSSetConstants(prob, 2, constants);CHKERRQ(ierr);
     }
 
-    ierr = DMSetNullSpaceConstructor(dm, 1, CreatePressureNullSpace);CHKERRQ(ierr);
-
-    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, &ctx);CHKERRQ(ierr);
-    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, &ctx);CHKERRQ(ierr);
-    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, &ctx);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
 }

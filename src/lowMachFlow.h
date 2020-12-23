@@ -23,14 +23,15 @@ typedef struct {
 typedef struct {
     PetscReal nu;    /* Kinematic viscosity */
     PetscReal alpha; /* Thermal diffusivity */
-    PetscReal T_in;  /* Inlet temperature*/
-} Parameter;
+} Parameters;
 
 // Setup
 PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user);
 PetscErrorCode SetupProblem(DM dm, LowMachFlowContext *user);
 PetscErrorCode SetupParameters(LowMachFlowContext *user);
 PetscErrorCode RemoveDiscretePressureNullspace(TS ts);
+PetscErrorCode RemoveDiscretePressureNullspace_Private(TS ts, Vec u);
+PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace);
 
 // Physics
 void VIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux,
