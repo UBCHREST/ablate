@@ -636,10 +636,10 @@ static PetscErrorCode SetupDiscretization(DM dm, AppCtx *user)
     ierr = DMCreateDS(dm);CHKERRQ(ierr);
     ierr = SetupProblem(dm, user);CHKERRQ(ierr);
     ierr = PetscBagGetData(user->bag, (void **) &param);CHKERRQ(ierr);
-//    while (cdm) {
-//        ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
-//        ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
-//    }
+    while (cdm) {
+        ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
+        ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
+    }
     ierr = PetscFEDestroy(&fe[0]);CHKERRQ(ierr);
     ierr = PetscFEDestroy(&fe[1]);CHKERRQ(ierr);
     ierr = PetscFEDestroy(&fe[2]);CHKERRQ(ierr);
@@ -784,22 +784,14 @@ int ex76(int argc, char **argv)
 
     ierr = TSSetComputeInitialCondition(ts, SetInitialConditions);CHKERRQ(ierr); /* Must come after SetFromOptions() */
     ierr = SetInitialConditions(ts, u);CHKERRQ(ierr);
-
     ierr = TSGetTime(ts, &t);CHKERRQ(ierr);
     ierr = DMSetOutputSequenceNumber(dm, 0, t);CHKERRQ(ierr);
     ierr = DMTSCheckFromOptions(ts, u);CHKERRQ(ierr);
     ierr = TSMonitorSet(ts, MonitorError, &user, NULL);CHKERRQ(ierr);CHKERRQ(ierr);
 
-    printf("in example");
-    ierr = VecView(u, PETSC_VIEWER_STDOUT_WORLD );CHKERRQ(ierr);
-
     ierr = TSSolve(ts, u);CHKERRQ(ierr);
     ierr = DMTSCheckFromOptions(ts, u);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject) u, "Numerical Solution");CHKERRQ(ierr);
-
-    printf("///start-exp");
-    ierr = VecView(u, PETSC_VIEWER_STDOUT_WORLD );CHKERRQ(ierr);
-    printf("///end");
 
     ierr = VecDestroy(&u);CHKERRQ(ierr);
     ierr = DMDestroy(&dm);CHKERRQ(ierr);

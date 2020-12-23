@@ -42,11 +42,11 @@ void MpiTestFixture::RunWithMPI() const {
     // build the mpi command
     std::stringstream mpiCommand;
     mpiCommand << "mpirun ";
-    mpiCommand << "-n " << GetParam().nproc << " ";
+    mpiCommand << "-n " << mpiTestParameter.nproc << " ";
     mpiCommand << ExecutablePath() << " ";
     mpiCommand << InTestRunFlag << " ";
     mpiCommand << "--gtest_filter=" << TestName() << " ";
-    mpiCommand << GetParam().arguments << " ";
+    mpiCommand << mpiTestParameter.arguments << " ";
     mpiCommand << " > " << OutputFile();
 
     std::system(mpiCommand.str().c_str());
@@ -58,7 +58,7 @@ void MpiTestFixture::CompareOutputFiles(){
     std::string actual((std::istreambuf_iterator<char>(actualStream)), std::istreambuf_iterator<char>());
 
     // read in the expected
-    std::ifstream expectedStream(GetParam().expectedOutputFile);
+    std::ifstream expectedStream(mpiTestParameter.expectedOutputFile);
     std::string expected((std::istreambuf_iterator<char>(expectedStream)), std::istreambuf_iterator<char>());
 
     ASSERT_TRUE(actual.length() > 0) << "Actual output is expected not to be empty";
@@ -66,5 +66,5 @@ void MpiTestFixture::CompareOutputFiles(){
 }
 
 std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params){
-    return os << "MPI Params: " << params.nproc;  // whatever needed to print bar to os
+    return os << params.expectedOutputFile;
 }

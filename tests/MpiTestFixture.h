@@ -11,9 +11,10 @@ struct MpiTestParameter
     std::string arguments;
 };
 
-class MpiTestFixture : public ::testing::TestWithParam<MpiTestParameter> {
+class MpiTestFixture : public ::testing::Test {
 private:
     static bool inMpiTestRun;
+    MpiTestParameter mpiTestParameter;
 
 protected:
     static int* argc;
@@ -27,6 +28,10 @@ protected:
     void RunWithMPI() const;
 
     void CompareOutputFiles();
+
+    void SetMpiParameters(MpiTestParameter mpiTestParameterIn){
+        mpiTestParameter = mpiTestParameterIn;
+    }
 
     std::string ExecutablePath() const{
         return std::string(*argv[0]);
@@ -43,7 +48,7 @@ protected:
     }
 
     bool ShouldRunMpiCode() const{
-        return inMpiTestRun || GetParam().nproc == 0;
+        return inMpiTestRun || mpiTestParameter.nproc == 0;
     }
 
 public:

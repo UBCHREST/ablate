@@ -68,7 +68,7 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u)
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
     ierr = TSGetTime(ts, &t);CHKERRQ(ierr);
     ierr = DMComputeExactSolution(dm, t, u, NULL);CHKERRQ(ierr);
-    ierr = RemoveDiscretePressureNullspace_Private(ts, u);CHKERRQ(ierr);
+    ierr = RemoveDiscretePressureNullspace(dm, u);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -107,12 +107,12 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     PetscFunctionReturn(0);
 }
 
-extern int ex76(int argc,char **args);
-int main(int argc,char **args){
-    ex76(argc, args);
-}
+//extern int ex76(int argc,char **args);
+//int main(int argc,char **args){
+//    ex76(argc, args);
+//}
 
-int main2(int argc,char **args)
+int main(int argc,char **args)
 {
     DM                  dm;   /* problem definition */
     TS                  ts;   /* timestepper */
@@ -133,16 +133,16 @@ int main2(int argc,char **args)
     ierr = CreateMesh(PETSC_COMM_WORLD, &dm, PETSC_TRUE, 2);CHKERRQ(ierr);
     ierr = TSSetDM(ts, dm);CHKERRQ(ierr);
     ierr = DMSetApplicationContext(dm, &context);CHKERRQ(ierr);
+    ierr = TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
 
     // setup problem
     ierr = SetupDiscretization(dm, &context);CHKERRQ(ierr);
-    ierr = SetupProblem(dm, &context);CHKERRQ(ierr);
+    ierr = StartProblemSetup(dm, &context);CHKERRQ(ierr);
 
     // Override problem with source terms, boundary, and set the exact solution
     {
         PetscDS prob;
-        ierr = DMGetDS(dm, &prob);
-        CHKERRQ(ierr);
+        ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
 
         // V, W Test Function
         ierr = PetscDSSetResidual(prob, V, f0_quadratic_v, VIntegrandTestGradientFunction);CHKERRQ(ierr);
@@ -178,21 +178,10 @@ int main2(int argc,char **args)
         ierr = PetscDSSetExactSolutionTimeDerivative(prob, VEL, quadratic_u_t, parameters);CHKERRQ(ierr);
         ierr = PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, parameters);CHKERRQ(ierr);
         ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, quadratic_T_t, parameters);CHKERRQ(ierr);
-
-
-        ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
-        ierr = DMCreateGlobalVector(dm, &u);CHKERRQ(ierr);
-
-        ierr = DMSetNullSpaceConstructor(dm, PRES, CreatePressureNullSpace);CHKERRQ(ierr);
-
-        ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, &parameters);CHKERRQ(ierr);
-        ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, &parameters);CHKERRQ(ierr);
-        ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, &parameters);CHKERRQ(ierr);
     }
+    ierr = CompleteProblemSetup(ts, &u, &context);CHKERRQ(ierr);
 
     // Setup the TS
-    ierr = TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
-    ierr = TSSetPreStep(ts, RemoveDiscretePressureNullspace);CHKERRQ(ierr);
     ierr = TSSetFromOptions(ts);CHKERRQ(ierr);
 
     // Set initial conditions from the exact solution

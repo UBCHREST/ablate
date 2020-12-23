@@ -1,8 +1,8 @@
 #include "gtest/gtest.h"
-#include "MpiTestFixture.h"
+#include "MpiTestParamFixture.h"
 #include <mpi.h>
 
-class DemoTestA : public MpiTestFixture{
+class DemoTestA : public MpiTestParamFixture{
 public:
     char green = 4;
 };

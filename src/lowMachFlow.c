@@ -209,14 +209,12 @@ PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode RemoveDiscretePressureNullspace_Private(TS ts, Vec u)
+PetscErrorCode RemoveDiscretePressureNullspace(DM dm, Vec u)
 {
-    DM             dm;
     MatNullSpace   nullsp;
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
     ierr = CreatePressureNullSpace(dm, PRES, PRES, &nullsp);CHKERRQ(ierr);
     ierr = MatNullSpaceRemove(nullsp, u);CHKERRQ(ierr);
     ierr = MatNullSpaceDestroy(&nullsp);CHKERRQ(ierr);
@@ -224,14 +222,16 @@ PetscErrorCode RemoveDiscretePressureNullspace_Private(TS ts, Vec u)
 }
 
 /* Make the discrete pressure discretely divergence free */
-PetscErrorCode RemoveDiscretePressureNullspace(TS ts)
+PetscErrorCode RemoveDiscretePressureNullspaceOnTs(TS ts)
 {
     Vec            u;
     PetscErrorCode ierr;
+    DM             dm;
 
     PetscFunctionBegin;
+    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
     ierr = TSGetSolution(ts, &u);CHKERRQ(ierr);
-    ierr = RemoveDiscretePressureNullspace_Private(ts, u);CHKERRQ(ierr);
+    ierr = RemoveDiscretePressureNullspace(dm, u);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -348,8 +348,7 @@ static void g3_wT(PetscInt dim, PetscInt Nf, PetscInt NfAux,
     for (d = 0; d < dim; ++d) g3[d*dim+d] = alpha;
 }
 
-
-PetscErrorCode SetupProblem(DM dm, LowMachFlowContext *ctx) {
+PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
@@ -377,5 +376,28 @@ PetscErrorCode SetupProblem(DM dm, LowMachFlowContext *ctx) {
         constants[ALPHA] = param->alpha;
         ierr = PetscDSSetConstants(prob, 2, constants);CHKERRQ(ierr);
     }
+    PetscFunctionReturn(0);
+}
 
+PetscErrorCode CompleteProblemSetup(TS ts, Vec* u, LowMachFlowContext *context) {
+    PetscErrorCode ierr;
+    Parameters *parameters;
+    DM dm;
+
+    PetscFunctionBeginUser;
+    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+    ierr = PetscBagGetData(context->parameters, (void **) &parameters);CHKERRQ(ierr);
+
+    ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(dm, u);CHKERRQ(ierr);
+
+    ierr = DMSetNullSpaceConstructor(dm, PRES, CreatePressureNullSpace);CHKERRQ(ierr);
+
+    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, &parameters);CHKERRQ(ierr);
+    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, &parameters);CHKERRQ(ierr);
+    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, &parameters);CHKERRQ(ierr);
+
+    ierr = TSSetPreStep(ts, RemoveDiscretePressureNullspaceOnTs);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 }
