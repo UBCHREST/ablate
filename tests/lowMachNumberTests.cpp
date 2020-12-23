@@ -3,7 +3,7 @@ We solve the Low Mach flow problem in a rectangular\n\
 domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include "gtest/gtest.h"
-#include "MpiTestFixture.h"
+#include "testFixtures/MpiTestFixture.h"
 #include <petsc.h>
 #include "lowMachFlow.h"
 #include "mesh.h"
@@ -415,7 +415,7 @@ TEST_P(LowMachMMS, LowMachMMSTests) {
 }
 
 
-INSTANTIATE_TEST_SUITE_P(TestOne, LowMachMMS, testing::Values(
+INSTANTIATE_TEST_SUITE_P(LowMachMMSTests, LowMachMMS, testing::Values(
         (LowMachMMSParameters) {
                 .mpiTestParameter = {
                         .nproc = 1,

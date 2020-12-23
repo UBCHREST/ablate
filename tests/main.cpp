@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "MpiTestFixture.h"
+#include "testFixtures/MpiTestFixture.h"
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

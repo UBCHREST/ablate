@@ -6,7 +6,6 @@ target_link_directories (frameworkLibrary PUBLIC ${PETSc_LIBRARY_DIRS} ${MPI_LIB
 # Include code
 target_sources(frameworkLibrary
         PUBLIC
-        example76.c
         lowMachFlow.c
         lowMachFlow.h
         mesh.c

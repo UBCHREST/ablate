@@ -3,13 +3,10 @@ add_subdirectory("${PROJECT_SOURCE_DIR}/extern/googletest" "extern/googletest")
 add_executable(tests "")
 target_link_libraries(tests PUBLIC gtest gmock frameworkLibrary)
 
+add_subdirectory(testFixtures)
+
 target_sources(tests
         PRIVATE
-        MpiTestFixture.h
-        MpiTestFixture.cpp
-        MpiTestParamFixture.h
-        demoTestA.cpp
-        demoTestB.cpp
         lowMachNumberTests.cpp
         main.cpp
         )
@@ -27,3 +24,4 @@ add_custom_command(
         ${CMAKE_CURRENT_SOURCE_DIR}/outputs/
         $<TARGET_FILE_DIR:tests>/outputs
 )
+
