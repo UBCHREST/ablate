@@ -25,9 +25,6 @@ jobs:
         submodules: recursive
         fetch-depth: 0
 
-    - name: Log into registry
-      run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USER }}" --password-stdin
-
     - name: Building tests
       run: docker build . --file DockerTestFile --tag framework-test-image
 
@@ -58,9 +55,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-
-      - name: Log into registry
-        run: echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
       - name: Build the docker image
         run: docker build . --file DockerTestFile --tag framework-test-image
