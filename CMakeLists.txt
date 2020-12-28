@@ -31,6 +31,20 @@ endif()
 # Load in the subdirectories
 add_subdirectory(src)
 
+# Add a target to allow linting check
+find_program(CLANG_FORMAT "clang-format")
+if(CLANG_FORMAT)
+    add_custom_target(
+            format-check
+            COMMAND ${PROJECT_SOURCE_DIR}/extern/run-clang-format/run-clang-format.py
+            --style=file
+            -r
+            ${PROJECT_SOURCE_DIR}/src
+            ${PROJECT_SOURCE_DIR}/tests
+            USES_TERMINAL
+    )
+endif()
+
 # Keep a simple main statement
 add_executable(Framework main.c)
 target_link_libraries(Framework PRIVATE frameworkLibrary)
