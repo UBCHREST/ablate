@@ -18,4 +18,4 @@ run cmake -S /source/ -B .
 run make -j $(nproc)
 
 # Specify Entry Point for tests
-CMD ["ctest"]
+CMD bash -c "ctest && make format-check"
