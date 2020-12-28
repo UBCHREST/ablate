@@ -3,7 +3,7 @@ We solve the Low Mach flow problem in a rectangular\n\
 domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include "gtest/gtest.h"
-#include "testFixtures/MpiTestFixture.h"
+#include "testFixtures/MpiTestFixture.hpp"
 #include <petsc.h>
 #include "lowMachFlow.h"
 #include "mesh.h"

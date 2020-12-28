@@ -1,4 +1,5 @@
-#include "MpiTestFixture.h"
+#include "MpiTestFixture.hpp"
+
 #include <filesystem>
 #include <fstream>
 

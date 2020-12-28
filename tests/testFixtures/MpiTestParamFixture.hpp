@@ -1,7 +1,8 @@
 #ifndef mpitestparamfixture_h
 #define mpitestparamfixture_h
 #include <gtest/gtest.h>
-#include "MpiTestFixture.h"
+
+#include "MpiTestFixture.hpp"
 
 class MpiTestParamFixture : public MpiTestFixture, public ::testing::WithParamInterface<MpiTestParameter> {
 protected:
