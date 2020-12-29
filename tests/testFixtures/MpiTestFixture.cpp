@@ -8,33 +8,32 @@ char*** MpiTestFixture::argv;
 const std::string MpiTestFixture::InTestRunFlag = "InMpiTestRun";
 bool MpiTestFixture::inMpiTestRun;
 
-bool MpiTestFixture::InitializeTestingEnvironment(int* argc, char***argv){
+bool MpiTestFixture::InitializeTestingEnvironment(int* argc, char*** argv) {
     MpiTestFixture::argc = argc;
     MpiTestFixture::argv = argv;
 
     int inMpiTestRunLocation = -1;
-    for(auto i =0; i < *argc; i++){
-        if(strcmp(MpiTestFixture::InTestRunFlag.c_str(), (*argv)[i]) == 0){
+    for (auto i = 0; i < *argc; i++) {
+        if (strcmp(MpiTestFixture::InTestRunFlag.c_str(), (*argv)[i]) == 0) {
             inMpiTestRun = true;
             inMpiTestRunLocation = i;
         }
     }
 
-    if(inMpiTestRunLocation >= 0){
-        *argc = (*argc)-1;
-        for(auto i = inMpiTestRunLocation; i < *argc; i++ ){
-            (*argv)[i] = (*argv)[i+1];
+    if (inMpiTestRunLocation >= 0) {
+        *argc = (*argc) - 1;
+        for (auto i = inMpiTestRunLocation; i < *argc; i++) {
+            (*argv)[i] = (*argv)[i + 1];
         }
     }
 
     return inMpiTestRun;
 }
 
-void MpiTestFixture::SetUp() {
-}
+void MpiTestFixture::SetUp() {}
 
-void MpiTestFixture::TearDown(){
-    if(!inMpiTestRun){
+void MpiTestFixture::TearDown() {
+    if (!inMpiTestRun) {
         fs::remove_all(OutputFile());
     }
 }
@@ -53,7 +52,7 @@ void MpiTestFixture::RunWithMPI() const {
     std::system(mpiCommand.str().c_str());
 }
 
-void MpiTestFixture::CompareOutputFiles(){
+void MpiTestFixture::CompareOutputFiles() {
     // load the actual output
     std::ifstream actualStream(OutputFile());
     std::string actual((std::istreambuf_iterator<char>(actualStream)), std::istreambuf_iterator<char>());
@@ -66,6 +65,4 @@ void MpiTestFixture::CompareOutputFiles(){
     ASSERT_EQ(actual, expected);
 }
 
-std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params){
-    return os << params.expectedOutputFile;
-}
+std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params) { return os << params.expectedOutputFile; }
