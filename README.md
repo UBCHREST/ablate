@@ -16,9 +16,12 @@ docker run --rm testing_image
 ```
 
 # Formatting Linting
-The c/c++ code style is based upon the [Google Style Guide](https://google.github.io/styleguide/) and enforced using clang-format during PR tests.  Specific overrides to the style are controlled in the .clang-format file. A directly if clang-format is installed.
+The c++ code style is based upon the [Google Style Guide](https://google.github.io/styleguide/) and enforced using clang-format during PR tests.  Specific overrides to the style are controlled in the .clang-format file.
+
+All c code should be styled using the [PETSc Style and Usage Guide](https://docs.petsc.org/en/latest/developers/style/) and enforced using a shell script based upon PETSc.
 
 ```bash
+# To run a format check
 # from build directory
 make format-check
 ```

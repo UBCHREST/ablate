@@ -35,8 +35,7 @@ PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user) {
     PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
 
     // Determine the number of dimensions
-    ierr = DMGetDimension(dm, &dim);
-    CHKERRQ(ierr);
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     /* Create finite element */
     ierr = PetscObjectGetComm((PetscObject)dm, &comm);

@@ -39,8 +39,11 @@ if(CLANG_FORMAT)
             COMMAND ${PROJECT_SOURCE_DIR}/extern/run-clang-format/run-clang-format.py
             --style=file
             -r
+            --extensions=cpp,hpp,cc,hh,c++,h++,cxx,hxx
             ${PROJECT_SOURCE_DIR}/src
             ${PROJECT_SOURCE_DIR}/tests
+            COMMAND ${PROJECT_SOURCE_DIR}/extern/petscFormat/petscFormatTest.sh
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             USES_TERMINAL
     )
 endif()
