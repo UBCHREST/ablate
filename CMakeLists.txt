@@ -4,7 +4,6 @@ project(CHREST VERSION 0.0.5)
 # Load the Required 3rd Party Libaries
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(PETSc REQUIRED PETSc)
-pkg_check_modules(MPI REQUIRED mpich)
 
 # Set the c/c++ Standards
 set(CMAKE_C_STANDARD 99)
