@@ -5,6 +5,10 @@ ENV PETSC_ARCH=arch-opt
 ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
 ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
 
+# Install dependencies
+RUN apt-get update
+RUN apt-get install -y clang-format
+
 # Copy over the source
 COPY . /source
 WORKDIR /build
@@ -14,4 +18,4 @@ run cmake -S /source/ -B .
 run make -j $(nproc)
 
 # Specify Entry Point for tests
-CMD ["ctest"]
+CMD bash -c "make format-check && ctest"

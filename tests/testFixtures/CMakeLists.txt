@@ -1,6 +1,6 @@
 target_sources(tests
         PRIVATE
-        MpiTestFixture.h
+        MpiTestFixture.hpp
         MpiTestFixture.cpp
-        MpiTestParamFixture.h
+        MpiTestParamFixture.hpp
         )

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(CHREST VERSION 0.0.3)
+project(CHREST VERSION 0.0.4)
 
 # Load the Required 3rd Party Libaries
 find_package(PkgConfig REQUIRED)
@@ -30,6 +30,23 @@ endif()
 
 # Load in the subdirectories
 add_subdirectory(src)
+
+# Add a target to allow linting check
+find_program(CLANG_FORMAT "clang-format")
+if(CLANG_FORMAT)
+    add_custom_target(
+            format-check
+            COMMAND ${PROJECT_SOURCE_DIR}/extern/run-clang-format/run-clang-format.py
+            --style=file
+            -r
+            --extensions=cpp,hpp,cc,hh,c++,h++,cxx,hxx
+            ${PROJECT_SOURCE_DIR}/src
+            ${PROJECT_SOURCE_DIR}/tests
+            COMMAND ${PROJECT_SOURCE_DIR}/extern/petscFormat/petscFormatTest.sh
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+            USES_TERMINAL
+    )
+endif()
 
 # Keep a simple main statement
 add_executable(Framework main.c)
