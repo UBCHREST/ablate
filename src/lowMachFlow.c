@@ -28,76 +28,52 @@ PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user) {
 
     // determine if it a simplex element and the number of dimensions
     DMPolytopeType ct;
-    ierr = DMPlexGetHeightStratum(dm, 0, &cStart, NULL);
-    CHKERRQ(ierr);
-    ierr = DMPlexGetCellType(dm, cStart, &ct);
-    CHKERRQ(ierr);
+    ierr = DMPlexGetHeightStratum(dm, 0, &cStart, NULL);CHKERRQ(ierr);
+    ierr = DMPlexGetCellType(dm, cStart, &ct);CHKERRQ(ierr);
     PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
 
     // Determine the number of dimensions
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     /* Create finite element */
-    ierr = PetscObjectGetComm((PetscObject)dm, &comm);
-    CHKERRQ(ierr);
-    ierr = PetscFECreateDefault(comm, dim, dim, simplex, "vel_", PETSC_DEFAULT, &fe[0]);
-    CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[VEL], "velocity");
-    CHKERRQ(ierr);
+    ierr = PetscObjectGetComm((PetscObject)dm, &comm);CHKERRQ(ierr);
+    ierr = PetscFECreateDefault(comm, dim, dim, simplex, "vel_", PETSC_DEFAULT, &fe[0]);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)fe[VEL], "velocity");CHKERRQ(ierr);
 
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, "pres_", PETSC_DEFAULT, &fe[1]);
-    CHKERRQ(ierr);
-    ierr = PetscFECopyQuadrature(fe[VEL], fe[PRES]);
-    CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[PRES], "pressure");
-    CHKERRQ(ierr);
+    ierr = PetscFECreateDefault(comm, dim, 1, simplex, "pres_", PETSC_DEFAULT, &fe[1]);CHKERRQ(ierr);
+    ierr = PetscFECopyQuadrature(fe[VEL], fe[PRES]);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)fe[PRES], "pressure");CHKERRQ(ierr);
 
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, "temp_", PETSC_DEFAULT, &fe[2]);
-    CHKERRQ(ierr);
-    ierr = PetscFECopyQuadrature(fe[VEL], fe[TEMP]);
-    CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[TEMP], "temperature");
-    CHKERRQ(ierr);
+    ierr = PetscFECreateDefault(comm, dim, 1, simplex, "temp_", PETSC_DEFAULT, &fe[2]);CHKERRQ(ierr);
+    ierr = PetscFECopyQuadrature(fe[VEL], fe[TEMP]);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)fe[TEMP], "temperature");CHKERRQ(ierr);
 
     /* Set discretization and boundary conditions for each mesh */
-    ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);
-    CHKERRQ(ierr);
-    ierr = DMSetField(dm, PRES, NULL, (PetscObject)fe[PRES]);
-    CHKERRQ(ierr);
-    ierr = DMSetField(dm, TEMP, NULL, (PetscObject)fe[TEMP]);
-    CHKERRQ(ierr);
+    ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);
+    ierr = DMSetField(dm, PRES, NULL, (PetscObject)fe[PRES]);CHKERRQ(ierr);
+    ierr = DMSetField(dm, TEMP, NULL, (PetscObject)fe[TEMP]);CHKERRQ(ierr);
 
     // Create the discrete systems for the DM based upon the fields added to the DM
-    ierr = DMCreateDS(dm);
-    CHKERRQ(ierr);
+    ierr = DMCreateDS(dm);CHKERRQ(ierr);
 
     while (cdm) {
-        ierr = DMCopyDisc(dm, cdm);
-        CHKERRQ(ierr);
-        ierr = DMGetCoarseDM(cdm, &cdm);
-        CHKERRQ(ierr);
+        ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
+        ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
     }
 
     // Clean up the fields
-    ierr = PetscFEDestroy(&fe[VEL]);
-    CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&fe[PRES]);
-    CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&fe[TEMP]);
-    CHKERRQ(ierr);
+    ierr = PetscFEDestroy(&fe[VEL]);CHKERRQ(ierr);
+    ierr = PetscFEDestroy(&fe[PRES]);CHKERRQ(ierr);
+    ierr = PetscFEDestroy(&fe[TEMP]);CHKERRQ(ierr);
 
     {
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        ierr = DMGetField(dm, PRES, NULL, &pressure);
-        CHKERRQ(ierr);
-        ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);
-        CHKERRQ(ierr);
-        ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);
-        CHKERRQ(ierr);
-        ierr = MatNullSpaceDestroy(&nullspacePres);
-        CHKERRQ(ierr);
+        ierr = DMGetField(dm, PRES, NULL, &pressure);CHKERRQ(ierr);
+        ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);CHKERRQ(ierr);
+        ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);CHKERRQ(ierr);
+        ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
@@ -110,15 +86,11 @@ PetscErrorCode SetupParameters(LowMachFlowContext *user) {
 
     PetscFunctionBeginUser;
     /* setup PETSc parameter bag */
-    ierr = PetscBagGetData(user->parameters, (void **)&p);
-    CHKERRQ(ierr);
-    ierr = PetscBagSetName(user->parameters, "par", "Low Mach flow parameters");
-    CHKERRQ(ierr);
+    ierr = PetscBagGetData(user->parameters, (void **)&p);CHKERRQ(ierr);
+    ierr = PetscBagSetName(user->parameters, "par", "Low Mach flow parameters");CHKERRQ(ierr);
     bag = user->parameters;
-    ierr = PetscBagRegisterReal(bag, &p->nu, 1.0, "nu", "Kinematic viscosity");
-    CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(bag, &p->alpha, 1.0, "alpha", "Thermal diffusivity");
-    CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(bag, &p->nu, 1.0, "nu", "Kinematic viscosity");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(bag, &p->alpha, 1.0, "alpha", "Thermal diffusivity");CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -288,20 +260,13 @@ PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, 
     PetscFunctionBeginUser;
     if (ofield != 1) SETERRQ1(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Nullspace must be for pressure field at index 1, not %D", ofield);
     funcs[nfield] = constant;
-    ierr = DMCreateGlobalVector(dm, &vec);
-    CHKERRQ(ierr);
-    ierr = DMProjectFunction(dm, 0.0, funcs, NULL, INSERT_ALL_VALUES, vec);
-    CHKERRQ(ierr);
-    ierr = VecNormalize(vec, NULL);
-    CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)vec, "Pressure Null Space");
-    CHKERRQ(ierr);
-    ierr = VecViewFromOptions(vec, NULL, "-pressure_nullspace_view");
-    CHKERRQ(ierr);
-    ierr = MatNullSpaceCreate(PetscObjectComm((PetscObject)dm), PETSC_FALSE, 1, &vec, nullSpace);
-    CHKERRQ(ierr);
-    ierr = VecDestroy(&vec);
-    CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(dm, &vec);CHKERRQ(ierr);
+    ierr = DMProjectFunction(dm, 0.0, funcs, NULL, INSERT_ALL_VALUES, vec);CHKERRQ(ierr);
+    ierr = VecNormalize(vec, NULL);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)vec, "Pressure Null Space");CHKERRQ(ierr);
+    ierr = VecViewFromOptions(vec, NULL, "-pressure_nullspace_view");CHKERRQ(ierr);
+    ierr = MatNullSpaceCreate(PetscObjectComm((PetscObject)dm), PETSC_FALSE, 1, &vec, nullSpace);CHKERRQ(ierr);
+    ierr = VecDestroy(&vec);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -310,12 +275,9 @@ PetscErrorCode RemoveDiscretePressureNullspace(DM dm, Vec u) {
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = CreatePressureNullSpace(dm, PRES, PRES, &nullsp);
-    CHKERRQ(ierr);
-    ierr = MatNullSpaceRemove(nullsp, u);
-    CHKERRQ(ierr);
-    ierr = MatNullSpaceDestroy(&nullsp);
-    CHKERRQ(ierr);
+    ierr = CreatePressureNullSpace(dm, PRES, PRES, &nullsp);CHKERRQ(ierr);
+    ierr = MatNullSpaceRemove(nullsp, u);CHKERRQ(ierr);
+    ierr = MatNullSpaceDestroy(&nullsp);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -326,12 +288,9 @@ PetscErrorCode RemoveDiscretePressureNullspaceOnTs(TS ts) {
     DM dm;
 
     PetscFunctionBegin;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = TSGetSolution(ts, &u);
-    CHKERRQ(ierr);
-    ierr = RemoveDiscretePressureNullspace(dm, u);
-    CHKERRQ(ierr);
+    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+    ierr = TSGetSolution(ts, &u);CHKERRQ(ierr);
+    ierr = RemoveDiscretePressureNullspace(dm, u);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -577,39 +536,28 @@ PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
 
     PetscFunctionBeginUser;
     PetscDS prob;
-    ierr = DMGetDS(dm, &prob);
-    CHKERRQ(ierr);
+    ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
 
     // V, W, Q Test Function
-    ierr = PetscDSSetResidual(prob, V, VIntegrandTestFunction, VIntegrandTestGradientFunction);
-    CHKERRQ(ierr);
-    ierr = PetscDSSetResidual(prob, W, WIntegrandTestFunction, WIntegrandTestGradientFunction);
-    CHKERRQ(ierr);
-    ierr = PetscDSSetResidual(prob, Q, QIntegrandTestFunction, NULL);
-    CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, V, VIntegrandTestFunction, VIntegrandTestGradientFunction);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, W, WIntegrandTestFunction, WIntegrandTestGradientFunction);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, Q, QIntegrandTestFunction, NULL);CHKERRQ(ierr);
 
-    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);
-    CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);
-    CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, Q, VEL, NULL, g1_qu, NULL, NULL);
-    CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);
-    CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);
-    CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, Q, VEL, NULL, g1_qu, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
 
     /* Setup constants */
     {
         Parameters *param;
         PetscScalar constants[2];
 
-        ierr = PetscBagGetData(ctx->parameters, (void **)&param);
-        CHKERRQ(ierr);
+        ierr = PetscBagGetData(ctx->parameters, (void **)&param);CHKERRQ(ierr);
         constants[NU] = param->nu;
         constants[ALPHA] = param->alpha;
-        ierr = PetscDSSetConstants(prob, 2, constants);
-        CHKERRQ(ierr);
+        ierr = PetscDSSetConstants(prob, 2, constants);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }
@@ -620,28 +568,19 @@ PetscErrorCode CompleteProblemSetup(TS ts, Vec *u, LowMachFlowContext *context) 
     DM dm;
 
     PetscFunctionBeginUser;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = PetscBagGetData(context->parameters, (void **)&parameters);
-    CHKERRQ(ierr);
+    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+    ierr = PetscBagGetData(context->parameters, (void **)&parameters);CHKERRQ(ierr);
 
-    ierr = DMPlexCreateClosureIndex(dm, NULL);
-    CHKERRQ(ierr);
-    ierr = DMCreateGlobalVector(dm, u);
-    CHKERRQ(ierr);
+    ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(dm, u);CHKERRQ(ierr);
 
-    ierr = DMSetNullSpaceConstructor(dm, PRES, CreatePressureNullSpace);
-    CHKERRQ(ierr);
+    ierr = DMSetNullSpaceConstructor(dm, PRES, CreatePressureNullSpace);CHKERRQ(ierr);
 
-    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, &parameters);
-    CHKERRQ(ierr);
-    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, &parameters);
-    CHKERRQ(ierr);
-    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, &parameters);
-    CHKERRQ(ierr);
+    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, &parameters);CHKERRQ(ierr);
+    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, &parameters);CHKERRQ(ierr);
+    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, &parameters);CHKERRQ(ierr);
 
-    ierr = TSSetPreStep(ts, RemoveDiscretePressureNullspaceOnTs);
-    CHKERRQ(ierr);
+    ierr = TSSetPreStep(ts, RemoveDiscretePressureNullspaceOnTs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
