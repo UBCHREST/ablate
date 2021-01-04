@@ -1,8 +1,16 @@
 cmake_minimum_required(VERSION 3.13)
-project(CHREST VERSION 0.0.5)
+
+# Set the compilers based upon the PETSc package
+find_package(PkgConfig REQUIRED)
+pkg_get_variable(PETSC_C_COMPILER PETSc ccompiler)
+set(CMAKE_C_COMPILER ${PETSC_C_COMPILER})
+pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
+set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
+
+# Set the project details
+project(CHREST VERSION 0.0.4)
 
 # Load the Required 3rd Party Libaries
-find_package(PkgConfig REQUIRED)
 pkg_check_modules(PETSc REQUIRED PETSc)
 
 # Set the c/c++ Standards
