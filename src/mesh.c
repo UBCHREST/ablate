@@ -20,8 +20,7 @@ PetscErrorCode CreateMesh(MPI_Comm comm, DM *dm, PetscBool simplex, PetscInt dim
         ierr = PetscPartitionerSetFromOptions(part);CHKERRQ(ierr);
         ierr = DMPlexDistribute(*dm, 0, NULL, &distributedMesh);CHKERRQ(ierr);
         if (distributedMesh) {
-            ierr = DMDestroy(dm);
-            CHKERRQ(ierr);
+            ierr = DMDestroy(dm);CHKERRQ(ierr);
             *dm = distributedMesh;
         }
     }
