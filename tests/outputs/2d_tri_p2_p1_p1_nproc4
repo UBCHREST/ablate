@@ -1,11 +1,11 @@
-L_2 Error: [2.89365e-16, 8.54664e-17, 1.09106e-16]
-L_2 Residual: 2.26879e-14
+L_2 Error: [2.62232e-16, 8.99102e-17, 1.06732e-16]
+L_2 Residual: 1.0882e-14
 Taylor approximation converging at order 2.00
-Timestep: 0000 time = 0        	 L_2 Error: [2.89e-16, 8.99e-17, 1.09e-16]
-Timestep: 0001 time = 0.1      	 L_2 Error: [2.44e-11, 1.96e-09, 1.9e-10]
-Timestep: 0002 time = 0.2      	 L_2 Error: [2.55e-11, 1.95e-09, 2.13e-10]
-Timestep: 0003 time = 0.3      	 L_2 Error: [2.56e-11, 1.95e-09, 2.17e-10]
-Timestep: 0004 time = 0.4      	 L_2 Error: [2.56e-11, 1.95e-09, 2.17e-10]
-L_2 Error: [3.46327e-16, 8.54664e-17, 1.63091e-16]
-L_2 Residual: 2.49495e-14
+Timestep: 0000 time = 0        	 L_2 Error: [2.62e-16, 8.99e-17, 1.07e-16]
+Timestep: 0001 time = 0.1      	 L_2 Error: [3.63e-11, 4.32e-09, 2.92e-10]
+Timestep: 0002 time = 0.2      	 L_2 Error: [3.69e-11, 4.33e-09, 3.06e-10]
+Timestep: 0003 time = 0.3      	 L_2 Error: [3.69e-11, 4.33e-09, 3.07e-10]
+Timestep: 0004 time = 0.4      	 L_2 Error: [3.7e-11, 4.33e-09, 3.08e-10]
+L_2 Error: [3.175e-16, 8.99102e-17, 1.82882e-16]
+L_2 Residual: 1.23733e-14
 Taylor approximation converging at order 2.00
