@@ -21,7 +21,7 @@ class MpiTestFixture : public ::testing::Test {
     static int* argc;
     static char*** argv;
     static const std::string InTestRunFlag;
-    static const std::string MpiRunCommandFlag;
+    static const std::string Test_Mpi_Command_Name;
 
     void SetUp() override;
 

@@ -1,12 +1,12 @@
 #include "MpiTestFixture.hpp"
-
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 
 int* MpiTestFixture::argc;
 char*** MpiTestFixture::argv;
 const std::string MpiTestFixture::InTestRunFlag = "--inmpitestrun=true";
-const std::string MpiTestFixture::MpiRunCommandFlag = "--mpirun=";
+const std::string MpiTestFixture::Test_Mpi_Command_Name = "TEST_MPI_COMMAND";
 
 bool MpiTestFixture::inMpiTestRun;
 std::string MpiTestFixture::mpiCommand = "mpirun";
@@ -37,11 +37,12 @@ bool MpiTestFixture::InitializeTestingEnvironment(int* argc, char*** argv) {
     MpiTestFixture::argc = argc;
     MpiTestFixture::argv = argv;
 
-    auto mpiCommand = MpiTestFixture::ParseCommandLineArgument(MpiTestFixture::argc, MpiTestFixture::argv, MpiTestFixture::MpiRunCommandFlag);
-    if (!mpiCommand.empty()) {
-        MpiTestFixture::mpiCommand = mpiCommand;
-    }
     MpiTestFixture::inMpiTestRun = !MpiTestFixture::ParseCommandLineArgument(MpiTestFixture::argc, MpiTestFixture::argv, MpiTestFixture::InTestRunFlag).empty();
+
+    char* commandName = std::getenv(MpiTestFixture::Test_Mpi_Command_Name.c_str());
+    if (commandName != NULL) {
+        MpiTestFixture::mpiCommand = std::string(commandName);
+    }
 
     return inMpiTestRun;
 }
