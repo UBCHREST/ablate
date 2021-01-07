@@ -1,30 +1,47 @@
 #include "MpiTestFixture.hpp"
-
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 
 int* MpiTestFixture::argc;
 char*** MpiTestFixture::argv;
-const std::string MpiTestFixture::InTestRunFlag = "InMpiTestRun";
+const std::string MpiTestFixture::InTestRunFlag = "--inmpitestrun=true";
+const std::string MpiTestFixture::Test_Mpi_Command_Name = "TEST_MPI_COMMAND";
+
 bool MpiTestFixture::inMpiTestRun;
+std::string MpiTestFixture::mpiCommand = "mpirun";
+
+std::string MpiTestFixture::ParseCommandLineArgument(int* argc, char*** argv, const std::string flag) {
+    int commandLineArgumentLocation = -1;
+    std::string argument;
+    for (auto i = 0; i < *argc; i++) {
+        if (strncmp(flag.c_str(), (*argv)[i], flag.length()) == 0) {
+            commandLineArgumentLocation = i;
+
+            argument = std::string((*argv)[i]);
+            argument = argument.substr(argument.find("=") + 1);
+        }
+    }
+
+    if (commandLineArgumentLocation >= 0) {
+        *argc = (*argc) - 1;
+        for (auto i = commandLineArgumentLocation; i < *argc; i++) {
+            (*argv)[i] = (*argv)[i + 1];
+        }
+    }
+
+    return argument;
+}
 
 bool MpiTestFixture::InitializeTestingEnvironment(int* argc, char*** argv) {
     MpiTestFixture::argc = argc;
     MpiTestFixture::argv = argv;
 
-    int inMpiTestRunLocation = -1;
-    for (auto i = 0; i < *argc; i++) {
-        if (strcmp(MpiTestFixture::InTestRunFlag.c_str(), (*argv)[i]) == 0) {
-            inMpiTestRun = true;
-            inMpiTestRunLocation = i;
-        }
-    }
+    MpiTestFixture::inMpiTestRun = !MpiTestFixture::ParseCommandLineArgument(MpiTestFixture::argc, MpiTestFixture::argv, MpiTestFixture::InTestRunFlag).empty();
 
-    if (inMpiTestRunLocation >= 0) {
-        *argc = (*argc) - 1;
-        for (auto i = inMpiTestRunLocation; i < *argc; i++) {
-            (*argv)[i] = (*argv)[i + 1];
-        }
+    char* commandName = std::getenv(MpiTestFixture::Test_Mpi_Command_Name.c_str());
+    if (commandName != NULL) {
+        MpiTestFixture::mpiCommand = std::string(commandName);
     }
 
     return inMpiTestRun;
@@ -41,7 +58,7 @@ void MpiTestFixture::TearDown() {
 void MpiTestFixture::RunWithMPI() const {
     // build the mpi command
     std::stringstream mpiCommand;
-    mpiCommand << "mpirun ";
+    mpiCommand << MpiTestFixture::mpiCommand << " ";
     mpiCommand << "-n " << mpiTestParameter.nproc << " ";
     mpiCommand << ExecutablePath() << " ";
     mpiCommand << InTestRunFlag << " ";

@@ -1,7 +1,7 @@
 # Include PETSc and MPI
-target_include_directories(frameworkLibrary PUBLIC ${PETSc_INCLUDE_DIRS} ${PETSc_INCLUDE_DIRS})
-target_link_libraries(frameworkLibrary PUBLIC ${PETSc_LIBRARIES} ${MPI_LIBRARIES})
-target_link_directories (frameworkLibrary PUBLIC ${PETSc_LIBRARY_DIRS} ${MPI_LIBRARY_DIRS})
+target_include_directories(frameworkLibrary PUBLIC ${PETSc_INCLUDE_DIRS})
+target_link_libraries(frameworkLibrary PUBLIC ${PETSc_LIBRARIES})
+target_link_directories (frameworkLibrary PUBLIC ${PETSc_LIBRARY_DIRS})
 
 # Include code
 target_sources(frameworkLibrary
