@@ -8,7 +8,7 @@ pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
 set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
 
 # Set the project details
-project(CHREST VERSION 0.0.6)
+project(CHREST VERSION 0.0.5)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)
