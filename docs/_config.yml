@@ -25,7 +25,7 @@ url: "https://mtmcgurn-buffalo.github.io" # the base hostname & protocol for you
 # Build settings
 markdown: kramdown
 #theme: minima
-remote_theme: songzivong/dark-minima
+remote_theme: jekyll/minima
 plugins:
   - jekyll-feed
   - jekyll-remote-theme
