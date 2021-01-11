@@ -60,7 +60,7 @@ void MpiTestFixture::RunWithMPI() const {
     std::stringstream mpiCommand;
     mpiCommand << MpiTestFixture::mpiCommand << " ";
     mpiCommand << "-n " << mpiTestParameter.nproc << " ";
-    mpiCommand << ExecutablePath() << " ";
+    mpiCommand << "\"" << ExecutablePath() << "\" ";
     mpiCommand << InTestRunFlag << " ";
     mpiCommand << "--gtest_filter=" << TestName() << " ";
     mpiCommand << mpiTestParameter.arguments << " ";
