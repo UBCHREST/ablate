@@ -13,18 +13,18 @@
 # you will see them accessed via {{ site.title }}, {{ site.email }}, and so on.
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
-title: CHREST Framework Documentation
+title: CHREST Documentation
 description: >- # this means to ignore newlines until "baseurl:"
   CHREST aims to advance space exploration through research that will improve hybrid rocket motors and enable the next generation of low-cost space flight.
-baseurl: "/framework" # the subpath of your site, e.g. /blog
-url: "https://UBCHREST.github.io" # the base hostname & protocol for your site, e.g. http://example.com
+baseurl: "/chrest" # the subpath of your site, e.g. /blog
+url: "https://ubchrest.github.io" # the base hostname & protocol for your site, e.g. http://example.com
 logo: "/assets/images/logo.png"
-repository: "UBCHREST/framework"
+repository: "ubchrest/chrest"
 
 # Aux links for the upper right navigation
 aux_links:
   "CHREST on GitHub":
-      - "//github.com/UBCHREST"
+      - "//github.com/ubchrest"
 
 # Makes Aux links open in a new tab. Default is false
 aux_links_new_tab: true
