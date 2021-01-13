@@ -1,7 +1,7 @@
 ---
 layout: about
 ---
-The framework documentation that should contain:
+The CHREST framework documentation that should contain:
 * building/running the framework
 * physics overview and assumptions
 * development guides
