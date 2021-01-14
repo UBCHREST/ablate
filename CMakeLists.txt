@@ -8,7 +8,7 @@ pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
 set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
 
 # Set the project details
-project(CHREST VERSION 0.0.9)
+project(ABLATE VERSION 0.0.10)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)
@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Setup the framework library
-add_library(frameworkLibrary "")
+add_library(ablateLibrary "")
 
 # Check if we should enable testing options
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -56,5 +56,5 @@ if(CLANG_FORMAT)
 endif()
 
 # Keep a simple main statement
-add_executable(Framework main.c)
-target_link_libraries(Framework PRIVATE frameworkLibrary)
+add_executable(ablate main.c)
+target_link_libraries(ablate PRIVATE ablateLibrary)

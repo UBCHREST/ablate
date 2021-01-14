@@ -1,10 +1,10 @@
 # Include PETSc and MPI
-target_include_directories(frameworkLibrary PUBLIC ${PETSc_INCLUDE_DIRS})
-target_link_libraries(frameworkLibrary PUBLIC ${PETSc_LIBRARIES})
-target_link_directories (frameworkLibrary PUBLIC ${PETSc_LIBRARY_DIRS})
+target_include_directories(ablateLibrary PUBLIC ${PETSc_INCLUDE_DIRS})
+target_link_libraries(ablateLibrary PUBLIC ${PETSc_LIBRARIES})
+target_link_directories (ablateLibrary PUBLIC ${PETSc_LIBRARY_DIRS})
 
 # Include code
-target_sources(frameworkLibrary
+target_sources(ablateLibrary
         PUBLIC
         lowMachFlow.c
         lowMachFlow.h
@@ -13,7 +13,7 @@ target_sources(frameworkLibrary
         )
 
 # Allow public access to the header files in the directory
-target_include_directories(frameworkLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_include_directories(ablateLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 
 # Tag the version file
 configure_file (

@@ -1,7 +1,7 @@
 add_subdirectory("${PROJECT_SOURCE_DIR}/extern/googletest" "extern/googletest")
 
 add_executable(tests "")
-target_link_libraries(tests PUBLIC gtest gmock frameworkLibrary)
+target_link_libraries(tests PUBLIC gtest gmock ablateLibrary)
 
 add_subdirectory(testFixtures)
 
