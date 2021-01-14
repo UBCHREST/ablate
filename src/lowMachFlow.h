@@ -12,18 +12,9 @@
 #define Q 1
 #define W 2
 
-// Store the constant locations
-#define NU 0
-#define ALPHA 1
-
 typedef struct {
     PetscBag parameters;
 } LowMachFlowContext;
-
-typedef struct {
-    PetscReal nu;    /* Kinematic viscosity */
-    PetscReal alpha; /* Thermal diffusivity */
-} Parameters;
 
 // Setup
 PETSC_EXTERN PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user);

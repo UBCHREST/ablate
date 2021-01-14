@@ -5,6 +5,7 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include "lowMachFlow.h"
 #include "mesh.h"
+#include "constants.h"
 
 static PetscErrorCode quadratic_u(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
   u[0] = time + X[0] * X[0] + X[1] * X[1];
@@ -51,10 +52,11 @@ static void f0_quadratic_v(PetscInt dim,
                            const PetscScalar constants[],
                            PetscScalar f0[]) {
   VIntegrandTestFunction(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-  const PetscReal nu = PetscRealPart(constants[NU]);
-
-  f0[0] -= (t * (2 * X[0] + 2 * X[1]) + 2 * X[0] * X[0] * X[0] + 4 * X[0] * X[0] * X[1] - 2 * X[0] * X[1] * X[1] - 4.0 * nu + 2);
-  f0[1] -= (t * (2 * X[0] - 2 * X[1]) + 4 * X[0] * X[1] * X[1] + 2 * X[0] * X[0] * X[1] - 2 * X[1] * X[1] * X[1] - 4.0 * nu + 2);
+    //TODO: fix
+  //  const PetscReal nu = PetscRealPart(constants[NU]);
+//
+//  f0[0] -= (t * (2 * X[0] + 2 * X[1]) + 2 * X[0] * X[0] * X[0] + 4 * X[0] * X[0] * X[1] - 2 * X[0] * X[1] * X[1] - 4.0 * nu + 2);
+//  f0[1] -= (t * (2 * X[0] - 2 * X[1]) + 4 * X[0] * X[1] * X[1] + 2 * X[0] * X[0] * X[1] - 2 * X[1] * X[1] * X[1] - 4.0 * nu + 2);
 }
 
 /* f0_w = dT/dt + u.grad(T) - Q */
@@ -147,7 +149,7 @@ int main(int argc, char **args) {
   if (ierr) return ierr;
 
   // setup and initialize the constant field variables
-  ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(Parameters), &context.parameters);CHKERRQ(ierr);
+  ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(FlowParameters), &context.parameters);CHKERRQ(ierr);
   ierr = SetupParameters(&context);CHKERRQ(ierr);
 
   // setup the ts
@@ -170,7 +172,7 @@ int main(int argc, char **args) {
     ierr = PetscDSSetResidual(prob, V, f0_quadratic_v, VIntegrandTestGradientFunction);CHKERRQ(ierr);
     ierr = PetscDSSetResidual(prob, W, f0_quadratic_w, WIntegrandTestGradientFunction);CHKERRQ(ierr);
 
-    Parameters *parameters;
+    FlowParameters *parameters;
     ierr = PetscBagGetData(context.parameters, (void **)&parameters);CHKERRQ(ierr);
 
     /* Setup Boundary Conditions */

@@ -1,5 +1,5 @@
 #include "lowMachFlow.h"
-
+#include "constants.h"
 /*F
 This Low Mach flow is time-dependent isoviscous Navier-Stokes flow. We discretize using the
 finite element method on an unstructured mesh. The weak form equations are
@@ -81,7 +81,7 @@ PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user) {
 
 PetscErrorCode SetupParameters(LowMachFlowContext *user) {
     PetscBag bag;
-    Parameters *p;
+    FlowParameters *p;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
@@ -89,8 +89,9 @@ PetscErrorCode SetupParameters(LowMachFlowContext *user) {
     ierr = PetscBagGetData(user->parameters, (void **)&p);CHKERRQ(ierr);
     ierr = PetscBagSetName(user->parameters, "par", "Low Mach flow parameters");CHKERRQ(ierr);
     bag = user->parameters;
-    ierr = PetscBagRegisterReal(bag, &p->nu, 1.0, "nu", "Kinematic viscosity");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(bag, &p->alpha, 1.0, "alpha", "Thermal diffusivity");CHKERRQ(ierr);
+    // TODO: fix
+//    ierr = PetscBagRegisterReal(bag, &p->nu, 1.0, "nu", "Kinematic viscosity");CHKERRQ(ierr);
+//    ierr = PetscBagRegisterReal(bag, &p->alpha, 1.0, "alpha", "Thermal diffusivity");CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -148,17 +149,18 @@ void VIntegrandTestGradientFunction(PetscInt dim,
                                     PetscInt numConstants,
                                     const PetscScalar constants[],
                                     PetscScalar f1[]) {
-    const PetscReal nu = PetscRealPart(constants[NU]);
-    const PetscInt Nc = dim;
-    PetscInt c, d;
-
-    for (c = 0; c < Nc; ++c) {
-        for (d = 0; d < dim; ++d) {
-            // TODO: add uOff and uOff_x
-            f1[c * dim + d] = nu * (u_x[c * dim + d] + u_x[d * dim + c]);
-        }
-        f1[c * dim + c] -= u[uOff[PRES]];
-    }
+    //TODO: fix
+//    const PetscReal nu = PetscRealPart(constants[NU]);
+//    const PetscInt Nc = dim;
+//    PetscInt c, d;
+//
+//    for (c = 0; c < Nc; ++c) {
+//        for (d = 0; d < dim; ++d) {
+//            // TODO: add uOff and uOff_x
+//            f1[c * dim + d] = nu * (u_x[c * dim + d] + u_x[d * dim + c]);
+//        }
+//        f1[c * dim + c] -= u[uOff[PRES]];
+//    }
 }
 
 /* f0_w = dT/dt + u.grad(T)*/
@@ -206,11 +208,12 @@ void WIntegrandTestGradientFunction(PetscInt dim,
                                     PetscInt numConstants,
                                     const PetscScalar constants[],
                                     PetscScalar f1[]) {
-    const PetscReal alpha = PetscRealPart(constants[ALPHA]);
-    PetscInt d;
-    for (d = 0; d < dim; ++d) {
-        f1[d] = alpha * u_x[uOff_x[TEMP] + d];
-    }
+    //TODO: fix
+//    const PetscReal alpha = PetscRealPart(constants[ALPHA]);
+//    PetscInt d;
+//    for (d = 0; d < dim; ++d) {
+//        f1[d] = alpha * u_x[uOff_x[TEMP] + d];
+//    }
 }
 
 /* \nabla\cdot u */
@@ -425,16 +428,17 @@ static void g3_vu(PetscInt dim,
                   PetscInt numConstants,
                   const PetscScalar constants[],
                   PetscScalar g3[]) {
-    const PetscReal nu = PetscRealPart(constants[NU]);
-    const PetscInt Nc = dim;
-    PetscInt c, d;
-
-    for (c = 0; c < Nc; ++c) {
-        for (d = 0; d < dim; ++d) {
-            g3[((c * Nc + c) * dim + d) * dim + d] += nu;  // gradU
-            g3[((c * Nc + d) * dim + d) * dim + c] += nu;  // gradU transpose
-        }
-    }
+    //TODO: fix
+//    const PetscReal nu = PetscRealPart(constants[NU]);
+//    const PetscInt Nc = dim;
+//    PetscInt c, d;
+//
+//    for (c = 0; c < Nc; ++c) {
+//        for (d = 0; d < dim; ++d) {
+//            g3[((c * Nc + c) * dim + d) * dim + d] += nu;  // gradU
+//            g3[((c * Nc + d) * dim + d) * dim + c] += nu;  // gradU transpose
+//        }
+//    }
 }
 
 static void g0_wT(PetscInt dim,
@@ -525,10 +529,11 @@ static void g3_wT(PetscInt dim,
                   PetscInt numConstants,
                   const PetscScalar constants[],
                   PetscScalar g3[]) {
-    const PetscReal alpha = PetscRealPart(constants[ALPHA]);
-    PetscInt d;
-
-    for (d = 0; d < dim; ++d) g3[d * dim + d] = alpha;
+    //TODO: fix
+//    const PetscReal alpha = PetscRealPart(constants[ALPHA]);
+//    PetscInt d;
+//
+//    for (d = 0; d < dim; ++d) g3[d * dim + d] = alpha;
 }
 
 PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
@@ -551,12 +556,11 @@ PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
 
     /* Setup constants */
     {
-        Parameters *param;
-        PetscScalar constants[2];
+        FlowParameters *param;
+        PetscScalar constants[TOTAlCONSTANTS];
 
         ierr = PetscBagGetData(ctx->parameters, (void **)&param);CHKERRQ(ierr);
-        constants[NU] = param->nu;
-        constants[ALPHA] = param->alpha;
+        PackFlowParameters(param, constants);
         ierr = PetscDSSetConstants(prob, 2, constants);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
@@ -564,7 +568,7 @@ PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
 
 PetscErrorCode CompleteProblemSetup(TS ts, Vec *u, LowMachFlowContext *context) {
     PetscErrorCode ierr;
-    Parameters *parameters;
+    FlowParameters *parameters;
     DM dm;
 
     PetscFunctionBeginUser;

@@ -11,7 +11,7 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
-struct LowMachMMSParameters {
+struct IncompressibleMMSParameters {
     MpiTestParameter mpiTestParameter;
     ExactFunction uExact;
     ExactFunction pExact;
@@ -56,7 +56,7 @@ struct LowMachMMSParameters {
                  PetscScalar[]);
 };
 
-class LowMachMMS : public MpiTestFixture, public ::testing::WithParamInterface<LowMachMMSParameters> {
+class IncompressibleMMS : public MpiTestFixture, public ::testing::WithParamInterface<IncompressibleMMSParameters> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
@@ -197,7 +197,7 @@ static void f0_quadratic_v(PetscInt dim,
                            const PetscScalar constants[],
                            PetscScalar f0[]) {
     VIntegrandTestFunction(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-    const PetscReal nu = PetscRealPart(constants[NU]);
+    const PetscReal nu = PetscRealPart(constants[MU]);
 
     f0[0] -= (t * (2 * X[0] + 2 * X[1]) + 2 * X[0] * X[0] * X[0] + 4 * X[0] * X[0] * X[1] - 2 * X[0] * X[1] * X[1] - 4.0 * nu + 2);
     f0[1] -= (t * (2 * X[0] - 2 * X[1]) + 4 * X[0] * X[1] * X[1] + 2 * X[0] * X[0] * X[1] - 2 * X[1] * X[1] * X[1] - 4.0 * nu + 2);
@@ -425,7 +425,7 @@ static void f0_cubic_trig_w(PetscInt dim,
                X[0] * X[1] * X[1] * X[1] - 2.0 * alpha);
 }
 
-TEST_P(LowMachMMS, LowMachMMSTests) {
+TEST_P(IncompressibleMMS, LowMachMMSTests) {
     StartWithMPI DM dm;         /* problem definition */
     TS ts;                      /* timestepper */
     Vec u;                      /* solution */
@@ -440,7 +440,7 @@ TEST_P(LowMachMMS, LowMachMMSTests) {
     PetscInitialize(argc, argv, NULL, help);
 
     // setup and initialize the constant field variables
-    ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(Parameters), &context.parameters);
+    ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(FlowParameters), &context.parameters);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     ierr = SetupParameters(&context);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
@@ -475,7 +475,7 @@ TEST_P(LowMachMMS, LowMachMMSTests) {
         ierr = PetscDSSetResidual(prob, W, testingParam.f0_w, WIntegrandTestGradientFunction);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        Parameters *parameters;
+        FlowParameters *parameters;
         ierr = PetscBagGetData(context.parameters, (void **)&parameters);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
@@ -569,9 +569,9 @@ TEST_P(LowMachMMS, LowMachMMSTests) {
 
 INSTANTIATE_TEST_SUITE_P(
     LowMachMMSTests,
-    LowMachMMS,
+    IncompressibleMMS,
     testing::Values(
-        (LowMachMMSParameters){
+        (IncompressibleMMSParameters){
             .mpiTestParameter = {.nproc = 1,
                                  .expectedOutputFile = "outputs/2d_tri_p2_p1_p1",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
@@ -588,7 +588,7 @@ INSTANTIATE_TEST_SUITE_P(
             .T_tExact = quadratic_T_t,
             .f0_v = f0_quadratic_v,
             .f0_w = f0_quadratic_w},
-        (LowMachMMSParameters){
+        (IncompressibleMMSParameters){
             .mpiTestParameter = {.nproc = 4,
                                  .expectedOutputFile = "outputs/2d_tri_p2_p1_p1_nproc4",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
@@ -605,7 +605,7 @@ INSTANTIATE_TEST_SUITE_P(
             .T_tExact = quadratic_T_t,
             .f0_v = f0_quadratic_v,
             .f0_w = f0_quadratic_w},
-        (LowMachMMSParameters){
+        (IncompressibleMMSParameters){
             .mpiTestParameter = {.nproc = 1,
                                  .expectedOutputFile = "outputs/2d_tri_p2_p1_p1_tconv",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
@@ -623,7 +623,7 @@ INSTANTIATE_TEST_SUITE_P(
             .T_tExact = cubic_trig_T_t,
             .f0_v = f0_cubic_trig_v,
             .f0_w = f0_cubic_trig_w},
-        (LowMachMMSParameters){
+        (IncompressibleMMSParameters){
             .mpiTestParameter = {.nproc = 1,
                                  .expectedOutputFile = "outputs/2d_tri_p2_p1_p1_sconv",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
@@ -641,7 +641,7 @@ INSTANTIATE_TEST_SUITE_P(
             .T_tExact = cubic_T_t,
             .f0_v = f0_cubic_v,
             .f0_w = f0_cubic_w},
-        (LowMachMMSParameters){
+        (IncompressibleMMSParameters){
             .mpiTestParameter = {.nproc = 1,
                                  .expectedOutputFile = "outputs/2d_tri_p3_p2_p2",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
@@ -660,4 +660,4 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_v = f0_cubic_v,
             .f0_w = f0_cubic_w}));
 
-std::ostream &operator<<(std::ostream &os, const LowMachMMSParameters &params) { return os << params.mpiTestParameter.expectedOutputFile; }
+std::ostream &operator<<(std::ostream &os, const IncompressibleMMSParameters &params) { return os << params.mpiTestParameter.expectedOutputFile; }
