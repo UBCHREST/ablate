@@ -1,5 +1,11 @@
+# ABLATE Framework
+**A**blative **B**oundary **L**ayers **A**t **T**he **E**xascale = **ABLATE**
+
+ABLATE is a [UB CHREST](https://www.buffalo.edu/chrest.html) project focused on leveraging advances in both exascale computing and machine learning to better understand the turbulent mixing and fuel entrainment in the combustion environment that is critical to the operation of hybrid rocket motors.
+
+
 ## [Documentation](https://ubchrest.github.io/chrest/)
-Current documentation can be found online at [CHREST Documentation](https://ubchrest.github.io/chrest/).
+Current documentation can be found online at [ABLATE Documentation](https://ubchrest.github.io/ablate/).
 
 Documentation is built using a series of static html and markdown files in the doc folder. [Jekyll](https://jekyllrb.com) is used to compile the documents into a static site that is published upon commit.  You can test your changed locally following this [GitHub Guide](https://docs.github.com/en/free-pro-team@latest/github/working-with-github-pages/testing-your-github-pages-site-locally-with-jekyll).  Math/equation is rendered using [MathJax](https://www.mathjax.org) using Latex style equations where $$ is used to define math regions.
 ```markdown

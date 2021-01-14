@@ -11,7 +11,7 @@ The University at Buffalo Center for Computational Research [(CCR)](http://www.b
 * [CCR OnDemand](https://ondemand.ccr.buffalo.edu) - an integrated, single access point for all of your HPC resources
 * [CCR Coldfront](https://coldfront.ccr.buffalo.edu) - resource allocation management tool built
 
-## Building the Framework on CCR
+## Building ABLATE on CCR
 1. Clone and checkout the desired branch
     ```bash
     git clone —recursive url/to/repo/or/fork

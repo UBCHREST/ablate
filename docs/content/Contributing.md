@@ -4,7 +4,7 @@ title: Contributing
 nav_order: 1
 ---
 
-This is a step-by-step overview of how to contribute code to the CHREST framework.
+This is a step-by-step overview of how to contribute code to ABLATE.
 1. Create a fork a the project and branch for the issue/feature you will be working on. Detailed instructions are also [available](https://gist.github.com/Chaser324/ce0505fbed06b947d962).
 1. Modify or create any required files.  Any new files should be added to the CMakeLists.txt file in the associated folder.
 1. Update any documentation within the docs folder.
