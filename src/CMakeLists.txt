@@ -10,8 +10,8 @@ target_sources(ablateLibrary
         lowMachFlow.h
         mesh.c
         mesh.h
-        constants.c
-        constants.h
+        parameters.c
+        parameters.h
         )
 
 # Allow public access to the header files in the directory

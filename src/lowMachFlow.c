@@ -1,5 +1,5 @@
 #include "lowMachFlow.h"
-#include "constants.h"
+#include "parameters.h"
 /*F
 This Low Mach flow is time-dependent isoviscous Navier-Stokes flow. We discretize using the
 finite element method on an unstructured mesh. The weak form equations are
@@ -79,20 +79,39 @@ PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode SetupParameters(LowMachFlowContext *user) {
-    PetscBag bag;
-    FlowParameters *p;
-    PetscErrorCode ierr;
+/* -\frac{p^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T */
+void QIntegrandTestFunction(PetscInt dim,
+                            PetscInt Nf,
+                            PetscInt NfAux,
+                            const PetscInt uOff[],
+                            const PetscInt uOff_x[],
+                            const PetscScalar u[],
+                            const PetscScalar u_t[],
+                            const PetscScalar u_x[],
+                            const PetscInt aOff[],
+                            const PetscInt aOff_x[],
+                            const PetscScalar a[],
+                            const PetscScalar a_t[],
+                            const PetscScalar a_x[],
+                            PetscReal t,
+                            const PetscReal X[],
+                            PetscInt numConstants,
+                            const PetscScalar constants[],
+                            PetscScalar f0[]) {
+    PetscInt d;
 
-    PetscFunctionBeginUser;
-    /* setup PETSc parameter bag */
-    ierr = PetscBagGetData(user->parameters, (void **)&p);CHKERRQ(ierr);
-    ierr = PetscBagSetName(user->parameters, "par", "Low Mach flow parameters");CHKERRQ(ierr);
-    bag = user->parameters;
-    // TODO: fix
-//    ierr = PetscBagRegisterReal(bag, &p->nu, 1.0, "nu", "Kinematic viscosity");CHKERRQ(ierr);
-//    ierr = PetscBagRegisterReal(bag, &p->alpha, 1.0, "alpha", "Thermal diffusivity");CHKERRQ(ierr);
-    PetscFunctionReturn(0);
+    // -\frac{p^{th}}{T^2}\frac{\partial T}{\partial t}
+    f0[0] = -constants[PTH]/(u[uOff[TEMP]])*u_t[uOff[TEMP]];
+
+    // \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u}
+    for (d = 0; d < dim; ++d) {
+        f0[0] += constants[PTH]/u[uOff[TEMP]] *  u_x[uOff_x[VEL] + d * dim + d];
+    }
+
+    // \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T
+    for (d = 0; d < dim; ++d) {
+        f0[0] -= constants[PTH]/u[uOff[TEMP]] *  u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];
+    }
 }
 
 /* f0_v = du/dt + u \cdot \nabla u */
@@ -214,31 +233,6 @@ void WIntegrandTestGradientFunction(PetscInt dim,
 //    for (d = 0; d < dim; ++d) {
 //        f1[d] = alpha * u_x[uOff_x[TEMP] + d];
 //    }
-}
-
-/* \nabla\cdot u */
-void QIntegrandTestFunction(PetscInt dim,
-                            PetscInt Nf,
-                            PetscInt NfAux,
-                            const PetscInt uOff[],
-                            const PetscInt uOff_x[],
-                            const PetscScalar u[],
-                            const PetscScalar u_t[],
-                            const PetscScalar u_x[],
-                            const PetscInt aOff[],
-                            const PetscInt aOff_x[],
-                            const PetscScalar a[],
-                            const PetscScalar a_t[],
-                            const PetscScalar a_x[],
-                            PetscReal t,
-                            const PetscReal X[],
-                            PetscInt numConstants,
-                            const PetscScalar constants[],
-                            PetscScalar f0[]) {
-    PetscInt d;
-    for (d = 0, f0[0] = 0.0; d < dim; ++d) {
-        f0[0] += u_x[d * dim + d];
-    }
 }
 
 static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx) {

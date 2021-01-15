@@ -1,11 +1,12 @@
 ---
 layout: default
-title: Low Mach Flow Formulation
-nav_order: 2
+title: Governing Equations
+parent: Low Mach Flow Formulation
+nav_order: 1
 ---
 
 ### Governing Equations
-The low mach number flow formulation is based upon the work of J. Principe and R. Codina[1] reproduced here in dimensionless form. For simplicity:
+The low mach number flow formulation is based upon the work of J. Principe and R. Codina reproduced here in dimensionless form. For simplicity:
 
 - the non-dimensional form is written without any additional super/subscript
 - the dimensional (tradition with units) values uses a * (e.g. $$T^*$$)
@@ -25,6 +26,7 @@ The low mach number flow formulation is based upon the work of J. Principe and R
 | $$\beta$$ | Thermal expansion coefficient | $$\beta = \beta^* T_o$$ |
 | $$\boldsymbol{x}$$ | Spacial Location | $$\boldsymbol{x} = \frac{\boldsymbol{x}^*}{l_o}$$ |
 
+$$p_o$$, $$\rho_o$$, and $$T_o$$ are assumed to be related by the equation of state.
 
 $$\begin{eqnarray}
 S\frac{\partial \rho}{\partial t} + \nabla \cdot \left(\rho \boldsymbol{u} \right ) = 0 \\
@@ -39,7 +41,6 @@ $$\begin{eqnarray}
 \boldsymbol{\epsilon}{}(\boldsymbol{u}) = \frac{1}{2} \left(\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T \right )
 \end{eqnarray}$$
 
-
 where the non-dimensional quantities were defined:
 
 | Symbol      | Name | Definition |
@@ -51,31 +52,9 @@ where the non-dimensional quantities were defined:
 | $$H$$       | heat release     | $$\frac{t_o Q_o}{\rho_o {C_p}_o T_o}$$ |
 | $$\Gamma$$  | *depends upon state equation* | $$\frac{p_o}{\rho_o {C_p}_o T_o}$$  |
 
+The ideal gas equation of state is assumed where $$\rho$$ is a function of $$p^{th}$$ and $$T$$ only, $$\rho^*=\frac{p^{th*}}{RT^*}$$. From the relationship between $$p_o$$, $$\rho_o$$, and $$T_o$$ we know $$ \rho_o=\frac{p_o}{R_o}$$. Combining this with the the definition of the non-dimensional quantities
 
-
-### Weak Formulation
-The non-dimensionalized weak form is provided (Ref [2]) for each governing equation where $$\left < f , g \right >  \equiv \int_{\Omega}^{} f g d\Omega$$ and $$\left < f , g \right >_\Gamma  \equiv \int_{\Gamma}^{} f g d\Gamma $$ notation is introduced.
-#### Test Function $$q$$
-
-$$
-\left < q, S \frac{\partial \rho}{\partial t} \right > + \left < q, \nabla \cdot \left(\rho \boldsymbol{u} \right ) \right > = 0 $$
-
-#### Test Function $$v$$
-
-$$
-\left < \boldsymbol{v}, \rho S \frac{\partial \boldsymbol{u}}{\partial t} \right > + \left < \boldsymbol{v}, \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u} \right > + \left < \frac{2\mu\boldsymbol{\epsilon'}{}(\boldsymbol{u})}{R}, \nabla^S \boldsymbol{v}  \right > - \left < p, \nabla \cdot \boldsymbol{v} \right > = \left < -\frac{1}{F^2}\rho \boldsymbol{\hat{z}}, \boldsymbol{v} \right > + \left < \boldsymbol{t_n}, \boldsymbol{v} \right >_\Gamma\\
-
-\boldsymbol{t_n} = \left( -p\boldsymbol{I}+ \frac{2\mu\boldsymbol{\epsilon'}{}(\boldsymbol{u})}{R} \right) \cdot \boldsymbol{n}
-$$
-
-#### Test Function $$w$$
-
-$$
-\left< \rho c_p S \frac{\partial T}{\partial t} , w \right> + \left< \rho c_p \boldsymbol{u} \cdot \nabla T, w \right> + \left<\frac{k}{P}\nabla T, w \right> - \left<\Gamma \beta S T \frac{dp^{th}}{dt}, w \right> = \left<HSQ, w \right> + \left<q_n, w \right>_\Gamma \\
-
-q_n = \frac{k}{p} \nabla T \cdot \boldsymbol{n}
-$$
+$$ \rho^*=\frac{p^{th*}}{RT^*} \Rightarrow  \rho\rho_o=\frac{p^{th}p_o}{RTT_o} \Rightarrow p^{th}=\rho T $$
 
 ## References
-1. Principe, J., & Codina, R. (2009). Mathematical models for thermally coupled low speed flows. Advances in Theoretical and Applied Mechanics, 2(2), 93-112.
-2. Avila, M., Principe, J., & Codina, R. (2011). A finite element dynamical nonlinear subscale approximation for the low Mach number flow equations. Journal of Computational Physics, 230(22), 7988-8009.
+ - Principe, J., & Codina, R. (2009). Mathematical models for thermally coupled low speed flows. Advances in Theoretical and Applied Mechanics, 2(2), 93-112.

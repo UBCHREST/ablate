@@ -1,4 +1,5 @@
-#if !defined(constants_h)
+#ifndef parameters_h
+#define parameters_h
 #include <petsc.h>
 
 typedef enum {
@@ -8,6 +9,7 @@ typedef enum {
     PECLET,
     HEATRELEASE,
     GAMMA,
+    PTH,
     MU,
     K,
     CP,
@@ -22,6 +24,7 @@ typedef struct {
     PetscReal peclet;
     PetscReal heatRelease;
     PetscReal gamma;
+    PetscReal pth;   /* non-dimensional constant thermodynamic pressure */
     PetscReal mu;    /* non-dimensional viscosity */
     PetscReal k;     /* non-dimensional thermal conductivity */
     PetscReal cp;    /* non-dimensional specific heat capacity */
@@ -29,5 +32,6 @@ typedef struct {
 } FlowParameters;
 
 PETSC_EXTERN void PackFlowParameters(FlowParameters *parameters, PetscScalar *constantArray);
+PETSC_EXTERN PetscErrorCode SetupFlowParameters(PetscBag *flowParametersBag);
 
 #endif

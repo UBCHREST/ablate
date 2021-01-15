@@ -20,7 +20,6 @@ typedef struct {
 PETSC_EXTERN PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user);
 PETSC_EXTERN PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *user);
 PETSC_EXTERN PetscErrorCode CompleteProblemSetup(TS ts, Vec *u, LowMachFlowContext *user);
-PETSC_EXTERN PetscErrorCode SetupParameters(LowMachFlowContext *user);
 PETSC_EXTERN PetscErrorCode RemoveDiscretePressureNullspace(DM dm, Vec u);
 
 // Physics

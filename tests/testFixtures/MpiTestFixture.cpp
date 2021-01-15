@@ -66,10 +66,18 @@ void MpiTestFixture::RunWithMPI() const {
     mpiCommand << mpiTestParameter.arguments << " ";
     mpiCommand << " > " << OutputFile();
 
-    std::system(mpiCommand.str().c_str());
+    auto exitCode = std::system(mpiCommand.str().c_str());
+    if(exitCode != 0){
+        std::ifstream outputStream(OutputFile());
+        std::string output((std::istreambuf_iterator<char>(outputStream)), std::istreambuf_iterator<char>());
+        FAIL() << output;
+    }
 }
 
 void MpiTestFixture::CompareOutputFiles() {
+    if(mpiTestParameter.expectedOutputFile.empty()){
+        return;
+    }
     // load the actual output
     std::ifstream actualStream(OutputFile());
     std::string actual((std::istreambuf_iterator<char>(actualStream)), std::istreambuf_iterator<char>());
@@ -82,4 +90,6 @@ void MpiTestFixture::CompareOutputFiles() {
     ASSERT_EQ(actual, expected);
 }
 
-std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params) { return os << params.expectedOutputFile; }
+std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params) {
+    return os << (params.expectedOutputFile.empty() ? params.arguments : params.expectedOutputFile);
+}

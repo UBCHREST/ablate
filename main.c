@@ -5,7 +5,7 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include "lowMachFlow.h"
 #include "mesh.h"
-#include "constants.h"
+#include "parameters.h"
 
 static PetscErrorCode quadratic_u(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
   u[0] = time + X[0] * X[0] + X[1] * X[1];
@@ -150,7 +150,7 @@ int main(int argc, char **args) {
 
   // setup and initialize the constant field variables
   ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(FlowParameters), &context.parameters);CHKERRQ(ierr);
-  ierr = SetupParameters(&context);CHKERRQ(ierr);
+//  ierr = SetupParameters(&context);CHKERRQ(ierr);//TODO:fix
 
   // setup the ts
   ierr = TSCreate(PETSC_COMM_WORLD, &ts);CHKERRQ(ierr);
