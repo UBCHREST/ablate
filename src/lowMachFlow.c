@@ -455,7 +455,7 @@ static void g0_wT(PetscInt dim,
                   const PetscScalar constants[],
                   PetscScalar g0[]) {
     PetscInt d;
-    for (d = 0; d < dim; ++d) g0[d] = u_tShift;
+    g0[d] = u_tShift;
 }
 
 static void g0_wu(PetscInt dim,

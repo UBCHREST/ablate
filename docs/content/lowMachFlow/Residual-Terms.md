@@ -6,16 +6,16 @@ nav_order: 3
 ---
 Provides the term to evaluate and multiply by the test function/test gradient function at each quadrature location.
 
-### Q Integrand Test Function
+### Q Test Function
 
 $$
-q \left( S \frac{\partial \rho}{\partial t} + \nabla \cdot \left(\rho \boldsymbol{u} \right)\right)
+F_q = \int_\Omega q \left( S \frac{\partial \rho}{\partial t} + \nabla \cdot \left(\rho \boldsymbol{u} \right)\right)  d\Omega
 $$
 
 We know that $$\rho = \frac{p^{th}}{T}$$.
 
 $$
-S\frac{\partial \rho}{\partial t} \Rightarrow \frac{1}{T} \frac{\partial p^{th}}{\partial t}-\frac{p^{th}}{T^2}\frac{\partial T}{\partial t}
+ S\frac{\partial \rho}{\partial t} \Rightarrow \frac{1}{T} \frac{\partial p^{th}}{\partial t}-\frac{p^{th}}{T^2}\frac{\partial T}{\partial t}
 $$
 
 $$
@@ -28,14 +28,24 @@ $$
 Combining the terms and assuming that $$\frac{\partial p^{th}}{\partial t} = 0 $$ results in
 
 $$
--\frac{p^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T
+F_q = q \left(-\frac{p^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right)  d\Omega
 $$
+
+### Jacobians
+
+
+### $$\boldsymbol{V}$$ Test Function
+
+$$
+ v_i \rho S \frac{u_i}{t} \Rightarrow v_i \frac{S p^{th}}{T} \frac{u_i}{t}
+$$
+
 
 ### Jacobians
 $$ \int_\Omega \phi g_0(u, u_t, \nabla u, x, t) \psi + \phi {\vec g}_1(u, u_t, \nabla u, x, t) \nabla \psi + \nabla\phi \cdot {\vec g}_2(u, u_t, \nabla u, x, t) \psi + \nabla\phi \cdot {\overleftrightarrow g}_3(u, u_t, \nabla u, x, t) \cdot \nabla \psi $$
 
-### $$ \boldsymbol{q} - \boldsymbol{u} $$:
+### $$ q - \boldsymbol{u} $$:
 
-$$  \boldsymbol{g_o} = - \frac{p^{th}}{T^2}\nabla T $$
+$$  g_o = - \frac{p^{th}}{T^2}\nabla T $$
 
 $$  \boldsymbol{g_1} = - \frac{p^{th}}{T^2}\nabla T $$
