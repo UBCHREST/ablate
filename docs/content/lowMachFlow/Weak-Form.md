@@ -23,7 +23,7 @@ $$
 #### Test Function $$w$$
 
 $$
-\left< \rho c_p S \frac{\partial T}{\partial t} , w \right> + \left< \rho c_p \boldsymbol{u} \cdot \nabla T, w \right> + \left<\frac{k}{P}\nabla T, w \right> - \left<\Gamma \beta S T \frac{dp^{th}}{dt}, w \right> = \left<HSQ, w \right> + \left<q_n, w \right>_\Gamma \\
+\left< \rho c_p S \frac{\partial T}{\partial t} , w \right> + \left< \rho c_p \boldsymbol{u} \cdot \nabla T, w \right> + \left<\frac{k}{P}\nabla T, \nabla w \right> - \left<\Gamma \beta S T \frac{dp^{th}}{dt}, w \right> = \left<HSQ, w \right> + \left<q_n, w \right>_\Gamma \\
 
 q_n = \frac{k}{p} \nabla T \cdot \boldsymbol{n}
 $$
