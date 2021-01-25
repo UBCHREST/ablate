@@ -33,7 +33,6 @@ aux_links_new_tab: true
 markdown: kramdown
 remote_theme: pmarsceill/just-the-docs
 plugins:
-  - jekyll-feed
   - jekyll-remote-theme
 
 # Exclude from processing.

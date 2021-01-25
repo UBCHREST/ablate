@@ -124,3 +124,57 @@ $$\begin{eqnarray}
 $$
 \therefore \frac{\partial F_{w,i}}{\partial c_{T,j}} = \psi_i C_p S p^{th} \left(\frac{1}{T} \frac{\partial }{\partial c_{T,j}}  \frac{\partial T}{\partial t} - \frac{\partial T}{\partial t} \frac{1}{T^2} \psi_{T,j} \right) + \psi_i C_p p^{th} \boldsymbol{u} \cdot  \left( \frac{1}{T} \nabla \psi_{T,j} - \frac{\nabla T}{T^2} \psi_{T,j} \right) + \frac{k}{P} \nabla \phi_i \cdot  \nabla \psi_{T,j}
 $$ 
+
+### V Test Function
+
+$$
+\require{cancel}
+\begin{eqnarray}
+F_\boldsymbol{v} &=& \int_\Omega \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \nabla^S \boldsymbol{v} \cdot \frac{2 \mu}{R} \boldsymbol{\epsilon}'(\boldsymbol{u}) - p \nabla \cdot \boldsymbol{v} + \frac{\rho \hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{v} - \int_\Gamma \boldsymbol{t_n} \cdot \boldsymbol{v} = 0
+\end{eqnarray}$$
+
+#### Jacobians
+
+$$\begin{eqnarray}
+F_{\boldsymbol{v}_i} &=& \int_\Omega \boldsymbol{\phi_i} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{\phi_i} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \boldsymbol{\epsilon}'(\boldsymbol{u}) - p \nabla \cdot \boldsymbol{\phi_i} + \frac{\rho \hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i} - \int_\Gamma \boldsymbol{t_n} \cdot \boldsymbol{\phi_i} = 0
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+\frac{\partial F_{\boldsymbol{v}_i}}{\partial c_{p,j}} &=& \int - \frac{\partial}{\partial c_{p,j}} p \nabla \cdot \boldsymbol{\phi_i} \\
+&=&\int - \frac{\partial p}{\partial c_{p,j}}  \nabla \cdot \boldsymbol{\phi_i} \\
+&=&\int - \psi_{p,j} \nabla \cdot \boldsymbol{\phi_i} \\
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+\frac{\partial F_{\boldsymbol{v}_i}}{\partial c_{T,j}} &=& \int \boldsymbol{\phi_i} \cdot \frac{\partial \rho}{\partial c_{T,j}} S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{\phi_i} \cdot \frac{\partial \rho}{\partial c_{T,j}} \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{\partial \rho}{\partial c_{T,j}} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i} \\
+&=& - \int \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \frac{\partial T}{\partial c_{T,j}}  S \frac{\partial \boldsymbol{u}}{\partial t} - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \frac{\partial T}{\partial c_{T,j}} \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{p^{th}}{T^2} \frac{\partial T}{\partial c_{T,j}} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i} \\
+&=& - \int \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j}  S \frac{\partial \boldsymbol{u}}{\partial t} - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j} \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{p^{th}}{T^2} \psi_{T,j} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i}
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+\frac{\partial F_{\boldsymbol{v}_i}}{\partial c_{u_c,j}} &=& \int_\Omega \frac{\partial }{\partial c_{u_c,j}} \boldsymbol{\phi_i} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \frac{\partial}{\partial c_{u_c,j}}\boldsymbol{\phi_i} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{\partial }{\partial c_{u_c,j}}\nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \boldsymbol{\epsilon}'(\boldsymbol{u})
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+\frac{\partial}{\partial c_{u_c,j}} \boldsymbol{\phi_i} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t}
+&=&\boldsymbol{\phi_i} \cdot \rho S  \frac{\partial}{\partial c_{u_c,j}} \frac{\partial \boldsymbol{u}}{\partial t}
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+\frac{\partial}{\partial c_{u_c,j}}\boldsymbol{\phi_i} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u}
+&=& \boldsymbol{\phi_i} \cdot \left(\rho \frac{\partial\boldsymbol{u}}{\partial c_{u_c,j}} \cdot \nabla \boldsymbol{u} + \rho \boldsymbol{u} \cdot \frac{\partial \nabla \boldsymbol{u}}{\partial c_{u_c,j}}  \right) \\
+&=& \boldsymbol{\phi_i} \cdot \left(\rho \psi_j \hat{e}_c \cdot \hat{e}_l \frac{\partial u_k}{\partial x_l}\hat{e}_k + \rho \boldsymbol{u} \cdot \hat{e}_l \frac{\partial \psi_j}{\partial x_l}\hat{e}_c  \right) \\
+&=& \boldsymbol{\phi_i} \cdot \left(\rho \psi_j \frac{\partial u_k}{\partial x_c}\hat{e}_k +  \rho u_c \nabla \psi_j  \right) \\
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+\frac{\partial}{\partial c_{u_c,j}}\nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \boldsymbol{\epsilon}'(\boldsymbol{u}) \\
+&=& \nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \frac{\partial  \boldsymbol{\epsilon}'(\boldsymbol{u})}{\partial c_{u_c,j}} \\
+&=& \nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \frac{\partial }{\partial c_{u_c,j}} \left( \frac{1}{2}\left(\nabla \boldsymbol{u} + \nabla\boldsymbol{u}^T \right) - \frac{1}{3}(\nabla \cdot \boldsymbol{u} \boldsymbol{I}) \right) \\
+&=& \nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \left( \frac{1}{2}\left(\frac{\partial \nabla \boldsymbol{u}}{\partial c_{u_c,j}} + \frac{\partial \nabla \boldsymbol{u}^T}{\partial c_{u_c,j}} \right) - \frac{1}{3} \frac{\partial \nabla \cdot \boldsymbol{u}}{\partial c_{u_c,j}} \boldsymbol{I} \right) \\
+&=& \nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \left( \frac{1}{2}\left( \hat{e}_l \frac{\partial \psi_j}{\partial x_l}\hat{e}_c + \hat{e}_c \frac{\partial \psi_j}{\partial x_l}\hat{e}_l \right) - \frac{1}{3} \frac{\partial \psi_j}{\partial x_c} \boldsymbol{I} \right) \\
+\end{eqnarray}$$
+
+$$
+\therefore \frac{\partial F_{\boldsymbol{v}_i}}{\partial c_{u_c,j}} = \int \boldsymbol{\phi_i} \cdot \rho S  \frac{\partial}{\partial c_{u_c,j}} \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{\phi_i} \cdot \left(\rho \psi_j \frac{\partial u_k}{\partial x_c}\hat{e}_k + \rho u_c \nabla \psi_j  \right) +  \nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \left( \frac{1}{2}\left( \hat{e}_l \frac{\partial \psi_j}{\partial x_l}\hat{e}_c + \hat{e}_c \frac{\partial \psi_j}{\partial x_l}\hat{e}_l \right) - \frac{1}{3} \frac{\partial \psi_j}{\partial x_c} \boldsymbol{I} \right)
+$$

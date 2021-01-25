@@ -60,6 +60,6 @@ For the divergence of a vector field
 
 $$ 
 \nabla \cdot \boldsymbol{u} = \frac{\partial u_{cc}}{\partial x_{cc}}  = \sum_k c_{cc,k} \frac{\partial \psi_k}{\partial x_{cc}} \\
-\frac{\partial \nabla \cdot \boldsymbol{u}}{\nabla c_{c,j}} = \frac{\partial \psi_j}{\partial x_c}
+\frac{\partial \nabla \cdot \boldsymbol{u}}{\partial c_{c,j}} = \frac{\partial \psi_j}{\partial x_c}
 $$
 

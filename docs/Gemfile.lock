@@ -265,7 +265,6 @@ PLATFORMS
 
 DEPENDENCIES
   github-pages
-  jekyll-feed (~> 0.6)
   jekyll-include-cache
   jekyll-remote-theme
   tzinfo (~> 1.2)
@@ -273,4 +272,4 @@ DEPENDENCIES
   wdm (~> 0.1.0)
 
 BUNDLED WITH
-   2.1.4
+   2.2.6
