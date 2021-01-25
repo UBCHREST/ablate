@@ -28,7 +28,7 @@ $$
 Combining the terms and assuming that $$\frac{\partial p^{th}}{\partial t} = 0 $$ results in
 
 $$
-F_q = q \left(-\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right)  d\Omega
+F_q = \int_\Omega q \left(-\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right)  d\Omega
 $$
 
 #### Jacobians
