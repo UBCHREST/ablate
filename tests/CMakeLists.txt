@@ -7,7 +7,7 @@ add_subdirectory(testFixtures)
 
 target_sources(tests
         PRIVATE
-#        incompressibleFlowTests.cpp TODO: fix
+        lowMachFlowTests.cpp
         parametersTests.cpp
         main.cpp
         )

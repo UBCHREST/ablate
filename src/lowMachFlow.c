@@ -124,7 +124,7 @@ void VIntegrandTestFunction(PetscInt dim,
     PetscInt Nc = dim;
     PetscInt c, d;
 
-    const rho = constants[PTH]/u[uOff[TEMP]];
+    const PetscReal rho = constants[PTH]/u[uOff[TEMP]];
 
     // \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t}
     for (d = 0; d < dim; ++d) {
@@ -158,10 +158,11 @@ void VIntegrandTestGradientFunction(PetscInt dim,
                                     PetscInt numConstants,
                                     const PetscScalar constants[],
                                     PetscScalar f1[]) {
+
     const PetscInt Nc = dim;
     PetscInt c, d;
 
-    const coefficient = constants[MU]/constants[REYNOLDS];// (0.5 * 2.0)
+    const PetscReal coefficient = constants[MU]/constants[REYNOLDS];// (0.5 * 2.0)
 
     PetscReal u_divergence = 0.0;
     for (c = 0; c < Nc; ++c) {
@@ -176,7 +177,7 @@ void VIntegrandTestGradientFunction(PetscInt dim,
         }
 
         // -1/3 (\nable \cdot \boldsybol{u}) \boldsymbol{I}
-        f1[c * dim + d] -= coefficient/3.0 * u_divergence;
+        f1[c * dim + c] -= coefficient/3.0 * u_divergence;
     }
 
     // (\nabla \boldsymbol{v}^T) \cdot \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T) - 1/3 (\nabla \cdot \bolsymbol{u})\boldsymbol{I})
@@ -187,7 +188,7 @@ void VIntegrandTestGradientFunction(PetscInt dim,
         }
 
         // -1/3 (\nable \cdot \boldsybol{u}) \boldsymbol{I}
-        f1[d * dim + c] -= coefficient/3.0 * u_divergence;
+        f1[c * dim + c] -= coefficient/3.0 * u_divergence;
     }
 
     // - p \nabla \cdot \boldsymbol{v}
@@ -296,7 +297,7 @@ PetscErrorCode RemoveDiscretePressureNullspace(DM dm, Vec u) {
     PetscFunctionReturn(0);
 }
 
-/* Make the discrete pressure discretely divergence free */
+///* Make the discrete pressure discretely divergence free */
 PetscErrorCode RemoveDiscretePressureNullspaceOnTs(TS ts) {
     Vec u;
     PetscErrorCode ierr;
@@ -560,11 +561,11 @@ PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
     ierr = PetscDSSetResidual(prob, W, WIntegrandTestFunction, WIntegrandTestGradientFunction);CHKERRQ(ierr);
     ierr = PetscDSSetResidual(prob, Q, QIntegrandTestFunction, NULL);CHKERRQ(ierr);
 
-    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, Q, VEL, NULL, g1_qu, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
+//    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
+//    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);
+//    ierr = PetscDSSetJacobian(prob, Q, VEL, NULL, g1_qu, NULL, NULL);CHKERRQ(ierr);
+//    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
+//    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
 
     /* Setup constants */
     {
@@ -573,7 +574,7 @@ PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
 
         ierr = PetscBagGetData(ctx->parameters, (void **)&param);CHKERRQ(ierr);
         PackFlowParameters(param, constants);
-        ierr = PetscDSSetConstants(prob, 2, constants);CHKERRQ(ierr);
+        ierr = PetscDSSetConstants(prob, TOTAlCONSTANTS, constants);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }
