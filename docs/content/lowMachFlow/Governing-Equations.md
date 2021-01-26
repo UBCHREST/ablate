@@ -30,7 +30,7 @@ $$p_o$$, $$\rho_o$$, and $$T_o$$ are assumed to be related by the equation of st
 
 $$\begin{eqnarray}
 S\frac{\partial \rho}{\partial t} + \nabla \cdot \left(\rho \boldsymbol{u} \right ) = 0 \\
-\rho \left(S\frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{u} \cdot \nabla \boldsymbol{u}) \right ) + \nabla p - \frac{1}{R}\nabla \cdot \left(2 \mu \boldsymbol{\epsilon'}{}(\boldsymbol{u})\right ) = -\frac{1}{F}\rho\hat{\boldsymbol{z}} \\
+\rho \left(S\frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{u} \cdot \nabla \boldsymbol{u}) \right ) + \nabla p - \frac{1}{R}\nabla \cdot \left(2 \mu \boldsymbol{\epsilon'}{}(\boldsymbol{u})\right ) = -\frac{1}{F^2}\rho\hat{\boldsymbol{z}} \\
 \rho c_p \left(S \frac{\partial T}{\partial t} + \boldsymbol{u} \cdot \nabla T \right ) - \Gamma \beta T S \frac{d p^{th}}{dt} - \frac{1}{P} \nabla \cdot \left (k \nabla T \right ) = HSQ
 \end{eqnarray}$$
 

@@ -12,6 +12,7 @@ void PackFlowParameters(FlowParameters *parameters, PetscScalar *constantArray) 
     constantArray[K] = parameters->k;
     constantArray[CP] = parameters->cp;
     constantArray[BETA] = parameters->beta;
+    constantArray[GRAVITY_DIRECTION] = parameters->gravityDirection;
 }
 
 PetscErrorCode SetupFlowParameters(PetscBag *flowParametersBag){
@@ -31,11 +32,12 @@ PetscErrorCode SetupFlowParameters(PetscBag *flowParametersBag){
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->peclet, 1.0, "peclet", "Peclet number");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->heatRelease, 1.0, "heatRelease", "Heat Release number");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->gamma, 1.0, "gamma", "gamma: p_o/(\rho_o Cp_o T_o");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->pth, 0.0, "pth", "non-dimensional thermodyamic pressure");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(*flowParametersBag, &p->pth, 1.0, "pth", "non-dimensional thermodyamic pressure");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->mu, 1.0, "mu", "non-dimensional viscosity");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->k, 1.0, "k", "non-dimensional thermal conductivity");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->cp, 1.0, "cp", "non-dimensional specific heat capacity");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->beta, 1.0, "beta", "non-dimensional thermal expansion coefficient ");CHKERRQ(ierr);
+    ierr = PetscBagRegisterInt(*flowParametersBag, &p->gravityDirection, 1, "gravityDirection", "axis");CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

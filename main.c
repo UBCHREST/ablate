@@ -101,7 +101,7 @@ static PetscErrorCode quadratic_p(PetscInt Dim, PetscReal time, const PetscReal 
 
 static PetscErrorCode quadratic_T(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
     // T = t + x + y
-    T[0] = time + X[0] + X[1];
+    T[0] = time + X[0] + X[1] + 1;
     return 0;
 }
 static PetscErrorCode quadratic_T_t(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
@@ -137,9 +137,9 @@ static void f0_quadratic_q(PetscInt dim,
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= (Pth*S)/Power(t + x + y,2) - (4*Pth*x)/(t + x + y) +
-             (Pth*(t + 2*Power(x,2) + 2*x*y))/Power(t + x + y,2) +
-             (Pth*(t + Power(x,2) + Power(y,2)))/Power(t + x + y,2);
+    f0[0] -= -((Pth*S)/Power(1 + t + x + y,2)) + (4*Pth*x)/(1 + t + x + y) -
+             (Pth*(t + 2*Power(x,2) + 2*x*y))/Power(1 + t + x + y,2) -
+             (Pth*(t + Power(x,2) + Power(y,2)))/Power(1 + t + x + y,2);
 }
 
 static void f0_quadratic_v(PetscInt dim,
@@ -171,11 +171,8 @@ static void f0_quadratic_v(PetscInt dim,
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= 1 - (5.333333333333334*mu)/R +
-             (Pth*(S + (4*x + 2*y)*(t + 2*Power(x,2) + 2*x*y) + 2*x*(t + Power(x,2) + Power(y,2))))/(t + x + y);
-
-    f0[1] -= 1 - (4.*mu)/R + Pth/(F*(t + x + y)) +
-             (Pth*(S + 2*x*(t + 2*Power(x,2) + 2*x*y) + 2*y*(t + Power(x,2) + Power(y,2))))/ (t + x + y);
+    f0[0] -= 1 - (5.333333333333334*mu)/R + (Pth*S)/(1 + t + x + y) + (2*Pth*y*(t + 2*Power(x,2) + 2*x*y))/(1 + t + x + y) + (2*Pth*x*(t + Power(x,2) + Power(y,2)))/(1 + t + x + y);
+    f0[1] -= 1 - (4.*mu)/R + Pth/(Power(F,2)*(1 + t + x + y)) + (Pth*S)/(1 + t + x + y) + (2*Pth*x*(t + 2*Power(x,2) + 2*x*y))/(1 + t + x + y) + (Pth*(4*x + 2*y)*(t + Power(x,2) + Power(y,2)))/(1 + t + x + y);
 }
 
 /* f0_w = dT/dt + u.grad(T) - Q */
@@ -207,14 +204,8 @@ static void f0_quadratic_w(PetscInt dim,
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= (Cp*Pth*(S + 2*t + 3*Power(x,2) + 2*x*y + Power(y,2)))/(H*S*(t + x + y));
+    f0[0] -= (Cp*Pth*(S + 2*t + 3*Power(x,2) + 2*x*y + Power(y,2)))/(H*S*(1 + t + x + y));
 }
-
-
-// extern int ex76(int argc,char **args);
-// int main(int argc,char **args){
-//    ex76(argc, args);
-//}
 
 int main(int argc, char **args) {
   DM dm;                      /* problem definition */

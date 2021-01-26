@@ -14,6 +14,7 @@ typedef enum {
     K,
     CP,
     BETA,
+    GRAVITY_DIRECTION,
     TOTAlCONSTANTS
 } FlowConstants;
 
@@ -29,6 +30,7 @@ typedef struct {
     PetscReal k;     /* non-dimensional thermal conductivity */
     PetscReal cp;    /* non-dimensional specific heat capacity */
     PetscReal beta;  /* non-dimensional thermal expansion coefficient */
+    PetscInt gravityDirection;
 } FlowParameters;
 
 PETSC_EXTERN void PackFlowParameters(FlowParameters *parameters, PetscScalar *constantArray);
