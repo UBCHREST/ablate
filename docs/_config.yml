@@ -16,8 +16,8 @@
 title: ABLATE Documentation
 description: >- # this means to ignore newlines until "baseurl:"
   ABLATE aims to advance space exploration through research that will improve hybrid rocket motors and enable the next generation of low-cost space flight.
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "https://mtmcgurn-buffalo.github.io/ablate" # the base hostname & protocol for your site, e.g. http://example.com //TODO: return
+baseurl: "/ablate" # the subpath of your site, e.g. /blog
+url: "https://mtmcgurn-buffalo.github.io" # the base hostname & protocol for your site, e.g. http://example.com //TODO: return
 logo: "/assets/images/logo.png"
 repository: "ubchrest/ablate"
 
