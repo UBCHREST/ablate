@@ -14,14 +14,15 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = TSGetTime(ts, &t);
-    CHKERRQ(ierr);
-    ierr = DMComputeExactSolution(dm, t, u, NULL);
-    CHKERRQ(ierr);
-//    ierr = RemoveDiscretePressureNullspace(dm, u);
-    CHKERRQ(ierr);
+    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+    ierr = TSGetTime(ts, &t);CHKERRQ(ierr);
+
+    // This function Tags the u vector as the exact solution.  We need to copy the values to prevent this.
+    Vec e;
+    ierr = VecDuplicate(u, &e); CHKERRQ(ierr);
+    ierr = DMComputeExactSolution(dm, t, e, NULL); CHKERRQ(ierr);
+    ierr = VecCopy(e, u); CHKERRQ(ierr);
+    ierr = VecDestroy(&e); CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -42,35 +43,22 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     CHKERRQ(ierr);
 
     for (f = 0; f < 3; ++f) {
-        ierr = PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]);CHKERRABORT(PETSC_COMM_WORLD, ierr);
     }
-    ierr = DMComputeL2FieldDiff(dm, crtime, exactFuncs, ctxs, u, ferrors);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    ierr = DMComputeL2FieldDiff(dm, crtime, exactFuncs, ctxs, u, ferrors);CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]);CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-    ierr = DMGetGlobalVector(dm, &u);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    // ierr = TSGetSolution(ts, &u);CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = PetscObjectSetName((PetscObject)u, "Numerical Solution");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = VecViewFromOptions(u, NULL, "-sol_vec_view");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = DMRestoreGlobalVector(dm, &u);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    // output the solution view
+    ierr = VecViewFromOptions(u, NULL, "-vec_view");CHKERRABORT(PETSC_COMM_WORLD, ierr); // The total option is "-num_sol_vec_view" when combined with the prefix
 
-    ierr = DMGetGlobalVector(dm, &v);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    // ierr = VecSet(v, 0.0);CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = DMProjectFunction(dm, 0.0, exactFuncs, ctxs, INSERT_ALL_VALUES, v);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = PetscObjectSetName((PetscObject)v, "Exact Solution");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = VecViewFromOptions(v, NULL, "-exact_vec_view");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = DMRestoreGlobalVector(dm, &v);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    // output the exact solution
+    ierr = DMGetGlobalVector(dm, &v);CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
+    PetscReal time;
+    ierr = TSGetTime(ts, &time);CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    ierr = DMComputeExactSolution(dm, time, v, NULL); CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    ierr = VecViewFromOptions(v, NULL, "-vec_view");CHKERRABORT(PETSC_COMM_WORLD, ierr); // The total option is "-exact_vec_view" when combined with the prefix
+    ierr = DMRestoreGlobalVector(dm, &v);CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
     PetscFunctionReturn(0);
 }
@@ -83,7 +71,7 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
 */
 static PetscErrorCode quadratic_u(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
     // u = {t + x^2 + y^2, t + 2*x^2 + 2*x*y}
-    u[0] = time + X[0] * X[0] + X[1] * X[1];
+    u[0] = 2*time + X[0] * X[0] + X[1] * X[1];
     u[1] = time + 2.0 * X[0] * X[0] + 2.0 * X[0] * X[1];
     return 0;
 }
@@ -240,8 +228,8 @@ int main(int argc, char **args) {
     ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
 
     // V, W Test Function
-      ierr = PetscDSSetResidual(prob, Q, f0_quadratic_q, NULL);CHKERRQ(ierr);
-      ierr = PetscDSSetResidual(prob, V, f0_quadratic_v, VIntegrandTestGradientFunction);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, Q, f0_quadratic_q, NULL);CHKERRQ(ierr);
+     ierr = PetscDSSetResidual(prob, V, f0_quadratic_v, VIntegrandTestGradientFunction);CHKERRQ(ierr);
     ierr = PetscDSSetResidual(prob, W, f0_quadratic_w, WIntegrandTestGradientFunction);CHKERRQ(ierr);
 
     FlowParameters *parameters;
@@ -266,7 +254,17 @@ int main(int argc, char **args) {
     id = 4;
     ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))quadratic_T, (void (*)(void))quadratic_T_t, 1, &id, parameters);CHKERRQ(ierr);
 
-    // Set the exact solution
+      id = 3;
+      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
+      id = 1;
+      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
+      id = 2;
+      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
+      id = 4;
+      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
+
+
+      // Set the exact solution
     ierr = PetscDSSetExactSolution(prob, VEL, quadratic_u, parameters);CHKERRQ(ierr);
     ierr = PetscDSSetExactSolution(prob, PRES, quadratic_p, parameters);CHKERRQ(ierr);
     ierr = PetscDSSetExactSolution(prob, TEMP, quadratic_T, parameters);CHKERRQ(ierr);
@@ -288,7 +286,6 @@ int main(int argc, char **args) {
   ierr = DMTSCheckFromOptions(ts, u);CHKERRQ(ierr);
   ierr = TSMonitorSet(ts, MonitorError, &context, NULL);CHKERRQ(ierr);CHKERRQ(ierr);
 
-  ierr = PetscObjectSetName((PetscObject)u, "Numerical Solution");CHKERRQ(ierr);
   ierr = TSSolve(ts, u);CHKERRQ(ierr);
 
   // Compare the actual vs expected values

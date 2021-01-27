@@ -272,45 +272,45 @@ static PetscErrorCode constant(PetscInt dim, PetscReal time, const PetscReal x[]
 }
 
 PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace) {
-//    Vec vec;
-//    PetscErrorCode (*funcs[3])(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *) = {zero, zero, zero};
-//    PetscErrorCode ierr;
-//
-//    PetscFunctionBeginUser;
-//    if (ofield != 1) SETERRQ1(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Nullspace must be for pressure field at index 1, not %D", ofield);
-//    funcs[nfield] = constant;
-//    ierr = DMCreateGlobalVector(dm, &vec);CHKERRQ(ierr);
-//    ierr = DMProjectFunction(dm, 0.0, funcs, NULL, INSERT_ALL_VALUES, vec);CHKERRQ(ierr);
-//    ierr = VecNormalize(vec, NULL);CHKERRQ(ierr);
-//    ierr = PetscObjectSetName((PetscObject)vec, "Pressure Null Space");CHKERRQ(ierr);
-//    ierr = VecViewFromOptions(vec, NULL, "-pressure_nullspace_view");CHKERRQ(ierr);
-//    ierr = MatNullSpaceCreate(PetscObjectComm((PetscObject)dm), PETSC_FALSE, 1, &vec, nullSpace);CHKERRQ(ierr);
-//    ierr = VecDestroy(&vec);CHKERRQ(ierr);
-//    PetscFunctionReturn(0);
+    Vec vec;
+    PetscErrorCode (*funcs[3])(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *) = {zero, zero, zero};
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+    if (ofield != 1) SETERRQ1(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Nullspace must be for pressure field at index 1, not %D", ofield);
+    funcs[nfield] = constant;
+    ierr = DMCreateGlobalVector(dm, &vec);CHKERRQ(ierr);
+    ierr = DMProjectFunction(dm, 0.0, funcs, NULL, INSERT_ALL_VALUES, vec);CHKERRQ(ierr);
+    ierr = VecNormalize(vec, NULL);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)vec, "Pressure Null Space");CHKERRQ(ierr);
+    ierr = VecViewFromOptions(vec, NULL, "-pressure_nullspace_view");CHKERRQ(ierr);
+    ierr = MatNullSpaceCreate(PetscObjectComm((PetscObject)dm), PETSC_FALSE, 1, &vec, nullSpace);CHKERRQ(ierr);
+    ierr = VecDestroy(&vec);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
 
 PetscErrorCode RemoveDiscretePressureNullspace(DM dm, Vec u) {
-//    MatNullSpace nullsp;
-//    PetscErrorCode ierr;
-//
-//    PetscFunctionBegin;
-//    ierr = CreatePressureNullSpace(dm, PRES, PRES, &nullsp);CHKERRQ(ierr);
-//    ierr = MatNullSpaceRemove(nullsp, u);CHKERRQ(ierr);
-//    ierr = MatNullSpaceDestroy(&nullsp);CHKERRQ(ierr);
-//    PetscFunctionReturn(0);
+    MatNullSpace nullsp;
+    PetscErrorCode ierr;
+
+    PetscFunctionBegin;
+    ierr = CreatePressureNullSpace(dm, PRES, PRES, &nullsp);CHKERRQ(ierr);
+    ierr = MatNullSpaceRemove(nullsp, u);CHKERRQ(ierr);
+    ierr = MatNullSpaceDestroy(&nullsp);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
 
 ///* Make the discrete pressure discretely divergence free */
 PetscErrorCode RemoveDiscretePressureNullspaceOnTs(TS ts) {
-//    Vec u;
-//    PetscErrorCode ierr;
-//    DM dm;
-//
-//    PetscFunctionBegin;
-//    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
-//    ierr = TSGetSolution(ts, &u);CHKERRQ(ierr);
-//    ierr = RemoveDiscretePressureNullspace(dm, u);CHKERRQ(ierr);
-//    PetscFunctionReturn(0);
+    Vec u;
+    PetscErrorCode ierr;
+    DM dm;
+
+    PetscFunctionBegin;
+    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+    ierr = TSGetSolution(ts, &u);CHKERRQ(ierr);
+    ierr = RemoveDiscretePressureNullspace(dm, u);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
 
 /*Jacobians*/
@@ -593,6 +593,8 @@ PetscErrorCode CompleteProblemSetup(TS ts, Vec *u, LowMachFlowContext *context) 
 
     ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
     ierr = DMCreateGlobalVector(dm, u);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)*u, "Numerical Solution");CHKERRQ(ierr);
+    ierr = VecSetOptionsPrefix(*u, "num_sol_");CHKERRQ(ierr);
 
 //    ierr = DMSetNullSpaceConstructor(dm, PRES, CreatePressureNullSpace);CHKERRQ(ierr);
 
