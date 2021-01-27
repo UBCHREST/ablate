@@ -20,7 +20,7 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     CHKERRQ(ierr);
     ierr = DMComputeExactSolution(dm, t, u, NULL);
     CHKERRQ(ierr);
-    ierr = RemoveDiscretePressureNullspace(dm, u);
+//    ierr = RemoveDiscretePressureNullspace(dm, u);
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
