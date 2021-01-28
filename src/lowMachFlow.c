@@ -333,10 +333,12 @@ static void g0_qu(PetscInt dim,
                   PetscInt numConstants,
                   const PetscScalar constants[],
                   PetscScalar g0[]) {
+    // - \phi_i \psi_{u_c,j} \frac{p^{th}}{T^2} \frac{\partial T}{\partial x_c}
     for (PetscInt d = 0; d < dim; ++d) {
         g0[d] = -constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) * u_x[uOff_x[TEMP] + d];
     }
 }
+
 static void g1_qu(PetscInt dim,
                   PetscInt Nf,
                   PetscInt NfAux,
@@ -357,9 +359,63 @@ static void g1_qu(PetscInt dim,
                   const PetscScalar constants[],
                   PetscScalar g1[]) {
     PetscInt d;
-
+    // \phi_i \frac{p^{th}}{T} \frac{\partial \psi_{u_c,j}}{\partial x_c}
     for (d = 0; d < dim; ++d){
         g1[d * dim + d] = constants[PTH]/u[uOff[TEMP]];
+    }
+}
+
+static void g0_qT(PetscInt dim,
+                  PetscInt Nf,
+                  PetscInt NfAux,
+                  const PetscInt uOff[],
+                  const PetscInt uOff_x[],
+                  const PetscScalar u[],
+                  const PetscScalar u_t[],
+                  const PetscScalar u_x[],
+                  const PetscInt aOff[],
+                  const PetscInt aOff_x[],
+                  const PetscScalar a[],
+                  const PetscScalar a_t[],
+                  const PetscScalar a_x[],
+                  PetscReal t,
+                  PetscReal u_tShift,
+                  const PetscReal x[],
+                  PetscInt numConstants,
+                  const PetscScalar constants[],
+                  PetscScalar g0[]) {
+
+    // \frac{F_{q,i}}{\partial c_{\frac{\partial T}{\partial t},j}} =  \int \frac{-\phi_i S  p^{th}}{T^2} \psi_j
+    g0[0] = - constants[STROUHAL] * constants[PTH]/(u[uOff[TEMP]] * u[uOff[TEMP]]) * u_tShift;
+
+    // \frac{\phi_i p^{th}}{T^2} \left( - \psi_{T,j}  \nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \left(\frac{2}{T} \psi_{T,j} \nabla T\right) \right)
+    for (PetscInt d = 0; d < dim; ++d) {
+        g0[0] += constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) *(-u_x[uOff_x[VEL] + d * dim + d] + 2.0/u[uOff[TEMP]] * u[uOff[VEL] + d ] * u_x[uOff_x[TEMP] + d]);
+    }
+}
+
+static void g1_qT(PetscInt dim,
+                  PetscInt Nf,
+                  PetscInt NfAux,
+                  const PetscInt uOff[],
+                  const PetscInt uOff_x[],
+                  const PetscScalar u[],
+                  const PetscScalar u_t[],
+                  const PetscScalar u_x[],
+                  const PetscInt aOff[],
+                  const PetscInt aOff_x[],
+                  const PetscScalar a[],
+                  const PetscScalar a_t[],
+                  const PetscScalar a_x[],
+                  PetscReal t,
+                  PetscReal u_tShift,
+                  const PetscReal x[],
+                  PetscInt numConstants,
+                  const PetscScalar constants[],
+                  PetscScalar g1[]) {
+    // -\frac{\phi_i p^{th}}{T^2} \left( \boldsymbol{u}\cdot  \nabla \psi_{T,j}\right)
+    for (PetscInt d = 0; d < dim; ++d) {
+        g1[d] = -constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) * (u[uOff[VEL] + d ] );
     }
 }
 
@@ -605,9 +661,11 @@ PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
 
 //    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
 //    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);// good?
-    ierr = PetscDSSetJacobian(prob, Q, VEL, g0_qu, g1_qu, NULL, NULL);CHKERRQ(ierr); // good!
+//    ierr = PetscDSSetJacobian(prob, Q, VEL, g0_qu, g1_qu, NULL, NULL);CHKERRQ(ierr); // good?
+    ierr = PetscDSSetJacobian(prob, Q, TEMP, g0_qT, g1_qT, NULL, NULL);CHKERRQ(ierr);// ut_error?
+
 //    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);// good!
-//    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);//?
+//    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);// ut_error?
 
     /* Setup constants */
     {
