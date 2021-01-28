@@ -419,6 +419,44 @@ static void g1_qT(PetscInt dim,
     }
 }
 
+static void g0_vT(PetscInt dim,
+                  PetscInt Nf,
+                  PetscInt NfAux,
+                  const PetscInt uOff[],
+                  const PetscInt uOff_x[],
+                  const PetscScalar u[],
+                  const PetscScalar u_t[],
+                  const PetscScalar u_x[],
+                  const PetscInt aOff[],
+                  const PetscInt aOff_x[],
+                  const PetscScalar a[],
+                  const PetscScalar a_t[],
+                  const PetscScalar a_x[],
+                  PetscReal t,
+                  PetscReal u_tShift,
+                  const PetscReal x[],
+                  PetscInt numConstants,
+                  const PetscScalar constants[],
+                  PetscScalar g0[]) {
+    PetscInt c, d;
+    const PetscInt Nc = dim;
+
+    // - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j}  S \frac{\partial \boldsymbol{u}}{\partial t}
+    for (d = 0; d < dim; ++d){
+        g0[d] = -constants[PTH]*constants[STROUHAL]/(u[uOff[TEMP]]*u[uOff[TEMP]])*u_t[uOff[VEL]+d];
+    }
+
+    // - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j} \boldsymbol{u} \cdot \nabla \boldsymbol{u}
+    for (c = 0; c < Nc; ++c) {
+        for (d = 0; d < dim; ++d) {
+            g0[c] -= constants[PTH]/(u[uOff[TEMP]]*u[uOff[TEMP]])*u[uOff[VEL] + d] * u_x[uOff_x[VEL]+ c * dim + d];
+        }
+    }
+
+    // -\frac{p^{th}}{T^2} \psi_{T,j} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i}
+    g0[(PetscInt)constants[GRAVITY_DIRECTION]] -= constants[PTH]/(constants[FROUDE]*constants[FROUDE]*u[uOff[TEMP]]*u[uOff[TEMP]]);
+}
+
 static void g0_vu(PetscInt dim,
                   PetscInt Nf,
                   PetscInt NfAux,
@@ -441,11 +479,15 @@ static void g0_vu(PetscInt dim,
     PetscInt c, d;
     const PetscInt Nc = dim;
 
-    for (d = 0; d < dim; ++d) g0[d * dim + d] = u_tShift;
+    // \frac{\partial F_{\boldsymbol{v}_i}}{\partial c_{\frac{\partial u_c}{\partial t},j}} = \int_\Omega \boldsymbol{\phi_i} \cdot \rho S \psi_j
+    for (d = 0; d < dim; ++d){
+        g0[d * dim + d] = constants[STROUHAL]*constants[PTH]/u[uOff[TEMP]]* u_tShift;
+    }
 
+    // \boldsymbol{\phi_i} \cdot \left(\rho \psi_j \frac{\partial u_k}{\partial x_c}\hat{e}_k
     for (c = 0; c < Nc; ++c) {
         for (d = 0; d < dim; ++d) {
-            g0[c * Nc + d] += u_x[c * Nc + d];
+            g0[c * Nc + d] += constants[PTH]/u[uOff[TEMP]]*u_x[uOff_x[VEL] + c * Nc + d];
         }
     }
 }
@@ -473,13 +515,48 @@ static void g1_vu(PetscInt dim,
     PetscInt NcJ = dim;
     PetscInt c, d, e;
 
+    // \phi_i \cdot \rho u_c \nabla \psi_j
     for (c = 0; c < NcI; ++c) {
         for (d = 0; d < NcJ; ++d) {
             for (e = 0; e < dim; ++e) {
                 if (c == d) {
-                    g1[(c * NcJ + d) * dim + e] += u[e];
+                    g1[(c * NcJ + d) * dim + e] += constants[PTH]/u[uOff[TEMP]]*u[uOff[VEL] + e];
                 }
             }
+        }
+    }
+}
+
+static void g3_vu(PetscInt dim,
+                  PetscInt Nf,
+                  PetscInt NfAux,
+                  const PetscInt uOff[],
+                  const PetscInt uOff_x[],
+                  const PetscScalar u[],
+                  const PetscScalar u_t[],
+                  const PetscScalar u_x[],
+                  const PetscInt aOff[],
+                  const PetscInt aOff_x[],
+                  const PetscScalar a[],
+                  const PetscScalar a_t[],
+                  const PetscScalar a_x[],
+                  PetscReal t,
+                  PetscReal u_tShift,
+                  const PetscReal x[],
+                  PetscInt numConstants,
+                  const PetscScalar constants[],
+                  PetscScalar g3[]) {
+
+    const PetscInt Nc = dim;
+    PetscInt c, d;
+
+    // \nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \left( \frac{1}{2}\left( \hat{e}_l \frac{\partial \psi_j}{\partial x_l}\hat{e}_c + \hat{e}_c \frac{\partial \psi_j}{\partial x_l}\hat{e}_l \right) - \frac{1}{3} \frac{\partial \psi_j}{\partial x_c}
+    for (c = 0; c < Nc; ++c) {
+        for (d = 0; d < dim; ++d) {
+            g3[((c * Nc + c) * dim + d) * dim + d] += constants[MU]/constants[REYNOLDS];  // gradU
+            g3[((c * Nc + d) * dim + d) * dim + c] += constants[MU]/constants[REYNOLDS];  // gradU transpose
+
+            g3[((c * Nc + d) * dim + d) * dim + c] -= 2.0/3.0*constants[MU]/constants[REYNOLDS];
         }
     }
 }
@@ -507,38 +584,6 @@ static void g2_vp(PetscInt dim,
     for (d = 0; d < dim; ++d){
         g2[d * dim + d] = -1.0;
     }
-}
-
-static void g3_vu(PetscInt dim,
-                  PetscInt Nf,
-                  PetscInt NfAux,
-                  const PetscInt uOff[],
-                  const PetscInt uOff_x[],
-                  const PetscScalar u[],
-                  const PetscScalar u_t[],
-                  const PetscScalar u_x[],
-                  const PetscInt aOff[],
-                  const PetscInt aOff_x[],
-                  const PetscScalar a[],
-                  const PetscScalar a_t[],
-                  const PetscScalar a_x[],
-                  PetscReal t,
-                  PetscReal u_tShift,
-                  const PetscReal x[],
-                  PetscInt numConstants,
-                  const PetscScalar constants[],
-                  PetscScalar g3[]) {
-    //TODO: fix
-//    const PetscReal nu = PetscRealPart(constants[NU]);
-//    const PetscInt Nc = dim;
-//    PetscInt c, d;
-//
-//    for (c = 0; c < Nc; ++c) {
-//        for (d = 0; d < dim; ++d) {
-//            g3[((c * Nc + c) * dim + d) * dim + d] += nu;  // gradU
-//            g3[((c * Nc + d) * dim + d) * dim + c] += nu;  // gradU transpose
-//        }
-//    }
 }
 
 static void g0_wu(PetscInt dim,
@@ -659,13 +704,13 @@ PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
     ierr = PetscDSSetResidual(prob, W, WIntegrandTestFunction, WIntegrandTestGradientFunction);CHKERRQ(ierr);
     ierr = PetscDSSetResidual(prob, Q, QIntegrandTestFunction, NULL);CHKERRQ(ierr);
 
-//    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
-//    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);// good?
-//    ierr = PetscDSSetJacobian(prob, Q, VEL, g0_qu, g1_qu, NULL, NULL);CHKERRQ(ierr); // good?
+    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);// good?
+    ierr = PetscDSSetJacobian(prob, V, TEMP, g0_vT, NULL, NULL, NULL);CHKERRQ(ierr);// good?
+    ierr = PetscDSSetJacobian(prob, Q, VEL, g0_qu, g1_qu, NULL, NULL);CHKERRQ(ierr); // good?
     ierr = PetscDSSetJacobian(prob, Q, TEMP, g0_qT, g1_qT, NULL, NULL);CHKERRQ(ierr);// ut_error?
-
-//    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);// good!
-//    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);// ut_error?
+    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);// good!
+    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);// ut_error?
 
     /* Setup constants */
     {

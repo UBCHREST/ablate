@@ -71,7 +71,7 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
 */
 static PetscErrorCode quadratic_u(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
     // u = {t + x^2 + y^2, t + 2*x^2 + 2*x*y}
-    u[0] = 2*time + X[0] * X[0] + X[1] * X[1];
+    u[0] = time + X[0] * X[0] + X[1] * X[1];
     u[1] = time + 2.0 * X[0] * X[0] + 2.0 * X[0] * X[1];
     return 0;
 }
@@ -83,12 +83,12 @@ static PetscErrorCode quadratic_u_t(PetscInt Dim, PetscReal time, const PetscRea
 
 static PetscErrorCode quadratic_p(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *p, void *ctx) {
     // p = x + y - 1
-    p[0] = 1000*X[0] + X[1] - 1.0;
+    p[0] = X[0] + X[1] - 1.0;
     return 0;
 }
 
 static PetscErrorCode quadratic_T(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
-    // T = t + x + y
+    // T = t + x + y + 1
     T[0] = time + X[0] + X[1] + 1;
     return 0;
 }
@@ -125,8 +125,7 @@ static void f0_quadratic_q(PetscInt dim,
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= -((Pth*S)/Power(1 + t + x + y,2)) + (4*Pth*x)/(1 + t + x + y) -
-             (Pth*(t + 2*Power(x,2) + 2*x*y))/Power(1 + t + x + y,2) -
+    f0[0] -= -((Pth*S)/Power(1 + t + x + y,2)) + (4*Pth*x)/(1 + t + x + y) - (Pth*(t + 2*Power(x,2) + 2*x*y))/Power(1 + t + x + y,2) -
              (Pth*(t + Power(x,2) + Power(y,2)))/Power(1 + t + x + y,2);
 }
 
@@ -159,8 +158,10 @@ static void f0_quadratic_v(PetscInt dim,
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= 1 - (5.333333333333334*mu)/R + (Pth*S)/(1 + t + x + y) + (2*Pth*y*(t + 2*Power(x,2) + 2*x*y))/(1 + t + x + y) + (2*Pth*x*(t + Power(x,2) + Power(y,2)))/(1 + t + x + y);
-    f0[1] -= 1 - (4.*mu)/R + Pth/(Power(F,2)*(1 + t + x + y)) + (Pth*S)/(1 + t + x + y) + (2*Pth*x*(t + 2*Power(x,2) + 2*x*y))/(1 + t + x + y) + (Pth*(4*x + 2*y)*(t + Power(x,2) + Power(y,2)))/(1 + t + x + y);
+    f0[0] -= 1 - (5.333333333333334*mu)/R + (Pth*S)/(1 + t + x + y) + (2*Pth*y*(t + 2*Power(x,2) + 2*x*y))/(1 + t + x + y) +
+             (2*Pth*x*(t + Power(x,2) + Power(y,2)))/(1 + t + x + y);
+    f0[1] -= 1 - (4.*mu)/R + Pth/(Power(F,2)*(1 + t + x + y)) + (Pth*S)/(1 + t + x + y) +
+             (2*Pth*x*(t + 2*Power(x,2) + 2*x*y))/(1 + t + x + y) + (Pth*(4*x + 2*y)*(t + Power(x,2) + Power(y,2)))/(1 + t + x + y);
 }
 
 /* f0_w = dT/dt + u.grad(T) - Q */

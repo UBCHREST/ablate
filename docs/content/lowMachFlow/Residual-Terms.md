@@ -151,8 +151,8 @@ $$\begin{eqnarray}
 
 $$\begin{eqnarray}
 \frac{\partial F_{\boldsymbol{v}_i}}{\partial c_{T,j}} &=& \int \boldsymbol{\phi_i} \cdot \frac{\partial \rho}{\partial c_{T,j}} S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{\phi_i} \cdot \frac{\partial \rho}{\partial c_{T,j}} \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{\partial \rho}{\partial c_{T,j}} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i} \\
-&=& - \int \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \frac{\partial T}{\partial c_{T,j}}  S \frac{\partial \boldsymbol{u}}{\partial t} - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \frac{\partial T}{\partial c_{T,j}} \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{p^{th}}{T^2} \frac{\partial T}{\partial c_{T,j}} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i} \\
-&=& - \int \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j}  S \frac{\partial \boldsymbol{u}}{\partial t} - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j} \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{p^{th}}{T^2} \psi_{T,j} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i}
+&=& - \int \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \frac{\partial T}{\partial c_{T,j}}  S \frac{\partial \boldsymbol{u}}{\partial t} - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \frac{\partial T}{\partial c_{T,j}} \boldsymbol{u} \cdot \nabla \boldsymbol{u} - \frac{p^{th}}{T^2} \frac{\partial T}{\partial c_{T,j}} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i} \\
+&=& - \int \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j}  S \frac{\partial \boldsymbol{u}}{\partial t} - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j} \boldsymbol{u} \cdot \nabla \boldsymbol{u} - \frac{p^{th}}{T^2} \psi_{T,j} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i}
 \end{eqnarray}$$
 
 $$\begin{eqnarray}
