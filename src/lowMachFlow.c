@@ -249,10 +249,8 @@ void WIntegrandTestGradientFunction(PetscInt dim,
                                     PetscInt numConstants,
                                     const PetscScalar constants[],
                                     PetscScalar f1[]) {
-    PetscInt d;
-
     // \nabla w \cdot \frac{k}{P} \nabla T
-    for (d = 0; d < dim; ++d) {
+    for (PetscInt d = 0; d < dim; ++d) {
         f1[d] = constants[K]/constants[PECLET] * u_x[uOff_x[TEMP] + d];
     }
 }
@@ -705,14 +703,14 @@ PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
     ierr = PetscDSSetResidual(prob, Q, QIntegrandTestFunction, NULL);CHKERRQ(ierr);
 
     ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);// good?
-    ierr = PetscDSSetJacobian(prob, V, TEMP, g0_vT, NULL, NULL, NULL);CHKERRQ(ierr);// good?
-    ierr = PetscDSSetJacobian(prob, Q, VEL, g0_qu, g1_qu, NULL, NULL);CHKERRQ(ierr); // good?
-    ierr = PetscDSSetJacobian(prob, Q, TEMP, g0_qT, g1_qT, NULL, NULL);CHKERRQ(ierr);// ut_error?
-    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);// good!
-    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);// ut_error?
+    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, V, TEMP, g0_vT, NULL, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, Q, VEL, g0_qu, g1_qu, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, Q, TEMP, g0_qT, g1_qT, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
 
-    /* Setup constants */
+    /* Setup constants */;
     {
         FlowParameters *param;
         PetscScalar constants[TOTAlCONSTANTS];
