@@ -83,7 +83,7 @@ static PetscErrorCode quadratic_u_t(PetscInt Dim, PetscReal time, const PetscRea
 
 static PetscErrorCode quadratic_p(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *p, void *ctx) {
     // p = x + y - 1
-    p[0] = X[0] + X[1] - 1.0;
+    p[0] = 1000*X[0] + X[1] - 1.0;
     return 0;
 }
 
@@ -192,7 +192,7 @@ static void f0_quadratic_w(PetscInt dim,
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= (Cp*Pth*(S + 2*t + 3*Power(x,2) + 2*x*y + Power(y,2)))/(H*S*(1 + t + x + y));
+    f0[0] -= (Cp*Pth*(S + 2*t + 3*Power(x,2) + 2*x*y + Power(y,2)))/(1 + t + x + y);
 }
 
 int main(int argc, char **args) {

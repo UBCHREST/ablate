@@ -21,7 +21,7 @@ The low mach number flow formulation is based upon the work of J. Principe and R
 | $$\mu$$ | Viscosity | $$\mu = \frac{\mu^*}{\mu_o}$$ |
 | $$k$$ | Thermal Conductivity | $$k = \frac{k^*}{k_o}$$ |
 | $$Q$$ | External Heating | $$Q = \frac{Q^*}{Q_o}$$ |
-| $$T$$ | Absolute Temperature | $$Q = \frac{Q^*}{Q_o}$$ |
+| $$T$$ | Absolute Temperature | $$T = \frac{T^*}{T_o}$$ |
 | $$C_p$$ | Specific Heat Capacity | $$C_p = \frac{C_p^*}{ {C_p}_o}$$ |
 | $$\beta$$ | Thermal expansion coefficient | $$\beta = \beta^* T_o$$ |
 | $$\boldsymbol{x}$$ | Spacial Location | $$\boldsymbol{x} = \frac{\boldsymbol{x}^*}{l_o}$$ |

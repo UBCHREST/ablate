@@ -62,7 +62,7 @@ $$\begin{eqnarray}
 &=& \int \phi_i \frac{\partial}{\partial c_{u_c,j}} \left(\rho \nabla \cdot \boldsymbol{u} + \boldsymbol{u} \cdot \nabla \rho \right) \\
 &=& \int \phi_i \left(\rho \frac{\partial \nabla \cdot \boldsymbol{u}}{\partial c_{u_c,j}} + \frac{\partial \boldsymbol{u}}{\partial c_{u_c,j}} \cdot \nabla \rho \right) \\
 &=& \int \phi_i \rho \frac{\partial \psi_{u_c,j}}{\partial x_c}  + \phi_i \psi_{u_c,j} \hat{e}_j \cdot \nabla \rho \\
-&=& \int \phi_i \rho \frac{\partial \psi_{u_c,j}}{\partial x_c}  + \phi_i \psi_{u_c,j} \frac{\partial rho}{\partial x_c} \\
+&=& \int \phi_i \rho \frac{\partial \psi_{u_c,j}}{\partial x_c}  + \phi_i \psi_{u_c,j} \frac{\partial \rho}{\partial x_c} \\
 &=& \int \phi_i \frac{p^{th}}{T} \frac{\partial \psi_{u_c,j}}{\partial x_c}  + \phi_i \psi_{u_c,j} p^{th} \frac{\partial \frac{1}{T}}{\partial x_c} \\
 &=& \int \phi_i \frac{p^{th}}{T} \frac{\partial \psi_{u_c,j}}{\partial x_c}  - \phi_i \psi_{u_c,j} \frac{p^{th}}{T^2} \frac{\partial T}{\partial x_c} 
 \end{eqnarray}$$
