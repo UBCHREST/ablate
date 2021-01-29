@@ -34,25 +34,23 @@ $$
 #### Jacobians
 
 $$
-F_{q,i} = \int \phi_i S \frac{\partial}{\partial t}\frac{p^{th}}{T} + \phi_i \nabla \cdot \left(\frac{p^{th}}{T}\boldsymbol{u} \right) \\
+F_{q,i} = \int -\phi_i \frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \phi_i \nabla \cdot \left(\frac{p^{th}}{T}\boldsymbol{u} \right) \\
 $$
 
 $$\begin{eqnarray}
 \frac{F_{q,i}}{\partial c_{T,j}}
-&=& \int \phi_i \frac{\partial}{\partial c_{T,j}}\nabla \cdot \left(\frac{p^{th}}{T}\boldsymbol{u} \right)\\
-&=& \int \phi_i p^{th} \frac{\partial}{\partial c_{T,j}} \left( \frac{1}{T}\nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \nabla \frac{1}{T} \right) \\
-&=& \int \phi_i p^{th} \left( \frac{\partial \frac{1}{T}}{\partial c_{T,j}} \nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \frac{\partial}{\partial c_{T,j}} \nabla \frac{1}{T} \right) \\
-&=& \int \phi_i p^{th} \left( - \frac{1}{T^2} \frac{\partial T}{\partial c_{T,j}}  \nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \frac{\partial}{\partial c_{T,j}} \nabla \frac{1}{T} \right) \\
-&=& \int \phi_i p^{th} \left( - \frac{1}{T^2} \frac{\partial T}{\partial c_{T,j}}  \nabla \cdot \boldsymbol{u} - \boldsymbol{u}\cdot \frac{\partial}{\partial c_{T,j}} \frac{\nabla T}{T^2} \right) \\
-&=& \int \phi_i p^{th} \left( - \frac{1}{T^2} \frac{\partial T}{\partial c_{T,j}}  \nabla \cdot \boldsymbol{u} - \boldsymbol{u}\cdot \left(\frac{1}{T^2} \frac{\partial \nabla T}{\partial c_{T,j}} +  \frac{\partial \frac{1}{T^2}}{\partial c_{T,j}} \nabla T \right)\right) \\
-&=& \int \phi_i p^{th} \left( - \frac{1}{T^2} \frac{\partial T}{\partial c_{T,j}}  \nabla \cdot \boldsymbol{u} - \boldsymbol{u}\cdot \left(\frac{1}{T^2} \frac{\partial \nabla T}{\partial c_{T,j}} - \frac{2}{T^3}  \frac{\partial T}{\partial c_{T,j}} \nabla T \right)\right) \\
-&=& \int \frac{\phi_i p^{th}}{T^2} \left( - \psi_{T,j}  \nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \left(\frac{2}{T} \psi_{T,j} \nabla T - \nabla \psi_{T,j}\right) \right) \\
+&=& \int -\phi_i \frac{\partial}{\partial c_{T,j}} \left(\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t}\right) + \phi_i \frac{\partial}{\partial c_{T,j}}\nabla \cdot \left(\frac{p^{th}}{T}\boldsymbol{u} \right)\\
+&=& \int -\phi_i  Sp^{th}\frac{\partial \frac{1}{T^2}}{\partial c_{T,j}}\frac{\partial T}{\partial t} +   \phi_i p^{th} \frac{\partial}{\partial c_{T,j}} \left( \frac{1}{T}\nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \nabla \frac{1}{T} \right) \\
+&=& \int \phi_i  Sp^{th}\frac{\partial T}{\partial c_{T,j}} \frac{2}{T^3} \frac{\partial T}{\partial t} + \phi_i p^{th} \left( \frac{\partial \frac{1}{T}}{\partial c_{T,j}} \nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \frac{\partial}{\partial c_{T,j}} \nabla \frac{1}{T} \right) \\
+&=& \int \phi_i  \frac{2Sp^{th}}{T^3}\frac{\partial T}{\partial c_{T,j}}  \frac{\partial T}{\partial t} + \phi_i p^{th} \left( - \frac{1}{T^2} \frac{\partial T}{\partial c_{T,j}}  \nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \frac{\partial}{\partial c_{T,j}} \nabla \frac{1}{T} \right) \\
+&=& \int \phi_i  \frac{2Sp^{th}}{T^3}\frac{\partial T}{\partial c_{T,j}}  \frac{\partial T}{\partial t} + \phi_i p^{th} \left( - \frac{1}{T^2} \frac{\partial T}{\partial c_{T,j}}  \nabla \cdot \boldsymbol{u} - \boldsymbol{u}\cdot \frac{\partial}{\partial c_{T,j}} \frac{\nabla T}{T^2} \right) \\
+&=& \int \phi_i  \frac{2Sp^{th}}{T^3}\frac{\partial T}{\partial c_{T,j}}  \frac{\partial T}{\partial t} + \phi_i p^{th} \left( - \frac{1}{T^2} \frac{\partial T}{\partial c_{T,j}}  \nabla \cdot \boldsymbol{u} - \boldsymbol{u}\cdot \left(\frac{1}{T^2} \frac{\partial \nabla T}{\partial c_{T,j}} +  \frac{\partial \frac{1}{T^2}}{\partial c_{T,j}} \nabla T \right)\right) \\
+&=& \int \phi_i  \frac{2Sp^{th}}{T^3}\frac{\partial T}{\partial c_{T,j}}  \frac{\partial T}{\partial t} + \phi_i p^{th} \left( - \frac{1}{T^2} \frac{\partial T}{\partial c_{T,j}}  \nabla \cdot \boldsymbol{u} - \boldsymbol{u}\cdot \left(\frac{1}{T^2} \frac{\partial \nabla T}{\partial c_{T,j}} - \frac{2}{T^3}  \frac{\partial T}{\partial c_{T,j}} \nabla T \right)\right) \\
+&=& \int \phi_i  \frac{2Sp^{th}}{T^3}\psi_{T,j}  \frac{\partial T}{\partial t} + \frac{\phi_i p^{th}}{T^2} \left( - \psi_{T,j}  \nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \left(\frac{2}{T} \psi_{T,j} \nabla T - \nabla \psi_{T,j}\right) \right) \\
 \end{eqnarray}$$
 
 $$\begin{eqnarray}
-\frac{F_{q,i}}{\partial c_{\frac{\partial T}{\partial t},j}} &=& \int \phi_i S \frac{\partial}{\partial c_{T,j}}\frac{\partial}{\partial t}\frac{p^{th}}{T} \\
-&=& \int \phi_i S p^{th} \frac{\partial}{\partial c_{T,j}}\frac{\partial}{\partial t}\frac{1}{T} \\
-&=& \int \frac{-\phi_i S  p^{th}}{T^2} \frac{\partial}{\partial c_{T,j}}\frac{\partial T}{\partial t} \\
+\frac{F_{q,i}}{\partial c_{\frac{\partial T}{\partial t},j}} &=& \int \frac{-\phi_i S  p^{th}}{T^2} \frac{\partial}{\partial c_{\frac{\partial T}{\partial t},j}}\frac{\partial T}{\partial t} \\
 &=& \int \frac{-\phi_i S  p^{th}}{T^2} \psi_j \\
 \end{eqnarray}$$
 
