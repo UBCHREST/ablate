@@ -23,6 +23,8 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     ierr = DMComputeExactSolution(dm, t, e, NULL); CHKERRQ(ierr);
     ierr = VecCopy(e, u); CHKERRQ(ierr);
     ierr = VecDestroy(&e); CHKERRQ(ierr);
+
+    ierr = RemoveDiscretePressureNullspace(dm, u);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -254,15 +256,15 @@ int main(int argc, char **args) {
     ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))quadratic_T, (void (*)(void))quadratic_T_t, 1, &id, parameters);CHKERRQ(ierr);
     id = 4;
     ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))quadratic_T, (void (*)(void))quadratic_T_t, 1, &id, parameters);CHKERRQ(ierr);
-
-      id = 3;
-      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
-      id = 1;
-      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
-      id = 2;
-      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
-      id = 4;
-      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
+//
+//      id = 3;
+//      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
+//      id = 1;
+//      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
+//      id = 2;
+//      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
+//      id = 4;
+//      ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall pres", "marker", PRES, 0, NULL, (void (*)(void))quadratic_p, NULL, 1, &id, parameters);CHKERRQ(ierr);
 
 
       // Set the exact solution

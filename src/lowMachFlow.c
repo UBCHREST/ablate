@@ -54,15 +54,15 @@ PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user) {
     ierr = PetscFEDestroy(&fe[PRES]);CHKERRQ(ierr);
     ierr = PetscFEDestroy(&fe[TEMP]);CHKERRQ(ierr);
 
-//    {
-//        PetscObject pressure;
-//        MatNullSpace nullspacePres;
-//
-//        ierr = DMGetField(dm, PRES, NULL, &pressure);CHKERRQ(ierr);
-//        ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);CHKERRQ(ierr);
-//        ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);CHKERRQ(ierr);
-//        ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
-//    }
+    {
+        PetscObject pressure;
+        MatNullSpace nullspacePres;
+
+        ierr = DMGetField(dm, PRES, NULL, &pressure);CHKERRQ(ierr);
+        ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);CHKERRQ(ierr);
+        ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);CHKERRQ(ierr);
+        ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }
@@ -736,13 +736,13 @@ PetscErrorCode CompleteProblemSetup(TS ts, Vec *u, LowMachFlowContext *context) 
     ierr = PetscObjectSetName((PetscObject)*u, "Numerical Solution");CHKERRQ(ierr);
     ierr = VecSetOptionsPrefix(*u, "num_sol_");CHKERRQ(ierr);
 
-//    ierr = DMSetNullSpaceConstructor(dm, PRES, CreatePressureNullSpace);CHKERRQ(ierr);
+    ierr = DMSetNullSpaceConstructor(dm, PRES, CreatePressureNullSpace);CHKERRQ(ierr);
 
     ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, &parameters);CHKERRQ(ierr);
     ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, &parameters);CHKERRQ(ierr);
     ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, &parameters);CHKERRQ(ierr);
 
-//    ierr = TSSetPreStep(ts, RemoveDiscretePressureNullspaceOnTs);CHKERRQ(ierr);
+    ierr = TSSetPreStep(ts, RemoveDiscretePressureNullspaceOnTs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
