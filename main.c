@@ -229,9 +229,9 @@ int main(int argc, char **args) {
     ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
 
     // V, W Test Function
-//    ierr = PetscDSSetResidual(prob, Q, f0_quadratic_q, NULL);CHKERRQ(ierr);
-//     ierr = PetscDSSetResidual(prob, V, f0_quadratic_v, VIntegrandTestGradientFunction);CHKERRQ(ierr);
-//    ierr = PetscDSSetResidual(prob, W, f0_quadratic_w, WIntegrandTestGradientFunction);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, Q, f0_quadratic_q, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, V, f0_quadratic_v, VIntegrandTestGradientFunction);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, W, f0_quadratic_w, WIntegrandTestGradientFunction);CHKERRQ(ierr);
 
     FlowParameters *parameters;
     ierr = PetscBagGetData(context.parameters, (void **)&parameters);CHKERRQ(ierr);
