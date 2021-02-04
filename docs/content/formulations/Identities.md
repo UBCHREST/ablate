@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Reference Identities
-parent: Low Mach Flow Formulation
-nav_order: 4
+parent: Flow Formulations
+nav_order: 5
 ---
 Given that our field variable $$u$$ or $$\boldsymbol{u}$$ is represented as $$u = \sum_k c_k \psi_k $$ or $$ \boldsymbol{u} = \sum_k \boldsymbol{c_k} \psi_k $$ we can express the change in the field variable in terms of nodal value $${c_j}$$ as
 
