@@ -34,7 +34,7 @@ The non-dimensional quantities are defined as:
 | $$S$$       | Strouhal     | $$\frac{l_o}{u_o t_o}$$ |
 | $$R$$       | Reynolds     | $$\frac{\rho_o u_o l_o}{\mu_o}$$ |
 | $$F$$       | Froude       | $$\frac{u_o}{\sqrt{g_o l_o}}$$|
-| $$P$$       | Péclet       | $$\frac{rho_o {C_p}_o u_o l_o}{k_o}$$|
+| $$P$$       | Péclet       | $$\frac{\rho_o {C_p}_o u_o l_o}{k_o}$$|
 | $$H$$       | heat release     | $$\frac{t_o Q_o}{\rho_o {C_p}_o T_o}$$ |
 | $$\Gamma$$  | *depends upon state equation* | $$\frac{p_o}{\rho_o {C_p}_o T_o}$$  |
 

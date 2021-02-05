@@ -37,7 +37,7 @@ PetscErrorCode SetupFlowParameters(PetscBag *flowParametersBag){
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->k, 1.0, "k", "non-dimensional thermal conductivity");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->cp, 1.0, "cp", "non-dimensional specific heat capacity");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->beta, 1.0, "beta", "non-dimensional thermal expansion coefficient ");CHKERRQ(ierr);
-    ierr = PetscBagRegisterInt(*flowParametersBag, &p->gravityDirection, 1, "gravityDirection", "axis");CHKERRQ(ierr);
+    ierr = PetscBagRegisterInt(*flowParametersBag, &p->gravityDirection, 0, "gravityDirection", "axis");CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

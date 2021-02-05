@@ -1,8 +1,20 @@
-#include "lowMachFlow.h"
-#include "parameters.h"
+#include "incompressibleFlow.h"
+
 /*F
-This Low Mach flow is time-dependent iso viscous Navier-Stokes flow. We discretize using the
-finite element method on an unstructured mesh. The weak form equations are in the documentation
+This Low Mach flow is time-dependent isoviscous Navier-Stokes flow. We discretize using the
+finite element method on an unstructured mesh. The weak form equations are
+
+\begin{align*}
+    < q, \nabla\cdot u > = 0
+    <v, du/dt> + <v, u \cdot \nabla u> + < \nabla v, \nu (\nabla u + {\nabla u}^T) > - < \nabla\cdot v, p >  - < v, f  >  = 0
+    < w, dT/dt > + < w, u \cdot \nabla T > + < \nabla w, \alpha \nabla T > - < w, Q > = 0
+\end{align*}
+
+where $\nu$ is the kinematic viscosity and $\alpha$ is thermal diffusivity.
+
+For visualization, use
+
+  -dm_view hdf5:$PWD/sol.h5 -sol_vec_view hdf5:$PWD/sol.h5::append -exact_vec_view hdf5:$PWD/sol.h5::append
 F*/
 
 PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user) {
@@ -67,42 +79,22 @@ PetscErrorCode SetupDiscretization(DM dm, LowMachFlowContext *user) {
     PetscFunctionReturn(0);
 }
 
-/* =q \left(-\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right) */
-void QIntegrandTestFunction(PetscInt dim,
-                            PetscInt Nf,
-                            PetscInt NfAux,
-                            const PetscInt uOff[],
-                            const PetscInt uOff_x[],
-                            const PetscScalar u[],
-                            const PetscScalar u_t[],
-                            const PetscScalar u_x[],
-                            const PetscInt aOff[],
-                            const PetscInt aOff_x[],
-                            const PetscScalar a[],
-                            const PetscScalar a_t[],
-                            const PetscScalar a_x[],
-                            PetscReal t,
-                            const PetscReal X[],
-                            PetscInt numConstants,
-                            const PetscScalar constants[],
-                            PetscScalar f0[]) {
-    PetscInt d;
+PetscErrorCode SetupParameters(LowMachFlowContext *user) {
+    PetscBag bag;
+    Parameters *p;
+    PetscErrorCode ierr;
 
-    // -\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t}
-    f0[0] = -u_t[uOff[TEMP]]*constants[STROUHAL]*constants[PTH]/(u[uOff[TEMP]]*u[uOff[TEMP]]);
-
-    // \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u}
-    for (d = 0; d < dim; ++d) {
-        f0[0] += constants[PTH]/u[uOff[TEMP]] *  u_x[uOff_x[VEL] + d * dim + d];
-    }
-
-    // - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right)
-    for (d = 0; d < dim; ++d) {
-        f0[0] -= constants[PTH]/(u[uOff[TEMP]]*u[uOff[TEMP]]) *  u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];
-    }
+    PetscFunctionBeginUser;
+    /* setup PETSc parameter bag */
+    ierr = PetscBagGetData(user->parameters, (void **)&p);CHKERRQ(ierr);
+    ierr = PetscBagSetName(user->parameters, "par", "Low Mach flow parameters");CHKERRQ(ierr);
+    bag = user->parameters;
+    ierr = PetscBagRegisterReal(bag, &p->nu, 1.0, "nu", "Kinematic viscosity");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(bag, &p->alpha, 1.0, "alpha", "Thermal diffusivity");CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
 
-/* \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{\rho \hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{v} */
+/* f0_v = du/dt + u \cdot \nabla u */
 void VIntegrandTestFunction(PetscInt dim,
                             PetscInt Nf,
                             PetscInt NfAux,
@@ -124,25 +116,19 @@ void VIntegrandTestFunction(PetscInt dim,
     PetscInt Nc = dim;
     PetscInt c, d;
 
-    const PetscReal rho = constants[PTH]/u[uOff[TEMP]];
-
-    // \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t}
+    // du/dt
     for (d = 0; d < dim; ++d) {
-        f0[d] = rho*constants[STROUHAL] * u_t[uOff[VEL] + d];
+        f0[d] = u_t[uOff[VEL] + d];
     }
 
-    // \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u}
     for (c = 0; c < Nc; ++c) {
         for (d = 0; d < dim; ++d) {
-            f0[c] += rho*u[uOff[VEL] + d] * u_x[uOff_x[VEL]+ c * dim + d];
+            f0[c] += u[d] * u_x[c * dim + d];
         }
     }
-
-    // rho \hat{z}/F^2
-    f0[(PetscInt)constants[GRAVITY_DIRECTION]] += rho/(constants[FROUDE]*constants[FROUDE]);
 }
 
-/*.5 (\nabla \boldsymbol{v} + \nabla \boldsymbol{v}^T) \cdot 2 \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T) - 1/3 (\nabla \cdot \bolsymbol{u})\boldsymbol{I}) - p \nabla \cdot \boldsymbol{v} */
+/*f1_v = \nu[grad(u) + grad(u)^T] - pI */
 void VIntegrandTestGradientFunction(PetscInt dim,
                                     PetscInt Nf,
                                     PetscInt NfAux,
@@ -161,46 +147,20 @@ void VIntegrandTestGradientFunction(PetscInt dim,
                                     PetscInt numConstants,
                                     const PetscScalar constants[],
                                     PetscScalar f1[]) {
-
+    const PetscReal nu = PetscRealPart(constants[NU]);
     const PetscInt Nc = dim;
     PetscInt c, d;
 
-    const PetscReal coefficient = constants[MU]/constants[REYNOLDS];// (0.5 * 2.0)
-
-    PetscReal u_divergence = 0.0;
     for (c = 0; c < Nc; ++c) {
-        u_divergence += u_x[uOff_x[VEL] + c * dim + c];
-    }
-
-    // (\nabla \boldsymbol{v}) \cdot \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T) - 1/3 (\nabla \cdot \bolsymbol{u})\boldsymbol{I})
-    for (c = 0; c < Nc; ++c) {
-        // 2 \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T)
         for (d = 0; d < dim; ++d) {
-            f1[c * dim + d] =  0.5 * coefficient * (u_x[uOff_x[VEL] + c * dim + d] + u_x[uOff_x[VEL] + d * dim + c]);
+            // TODO: add uOff and uOff_x
+            f1[c * dim + d] = nu * (u_x[c * dim + d] + u_x[d * dim + c]);
         }
-
-        // -1/3 (\nable \cdot \boldsybol{u}) \boldsymbol{I}
-        f1[c * dim + c] -= coefficient/3.0 * u_divergence;
-    }
-
-    // (\nabla \boldsymbol{v}^T) \cdot \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T) - 1/3 (\nabla \cdot \bolsymbol{u})\boldsymbol{I})
-    for (c = 0; c < Nc; ++c) {
-        // 2 \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T)
-        for (d = 0; d < dim; ++d) {
-            f1[d * dim + c] += 0.5 * coefficient * (u_x[uOff_x[VEL] + c * dim + d] + u_x[uOff_x[VEL] + d * dim + c]);
-        }
-
-        // -1/3 (\nable \cdot \boldsybol{u}) \boldsymbol{I}
-        f1[c * dim + c] -= coefficient/3.0 * u_divergence;
-    }
-
-    // - p \nabla \cdot \boldsymbol{v}
-    for (c = 0; c < Nc; ++c) {
         f1[c * dim + c] -= u[uOff[PRES]];
     }
 }
 
-/*w \frac{C_p S p^{th}}{T} \frac{\partial T}{\partial t} + w \frac{C_p p^{th}}{T} \boldsymbol{u} \cdot \nabla T */
+/* f0_w = dT/dt + u.grad(T)*/
 void WIntegrandTestFunction(PetscInt dim,
                             PetscInt Nf,
                             PetscInt NfAux,
@@ -219,16 +179,14 @@ void WIntegrandTestFunction(PetscInt dim,
                             PetscInt numConstants,
                             const PetscScalar constants[],
                             PetscScalar f0[]) {
-    // \frac{C_p S p^{th}}{T} \frac{\partial T}{\partial t}
-    f0[0] = constants[CP]*constants[STROUHAL]*constants[PTH]/u[uOff[TEMP]]*u_t[uOff[TEMP]];
+    PetscInt d;
 
-    // \frac{C_p p^{th}}{T} \boldsymbol{u} \cdot \nabla T
-    for (PetscInt d = 0; d < dim; ++d) {
-        f0[0] += constants[CP]*constants[PTH]/u[uOff[TEMP]] *  u[uOff[VEL] + d]*u_x[uOff_x[TEMP] + d];
+    f0[0] = u_t[uOff[TEMP]];
+    for (d = 0; d < dim; ++d) {
+        f0[0] += u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];
     }
 }
 
-/*  \nabla w \cdot \frac{k}{P} \nabla T */
 void WIntegrandTestGradientFunction(PetscInt dim,
                                     PetscInt Nf,
                                     PetscInt NfAux,
@@ -247,9 +205,35 @@ void WIntegrandTestGradientFunction(PetscInt dim,
                                     PetscInt numConstants,
                                     const PetscScalar constants[],
                                     PetscScalar f1[]) {
-    // \nabla w \cdot \frac{k}{P} \nabla T
-    for (PetscInt d = 0; d < dim; ++d) {
-        f1[d] = constants[K]/constants[PECLET] * u_x[uOff_x[TEMP] + d];
+    const PetscReal alpha = PetscRealPart(constants[ALPHA]);
+    PetscInt d;
+    for (d = 0; d < dim; ++d) {
+        f1[d] = alpha * u_x[uOff_x[TEMP] + d];
+    }
+}
+
+/* \nabla\cdot u */
+void QIntegrandTestFunction(PetscInt dim,
+                            PetscInt Nf,
+                            PetscInt NfAux,
+                            const PetscInt uOff[],
+                            const PetscInt uOff_x[],
+                            const PetscScalar u[],
+                            const PetscScalar u_t[],
+                            const PetscScalar u_x[],
+                            const PetscInt aOff[],
+                            const PetscInt aOff_x[],
+                            const PetscScalar a[],
+                            const PetscScalar a_t[],
+                            const PetscScalar a_x[],
+                            PetscReal t,
+                            const PetscReal X[],
+                            PetscInt numConstants,
+                            const PetscScalar constants[],
+                            PetscScalar f0[]) {
+    PetscInt d;
+    for (d = 0, f0[0] = 0.0; d < dim; ++d) {
+        f0[0] += u_x[d * dim + d];
     }
 }
 
@@ -296,8 +280,8 @@ PetscErrorCode RemoveDiscretePressureNullspace(DM dm, Vec u) {
     PetscFunctionReturn(0);
 }
 
-///* Make the discrete pressure discretely divergence free */
-PetscErrorCode RemoveDiscretePressureNullspaceOnTs(TS ts) {
+/* Make the discrete pressure discretely divergence free */
+PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
     Vec u;
     PetscErrorCode ierr;
     DM dm;
@@ -310,31 +294,6 @@ PetscErrorCode RemoveDiscretePressureNullspaceOnTs(TS ts) {
 }
 
 /*Jacobians*/
-static void g0_qu(PetscInt dim,
-                  PetscInt Nf,
-                  PetscInt NfAux,
-                  const PetscInt uOff[],
-                  const PetscInt uOff_x[],
-                  const PetscScalar u[],
-                  const PetscScalar u_t[],
-                  const PetscScalar u_x[],
-                  const PetscInt aOff[],
-                  const PetscInt aOff_x[],
-                  const PetscScalar a[],
-                  const PetscScalar a_t[],
-                  const PetscScalar a_x[],
-                  PetscReal t,
-                  PetscReal u_tShift,
-                  const PetscReal x[],
-                  PetscInt numConstants,
-                  const PetscScalar constants[],
-                  PetscScalar g0[]) {
-    // - \phi_i \psi_{u_c,j} \frac{p^{th}}{T^2} \frac{\partial T}{\partial x_c}
-    for (PetscInt d = 0; d < dim; ++d) {
-        g0[d] = -constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) * u_x[uOff_x[TEMP] + d];
-    }
-}
-
 static void g1_qu(PetscInt dim,
                   PetscInt Nf,
                   PetscInt NfAux,
@@ -355,104 +314,7 @@ static void g1_qu(PetscInt dim,
                   const PetscScalar constants[],
                   PetscScalar g1[]) {
     PetscInt d;
-    // \phi_i \frac{p^{th}}{T} \frac{\partial \psi_{u_c,j}}{\partial x_c}
-    for (d = 0; d < dim; ++d){
-        g1[d * dim + d] = constants[PTH]/u[uOff[TEMP]];
-    }
-}
-
-static void g0_qT(PetscInt dim,
-                  PetscInt Nf,
-                  PetscInt NfAux,
-                  const PetscInt uOff[],
-                  const PetscInt uOff_x[],
-                  const PetscScalar u[],
-                  const PetscScalar u_t[],
-                  const PetscScalar u_x[],
-                  const PetscInt aOff[],
-                  const PetscInt aOff_x[],
-                  const PetscScalar a[],
-                  const PetscScalar a_t[],
-                  const PetscScalar a_x[],
-                  PetscReal t,
-                  PetscReal u_tShift,
-                  const PetscReal x[],
-                  PetscInt numConstants,
-                  const PetscScalar constants[],
-                  PetscScalar g0[]) {
-
-    // \frac{F_{q,i}}{\partial c_{\frac{\partial T}{\partial t},j}} =  \int \frac{-\phi_i S  p^{th}}{T^2} \psi_j
-    g0[0] = - constants[STROUHAL] * constants[PTH]/(u[uOff[TEMP]] * u[uOff[TEMP]]) * u_tShift;
-
-    g0[0] += 2.0*u_t[uOff[TEMP]]*constants[STROUHAL]*constants[PTH]/(u[uOff[TEMP]] * u[uOff[TEMP]] * u[uOff[TEMP]]);
-
-    // \frac{\phi_i p^{th}}{T^2} \left( - \psi_{T,j}  \nabla \cdot \boldsymbol{u} + \boldsymbol{u}\cdot \left(\frac{2}{T} \psi_{T,j} \nabla T\right) \right)
-    for (PetscInt d = 0; d < dim; ++d) {
-        g0[0] += constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) *(-u_x[uOff_x[VEL] + d * dim + d] + 2.0/u[uOff[TEMP]] * u[uOff[VEL] + d ] * u_x[uOff_x[TEMP] + d]);
-    }
-}
-
-static void g1_qT(PetscInt dim,
-                  PetscInt Nf,
-                  PetscInt NfAux,
-                  const PetscInt uOff[],
-                  const PetscInt uOff_x[],
-                  const PetscScalar u[],
-                  const PetscScalar u_t[],
-                  const PetscScalar u_x[],
-                  const PetscInt aOff[],
-                  const PetscInt aOff_x[],
-                  const PetscScalar a[],
-                  const PetscScalar a_t[],
-                  const PetscScalar a_x[],
-                  PetscReal t,
-                  PetscReal u_tShift,
-                  const PetscReal x[],
-                  PetscInt numConstants,
-                  const PetscScalar constants[],
-                  PetscScalar g1[]) {
-    // -\frac{\phi_i p^{th}}{T^2} \left( \boldsymbol{u}\cdot  \nabla \psi_{T,j}\right)
-    for (PetscInt d = 0; d < dim; ++d) {
-        g1[d] = -constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) * (u[uOff[VEL] + d ] );
-    }
-}
-
-static void g0_vT(PetscInt dim,
-                  PetscInt Nf,
-                  PetscInt NfAux,
-                  const PetscInt uOff[],
-                  const PetscInt uOff_x[],
-                  const PetscScalar u[],
-                  const PetscScalar u_t[],
-                  const PetscScalar u_x[],
-                  const PetscInt aOff[],
-                  const PetscInt aOff_x[],
-                  const PetscScalar a[],
-                  const PetscScalar a_t[],
-                  const PetscScalar a_x[],
-                  PetscReal t,
-                  PetscReal u_tShift,
-                  const PetscReal x[],
-                  PetscInt numConstants,
-                  const PetscScalar constants[],
-                  PetscScalar g0[]) {
-    PetscInt c, d;
-    const PetscInt Nc = dim;
-
-    // - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j}  S \frac{\partial \boldsymbol{u}}{\partial t}
-    for (d = 0; d < dim; ++d){
-        g0[d] = -constants[PTH]*constants[STROUHAL]/(u[uOff[TEMP]]*u[uOff[TEMP]])*u_t[uOff[VEL]+d];
-    }
-
-    // - \boldsymbol{\phi_i} \cdot \frac{p^{th}}{T^2} \psi_{T,j} \boldsymbol{u} \cdot \nabla \boldsymbol{u}
-    for (c = 0; c < Nc; ++c) {
-        for (d = 0; d < dim; ++d) {
-            g0[c] -= constants[PTH]/(u[uOff[TEMP]]*u[uOff[TEMP]])*u[uOff[VEL] + d] * u_x[uOff_x[VEL]+ c * dim + d];
-        }
-    }
-
-    // -\frac{p^{th}}{T^2} \psi_{T,j} \frac{\hat{\boldsymbol{z}}}{F^2} \cdot \boldsymbol{\phi_i}
-    g0[(PetscInt)constants[GRAVITY_DIRECTION]] -= constants[PTH]/(constants[FROUDE]*constants[FROUDE]*u[uOff[TEMP]]*u[uOff[TEMP]]);
+    for (d = 0; d < dim; ++d) g1[d * dim + d] = 1.0;
 }
 
 static void g0_vu(PetscInt dim,
@@ -477,15 +339,11 @@ static void g0_vu(PetscInt dim,
     PetscInt c, d;
     const PetscInt Nc = dim;
 
-    // \frac{\partial F_{\boldsymbol{v}_i}}{\partial c_{\frac{\partial u_c}{\partial t},j}} = \int_\Omega \boldsymbol{\phi_i} \cdot \rho S \psi_j
-    for (d = 0; d < dim; ++d){
-        g0[d * dim + d] = constants[STROUHAL]*constants[PTH]/u[uOff[TEMP]]* u_tShift;
-    }
+    for (d = 0; d < dim; ++d) g0[d * dim + d] = u_tShift;
 
-    // \boldsymbol{\phi_i} \cdot \left(\rho \psi_j \frac{\partial u_k}{\partial x_c}\hat{e}_k
     for (c = 0; c < Nc; ++c) {
         for (d = 0; d < dim; ++d) {
-            g0[c * Nc + d] += constants[PTH]/u[uOff[TEMP]]*u_x[uOff_x[VEL] + c * Nc + d];
+            g0[c * Nc + d] += u_x[c * Nc + d];
         }
     }
 }
@@ -513,48 +371,13 @@ static void g1_vu(PetscInt dim,
     PetscInt NcJ = dim;
     PetscInt c, d, e;
 
-    // \phi_i \cdot \rho u_c \nabla \psi_j
     for (c = 0; c < NcI; ++c) {
         for (d = 0; d < NcJ; ++d) {
             for (e = 0; e < dim; ++e) {
                 if (c == d) {
-                    g1[(c * NcJ + d) * dim + e] += constants[PTH]/u[uOff[TEMP]]*u[uOff[VEL] + e];
+                    g1[(c * NcJ + d) * dim + e] += u[e];
                 }
             }
-        }
-    }
-}
-
-static void g3_vu(PetscInt dim,
-                  PetscInt Nf,
-                  PetscInt NfAux,
-                  const PetscInt uOff[],
-                  const PetscInt uOff_x[],
-                  const PetscScalar u[],
-                  const PetscScalar u_t[],
-                  const PetscScalar u_x[],
-                  const PetscInt aOff[],
-                  const PetscInt aOff_x[],
-                  const PetscScalar a[],
-                  const PetscScalar a_t[],
-                  const PetscScalar a_x[],
-                  PetscReal t,
-                  PetscReal u_tShift,
-                  const PetscReal x[],
-                  PetscInt numConstants,
-                  const PetscScalar constants[],
-                  PetscScalar g3[]) {
-
-    const PetscInt Nc = dim;
-    PetscInt c, d;
-
-    // \nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \left( \frac{1}{2}\left( \hat{e}_l \frac{\partial \psi_j}{\partial x_l}\hat{e}_c + \hat{e}_c \frac{\partial \psi_j}{\partial x_l}\hat{e}_l \right) - \frac{1}{3} \frac{\partial \psi_j}{\partial x_c}
-    for (c = 0; c < Nc; ++c) {
-        for (d = 0; d < dim; ++d) {
-            g3[((c * Nc + c) * dim + d) * dim + d] += constants[MU]/constants[REYNOLDS];  // gradU
-            g3[((c * Nc + d) * dim + d) * dim + c] += constants[MU]/constants[REYNOLDS];  // gradU transpose
-
-            g3[((c * Nc + d) * dim + d) * dim + c] -= 2.0/3.0*constants[MU]/constants[REYNOLDS];
         }
     }
 }
@@ -579,9 +402,61 @@ static void g2_vp(PetscInt dim,
                   const PetscScalar constants[],
                   PetscScalar g2[]) {
     PetscInt d;
-    for (d = 0; d < dim; ++d){
-        g2[d * dim + d] = -1.0;
+    for (d = 0; d < dim; ++d) g2[d * dim + d] = -1.0;
+}
+
+static void g3_vu(PetscInt dim,
+                  PetscInt Nf,
+                  PetscInt NfAux,
+                  const PetscInt uOff[],
+                  const PetscInt uOff_x[],
+                  const PetscScalar u[],
+                  const PetscScalar u_t[],
+                  const PetscScalar u_x[],
+                  const PetscInt aOff[],
+                  const PetscInt aOff_x[],
+                  const PetscScalar a[],
+                  const PetscScalar a_t[],
+                  const PetscScalar a_x[],
+                  PetscReal t,
+                  PetscReal u_tShift,
+                  const PetscReal x[],
+                  PetscInt numConstants,
+                  const PetscScalar constants[],
+                  PetscScalar g3[]) {
+    const PetscReal nu = PetscRealPart(constants[NU]);
+    const PetscInt Nc = dim;
+    PetscInt c, d;
+
+    for (c = 0; c < Nc; ++c) {
+        for (d = 0; d < dim; ++d) {
+            g3[((c * Nc + c) * dim + d) * dim + d] += nu;  // gradU
+            g3[((c * Nc + d) * dim + d) * dim + c] += nu;  // gradU transpose
+        }
     }
+}
+
+static void g0_wT(PetscInt dim,
+                  PetscInt Nf,
+                  PetscInt NfAux,
+                  const PetscInt uOff[],
+                  const PetscInt uOff_x[],
+                  const PetscScalar u[],
+                  const PetscScalar u_t[],
+                  const PetscScalar u_x[],
+                  const PetscInt aOff[],
+                  const PetscInt aOff_x[],
+                  const PetscScalar a[],
+                  const PetscScalar a_t[],
+                  const PetscScalar a_x[],
+                  PetscReal t,
+                  PetscReal u_tShift,
+                  const PetscReal x[],
+                  PetscInt numConstants,
+                  const PetscScalar constants[],
+                  PetscScalar g0[]) {
+    PetscInt d;
+    for (d = 0; d < dim; ++d) g0[d] = u_tShift;
 }
 
 static void g0_wu(PetscInt dim,
@@ -604,41 +479,7 @@ static void g0_wu(PetscInt dim,
                   const PetscScalar constants[],
                   PetscScalar g0[]) {
     PetscInt d;
-    for (d = 0; d < dim; ++d){
-        g0[d] = constants[CP]*constants[PTH]/u[uOff[TEMP]]*u_x[uOff_x[TEMP] + d];
-    }
-}
-
-
-static void g0_wT(PetscInt dim,
-                  PetscInt Nf,
-                  PetscInt NfAux,
-                  const PetscInt uOff[],
-                  const PetscInt uOff_x[],
-                  const PetscScalar u[],
-                  const PetscScalar u_t[],
-                  const PetscScalar u_x[],
-                  const PetscInt aOff[],
-                  const PetscInt aOff_x[],
-                  const PetscScalar a[],
-                  const PetscScalar a_t[],
-                  const PetscScalar a_x[],
-                  PetscReal t,
-                  PetscReal u_tShift,
-                  const PetscReal x[],
-                  PetscInt numConstants,
-                  const PetscScalar constants[],
-                  PetscScalar g0[]) {
-    //\frac{\partial F_{w,i}}{\partial c_{\frac{\partial T}{\partial t},j}} = \psi_i C_p S p^{th} \frac{1}{T} \psi_{j}
-    g0[0] = constants[CP]*constants[STROUHAL]*constants[PTH]/u[uOff[TEMP]]*u_tShift;
-
-    //- \phi_i C_p S p^{th} \frac{\partial T}{\partial t} \frac{1}{T^2} \psi_{T,j}  + ...
-    g0[0] -= constants[CP]*constants[STROUHAL]*constants[PTH]/(u[uOff[TEMP]]*u[uOff[TEMP]])*u_t[uOff[TEMP]];
-
-    // -\phi_i C_p p^{th} \boldsymbol{u} \cdot  \frac{\nabla T}{T^2} \psi_{T,j}
-    for (PetscInt d = 0; d < dim; ++d){
-        g0[0] -= constants[CP]*constants[PTH]/(u[uOff[TEMP]]*u[uOff[TEMP]])*u[uOff[VEL]+d]*u_x[uOff_x[TEMP]+d];
-    }
+    for (d = 0; d < dim; ++d) g0[d] = u_x[uOff_x[2] + d];
 }
 
 static void g1_wT(PetscInt dim,
@@ -661,9 +502,7 @@ static void g1_wT(PetscInt dim,
                   const PetscScalar constants[],
                   PetscScalar g1[]) {
     PetscInt d;
-    for (d = 0; d < dim; ++d){
-        g1[d] = constants[CP]*constants[PTH]/u[uOff[TEMP]]*u[uOff[VEL] + d];
-    }
+    for (d = 0; d < dim; ++d) g1[d] = u[uOff[0] + d];
 }
 
 static void g3_wT(PetscInt dim,
@@ -685,9 +524,10 @@ static void g3_wT(PetscInt dim,
                   PetscInt numConstants,
                   const PetscScalar constants[],
                   PetscScalar g3[]) {
-    for (PetscInt d = 0; d < dim; ++d){
-        g3[d * dim + d] = constants[K]/constants[PECLET];
-    }
+    const PetscReal alpha = PetscRealPart(constants[ALPHA]);
+    PetscInt d;
+
+    for (d = 0; d < dim; ++d) g3[d * dim + d] = alpha;
 }
 
 PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
@@ -704,27 +544,26 @@ PetscErrorCode StartProblemSetup(DM dm, LowMachFlowContext *ctx) {
 
     ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
     ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, V, TEMP, g0_vT, NULL, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, Q, VEL, g0_qu, g1_qu, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, Q, TEMP, g0_qT, g1_qT, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, Q, VEL, NULL, g1_qu, NULL, NULL);CHKERRQ(ierr);
     ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
     ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
 
-    /* Setup constants */;
+    /* Setup constants */
     {
-        FlowParameters *param;
-        PetscScalar constants[TOTAlCONSTANTS];
+        Parameters *param;
+        PetscScalar constants[2];
 
         ierr = PetscBagGetData(ctx->parameters, (void **)&param);CHKERRQ(ierr);
-        PackFlowParameters(param, constants);
-        ierr = PetscDSSetConstants(prob, TOTAlCONSTANTS, constants);CHKERRQ(ierr);
+        constants[NU] = param->nu;
+        constants[ALPHA] = param->alpha;
+        ierr = PetscDSSetConstants(prob, 2, constants);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode CompleteProblemSetup(TS ts, Vec *u, LowMachFlowContext *context) {
     PetscErrorCode ierr;
-    FlowParameters *parameters;
+    Parameters *parameters;
     DM dm;
 
     PetscFunctionBeginUser;
@@ -733,8 +572,6 @@ PetscErrorCode CompleteProblemSetup(TS ts, Vec *u, LowMachFlowContext *context) 
 
     ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
     ierr = DMCreateGlobalVector(dm, u);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)*u, "Numerical Solution");CHKERRQ(ierr);
-    ierr = VecSetOptionsPrefix(*u, "num_sol_");CHKERRQ(ierr);
 
     ierr = DMSetNullSpaceConstructor(dm, PRES, CreatePressureNullSpace);CHKERRQ(ierr);
 

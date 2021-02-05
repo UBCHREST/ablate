@@ -5,7 +5,7 @@ parent: Incompressible Flow Formulation
 grand_parent: Flow Formulations
 nav_order: 3
 ---
-Provides the term to evaluate and multiply by the test function/test gradient function at each quadrature location.  The Residual and Jacobians are in terms of
+Provides the term to evaluate and multiply by the test function/test gradient function at each quadrature location.  The density is assumed to be unity for the implementation (i.e. equal to the reference density).  The Residual and Jacobians are in terms of
 
 ### Q Test Function
 
@@ -107,7 +107,7 @@ $$\begin{eqnarray}
 \end{eqnarray}$$
 
 $$
-\therefore \frac{\partial F_{\boldsymbol{v}_i}}{\partial c_{u_c,j}} = \int \boldsymbol{\phi_i} \cdot \left(\rho \psi_j \frac{\partial u_k}{\partial x_c}\hat{e}_k + \rho u_c \nabla \psi_j  \right) +  \nabla^S \boldsymbol{\phi_i} \cdot \frac \mu}{R} \left(\left( \hat{e}_l \frac{\partial \psi_j}{\partial x_l}\hat{e}_c + \hat{e}_c \frac{\partial \psi_j}{\partial x_l}\hat{e}_l \right) - \frac{1}{3} \frac{\partial \psi_j}{\partial x_c} \boldsymbol{I} \right)
+\therefore \frac{\partial F_{\boldsymbol{v}_i}}{\partial c_{u_c,j}} = \int_\Omega \boldsymbol{\phi_i} \cdot \left(\rho \psi_j \frac{\partial u_k}{\partial x_c}\hat{e}_k +  \rho u_c \nabla \psi_j  \right) + \nabla^S \boldsymbol{\phi_i} \cdot \frac{2 \mu}{R} \left( \frac{1}{2}\left( \hat{e}_l \frac{\partial \psi_j}{\partial x_l}\hat{e}_c + \hat{e}_c \frac{\partial \psi_j}{\partial x_l}\hat{e}_l \right) \right)
 $$
 
 $$\begin{eqnarray}

@@ -91,5 +91,5 @@ void MpiTestFixture::CompareOutputFiles() {
 }
 
 std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params) {
-    return os << (params.expectedOutputFile.empty() ? params.arguments : params.expectedOutputFile);
+    return os << (params.testName.empty() ? params.arguments : params.testName);
 }

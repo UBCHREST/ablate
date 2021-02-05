@@ -3,7 +3,7 @@
 #include <petsc.h>
 
 typedef enum {
-    STROUHAL = 0,
+    STROUHAL,
     REYNOLDS,
     FROUDE,
     PECLET,

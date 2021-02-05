@@ -5,6 +5,7 @@
 namespace fs = std::filesystem;
 
 struct MpiTestParameter {
+    std::string testName;
     int nproc;
     std::string expectedOutputFile;
     std::string arguments;

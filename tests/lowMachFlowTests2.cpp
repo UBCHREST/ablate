@@ -4,11 +4,11 @@ We solve the Low Mach flow problem in a rectangular\n\
 domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
+#include "flow/incompressibleFlow.h"
 #include "gtest/gtest.h"
-#include "lowMachFlow.h"
 #include "mesh.h"
-#include "testFixtures/MpiTestFixture.hpp"
 #include "parameters.h"
+#include "testFixtures/MpiTestFixture.hpp"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
