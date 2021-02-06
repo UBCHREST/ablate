@@ -28,6 +28,8 @@ typedef void (*IntegrandTestFunction)(PetscInt dim, PetscInt Nf,PetscInt NfAux,
                                           const PetscScalar *constants,
                                           PetscScalar *f0);
 
+#define SourceFunction(FUNC) FUNC(PetscInt dim,PetscInt Nf,PetscInt NfAux,const PetscInt uOff[],const PetscInt uOff_x[],const PetscScalar u[],const PetscScalar u_t[],const PetscScalar u_x[],const PetscInt aOff[],const PetscInt aOff_x[],const PetscScalar a[],const PetscScalar a_t[],const PetscScalar a_x[], PetscReal t,const PetscReal X[], PetscInt numConstants,const PetscScalar constants[], PetscScalar f0[])
+
 // store the pointer to the provided test function from the solver
 static IntegrandTestFunction f0_v_original;
 static IntegrandTestFunction f0_w_original;
@@ -126,203 +128,153 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     PetscFunctionReturn(0);
 }
 
+// helper functions for generated code
+static PetscReal Power(PetscReal x, PetscInt exp){
+    return PetscPowReal(x, exp);
+}
+static PetscReal Cos(PetscReal x){
+    return PetscCosReal(x);
+}
+static PetscReal Sin(PetscReal x){
+    return PetscSinReal(x);
+}
+
 /*
-  CASE: quadratic
+  CASE: incompressible quadratic
   In 2D we use exact solution:
 
     u = t + x^2 + y^2
     v = t + 2x^2 - 2xy
     p = x + y - 1
     T = t + x + y
-    f = <t (2x + 2y) + 2x^3 + 4x^2y - 2xy^2 -4\nu + 2, t (2x - 2y) + 4xy^2 + 2x^2y - 2y^3 -4\nu + 2>
-    Q = 1 + 2t + 3x^2 - 2xy + y^2
-
   so that
 
     \nabla \cdot u = 2x - 2x = 0
 
-  f = du/dt + u \cdot \nabla u - \nu \Delta u + \nabla p
-    = <1, 1> + <t + x^2 + y^2, t + 2x^2 - 2xy> . <<2x, 4x - 2y>, <2y, -2x>> - \nu <4, 4> + <1, 1>
-    = <t (2x + 2y) + 2x^3 + 4x^2y - 2xy^2, t (2x - 2y) + 2x^2y + 4xy^2 - 2y^3> + <-4 \nu + 2, -4\nu + 2>
-    = <t (2x + 2y) + 2x^3 + 4x^2y - 2xy^2 - 4\nu + 2, t (2x - 2y) + 4xy^2 + 2x^2y - 2y^3 - 4\nu + 2>
-
-  Q = dT/dt + u \cdot \nabla T - \alpha \Delta T
-    = 1 + <t + x^2 + y^2, t + 2x^2 - 2xy> . <1, 1> - \alpha 0
-    = 1 + 2t + 3x^2 - 2xy + y^2
+  see docs/content/formulations/incompressibleFlow/solutions/Incompressible_2D_Quadratic_MMS.nb
 */
-static PetscErrorCode quadratic_u(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
+static PetscErrorCode incompressible_quadratic_u(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *u, void *ctx) {
     u[0] = time + X[0] * X[0] + X[1] * X[1];
     u[1] = time + 2.0 * X[0] * X[0] - 2.0 * X[0] * X[1];
     return 0;
 }
-static PetscErrorCode quadratic_u_t(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
+static PetscErrorCode incompressible_quadratic_u_t(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *u, void *ctx) {
     u[0] = 1.0;
     u[1] = 1.0;
     return 0;
 }
 
-static PetscErrorCode quadratic_p(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *p, void *ctx) {
+static PetscErrorCode incompressible_quadratic_p(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *p, void *ctx) {
     p[0] = X[0] + X[1] - 1.0;
     return 0;
 }
 
-static PetscErrorCode quadratic_T(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
+static PetscErrorCode incompressible_quadratic_T(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *T, void *ctx) {
     T[0] = time + X[0] + X[1];
     return 0;
 }
-static PetscErrorCode quadratic_T_t(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
+static PetscErrorCode incompressible_quadratic_T_t(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *T, void *ctx) {
     T[0] = 1.0;
     return 0;
 }
 
 /* f0_v = du/dt - f */
-static void f0_quadratic_v(PetscInt dim,
-                           PetscInt Nf,
-                           PetscInt NfAux,
-                           const PetscInt uOff[],
-                           const PetscInt uOff_x[],
-                           const PetscScalar u[],
-                           const PetscScalar u_t[],
-                           const PetscScalar u_x[],
-                           const PetscInt aOff[],
-                           const PetscInt aOff_x[],
-                           const PetscScalar a[],
-                           const PetscScalar a_t[],
-                           const PetscScalar a_x[],
-                           PetscReal t,
-                           const PetscReal X[],
-                           PetscInt numConstants,
-                           const PetscScalar constants[],
-                           PetscScalar f0[]) {
+static void SourceFunction(f0_incompressible_quadratic_v){
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-    const PetscReal nu = PetscRealPart(1.0);
+    const PetscReal rho = 1.0;
+    const PetscReal S = constants[STROUHAL];
+    const PetscReal mu = constants[MU];
+    const PetscReal R = constants[REYNOLDS];
+    const PetscReal x = X[0];
+    const PetscReal y = X[1];
 
-    f0[0] -= (t * (2 * X[0] + 2 * X[1]) + 2 * X[0] * X[0] * X[0] + 4 * X[0] * X[0] * X[1] - 2 * X[0] * X[1] * X[1] - 4.0 * nu + 2);
-    f0[1] -= (t * (2 * X[0] - 2 * X[1]) + 4 * X[0] * X[1] * X[1] + 2 * X[0] * X[0] * X[1] - 2 * X[1] * X[1] * X[1] - 4.0 * nu + 2);
+    f0[0] -= 1 - (4.*mu)/R + rho*S + 2*rho*y*(t + 2*Power(x,2) - 2*x*y) + 2*rho*x*(t + Power(x,2) + Power(y,2));
+    f0[1] -= 1 - (4.*mu)/R + rho*S - 2*rho*x*(t + 2*Power(x,2) - 2*x*y) + rho*(4*x - 2*y)*(t + Power(x,2) + Power(y,2));
 }
 
 /* f0_w = dT/dt + u.grad(T) - Q */
-static void f0_quadratic_w(PetscInt dim,
-                           PetscInt Nf,
-                           PetscInt NfAux,
-                           const PetscInt uOff[],
-                           const PetscInt uOff_x[],
-                           const PetscScalar u[],
-                           const PetscScalar u_t[],
-                           const PetscScalar u_x[],
-                           const PetscInt aOff[],
-                           const PetscInt aOff_x[],
-                           const PetscScalar a[],
-                           const PetscScalar a_t[],
-                           const PetscScalar a_x[],
-                           PetscReal t,
-                           const PetscReal X[],
-                           PetscInt numConstants,
-                           const PetscScalar constants[],
-                           PetscScalar f0[]) {
+static void SourceFunction(f0_incompressible_quadratic_w){
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-    f0[0] += -(2 * t + 1 + 3 * X[0] * X[0] - 2 * X[0] * X[1] + X[1] * X[1]);
+
+    const PetscReal rho = 1.0;
+    const PetscReal S = constants[STROUHAL];
+    const PetscReal Cp = constants[CP];
+    const PetscReal x = X[0];
+    const PetscReal y = X[1];
+
+    f0[0] -= Cp*rho*(S + 2*t + 3*Power(x,2) - 2*x*y + Power(y,2));
 }
 
 /*
-  CASE: cubic
+  CASE: incompressible cubic
   In 2D we use exact solution:
 
     u = t + x^3 + y^3
     v = t + 2x^3 - 3x^2y
     p = 3/2 x^2 + 3/2 y^2 - 1
     T = t + 1/2 x^2 + 1/2 y^2
-    f = < t(3x^2 + 3y^2) + 3x^5 + 6x^3y^2 - 6x^2y^3 - \nu(6x + 6y) + 3x + 1,
-          t(3x^2 - 6xy) + 6x^2y^3 + 3x^4y - 6xy^4 - \nu(12x - 6y) + 3y + 1>
-    Q = x^4 + xy^3 + 2x^3y - 3x^2y^2 + xt + yt - 2\alpha + 1
 
   so that
 
     \nabla \cdot u = 3x^2 - 3x^2 = 0
 
-  du/dt + u \cdot \nabla u - \nu \Delta u + \nabla p - f
-  = <1,1> + <t(3x^2 + 3y^2) + 3x^5 + 6x^3y^2 - 6x^2y^3, t(3x^2 - 6xy) + 6x^2y^3 + 3x^4y - 6xy^4> - \nu<6x + 6y, 12x - 6y> + <3x, 3y> - <t(3x^2 + 3y^2) + 3x^5 + 6x^3y^2 - 6x^2y^3 - \nu(6x + 6y) + 3x +
-  1, t(3x^2 - 6xy) + 6x^2y^3 + 3x^4y - 6xy^4 - \nu(12x - 6y) + 3y + 1>  = 0
-
-  dT/dt + u \cdot \nabla T - \alpha \Delta T - Q = 1 + (x^3 + y^3) x + (2x^3 - 3x^2y) y - 2*\alpha - (x^4 + xy^3 + 2x^3y - 3x^2y^2 - 2*\alpha +1)   = 0
+   see docs/content/formulations/incompressibleFlow/solutions/Incompressible_2D_Cubic_MMS.nb.nb
 */
-static PetscErrorCode cubic_u(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
+static PetscErrorCode incompressible_cubic_u(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *u, void *ctx) {
     u[0] = time + X[0] * X[0] * X[0] + X[1] * X[1] * X[1];
     u[1] = time + 2.0 * X[0] * X[0] * X[0] - 3.0 * X[0] * X[0] * X[1];
     return 0;
 }
-static PetscErrorCode cubic_u_t(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
+static PetscErrorCode incompressible_cubic_u_t(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *u, void *ctx) {
     u[0] = 1.0;
     u[1] = 1.0;
     return 0;
 }
 
-static PetscErrorCode cubic_p(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *p, void *ctx) {
+static PetscErrorCode incompressible_cubic_p(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *p, void *ctx) {
     p[0] = 3.0 * X[0] * X[0] / 2.0 + 3.0 * X[1] * X[1] / 2.0 - 1.0;
     return 0;
 }
 
-static PetscErrorCode cubic_T(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
+static PetscErrorCode incompressible_cubic_T(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *T, void *ctx) {
     T[0] = time + X[0] * X[0] / 2.0 + X[1] * X[1] / 2.0;
     return 0;
 }
-static PetscErrorCode cubic_T_t(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
+static PetscErrorCode incompressible_cubic_T_t(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *T, void *ctx) {
     T[0] = 1.0;
     return 0;
 }
 
-static void f0_cubic_v(PetscInt dim,
-                       PetscInt Nf,
-                       PetscInt NfAux,
-                       const PetscInt uOff[],
-                       const PetscInt uOff_x[],
-                       const PetscScalar u[],
-                       const PetscScalar u_t[],
-                       const PetscScalar u_x[],
-                       const PetscInt aOff[],
-                       const PetscInt aOff_x[],
-                       const PetscScalar a[],
-                       const PetscScalar a_t[],
-                       const PetscScalar a_x[],
-                       PetscReal t,
-                       const PetscReal X[],
-                       PetscInt numConstants,
-                       const PetscScalar constants[],
-                       PetscScalar f0[]) {
+static void SourceFunction(f0_incompressible_cubic_v){
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
-    const PetscReal nu = PetscRealPart(1.0);
-    f0[0] -= (t * (3 * X[0] * X[0] + 3 * X[1] * X[1]) + 3 * X[0] * X[0] * X[0] * X[0] * X[0] + 6 * X[0] * X[0] * X[0] * X[1] * X[1] - 6 * X[0] * X[0] * X[1] * X[1] * X[1] -
-              (6 * X[0] + 6 * X[1]) * nu + 3 * X[0] + 1);
-    f0[1] -= (t * (3 * X[0] * X[0] - 6 * X[0] * X[1]) + 3 * X[0] * X[0] * X[0] * X[0] * X[1] + 6 * X[0] * X[0] * X[1] * X[1] * X[1] - 6 * X[0] * X[1] * X[1] * X[1] * X[1] -
-              (12 * X[0] - 6 * X[1]) * nu + 3 * X[1] + 1);
+    const PetscReal rho = 1.0;
+    const PetscReal S = constants[STROUHAL];
+    const PetscReal mu = constants[MU];
+    const PetscReal R = constants[REYNOLDS];
+    const PetscReal x = X[0];
+    const PetscReal y = X[1];
+
+    f0[0] -= rho*S + 3*x + 3*rho*Power(y,2)*(t + 2*Power(x,3) - 3*Power(x,2)*y) + 3*rho*Power(x,2)*(t + Power(x,3) + Power(y,3)) - (12.*mu*x + 1.*mu*(-6*x + 6*y))/R;
+    f0[1] -= rho*S - (1.*mu*(12*x - 6*y))/R + 3*y - 3*rho*Power(x,2)*(t + 2*Power(x,3) - 3*Power(x,2)*y) + rho*(6*Power(x,2) - 6*x*y)*(t + Power(x,3) + Power(y,3));
 }
 
-static void f0_cubic_w(PetscInt dim,
-                       PetscInt Nf,
-                       PetscInt NfAux,
-                       const PetscInt uOff[],
-                       const PetscInt uOff_x[],
-                       const PetscScalar u[],
-                       const PetscScalar u_t[],
-                       const PetscScalar u_x[],
-                       const PetscInt aOff[],
-                       const PetscInt aOff_x[],
-                       const PetscScalar a[],
-                       const PetscScalar a_t[],
-                       const PetscScalar a_x[],
-                       PetscReal t,
-                       const PetscReal X[],
-                       PetscInt numConstants,
-                       const PetscScalar constants[],
-                       PetscScalar f0[]) {
-    const PetscReal alpha = PetscRealPart(constants[1]);
+static void SourceFunction(f0_incompressible_cubic_w){
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-    f0[0] += -(X[0] * X[0] * X[0] * X[0] + 2.0 * X[0] * X[0] * X[0] * X[1] - 3.0 * X[0] * X[0] * X[1] * X[1] + X[0] * X[1] * X[1] * X[1] + X[0] * t + X[1] * t - 2.0 * alpha + 1);
+
+    const PetscReal rho = 1.0;
+    const PetscReal S = constants[STROUHAL];
+    const PetscReal Cp = constants[CP];
+    const PetscReal k = constants[K];
+    const PetscReal P = constants[PECLET];
+    const PetscReal x = X[0];
+    const PetscReal y = X[1];
+
+    f0[0] -= (-2.*k)/P + Cp*rho*(S + 1.*y*(t + 2*Power(x,3) - 3*Power(x,2)*y) + 1.*x*(t + Power(x,3) + Power(y,3)));
 }
 
 /*
-  CASE: cubic-trigonometric
+  CASE: incompressible cubic-trigonometric
   In 2D we use exact solution:
 
     u = beta cos t + x^3 + y^3
@@ -337,90 +289,66 @@ static void f0_cubic_w(PetscInt dim,
 
     \nabla \cdot u = 3x^2 - 3x^2 = 0
 
-  f = du/dt + u \cdot \nabla u - \nu \Delta u + \nabla p
-    = <-sin t, cos t> + <cos t + x^3 + y^3, sin t + 2x^3 - 3x^2y> <<3x^2, 6x^2 - 6xy>, <3y^2, -3x^2>> - \nu <6x + 6y, 12x - 6y> + <3x, 3y>
-    = <-sin t, cos t> + <cos t 3x^2 + 3x^5 + 3x^2y^3 + sin t 3y^2 + 6x^3y^2 - 9x^2y^3, cos t (6x^2 - 6xy) + 6x^5 - 6x^4y + 6x^2y^3 - 6xy^4 + sin t (-3x^2) - 6x^5 + 9x^4y> - \nu <6x + 6y, 12x - 6y> +
-  <3x, 3y> = <cos t (3x^2)       + sin t (3y^2 - 1) + 3x^5 + 6x^3y^2 - 6x^2y^3 - \nu (6x + 6y)  + 3x, cos t (6x^2 - 6xy) - sin t (3x^2)     + 3x^4y + 6x^2y^3 - 6xy^4  - \nu (12x - 6y) + 3y>
+   see docs/content/formulations/incompressibleFlow/solutions/Incompressible_2D_Cubic-Trigonometric_MMS.nb.nb
 
-  Q = dT/dt + u \cdot \nabla T - \alpha \Delta T
-    = -sin t + <cos t + x^3 + y^3, sin t + 2x^3 - 3x^2y> . <x, y> - 2 \alpha
-    = -sin t + cos t (x) + x^4 + xy^3 + sin t (y) + 2x^3y - 3x^2y^2 - 2 \alpha
-    = cos t x + sin t (y - 1) + (x^4 + 2x^3y - 3x^2y^2 + xy^3 - 2 \alpha)
 */
-static PetscErrorCode cubic_trig_u(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
-    u[0] = 100. * PetscCosReal(time) + X[0] * X[0] * X[0] + X[1] * X[1] * X[1];
-    u[1] = 100. * PetscSinReal(time) + 2.0 * X[0] * X[0] * X[0] - 3.0 * X[0] * X[0] * X[1];
+static PetscErrorCode incompressible_cubic_trig_u(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *u, void *ctx) {
+    const PetscReal beta = 100.0;
+    u[0] = beta * Cos(time) + X[0] * X[0] * X[0] + X[1] * X[1] * X[1];
+    u[1] = beta * Sin(time) + 2.0 * X[0] * X[0] * X[0] - 3.0 * X[0] * X[0] * X[1];
     return 0;
 }
-static PetscErrorCode cubic_trig_u_t(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
-    u[0] = -100. * PetscSinReal(time);
-    u[1] = 100. * PetscCosReal(time);
+static PetscErrorCode incompressible_cubic_trig_u_t(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *u, void *ctx) {
+    const PetscReal beta = 100.0;
+    u[0] = -beta * Sin(time);
+    u[1] = beta * Cos(time);
     return 0;
 }
 
-static PetscErrorCode cubic_trig_p(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *p, void *ctx) {
+static PetscErrorCode incompressible_cubic_trig_p(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *p, void *ctx) {
     p[0] = 3.0 * X[0] * X[0] / 2.0 + 3.0 * X[1] * X[1] / 2.0 - 1.0;
     return 0;
 }
 
-static PetscErrorCode cubic_trig_T(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
-    T[0] = 100. * PetscCosReal(time) + X[0] * X[0] / 2.0 + X[1] * X[1] / 2.0;
+static PetscErrorCode incompressible_cubic_trig_T(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *T, void *ctx) {
+    const PetscReal beta = 100.0;
+    T[0] = beta * Cos(time) + X[0] * X[0] / 2.0 + X[1] * X[1] / 2.0;
     return 0;
 }
-static PetscErrorCode cubic_trig_T_t(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
-    T[0] = -100. * PetscSinReal(time);
+static PetscErrorCode incompressible_cubic_trig_T_t(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *T, void *ctx) {
+    const PetscReal beta = 100.0;
+    T[0] = -beta * Sin(time);
     return 0;
 }
 
-static void f0_cubic_trig_v(PetscInt dim,
-                            PetscInt Nf,
-                            PetscInt NfAux,
-                            const PetscInt uOff[],
-                            const PetscInt uOff_x[],
-                            const PetscScalar u[],
-                            const PetscScalar u_t[],
-                            const PetscScalar u_x[],
-                            const PetscInt aOff[],
-                            const PetscInt aOff_x[],
-                            const PetscScalar a[],
-                            const PetscScalar a_t[],
-                            const PetscScalar a_x[],
-                            PetscReal t,
-                            const PetscReal X[],
-                            PetscInt numConstants,
-                            const PetscScalar constants[],
-                            PetscScalar f0[]) {
+static void SourceFunction(f0_incompressible_cubic_trig_v){
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
-    const PetscReal nu = PetscRealPart(1.0);
-    f0[0] -= 100. * PetscCosReal(t) * (3 * X[0] * X[0]) + 100. * PetscSinReal(t) * (3 * X[1] * X[1] - 1.) + 3 * X[0] * X[0] * X[0] * X[0] * X[0] + 6 * X[0] * X[0] * X[0] * X[1] * X[1] -
-             6 * X[0] * X[0] * X[1] * X[1] * X[1] - (6 * X[0] + 6 * X[1]) * nu + 3 * X[0];
-    f0[1] -= 100. * PetscCosReal(t) * (6 * X[0] * X[0] - 6 * X[0] * X[1]) - 100. * PetscSinReal(t) * (3 * X[0] * X[0]) + 3 * X[0] * X[0] * X[0] * X[0] * X[1] + 6 * X[0] * X[0] * X[1] * X[1] * X[1] -
-             6 * X[0] * X[1] * X[1] * X[1] * X[1] - (12 * X[0] - 6 * X[1]) * nu + 3 * X[1];
+    const PetscReal beta = 100.0;
+    const PetscReal rho = 1.0;
+    const PetscReal S = constants[STROUHAL];
+    const PetscReal mu = constants[MU];
+    const PetscReal R = constants[REYNOLDS];
+    const PetscReal x = X[0];
+    const PetscReal y = X[1];
+
+    f0[0] -= 3*x - (12.*mu*x + 1.*mu*(-6*x + 6*y))/R + 3*rho*Power(x,2)*(Power(x,3) + Power(y,3) + beta*Cos(t)) - beta*rho*S*Sin(t) + 3*rho*Power(y,2)*(2*Power(x,3) - 3*Power(x,2)*y + beta*Sin(t));
+    f0[1] -= (-1.*mu*(12*x - 6*y))/R + 3*y + beta*rho*S*Cos(t) + rho*(6*Power(x,2) - 6*x*y)*(Power(x,3) + Power(y,3) + beta*Cos(t)) - 3*rho*Power(x,2)*(2*Power(x,3) - 3*Power(x,2)*y + beta*Sin(t));
 }
 
-static void f0_cubic_trig_w(PetscInt dim,
-                            PetscInt Nf,
-                            PetscInt NfAux,
-                            const PetscInt uOff[],
-                            const PetscInt uOff_x[],
-                            const PetscScalar u[],
-                            const PetscScalar u_t[],
-                            const PetscScalar u_x[],
-                            const PetscInt aOff[],
-                            const PetscInt aOff_x[],
-                            const PetscScalar a[],
-                            const PetscScalar a_t[],
-                            const PetscScalar a_x[],
-                            PetscReal t,
-                            const PetscReal X[],
-                            PetscInt numConstants,
-                            const PetscScalar constants[],
-                            PetscScalar f0[]) {
-    const PetscReal alpha = PetscRealPart(constants[1]);
+static void SourceFunction(f0_incompressible_cubic_trig_w){
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-    f0[0] += -(100. * PetscCosReal(t) * X[0] + 100. * PetscSinReal(t) * (X[1] - 1.) + X[0] * X[0] * X[0] * X[0] + 2.0 * X[0] * X[0] * X[0] * X[1] - 3.0 * X[0] * X[0] * X[1] * X[1] +
-               X[0] * X[1] * X[1] * X[1] - 2.0 * alpha);
+
+    const PetscReal beta = 100.0;
+    const PetscReal rho = 1.0;
+    const PetscReal S = constants[STROUHAL];
+    const PetscReal Cp = constants[CP];
+    const PetscReal k = constants[K];
+    const PetscReal P = constants[PECLET];
+    const PetscReal x = X[0];
+    const PetscReal y = X[1];
+
+    f0[0] -= (-2*k)/P + Cp*rho*(x*(Power(x,3) + Power(y,3) + beta*Cos(t)) - beta*S*Sin(t) + y*(2*Power(x,3) - 3*Power(x,2)*y + beta*Sin(t)));
 }
 
 TEST_P(FlowMMS, MachMMSTests) {
@@ -567,92 +495,128 @@ INSTANTIATE_TEST_SUITE_P(
     FlowMMS,
     testing::Values(
         (FlowMMSParameters){
-            .mpiTestParameter = {
-                .testName = "incompressible 2d quadratic tri_p2_p1_p1",
+            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1",
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+            .flowType = FLOWINCOMPRESSIBLE,
+            .uExact = incompressible_quadratic_u,
+            .pExact = incompressible_quadratic_p,
+            .TExact = incompressible_quadratic_T,
+            .u_tExact = incompressible_quadratic_u_t,
+            .T_tExact = incompressible_quadratic_T_t,
+            .f0_v = f0_incompressible_quadratic_v,
+            .f0_w = f0_incompressible_quadratic_w},
+        (FlowMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
+                                 .nproc = 4,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_nproc4",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+            .flowType = FLOWINCOMPRESSIBLE,
+            .uExact = incompressible_quadratic_u,
+            .pExact = incompressible_quadratic_p,
+            .TExact = incompressible_quadratic_T,
+            .u_tExact = incompressible_quadratic_u_t,
+            .T_tExact = incompressible_quadratic_T_t,
+            .f0_v = f0_incompressible_quadratic_v,
+            .f0_w = f0_incompressible_quadratic_w},
+        (FlowMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d cubic trig tri_p2_p1_p1_tconv",
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_tconv",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-ts_max_steps 4 -ts_dt 0.1 -ts_convergence_estimate -convest_num_refine 1 "
+                                              "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+            .flowType = FLOWINCOMPRESSIBLE,
+            .uExact = incompressible_cubic_trig_u,
+            .pExact = incompressible_cubic_trig_p,
+            .TExact = incompressible_cubic_trig_T,
+            .u_tExact = incompressible_cubic_trig_u_t,
+            .T_tExact = incompressible_cubic_trig_T_t,
+            .f0_v = f0_incompressible_cubic_trig_v,
+            .f0_w = f0_incompressible_cubic_trig_w},
+        (FlowMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d cubic p2_p1_p1_sconv",
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_sconv",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-ts_max_steps 1 -ts_dt 1e-4 -ts_convergence_estimate -ts_convergence_temporal 0 -convest_num_refine 1 "
+                                              "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1e-16 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+            .flowType = FLOWINCOMPRESSIBLE,
+            .uExact = incompressible_cubic_u,
+            .pExact = incompressible_cubic_p,
+            .TExact = incompressible_cubic_T,
+            .u_tExact = incompressible_cubic_u_t,
+            .T_tExact = incompressible_cubic_T_t,
+            .f0_v = f0_incompressible_cubic_v,
+            .f0_w = f0_incompressible_cubic_w},
+        (FlowMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+            .flowType = FLOWINCOMPRESSIBLE,
+            .uExact = incompressible_cubic_u,
+            .pExact = incompressible_cubic_p,
+            .TExact = incompressible_cubic_T,
+            .u_tExact = incompressible_cubic_u_t,
+            .T_tExact = incompressible_cubic_T_t,
+            .f0_v = f0_incompressible_cubic_v,
+            .f0_w = f0_incompressible_cubic_w},
+        (FlowMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 with real coefficients",
                 .nproc = 1,
-                .expectedOutputFile = "outputs/2d_tri_p2_p1_p1",
+                .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_real_coefficients",
                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                              "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                             "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
+                             "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
             .flowType = FLOWINCOMPRESSIBLE,
-            .uExact = quadratic_u,
-            .pExact = quadratic_p,
-            .TExact = quadratic_T,
-            .u_tExact = quadratic_u_t,
-            .T_tExact = quadratic_T_t,
-            .f0_v = f0_quadratic_v,
-            .f0_w = f0_quadratic_w},
+            .uExact = incompressible_quadratic_u,
+            .pExact = incompressible_quadratic_p,
+            .TExact = incompressible_quadratic_T,
+            .u_tExact = incompressible_quadratic_u_t,
+            .T_tExact = incompressible_quadratic_T_t,
+            .f0_v = f0_incompressible_quadratic_v,
+            .f0_w = f0_incompressible_quadratic_w},
         (FlowMMSParameters){
-            .mpiTestParameter = {
-                .testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
-                .nproc = 4,
-                .expectedOutputFile = "outputs/2d_tri_p2_p1_p1_nproc4",
-                .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
-                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .flowType = FLOWINCOMPRESSIBLE,
-            .uExact = quadratic_u,
-            .pExact = quadratic_p,
-            .TExact = quadratic_T,
-            .u_tExact = quadratic_u_t,
-            .T_tExact = quadratic_T_t,
-            .f0_v = f0_quadratic_v,
-            .f0_w = f0_quadratic_w},
-        (FlowMMSParameters){
-            .mpiTestParameter = {
-                .testName = "incompressible 2d cubic trig tri_p2_p1_p1_tconv 4 proc",
+            .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2 with real coefficients",
                 .nproc = 1,
-                .expectedOutputFile = "outputs/2d_tri_p2_p1_p1_tconv",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-ts_max_steps 4 -ts_dt 0.1 -ts_convergence_estimate -convest_num_refine 1 "
-                             "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .flowType = FLOWINCOMPRESSIBLE,
-            .uExact = cubic_trig_u,
-            .pExact = cubic_trig_p,
-            .TExact = cubic_trig_T,
-            .u_tExact = cubic_trig_u_t,
-            .T_tExact = cubic_trig_T_t,
-            .f0_v = f0_cubic_trig_v,
-            .f0_w = f0_cubic_trig_w},
-        (FlowMMSParameters){
-            .mpiTestParameter = {
-                .testName = "incompressible 2d cubic p2_p1_p1_sconv",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/2d_tri_p2_p1_p1_sconv",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-ts_max_steps 1 -ts_dt 1e-4 -ts_convergence_estimate -ts_convergence_temporal 0 -convest_num_refine 1 "
-                             "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1e-16 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .flowType = FLOWINCOMPRESSIBLE,
-            .uExact = cubic_u,
-            .pExact = cubic_p,
-            .TExact = cubic_T,
-            .u_tExact = cubic_u_t,
-            .T_tExact = cubic_T_t,
-            .f0_v = f0_cubic_v,
-            .f0_w = f0_cubic_w},
-        (FlowMMSParameters){
-            .mpiTestParameter = {
-                .testName = "incompressible 2d cubic tri_p3_p2_p2",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/2d_tri_p3_p2_p2",
+                .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2_real_coefficients",
                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
@@ -660,14 +624,16 @@ INSTANTIATE_TEST_SUITE_P(
                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                              "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                             "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
+                             "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
             .flowType = FLOWINCOMPRESSIBLE,
-            .uExact = cubic_u,
-            .pExact = cubic_p,
-            .TExact = cubic_T,
-            .u_tExact = cubic_u_t,
-            .T_tExact = cubic_T_t,
-            .f0_v = f0_cubic_v,
-            .f0_w = f0_cubic_w}));
+            .uExact = incompressible_cubic_u,
+            .pExact = incompressible_cubic_p,
+            .TExact = incompressible_cubic_T,
+            .u_tExact = incompressible_cubic_u_t,
+            .T_tExact = incompressible_cubic_T_t,
+            .f0_v = f0_incompressible_cubic_v,
+            .f0_w = f0_incompressible_cubic_w}));
 
 std::ostream &operator<<(std::ostream &os, const FlowMMSParameters &params) { return os << params.mpiTestParameter; }

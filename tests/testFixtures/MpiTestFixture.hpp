@@ -14,6 +14,7 @@ struct MpiTestParameter {
 class MpiTestFixture : public ::testing::Test {
    private:
     static bool inMpiTestRun;
+    static bool keepOutputFile;
     static std::string mpiCommand;
     static std::string ParseCommandLineArgument(int* argc, char*** argv, const std::string flag);
     MpiTestParameter mpiTestParameter;
@@ -23,6 +24,7 @@ class MpiTestFixture : public ::testing::Test {
     static char*** argv;
     static const std::string InTestRunFlag;
     static const std::string Test_Mpi_Command_Name;
+    static const std::string Keep_Output_File;
 
     void SetUp() override;
 

@@ -7,8 +7,11 @@ int* MpiTestFixture::argc;
 char*** MpiTestFixture::argv;
 const std::string MpiTestFixture::InTestRunFlag = "--inmpitestrun=true";
 const std::string MpiTestFixture::Test_Mpi_Command_Name = "TEST_MPI_COMMAND";
+const std::string MpiTestFixture::Keep_Output_File = "--keepOutputFile=true";
 
 bool MpiTestFixture::inMpiTestRun;
+bool MpiTestFixture::keepOutputFile;
+
 std::string MpiTestFixture::mpiCommand = "mpirun";
 
 std::string MpiTestFixture::ParseCommandLineArgument(int* argc, char*** argv, const std::string flag) {
@@ -38,6 +41,7 @@ bool MpiTestFixture::InitializeTestingEnvironment(int* argc, char*** argv) {
     MpiTestFixture::argv = argv;
 
     MpiTestFixture::inMpiTestRun = !MpiTestFixture::ParseCommandLineArgument(MpiTestFixture::argc, MpiTestFixture::argv, MpiTestFixture::InTestRunFlag).empty();
+    MpiTestFixture::keepOutputFile = !MpiTestFixture::ParseCommandLineArgument(MpiTestFixture::argc, MpiTestFixture::argv, MpiTestFixture::Keep_Output_File).empty();
 
     char* commandName = std::getenv(MpiTestFixture::Test_Mpi_Command_Name.c_str());
     if (commandName != NULL) {
@@ -51,7 +55,11 @@ void MpiTestFixture::SetUp() {}
 
 void MpiTestFixture::TearDown() {
     if (!inMpiTestRun) {
-        fs::remove_all(OutputFile());
+        if (!MpiTestFixture::keepOutputFile) {
+            fs::remove_all(OutputFile());
+        }else{
+            std::cout << "Generated output file: " << OutputFile() << std::endl;
+        }
     }
 }
 

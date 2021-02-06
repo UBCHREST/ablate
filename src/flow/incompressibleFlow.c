@@ -91,8 +91,9 @@ static void wIntegrandTestFunction(PetscInt dim,
     PetscInt d;
 
     f0[0] = constants[CP]*constants[STROUHAL]*u_t[uOff[TEMP]];
+
     for (d = 0; d < dim; ++d) {
-        f0[0] +=  constants[STROUHAL]* u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];// rho is assumed unity
+        f0[0] +=  constants[CP]* u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];// rho is assumed unity
     }
 }
 
