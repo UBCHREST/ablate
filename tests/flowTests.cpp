@@ -4,35 +4,56 @@ We solve the Low Mach flow problem in a rectangular\n\
 domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
-#include "gtest/gtest.h"
 #include "flow.h"
+#include "gtest/gtest.h"
 #include "mesh.h"
 #include "testFixtures/MpiTestFixture.hpp"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
-typedef void (*IntegrandTestFunction)(PetscInt dim, PetscInt Nf,PetscInt NfAux,
-                                          const PetscInt *uOff,
-                                          const PetscInt *uOff_x,
-                                          const PetscScalar *u,
-                                          const PetscScalar *u_t,
-                                          const PetscScalar *u_x,
-                                          const PetscInt *aOff,
-                                          const PetscInt *aOff_x,
-                                          const PetscScalar *a,
-                                          const PetscScalar *a_t,
-                                          const PetscScalar *a_x,
-                                   PetscReal t,
-                                          const PetscReal *X,
-                                   PetscInt numConstants,
-                                          const PetscScalar *constants,
-                                          PetscScalar *f0);
+typedef void (*IntegrandTestFunction)(PetscInt dim,
+                                      PetscInt Nf,
+                                      PetscInt NfAux,
+                                      const PetscInt *uOff,
+                                      const PetscInt *uOff_x,
+                                      const PetscScalar *u,
+                                      const PetscScalar *u_t,
+                                      const PetscScalar *u_x,
+                                      const PetscInt *aOff,
+                                      const PetscInt *aOff_x,
+                                      const PetscScalar *a,
+                                      const PetscScalar *a_t,
+                                      const PetscScalar *a_x,
+                                      PetscReal t,
+                                      const PetscReal *X,
+                                      PetscInt numConstants,
+                                      const PetscScalar *constants,
+                                      PetscScalar *f0);
 
-#define SourceFunction(FUNC) FUNC(PetscInt dim,PetscInt Nf,PetscInt NfAux,const PetscInt uOff[],const PetscInt uOff_x[],const PetscScalar u[],const PetscScalar u_t[],const PetscScalar u_x[],const PetscInt aOff[],const PetscInt aOff_x[],const PetscScalar a[],const PetscScalar a_t[],const PetscScalar a_x[], PetscReal t,const PetscReal X[], PetscInt numConstants,const PetscScalar constants[], PetscScalar f0[])
+#define SourceFunction(FUNC)            \
+    FUNC(PetscInt dim,                  \
+         PetscInt Nf,                   \
+         PetscInt NfAux,                \
+         const PetscInt uOff[],         \
+         const PetscInt uOff_x[],       \
+         const PetscScalar u[],         \
+         const PetscScalar u_t[],       \
+         const PetscScalar u_x[],       \
+         const PetscInt aOff[],         \
+         const PetscInt aOff_x[],       \
+         const PetscScalar a[],         \
+         const PetscScalar a_t[],       \
+         const PetscScalar a_x[],       \
+         PetscReal t,                   \
+         const PetscReal X[],           \
+         PetscInt numConstants,         \
+         const PetscScalar constants[], \
+         PetscScalar f0[])
 
 // store the pointer to the provided test function from the solver
 static IntegrandTestFunction f0_v_original;
 static IntegrandTestFunction f0_w_original;
+static IntegrandTestFunction f0_q_original;
 
 struct FlowMMSParameters {
     MpiTestParameter mpiTestParameter;
@@ -44,12 +65,12 @@ struct FlowMMSParameters {
     ExactFunction T_tExact;
     IntegrandTestFunction f0_v;
     IntegrandTestFunction f0_w;
+    IntegrandTestFunction f0_q;
 };
 
 class FlowMMS : public MpiTestFixture, public ::testing::WithParamInterface<FlowMMSParameters> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
-
 };
 
 PETSC_EXTERN PetscErrorCode removeDiscretePressureNullspace(DM dm, Vec u);
@@ -60,19 +81,26 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
-    ierr = TSGetTime(ts, &t);CHKERRQ(ierr);
+    ierr = TSGetDM(ts, &dm);
+    CHKERRQ(ierr);
+    ierr = TSGetTime(ts, &t);
+    CHKERRQ(ierr);
 
     // This function Tags the u vector as the exact solution.  We need to copy the values to prevent this.
     Vec e;
-    ierr = VecDuplicate(u, &e); CHKERRQ(ierr);
-    ierr = DMComputeExactSolution(dm, t, e, NULL); CHKERRQ(ierr);
-    ierr = VecCopy(e, u); CHKERRQ(ierr);
-    ierr = VecDestroy(&e); CHKERRQ(ierr);
+    ierr = VecDuplicate(u, &e);
+    CHKERRQ(ierr);
+    ierr = DMComputeExactSolution(dm, t, e, NULL);
+    CHKERRQ(ierr);
+    ierr = VecCopy(e, u);
+    CHKERRQ(ierr);
+    ierr = VecDestroy(&e);
+    CHKERRQ(ierr);
 
     // get the flow to apply the completeFlowInitialization method
     Flow flow;
-    ierr = DMGetApplicationContext(dm,(void**)&flow); CHKERRQ(ierr);
+    ierr = DMGetApplicationContext(dm, (void **)&flow);
+    CHKERRQ(ierr);
     FlowInitialization(flow, dm, u);
 
     PetscFunctionReturn(0);
@@ -129,15 +157,9 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
 }
 
 // helper functions for generated code
-static PetscReal Power(PetscReal x, PetscInt exp){
-    return PetscPowReal(x, exp);
-}
-static PetscReal Cos(PetscReal x){
-    return PetscCosReal(x);
-}
-static PetscReal Sin(PetscReal x){
-    return PetscSinReal(x);
-}
+static PetscReal Power(PetscReal x, PetscInt exp) { return PetscPowReal(x, exp); }
+static PetscReal Cos(PetscReal x) { return PetscCosReal(x); }
+static PetscReal Sin(PetscReal x) { return PetscSinReal(x); }
 
 /*
   CASE: incompressible quadratic
@@ -179,7 +201,7 @@ static PetscErrorCode incompressible_quadratic_T_t(PetscInt Dim, PetscReal time,
 }
 
 /* f0_v = du/dt - f */
-static void SourceFunction(f0_incompressible_quadratic_v){
+static void SourceFunction(f0_incompressible_quadratic_v) {
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
     const PetscReal rho = 1.0;
     const PetscReal S = constants[STROUHAL];
@@ -188,12 +210,12 @@ static void SourceFunction(f0_incompressible_quadratic_v){
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= 1 - (4.*mu)/R + rho*S + 2*rho*y*(t + 2*Power(x,2) - 2*x*y) + 2*rho*x*(t + Power(x,2) + Power(y,2));
-    f0[1] -= 1 - (4.*mu)/R + rho*S - 2*rho*x*(t + 2*Power(x,2) - 2*x*y) + rho*(4*x - 2*y)*(t + Power(x,2) + Power(y,2));
+    f0[0] -= 1 - (4. * mu) / R + rho * S + 2 * rho * y * (t + 2 * Power(x, 2) - 2 * x * y) + 2 * rho * x * (t + Power(x, 2) + Power(y, 2));
+    f0[1] -= 1 - (4. * mu) / R + rho * S - 2 * rho * x * (t + 2 * Power(x, 2) - 2 * x * y) + rho * (4 * x - 2 * y) * (t + Power(x, 2) + Power(y, 2));
 }
 
 /* f0_w = dT/dt + u.grad(T) - Q */
-static void SourceFunction(f0_incompressible_quadratic_w){
+static void SourceFunction(f0_incompressible_quadratic_w) {
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
     const PetscReal rho = 1.0;
@@ -202,7 +224,7 @@ static void SourceFunction(f0_incompressible_quadratic_w){
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= Cp*rho*(S + 2*t + 3*Power(x,2) - 2*x*y + Power(y,2));
+    f0[0] -= Cp * rho * (S + 2 * t + 3 * Power(x, 2) - 2 * x * y + Power(y, 2));
 }
 
 /*
@@ -245,7 +267,7 @@ static PetscErrorCode incompressible_cubic_T_t(PetscInt Dim, PetscReal time, con
     return 0;
 }
 
-static void SourceFunction(f0_incompressible_cubic_v){
+static void SourceFunction(f0_incompressible_cubic_v) {
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
     const PetscReal rho = 1.0;
@@ -255,11 +277,13 @@ static void SourceFunction(f0_incompressible_cubic_v){
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= rho*S + 3*x + 3*rho*Power(y,2)*(t + 2*Power(x,3) - 3*Power(x,2)*y) + 3*rho*Power(x,2)*(t + Power(x,3) + Power(y,3)) - (12.*mu*x + 1.*mu*(-6*x + 6*y))/R;
-    f0[1] -= rho*S - (1.*mu*(12*x - 6*y))/R + 3*y - 3*rho*Power(x,2)*(t + 2*Power(x,3) - 3*Power(x,2)*y) + rho*(6*Power(x,2) - 6*x*y)*(t + Power(x,3) + Power(y,3));
+    f0[0] -= rho * S + 3 * x + 3 * rho * Power(y, 2) * (t + 2 * Power(x, 3) - 3 * Power(x, 2) * y) + 3 * rho * Power(x, 2) * (t + Power(x, 3) + Power(y, 3)) -
+             (12. * mu * x + 1. * mu * (-6 * x + 6 * y)) / R;
+    f0[1] -= rho * S - (1. * mu * (12 * x - 6 * y)) / R + 3 * y - 3 * rho * Power(x, 2) * (t + 2 * Power(x, 3) - 3 * Power(x, 2) * y) +
+             rho * (6 * Power(x, 2) - 6 * x * y) * (t + Power(x, 3) + Power(y, 3));
 }
 
-static void SourceFunction(f0_incompressible_cubic_w){
+static void SourceFunction(f0_incompressible_cubic_w) {
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
     const PetscReal rho = 1.0;
@@ -270,7 +294,7 @@ static void SourceFunction(f0_incompressible_cubic_w){
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= (-2.*k)/P + Cp*rho*(S + 1.*y*(t + 2*Power(x,3) - 3*Power(x,2)*y) + 1.*x*(t + Power(x,3) + Power(y,3)));
+    f0[0] -= (-2. * k) / P + Cp * rho * (S + 1. * y * (t + 2 * Power(x, 3) - 3 * Power(x, 2) * y) + 1. * x * (t + Power(x, 3) + Power(y, 3)));
 }
 
 /*
@@ -321,7 +345,7 @@ static PetscErrorCode incompressible_cubic_trig_T_t(PetscInt Dim, PetscReal time
     return 0;
 }
 
-static void SourceFunction(f0_incompressible_cubic_trig_v){
+static void SourceFunction(f0_incompressible_cubic_trig_v) {
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
     const PetscReal beta = 100.0;
@@ -332,11 +356,13 @@ static void SourceFunction(f0_incompressible_cubic_trig_v){
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= 3*x - (12.*mu*x + 1.*mu*(-6*x + 6*y))/R + 3*rho*Power(x,2)*(Power(x,3) + Power(y,3) + beta*Cos(t)) - beta*rho*S*Sin(t) + 3*rho*Power(y,2)*(2*Power(x,3) - 3*Power(x,2)*y + beta*Sin(t));
-    f0[1] -= (-1.*mu*(12*x - 6*y))/R + 3*y + beta*rho*S*Cos(t) + rho*(6*Power(x,2) - 6*x*y)*(Power(x,3) + Power(y,3) + beta*Cos(t)) - 3*rho*Power(x,2)*(2*Power(x,3) - 3*Power(x,2)*y + beta*Sin(t));
+    f0[0] -= 3 * x - (12. * mu * x + 1. * mu * (-6 * x + 6 * y)) / R + 3 * rho * Power(x, 2) * (Power(x, 3) + Power(y, 3) + beta * Cos(t)) - beta * rho * S * Sin(t) +
+             3 * rho * Power(y, 2) * (2 * Power(x, 3) - 3 * Power(x, 2) * y + beta * Sin(t));
+    f0[1] -= (-1. * mu * (12 * x - 6 * y)) / R + 3 * y + beta * rho * S * Cos(t) + rho * (6 * Power(x, 2) - 6 * x * y) * (Power(x, 3) + Power(y, 3) + beta * Cos(t)) -
+             3 * rho * Power(x, 2) * (2 * Power(x, 3) - 3 * Power(x, 2) * y + beta * Sin(t));
 }
 
-static void SourceFunction(f0_incompressible_cubic_trig_w){
+static void SourceFunction(f0_incompressible_cubic_trig_w) {
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
     const PetscReal beta = 100.0;
@@ -348,12 +374,98 @@ static void SourceFunction(f0_incompressible_cubic_trig_w){
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= (-2*k)/P + Cp*rho*(x*(Power(x,3) + Power(y,3) + beta*Cos(t)) - beta*S*Sin(t) + y*(2*Power(x,3) - 3*Power(x,2)*y + beta*Sin(t)));
+    f0[0] -= (-2 * k) / P + Cp * rho * (x * (Power(x, 3) + Power(y, 3) + beta * Cos(t)) - beta * S * Sin(t) + y * (2 * Power(x, 3) - 3 * Power(x, 2) * y + beta * Sin(t)));
+}
+
+/*
+  CASE: low mach quadratic
+  In 2D we use exact solution:
+
+    u = t + x^2 + y^2
+    v = t + 2x^2 + 2xy
+    p = x + y - 1
+    T = t + x + y
+    z = {0, 1}
+
+  see docs/content/formulations/lowMachFlow/solutions/LowMach_2D_Quadratic_MMS.nb.nb
+
+*/
+static PetscErrorCode lowMach_quadratic_u(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
+    // u = {t + x^2 + y^2, t + 2*x^2 + 2*x*y}
+    u[0] = time + X[0] * X[0] + X[1] * X[1];
+    u[1] = time + 2.0 * X[0] * X[0] + 2.0 * X[0] * X[1];
+    return 0;
+}
+static PetscErrorCode lowMach_quadratic_u_t(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
+    u[0] = 1.0;
+    u[1] = 1.0;
+    return 0;
+}
+
+static PetscErrorCode lowMach_quadratic_p(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *p, void *ctx) {
+    // p = x + y - 1
+    p[0] = X[0] + X[1] - 1.0;
+    return 0;
+}
+
+static PetscErrorCode lowMach_quadratic_T(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
+    // T = t + x + y + 1
+    T[0] = time + X[0] + X[1] + 1;
+    return 0;
+}
+static PetscErrorCode lowMach_quadratic_T_t(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
+    T[0] = 1.0;
+    return 0;
+}
+
+static void SourceFunction(f0_lowMach_quadratic_q) {
+    f0_q_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
+    const PetscReal S = constants[STROUHAL];
+    const PetscReal Pth = constants[PTH];
+    const PetscReal x = X[0];
+    const PetscReal y = X[1];
+
+    f0[0] -= -((Pth * S) / Power(1 + t + x + y, 2)) + (4 * Pth * x) / (1 + t + x + y) - (Pth * (t + 2 * Power(x, 2) + 2 * x * y)) / Power(1 + t + x + y, 2) -
+             (Pth * (t + Power(x, 2) + Power(y, 2))) / Power(1 + t + x + y, 2);
+}
+
+static void SourceFunction(f0_lowMach_quadratic_v) {
+    f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
+
+    const PetscReal S = constants[STROUHAL];
+    const PetscReal Pth = constants[PTH];
+    const PetscReal mu = constants[MU];
+    const PetscReal R = constants[REYNOLDS];
+    const PetscReal F = constants[FROUDE];
+
+    const PetscReal x = X[0];
+    const PetscReal y = X[1];
+
+    f0[0] -= 1 - (5.333333333333334 * mu) / R + (Pth * S) / (1 + t + x + y) + (2 * Pth * y * (t + 2 * Power(x, 2) + 2 * x * y)) / (1 + t + x + y) +
+             (2 * Pth * x * (t + Power(x, 2) + Power(y, 2))) / (1 + t + x + y);
+    f0[1] -= 1 - (4. * mu) / R + Pth / (Power(F, 2) * (1 + t + x + y)) + (Pth * S) / (1 + t + x + y) + (2 * Pth * x * (t + 2 * Power(x, 2) + 2 * x * y)) / (1 + t + x + y) +
+             (Pth * (4 * x + 2 * y) * (t + Power(x, 2) + Power(y, 2))) / (1 + t + x + y);
+}
+
+/* f0_w = dT/dt + u.grad(T) - Q */
+static void SourceFunction(f0_lowMach_quadratic_w) {
+    f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
+
+    const PetscReal S = constants[STROUHAL];
+    const PetscReal Pth = constants[PTH];
+    const PetscReal Cp = constants[CP];
+    const PetscReal H = constants[HEATRELEASE];
+
+    const PetscReal x = X[0];
+    const PetscReal y = X[1];
+
+    f0[0] -= (Cp * Pth * (S + 2 * t + 3 * Power(x, 2) + 2 * x * y + Power(y, 2))) / (1 + t + x + y);
 }
 
 TEST_P(FlowMMS, MachMMSTests) {
-    StartWithMPI DM dm;         /* problem definition */
-        TS ts;                      /* timestepper */
+    StartWithMPI
+        DM dm;     /* problem definition */
+        TS ts;     /* timestepper */
         Flow flow; /* user-defined work context */
         PetscReal t;
         PetscErrorCode ierr;
@@ -375,9 +487,8 @@ TEST_P(FlowMMS, MachMMSTests) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // create a flow
-        ierr = FlowCreate(&flow,testingParam.flowType, dm);
+        ierr = FlowCreate(&flow, testingParam.flowType, dm);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
 
         // setup problem
         ierr = FlowSetupDiscretization(flow);
@@ -393,14 +504,24 @@ TEST_P(FlowMMS, MachMMSTests) {
 
             // V, W Test Function
             IntegrandTestFunction tempFunctionPointer;
-            ierr = PetscDSGetResidual(prob, V, &f0_v_original, &tempFunctionPointer);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetResidual(prob, V, testingParam.f0_v, tempFunctionPointer);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSGetResidual(prob, W, &f0_w_original, &tempFunctionPointer);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetResidual(prob, W, testingParam.f0_w, tempFunctionPointer);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            if (testingParam.f0_v) {
+                ierr = PetscDSGetResidual(prob, V, &f0_v_original, &tempFunctionPointer);
+                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                ierr = PetscDSSetResidual(prob, V, testingParam.f0_v, tempFunctionPointer);
+                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            }
+            if (testingParam.f0_w) {
+                ierr = PetscDSGetResidual(prob, W, &f0_w_original, &tempFunctionPointer);
+                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                ierr = PetscDSSetResidual(prob, W, testingParam.f0_w, tempFunctionPointer);
+                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            }
+            if (testingParam.f0_q) {
+                ierr = PetscDSGetResidual(prob, Q, &f0_q_original, &tempFunctionPointer);
+                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                ierr = PetscDSSetResidual(prob, Q, testingParam.f0_q, tempFunctionPointer);
+                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            }
 
             FlowParameters *parameters;
             ierr = PetscBagGetData(flow->parameters, (void **)&parameters);
@@ -409,26 +530,31 @@ TEST_P(FlowMMS, MachMMSTests) {
             /* Setup Boundary Conditions */
             PetscInt id;
             id = 3;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameters);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameters);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameters);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameters);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 2;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameters);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameters);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameters);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameters);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 3;
             ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameters);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameters);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameters);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 2;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameters);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameters);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
             ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameters);
@@ -594,17 +720,17 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_cubic_w},
         (FlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 with real coefficients",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_real_coefficients",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                             "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
-                             "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_real_coefficients",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                              "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
+                                              "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
             .flowType = FLOWINCOMPRESSIBLE,
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -615,18 +741,18 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_quadratic_w},
         (FlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2 with real coefficients",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2_real_coefficients",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                             "-snes_convergence_test correct_pressure "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                             "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
-                             "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2_real_coefficients",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                              "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
+                                              "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
             .flowType = FLOWINCOMPRESSIBLE,
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
@@ -634,6 +760,48 @@ INSTANTIATE_TEST_SUITE_P(
             .u_tExact = incompressible_cubic_u_t,
             .T_tExact = incompressible_cubic_T_t,
             .f0_v = f0_incompressible_cubic_v,
-            .f0_w = f0_incompressible_cubic_w}));
+            .f0_w = f0_incompressible_cubic_w},
+        (FlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2",
+                                                 .nproc = 1,
+                                                 .expectedOutputFile = "outputs/lowMach_2d_tri_p3_p2_p2",
+                                                 .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
+                                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
+                                                              "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                              "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                              "-dmts_check -1 -snes_linesearch_type basic "
+                                                              "-gravityDirection 1"},
+                            .flowType = FLOWLOWMACH,
+                            .uExact = lowMach_quadratic_u,
+                            .pExact = lowMach_quadratic_p,
+                            .TExact = lowMach_quadratic_T,
+                            .u_tExact = lowMach_quadratic_u_t,
+                            .T_tExact = lowMach_quadratic_T_t,
+                            .f0_v = f0_lowMach_quadratic_v,
+                            .f0_w = f0_lowMach_quadratic_w,
+                            .f0_q = f0_lowMach_quadratic_q},
+        (FlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2  with real coefficients",
+                                                 .nproc = 1,
+                                                 .expectedOutputFile = "outputs/lowMach_2d_tri_p3_p2_p2_real_coefficients",
+                                                 .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
+                                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
+                                                              "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                              "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                              "-dmts_check -1 -snes_linesearch_type basic "
+                                                              "-gravityDirection 1 "
+                                                              "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
+                                                              "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
+                            .flowType = FLOWLOWMACH,
+                            .uExact = lowMach_quadratic_u,
+                            .pExact = lowMach_quadratic_p,
+                            .TExact = lowMach_quadratic_T,
+                            .u_tExact = lowMach_quadratic_u_t,
+                            .T_tExact = lowMach_quadratic_T_t,
+                            .f0_v = f0_lowMach_quadratic_v,
+                            .f0_w = f0_lowMach_quadratic_w,
+                            .f0_q = f0_lowMach_quadratic_q}));
 
 std::ostream &operator<<(std::ostream &os, const FlowMMSParameters &params) { return os << params.mpiTestParameter; }

@@ -1,0 +1,11 @@
+L_2 Error: [1.03645e-15, 1.09283e-16, 3.93747e-16]
+L_2 Residual: 1.98921e-14
+Taylor approximation converging at order 1.98
+Timestep: 0000 time = 0        	 L_2 Error: [1.04e-15, 1.05e-16, 3.94e-16]
+Timestep: 0001 time = 0.1      	 L_2 Error: [2.81e-13, 9.88e-12, 2.78e-14]
+Timestep: 0002 time = 0.2      	 L_2 Error: [1.52e-13, 3.24e-12, 2.18e-14]
+Timestep: 0003 time = 0.3      	 L_2 Error: [8.91e-14, 1.71e-12, 1.39e-14]
+Timestep: 0004 time = 0.4      	 L_2 Error: [5.44e-14, 1.09e-12, 8.44e-15]
+L_2 Error: [1.25285e-15, 1.09283e-16, 5.46284e-16]
+L_2 Residual: 2.52756e-14
+Taylor approximation converging at order 1.99

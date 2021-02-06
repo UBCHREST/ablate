@@ -1,5 +1,6 @@
 #include "flow.h"
 #include "incompressibleFlow.h"
+#include "lowMachFlow.h"
 
 PetscErrorCode FlowCreate(Flow* flow, FlowType type, DM dm){
 
@@ -17,7 +18,7 @@ PetscErrorCode FlowCreate(Flow* flow, FlowType type, DM dm){
     if(!type) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "The flow type must be specified");
     }else if(strcmp(type, FLOWLOWMACH) == 0){
-
+        return LowMachFlowCreate(*flow);
     }else if(strcmp(type, FLOWINCOMPRESSIBLE) ==0){
         return IncompressibleFlowCreate(*flow);
     }{

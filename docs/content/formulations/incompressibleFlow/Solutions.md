@@ -7,4 +7,6 @@ nav_order: 4
 ---
 
 Implemented MMS solutions
-- [2D Quadratic MMS.nb]({{site.url}}{{site.baseurl}}/content/formulations/incompressibleFlow/solutions/2D_Quadratic_MMS.nb)
+- [Incompressible 2D Quadratic MMS.nb]({{site.url}}{{site.baseurl}}/content/formulations/incompressibleFlow/solutions/Incompressible_2D_Quadratic_MMS.nb)
+- [Incompressible_2D_Cubic_MMS.nb]({{site.url}}{{site.baseurl}}/content/formulations/incompressibleFlow/solutions/Incompressible_2D_Cubic_MMS.nb)
+- [Incompressible_2D_Cubic-Trigonometric_MMS.nb]({{site.url}}{{site.baseurl}}/content/formulations/incompressibleFlow/solutions/Incompressible_2D_Cubic-Trigonometric_MMS.nb)

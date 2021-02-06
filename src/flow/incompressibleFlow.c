@@ -1,6 +1,6 @@
 #include "incompressibleFlow.h"
 /*F
-The incompressible flow formulation outlined in docs/conents/formulations/incompressibleFlow
+The incompressible flow formulation outlined in docs/content/formulations/incompressibleFlow
 F*/
 
 
@@ -426,7 +426,7 @@ static PetscErrorCode constant(PetscInt dim, PetscReal time, const PetscReal x[]
     return 0;
 }
 
-PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace) {
+static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace) {
     Vec vec;
     PetscErrorCode (*funcs[3])(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *) = {zero, zero, zero};
     PetscErrorCode ierr;
@@ -444,12 +444,12 @@ PetscErrorCode CreatePressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, 
     PetscFunctionReturn(0);
 }
 
-PETSC_EXTERN PetscErrorCode removeDiscretePressureNullspace(DM dm, Vec u) {
+static PetscErrorCode removeDiscretePressureNullspace(DM dm, Vec u) {
     MatNullSpace nullsp;
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = CreatePressureNullSpace(dm, PRES, PRES, &nullsp);CHKERRQ(ierr);
+    ierr = createPressureNullSpace(dm, PRES, PRES, &nullsp);CHKERRQ(ierr);
     ierr = MatNullSpaceRemove(nullsp, u);CHKERRQ(ierr);
     ierr = MatNullSpaceDestroy(&nullsp);CHKERRQ(ierr);
     PetscFunctionReturn(0);
@@ -573,7 +573,7 @@ static PetscErrorCode incompressibleFlowCompleteProblemSetup(Flow flow, TS ts) {
     ierr = PetscObjectSetName((PetscObject)(flow->flowField), "Numerical Solution");CHKERRQ(ierr);
     ierr = VecSetOptionsPrefix((flow->flowField), "num_sol_");CHKERRQ(ierr);
 
-    ierr = DMSetNullSpaceConstructor(dm, PRES, CreatePressureNullSpace);CHKERRQ(ierr);
+    ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
 
     ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, &parameters);CHKERRQ(ierr);
     ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, &parameters);CHKERRQ(ierr);

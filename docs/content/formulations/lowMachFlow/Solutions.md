@@ -7,4 +7,4 @@ nav_order: 4
 ---
 
 Implemented MMS solutions
-- [2D Quadratic MMS.nb]({{site.url}}{{site.baseurl}}/content/formulations/lowMachFlow/solutions/2D_Quadratic_MMS.nb)
+- [Low Mach 2D Quadratic MMS.nb]({{site.url}}{{site.baseurl}}/content/formulations/lowMachFlow/solutions/LowMach_2D_Quadratic_MMS.nb)
