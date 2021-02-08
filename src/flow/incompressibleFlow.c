@@ -505,10 +505,8 @@ static PetscErrorCode incompressibleFlowSetupDiscretization(Flow flow) {
     ierr = DMCreateDS(flow->dm);CHKERRQ(ierr);
 
     while (cdm) {
-        ierr = DMCopyDisc(flow->dm, cdm);
-        CHKERRQ(ierr);
-        ierr = DMGetCoarseDM(cdm, &cdm);
-        CHKERRQ(ierr);
+        ierr = DMCopyDisc(flow->dm, cdm);CHKERRQ(ierr);
+        ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
     }
 
     // Clean up the fields
@@ -520,14 +518,10 @@ static PetscErrorCode incompressibleFlowSetupDiscretization(Flow flow) {
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        ierr = DMGetField(flow->dm, PRES, NULL, &pressure);
-        CHKERRQ(ierr);
-        ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);
-        CHKERRQ(ierr);
-        ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);
-        CHKERRQ(ierr);
-        ierr = MatNullSpaceDestroy(&nullspacePres);
-        CHKERRQ(ierr);
+        ierr = DMGetField(flow->dm, PRES, NULL, &pressure);CHKERRQ(ierr);
+        ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);CHKERRQ(ierr);
+        ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);CHKERRQ(ierr);
+        ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
@@ -555,11 +549,9 @@ static PetscErrorCode incompressibleFlowStartProblemSetup(Flow flow) {
         FlowParameters *param;
         PetscScalar constants[TOTAlCONSTANTS];
 
-        ierr = PetscBagGetData(flow->parameters, (void **)&param);
-        CHKERRQ(ierr);
+        ierr = PetscBagGetData(flow->parameters, (void **)&param);CHKERRQ(ierr);
         PackFlowParameters(param, constants);
-        ierr = PetscDSSetConstants(prob, TOTAlCONSTANTS, constants);
-        CHKERRQ(ierr);
+        ierr = PetscDSSetConstants(prob, TOTAlCONSTANTS, constants);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }
