@@ -57,7 +57,7 @@ void MpiTestFixture::TearDown() {
     if (!inMpiTestRun) {
         if (!MpiTestFixture::keepOutputFile) {
             fs::remove_all(OutputFile());
-        }else{
+        } else {
             std::cout << "Generated output file: " << OutputFile() << std::endl;
         }
     }
@@ -75,7 +75,7 @@ void MpiTestFixture::RunWithMPI() const {
     mpiCommand << " > " << OutputFile();
 
     auto exitCode = std::system(mpiCommand.str().c_str());
-    if(exitCode != 0){
+    if (exitCode != 0) {
         std::ifstream outputStream(OutputFile());
         std::string output((std::istreambuf_iterator<char>(outputStream)), std::istreambuf_iterator<char>());
         FAIL() << output;
@@ -83,7 +83,7 @@ void MpiTestFixture::RunWithMPI() const {
 }
 
 void MpiTestFixture::CompareOutputFiles() {
-    if(mpiTestParameter.expectedOutputFile.empty()){
+    if (mpiTestParameter.expectedOutputFile.empty()) {
         return;
     }
     // load the actual output
@@ -98,6 +98,4 @@ void MpiTestFixture::CompareOutputFiles() {
     ASSERT_EQ(actual, expected);
 }
 
-std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params) {
-    return os << (params.testName.empty() ? params.arguments : params.testName);
-}
+std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params) { return os << (params.testName.empty() ? params.arguments : params.testName); }

@@ -462,7 +462,6 @@ static void SourceFunction(f0_lowMach_quadratic_w) {
     f0[0] -= (Cp * Pth * (S + 2 * t + 3 * Power(x, 2) + 2 * x * y + Power(y, 2))) / (1 + t + x + y);
 }
 
-
 /*
   CASE: low mach cubic
   In 2D we use exact solution:
@@ -488,7 +487,7 @@ static PetscErrorCode lowMach_cubic_u_t(PetscInt Dim, PetscReal time, const Pets
 }
 
 static PetscErrorCode lowMach_cubic_p(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *p, void *ctx) {
-    p[0] = 3.0/2.0 * X[0] * X[0] + 3.0/2.0 * X[1] * X[1] - 1.125;
+    p[0] = 3.0 / 2.0 * X[0] * X[0] + 3.0 / 2.0 * X[1] * X[1] - 1.125;
     return 0;
 }
 
@@ -508,8 +507,8 @@ static void SourceFunction(f0_lowMach_cubic_q) {
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= -((Pth*S)/Power(1 + t + Power(x,2)/2. + Power(y,2)/2.,2)) - (Pth*y*(t + 2*Power(x,3) + 3*Power(x,2)*y))/Power(1 + t + Power(x,2)/2. + Power(y,2)/2.,2) +
-             (6*Pth*Power(x,2))/(1 + t + Power(x,2)/2. + Power(y,2)/2.) - (Pth*x*(t + Power(x,3) + Power(y,3)))/Power(1 + t + Power(x,2)/2. + Power(y,2)/2.,2);
+    f0[0] -= -((Pth * S) / Power(1 + t + Power(x, 2) / 2. + Power(y, 2) / 2., 2)) - (Pth * y * (t + 2 * Power(x, 3) + 3 * Power(x, 2) * y)) / Power(1 + t + Power(x, 2) / 2. + Power(y, 2) / 2., 2) +
+             (6 * Pth * Power(x, 2)) / (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.) - (Pth * x * (t + Power(x, 3) + Power(y, 3))) / Power(1 + t + Power(x, 2) / 2. + Power(y, 2) / 2., 2);
 }
 
 static void SourceFunction(f0_lowMach_cubic_v) {
@@ -524,11 +523,11 @@ static void SourceFunction(f0_lowMach_cubic_v) {
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= 3*x + (Pth*S)/(1 + t + Power(x,2)/2. + Power(y,2)/2.) + (3*Pth*Power(y,2)*(t + 2*Power(x,3) + 3*Power(x,2)*y))/(1 + t + Power(x,2)/2. + Power(y,2)/2.) +
-             (3*Pth*Power(x,2)*(t + Power(x,3) + Power(y,3)))/(1 + t + Power(x,2)/2. + Power(y,2)/2.) - (4.*mu*x + 1.*mu*(6*x + 6*y))/R;
-    f0[1] -= 3*y - (1.*mu*(12*x + 6*y))/R + Pth/(Power(F,2)*(1 + t + Power(x,2)/2. + Power(y,2)/2.)) + (Pth*S)/(1 + t + Power(x,2)/2. + Power(y,2)/2.) +
-             (3*Pth*Power(x,2)*(t + 2*Power(x,3) + 3*Power(x,2)*y))/(1 + t + Power(x,2)/2. + Power(y,2)/2.) +
-             (Pth*(6*Power(x,2) + 6*x*y)*(t + Power(x,3) + Power(y,3)))/(1 + t + Power(x,2)/2. + Power(y,2)/2.);
+    f0[0] -= 3 * x + (Pth * S) / (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.) + (3 * Pth * Power(y, 2) * (t + 2 * Power(x, 3) + 3 * Power(x, 2) * y)) / (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.) +
+             (3 * Pth * Power(x, 2) * (t + Power(x, 3) + Power(y, 3))) / (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.) - (4. * mu * x + 1. * mu * (6 * x + 6 * y)) / R;
+    f0[1] -= 3 * y - (1. * mu * (12 * x + 6 * y)) / R + Pth / (Power(F, 2) * (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.)) + (Pth * S) / (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.) +
+             (3 * Pth * Power(x, 2) * (t + 2 * Power(x, 3) + 3 * Power(x, 2) * y)) / (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.) +
+             (Pth * (6 * Power(x, 2) + 6 * x * y) * (t + Power(x, 3) + Power(y, 3))) / (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.);
 }
 
 /* f0_w = dT/dt + u.grad(T) - Q */
@@ -544,7 +543,7 @@ static void SourceFunction(f0_lowMach_cubic_w) {
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
-    f0[0] -= (-2*k)/P + (Cp*Pth*(S + y*(t + 2*Power(x,3) + 3*Power(x,2)*y) + x*(t + Power(x,3) + Power(y,3))))/(1 + t + Power(x,2)/2. + Power(y,2)/2.);
+    f0[0] -= (-2 * k) / P + (Cp * Pth * (S + y * (t + 2 * Power(x, 3) + 3 * Power(x, 2) * y) + x * (t + Power(x, 3) + Power(y, 3)))) / (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.);
 }
 
 TEST_P(FlowMMS, MachMMSTests) {
@@ -889,46 +888,46 @@ INSTANTIATE_TEST_SUITE_P(
                             .f0_w = f0_lowMach_quadratic_w,
                             .f0_q = f0_lowMach_quadratic_q},
         (FlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d cubic tri_p3_p2_p2",
-            .nproc = 1,
-            .expectedOutputFile = "outputs/lowMach_2d_cubic_tri_p3_p2_p2",
-            .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
-                         "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                         "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                         "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
-                         "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                         "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                         "-dmts_check -1 -snes_linesearch_type basic "
-                         "-gravityDirection 1 "},
-            .flowType = FLOWLOWMACH,
-            .uExact = lowMach_cubic_u,
-            .pExact = lowMach_cubic_p,
-            .TExact = lowMach_cubic_T,
-            .u_tExact = lowMach_cubic_u_t,
-            .T_tExact = lowMach_cubic_T_t,
-            .f0_v = f0_lowMach_cubic_v,
-            .f0_w = f0_lowMach_cubic_w,
-            .f0_q = f0_lowMach_cubic_q},
+                                                 .nproc = 1,
+                                                 .expectedOutputFile = "outputs/lowMach_2d_cubic_tri_p3_p2_p2",
+                                                 .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
+                                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
+                                                              "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                              "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                              "-dmts_check -1 -snes_linesearch_type basic "
+                                                              "-gravityDirection 1 "},
+                            .flowType = FLOWLOWMACH,
+                            .uExact = lowMach_cubic_u,
+                            .pExact = lowMach_cubic_p,
+                            .TExact = lowMach_cubic_T,
+                            .u_tExact = lowMach_cubic_u_t,
+                            .T_tExact = lowMach_cubic_T_t,
+                            .f0_v = f0_lowMach_cubic_v,
+                            .f0_w = f0_lowMach_cubic_w,
+                            .f0_q = f0_lowMach_cubic_q},
         (FlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d cubic tri_p3_p2_p2 with real coefficients",
-            .nproc = 1,
-            .expectedOutputFile = "outputs/lowMach_2d_cubic_tri_p3_p2_p2_real_coefficients",
-            .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
-                         "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                         "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                         "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
-                         "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                         "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                         "-dmts_check -1 -snes_linesearch_type basic "
-                         "-gravityDirection 1 "
-                         "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
-                         "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
-            .flowType = FLOWLOWMACH,
-            .uExact = lowMach_cubic_u,
-            .pExact = lowMach_cubic_p,
-            .TExact = lowMach_cubic_T,
-            .u_tExact = lowMach_cubic_u_t,
-            .T_tExact = lowMach_cubic_T_t,
-            .f0_v = f0_lowMach_cubic_v,
-            .f0_w = f0_lowMach_cubic_w,
-            .f0_q = f0_lowMach_cubic_q}));
+                                                 .nproc = 1,
+                                                 .expectedOutputFile = "outputs/lowMach_2d_cubic_tri_p3_p2_p2_real_coefficients",
+                                                 .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
+                                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
+                                                              "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                              "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                              "-dmts_check -1 -snes_linesearch_type basic "
+                                                              "-gravityDirection 1 "
+                                                              "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
+                                                              "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
+                            .flowType = FLOWLOWMACH,
+                            .uExact = lowMach_cubic_u,
+                            .pExact = lowMach_cubic_p,
+                            .TExact = lowMach_cubic_T,
+                            .u_tExact = lowMach_cubic_u_t,
+                            .T_tExact = lowMach_cubic_T_t,
+                            .f0_v = f0_lowMach_cubic_v,
+                            .f0_w = f0_lowMach_cubic_w,
+                            .f0_q = f0_lowMach_cubic_q}));
 
 std::ostream &operator<<(std::ostream &os, const FlowMMSParameters &params) { return os << params.mpiTestParameter; }

@@ -5,7 +5,8 @@
 
 TEST(ParametersTests, ShouldPackFlowParameters) {
     // arrange
-    FlowParameters parameters{.strouhal = 1.0, .reynolds = 2.0, .froude = 3.0, .peclet = 4.0, .heatRelease = 5.0, .gamma = 6.0, .pth = 11, .mu = 7.0, .k = 8.0, .cp = 9.0, .beta = 10, .gravityDirection = 12 };
+    FlowParameters parameters{
+        .strouhal = 1.0, .reynolds = 2.0, .froude = 3.0, .peclet = 4.0, .heatRelease = 5.0, .gamma = 6.0, .pth = 11, .mu = 7.0, .k = 8.0, .cp = 9.0, .beta = 10, .gravityDirection = 12};
 
     PetscScalar packedConstants[TOTAlCONSTANTS];
 
@@ -65,9 +66,27 @@ TEST_P(ParametersSetupTextFixture, SetupAndParseConstants) {
 INSTANTIATE_TEST_SUITE_P(
     ParametersTests,
     ParametersSetupTextFixture,
-    ::testing::Values(std::make_tuple(MpiTestParameter{.nproc = 1, .arguments = ""},
-                                      FlowParameters{.strouhal = 1.0, .reynolds = 1.0, .froude = 1.0, .peclet = 1.0, .heatRelease = 1.0, .gamma = 1.0, .mu = 1.0, .k = 1.0, .cp = 1.0, .beta = 1.0, .gravityDirection = 0, .pth = 1}),
-                      std::make_tuple(MpiTestParameter{.nproc = 1, .arguments = "-strouhal 10.0"},
-                                      FlowParameters{.strouhal = 10.0, .reynolds = 1.0, .froude = 1.0, .peclet = 1.0, .heatRelease = 1.0, .gamma = 1.0, .mu = 1.0, .k = 1.0, .cp = 1.0, .beta = 1.0, .gravityDirection = 0, .pth = 1}),
-                      std::make_tuple(MpiTestParameter{.nproc = 1, .arguments = "-strouhal 10.0 -reynolds 11.1 -froude 12.2 -peclet 13.3 -heatRelease 14.4 -gamma 15.5 -mu 16.6 -k 17.7 -cp 18.8 -beta 19.9 -gravityDirection 2 -pth 20.2"},
-                                      FlowParameters{.strouhal = 10.0, .reynolds = 11.1, .froude = 12.2, .peclet = 13.3, .heatRelease = 14.4, .gamma = 15.5, .mu = 16.6, .k = 17.7, .cp = 18.8, .beta = 19.9, .gravityDirection = 2, .pth = 20.2})));
+    ::testing::Values(
+        std::make_tuple(
+            MpiTestParameter{.nproc = 1, .arguments = ""},
+            FlowParameters{
+                .strouhal = 1.0, .reynolds = 1.0, .froude = 1.0, .peclet = 1.0, .heatRelease = 1.0, .gamma = 1.0, .mu = 1.0, .k = 1.0, .cp = 1.0, .beta = 1.0, .gravityDirection = 0, .pth = 1}),
+        std::make_tuple(
+            MpiTestParameter{.nproc = 1, .arguments = "-strouhal 10.0"},
+            FlowParameters{
+                .strouhal = 10.0, .reynolds = 1.0, .froude = 1.0, .peclet = 1.0, .heatRelease = 1.0, .gamma = 1.0, .mu = 1.0, .k = 1.0, .cp = 1.0, .beta = 1.0, .gravityDirection = 0, .pth = 1}),
+        std::make_tuple(
+            MpiTestParameter{.nproc = 1,
+                             .arguments = "-strouhal 10.0 -reynolds 11.1 -froude 12.2 -peclet 13.3 -heatRelease 14.4 -gamma 15.5 -mu 16.6 -k 17.7 -cp 18.8 -beta 19.9 -gravityDirection 2 -pth 20.2"},
+            FlowParameters{.strouhal = 10.0,
+                           .reynolds = 11.1,
+                           .froude = 12.2,
+                           .peclet = 13.3,
+                           .heatRelease = 14.4,
+                           .gamma = 15.5,
+                           .mu = 16.6,
+                           .k = 17.7,
+                           .cp = 18.8,
+                           .beta = 19.9,
+                           .gravityDirection = 2,
+                           .pth = 20.2})));
