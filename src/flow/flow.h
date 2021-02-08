@@ -1,8 +1,8 @@
 #ifndef ABLATE_FLOW_H
 #define ABLATE_FLOW_H
 
-#include "../parameters.h"
 #include <petsc.h>
+#include "../parameters.h"
 
 // Define field id for velocity, pressure, temperature
 #define VEL 0
@@ -15,15 +15,15 @@
 #define W 2
 
 typedef const char* FlowType;
-#define FLOWLOWMACH         "flowLowMach"
-#define FLOWINCOMPRESSIBLE         "flowIncompressible"
+#define FLOWLOWMACH "flowLowMach"
+#define FLOWINCOMPRESSIBLE "flowIncompressible"
 
 struct _Flow {
     PetscBag parameters; /* constant flow parameters */
-    DM dm; /* flow domain */
-    Vec flowField; /* flow solution vector */
+    DM dm;               /* flow domain */
+    Vec flowField;       /* flow solution vector */
 
-    void *data;     /* implementation-specific data */
+    void* data; /* implementation-specific data */
 
     /* flow field setup parameters */
     PetscErrorCode (*setupDiscretization)(struct _Flow*);
@@ -35,15 +35,11 @@ struct _Flow {
 
 typedef struct _Flow* Flow;
 
-
 PETSC_EXTERN PetscErrorCode FlowCreate(Flow* flow, FlowType type, DM dm);
 PETSC_EXTERN PetscErrorCode FlowSetupDiscretization(Flow flow);
 PETSC_EXTERN PetscErrorCode FlowStartProblemSetup(Flow flow);
 PETSC_EXTERN PetscErrorCode FlowCompleteProblemSetup(Flow flow, TS ts);
-PETSC_EXTERN PetscErrorCode FlowInitialization(Flow flow,DM dm, Vec u);
+PETSC_EXTERN PetscErrorCode FlowInitialization(Flow flow, DM dm, Vec u);
 PETSC_EXTERN PetscErrorCode FlowDestroy(Flow* flow);
-
-
-
 
 #endif  // ABLATE_FLOW_H

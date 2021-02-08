@@ -2,21 +2,7 @@
 #define parameters_h
 #include <petsc.h>
 
-typedef enum {
-    STROUHAL,
-    REYNOLDS,
-    FROUDE,
-    PECLET,
-    HEATRELEASE,
-    GAMMA,
-    PTH,
-    MU,
-    K,
-    CP,
-    BETA,
-    GRAVITY_DIRECTION,
-    TOTAlCONSTANTS
-} FlowConstants;
+typedef enum { STROUHAL, REYNOLDS, FROUDE, PECLET, HEATRELEASE, GAMMA, PTH, MU, K, CP, BETA, GRAVITY_DIRECTION, TOTAlCONSTANTS } FlowConstants;
 
 typedef struct {
     PetscReal strouhal;
@@ -25,11 +11,11 @@ typedef struct {
     PetscReal peclet;
     PetscReal heatRelease;
     PetscReal gamma;
-    PetscReal pth;   /* non-dimensional constant thermodynamic pressure */
-    PetscReal mu;    /* non-dimensional viscosity */
-    PetscReal k;     /* non-dimensional thermal conductivity */
-    PetscReal cp;    /* non-dimensional specific heat capacity */
-    PetscReal beta;  /* non-dimensional thermal expansion coefficient */
+    PetscReal pth;  /* non-dimensional constant thermodynamic pressure */
+    PetscReal mu;   /* non-dimensional viscosity */
+    PetscReal k;    /* non-dimensional thermal conductivity */
+    PetscReal cp;   /* non-dimensional specific heat capacity */
+    PetscReal beta; /* non-dimensional thermal expansion coefficient */
     PetscInt gravityDirection;
 } FlowParameters;
 

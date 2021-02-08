@@ -15,13 +15,13 @@ void PackFlowParameters(FlowParameters *parameters, PetscScalar *constantArray) 
     constantArray[GRAVITY_DIRECTION] = parameters->gravityDirection;
 }
 
-PetscErrorCode SetupFlowParameters(PetscBag *flowParametersBag){
+PetscErrorCode SetupFlowParameters(PetscBag *flowParametersBag) {
     FlowParameters *p;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
     // create an empty bag
-    PetscBagCreate(PETSC_COMM_WORLD,sizeof(FlowParameters),flowParametersBag);
+    PetscBagCreate(PETSC_COMM_WORLD, sizeof(FlowParameters), flowParametersBag);
 
     // setup PETSc parameter bag
     ierr = PetscBagGetData(*flowParametersBag, (void **)&p);CHKERRQ(ierr);
