@@ -54,7 +54,3 @@ if(CLANG_FORMAT)
             USES_TERMINAL
     )
 endif()
-
-# Keep a simple main statement
-add_executable(ablate main.c)
-target_link_libraries(ablate PRIVATE ablateLibrary)

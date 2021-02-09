@@ -113,7 +113,7 @@ static void vIntegrandTestGradientFunction(PetscInt dim,
     for (c = 0; c < Nc; ++c) {
         // 2 \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T)
         for (d = 0; d < dim; ++d) {
-            f1[c * dim + d] = 0.5 * coefficient * (u_x[uOff_x[VEL] + c * dim + d] + u_x[uOff_x[VEL] + d * dim + c]);
+            f1[c * dim + d] += 0.5 * coefficient * (u_x[uOff_x[VEL] + c * dim + d] + u_x[uOff_x[VEL] + d * dim + c]);
         }
 
         // -1/3 (\nable \cdot \boldsybol{u}) \boldsymbol{I}

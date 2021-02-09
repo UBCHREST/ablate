@@ -1,4 +1,4 @@
-L_2 Error: [2.39269e-16, 2.87565e-17, 7.14522e-17]
+L_2 Error: \[(.*), (.*), (.*)]<expects> <1E-13 <1E-13 <1E-20
 L_2 Residual: 3.52994e-15
 Taylor approximation converging at order 2.00
 Timestep: 0000 time = 0        	 L_2 Error: [2.39e-16, 2.88e-17, 7.15e-17]

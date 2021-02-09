@@ -831,12 +831,12 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
                                               "-snes_convergence_test correct_pressure "
-                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged "
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                              "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
-                                              "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1E-12 -fieldsplit_pressure_pc_type jacobi "
+                                              "-pth 91282.5 -strouhal 0.0024 -reynolds 23126.27 -froude 0.3162 -peclet 16373.178 "
+                                              "-heatRelease 0.00831 -gamma 0.285337 -mu 1.1 -k 1.2 -cp 1.3 "},
             .flowType = FLOWINCOMPRESSIBLE,
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
@@ -844,7 +844,7 @@ INSTANTIATE_TEST_SUITE_P(
             .u_tExact = incompressible_cubic_u_t,
             .T_tExact = incompressible_cubic_T_t,
             .f0_v = f0_incompressible_cubic_v,
-            .f0_w = f0_incompressible_cubic_w},
+            .f0_w = f0_incompressible_cubic_w}/*,
         (FlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2",
                                                  .nproc = 1,
                                                  .expectedOutputFile = "outputs/lowMach_2d_tri_p3_p2_p2",
@@ -928,6 +928,6 @@ INSTANTIATE_TEST_SUITE_P(
                             .T_tExact = lowMach_cubic_T_t,
                             .f0_v = f0_lowMach_cubic_v,
                             .f0_w = f0_lowMach_cubic_w,
-                            .f0_q = f0_lowMach_cubic_q}));
+                            .f0_q = f0_lowMach_cubic_q}*/));
 
 std::ostream &operator<<(std::ostream &os, const FlowMMSParameters &params) { return os << params.mpiTestParameter; }
