@@ -12,7 +12,7 @@ PetscErrorCode FlowCreate(Flow* flow, FlowType type, DM dm) {
     PetscErrorCode ierr = DMSetApplicationContext(dm, *flow);CHKERRQ(ierr);
 
     // setup the parameters
-    ierr = SetupFlowParameters(&(*flow)->parameters);CHKERRQ(ierr);
+    ierr = SetupFlowParameters(&((*flow)->parameters));CHKERRQ(ierr);
 
     if (!type) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "The flow type must be specified");

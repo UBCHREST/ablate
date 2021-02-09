@@ -21,7 +21,7 @@ y &=& x^4 + 4      \nonumber \\
 ```
 
 ## Running Tests Locally
-The tests can be run locally using an IDE or cmake directly (ctest command).  To run the tests using the testing environment (docker), first make sure that [Docker](https://www.docker.com) installed.
+The tests can be run locally using an IDE or cmake directly (ctest command).  You may also use the ```--keepOutputFile=true```  command line argument to preserve output files.  To run the tests using the testing environment (docker), first make sure that [Docker](https://www.docker.com) installed.
 
 ```bash
 # Login to github to access base image (follow prompt instructions)
