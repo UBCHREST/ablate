@@ -844,16 +844,16 @@ INSTANTIATE_TEST_SUITE_P(
             .u_tExact = incompressible_cubic_u_t,
             .T_tExact = incompressible_cubic_T_t,
             .f0_v = f0_incompressible_cubic_v,
-            .f0_w = f0_incompressible_cubic_w}/*,
+            .f0_w = f0_incompressible_cubic_w},
         (FlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2",
                                                  .nproc = 1,
                                                  .expectedOutputFile = "outputs/lowMach_2d_tri_p3_p2_p2",
                                                  .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                                                              "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                              "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
                                                               "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                                               "-dmts_check -1 -snes_linesearch_type basic "
                                                               "-gravityDirection 1"},
                             .flowType = FLOWLOWMACH,
@@ -871,9 +871,9 @@ INSTANTIATE_TEST_SUITE_P(
                                                  .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                                                              "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                              "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
                                                               "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                                               "-dmts_check -1 -snes_linesearch_type basic "
                                                               "-gravityDirection 1 "
                                                               "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
@@ -893,9 +893,9 @@ INSTANTIATE_TEST_SUITE_P(
                                                  .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                                                              "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                              "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
                                                               "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                                               "-dmts_check -1 -snes_linesearch_type basic "
                                                               "-gravityDirection 1 "},
                             .flowType = FLOWLOWMACH,
@@ -913,9 +913,9 @@ INSTANTIATE_TEST_SUITE_P(
                                                  .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
-                                                              "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                              "-ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
                                                               "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                              "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                                               "-dmts_check -1 -snes_linesearch_type basic "
                                                               "-gravityDirection 1 "
                                                               "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
@@ -928,6 +928,6 @@ INSTANTIATE_TEST_SUITE_P(
                             .T_tExact = lowMach_cubic_T_t,
                             .f0_v = f0_lowMach_cubic_v,
                             .f0_w = f0_lowMach_cubic_w,
-                            .f0_q = f0_lowMach_cubic_q}*/));
+                            .f0_q = f0_lowMach_cubic_q}));
 
 std::ostream &operator<<(std::ostream &os, const FlowMMSParameters &params) { return os << params.mpiTestParameter; }

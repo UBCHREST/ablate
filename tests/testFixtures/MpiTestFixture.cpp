@@ -117,7 +117,7 @@ void MpiTestFixture::CompareOutputFiles() {
             std::istringstream valuesStream(valuesLine);
             std::vector<std::string> expectedValues(std::istream_iterator<std::string>{valuesStream}, std::istream_iterator<std::string>());
 
-            ASSERT_EQ(expectedValues.size(), matches.size() - 1) << "the number of expected and found values is different";
+            ASSERT_EQ(expectedValues.size(), matches.size() - 1) << "the number of expected and found values is different on line " << expectedLine;
 
             // march over each value
             for(int v =0; v < expectedValues.size(); v++){
