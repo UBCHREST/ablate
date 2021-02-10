@@ -54,7 +54,7 @@ CCR uses SLURMS for scheduling and therefore job scripts specifying the job. Det
  #SBATCH --job-name="chrest_framework_test"
  #SBATCH --output=chrest_framework_test-srun.out
  #SBATCH --mail-user=mtmcgurn@buffalo.edu
- #SBATCH --mail-flowType=ALL
+ #SBATCH --mail-flow=ALL
 
  # Print the current environment
  echo "SLURM_JOBID="$SLURM_JOBID
