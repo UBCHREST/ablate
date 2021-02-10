@@ -10,3 +10,4 @@ class MpiTestParamFixture : public MpiTestFixture, public ::testing::WithParamIn
 };
 
 #endif
+å

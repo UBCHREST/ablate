@@ -120,13 +120,13 @@ void MpiTestFixture::CompareOutputFiles() {
             ASSERT_EQ(expectedValues.size(), matches.size() - 1) << "the number of expected and found values is different on line " << expectedLine;
 
             // march over each value
-            for(int v =0; v < expectedValues.size(); v++){
+            for (int v = 0; v < expectedValues.size(); v++) {
                 char compareChar = expectedValues[v][0];
                 double expectedValue = stod(expectedValues[v].substr(1));
-                double actualValue = stod(matches[v+1]);
+                double actualValue = stod(matches[v + 1]);
 
-                switch(compareChar){
-                    case '<' :
+                switch (compareChar) {
+                    case '<':
                         ASSERT_LT(actualValue, expectedValue) << " on line " << expectedLine;
                         break;
                     case '>':
@@ -138,28 +138,24 @@ void MpiTestFixture::CompareOutputFiles() {
                     default:
                         FAIL() << "Unknown compare char " << compareChar << " on line " << expectedLine;
                 }
-
-
             }
 
-
-
-//
-//            while (valuesStream.good()) {
-//                std::string tmp;
-//
-//                expectedValues.push_back(tmp);
-//
-//                double tmp;
-//            }
-//
-//
-//
-//
-//            for (auto i = 0; i < expectedValues.size(); i++) {
-//                auto foundAsDouble = stod(matches[i + 1]);
-//                ASSERT_DOUBLE_EQ(expectedValues[i], foundAsDouble);
-//            }
+            //
+            //            while (valuesStream.good()) {
+            //                std::string tmp;
+            //
+            //                expectedValues.push_back(tmp);
+            //
+            //                double tmp;
+            //            }
+            //
+            //
+            //
+            //
+            //            for (auto i = 0; i < expectedValues.size(); i++) {
+            //                auto foundAsDouble = stod(matches[i + 1]);
+            //                ASSERT_DOUBLE_EQ(expectedValues[i], foundAsDouble);
+            //            }
         }
     }
 

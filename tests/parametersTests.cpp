@@ -84,7 +84,7 @@ INSTANTIATE_TEST_SUITE_P(
                            .peclet = 13.3,
                            .heatRelease = 14.4,
                            .gamma = 15.5,
-                            .pth = 20.2,
+                           .pth = 20.2,
                            .mu = 16.6,
                            .k = 17.7,
                            .cp = 18.8,
