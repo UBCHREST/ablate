@@ -1,0 +1,11 @@
+L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-14 <1E-14 <1E-14
+L_2 Residual: (.*)<expects> <1E-8
+Taylor approximation converging at order (.*)<expects> =1.99
+Timestep: 0000 time = 0        	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-8 <1E-8 <1E-8
+Timestep: 0001 time = 0.1      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-8 <1E-8 <1E-8
+Timestep: 0002 time = 0.2      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-8 <0.0002 <1E-8
+Timestep: 0003 time = 0.3      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-8 <0.0002 <1E-8
+Timestep: 0004 time = 0.4      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-8 <0.0001 <1E-8
+L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-13 <1E-13 <1E-13
+L_2 Residual: (.*)<expects> <1E-8
+Taylor approximation converging at order (.*)<expects> =1.99

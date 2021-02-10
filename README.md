@@ -21,7 +21,7 @@ y &=& x^4 + 4      \nonumber \\
 ```
 
 ## Running Tests Locally
-The tests can be run locally using an IDE or cmake directly (ctest command).  To run the tests using the testing environment (docker), first make sure that [Docker](https://www.docker.com) installed.
+The tests can be run locally using an IDE or cmake directly (ctest command).  You may also use the ```--keepOutputFile=true```  command line argument to preserve output files.  To run the tests using the testing environment (docker), first make sure that [Docker](https://www.docker.com) installed.
 
 ```bash
 # Login to github to access base image (follow prompt instructions)
@@ -34,6 +34,25 @@ docker build -t testing_image -f DockerTestFile .
 docker run --rm testing_image 
 
 ```
+
+For output file comparisons you can specify that numbers are '<', '>', or '=' to a an expected value.  For example: 
+
+```
+L_2 Error: [(.*), (.*), (.*)]<expects> <1E-13 <1E-13 <1E-13
+```
+would expect three numbers (all less than 1E-13),
+
+```
+L_2 Residual: (.*)<expects> <1E-13
+```
+one value less than 1E-13,
+
+```
+Taylor approximation converging at order (.*)<expects> =2
+```
+and one value equal to 2.  When using the compare tool, you must escape all regex characters on the line being compared. 
+
+
 
 ## Formatting Linting
 The c++ code style is based upon the [Google Style Guide](https://google.github.io/styleguide/) and enforced using clang-format during PR tests.  Specific overrides to the style are controlled in the .clang-format file.

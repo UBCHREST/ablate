@@ -8,7 +8,7 @@ pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
 set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
 
 # Set the project details
-project(ABLATE VERSION 0.0.10)
+project(ABLATE VERSION 0.1.0)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)
@@ -54,7 +54,3 @@ if(CLANG_FORMAT)
             USES_TERMINAL
     )
 endif()
-
-# Keep a simple main statement
-add_executable(ablate main.c)
-target_link_libraries(ablate PRIVATE ablateLibrary)

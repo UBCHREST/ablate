@@ -7,7 +7,8 @@ add_subdirectory(testFixtures)
 
 target_sources(tests
         PRIVATE
-        lowMachNumberTests.cpp
+        flowTests.cpp
+        parametersTests.cpp
         main.cpp
         )
 

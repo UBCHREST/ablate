@@ -3,4 +3,5 @@ target_sources(tests
         MpiTestFixture.hpp
         MpiTestFixture.cpp
         MpiTestParamFixture.hpp
+        MpiTestEventListener.h
         )
