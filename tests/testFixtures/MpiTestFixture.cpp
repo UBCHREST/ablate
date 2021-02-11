@@ -95,6 +95,7 @@ void MpiTestFixture::CompareOutputFiles() {
     // march over each line
     std::string expectedLine;
     std::string actualLine;
+    int lineNumber = 1;
     while (std::getline(expectedStream, expectedLine)) {
         if (!std::getline(actualStream, actualLine)) {
             FAIL() << "The actual output file is missing lines";
@@ -117,7 +118,7 @@ void MpiTestFixture::CompareOutputFiles() {
             std::istringstream valuesStream(valuesLine);
             std::vector<std::string> expectedValues(std::istream_iterator<std::string>{valuesStream}, std::istream_iterator<std::string>());
 
-            ASSERT_EQ(expectedValues.size(), matches.size() - 1) << "the number of expected and found values is different on line " << expectedLine;
+            ASSERT_EQ(expectedValues.size(), matches.size() - 1) << "the number of expected and found values is different on line (" << lineNumber << ") " << expectedLine << " from " << actualLine;
 
             // march over each value
             for (int v = 0; v < expectedValues.size(); v++) {
@@ -140,22 +141,7 @@ void MpiTestFixture::CompareOutputFiles() {
                 }
             }
 
-            //
-            //            while (valuesStream.good()) {
-            //                std::string tmp;
-            //
-            //                expectedValues.push_back(tmp);
-            //
-            //                double tmp;
-            //            }
-            //
-            //
-            //
-            //
-            //            for (auto i = 0; i < expectedValues.size(); i++) {
-            //                auto foundAsDouble = stod(matches[i + 1]);
-            //                ASSERT_DOUBLE_EQ(expectedValues[i], foundAsDouble);
-            //            }
+            lineNumber++;
         }
     }
 
