@@ -1,8 +1,3 @@
-static char help[] =
-    "Time-dependent Low Mach Flow in 2d channels with finite elements.\n\
-We solve the Low Mach flow problem in a rectangular\n\
-domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
-
 #include <petsc.h>
 #include "flow.h"
 #include "gtest/gtest.h"
@@ -257,7 +252,7 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         omega = testingParam.omega;
 
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, help);
+        PetscInitialize(argc, argv, NULL, NULL);
 
         // setup the ts
         ierr = TSCreate(PETSC_COMM_WORLD, &ts);
@@ -424,16 +419,18 @@ INSTANTIATE_TEST_SUITE_P(
     ParticleMMS,
     testing::Values(
         (ParticleMMSParameters){
-            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1",
+            .mpiTestParameter = {.testName = "particle in incompressible 2d trigonometric-trigonometric tri_p2_p1_p1",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                 .expectedOutputFile = "outputs/particle_incompressible_trigonometric_2d_tri_p2_p1_p1",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 2 -vel_petscspace_degree 2 -pres_petscspace_degree 1 "
+                                              "-temp_petscspace_degree 1 -dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ts_monitor_cancel "
                                               "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                              "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 "
+                                              "-pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full -fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi -particle_layout_type box "
+                                              "-particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 -particle_ts_max_steps 2 "
+                                              "-particle_ts_dt 0.05 -particle_ts_convergence_estimate -convest_num_refine 1 "
+                                              "-particle_ts_monitor_cancel"},
             .flowType = FLOWINCOMPRESSIBLE,
             .uExact = trig_trig_u,
             .pExact = trig_trig_p,
