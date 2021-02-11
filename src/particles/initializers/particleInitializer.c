@@ -1,8 +1,8 @@
 #include "particleInitializer.h"
-#include "particleCellInitializer.h"
 #include "particleBoxInitializer.h"
+#include "particleCellInitializer.h"
 
-const char *partLayoutTypes[NUM_PART_LAYOUT_TYPES+1] = {"cell", "box",  "unknown"};
+const char* partLayoutTypes[NUM_PART_LAYOUT_TYPES + 1] = {"cell", "box", "unknown"};
 
 PetscErrorCode ParticleInitializerCreate(ParticleInitializer* particleInitializer) {
     PetscErrorCode ierr;
@@ -19,7 +19,7 @@ PetscErrorCode ParticleInitializerCreate(ParticleInitializer* particleInitialize
     (*particleInitializer)->type = (PartLayoutType)selectedLayoutType;
     ierr = PetscOptionsEnd();
 
-    switch((*particleInitializer)->type){
+    switch ((*particleInitializer)->type) {
         case PART_LAYOUT_CELL:
             return ParticleCellInitializerCreate(*particleInitializer);
         case PART_LAYOUT_BOX:
@@ -36,12 +36,12 @@ PETSC_EXTERN PetscErrorCode ParticleInitializerDestroy(ParticleInitializer* part
     return 0;
 }
 
-PETSC_EXTERN PetscErrorCode ParticleInitializerSetSolutionVector(ParticleInitializer particleInitializer,DM dm, Vec solution) {
+PETSC_EXTERN PetscErrorCode ParticleInitializerSetSolutionVector(ParticleInitializer particleInitializer, DM dm, Vec solution) {
     return particleInitializer->setSolutionVector(particleInitializer, dm, solution);
 }
 
 ;
-PETSC_EXTERN PetscErrorCode ParticleInitialize(ParticleInitializer particleInitializer,DM flowDm, DM particleDm){
-    PetscErrorCode ierr =  particleInitializer->initializeParticles(particleInitializer, flowDm, particleDm);CHKERRQ(ierr);
+PETSC_EXTERN PetscErrorCode ParticleInitialize(ParticleInitializer particleInitializer, DM flowDm, DM particleDm) {
+    PetscErrorCode ierr = particleInitializer->initializeParticles(particleInitializer, flowDm, particleDm);CHKERRQ(ierr);
     return DMViewFromOptions(particleDm, NULL, "-dm_view");
 }

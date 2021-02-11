@@ -15,16 +15,14 @@ static PetscErrorCode setSolutionVector(ParticleInitializer particleInitializer,
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = DMGetDimension(dm, &dim);
-    CHKERRQ(ierr);
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
     Np = 1;
     for (d = 0; d < dim; ++d) {
         n[d] = data->Npb;
         dx[d] = (data->partUpper[d] - data->partLower[d]) / PetscMax(1, n[d] - 1);
         Np *= n[d];
     }
-    ierr = VecGetArray(u, &coords);
-    CHKERRQ(ierr);
+    ierr = VecGetArray(u, &coords);CHKERRQ(ierr);
     switch (dim) {
         case 2:
             x[0] = data->partLower[0];

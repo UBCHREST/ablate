@@ -2,9 +2,9 @@
 #include "flow.h"
 #include "gtest/gtest.h"
 #include "mesh.h"
-#include "testFixtures/MpiTestFixture.hpp"
-#include "particles.h"
 #include "particleInitializer.h"
+#include "particles.h"
+#include "testFixtures/MpiTestFixture.hpp"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -53,7 +53,6 @@ static IntegrandTestFunction f0_w_original;
 static IntegrandTestFunction f0_q_original;
 static PetscReal omega;
 
-
 struct ParticleMMSParameters {
     MpiTestParameter mpiTestParameter;
     FlowType flowType;
@@ -73,7 +72,6 @@ class ParticleMMS : public MpiTestFixture, public ::testing::WithParamInterface<
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
-
 
 /*
   CASE: trigonometric-trigonometric
@@ -102,59 +100,51 @@ class ParticleMMS : public MpiTestFixture, public ::testing::WithParamInterface<
     = 1 + <u, v> . <1, 1> - \alpha 0
     = 1 + u + v
 */
-static PetscErrorCode trig_trig_x(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *x, void *ctx)
-{
-    const PetscReal x0     = X[0];
-    const PetscReal y0     = X[1];
-    const PetscReal R0     = PetscSqrtReal(x0*x0 + y0*y0);
+static PetscErrorCode trig_trig_x(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *x, void *ctx) {
+    const PetscReal x0 = X[0];
+    const PetscReal y0 = X[1];
+    const PetscReal R0 = PetscSqrtReal(x0 * x0 + y0 * y0);
     const PetscReal theta0 = PetscAtan2Real(y0, x0);
 
-    x[0] = R0*PetscCosReal(omega*time + theta0);
-    x[1] = R0*PetscSinReal(omega*time + theta0);
+    x[0] = R0 * PetscCosReal(omega * time + theta0);
+    x[1] = R0 * PetscSinReal(omega * time + theta0);
     return 0;
 }
-static PetscErrorCode trig_trig_u(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx)
-{
-    u[0] = -omega*X[1];
-    u[1] =  omega*X[0];
+static PetscErrorCode trig_trig_u(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
+    u[0] = -omega * X[1];
+    u[1] = omega * X[0];
     return 0;
 }
-static PetscErrorCode trig_trig_u_t(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx)
-{
+static PetscErrorCode trig_trig_u_t(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *u, void *ctx) {
     u[0] = 0.0;
     u[1] = 0.0;
     return 0;
 }
 
-static PetscErrorCode trig_trig_p(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *p, void *ctx)
-{
+static PetscErrorCode trig_trig_p(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *p, void *ctx) {
     p[0] = X[0] + X[1] - 1.0;
     return 0;
 }
 
-static PetscErrorCode trig_trig_T(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx)
-{
+static PetscErrorCode trig_trig_T(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
     T[0] = time + X[0] + X[1];
     return 0;
 }
-static PetscErrorCode trig_trig_T_t(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx)
-{
+static PetscErrorCode trig_trig_T_t(PetscInt dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *T, void *ctx) {
     T[0] = 1.0;
     return 0;
 }
 
-static void SourceFunction(f0_trig_trig_v)
-{
+static void SourceFunction(f0_trig_trig_v) {
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-    f0[0] -= 1.0 - omega*omega*X[0];
-    f0[1] -= 1.0 - omega*omega*X[1];
+    f0[0] -= 1.0 - omega * omega * X[0];
+    f0[1] -= 1.0 - omega * omega * X[1];
 }
 
-static void SourceFunction(f0_trig_trig_w)
-{
+static void SourceFunction(f0_trig_trig_w) {
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
-    f0[0] += - (1.0 + omega*(X[0] - X[1]));
+    f0[0] += -(1.0 + omega * (X[0] - X[1]));
 }
 
 static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
@@ -240,10 +230,10 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
 
 TEST_P(ParticleMMS, ParticleFlowMMSTests) {
     StartWithMPI
-        DM dm;     /* problem definition */
-        TS ts;     /* timestepper */
-        Flow flow; /* user-defined flow context */
-        Particles particles;  /* user-defined particle context */
+        DM dm;               /* problem definition */
+        TS ts;               /* timestepper */
+        Flow flow;           /* user-defined flow context */
+        Particles particles; /* user-defined particle context */
         PetscReal t;
         PetscErrorCode ierr;
 
@@ -385,8 +375,10 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
 
         // Setup particle position integrator
         TS particleTs;
-        ierr = TSCreate(PETSC_COMM_WORLD, &particleTs);CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = ParticleSetupIntegrator(particles, particleTs, ts);CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = TSCreate(PETSC_COMM_WORLD, &particleTs);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = ParticleSetupIntegrator(particles, particleTs, ts);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Solve the one way coupled system
         ierr = TSSolve(ts, flow->flowField);
@@ -414,33 +406,29 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    ParticleMMSTests,
-    ParticleMMS,
-    testing::Values(
-        (ParticleMMSParameters){
-            .mpiTestParameter = {.testName = "particle in incompressible 2d trigonometric-trigonometric tri_p2_p1_p1",
-                                 .nproc = 1,
-                                 .expectedOutputFile = "outputs/particle_incompressible_trigonometric_2d_tri_p2_p1_p1",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 2 -vel_petscspace_degree 2 -pres_petscspace_degree 1 "
-                                              "-temp_petscspace_degree 1 -dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ts_monitor_cancel "
-                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 "
-                                              "-pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full -fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi -particle_layout_type box "
-                                              "-particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 -particle_ts_max_steps 2 "
-                                              "-particle_ts_dt 0.05 -particle_ts_convergence_estimate -convest_num_refine 1 "
-                                              "-particle_ts_monitor_cancel"},
-            .flowType = FLOWINCOMPRESSIBLE,
-            .uExact = trig_trig_u,
-            .pExact = trig_trig_p,
-            .TExact = trig_trig_T,
-            .u_tExact = trig_trig_u_t,
-            .T_tExact = trig_trig_T_t,
-            .particleExact = trig_trig_x,
-            .f0_v = f0_trig_trig_v,
-            .f0_w = f0_trig_trig_w,
-            .omega = 0.5}
-        ));
+INSTANTIATE_TEST_SUITE_P(ParticleMMSTests,
+                         ParticleMMS,
+                         testing::Values((ParticleMMSParameters){.mpiTestParameter = {.testName = "particle in incompressible 2d trigonometric-trigonometric tri_p2_p1_p1",
+                                                                                      .nproc = 1,
+                                                                                      .expectedOutputFile = "outputs/particle_incompressible_trigonometric_2d_tri_p2_p1_p1",
+                                                                                      .arguments = "-dm_plex_separate_marker -dm_refine 2 -vel_petscspace_degree 2 -pres_petscspace_degree 1 "
+                                                                                                   "-temp_petscspace_degree 1 -dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ts_monitor_cancel "
+                                                                                                   "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                                                                                   "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 "
+                                                                                                   "-pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full -fieldsplit_0_pc_type lu "
+                                                                                                   "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi -particle_layout_type box "
+                                                                                                   "-particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 -particle_ts_max_steps 2 "
+                                                                                                   "-particle_ts_dt 0.05 -particle_ts_convergence_estimate -convest_num_refine 1 "
+                                                                                                   "-particle_ts_monitor_cancel"},
+                                                                 .flowType = FLOWINCOMPRESSIBLE,
+                                                                 .uExact = trig_trig_u,
+                                                                 .pExact = trig_trig_p,
+                                                                 .TExact = trig_trig_T,
+                                                                 .u_tExact = trig_trig_u_t,
+                                                                 .T_tExact = trig_trig_T_t,
+                                                                 .particleExact = trig_trig_x,
+                                                                 .f0_v = f0_trig_trig_v,
+                                                                 .f0_w = f0_trig_trig_w,
+                                                                 .omega = 0.5}));
 
 std::ostream &operator<<(std::ostream &os, const ParticleMMSParameters &params) { return os << params.mpiTestParameter; }

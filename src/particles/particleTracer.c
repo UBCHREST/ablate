@@ -207,11 +207,11 @@ static PetscErrorCode setupIntegrator(Particles particles, TS particleTs, TS flo
     ierr = PetscObjectCompose((PetscObject) flowTs, "_SwarmSol", (PetscObject) (particles->particleSolution));CHKERRQ(ierr);// do else where
 
     // If the exact solution is set, setup the monitors
-    if(particles->exactSolution){
+    if (particles->exactSolution){
         ierr = TSMonitorSet(particleTs, monitorParticleError, particles, NULL);CHKERRQ(ierr);CHKERRQ(ierr);
     }
     ierr = TSSetFromOptions(particleTs);CHKERRQ(ierr);
-    if(particles->exactSolution) {
+    if (particles->exactSolution) {
         ierr = TSSetComputeExactError(particleTs, computeParticleError);CHKERRQ(ierr);
     }
 
