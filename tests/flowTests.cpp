@@ -73,8 +73,6 @@ class FlowMMS : public MpiTestFixture, public ::testing::WithParamInterface<Flow
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
-PETSC_EXTERN PetscErrorCode removeDiscretePressureNullspace(DM dm, Vec u);
-
 static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     DM dm;
     PetscReal t;
