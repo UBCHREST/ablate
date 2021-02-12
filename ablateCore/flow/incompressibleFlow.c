@@ -3,6 +3,9 @@
 The incompressible flow formulation outlined in docs/content/formulations/incompressibleFlow
 F*/
 
+const char *incompressibleFlowParametersTypeNames[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS + 1] = {
+    "strouhal", "reynolds", "peclet", "mu", "k", "cp", "unknown"};
+
 // \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u}
 static void vIntegrandTestFunction(PetscInt dim,
                                    PetscInt Nf,
@@ -441,7 +444,7 @@ static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt n
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode removeDiscretePressureNullspace(DM dm, Vec u) {
+PetscErrorCode IncompressibleFlow_CompleteFlowInitialization(DM dm, Vec u) {
     MatNullSpace nullsp;
     PetscErrorCode ierr;
 
@@ -461,12 +464,12 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
     PetscFunctionBegin;
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
     ierr = TSGetSolution(ts, &u);CHKERRQ(ierr);
-    ierr = removeDiscretePressureNullspace(dm, u);CHKERRQ(ierr);
+    ierr = IncompressibleFlow_CompleteFlowInitialization(dm, u);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode incompressibleFlowSetupDiscretization(Flow flow) {
-    DM cdm = flow->dm;
+PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm) {
+    DM cdm = dm;
     PetscFE fe[3];
     MPI_Comm comm;
     PetscInt dim, cStart;
@@ -476,15 +479,15 @@ static PetscErrorCode incompressibleFlowSetupDiscretization(Flow flow) {
 
     // determine if it a simplex element and the number of dimensions
     DMPolytopeType ct;
-    ierr = DMPlexGetHeightStratum(flow->dm, 0, &cStart, NULL);CHKERRQ(ierr);
-    ierr = DMPlexGetCellType(flow->dm, cStart, &ct);CHKERRQ(ierr);
+    ierr = DMPlexGetHeightStratum(dm, 0, &cStart, NULL);CHKERRQ(ierr);
+    ierr = DMPlexGetCellType(dm, cStart, &ct);CHKERRQ(ierr);
     PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
 
     // Determine the number of dimensions
-    ierr = DMGetDimension(flow->dm, &dim);CHKERRQ(ierr);
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     /* Create finite element */
-    ierr = PetscObjectGetComm((PetscObject)flow->dm, &comm);CHKERRQ(ierr);
+    ierr = PetscObjectGetComm((PetscObject)dm, &comm);CHKERRQ(ierr);
     ierr = PetscFECreateDefault(comm, dim, dim, simplex, "vel_", PETSC_DEFAULT, &fe[0]);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)fe[VEL], "velocity");CHKERRQ(ierr);
 
@@ -497,15 +500,15 @@ static PetscErrorCode incompressibleFlowSetupDiscretization(Flow flow) {
     ierr = PetscObjectSetName((PetscObject)fe[TEMP], "temperature");CHKERRQ(ierr);
 
     /* Set discretization and boundary conditions for each mesh */
-    ierr = DMSetField(flow->dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);
-    ierr = DMSetField(flow->dm, PRES, NULL, (PetscObject)fe[PRES]);CHKERRQ(ierr);
-    ierr = DMSetField(flow->dm, TEMP, NULL, (PetscObject)fe[TEMP]);CHKERRQ(ierr);
+    ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);
+    ierr = DMSetField(dm, PRES, NULL, (PetscObject)fe[PRES]);CHKERRQ(ierr);
+    ierr = DMSetField(dm, TEMP, NULL, (PetscObject)fe[TEMP]);CHKERRQ(ierr);
 
     // Create the discrete systems for the DM based upon the fields added to the DM
-    ierr = DMCreateDS(flow->dm);CHKERRQ(ierr);
+    ierr = DMCreateDS(dm);CHKERRQ(ierr);
 
     while (cdm) {
-        ierr = DMCopyDisc(flow->dm, cdm);CHKERRQ(ierr);
+        ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
         ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
     }
 
@@ -518,7 +521,7 @@ static PetscErrorCode incompressibleFlowSetupDiscretization(Flow flow) {
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        ierr = DMGetField(flow->dm, PRES, NULL, &pressure);CHKERRQ(ierr);
+        ierr = DMGetField(dm, PRES, NULL, &pressure);CHKERRQ(ierr);
         ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);CHKERRQ(ierr);
         ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);CHKERRQ(ierr);
         ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
@@ -527,12 +530,12 @@ static PetscErrorCode incompressibleFlowSetupDiscretization(Flow flow) {
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode incompressibleFlowStartProblemSetup(Flow flow) {
+PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, IncompressibleFlowParameters *flowParameters) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
     PetscDS prob;
-    ierr = DMGetDS(flow->dm, &prob);CHKERRQ(ierr);
+    ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
 
     // V, W, Q Test Function
     ierr = PetscDSSetResidual(prob, V, vIntegrandTestFunction, vIntegrandTestGradientFunction);CHKERRQ(ierr);
@@ -546,54 +549,63 @@ static PetscErrorCode incompressibleFlowStartProblemSetup(Flow flow) {
     ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
     /* Setup constants */;
     {
-        FlowParameters *param;
-        PetscScalar constants[TOTAlCONSTANTS];
+        PetscScalar constants[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS];
 
-        ierr = PetscBagGetData(flow->parameters, (void **)&param);CHKERRQ(ierr);
-        PackFlowParameters(param, constants);
-        ierr = PetscDSSetConstants(prob, TOTAlCONSTANTS, constants);CHKERRQ(ierr);
+        ierr = IncompressibleFlow_PackParameters(flowParameters, constants);
+        ierr = PetscDSSetConstants(prob, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode incompressibleFlowCompleteProblemSetup(Flow flow, TS ts) {
+PetscErrorCode IncompressibleFlow_CompleteProblemSetup(TS ts, Vec *flowField) {
     PetscErrorCode ierr;
-    FlowParameters *parameters;
     DM dm;
 
     PetscFunctionBeginUser;
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
-    ierr = PetscBagGetData(flow->parameters, (void **)&parameters);CHKERRQ(ierr);
 
     ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
-    ierr = DMCreateGlobalVector(dm, &(flow->flowField));CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)(flow->flowField), "Numerical Solution");CHKERRQ(ierr);
-    ierr = VecSetOptionsPrefix((flow->flowField), "num_sol_");CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(dm, flowField);CHKERRQ(ierr);
 
     ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
 
-    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, &parameters);CHKERRQ(ierr);
-    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, &parameters);CHKERRQ(ierr);
-    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, &parameters);CHKERRQ(ierr);
+    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);
+    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL);CHKERRQ(ierr);
+    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL);CHKERRQ(ierr);
 
     ierr = TSSetPreStep(ts, removeDiscretePressureNullspaceOnTs);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode incompressibleFlowDestroy(Flow flow) {
-    PetscFunctionBeginUser;
-    PetscErrorCode ierr = VecDestroy(&(flow->flowField));CHKERRQ(ierr);
-    PetscFunctionReturn(0);
+
+PetscErrorCode IncompressibleFlow_PackParameters(IncompressibleFlowParameters *parameters, PetscScalar *constantArray) {
+    constantArray[STROUHAL] = parameters->strouhal;
+    constantArray[REYNOLDS] = parameters->reynolds;
+    constantArray[PECLET] = parameters->peclet;
+    constantArray[MU] = parameters->mu;
+    constantArray[K] = parameters->k;
+    constantArray[CP] = parameters->cp;
+    return 0;
 }
 
-PetscErrorCode IncompressibleFlowCreate(Flow flow) {
+PetscErrorCode IncompressibleFlow_ParametersFromPETScOptions(PetscBag *flowParametersBag) {
+    IncompressibleFlowParameters *p;
+    PetscErrorCode ierr;
+
     PetscFunctionBeginUser;
-    flow->setupDiscretization = incompressibleFlowSetupDiscretization;
-    flow->startProblemSetup = incompressibleFlowStartProblemSetup;
-    flow->completeProblemSetup = incompressibleFlowCompleteProblemSetup;
-    flow->completeFlowInitialization = removeDiscretePressureNullspace;
-    flow->destroy = incompressibleFlowDestroy;
+    // create an empty bag
+    ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(IncompressibleFlowParameters), flowParametersBag);CHKERRQ(ierr);
+
+    // setup PETSc parameter bag
+    ierr = PetscBagGetData(*flowParametersBag, (void **)&p);CHKERRQ(ierr);
+    ierr = PetscBagSetName(*flowParametersBag, "flowParameters", "Low Mach Flow Parameters");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(*flowParametersBag, &p->strouhal, 1.0, incompressibleFlowParametersTypeNames[STROUHAL] , "Strouhal number");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(*flowParametersBag, &p->reynolds, 1.0, incompressibleFlowParametersTypeNames[REYNOLDS], "Reynolds number");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(*flowParametersBag, &p->peclet, 1.0, incompressibleFlowParametersTypeNames[PECLET], "Peclet number");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(*flowParametersBag, &p->mu, 1.0, incompressibleFlowParametersTypeNames[MU], "non-dimensional viscosity");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(*flowParametersBag, &p->k, 1.0, incompressibleFlowParametersTypeNames[K], "non-dimensional thermal conductivity");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(*flowParametersBag, &p->cp, 1.0, incompressibleFlowParametersTypeNames[CP], "non-dimensional specific heat capacity");CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

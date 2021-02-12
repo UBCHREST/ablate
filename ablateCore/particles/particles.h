@@ -2,8 +2,8 @@
 #define ABLATE_PARTICLES_H
 
 #include <petsc.h>
-#include "parameters.h"
 #include "flow.h"
+#include "flowParameters.h"
 #include "particleInitializer.h"
 
 // Define field id for mass

@@ -4,10 +4,11 @@ We solve the Low Mach flow problem in a rectangular\n\
 domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
-#include "flow.h"
 #include "gtest/gtest.h"
 #include "mesh.h"
 #include "MpiTestFixture.hpp"
+#include "incompressibleFlow.h"
+#include "parameters.h"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -56,7 +57,7 @@ static IntegrandTestFunction f0_w_original;
 static IntegrandTestFunction f0_q_original;
 
 struct FlowMMSParameters {
-    MpiTestParameter mpiTestParameter;
+    testingResources::MpiTestParameter mpiTestParameter;
     FlowType flowType;
     ExactFunction uExact;
     ExactFunction pExact;
@@ -68,7 +69,7 @@ struct FlowMMSParameters {
     IntegrandTestFunction f0_q;
 };
 
-class FlowMMS : public MpiTestFixture, public ::testing::WithParamInterface<FlowMMSParameters> {
+class FlowMMS : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<FlowMMSParameters> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
@@ -544,7 +545,7 @@ static void SourceFunction(f0_lowMach_cubic_w) {
     f0[0] -= (-2 * k) / P + (Cp * Pth * (S + y * (t + 2 * Power(x, 3) + 3 * Power(x, 2) * y) + x * (t + Power(x, 3) + Power(y, 3)))) / (1 + t + Power(x, 2) / 2. + Power(y, 2) / 2.);
 }
 
-TEST_P(FlowMMS, MachMMSTests) {
+TEST_P(FlowMMS, ShouldMatchExactSolution) {
     StartWithMPI
         DM dm;     /* problem definition */
         TS ts;     /* timestepper */

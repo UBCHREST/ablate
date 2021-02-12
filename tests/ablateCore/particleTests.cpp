@@ -5,6 +5,7 @@
 #include "particleInitializer.h"
 #include "particles.h"
 #include "MpiTestFixture.hpp"
+#include "lowMachFlow.h"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -54,7 +55,7 @@ static IntegrandTestFunction f0_q_original;
 static PetscReal omega;
 
 struct ParticleMMSParameters {
-    MpiTestParameter mpiTestParameter;
+    testingResources::MpiTestParameter mpiTestParameter;
     FlowType flowType;
     ExactFunction uExact;
     ExactFunction pExact;
@@ -68,7 +69,7 @@ struct ParticleMMSParameters {
     PetscReal omega;
 };
 
-class ParticleMMS : public MpiTestFixture, public ::testing::WithParamInterface<ParticleMMSParameters> {
+class ParticleMMS : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<ParticleMMSParameters> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };

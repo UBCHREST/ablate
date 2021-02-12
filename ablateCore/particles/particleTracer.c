@@ -24,7 +24,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     DMInterpolationInfo ictx;
     const PetscScalar  *coords, *v;
     PetscScalar        *f;
-    PetscInt            vf[1] = {VEL};
+    PetscInt            vf[1] = {0};
     PetscInt            dim, Np;
     PetscErrorCode      ierr;
 

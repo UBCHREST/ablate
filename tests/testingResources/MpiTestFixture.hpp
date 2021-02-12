@@ -4,11 +4,19 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
+namespace testingResources {
+
 struct MpiTestParameter {
     std::string testName;
     int nproc;
     std::string expectedOutputFile;
     std::string arguments;
+
+    std::string getTestName() const {
+        std::string s = testName;
+        std::replace( s.begin(), s.end(), ' ', '_');
+        return s;
+    }
 };
 
 class MpiTestFixture : public ::testing::Test {
@@ -54,7 +62,6 @@ class MpiTestFixture : public ::testing::Test {
     static bool InitializeTestingEnvironment(int* argc, char*** argv);
 };
 
-std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params);
 
 // Define macros to simplify the setup and running of mpi based code
 #define StartWithMPI if (ShouldRunMpiCode()) {
@@ -66,3 +73,4 @@ std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params);
     }
 
 #endif  // mpitestfixture_h
+}

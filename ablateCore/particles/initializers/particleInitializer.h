@@ -2,7 +2,7 @@
 #define ABLATE_PARTICLEINITIALIZER_H
 
 #include <petsc.h>
-#include "parameters.h"
+#include "flowParameters.h"
 
 typedef enum {PART_LAYOUT_CELL, PART_LAYOUT_BOX, NUM_PART_LAYOUT_TYPES} PartLayoutType;
 

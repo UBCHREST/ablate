@@ -3,9 +3,8 @@ target_link_libraries(coreTests PUBLIC gtest gmock ablateCore testingResources)
 
 target_sources(coreTests
         PRIVATE
-        flowTests.cpp
-        particleTests.cpp
-        parametersTests.cpp
+        lowMachFlowTests.cpp
+        incompressibleFlowTests.cpp
         main.cpp
         )
 

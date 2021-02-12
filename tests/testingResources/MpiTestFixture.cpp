@@ -4,19 +4,19 @@
 #include <fstream>
 #include <regex>
 
-int* MpiTestFixture::argc;
-char*** MpiTestFixture::argv;
-const std::string MpiTestFixture::InTestRunFlag = "--inmpitestrun=true";
-const std::string MpiTestFixture::Test_Mpi_Command_Name = "TEST_MPI_COMMAND";
-const std::string MpiTestFixture::Keep_Output_File = "--keepOutputFile=true";
+int* testingResources::MpiTestFixture::argc;
+char*** testingResources::MpiTestFixture::argv;
+const std::string testingResources::MpiTestFixture::InTestRunFlag = "--inmpitestrun=true";
+const std::string testingResources::MpiTestFixture::Test_Mpi_Command_Name = "TEST_MPI_COMMAND";
+const std::string testingResources::MpiTestFixture::Keep_Output_File = "--keepOutputFile=true";
 const std::string expectedResultDelimiter = std::string("<expects>");
 
-bool MpiTestFixture::inMpiTestRun;
-bool MpiTestFixture::keepOutputFile;
+bool testingResources::MpiTestFixture::inMpiTestRun;
+bool testingResources::MpiTestFixture::keepOutputFile;
 
-std::string MpiTestFixture::mpiCommand = "mpirun";
+std::string testingResources::MpiTestFixture::mpiCommand = "mpirun";
 
-std::string MpiTestFixture::ParseCommandLineArgument(int* argc, char*** argv, const std::string flag) {
+std::string testingResources::MpiTestFixture::ParseCommandLineArgument(int* argc, char*** argv, const std::string flag) {
     int commandLineArgumentLocation = -1;
     std::string argument;
     for (auto i = 0; i < *argc; i++) {
@@ -38,7 +38,7 @@ std::string MpiTestFixture::ParseCommandLineArgument(int* argc, char*** argv, co
     return argument;
 }
 
-bool MpiTestFixture::InitializeTestingEnvironment(int* argc, char*** argv) {
+bool testingResources::MpiTestFixture::InitializeTestingEnvironment(int* argc, char*** argv) {
     MpiTestFixture::argc = argc;
     MpiTestFixture::argv = argv;
 
@@ -53,9 +53,9 @@ bool MpiTestFixture::InitializeTestingEnvironment(int* argc, char*** argv) {
     return inMpiTestRun;
 }
 
-void MpiTestFixture::SetUp() {}
+void testingResources::MpiTestFixture::SetUp() {}
 
-void MpiTestFixture::TearDown() {
+void testingResources::MpiTestFixture::TearDown() {
     if (!inMpiTestRun) {
         if (!MpiTestFixture::keepOutputFile) {
             fs::remove_all(OutputFile());
@@ -65,7 +65,7 @@ void MpiTestFixture::TearDown() {
     }
 }
 
-void MpiTestFixture::RunWithMPI() const {
+void testingResources::MpiTestFixture::RunWithMPI() const {
     // build the mpi command
     std::stringstream mpiCommand;
     mpiCommand << MpiTestFixture::mpiCommand << " ";
@@ -84,7 +84,7 @@ void MpiTestFixture::RunWithMPI() const {
     }
 }
 
-void MpiTestFixture::CompareOutputFiles() {
+void testingResources::MpiTestFixture::CompareOutputFiles() {
     if (mpiTestParameter.expectedOutputFile.empty()) {
         return;
     }
@@ -147,5 +147,3 @@ void MpiTestFixture::CompareOutputFiles() {
 
     ASSERT_FALSE(std::getline(actualStream, actualLine)) << "actual results should reach end of file";
 }
-
-std::ostream& operator<<(std::ostream& os, const MpiTestParameter& params) { return os << (params.testName.empty() ? params.arguments : params.testName); }

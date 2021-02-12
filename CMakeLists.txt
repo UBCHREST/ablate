@@ -8,7 +8,7 @@ pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
 set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
 
 # Set the project details
-project(ABLATE VERSION 0.1.1)
+project(ablateLibrary VERSION 0.1.1)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)
@@ -19,8 +19,6 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Setup the framework library
-add_library(ablateCore "")
 
 # Check if we should enable testing options
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -28,15 +26,16 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CTest)
 endif()
 
+# Load in the subdirectories
+add_subdirectory(ablateCore)
+add_subdirectory(ablateLibrary)
+
 # Setup and configure testing
 if(BUILD_TESTING)
     enable_testing()
     include(GoogleTest)
     add_subdirectory(tests)
 endif()
-
-# Load in the subdirectories
-add_subdirectory(ablateCore)
 
 # Add a target to allow linting check
 find_program(CLANG_FORMAT "clang-format")
@@ -48,9 +47,14 @@ if(CLANG_FORMAT)
             -r
             --extensions=cpp,hpp,cc,hh,c++,h++,cxx,hxx
             ${PROJECT_SOURCE_DIR}/ablateCore
+            ${PROJECT_SOURCE_DIR}/ablateLibrary
             ${PROJECT_SOURCE_DIR}/tests
             COMMAND ${PROJECT_SOURCE_DIR}/extern/petscFormat/petscFormatTest.sh
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             USES_TERMINAL
     )
 endif()
+
+# keep a separate main statement
+add_executable(ablate main.cpp)
+target_link_libraries(ablate PRIVATE ablateLibrary)

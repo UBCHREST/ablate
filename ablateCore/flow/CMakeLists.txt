@@ -2,8 +2,6 @@
 # Include code
 target_sources(ablateCore
         PUBLIC
-        flow.c
-        flow.h
         incompressibleFlow.c
         incompressibleFlow.h
         lowMachFlow.c
