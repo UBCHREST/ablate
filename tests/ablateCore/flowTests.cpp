@@ -7,7 +7,7 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include "flow.h"
 #include "gtest/gtest.h"
 #include "mesh.h"
-#include "testFixtures/MpiTestFixture.hpp"
+#include "MpiTestFixture.hpp"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 

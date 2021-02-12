@@ -20,7 +20,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 # Setup the framework library
-add_library(ablateLibrary "")
+add_library(ablateCore "")
 
 # Check if we should enable testing options
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -36,7 +36,7 @@ if(BUILD_TESTING)
 endif()
 
 # Load in the subdirectories
-add_subdirectory(src)
+add_subdirectory(ablateCore)
 
 # Add a target to allow linting check
 find_program(CLANG_FORMAT "clang-format")
@@ -47,7 +47,7 @@ if(CLANG_FORMAT)
             --style=file
             -r
             --extensions=cpp,hpp,cc,hh,c++,h++,cxx,hxx
-            ${PROJECT_SOURCE_DIR}/src
+            ${PROJECT_SOURCE_DIR}/ablateCore
             ${PROJECT_SOURCE_DIR}/tests
             COMMAND ${PROJECT_SOURCE_DIR}/extern/petscFormat/petscFormatTest.sh
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}

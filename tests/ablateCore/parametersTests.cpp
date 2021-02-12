@@ -1,7 +1,7 @@
 #include <petsc.h>
 #include "gtest/gtest.h"
 #include "parameters.h"
-#include "testFixtures/MpiTestFixture.hpp"
+#include "MpiTestFixture.hpp"
 
 TEST(ParametersTests, ShouldPackFlowParameters) {
     // arrange

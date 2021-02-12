@@ -4,7 +4,7 @@
 #include "mesh.h"
 #include "particleInitializer.h"
 #include "particles.h"
-#include "testFixtures/MpiTestFixture.hpp"
+#include "MpiTestFixture.hpp"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
