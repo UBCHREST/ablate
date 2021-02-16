@@ -1,6 +1,0 @@
-#ifndef ABLATELIBRARY_DOMAIN_H
-#define ABLATELIBRARY_DOMAIN_H
-
-class domain {};
-
-#endif  // ABLATELIBRARY_DOMAIN_H

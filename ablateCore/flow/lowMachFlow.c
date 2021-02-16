@@ -410,7 +410,7 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_StartProblemSetup(DM flowDm, LowMachFlowParameters *flowParameters) {
+PetscErrorCode LowMachFlow_StartProblemSetup(DM flowDm, PetscInt numberParameters, PetscScalar parameters[]) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
@@ -429,12 +429,13 @@ PetscErrorCode LowMachFlow_StartProblemSetup(DM flowDm, LowMachFlowParameters *f
     ierr = PetscDSSetJacobian(prob, Q, TEMP, g0_qT, g1_qT, NULL, NULL);CHKERRQ(ierr);
     ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
     ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
+
     /* Setup constants */;
     {
-        PetscScalar constants[TOTAL_LOW_MACH_FLOW_PARAMETERS];
-        LowMachFlow_PackParameters(flowParameters, constants);
-        ierr = PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants);
-        CHKERRQ(ierr);
+        if(numberParameters != TOTAL_LOW_MACH_FLOW_PARAMETERS){
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "wrong number of flow parameters");
+        }
+        ierr = PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, parameters);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }

@@ -530,7 +530,7 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, IncompressibleFlowParameters *flowParameters) {
+PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, PetscInt numberParameters, PetscScalar parameters[]) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
@@ -549,10 +549,10 @@ PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, IncompressibleFlowPar
     ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
     /* Setup constants */;
     {
-        PetscScalar constants[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS];
-
-        ierr = IncompressibleFlow_PackParameters(flowParameters, constants);
-        ierr = PetscDSSetConstants(prob, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants);CHKERRQ(ierr);
+        if(numberParameters != TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS){
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "wrong number of flow parameters");
+        }
+        ierr = PetscDSSetConstants(prob, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, parameters);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }

@@ -347,7 +347,10 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Start the problem setup
-        ierr = LowMachFlow_StartProblemSetup(dm,flowParameters);
+        PetscScalar constants[TOTAL_LOW_MACH_FLOW_PARAMETERS];
+        ierr = LowMachFlow_PackParameters(flowParameters, constants);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = LowMachFlow_StartProblemSetup(dm,TOTAL_LOW_MACH_FLOW_PARAMETERS, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Override problem with source terms, boundary, and set the exact solution

@@ -395,7 +395,10 @@ TEST_P(IncompressibleFlowMMS, ShouldConvergeToExactSolution) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Start the problem setup
-        ierr = IncompressibleFlow_StartProblemSetup(dm,flowParameters);
+        PetscScalar constants[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS];
+        ierr = IncompressibleFlow_PackParameters(flowParameters, constants);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = IncompressibleFlow_StartProblemSetup(dm,TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Override problem with source terms, boundary, and set the exact solution

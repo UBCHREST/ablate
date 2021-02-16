@@ -29,7 +29,7 @@ PETSC_EXTERN PetscErrorCode IncompressibleFlow_ParametersFromPETScOptions(PetscB
 
 // Define the functions to setup the incompressible flow
 PETSC_EXTERN PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm);
-PETSC_EXTERN PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, IncompressibleFlowParameters *flowParameters);
+PETSC_EXTERN PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, PetscInt, PetscScalar []);
 PETSC_EXTERN PetscErrorCode IncompressibleFlow_CompleteProblemSetup(TS ts, Vec *flowField);
 PETSC_EXTERN PetscErrorCode IncompressibleFlow_CompleteFlowInitialization(DM dm, Vec u);
 

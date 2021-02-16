@@ -1,2 +1,3 @@
 add_subdirectory(testingResources)
 add_subdirectory(ablateCore)
+add_subdirectory(ablateLibrary)

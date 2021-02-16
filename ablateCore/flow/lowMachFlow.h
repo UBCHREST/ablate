@@ -35,7 +35,7 @@ PETSC_EXTERN PetscErrorCode LowMachFlow_ParametersFromPETScOptions(PetscBag *flo
 
 // Define the functions to setup the low mach flow
 PETSC_EXTERN PetscErrorCode LowMachFlow_SetupDiscretization(DM dm);
-PETSC_EXTERN PetscErrorCode LowMachFlow_StartProblemSetup(DM dm, LowMachFlowParameters *flowParameters);
+PETSC_EXTERN PetscErrorCode LowMachFlow_StartProblemSetup(DM dm, PetscInt, PetscScalar []);
 PETSC_EXTERN PetscErrorCode LowMachFlow_CompleteProblemSetup(TS ts, Vec *flowField);
 PETSC_EXTERN PetscErrorCode LowMachFlow_CompleteFlowInitialization(DM dm, Vec u);
 
