@@ -1,7 +1,3 @@
-//
-// Created by Matt McGurn on 2/15/21.
-//
-
 #ifndef ABLATELIBRARY_PETSCERROR_HPP
 #define ABLATELIBRARY_PETSCERROR_HPP
 #include <petscsys.h>
