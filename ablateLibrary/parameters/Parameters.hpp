@@ -1,6 +1,8 @@
 #ifndef ABLATELIBRARY_PARAMETERS_HPP
 #define ABLATELIBRARY_PARAMETERS_HPP
 #include <optional>
+#include <string>
+#include <sstream>
 #include "parameterException.hpp"
 
 namespace ablate {
