@@ -1,7 +1,9 @@
 target_sources(ablateLibrary
         PUBLIC
-        lowMachFlow.hpp
-        lowMachFlow.cpp
         flow.cpp
         flow.hpp
+        lowMachFlow.hpp
+        lowMachFlow.cpp
+        incompressibleFlow.hpp
+        incompressibleFlow.cpp
         )

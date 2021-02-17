@@ -7,6 +7,6 @@ void ablate::utilities::PetscOptions::Set(std::string& prefix, std::map<std::str
     // March over and set each option in the global petsc database
     for(auto optionPair : options){
         std::string optionName = "-" + prefix + "" + optionPair.first;
-        PetscOptionsSetValue(NULL, optionName.c_str(), optionPair.second.c_str()) >> checkError;
+        PetscOptionsSetValue(NULL, optionName.c_str(), optionPair.second.empty() ? NULL : optionPair.second.c_str()) >> checkError;
     }
 }

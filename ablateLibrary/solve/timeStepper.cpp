@@ -19,6 +19,14 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     ierr = DMGetDS(dm, &ds);
     CHKERRQ(ierr);
 
+
+    const char* name;
+    VecGetOptionsPrefix(u, &name);
+    printf("name %s\n", name);
+
+    ierr = VecViewFromOptions(u, NULL, "-vec_view_monitor");
+    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
     for (f = 0; f < 3; ++f) {
         ierr = PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
@@ -28,15 +36,8 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-    ierr = DMGetGlobalVector(dm, &u);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    // ierr = TSGetSolution(ts, &u);CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = PetscObjectSetName((PetscObject)u, "Numerical Solution");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = VecViewFromOptions(u, NULL, "-sol_vec_view");
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = DMRestoreGlobalVector(dm, &u);
-    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
+
 
     ierr = DMGetGlobalVector(dm, &v);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
@@ -52,6 +53,8 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
 
     PetscFunctionReturn(0);
 }
+
+PetscErrorCode SetInitialConditions(TS ts, Vec u);
 
 ablate::solve::TimeStepper::TimeStepper(MPI_Comm comm, std::string name, std::map<std::string, std::string> arguments):
     comm(comm),name(name)
@@ -77,9 +80,12 @@ ablate::solve::TimeStepper::~TimeStepper() {
     TSDestroy(&ts);
 }
 
+
 void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     // Get the solution vector
     Vec solutionVec = solvable->SetupSolve(ts);
+
+    SetInitialConditions(ts, solutionVec);
 
     // set the ts from options
     TSSetFromOptions(ts) >> checkError;
@@ -92,6 +98,8 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
     DMSetOutputSequenceNumber(dm, 0, time) >> checkError;
+
+    TSMonitorSet(ts, MonitorError, NULL, NULL)  >> checkError;
 
     TSSolve(ts, solutionVec);
 }
