@@ -360,16 +360,32 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
     // Determine the number of dimensions
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
+    // get the dm prefix to help name the fe objects
+    const char* dmPrefix;
+    ierr = DMGetOptionsPrefix(dm, &dmPrefix);CHKERRQ(ierr);
+    char fieldPrefix[128] = "";
+
     /* Create finite element */
+    ierr = PetscStrlcat(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
+    ierr = PetscStrlcat(fieldPrefix, "vel_", 128);CHKERRQ(ierr);
+
     ierr = PetscObjectGetComm((PetscObject)dm, &comm);CHKERRQ(ierr);
-    ierr = PetscFECreateDefault(comm, dim, dim, simplex, "vel_", PETSC_DEFAULT, &fe[0]);CHKERRQ(ierr);
+    ierr = PetscFECreateDefault(comm, dim, dim, simplex, fieldPrefix, PETSC_DEFAULT, &fe[0]);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)fe[VEL], "velocity");CHKERRQ(ierr);
 
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, "pres_", PETSC_DEFAULT, &fe[1]);CHKERRQ(ierr);
+    // pressure
+    ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
+    ierr = PetscStrlcat(fieldPrefix, "pres_", 128);CHKERRQ(ierr);
+
+    ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[1]);CHKERRQ(ierr);
     ierr = PetscFECopyQuadrature(fe[VEL], fe[PRES]);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)fe[PRES], "pressure");CHKERRQ(ierr);
 
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, "temp_", PETSC_DEFAULT, &fe[2]);CHKERRQ(ierr);
+    // temperature
+    ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
+    ierr = PetscStrlcat(fieldPrefix, "temp_", 128);CHKERRQ(ierr);
+
+    ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[2]);CHKERRQ(ierr);
     ierr = PetscFECopyQuadrature(fe[VEL], fe[TEMP]);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)fe[TEMP], "temperature");CHKERRQ(ierr);
 

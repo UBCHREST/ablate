@@ -532,24 +532,20 @@ INSTANTIATE_TEST_SUITE_P(
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1",
                 .nproc = 1,
                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1",
-                .arguments = "-dm_plex_separate_marker -dm_refine 2 "
+                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-dmts_check .001 -ts_max_steps 30 -ts_dt 0.1 "
+                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                              "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                              "-dm_view hdf5:case.h5 "
-                                              "-vec_view_monitor hdf5:case.h5::append "
-                                              " -ksp_atol 1.0e-14 "
-                                              "hdf5:case.h5::append"},
+                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
             .TExact = incompressible_quadratic_T,
             .u_tExact = incompressible_quadratic_u_t,
             .T_tExact = incompressible_quadratic_T_t,
-            /*.f0_v = f0_incompressible_quadratic_v,
-            .f0_w = f0_incompressible_quadratic_w*/},
+            .f0_v = f0_incompressible_quadratic_v,
+            .f0_w = f0_incompressible_quadratic_w},
         (IncompressibleFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
                 .nproc = 4,

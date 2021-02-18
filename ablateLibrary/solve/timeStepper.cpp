@@ -60,7 +60,7 @@ ablate::solve::TimeStepper::TimeStepper(MPI_Comm comm, std::string name, std::ma
 
     // set the name and prefix as provided
     PetscObjectSetName((PetscObject)ts, name.c_str()) >> checkError;
-//    TSSetOptionsPrefix(ts, name.c_str()) >> checkError;
+    TSSetOptionsPrefix(ts, name.c_str()) >> checkError;
 
     // append any prefix values
     ablate::utilities::PetscOptions::Set(name, arguments);

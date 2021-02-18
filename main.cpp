@@ -7,6 +7,7 @@
 #include "flow/incompressibleFlow.hpp"
 #include "utilities/petscError.hpp"
 #include "incompressibleFlow.h"
+#include "utilities/petscOptions.hpp"
 
 PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     DM dm;
@@ -40,11 +41,45 @@ int main(int argc, char **args) {
     // initialize petsc and mpi
     PetscInitialize(&argc, &args, NULL, NULL) >> ablate::checkError;
     {
+        // -dm_plex_separate_marker
+        // -dm_refine 2   -ts_max_steps 30 -ts_dt 0.1 -dm_view hdf5:sol.h5 -num_sol_vec_view_monitor hdf5:sol.h5::append -exact__vec_view hdf5:sol.h5::append
+        //
+        // -vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1  -ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1.0e-14 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full -fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi
+
+        std::map<std::string, std::string> globalParams = {
+            {"dm_plex_separate_marker", ""}
+        };
+        ablate::utilities::PetscOptions::Set(globalParams);
+
         // Create time stepping wrapper
-        auto ts = std::make_unique<ablate::solve::TimeStepper>(PETSC_COMM_WORLD, "testTimeStepper", std::map<std::string, std::string>({{"ts_dt", ".1"}, {"ts_max_steps", "1000"}}));
+        auto ts = std::make_unique<ablate::solve::TimeStepper>(PETSC_COMM_WORLD, "testTimeStepper", std::map<std::string, std::string>(
+                                                                                                        {
+                                                                                                            {"ts_dt", ".1"},
+                                                                                                            {"ts_max_steps", "30"},
+                                                                                                            {"ksp_type", "fgmres"},
+                                                                                                            {"ksp_gmres_restart", "10"},
+                                                                                                            {"ksp_rtol", "1.0e-9"},
+                                                                                                            {"ksp_atol", "1.0e-14"},
+                                                                                                            {"ksp_error_if_not_converged", ""},
+                                                                                                            {"pc_type", "fieldsplit"},
+                                                                                                            {"pc_fieldsplit_0_fields", "0,2"},
+                                                                                                            {"pc_fieldsplit_1_fields", "1"},
+                                                                                                            {"pc_fieldsplit_type", "schur"},
+                                                                                                            {"pc_fieldsplit_schur_factorization_type", "full"},
+                                                                                                            {"fieldsplit_0_pc_type", "lu"},
+                                                                                                            {"fieldsplit_pressure_ksp_rtol", "1E-10"},
+                                                                                                            {"fieldsplit_pressure_pc_type", "jacobi"}
+                                                                                                        }));
 
         // Create a mesh
-        auto mesh = std::make_shared<ablate::mesh::BoxMesh>(PETSC_COMM_WORLD, "testBoxMesh", std::map<std::string, std::string>(/*{{"dm_view", "hdf5:sol.h5"},{"dm_plex_separate_marker", ""}, {"dm_refine", "1"}}*/), 2);
+        auto mesh = std::make_shared<ablate::mesh::BoxMesh>(PETSC_COMM_WORLD, "testBoxMesh", std::map<std::string, std::string>({
+                                                                                                                                    {"num_sol_vec_view_monitor", "hdf5:sol.h5::append"},
+                                                                                                 {"dm_view", "hdf5:sol.h5"},
+                                                                                                 {"dm_plex_separate_marker", ""},
+                                                                                                 {"dm_refine", "2"},
+                                                                                                                                    {"vel_petscspace_degree", "2"},
+                                                                                                                                    {"pres_petscspace_degree", "1"},
+                                                                                                                                    {"temp_petscspace_degree", "1"}}), 2);
 
         std::map<std::string, std::string> values = {{"strouhal", "1.0"},
                                                      {"reynolds", "1.0"},
