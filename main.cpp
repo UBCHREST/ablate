@@ -64,9 +64,6 @@ int main(int argc, char **args) {
         // Create a low flow
         auto flow = std::make_shared<ablate::flow::IncompressibleFlow>(mesh, "low mach flow", std::map<std::string, std::string>(), parameters);
 
-        // Set initial conditions from the exact solution
-        TSSetComputeInitialCondition(ts->GetTS(), SetInitialConditions);
-
         ts->Solve(flow);
     }
     PetscFinalize() >> ablate::checkError;

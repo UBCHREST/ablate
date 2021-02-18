@@ -93,6 +93,9 @@ Vec ablate::flow::IncompressibleFlow::SetupSolve(TS& ts) {
     // finish setup and assign flow field
     IncompressibleFlow_CompleteProblemSetup(ts, &flowSolution);
 
+    // Initialize the flow field
+    DMComputeExactSolution(mesh->GetDomain(), 0, flowSolution, NULL) >> checkError;
+
     // Name the flow field
     PetscObjectSetName((PetscObject)flowSolution, "Incompressible Flow Numerical Solution") >> checkError;
     VecSetOptionsPrefix(flowSolution, "num_sol_") >> checkError;

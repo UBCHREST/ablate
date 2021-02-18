@@ -19,11 +19,6 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     ierr = DMGetDS(dm, &ds);
     CHKERRQ(ierr);
 
-
-    const char* name;
-    VecGetOptionsPrefix(u, &name);
-    printf("name %s\n", name);
-
     ierr = VecViewFromOptions(u, NULL, "-vec_view_monitor");
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
@@ -54,8 +49,6 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode SetInitialConditions(TS ts, Vec u);
-
 ablate::solve::TimeStepper::TimeStepper(MPI_Comm comm, std::string name, std::map<std::string, std::string> arguments):
     comm(comm),name(name)
 {
@@ -84,8 +77,6 @@ ablate::solve::TimeStepper::~TimeStepper() {
 void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     // Get the solution vector
     Vec solutionVec = solvable->SetupSolve(ts);
-
-    SetInitialConditions(ts, solutionVec);
 
     // set the ts from options
     TSSetFromOptions(ts) >> checkError;
