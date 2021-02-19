@@ -1,0 +1,11 @@
+target_sources(ablateLibrary
+        PUBLIC
+        registrar.hpp
+        factory.hpp
+        argumentIdentifier.hpp
+        blue.cpp
+        blue.hpp
+        item.cpp
+        item.hpp
+        testFactory.hpp
+        )
