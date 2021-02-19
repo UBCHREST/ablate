@@ -3,11 +3,10 @@
 #define ABLATELIBRARY_TIMESTEPPER_H
 #include <petsc.h>
 #include <map>
-#include "solvable.hpp"
 #include <memory>
+#include "solvable.hpp"
 
-namespace ablate {
-namespace solve {
+namespace ablate::solve {
 class TimeStepper {
    private:
     TS ts;            /** The PETSC time stepper**/
@@ -22,7 +21,6 @@ class TimeStepper {
 
     void Solve(std::shared_ptr<Solvable>);
 };
-}
-}
+}  // namespace ablate::solve
 
 #endif  // ABLATELIBRARY_TIMESTEPPER_H

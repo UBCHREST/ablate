@@ -4,4 +4,6 @@ target_sources(ablateLibrary
         petscError.hpp
         petscOptions.cpp
         petscOptions.hpp
+        demangler.cpp
+        demangler.hpp
         )

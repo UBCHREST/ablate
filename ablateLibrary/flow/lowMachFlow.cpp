@@ -30,9 +30,8 @@ static PetscErrorCode lowMach_quadratic_T_t(PetscInt Dim, PetscReal time, const 
     return 0;
 }
 
-ablate::flow::LowMachFlow::LowMachFlow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters) :
-Flow(mesh, name, arguments)
-{
+ablate::flow::LowMachFlow::LowMachFlow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters)
+    : Flow(mesh, name, arguments) {
     // Setup the problem
     LowMachFlow_SetupDiscretization(mesh->GetDomain()) >> checkError;
 
@@ -49,34 +48,35 @@ Flow(mesh, name, arguments)
 
     PetscInt id;
     id = 3;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))lowMach_quadratic_u, (void (*)(void))lowMach_quadratic_u_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))lowMach_quadratic_u, (void (*)(void))lowMach_quadratic_u_t, 1, &id, nullptr) >> checkError;
     id = 1;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))lowMach_quadratic_u, (void (*)(void))lowMach_quadratic_u_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))lowMach_quadratic_u, (void (*)(void))lowMach_quadratic_u_t, 1, &id, nullptr) >>
+        checkError;
     id = 2;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))lowMach_quadratic_u, (void (*)(void))lowMach_quadratic_u_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))lowMach_quadratic_u, (void (*)(void))lowMach_quadratic_u_t, 1, &id, nullptr) >> checkError;
     id = 4;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))lowMach_quadratic_u, (void (*)(void))lowMach_quadratic_u_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))lowMach_quadratic_u, (void (*)(void))lowMach_quadratic_u_t, 1, &id, nullptr) >> checkError;
     id = 3;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))lowMach_quadratic_T, (void (*)(void))lowMach_quadratic_T_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))lowMach_quadratic_T, (void (*)(void))lowMach_quadratic_T_t, 1, &id, nullptr) >> checkError;
     id = 1;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))lowMach_quadratic_T, (void (*)(void))lowMach_quadratic_T_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))lowMach_quadratic_T, (void (*)(void))lowMach_quadratic_T_t, 1, &id, nullptr) >> checkError;
     id = 2;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))lowMach_quadratic_T, (void (*)(void))lowMach_quadratic_T_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))lowMach_quadratic_T, (void (*)(void))lowMach_quadratic_T_t, 1, &id, nullptr) >> checkError;
     id = 4;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))lowMach_quadratic_T, (void (*)(void))lowMach_quadratic_T_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))lowMach_quadratic_T, (void (*)(void))lowMach_quadratic_T_t, 1, &id, nullptr) >> checkError;
 
     // Set the exact solution
-    PetscDSSetExactSolution(prob, VEL, lowMach_quadratic_u, NULL)  >> checkError;
-    PetscDSSetExactSolution(prob, PRES, lowMach_quadratic_p, NULL)  >> checkError;
-    PetscDSSetExactSolution(prob, TEMP, lowMach_quadratic_T, NULL)  >> checkError;
-    PetscDSSetExactSolutionTimeDerivative(prob, VEL, lowMach_quadratic_u_t, NULL)  >> checkError;
-    PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, NULL)  >> checkError;
-    PetscDSSetExactSolutionTimeDerivative(prob, TEMP, lowMach_quadratic_T_t, NULL)  >> checkError;
+    PetscDSSetExactSolution(prob, VEL, lowMach_quadratic_u, NULL) >> checkError;
+    PetscDSSetExactSolution(prob, PRES, lowMach_quadratic_p, NULL) >> checkError;
+    PetscDSSetExactSolution(prob, TEMP, lowMach_quadratic_T, NULL) >> checkError;
+    PetscDSSetExactSolutionTimeDerivative(prob, VEL, lowMach_quadratic_u_t, NULL) >> checkError;
+    PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, NULL) >> checkError;
+    PetscDSSetExactSolutionTimeDerivative(prob, TEMP, lowMach_quadratic_T_t, NULL) >> checkError;
 }
 
-Vec ablate::flow::LowMachFlow::SetupSolve(TS& ts) {
+Vec ablate::flow::LowMachFlow::SetupSolve(TS &ts) {
     // Setup the solve with the ts
-    TSSetDM(ts, mesh->GetDomain())  >> checkError;
+    TSSetDM(ts, mesh->GetDomain()) >> checkError;
 
     // finish setup and assign flow field
     LowMachFlow_CompleteProblemSetup(ts, &flowSolution);

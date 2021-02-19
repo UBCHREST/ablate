@@ -7,6 +7,7 @@ target_sources(libraryTests
         )
 
 add_subdirectory(parameters)
+add_subdirectory(parser)
 
 gtest_discover_tests(libraryTests
         # set a working directory so your project root so that you can find test data via paths relative to the project root

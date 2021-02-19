@@ -4,8 +4,7 @@
 
 using ::testing::AtLeast;
 
-namespace ablateTesting {
-namespace parameters {
+namespace ablateTesting::parameters {
 
 using namespace ablate::parameters;
 
@@ -106,12 +105,10 @@ TEST_P(ParameterTestFixtureDouble, GetShouldReturnDefaultValue) {
     EXPECT_DOUBLE_EQ(actualValue, 102.2);
 }
 
-INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureDouble,
-                        ::testing::Values(std::make_tuple("22.3", 22.3), std::make_tuple(" 1E-3 ", 1.0E-3), std::make_tuple("-1.2", -1.2)));
+INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureDouble, ::testing::Values(std::make_tuple("22.3", 22.3), std::make_tuple(" 1E-3 ", 1.0E-3), std::make_tuple("-1.2", -1.2)));
 
 // int based tests
 class ParameterTestFixtureInt : public testing::TestWithParam<std::tuple<std::string, int>> {};
-
 
 TEST_P(ParameterTestFixtureInt, GetShouldReturnValue) {
     // arrange
@@ -202,14 +199,10 @@ TEST_P(ParameterTestFixtureInt, GetShouldReturnDefaultValue) {
     EXPECT_EQ(actualValue, 102);
 }
 
-
-INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureInt,
-                         ::testing::Values(std::make_tuple("22.3", 22), std::make_tuple(" 3 ", 3), std::make_tuple("-23", -23)));
-
+INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureInt, ::testing::Values(std::make_tuple("22.3", 22), std::make_tuple(" 3 ", 3), std::make_tuple("-23", -23)));
 
 // int based tests
 class ParameterTestFixtureString : public testing::TestWithParam<std::tuple<std::string, std::string>> {};
-
 
 TEST_P(ParameterTestFixtureString, GetShouldReturnValue) {
     // arrange
@@ -270,7 +263,6 @@ TEST_P(ParameterTestFixtureString, GetShouldThrowExceptionWhenNotFound) {
     EXPECT_THROW(mockParameters.GetExpect<std::string>(key), ParameterException);
 }
 
-
 TEST_P(ParameterTestFixtureString, GetExpectShouldReturnValueEvenWithDefault) {
     // arrange
     const auto [expectedString, expectedValue] = GetParam();
@@ -301,9 +293,7 @@ TEST_P(ParameterTestFixtureString, GetShouldReturnDefaultValue) {
     EXPECT_EQ(actualValue, "default_123");
 }
 
-
-INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureString,
-                         ::testing::Values(std::make_tuple("22.3", "22.3"), std::make_tuple(" 3 ", "3"), std::make_tuple("one_two three ", "one_two")));
+INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureString, ::testing::Values(std::make_tuple("22.3", "22.3"), std::make_tuple(" 3 ", "3"), std::make_tuple("one_two three ", "one_two")));
 
 // fill tests
 TEST(ParameterTestFill, ShouldFillDoubleValues) {
@@ -374,7 +364,5 @@ TEST(ParameterTestFill, ShouldThrowExceptionForMissingIntValues) {
     // act
     // assert
     EXPECT_THROW(mockParameters.Fill(4, names, &values[0]), ParameterException);
-}
-
 }
 }

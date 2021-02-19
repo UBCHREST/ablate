@@ -1,11 +1,10 @@
 #ifndef ABLATELIBRARY_MAPPARAMETERS_HPP
 #define ABLATELIBRARY_MAPPARAMETERS_HPP
 
-#include "parameters.hpp"
 #include <map>
+#include "parameters.hpp"
 
-namespace ablate {
-namespace parameters {
+namespace ablate::parameters {
 class MapParameters : public Parameters {
    private:
     const std::map<std::string, std::string> values;
@@ -14,6 +13,6 @@ class MapParameters : public Parameters {
     MapParameters(std::map<std::string, std::string> values);
     std::optional<std::string> GetString(std::string paramName) const override;
 };
-}
-}
+}  // namespace ablate::parameters
+
 #endif  // ABLATELIBRARY_MAPPARAMETERS_HPP

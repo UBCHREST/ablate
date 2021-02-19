@@ -2,7 +2,6 @@
 #include "incompressibleFlow.h"
 #include "utilities/petscError.hpp"
 
-
 /*
   CASE: incompressible quadratic
   In 2D we use exact solution:
@@ -42,9 +41,9 @@ static PetscErrorCode incompressible_quadratic_T_t(PetscInt Dim, PetscReal time,
     return 0;
 }
 
-ablate::flow::IncompressibleFlow::IncompressibleFlow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters) :
-Flow(mesh, name, arguments)
-{
+ablate::flow::IncompressibleFlow::IncompressibleFlow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std::map<std::string, std::string> arguments,
+                                                     std::shared_ptr<parameters::Parameters> parameters)
+    : Flow(mesh, name, arguments) {
     // Setup the problem
     IncompressibleFlow_SetupDiscretization(mesh->GetDomain()) >> checkError;
 
@@ -61,34 +60,45 @@ Flow(mesh, name, arguments)
 
     PetscInt id;
     id = 3;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr) >>
+        checkError;
     id = 1;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(
+        prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr) >>
+        checkError;
     id = 2;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(
+        prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr) >>
+        checkError;
     id = 4;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(
+        prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr) >>
+        checkError;
     id = 3;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr) >>
+        checkError;
     id = 1;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr) >>
+        checkError;
     id = 2;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr) >>
+        checkError;
     id = 4;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr)  >> checkError;
+    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr) >>
+        checkError;
 
     // Set the exact solution
-    PetscDSSetExactSolution(prob, VEL, incompressible_quadratic_u, NULL)  >> checkError;
-    PetscDSSetExactSolution(prob, PRES, incompressible_quadratic_p, NULL)  >> checkError;
-    PetscDSSetExactSolution(prob, TEMP, incompressible_quadratic_T, NULL)  >> checkError;
-    PetscDSSetExactSolutionTimeDerivative(prob, VEL, incompressible_quadratic_u_t, NULL)  >> checkError;
-    PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, NULL)  >> checkError;
-    PetscDSSetExactSolutionTimeDerivative(prob, TEMP, incompressible_quadratic_T_t, NULL)  >> checkError;
+    PetscDSSetExactSolution(prob, VEL, incompressible_quadratic_u, NULL) >> checkError;
+    PetscDSSetExactSolution(prob, PRES, incompressible_quadratic_p, NULL) >> checkError;
+    PetscDSSetExactSolution(prob, TEMP, incompressible_quadratic_T, NULL) >> checkError;
+    PetscDSSetExactSolutionTimeDerivative(prob, VEL, incompressible_quadratic_u_t, NULL) >> checkError;
+    PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, NULL) >> checkError;
+    PetscDSSetExactSolutionTimeDerivative(prob, TEMP, incompressible_quadratic_T_t, NULL) >> checkError;
 }
 
-Vec ablate::flow::IncompressibleFlow::SetupSolve(TS& ts) {
+Vec ablate::flow::IncompressibleFlow::SetupSolve(TS &ts) {
     // Setup the solve with the ts
-    TSSetDM(ts, mesh->GetDomain())  >> checkError;
+    TSSetDM(ts, mesh->GetDomain()) >> checkError;
 
     // finish setup and assign flow field
     IncompressibleFlow_CompleteProblemSetup(ts, &flowSolution);

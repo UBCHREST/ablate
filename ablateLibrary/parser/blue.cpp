@@ -8,6 +8,7 @@
 #include "registrar.hpp"
 static bool item_s_registered = ablate::parser::Registrar<ITalky>::Register<Blue>(
     "Blue",
+    "all about blue",
     ablate::parser::ArgumentIdentifier<std::string>{.inputName="whatToSay"},
     ablate::parser::ArgumentIdentifier<ITalky>{.inputName="talky"});
 

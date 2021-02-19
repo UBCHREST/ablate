@@ -7,9 +7,8 @@
 #include "mesh/mesh.hpp"
 #include "solve/solvable.hpp"
 
-namespace ablate{
-namespace flow {
-class Flow : public solve::Solvable{
+namespace ablate::flow {
+class Flow : public solve::Solvable {
    protected:
     const std::shared_ptr<mesh::Mesh> mesh;
     const std::string name;
@@ -19,12 +18,8 @@ class Flow : public solve::Solvable{
     virtual ~Flow();
 
    public:
-    Vec GetFlowSolution(){
-        return flowSolution;
-    }
-
+    Vec GetFlowSolution() { return flowSolution; }
 };
-}
-}
+}  // namespace ablate::flow
 
 #endif  // ABLATELIBRARY_FLOW_H
