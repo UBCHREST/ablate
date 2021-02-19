@@ -1,12 +1,11 @@
 #ifndef ABLATELIBRARY_PARAMETERS_HPP
 #define ABLATELIBRARY_PARAMETERS_HPP
 #include <optional>
-#include <string>
 #include <sstream>
+#include <string>
 #include "parameterException.hpp"
 
-namespace ablate {
-namespace parameters {
+namespace ablate::parameters {
 
 class Parameters {
    public:
@@ -54,7 +53,7 @@ class Parameters {
     template <typename T>
     void Fill(int numberValues, const char *const *valueNames, T *constantArray) const {
         // March over each parameter
-        for(int n =0; n < numberValues; n++){
+        for (int n = 0; n < numberValues; n++) {
             // make a temp string
             auto stringName = std::string(valueNames[n]);
 
@@ -63,7 +62,6 @@ class Parameters {
         }
     }
 };
-}
-}
+}  // namespace ablate::parameters
 
 #endif  // ABLATELIBRARY_PARAMETERS_HPP
