@@ -8,6 +8,13 @@
 #include "factory.hpp"
 #include "listing.h"
 
+/**
+ * Helper macros for registering classes
+ */
+#define REGISTER_FACTORY_CONSTRUCTOR(interfaceTypeFullName, classFullName, description) static bool interfaceTypeFullName##_##classFullName##_registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(#classFullName, description)
+
+#define REGISTER(interfaceTypeFullName, classFullName, description, ...) static bool interfaceTypeFullName##_##classFullName##_registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(#classFullName, description, __VA_ARGS__)
+
 namespace ablate::parser {
 
 template <typename Interface>

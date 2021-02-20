@@ -1,3 +1,17 @@
+# Setup any ablateLibrary specific dependencies
+# turn off yaml-cpp options
+set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
+set(YAML_CPP_INSTALL OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+        yaml-cpp
+        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
+        GIT_TAG        yaml-cpp-0.6.3
+)
+FetchContent_MakeAvailable(yaml-cpp)
+
 # Setup the ablate core
 add_library(ablateLibrary SHARED "")
 
@@ -13,4 +27,4 @@ add_subdirectory(solve)
 add_subdirectory(parser)
 
 # Keep a simple main statement
-target_link_libraries(ablateLibrary PUBLIC ablateCore)
+target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp)

@@ -3,10 +3,8 @@ target_sources(ablateLibrary
         registrar.hpp
         factory.hpp
         argumentIdentifier.hpp
-        blue.cpp
-        blue.hpp
-        item.cpp
-        item.hpp
         listing.cpp
         listing.h
+        yamlParser.cpp
+        yamlParser.hpp
         )

@@ -19,6 +19,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# FetContent will allow downloading of other libraries
+include(FetchContent)
+
 # Check if we should enable testing options
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
