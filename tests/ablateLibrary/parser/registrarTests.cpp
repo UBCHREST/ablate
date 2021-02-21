@@ -79,6 +79,78 @@ TEST(RegistrarTests, ShouldRegisterClassWithArgumentIdentifiersAndRecordInLog) {
     Listing::ReplaceListing(nullptr);
 }
 
+class MockInterface4 {
+    virtual void Test(){};
+};
+
+class MockClass4 : public MockInterface4 {
+   public:
+    MockClass4(std::string, int, std::shared_ptr<MockInterface4>){};
+};
+
+TEST(RegistrarTests, ShouldRegisterDefaultClassWithArgumentIdentifiersAndRecordInLog) {
+    // arrange
+    auto mockListing = std::make_shared<MockListing>();
+    EXPECT_CALL(
+        *mockListing,
+        RecordListing(Listing::ClassEntry{.interface = typeid(MockInterface4).name(),
+            .description = "this is a simple mock class",
+            .className = "MockClass4",
+            .arguments = {Listing::ArgumentEntry{.name = "dog", .interface = typeid(std::string).name(), .description = "this is a string"},
+                          Listing::ArgumentEntry{.name = "cat", .interface = typeid(int).name(), .description = "this is a int"},
+                          Listing::ArgumentEntry{.name = "bird", .interface = typeid(MockInterface4).name(), .description = "this is a shared pointer to an interface"}},
+        .defaultConstructor = true}))
+        .Times(::testing::Exactly(1));
+
+    Listing::ReplaceListing(mockListing);
+
+    // act
+    REGISTERDEFAULT(MockInterface4,MockClass4, "this is a simple mock class",
+             ARG(std::string, "dog", "this is a string"),
+             ARG(int, "cat", "this is a int"),
+             ARG(MockInterface4, "bird", "this is a shared pointer to an interface")
+
+    );
+
+    // assert
+    auto createMethod = Registrar<MockInterface4>::GetCreateMethod("MockClass4");
+    ASSERT_TRUE(createMethod != nullptr);
+
+    // cleanup
+    Listing::ReplaceListing(nullptr);
+}
+
+class MockInterface5 {
+    virtual void Test(){};
+};
+
+class MockClass5a : public MockInterface5 {
+   public:
+    MockClass5a(std::string, int, std::shared_ptr<MockInterface5>){};
+};
+
+class MockClass5b : public MockInterface5 {
+   public:
+    MockClass5b(std::string, int, std::shared_ptr<MockInterface5>){};
+};
+
+TEST(RegistrarTests, ShouldNotAllowDoubleDefaultRegistar) {
+    // arrange
+    REGISTERDEFAULT(MockInterface5,MockClass5a, "this is a simple mock class",
+                    ARG(std::string, "dog", "this is a string"),
+                    ARG(int, "cat", "this is a int"),
+                    ARG(MockInterface5, "bird", "this is a shared pointer to an interface")
+    );
+
+    // act
+    // assert
+    ASSERT_THROW(    REGISTERDEFAULT(MockInterface5,MockClass5b, "this is a simple mock class",
+                                     ARG(std::string, "dog", "this is a string"),
+                                     ARG(int, "cat", "this is a int"),
+                                     ARG(MockInterface5, "bird", "this is a shared pointer to an interface")
+    ), std::invalid_argument);
+}
+
 TEST(RegistrarTests, ShouldResolveAndCreate) {
     // arrange
     auto mockFactory = MockFactory();
