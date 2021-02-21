@@ -27,12 +27,13 @@ std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser:
 }
 
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing::ClassEntry& classEntry) {
-    os << classEntry.className << " - " << classEntry.description << std::endl;
+    os << classEntry.className  << (classEntry.defaultConstructor ? "*": "") << " - " << classEntry.description << std::endl;
     for (auto argumentEntry : classEntry.arguments) {
         os << '\t' << '\t' << argumentEntry << std::endl;
     }
     return os;
 }
+
 void ablate::parser::Listing::ReplaceListing(std::shared_ptr<Listing> replacementListing) { listing = replacementListing; }
 bool ablate::parser::Listing::ClassEntry::operator==(const ablate::parser::Listing::ClassEntry& other) const {
     return className == other.className && interface == other.interface && description == other.description && arguments == other.arguments;

@@ -33,7 +33,7 @@ TEST(RegistrarTests, ShouldRegisterClassAndRecordInLog) {
     Listing::ReplaceListing(mockListing);
 
     // act
-    Registrar<MockInterface>::Register<MockClass1>("mockClass1", "this is a simple mock class");
+    Registrar<MockInterface>::Register<MockClass1>(false, "mockClass1", "this is a simple mock class");
 
     // assert
     auto createMethod = Registrar<MockInterface>::GetCreateMethod("mockClass1");
@@ -86,7 +86,7 @@ TEST(RegistrarTests, ShouldResolveAndCreate) {
 
     EXPECT_CALL(mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
-    Registrar<MockInterface>::Register<MockClass1>("mockClass1", "this is a simple mock class");
+    Registrar<MockInterface>::Register<MockClass1>(false, "mockClass1", "this is a simple mock class");
 
     // act
     auto instance = ResolveAndCreate<MockInterface>(mockFactory);
@@ -96,17 +96,56 @@ TEST(RegistrarTests, ShouldResolveAndCreate) {
     ASSERT_TRUE(std::dynamic_pointer_cast<MockClass1>(instance) != nullptr) << " should be an instance of MockClass1";
 }
 
-//TEST(RegistrarTests, ShouldThrowExceptionWhenCannotResolveAndCreate) {
-//    // arrange
-//    auto mockFactory = MockFactory();
-//    const std::string expectedClassType = "mockClass34";
-//
-//    EXPECT_CALL(mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
-//
-//    Registrar<MockInterface>::Register<MockClass1>("mockClass1", "this is a simple mock class");
-//
-//    // act
-//    // assert
-//    ASSERT_THROW(ResolveAndCreate<MockInterface>(mockFactory), std::invalid_argument);
-//}
+TEST(RegistrarTests, ShouldThrowExceptionWhenCannotResolveAndCreate) {
+    // arrange
+    auto mockFactory = MockFactory();
+    const std::string expectedClassType = "mockClass34";
+
+    EXPECT_CALL(mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
+
+    Registrar<MockInterface>::Register<MockClass1>(false, "mockClass1", "this is a simple mock class");
+
+    // act
+    // assert
+    ASSERT_THROW(ResolveAndCreate<MockInterface>(mockFactory), std::invalid_argument);
+}
+
+TEST(RegistrarTests, ShouldCreateDefaultAndUseWhenNotSpecified) {
+    // arrange
+    auto mockFactory = MockFactory();
+    const std::string expectedClassType = "";
+
+    EXPECT_CALL(mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
+
+    Registrar<MockInterface>::Register<MockClass1>(true, "mockClass54", "this is a simple mock class");
+
+    // act
+    auto result = ResolveAndCreate<MockInterface>(mockFactory);
+
+    // assert
+    ASSERT_TRUE(result != nullptr);
+}
+
+class NoDefaultInterface {
+    virtual void Test(){};
+};
+
+class MockClass3 : public NoDefaultInterface {
+   public:
+    MockClass3(Factory& factory){};
+};
+
+TEST(RegistrarTests, ShouldThrowExceptionWhenNoDefaultIsSpecified) {
+    // arrange
+    auto mockFactory = MockFactory();
+    const std::string expectedClassType = "";
+
+    EXPECT_CALL(mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
+
+    Registrar<NoDefaultInterface>::Register<MockClass3>(false, "mockClass2", "this is a simple mock class");
+
+    // act
+    // assert
+    ASSERT_THROW(ResolveAndCreate<NoDefaultInterface>(mockFactory), std::invalid_argument);
+}
 }

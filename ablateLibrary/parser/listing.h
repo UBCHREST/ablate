@@ -21,6 +21,7 @@ class Listing {
         const std::string className;
         const std::string description;
         const std::vector<ArgumentEntry> arguments;
+        const bool defaultConstructor;
         bool operator==(const ClassEntry& other) const;
     };
 
