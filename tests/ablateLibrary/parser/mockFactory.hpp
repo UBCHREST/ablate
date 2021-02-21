@@ -17,6 +17,7 @@ class MockFactory : public ablate::parser::Factory {
     MOCK_METHOD(int, Get, (const ArgumentIdentifier<int>&), (override, const));
     MOCK_METHOD(std::vector<std::string>, Get, (const ArgumentIdentifier<std::vector<std::string>>&), (override, const));
     MOCK_METHOD((std::map<std::string,std::string>), Get, ((const ArgumentIdentifier<std::map<std::string,std::string>>&)), (override, const));
+    MOCK_METHOD(bool, Contains, (const std::string& name), (override, const));
 };
 }
 

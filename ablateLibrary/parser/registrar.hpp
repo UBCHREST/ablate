@@ -13,16 +13,16 @@
  * Helper macros for registering classes
  */
 #define REGISTER_FACTORY_CONSTRUCTOR(interfaceTypeFullName, classFullName, description) \
-    static bool interfaceTypeFullName##_##classFullName##_registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description)
+    template<> bool ablate::parser::RegisteredInFactory<classFullName>::Registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description)
 
 #define REGISTER(interfaceTypeFullName, classFullName, description, ...) \
-    static bool interfaceTypeFullName##_##classFullName##_registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description, __VA_ARGS__)
+    template<> bool ablate::parser::RegisteredInFactory<classFullName>::Registered  = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description, __VA_ARGS__)
 
 #define REGISTER_FACTORY_CONSTRUCTOR_DEFAULT(interfaceTypeFullName, classFullName, description) \
-    static bool interfaceTypeFullName##_##classFullName##_registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description)
+    template<> bool ablate::parser::RegisteredInFactory<classFullName>::Registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description)
 
 #define REGISTERDEFAULT(interfaceTypeFullName, classFullName, description, ...) \
-    static bool interfaceTypeFullName##_##classFullName##_registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description, __VA_ARGS__)
+    template<> bool ablate::parser::RegisteredInFactory<classFullName>::Registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description, __VA_ARGS__)
 
 namespace ablate::parser {
 
@@ -31,7 +31,7 @@ class Registrar {
    public:
     Registrar() = delete;
 
-    using TCreateMethod = std::function<std::shared_ptr<Interface>(Factory&)>;
+    using TCreateMethod = std::function<std::shared_ptr<Interface>(std::shared_ptr<Factory>)>;
 
     /* Register a class that has a constructor that uses a Factory instance */
     template <typename Class>
@@ -41,7 +41,7 @@ class Registrar {
             Listing::Get().RecordListing(Listing::ClassEntry{.interface = typeid(Interface).name(), .className = className, .description = description, .defaultConstructor = defaultConstructor});
 
             // create method
-            s_methods[className] = [](Factory& factory) { return std::make_shared<Class>(factory); };
+            s_methods[className] = [](std::shared_ptr<Factory> factory) { return std::make_shared<Class>(factory); };
 
             if(defaultConstructor){
                 if(!defaultCreationMethod){
@@ -67,7 +67,7 @@ class Registrar {
                                     .defaultConstructor = defaultConstructor});
 
             // create method
-            s_methods[className] = [=](Factory& factory) { return std::make_shared<Class>(factory.Get(args)...); };
+            s_methods[className] = [=](std::shared_ptr<Factory> factory) { return std::make_shared<Class>(factory->Get(args)...); };
 
             if(defaultConstructor){
                 if(!defaultCreationMethod){
@@ -97,11 +97,11 @@ class Registrar {
 };
 
 template <typename Interface>
-std::shared_ptr<Interface> ResolveAndCreate(Factory& factory) {
-    auto childType = factory.GetClassType();
+std::shared_ptr<Interface> ResolveAndCreate(std::shared_ptr<Factory> factory) {
+    auto childType = factory->GetClassType();
 
     if (!childType.empty()) {
-        std::function<std::shared_ptr<Interface>(Factory&)> createMethod = Registrar<Interface>::GetCreateMethod(childType);
+        std::function<std::shared_ptr<Interface>(std::shared_ptr<Factory>)> createMethod = Registrar<Interface>::GetCreateMethod(childType);
         if (!createMethod) {
             throw std::invalid_argument("unknown type " + childType);
         }
@@ -109,7 +109,7 @@ std::shared_ptr<Interface> ResolveAndCreate(Factory& factory) {
         return createMethod(factory);
     } else {
         // check for a default
-        std::function<std::shared_ptr<Interface>(Factory&)> createMethod = Registrar<Interface>::GetDefaultCreateMethod();
+        std::function<std::shared_ptr<Interface>(std::shared_ptr<Factory>)> createMethod = Registrar<Interface>::GetDefaultCreateMethod();
         if (!createMethod) {
             throw std::invalid_argument("no default creator specified for interface " + utilities::Demangle(typeid(Interface).name()));
         }
@@ -117,6 +117,13 @@ std::shared_ptr<Interface> ResolveAndCreate(Factory& factory) {
         return createMethod(factory);
     }
 }
+template <typename T>
+class RegisteredInFactory
+{
+    public:
+    static bool Registered;
+};
+
 }  // namespace ablate::parser
 
 #endif  // ABLATELIBRARY_REGISTRAR_HPP

@@ -61,6 +61,10 @@ class YamlParser : public Factory {
     /* get all children as factory */
     std::vector<std::shared_ptr<Factory>> GetFactorySequence(const std::string& name) const override;
 
+    bool Contains(const std::string& name) const override{
+        return yamlConfiguration[name] != nullptr;
+    };
+
     /** get unused values **/
     std::vector<std::string> GetUnusedValues() const;
 };

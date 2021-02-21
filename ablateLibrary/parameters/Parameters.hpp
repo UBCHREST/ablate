@@ -9,6 +9,8 @@ namespace ablate::parameters {
 
 class Parameters {
    public:
+    virtual ~Parameters() = default;
+
     virtual std::optional<std::string> GetString(std::string paramName) const = 0;
 
     template <typename T>

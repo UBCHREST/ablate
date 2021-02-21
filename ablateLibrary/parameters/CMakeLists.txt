@@ -4,4 +4,6 @@ target_sources(ablateLibrary
         parameterException.hpp
         mapParameters.cpp
         mapParameters.hpp
+        factoryParameters.hpp
+        factoryParameters.cpp
         )

@@ -21,7 +21,7 @@ class MockListing : public ablate::parser::Listing {
 
 class MockClass1 : public MockInterface {
    public:
-    MockClass1(Factory& factory){};
+    MockClass1(std::shared_ptr<Factory> factory){};
 };
 
 TEST(RegistrarTests, ShouldRegisterClassAndRecordInLog) {
@@ -64,12 +64,9 @@ TEST(RegistrarTests, ShouldRegisterClassWithArgumentIdentifiersAndRecordInLog) {
     Listing::ReplaceListing(mockListing);
 
     // act
-    REGISTER(MockInterface,MockClass2, "this is a simple mock class",
-             ARG(std::string, "dog", "this is a string"),
-             ARG(int, "cat", "this is a int"),
-             ARG(MockInterface, "bird", "this is a shared pointer to an interface")
-
-    );
+    ablate::parser::Registrar<MockInterface>::Register<MockClass2>(
+        false, "MockClass2", "this is a simple mock class", ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"}, ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
+        ablate::parser::ArgumentIdentifier<MockInterface>{"bird", "this is a shared pointer to an interface"});
 
     // assert
     auto createMethod = Registrar<MockInterface>::GetCreateMethod("MockClass2");
@@ -105,12 +102,9 @@ TEST(RegistrarTests, ShouldRegisterDefaultClassWithArgumentIdentifiersAndRecordI
     Listing::ReplaceListing(mockListing);
 
     // act
-    REGISTERDEFAULT(MockInterface4,MockClass4, "this is a simple mock class",
-             ARG(std::string, "dog", "this is a string"),
-             ARG(int, "cat", "this is a int"),
-             ARG(MockInterface4, "bird", "this is a shared pointer to an interface")
-
-    );
+    ablate::parser::Registrar<MockInterface4>::Register<MockClass4>(
+        true, "MockClass4", "this is a simple mock class", ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"}, ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
+        ablate::parser::ArgumentIdentifier<MockInterface4>{"bird", "this is a shared pointer to an interface"});
 
     // assert
     auto createMethod = Registrar<MockInterface4>::GetCreateMethod("MockClass4");
@@ -136,27 +130,24 @@ class MockClass5b : public MockInterface5 {
 
 TEST(RegistrarTests, ShouldNotAllowDoubleDefaultRegistar) {
     // arrange
-    REGISTERDEFAULT(MockInterface5,MockClass5a, "this is a simple mock class",
-                    ARG(std::string, "dog", "this is a string"),
-                    ARG(int, "cat", "this is a int"),
-                    ARG(MockInterface5, "bird", "this is a shared pointer to an interface")
-    );
+    ablate::parser::Registrar<MockInterface5>::Register<MockClass5a>(
+        true, "MockClass5a", "this is a simple mock class", ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"}, ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
+        ablate::parser::ArgumentIdentifier<MockInterface5>{"bird", "this is a shared pointer to an interface"});
 
     // act
     // assert
-    ASSERT_THROW(    REGISTERDEFAULT(MockInterface5,MockClass5b, "this is a simple mock class",
-                                     ARG(std::string, "dog", "this is a string"),
-                                     ARG(int, "cat", "this is a int"),
-                                     ARG(MockInterface5, "bird", "this is a shared pointer to an interface")
+    ASSERT_THROW(ablate::parser::Registrar<MockInterface5>::Register<MockClass5b>(
+        true, "MockClass5b", "this is a simple mock class", ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"}, ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
+        ablate::parser::ArgumentIdentifier<MockInterface5>{"bird", "this is a shared pointer to an interface"}
     ), std::invalid_argument);
 }
 
 TEST(RegistrarTests, ShouldResolveAndCreate) {
     // arrange
-    auto mockFactory = MockFactory();
+    auto mockFactory = std::make_shared<MockFactory>();
     const std::string expectedClassType = "mockClass1";
 
-    EXPECT_CALL(mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
+    EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
     Registrar<MockInterface>::Register<MockClass1>(false, "mockClass1", "this is a simple mock class");
 
@@ -170,10 +161,10 @@ TEST(RegistrarTests, ShouldResolveAndCreate) {
 
 TEST(RegistrarTests, ShouldThrowExceptionWhenCannotResolveAndCreate) {
     // arrange
-    auto mockFactory = MockFactory();
+    auto mockFactory = std::make_shared<MockFactory>();
     const std::string expectedClassType = "mockClass34";
 
-    EXPECT_CALL(mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
+    EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
     Registrar<MockInterface>::Register<MockClass1>(false, "mockClass1", "this is a simple mock class");
 
@@ -184,10 +175,10 @@ TEST(RegistrarTests, ShouldThrowExceptionWhenCannotResolveAndCreate) {
 
 TEST(RegistrarTests, ShouldCreateDefaultAndUseWhenNotSpecified) {
     // arrange
-    auto mockFactory = MockFactory();
+    auto mockFactory = std::make_shared<MockFactory>();
     const std::string expectedClassType = "";
 
-    EXPECT_CALL(mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
+    EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
     Registrar<MockInterface>::Register<MockClass1>(true, "mockClass54", "this is a simple mock class");
 
@@ -204,15 +195,15 @@ class NoDefaultInterface {
 
 class MockClass3 : public NoDefaultInterface {
    public:
-    MockClass3(Factory& factory){};
+    MockClass3(std::shared_ptr<Factory> factory){};
 };
 
 TEST(RegistrarTests, ShouldThrowExceptionWhenNoDefaultIsSpecified) {
     // arrange
-    auto mockFactory = MockFactory();
+    auto mockFactory = std::make_shared<MockFactory>();
     const std::string expectedClassType = "";
 
-    EXPECT_CALL(mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
+    EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
     Registrar<NoDefaultInterface>::Register<MockClass3>(false, "mockClass2", "this is a simple mock class");
 

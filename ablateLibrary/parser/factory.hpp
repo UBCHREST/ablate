@@ -11,7 +11,7 @@ namespace ablate::parser {
 
 class Factory;
 template <typename Interface>
-std::shared_ptr<Interface> ResolveAndCreate(Factory& factory);
+std::shared_ptr<Interface> ResolveAndCreate(std::shared_ptr<Factory> factory);
 
 class Factory {
    public:
@@ -35,11 +35,14 @@ class Factory {
     /* return a map of strings */
     virtual std::map<std::string, std::string> Get(const ArgumentIdentifier<std::map<std::string, std::string>>& identifier) const = 0;
 
+    /* check to see if the child is contained*/
+    virtual bool Contains(const std::string& name) const = 0;
+
     /* produce a shared pointer for the specified interface and type */
     template <typename Interface>
     std::shared_ptr<Interface> Get(const ArgumentIdentifier<Interface>& identifier) const {
         auto childFactory = GetFactory(identifier.inputName);
-        return ResolveAndCreate<Interface>(*childFactory);
+        return ResolveAndCreate<Interface>(childFactory);
     }
 
     template <typename Interface>
@@ -49,7 +52,7 @@ class Factory {
         // Build and resolve the list
         std::vector<std::shared_ptr<Interface>> results;
         for(auto childFactory : childFactories){
-            results.push_back(ResolveAndCreate<Interface>(*childFactory));
+            results.push_back(ResolveAndCreate<Interface>(childFactory));
         }
 
         return results;
