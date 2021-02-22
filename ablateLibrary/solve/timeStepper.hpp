@@ -14,7 +14,7 @@ class TimeStepper {
     std::string name; /** the name for this time stepper **/
 
    public:
-    TimeStepper(MPI_Comm comm, std::string name, std::map<std::string, std::string> arguments);
+    TimeStepper(std::string name, std::map<std::string, std::string> arguments);
     ~TimeStepper();
 
     const TS& GetTS() const { return ts; }

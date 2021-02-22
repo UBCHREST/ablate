@@ -1,7 +1,7 @@
 #include "incompressibleFlow.hpp"
 #include "incompressibleFlow.h"
 #include "utilities/petscError.hpp"
-
+#include "parser/registrar.hpp"
 /*
   CASE: incompressible quadratic
   In 2D we use exact solution:
@@ -41,7 +41,7 @@ static PetscErrorCode incompressible_quadratic_T_t(PetscInt Dim, PetscReal time,
     return 0;
 }
 
-ablate::flow::IncompressibleFlow::IncompressibleFlow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std::map<std::string, std::string> arguments,
+ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments,
                                                      std::shared_ptr<parameters::Parameters> parameters)
     : Flow(mesh, name, arguments) {
     // Setup the problem
@@ -115,3 +115,9 @@ Vec ablate::flow::IncompressibleFlow::SetupSolve(TS &ts) {
 
     return flowSolution;
 }
+
+REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible flow",
+    ARG(std::string, "name", "the name of the flow field"),
+    ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
+    ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
+    ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"));

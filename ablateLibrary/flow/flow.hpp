@@ -19,6 +19,8 @@ class Flow : public solve::Solvable {
 
    public:
     Vec GetFlowSolution() { return flowSolution; }
+
+    virtual Vec SetupSolve(TS& timeStepper) = 0;
 };
 }  // namespace ablate::flow
 

@@ -1,0 +1,47 @@
+---
+arguments:
+  dm_plex_separate_marker: ""
+  num_sol_vec_view_monitor: hdf5:sol.h5::append
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_dt: .1
+    ts_max_steps: 30
+    ksp_type: fgmres
+    ksp_gmres_restart: 10
+    ksp_rtol: 1.0e-9
+    ksp_atol: 1.0e-14
+    ksp_error_if_not_converged: ""
+    pc_type: fieldsplit
+    pc_fieldsplit_0_fields: 0,2
+    pc_fieldsplit_1_fields: 1
+    pc_fieldsplit_type: schur
+    pc_fieldsplit_schur_factorization_type: "full"
+    fieldsplit_0_pc_type: lu
+    fieldsplit_pressure_ksp_rtol: 1E-10
+    fieldsplit_pressure_pc_type: jacobi
+flow: !ablate::flow::IncompressibleFlow
+  name: theFlowField
+  mesh: !ablate::mesh::BoxMesh
+    name: simpleBoxField
+    dimensions: 2
+    arguments:
+      dm_view: hdf5:sol.h5
+      dm_refine: 2
+      vel_petscspace_degree: 2
+      pres_petscspace_degree: 1
+      temp_petscspace_degree: 1
+  arguments: {}
+  parameters:
+    strouhal: 1.0
+    reynolds: 1.0
+    froude: 1.0
+    peclet: 1.0
+    heatRelease: 1.0
+    gamma: 1.0
+    pth: 1.0
+    mu: 1.0
+    k: 1.0
+    cp: 1.0
+    beta: 1.0
+    gravityDirection: 1

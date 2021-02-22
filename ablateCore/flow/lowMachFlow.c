@@ -434,17 +434,17 @@ PetscErrorCode LowMachFlow_StartProblemSetup(DM flowDm, PetscInt numberParameter
     ierr = DMGetDS(flowDm, &prob);CHKERRQ(ierr);
 
     // V, W, Q Test Function
-    ierr = PetscDSSetResidual(prob, V, vIntegrandTestFunction, vIntegrandTestGradientFunction);CHKERRQ(ierr);
-    ierr = PetscDSSetResidual(prob, W, wIntegrandTestFunction, wIntegrandTestGradientFunction);CHKERRQ(ierr);
-    ierr = PetscDSSetResidual(prob, Q, qIntegrandTestFunction, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, VTEST, vIntegrandTestFunction, vIntegrandTestGradientFunction);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, WTEST, wIntegrandTestFunction, wIntegrandTestGradientFunction);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, QTEST, qIntegrandTestFunction, NULL);CHKERRQ(ierr);
 
-    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, V, TEMP, g0_vT, NULL, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, Q, VEL, g0_qu, g1_qu, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, Q, TEMP, g0_qT, g1_qT, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, VTEST, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, VTEST, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, VTEST, TEMP, g0_vT, NULL, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, QTEST, VEL, g0_qu, g1_qu, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, QTEST, TEMP, g0_qT, g1_qT, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, WTEST, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, WTEST, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
 
     /* Setup constants */;
     {

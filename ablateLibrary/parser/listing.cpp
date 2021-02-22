@@ -11,7 +11,7 @@ ablate::parser::Listing& ablate::parser::Listing::Get() {
 }
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing& listing) {
     for (auto interface : listing.entries) {
-        os << "Interface: " << utilities::Demangle(interface.first) << std::endl;
+        os << "Interface: " << utilities::Demangler::Demangle(interface.first) << std::endl;
         for (auto classEntry : interface.second) {
             os << '\t' << classEntry;
         }
@@ -21,7 +21,7 @@ std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser:
 }
 
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing::ArgumentEntry& argumentEntry) {
-    os << argumentEntry.name << "(" << utilities::Demangle(argumentEntry.interface) << ") - " << argumentEntry.description;
+    os << argumentEntry.name << "(" << utilities::Demangler::Demangle(argumentEntry.interface) << ") - " << argumentEntry.description;
 
     return os;
 }

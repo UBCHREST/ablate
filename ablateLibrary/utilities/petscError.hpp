@@ -5,16 +5,32 @@
 
 namespace ablate {
 namespace utilities {
-class PetscError {
-    friend void operator>>(PetscErrorCode code,
-                       const PetscError& errorChecker)
-    {
-        std::cout << "ERROR Code: " << code << std::endl;
+class PetscErrorChecker {
+   public:
+    struct PetscError : public std::runtime_error {
+       private:
+        static std::string GetMessage(PetscErrorCode ierr){
+            const char *text;
+            char *specific;
+
+            PetscErrorMessage(ierr, &text, &specific);
+
+            return std::string(text) + ": " + std::string(specific);
+        }
+       public:
+        PetscError(PetscErrorCode ierr) : std::runtime_error(GetMessage(ierr)) {
+        }
+    };
+
+    friend void operator>>(PetscErrorCode ierr, const PetscErrorChecker &errorChecker) {
+        if (ierr != 0) {
+            throw PetscError(ierr);
+        }
     }
 };
-}
+}  // namespace utilities
 
-inline utilities::PetscError checkError;
-}
+inline utilities::PetscErrorChecker checkError;
+}  // namespace ablate
 
 #endif  // ABLATELIBRARY_PETSCERROR_HPP

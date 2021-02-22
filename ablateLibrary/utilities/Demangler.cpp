@@ -4,7 +4,12 @@
 #include <cstdlib>
 #include <memory>
 
-std::string ablate::utilities::Demangle(const std::string& name) {
+std::string ablate::utilities::Demangler::Demangle(const std::string& name) {
+    // hard code some default values
+    if(prettyNames.contains(name)){
+        return prettyNames[name];
+    }
+
     int status = -4;  // some arbitrary value to eliminate the compiler warning
 
     // enable c++11 by passing the flag -std=c++11 to g++

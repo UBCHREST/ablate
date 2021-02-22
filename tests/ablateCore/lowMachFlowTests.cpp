@@ -362,21 +362,21 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
             // V, W Test Function
             IntegrandTestFunction tempFunctionPointer;
             if (testingParam.f0_v) {
-                ierr = PetscDSGetResidual(prob, V, &f0_v_original, &tempFunctionPointer);
+                ierr = PetscDSGetResidual(prob, VTEST, &f0_v_original, &tempFunctionPointer);
                 CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                ierr = PetscDSSetResidual(prob, V, testingParam.f0_v, tempFunctionPointer);
+                ierr = PetscDSSetResidual(prob, VTEST, testingParam.f0_v, tempFunctionPointer);
                 CHKERRABORT(PETSC_COMM_WORLD, ierr);
             }
             if (testingParam.f0_w) {
-                ierr = PetscDSGetResidual(prob, W, &f0_w_original, &tempFunctionPointer);
+                ierr = PetscDSGetResidual(prob, WTEST, &f0_w_original, &tempFunctionPointer);
                 CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                ierr = PetscDSSetResidual(prob, W, testingParam.f0_w, tempFunctionPointer);
+                ierr = PetscDSSetResidual(prob, WTEST, testingParam.f0_w, tempFunctionPointer);
                 CHKERRABORT(PETSC_COMM_WORLD, ierr);
             }
             if (testingParam.f0_q) {
-                ierr = PetscDSGetResidual(prob, Q, &f0_q_original, &tempFunctionPointer);
+                ierr = PetscDSGetResidual(prob, QTEST, &f0_q_original, &tempFunctionPointer);
                 CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                ierr = PetscDSSetResidual(prob, Q, testingParam.f0_q, tempFunctionPointer);
+                ierr = PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer);
                 CHKERRABORT(PETSC_COMM_WORLD, ierr);
             }
 

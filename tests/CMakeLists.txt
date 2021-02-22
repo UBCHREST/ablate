@@ -11,3 +11,5 @@ FetchContent_MakeAvailable(googletest)
 add_subdirectory(testingResources)
 add_subdirectory(ablateCore)
 add_subdirectory(ablateLibrary)
+add_subdirectory(integrationTests)
+

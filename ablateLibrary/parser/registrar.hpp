@@ -12,6 +12,7 @@
 /**
  * Helper macros for registering classes
  */
+
 #define RESOLVE(interfaceTypeFullName, classFullName) template<> std::shared_ptr<interfaceTypeFullName> ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Resolved = ablate::parser::ResolveAndCreate<interfaceTypeFullName>(nullptr)
 
 #define REGISTER_FACTORY_CONSTRUCTOR(interfaceTypeFullName, classFullName, description) \
@@ -49,7 +50,7 @@ class Registrar {
                 if(!defaultCreationMethod){
                     defaultCreationMethod = s_methods[className];
                 }else{
-                    throw std::invalid_argument("the default parameter for " + utilities::Demangle(typeid(Interface).name()) + " is already set");
+                    throw std::invalid_argument("the default parameter for " + utilities::Demangler::Demangle(typeid(Interface).name()) + " is already set");
                 }
             }
         }
@@ -75,7 +76,7 @@ class Registrar {
                 if(!defaultCreationMethod){
                     defaultCreationMethod = s_methods[className];
                 }else{
-                    throw std::invalid_argument("the default parameter for " + utilities::Demangle(typeid(Interface).name()) + " is already set");
+                    throw std::invalid_argument("the default parameter for " + utilities::Demangler::Demangle(typeid(Interface).name()) + " is already set");
                 }
             }
 
@@ -116,7 +117,7 @@ std::shared_ptr<Interface> ResolveAndCreate(std::shared_ptr<Factory> factory) {
         // check for a default
         std::function<std::shared_ptr<Interface>(std::shared_ptr<Factory>)> createMethod = Registrar<Interface>::GetDefaultCreateMethod();
         if (!createMethod) {
-            throw std::invalid_argument("no default creator specified for interface " + utilities::Demangle(typeid(Interface).name()));
+            throw std::invalid_argument("no default creator specified for interface " + utilities::Demangler::Demangle(typeid(Interface).name()));
         }
 
         return createMethod(factory);

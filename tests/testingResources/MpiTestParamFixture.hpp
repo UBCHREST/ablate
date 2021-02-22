@@ -5,10 +5,11 @@
 #include "MpiTestFixture.hpp"
 
 using namespace testingResources;
+namespace testingResources {
 
 class MpiTestParamFixture : public MpiTestFixture, public ::testing::WithParamInterface<MpiTestParameter> {
    protected:
     void SetUp() override { SetMpiParameters(GetParam()); }
 };
-
+}
 #endif

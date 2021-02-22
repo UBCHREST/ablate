@@ -10,7 +10,7 @@
 namespace ablate::flow {
 class LowMachFlow : public Flow {
    public:
-    LowMachFlow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters);
+    LowMachFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters);
 
     Vec SetupSolve(TS& timeStepper) override;
 };

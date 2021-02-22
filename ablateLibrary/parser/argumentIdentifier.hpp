@@ -2,6 +2,8 @@
 #define ABLATELIBRARY_ARGUMENTIDENTIFIER_HPP
 #include <string>
 
+#define TMP_COMMA ,
+
 #define ARG(interfaceTypeFullName, inputName, description) ablate::parser::ArgumentIdentifier<interfaceTypeFullName>{inputName, description}
 
 namespace ablate::parser {

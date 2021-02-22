@@ -8,9 +8,9 @@
 #define TEMP 2
 
 // Define the test field number
-#define V 0
-#define Q 1
-#define W 2
+#define VTEST 0
+#define QTEST 1
+#define WTEST 2
 
 typedef enum { STROUHAL, REYNOLDS, FROUDE, PECLET, HEATRELEASE, GAMMA, PTH, MU, K, CP, BETA, GRAVITY_DIRECTION, TOTAL_LOW_MACH_FLOW_PARAMETERS } LowMachFlowParametersTypes;
 PETSC_EXTERN const char* lowMachFlowParametersTypeNames[TOTAL_LOW_MACH_FLOW_PARAMETERS + 1];

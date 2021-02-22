@@ -18,6 +18,13 @@ add_library(ablateLibrary SHARED "")
 # Allow public access to the header files in the directory
 target_include_directories(ablateLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 
+target_sources(ablateLibrary
+        PUBLIC
+        builder.cpp
+        builder.hpp
+        )
+
+
 # Include the code in any subdirectory
 add_subdirectory(flow)
 add_subdirectory(utilities)

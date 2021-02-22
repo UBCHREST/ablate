@@ -14,7 +14,9 @@ struct MpiTestParameter {
 
     std::string getTestName() const {
         std::string s = testName;
-        std::replace( s.begin(), s.end(), ' ', '_');
+        std::replace(s.begin(), s.end(), ' ', '_');
+        std::replace(s.begin(), s.end(), '/', '_');
+        std::replace(s.begin(), s.end(), '.', '_');
         return s;
     }
 };
@@ -62,7 +64,6 @@ class MpiTestFixture : public ::testing::Test {
     static bool InitializeTestingEnvironment(int* argc, char*** argv);
 };
 
-
 // Define macros to simplify the setup and running of mpi based code
 #define StartWithMPI if (ShouldRunMpiCode()) {
 #define EndWithMPI            \
@@ -72,5 +73,5 @@ class MpiTestFixture : public ::testing::Test {
         CompareOutputFiles(); \
     }
 
-#endif  // mpitestfixture_h
 }
+#endif  // mpitestfixture_h

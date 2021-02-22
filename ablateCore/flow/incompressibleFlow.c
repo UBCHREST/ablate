@@ -555,15 +555,15 @@ PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, PetscInt numberParame
     ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
 
     // V, W, Q Test Function
-    ierr = PetscDSSetResidual(prob, V, vIntegrandTestFunction, vIntegrandTestGradientFunction);CHKERRQ(ierr);
-    ierr = PetscDSSetResidual(prob, W, wIntegrandTestFunction, wIntegrandTestGradientFunction);CHKERRQ(ierr);
-    ierr = PetscDSSetResidual(prob, Q, qIntegrandTestFunction, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, VTEST, vIntegrandTestFunction, vIntegrandTestGradientFunction);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, WTEST, wIntegrandTestFunction, wIntegrandTestGradientFunction);CHKERRQ(ierr);
+    ierr = PetscDSSetResidual(prob, QTEST, qIntegrandTestFunction, NULL);CHKERRQ(ierr);
 
-    ierr = PetscDSSetJacobian(prob, V, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, V, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, Q, VEL, NULL, g1_qu, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, W, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
-    ierr = PetscDSSetJacobian(prob, W, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, VTEST, VEL, g0_vu, g1_vu, NULL, g3_vu);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, VTEST, PRES, NULL, NULL, g2_vp, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, QTEST, VEL, NULL, g1_qu, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, WTEST, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
+    ierr = PetscDSSetJacobian(prob, WTEST, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
     /* Setup constants */;
     {
         if(numberParameters != TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS){

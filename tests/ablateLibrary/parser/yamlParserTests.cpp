@@ -246,6 +246,26 @@ TEST(YamlParserTests, ShouldGetListOfStrings) {
     ASSERT_EQ(list, expectedValues);
 }
 
+TEST(YamlParserTests, ShouldGetMapOfStrings) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+    yaml << " item2:" << std::endl;
+    yaml << "   string1: 1  " << std::endl;
+    yaml << "   string2: 2 " << std::endl;
+    yaml << "   string3: 3 " << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto map = yamlParser->Get(ArgumentIdentifier<std::map<std::string,std::string>>{"item2"});
+
+    // assert
+    std::map<std::string, std::string> expectedValues = {{"string1", "1"}, {"string2", "2"}, {"string3", "3"}};
+    ASSERT_EQ(map, expectedValues);
+}
+
 TEST(YamlParserTests, ShouldGetListOfFactories) {
     // arrange
     std::stringstream yaml;

@@ -8,9 +8,9 @@
 #define TEMP 2
 
 // Define the test field number
-#define V 0
-#define Q 1
-#define W 2
+#define VTEST 0
+#define QTEST 1
+#define WTEST 2
 
 typedef enum { STROUHAL, REYNOLDS, PECLET, MU, K, CP, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS } IncompressibleFlowParametersTypes;
 PETSC_EXTERN const char* incompressibleFlowParametersTypeNames[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS + 1];
