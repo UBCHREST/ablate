@@ -1,7 +1,7 @@
 #include "factoryParameters.hpp"
 #include "parser/registrar.hpp"
 
-ablate::parameters::FactoryParameters::FactoryParameters(std::shared_ptr<ablate::parser::Factory>& factory):
+ablate::parameters::FactoryParameters::FactoryParameters(std::shared_ptr<ablate::parser::Factory> factory):
 factory(factory)
 {
 }

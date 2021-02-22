@@ -1,5 +1,6 @@
 #ifndef ABLATELIBRARY_ARGUMENTIDENTIFIER_HPP
 #define ABLATELIBRARY_ARGUMENTIDENTIFIER_HPP
+#include <string>
 
 #define ARG(interfaceTypeFullName, inputName, description) ablate::parser::ArgumentIdentifier<interfaceTypeFullName>{inputName, description}
 
@@ -8,6 +9,10 @@ template <typename Interface>
 struct ArgumentIdentifier {
     const std::string inputName;
     const std::string description;
+
+    bool operator==(const ArgumentIdentifier<Interface>& other) const {
+        return inputName == other.inputName && description == other.description;
+    }
 };
 }  // namespace ablate::parser
 
