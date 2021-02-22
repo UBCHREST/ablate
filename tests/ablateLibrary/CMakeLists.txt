@@ -14,3 +14,6 @@ gtest_discover_tests(libraryTests
         WORKING_DIRECTORY ${PROJECT_DIR}
         PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${PROJECT_DIR}"
         )
+
+# Allow public access to the header files in the directory
+target_include_directories(libraryTests PUBLIC ${CMAKE_CURRENT_LIST_DIR})

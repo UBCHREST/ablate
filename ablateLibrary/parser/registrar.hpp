@@ -12,17 +12,19 @@
 /**
  * Helper macros for registering classes
  */
+#define RESOLVE(interfaceTypeFullName, classFullName) template<> std::shared_ptr<interfaceTypeFullName> ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Resolved = ablate::parser::ResolveAndCreate<interfaceTypeFullName>(nullptr)
+
 #define REGISTER_FACTORY_CONSTRUCTOR(interfaceTypeFullName, classFullName, description) \
-    template<> bool ablate::parser::RegisteredInFactory<classFullName>::Registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description)
+    template<> bool ablate::parser::RegisteredInFactory<interfaceTypeFullName,classFullName>::Registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description); RESOLVE(interfaceTypeFullName,classFullName)
 
 #define REGISTER(interfaceTypeFullName, classFullName, description, ...) \
-    template<> bool ablate::parser::RegisteredInFactory<classFullName>::Registered  = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description, __VA_ARGS__)
+    template<> bool ablate::parser::RegisteredInFactory<interfaceTypeFullName,classFullName>::Registered  = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description, __VA_ARGS__); RESOLVE(interfaceTypeFullName,classFullName)
 
 #define REGISTER_FACTORY_CONSTRUCTOR_DEFAULT(interfaceTypeFullName, classFullName, description) \
-    template<> bool ablate::parser::RegisteredInFactory<classFullName>::Registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description)
+    template<> bool ablate::parser::RegisteredInFactory<interfaceTypeFullName,classFullName>::Registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description); RESOLVE(interfaceTypeFullName,classFullName)
 
 #define REGISTERDEFAULT(interfaceTypeFullName, classFullName, description, ...) \
-    template<> bool ablate::parser::RegisteredInFactory<classFullName>::Registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description, __VA_ARGS__)
+    template<> bool ablate::parser::RegisteredInFactory<interfaceTypeFullName,classFullName>::Registered = ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description, __VA_ARGS__); RESOLVE(interfaceTypeFullName,classFullName)
 
 namespace ablate::parser {
 
@@ -98,6 +100,9 @@ class Registrar {
 
 template <typename Interface>
 std::shared_ptr<Interface> ResolveAndCreate(std::shared_ptr<Factory> factory) {
+    if(factory == nullptr){
+        return nullptr;
+    }
     auto childType = factory->GetClassType();
 
     if (!childType.empty()) {
@@ -117,11 +122,13 @@ std::shared_ptr<Interface> ResolveAndCreate(std::shared_ptr<Factory> factory) {
         return createMethod(factory);
     }
 }
-template <typename T>
+template <typename Interface, typename Class>
 class RegisteredInFactory
 {
     public:
     static bool Registered;
+    static std::shared_ptr<Interface> Resolved;
+
 };
 
 }  // namespace ablate::parser

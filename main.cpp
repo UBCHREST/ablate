@@ -10,6 +10,7 @@
 #include "solve/timeStepper.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
+#include "parser/listing.h"
 
 PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     DM dm;
@@ -43,6 +44,10 @@ PetscErrorCode SetInitialConditions(TS ts, Vec u) {
 int main(int argc, char **args) {
         // initialize petsc and mpi
         PetscInitialize(&argc, &args, NULL, NULL) >> ablate::checkError;
+
+        std::cout << ablate::parser::Listing::Get() << std::endl;
+
+
         {
             // -dm_plex_separate_marker
             // -dm_refine 2   -ts_max_steps 30 -ts_dt 0.1 -dm_view hdf5:sol.h5 -num_sol_vec_view_monitor hdf5:sol.h5::append -exact__vec_view hdf5:sol.h5::append
