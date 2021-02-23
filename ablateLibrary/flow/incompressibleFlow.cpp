@@ -1,7 +1,8 @@
 #include "incompressibleFlow.hpp"
+#include <stdexcept>
 #include "incompressibleFlow.h"
-#include "utilities/petscError.hpp"
 #include "parser/registrar.hpp"
+#include "utilities/petscError.hpp"
 /*
   CASE: incompressible quadratic
   In 2D we use exact solution:
@@ -42,8 +43,9 @@ static PetscErrorCode incompressible_quadratic_T_t(PetscInt Dim, PetscReal time,
 }
 
 ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments,
-                                                     std::shared_ptr<parameters::Parameters> parameters)
-    : Flow(mesh, name, arguments) {
+                                                     std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
+                                                     std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions)
+    : Flow(mesh, name, arguments, initialization, boundaryConditions) {
     // Setup the problem
     IncompressibleFlow_SetupDiscretization(mesh->GetDomain()) >> checkError;
 
@@ -54,46 +56,27 @@ ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shar
     // Start the problem setup
     IncompressibleFlow_StartProblemSetup(mesh->GetDomain(), TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants) >> checkError;
 
-    // Apply any boundary conditions //TODO: move to seperate class
+    // Apply any boundary conditions
     PetscDS prob;
     DMGetDS(mesh->GetDomain(), &prob) >> checkError;
 
-    PetscInt id;
-    id = 3;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr) >>
-        checkError;
-    id = 1;
-    PetscDSAddBoundary(
-        prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr) >>
-        checkError;
-    id = 2;
-    PetscDSAddBoundary(
-        prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr) >>
-        checkError;
-    id = 4;
-    PetscDSAddBoundary(
-        prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))incompressible_quadratic_u, (void (*)(void))incompressible_quadratic_u_t, 1, &id, nullptr) >>
-        checkError;
-    id = 3;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr) >>
-        checkError;
-    id = 1;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr) >>
-        checkError;
-    id = 2;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr) >>
-        checkError;
-    id = 4;
-    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))incompressible_quadratic_T, (void (*)(void))incompressible_quadratic_T_t, 1, &id, nullptr) >>
-        checkError;
+    // add each boundary condition
+    for(auto boundary: boundaryConditions){
+        PetscInt id = boundary->GetLabelId();
+        PetscDSAddBoundary(prob,
+                           DM_BC_ESSENTIAL,
+                           boundary->GetBoundaryName().c_str(),
+                           boundary->GetLabelName().c_str(),
+                           GetFieldId(boundary->GetFieldName()), 0, NULL, (void (*)(void))boundary->GetBoundaryFunction(), (void (*)(void))boundary->GetBoundaryTimeDerivativeFunction(), 1, &id, boundary->GetContext()) >> checkError;
+    }
 
     // Set the exact solution
-    PetscDSSetExactSolution(prob, VEL, incompressible_quadratic_u, NULL) >> checkError;
-    PetscDSSetExactSolution(prob, PRES, incompressible_quadratic_p, NULL) >> checkError;
-    PetscDSSetExactSolution(prob, TEMP, incompressible_quadratic_T, NULL) >> checkError;
-    PetscDSSetExactSolutionTimeDerivative(prob, VEL, incompressible_quadratic_u_t, NULL) >> checkError;
-    PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, NULL) >> checkError;
-    PetscDSSetExactSolutionTimeDerivative(prob, TEMP, incompressible_quadratic_T_t, NULL) >> checkError;
+    for (auto exact : initialization) {
+        auto fieldId = GetFieldId(exact->GetName());
+
+        PetscDSSetExactSolution(prob, fieldId, exact->GetSolutionField().GetPetscFunction(), exact->GetSolutionField().GetContext()) >> checkError;
+        PetscDSSetExactSolutionTimeDerivative(prob, fieldId, exact->GetTimeDerivative().GetPetscFunction(), exact->GetTimeDerivative().GetContext()) >> checkError;
+    }
 }
 
 Vec ablate::flow::IncompressibleFlow::SetupSolve(TS &ts) {
@@ -115,9 +98,19 @@ Vec ablate::flow::IncompressibleFlow::SetupSolve(TS &ts) {
 
     return flowSolution;
 }
+int ablate::flow::IncompressibleFlow::GetFieldId(const std::string &field) {
+    if (field == "velocity") {
+        return VEL;
+    } else if (field == "pressure") {
+        return PRES;
+    } else if (field == "temperature") {
+        return TEMP;
+    } else {
+        throw std::invalid_argument("invalid flow field (" + field + ")");
+    }
+}
 
-REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible flow",
-    ARG(std::string, "name", "the name of the flow field"),
-    ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
-    ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
-    ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"));
+REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
+         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"),
+         ARG(std::vector<flow::FlowFieldSolution>, "initialization", "the exact solution used to initialize the flow field"),
+         ARG(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"));

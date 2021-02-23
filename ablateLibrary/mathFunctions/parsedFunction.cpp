@@ -2,15 +2,16 @@
 #include <algorithm>
 #include <petscsys.h>
 #include <exception>
+#include "parser/registrar.hpp"
 
-ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString) {
+ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString): formula(functionString) {
     // define the x,y,z and t variables
     parser.DefineVar("x", &coordinate[0]);
     parser.DefineVar("y", &coordinate[1]);
     parser.DefineVar("z", &coordinate[2]);
     parser.DefineVar("t", &time);
 
-    parser.SetExpr(functionString);
+    parser.SetExpr(formula);
 
     // Test the function
     parser.Eval();
@@ -110,3 +111,6 @@ PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscI
     }
     PetscFunctionReturn(0);
 }
+
+REGISTERDEFAULT(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedFunction, "a string based function to be parsed with muparser",
+ARG(std::string, "formula", "the formula that may accept x, y, z, t"));

@@ -31,8 +31,8 @@ static PetscErrorCode lowMach_quadratic_T_t(PetscInt Dim, PetscReal time, const 
     return 0;
 }
 
-ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters)
-    : Flow(mesh, name, arguments) {
+ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions)
+    : Flow(mesh, name, arguments, initialization, boundaryConditions) {
     // Setup the problem
     LowMachFlow_SetupDiscretization(mesh->GetDomain()) >> checkError;
 
@@ -96,4 +96,7 @@ REGISTER(ablate::flow::Flow, ablate::flow::LowMachFlow, "low mach flow",
     ARG(std::string, "name", "the name of the flow field"),
     ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
     ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
-    ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"));
+    ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"),
+    ARG(std::vector<flow::FlowFieldSolution>, "initialization", "the exact solution used to initialize the flow field"),
+    ARG(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field")
+);

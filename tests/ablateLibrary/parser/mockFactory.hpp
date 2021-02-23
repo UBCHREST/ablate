@@ -4,9 +4,13 @@
 #include "parser/factory.hpp"
 #include <map>
 #include <string>
+#include "gmock/gmock.h"
+
+using namespace ablate::parser;
 
 namespace ablateTesting::parser {
-using namespace ablate::parser;
+
+MATCHER_P(NameIs, name ,"") { return (arg.inputName == name); }
 
 class MockFactory : public ablate::parser::Factory {
    public:

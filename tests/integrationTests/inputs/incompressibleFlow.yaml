@@ -45,3 +45,84 @@ flow: !ablate::flow::IncompressibleFlow
     cp: 1.0
     beta: 1.0
     gravityDirection: 1
+  initialization:
+    - fieldName: "velocity"
+      solutionField:
+        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
+      timeDerivative:
+        formula: "1.0, 1.0"
+    - fieldName: "pressure"
+      solutionField:
+        formula: "x + y - 1"
+      timeDerivative:
+        formula: "0.0"
+    - fieldName: "temperature"
+      solutionField:
+        formula: "t + x + y"
+      timeDerivative:
+        formula: "1.0"
+  boundaryConditions:
+    - fieldName: velocity
+      boundaryName: "top wall velocity"
+      labelName: marker
+      labelId: 3
+      boundaryValue:
+        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
+      timeDerivativeValue:
+        formula: "1.0, 1.0"
+    - fieldName: velocity
+      boundaryName: "bottom wall velocity"
+      labelName: marker
+      labelId: 1
+      boundaryValue:
+        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
+      timeDerivativeValue:
+        formula: "1.0, 1.0"
+    - fieldName: velocity
+      boundaryName: "right wall velocity"
+      labelName: marker
+      labelId: 2
+      boundaryValue:
+        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
+      timeDerivativeValue:
+        formula: "1.0, 1.0"
+    - fieldName: velocity
+      boundaryName: "left wall velocity"
+      labelName: marker
+      labelId: 4
+      boundaryValue:
+        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
+      timeDerivativeValue:
+        formula: "1.0, 1.0"
+    - fieldName: temperature
+      boundaryName: "top wall temp"
+      labelName: marker
+      labelId: 3
+      boundaryValue:
+        formula: "t + x + y"
+      timeDerivativeValue:
+        formula: "1.0"
+    - fieldName: temperature
+      boundaryName: "bottom wall temp"
+      labelName: marker
+      labelId: 1
+      boundaryValue:
+        formula: "t + x + y"
+      timeDerivativeValue:
+        formula: "1.0"
+    - fieldName: temperature
+      boundaryName: "right wall temp"
+      labelName: marker
+      labelId: 2
+      boundaryValue:
+        formula: "t + x + y"
+      timeDerivativeValue:
+        formula: "1.0"
+    - fieldName: temperature
+      boundaryName: "right wall temp"
+      labelName: marker
+      labelId: 4
+      boundaryValue:
+        formula: "t + x + y"
+      timeDerivativeValue:
+        formula: "1.0"

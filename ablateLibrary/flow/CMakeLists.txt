@@ -6,4 +6,8 @@ target_sources(ablateLibrary
         lowMachFlow.cpp
         incompressibleFlow.hpp
         incompressibleFlow.cpp
+        flowFieldSolution.cpp
+        flowFieldSolution.hpp
+        boundaryCondition.cpp
+        boundaryCondition.hpp
         )

@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_PARSEDFUNCTION_HPP
 #define ABLATELIBRARY_PARSEDFUNCTION_HPP
 #include <muParser.h>
-#include <petsc.h>
+#include "mathFunction.hpp"
 
 namespace ablate::mathFunctions{
 /**
@@ -9,13 +9,12 @@ namespace ablate::mathFunctions{
  * see https://beltoforion.de/en/muparser/index.php
  */
 
-typedef PetscErrorCode (*PetscFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
-
-class ParsedFunction {
+class ParsedFunction : public MathFunction {
    private:
     mutable double coordinate[3] = {0, 0, 0};
     mutable double time = 0.0;
     mu::Parser parser;
+    const std::string formula;
 
    private:
     static PetscErrorCode ParsedPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
@@ -26,22 +25,21 @@ class ParsedFunction {
 
     explicit ParsedFunction(std::string functionString);
 
-    double Eval(const double& x, const double& y, const double& z, const double &t) const;
+    double Eval(const double& x, const double& y, const double& z, const double &t) const override;
 
-    double Eval(const double* xyz, const int& ndims, const double &t) const;
+    double Eval(const double* xyz, const int& ndims, const double &t) const override;
 
-    void Eval(const double& x, const double& y, const double& z, const double &t, std::vector<double>& result) const;
+    void Eval(const double& x, const double& y, const double& z, const double &t, std::vector<double>& result) const override;
 
-    void Eval(const double* xyz, const int& ndims, const double &t, std::vector<double>& result) const;
+    void Eval(const double* xyz, const int& ndims, const double &t, std::vector<double>& result) const override;
 
-    void* GetContext(){
+    void* GetContext() override{
         return this;
     }
 
-    PetscFunction GetPetscFunction(){
+    PetscFunction GetPetscFunction() override{
         return ParsedPetscFunction;
     }
-
 };
 }
 
