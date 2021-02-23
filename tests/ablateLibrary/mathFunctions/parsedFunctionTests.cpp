@@ -1,7 +1,6 @@
 #include "gtest/gtest.h"
 #include "mathFunctions/parsedFunction.hpp"
 
-
 TEST(ParsedFunctionTests, ShouldThrowExceptionInvalidEquation) {
     // arrange/act/assert
     ASSERT_ANY_THROW(ablate::mathFunctions::ParsedFunction("x+y+z+t+c"));
@@ -77,4 +76,23 @@ TEST(ParsedFunctionTests, ShouldEvalToVectorFromCoord) {
     const double array3[3] = {1.0, 2.0, 3.0};
     std::vector<double> result3 = {0 , 0};
     ASSERT_THROW(function.Eval(array3, 3, 4.0, result3), std::invalid_argument);
+}
+
+TEST(ParsedFunctionTests, ShouldProvideAndFunctionWithPetscFunction) {
+    // arrange
+    auto function = std::make_shared<ablate::mathFunctions::ParsedFunction>("x+y+z+t,x*y*z");
+
+    auto context = function->GetContext();
+    auto functionPointer = function->GetPetscFunction();
+
+    const PetscReal x[3] = {1.0, 2.0, 3.0};
+    PetscScalar result[2] = {0.0, 0.0};
+
+    // act
+    auto errorCode = functionPointer(3, 4.0, x, 2, result, context);
+
+    // assert
+    ASSERT_EQ(0, errorCode);
+    ASSERT_DOUBLE_EQ( 10.0, result[0]);
+    ASSERT_DOUBLE_EQ( 6.0, result[1]);
 }
