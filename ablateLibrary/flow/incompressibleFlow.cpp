@@ -3,44 +3,6 @@
 #include "incompressibleFlow.h"
 #include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
-/*
-  CASE: incompressible quadratic
-  In 2D we use exact solution:
-
-    u = t + x^2 + y^2
-    v = t + 2x^2 - 2xy
-    p = x + y - 1
-    T = t + x + y
-  so that
-
-    \nabla \cdot u = 2x - 2x = 0
-
-  see docs/content/formulations/incompressibleFlow/solutions/Incompressible_2D_Quadratic_MMS.nb
-*/
-static PetscErrorCode incompressible_quadratic_u(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *u, void *ctx) {
-    u[0] = time + X[0] * X[0] + X[1] * X[1];
-    u[1] = time + 2.0 * X[0] * X[0] - 2.0 * X[0] * X[1];
-    return 0;
-}
-static PetscErrorCode incompressible_quadratic_u_t(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *u, void *ctx) {
-    u[0] = 1.0;
-    u[1] = 1.0;
-    return 0;
-}
-
-static PetscErrorCode incompressible_quadratic_p(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *p, void *ctx) {
-    p[0] = X[0] + X[1] - 1.0;
-    return 0;
-}
-
-static PetscErrorCode incompressible_quadratic_T(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *T, void *ctx) {
-    T[0] = time + X[0] + X[1];
-    return 0;
-}
-static PetscErrorCode incompressible_quadratic_T_t(PetscInt Dim, PetscReal time, const PetscReal *X, PetscInt Nf, PetscScalar *T, void *ctx) {
-    T[0] = 1.0;
-    return 0;
-}
 
 ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments,
                                                      std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
@@ -98,6 +60,7 @@ Vec ablate::flow::IncompressibleFlow::SetupSolve(TS &ts) {
 
     return flowSolution;
 }
+
 int ablate::flow::IncompressibleFlow::GetFieldId(const std::string &field) {
     if (field == "velocity") {
         return VEL;
