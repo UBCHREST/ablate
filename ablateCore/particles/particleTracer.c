@@ -230,7 +230,7 @@ static PetscErrorCode setupIntegrator(Particles particles, TS particleTs, TS flo
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleTracerCreate(Particles particles, Flow flow) {
+PetscErrorCode ParticleTracerCreate(Particles particles, DM flowDM, Vec flowField) {
     PetscFunctionBeginUser;
     // setup particle methods
     particles->destroy = destroy;
@@ -243,12 +243,12 @@ PetscErrorCode ParticleTracerCreate(Particles particles, Flow flow) {
     ierr = DMSwarmFinalizeFieldRegister(particles->dm);CHKERRQ(ierr);
 
     // Store the values in the particles from the ts and flow
-    particles->flowFinal = flow->flowField;
+    particles->flowFinal = flowField;
     ierr = VecDuplicate(particles->flowFinal, &(particles->flowInitial));CHKERRQ(ierr);
-    ierr = VecCopy(particles->flow->flowField, (particles->flowInitial));CHKERRQ(ierr);
+    ierr = VecCopy(flowField, (particles->flowInitial));CHKERRQ(ierr);
 
     // Initialize the particles
-    ierr = ParticleInitialize(particles->particleInitializer, flow->dm, particles->dm);CHKERRQ(ierr);
+    ierr = ParticleInitialize(particles->particleInitializer, flowDM, particles->dm);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

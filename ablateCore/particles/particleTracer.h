@@ -2,6 +2,6 @@
 #define ABLATE_PARTICLETRACER_H
 #include "particles.h"
 
-PETSC_EXTERN PetscErrorCode ParticleTracerCreate(Particles particles, Flow flow);
+PETSC_EXTERN PetscErrorCode ParticleTracerCreate(Particles particles, DM flowDM, Vec flowField);
 
 #endif  // ABLATE_PARTICLETRACER_H

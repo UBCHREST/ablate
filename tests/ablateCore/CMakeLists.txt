@@ -5,6 +5,7 @@ target_sources(coreTests
         PRIVATE
         lowMachFlowTests.cpp
         incompressibleFlowTests.cpp
+        particleTests.cpp
         main.cpp
         )
 

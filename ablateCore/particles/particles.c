@@ -2,12 +2,12 @@
 #include "particles.h"
 #include "particleTracer.h"
 
-PetscErrorCode ParticleCreate(Particles* particles,ParticleType type, Flow flow, ParticleInitializer particleInitializer) {
+PetscErrorCode ParticleCreate(Particles* particles,ParticleType type, DM flowDM, Vec flowField, ParticleInitializer particleInitializer) {
     PetscErrorCode ierr;
     *particles = malloc(sizeof(struct _Particles));
 
     // initialize all fields
-    (*particles)->flow = flow;
+    (*particles)->flowDM = flowDM;
     (*particles)->dm = NULL;
     (*particles)->parameters = NULL;
     (*particles)->data = NULL;
@@ -24,14 +24,14 @@ PetscErrorCode ParticleCreate(Particles* particles,ParticleType type, Flow flow,
 
     // get the dimensions of the flow and set for the particle dm
     PetscInt dim;
-    ierr = DMGetDimension(flow->dm, &dim);CHKERRQ(ierr);
+    ierr = DMGetDimension(flowDM, &dim);CHKERRQ(ierr);
     ierr = DMSetDimension((*particles)->dm, dim);CHKERRQ(ierr);
-    ierr = DMSwarmSetCellDM((*particles)->dm, flow->dm);CHKERRQ(ierr);
+    ierr = DMSwarmSetCellDM((*particles)->dm, flowDM);CHKERRQ(ierr);
 
     if (!type) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "The particle type must be specified");
     } else if (strcmp(type, PARTICLETRACER) == 0) {
-        return ParticleTracerCreate(*particles, flow);
+        return ParticleTracerCreate(*particles, flowDM, flowField);
     }
     { SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Unknown particle type"); }
 }

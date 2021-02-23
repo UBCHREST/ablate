@@ -2,8 +2,6 @@
 #define ABLATE_PARTICLES_H
 
 #include <petsc.h>
-#include "flow.h"
-#include "flowParameters.h"
 #include "particleInitializer.h"
 
 // Define field id for mass
@@ -15,7 +13,7 @@ typedef const char* ParticleType;
 struct _Particles {
     PetscBag parameters; /* constant particle parameters */
     DM dm;               /* particle domain */
-    Flow flow;
+    DM flowDM;
     ParticleInitializer particleInitializer;
 
     void* data; /* implementation-specific data */
@@ -37,7 +35,7 @@ struct _Particles {
 
 typedef struct _Particles* Particles;
 
-PETSC_EXTERN PetscErrorCode ParticleCreate(Particles* particles,ParticleType type, Flow flow, ParticleInitializer particleInitializer);
+PETSC_EXTERN PetscErrorCode ParticleCreate(Particles* particles,ParticleType type, DM flowDM, Vec flowField, ParticleInitializer particleInitializer);
 PETSC_EXTERN PetscErrorCode ParticleSetupIntegrator(Particles particles, TS particleTs, TS flowTs);
 PETSC_EXTERN PetscErrorCode ParticleSetExactSolution(Particles particles, PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *));
 PETSC_EXTERN PetscErrorCode ParticleDestroy(Particles* particles);

@@ -502,7 +502,6 @@ TEST_P(IncompressibleFlowMMS, ShouldConvergeToExactSolution) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = TSMonitorSet(ts, MonitorError, NULL, NULL);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         ierr = TSSolve(ts, flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
