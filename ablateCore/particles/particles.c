@@ -1,8 +1,7 @@
-#include "incompressibleFlow.h"
 #include "particles.h"
-#include "particleTracer.h"
 
-PetscErrorCode ParticleCreate(Particles* particles,ParticleType type, DM flowDM, Vec flowField, ParticleInitializer particleInitializer) {
+PetscErrorCode ParticleCreate(Particles* particles, DM flowDM, ParticleInitializer particleInitializer) {
+    PetscFunctionBeginUser;
     PetscErrorCode ierr;
     *particles = malloc(sizeof(struct _Particles));
 
@@ -11,8 +10,6 @@ PetscErrorCode ParticleCreate(Particles* particles,ParticleType type, DM flowDM,
     (*particles)->dm = NULL;
     (*particles)->parameters = NULL;
     (*particles)->data = NULL;
-    (*particles)->setupIntegrator = NULL;
-    (*particles)->destroy = NULL;
     (*particles)->exactSolution = NULL;
     (*particles)->particleInitializer = particleInitializer;
 
@@ -27,27 +24,11 @@ PetscErrorCode ParticleCreate(Particles* particles,ParticleType type, DM flowDM,
     ierr = DMGetDimension(flowDM, &dim);CHKERRQ(ierr);
     ierr = DMSetDimension((*particles)->dm, dim);CHKERRQ(ierr);
     ierr = DMSwarmSetCellDM((*particles)->dm, flowDM);CHKERRQ(ierr);
-
-    if (!type) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "The particle type must be specified");
-    } else if (strcmp(type, PARTICLETRACER) == 0) {
-        return ParticleTracerCreate(*particles, flowDM, flowField);
-    }
-    { SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Unknown particle type"); }
-}
-
-PETSC_EXTERN PetscErrorCode ParticleSetExactSolution(Particles particles, PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *)) {
-    particles->exactSolution = exactSolution;
-    return 0;
-}
-
-PETSC_EXTERN PetscErrorCode ParticleSetupIntegrator(Particles particles, TS particleTs, TS flowTs) {
-    return particles->setupIntegrator(particles, particleTs, flowTs);
+    PetscFunctionReturn(0);
 }
 
 PETSC_EXTERN PetscErrorCode ParticleDestroy(Particles* particles) {
-    PetscErrorCode ierr = (*particles)->destroy(*particles);CHKERRQ(ierr);
-    ierr = DMDestroy(&(*particles)->dm);CHKERRQ(ierr);
+    PetscErrorCode ierr = DMDestroy(&(*particles)->dm);CHKERRQ(ierr);
     free(*particles);
     particles = NULL;
     return 0;

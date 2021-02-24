@@ -1,31 +1,16 @@
 #include <petsc.h>
-#include "incompressibleFlow.h"
-#include "gtest/gtest.h"
-#include "mesh.h"
-#include "particleInitializer.h"
-#include "particles.h"
 #include "MpiTestFixture.hpp"
+#include "gtest/gtest.h"
+#include "incompressibleFlow.h"
+#include "mesh.h"
+#include "particles.h"
+#include "particleTracer.h"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
-typedef void (*IntegrandTestFunction)(PetscInt dim,
-                                      PetscInt Nf,
-                                      PetscInt NfAux,
-                                      const PetscInt *uOff,
-                                      const PetscInt *uOff_x,
-                                      const PetscScalar *u,
-                                      const PetscScalar *u_t,
-                                      const PetscScalar *u_x,
-                                      const PetscInt *aOff,
-                                      const PetscInt *aOff_x,
-                                      const PetscScalar *a,
-                                      const PetscScalar *a_t,
-                                      const PetscScalar *a_x,
-                                      PetscReal t,
-                                      const PetscReal *X,
-                                      PetscInt numConstants,
-                                      const PetscScalar *constants,
-                                      PetscScalar *f0);
+typedef void (*IntegrandTestFunction)(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *u, const PetscScalar *u_t, const PetscScalar *u_x,
+                                      const PetscInt *aOff, const PetscInt *aOff_x, const PetscScalar *a, const PetscScalar *a_t, const PetscScalar *a_x, PetscReal t, const PetscReal *X,
+                                      PetscInt numConstants, const PetscScalar *constants, PetscScalar *f0);
 
 #define SourceFunction(FUNC)            \
     FUNC(PetscInt dim,                  \
@@ -169,8 +154,8 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     CHKERRQ(ierr);
 
     // get the flow to apply the completeFlowInitialization method
-    ierr = IncompressibleFlow_CompleteFlowInitialization(dm, u);CHKERRQ(ierr);
-
+    ierr = IncompressibleFlow_CompleteFlowInitialization(dm, u);
+    CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -227,10 +212,10 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
 
 TEST_P(ParticleMMS, ParticleFlowMMSTests) {
     StartWithMPI
-        DM dm;               /* problem definition */
-        TS ts;               /* timestepper */
+        DM dm;                 /* problem definition */
+        TS ts;                 /* timestepper */
         PetscBag parameterBag; /* constant flow parameters */
-        Vec flowField;       /* flow solution vector */
+        Vec flowField;         /* flow solution vector */
 
         PetscReal t;
         PetscErrorCode ierr;
@@ -267,7 +252,7 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         PetscScalar constants[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS];
         ierr = IncompressibleFlow_PackParameters(flowParameters, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = IncompressibleFlow_StartProblemSetup(dm,TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants);
+        ierr = IncompressibleFlow_StartProblemSetup(dm, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Override problem with source terms, boundary, and set the exact solution
@@ -296,11 +281,11 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
                 ierr = PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer);
                 CHKERRABORT(PETSC_COMM_WORLD, ierr);
             }
-/* Setup Boundary Conditions */
+            /* Setup Boundary Conditions */
             PetscInt id;
             id = 3;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
             ierr = PetscDSAddBoundary(
@@ -311,22 +296,24 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
                 prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 3;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 2;
             ierr =
                 PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
             // Set the exact solution
@@ -347,7 +334,8 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Name the flow field
-        ierr = PetscObjectSetName((PetscObject)flowField, "Numerical Solution");CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = PetscObjectSetName((PetscObject)flowField, "Numerical Solution");
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         ierr = TSSetComputeInitialCondition(ts, SetInitialConditions);
         CHKERRABORT(PETSC_COMM_WORLD, ierr); /* Must come after SetFromOptions() */
@@ -375,15 +363,15 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         Particles particles;
 
         // Setup the particle domain
-        ierr = ParticleCreate(&particles, PARTICLETRACER, dm, flowField, particleInitializer);
-        ParticleSetExactSolution(particles, testingParam.particleExact);
+        ierr = ParticleTracerCreate(&particles, dm, flowField, particleInitializer);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        particles->exactSolution = testingParam.particleExact;
 
         // Setup particle position integrator
         TS particleTs;
         ierr = TSCreate(PETSC_COMM_WORLD, &particleTs);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = ParticleSetupIntegrator(particles, particleTs, ts);
+        ierr = ParticleTracerSetupIntegrator(particles, particleTs, ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Solve the one way coupled system
@@ -403,7 +391,7 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = VecDestroy(&flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = ParticleDestroy(&particles);
+        ierr = ParticleTracerDestroy(&particles);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = ParticleInitializerDestroy(&particleInitializer);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
@@ -412,8 +400,7 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(ParticleMMSTests,
-                         ParticleMMS,
+INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, ParticleMMS,
                          testing::Values((ParticleMMSParameters){.mpiTestParameter = {.testName = "particle in incompressible 2d trigonometric trigonometric tri_p2_p1_p1",
                                                                                       .nproc = 1,
                                                                                       .expectedOutputFile = "outputs/particle_incompressible_trigonometric_2d_tri_p2_p1_p1",
@@ -435,4 +422,4 @@ INSTANTIATE_TEST_SUITE_P(ParticleMMSTests,
                                                                  .f0_v = f0_trig_trig_v,
                                                                  .f0_w = f0_trig_trig_w,
                                                                  .omega = 0.5}),
-[](const testing::TestParamInfo<ParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+                         [](const testing::TestParamInfo<ParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

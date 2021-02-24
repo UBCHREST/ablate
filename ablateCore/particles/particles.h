@@ -27,17 +27,12 @@ struct _Particles {
 
     // Allow the user to set the exactSolution
     PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *);
-
-    /* particles field setup functions */
-    PetscErrorCode (*setupIntegrator)(struct _Particles*, TS particleTs, TS flowTs);
-    PetscErrorCode (*destroy)(struct _Particles*);
 };
 
 typedef struct _Particles* Particles;
 
-PETSC_EXTERN PetscErrorCode ParticleCreate(Particles* particles,ParticleType type, DM flowDM, Vec flowField, ParticleInitializer particleInitializer);
-PETSC_EXTERN PetscErrorCode ParticleSetupIntegrator(Particles particles, TS particleTs, TS flowTs);
-PETSC_EXTERN PetscErrorCode ParticleSetExactSolution(Particles particles, PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *));
+PETSC_EXTERN PetscErrorCode ParticleCreate(Particles* particles, DM flowDM, ParticleInitializer particleInitializer);
+PETSC_EXTERN PetscErrorCode ParticleTracerSetupIntegrator(Particles particles, TS particleTs, TS flowTs);
 PETSC_EXTERN PetscErrorCode ParticleDestroy(Particles* particles);
 
 #endif  // ABLATE_PARTICLES_H
