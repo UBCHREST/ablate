@@ -4,6 +4,6 @@
 #include <petsc.h>
 #include "particleInitializer.h"
 
-PETSC_EXTERN PetscErrorCode ParticleBoxInitializerCreate(ParticleInitializer particleInitializer);
+PETSC_EXTERN PetscErrorCode ParticleBoxInitialize(DM flowDm, DM particleDm);
 
 #endif  // ABLATE_PARTICLEBOXINITIALIZER_H

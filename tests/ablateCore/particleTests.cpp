@@ -355,11 +355,6 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         ierr = TSSetFromOptions(ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        // Initialize the particles
-        ParticleInitializer particleInitializer;
-        ierr = ParticleInitializerCreate(&particleInitializer);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
         Particles particles;
 
         // Setup the particle domain
@@ -375,7 +370,7 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         ierr = PetscObjectSetName((PetscObject) particles->dm, "Particles");CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // initialize the particles
-        ParticleInitialize(particleInitializer, dm, particles->dm);
+        ParticleInitialize(dm, particles->dm);
 
         // Setup particle position integrator
         TS particleTs;
@@ -405,8 +400,6 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         ierr = VecDestroy(&flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = ParticleTracerDestroy(&particles);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = ParticleInitializerDestroy(&particleInitializer);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = PetscFinalize();
         exit(ierr);
