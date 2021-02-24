@@ -4,21 +4,6 @@ typedef struct {
     PetscInt particlesPerCell;
 } CellInitializerData;
 
-static PetscErrorCode setSolutionVector(ParticleInitializer particleInitializer,DM dm, Vec solution)
-{
-    PetscScalar   *coords;
-    PetscReal      x[3], dx[3];
-    PetscInt       n[3];
-    PetscInt       Np, dim, d, i, j, k;
-    CellInitializerData* data = (CellInitializerData*)particleInitializer->data;
-
-    PetscErrorCode ierr;
-
-    PetscFunctionBegin;
-    ierr = DMSwarmSetPointCoordinatesRandom(dm, data->particlesPerCell);CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-
 static PetscErrorCode initializeParticles(ParticleInitializer particleInitializer, DM flowDm, DM particleDm) {
     PetscFunctionBeginUser;
     CellInitializerData* data = (CellInitializerData*)particleInitializer->data;
@@ -53,7 +38,6 @@ PetscErrorCode ParticleCellInitializerCreate(ParticleInitializer particleInitial
     PetscFunctionBeginUser;
     particleInitializer->destroy = destroy;
     particleInitializer->initializeParticles = initializeParticles;
-    particleInitializer->setSolutionVector = setSolutionVector;
 
     CellInitializerData* data = malloc(sizeof(CellInitializerData));
     data->particlesPerCell = 1;

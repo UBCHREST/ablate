@@ -36,11 +36,6 @@ PETSC_EXTERN PetscErrorCode ParticleInitializerDestroy(ParticleInitializer* part
     return 0;
 }
 
-PETSC_EXTERN PetscErrorCode ParticleInitializerSetSolutionVector(ParticleInitializer particleInitializer, DM dm, Vec solution) {
-    return particleInitializer->setSolutionVector(particleInitializer, dm, solution);
-}
-
-;
 PETSC_EXTERN PetscErrorCode ParticleInitialize(ParticleInitializer particleInitializer, DM flowDm, DM particleDm) {
     PetscErrorCode ierr = particleInitializer->initializeParticles(particleInitializer, flowDm, particleDm);CHKERRQ(ierr);
     return DMViewFromOptions(particleDm, NULL, "-dm_view");

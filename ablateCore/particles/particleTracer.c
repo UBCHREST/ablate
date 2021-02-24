@@ -1,6 +1,5 @@
 #include "particleTracer.h"
 
-
 /* x_t = v
 
    Note that here we use the velocity field at t_{n+1} to advect the particles from
@@ -171,21 +170,21 @@ static PetscErrorCode advectParticles(TS ts)
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode setInitialParticleConditions(TS ts, Vec u) {
+static PetscErrorCode getInitialParticleCondition(TS ts, Vec u) {
     Particles particles;
     DM dm;
     PetscFunctionBegin;
     PetscErrorCode ierr = TSGetApplicationContext(ts, &particles);CHKERRQ(ierr);
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
 
-    ierr = ParticleInitializerSetSolutionVector(particles->particleInitializer, dm, u);CHKERRQ(ierr);
+    ierr = VecCopy(particles->initialLocation, u);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ParticleTracerSetupIntegrator(Particles particles, TS particleTs, TS flowTs) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
-    ierr = PetscObjectSetOptionsPrefix((PetscObject) particleTs, "particle_");CHKERRQ(ierr);
     ierr = TSSetDM(particleTs, particles->dm);CHKERRQ(ierr);
     ierr = TSSetProblemType(particleTs, TS_NONLINEAR);CHKERRQ(ierr);
     ierr = TSSetExactFinalTime(particleTs, TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
@@ -216,7 +215,7 @@ PetscErrorCode ParticleTracerSetupIntegrator(Particles particles, TS particleTs,
     ierr = DMSwarmDestroyGlobalVectorFromField(particles->dm, DMSwarmPICField_coor, &xtmp);CHKERRQ(ierr);
 
     // setup the initial conditions for error computing
-    ierr = TSSetComputeInitialCondition(particleTs, setInitialParticleConditions);CHKERRQ(ierr);
+    ierr = TSSetComputeInitialCondition(particleTs, getInitialParticleCondition);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

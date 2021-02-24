@@ -10,7 +10,6 @@ PetscErrorCode ParticleCreate(Particles* particles,PetscInt ndims) {
     (*particles)->parameters = NULL;
     (*particles)->data = NULL;
     (*particles)->exactSolution = NULL;
-    (*particles)->particleInitializer = NULL;
 
     // create and associate the dm
     ierr = DMCreate(PETSC_COMM_WORLD, &(*particles)->dm);CHKERRQ(ierr);
@@ -20,7 +19,7 @@ PetscErrorCode ParticleCreate(Particles* particles,PetscInt ndims) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleInitializeFlow(Particles particles, DM flowDM, Vec flowField, ParticleInitializer particleInitializer) {
+PetscErrorCode ParticleInitializeFlow(Particles particles, DM flowDM, Vec flowField) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
@@ -32,9 +31,6 @@ PetscErrorCode ParticleInitializeFlow(Particles particles, DM flowDM, Vec flowFi
     ierr = VecDuplicate(particles->flowFinal, &(particles->flowInitial));CHKERRQ(ierr);
     ierr = VecCopy(flowField, particles->flowInitial);CHKERRQ(ierr);
 
-    // Initialize the particles
-    particles->particleInitializer = particleInitializer;
-    ierr = ParticleInitialize(particles->particleInitializer, flowDM, particles->dm);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
