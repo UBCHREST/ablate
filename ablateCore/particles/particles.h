@@ -31,7 +31,8 @@ struct _Particles {
 
 typedef struct _Particles* Particles;
 
-PETSC_EXTERN PetscErrorCode ParticleCreate(Particles* particles, DM flowDM, ParticleInitializer particleInitializer);
+PETSC_EXTERN PetscErrorCode ParticleCreate(Particles* particles, PetscInt ndims);
+PETSC_EXTERN PetscErrorCode ParticleInitializeFlow(Particles particles, DM flowDM, Vec flowField, ParticleInitializer particleInitializer);
 PETSC_EXTERN PetscErrorCode ParticleTracerSetupIntegrator(Particles particles, TS particleTs, TS flowTs);
 PETSC_EXTERN PetscErrorCode ParticleDestroy(Particles* particles);
 

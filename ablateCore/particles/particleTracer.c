@@ -220,25 +220,17 @@ PetscErrorCode ParticleTracerSetupIntegrator(Particles particles, TS particleTs,
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleTracerCreate(Particles* particles, DM flowDM, Vec flowField, ParticleInitializer particleInitializer) {
+PetscErrorCode ParticleTracerCreate(Particles* particles, PetscInt ndims) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
     // Call the base particle create
-    ierr = ParticleCreate(particles, flowDM, particleInitializer);CHKERRQ(ierr);
+    ierr = ParticleCreate(particles, ndims);CHKERRQ(ierr);
 
     // register all particle fields
     ierr = DMSwarmSetType((*particles)->dm, DMSWARM_PIC);CHKERRQ(ierr);
     ierr = DMSwarmRegisterPetscDatatypeField((*particles)->dm, "mass", 1, PETSC_REAL);CHKERRQ(ierr);
     ierr = DMSwarmFinalizeFieldRegister((*particles)->dm);CHKERRQ(ierr);
-
-    // Store the values in the particles from the ts and flow
-    (*particles)->flowFinal = flowField;
-    ierr = VecDuplicate((*particles)->flowFinal, &((*particles)->flowInitial));CHKERRQ(ierr);
-    ierr = VecCopy(flowField, ((*particles)->flowInitial));CHKERRQ(ierr);
-
-    // Initialize the particles
-    ierr = ParticleInitialize((*particles)->particleInitializer, flowDM, (*particles)->dm);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

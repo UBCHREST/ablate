@@ -363,9 +363,16 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         Particles particles;
 
         // Setup the particle domain
-        ierr = ParticleTracerCreate(&particles, dm, flowField, particleInitializer);
+        ierr = ParticleTracerCreate(&particles, 2);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         particles->exactSolution = testingParam.particleExact;
+
+        // link the flow to the particles
+        ParticleInitializeFlow(particles, dm, flowField, particleInitializer);CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
+        // name the particle domain
+        ierr = PetscObjectSetOptionsPrefix((PetscObject)(particles->dm), "particles_");CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = PetscObjectSetName((PetscObject) particles->dm, "Particles");CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Setup particle position integrator
         TS particleTs;
