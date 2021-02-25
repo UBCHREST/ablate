@@ -4,7 +4,8 @@
 namespace ablate::solve {
 class Solvable {
    public:
-    virtual Vec SetupSolve(TS& timeStepper) = 0;
+    virtual void SetupSolve(TS& timeStepper) = 0;
+    virtual Vec GetSolutionVector() = 0;
 };
 }  // namespace ablate::solve
 

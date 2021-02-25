@@ -8,7 +8,7 @@
 */
 static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
 {
-    Particles           particles = (Particles) ctx;
+    ParticleData particles = (ParticleData) ctx;
     Vec                 u   = particles->flowInitial;
     DM                  sdm, dm, vdm;
     Vec                 vel, locvel, pvel;
@@ -60,7 +60,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
 
 static PetscErrorCode computeParticleError(TS ts, Vec u, Vec e)
 {
-    Particles            particles;
+    ParticleData particles;
     DM                 sdm;
     const PetscScalar *xp0, *xp;
     PetscScalar       *ep;
@@ -85,7 +85,7 @@ static PetscErrorCode computeParticleError(TS ts, Vec u, Vec e)
         PetscInt    d;
 
         for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p*dim+d]);
-        ierr = particles->exactSolution(dim, time, x0, 1, x, particles);CHKERRQ(ierr);
+        ierr = particles->exactSolution(dim, time, x0, 1, x, particles->exactSolutionContext);CHKERRQ(ierr);
         for (d = 0; d < dim; ++d) ep[p*dim+d] += x[d] - xp[p*dim+d];
     }
     ierr = VecRestoreArrayRead(particles->initialLocation, &xp0);CHKERRQ(ierr);
@@ -96,7 +96,7 @@ static PetscErrorCode computeParticleError(TS ts, Vec u, Vec e)
 
 static PetscErrorCode monitorParticleError(TS ts, PetscInt step, PetscReal time, Vec u, void *ctx)
 {
-    Particles            adv = (Particles) ctx;
+    ParticleData adv = (ParticleData) ctx;
     DM                 sdm;
     const PetscScalar *xp0, *xp;
     PetscReal          error = 0.0;
@@ -118,7 +118,7 @@ static PetscErrorCode monitorParticleError(TS ts, PetscInt step, PetscReal time,
         PetscInt    d;
 
         for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p*dim+d]);
-        ierr = adv->exactSolution(dim, time, x0, 1, x, adv);CHKERRQ(ierr);
+        ierr = adv->exactSolution(dim, time, x0, 1, x, adv->exactSolutionContext);CHKERRQ(ierr);
         for (d = 0; d < dim; ++d) perror += PetscSqr(PetscRealPart(x[d] - xp[p*dim+d]));
         error += perror;
     }
@@ -128,12 +128,51 @@ static PetscErrorCode monitorParticleError(TS ts, PetscInt step, PetscReal time,
     PetscFunctionReturn(0);
 }
 
+
+static PetscErrorCode PrintParticlesToFile(TS flowTS, DM sdm){
+    PetscInt timeStep;
+    TSGetStepNumber(flowTS, &timeStep);
+    const PetscScalar  *coord;
+
+    PetscInt dim;
+    PetscErrorCode ierr = DMGetDimension(sdm, &dim);CHKERRQ(ierr);
+    PetscInt Np;
+    ierr = DMSwarmGetLocalSize(sdm, &Np);CHKERRQ(ierr);
+
+    ierr = DMSwarmGetField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **) &coord);CHKERRQ(ierr);
+
+    char fileName[80];
+    sprintf(fileName, "particles.%d.txt", timeStep);
+
+    FILE* f = fopen( fileName, "w" );
+    switch(dim){
+        case 3:
+            fprintf(f, "X Y Z i \n");
+            break;
+        case 2:
+            fprintf(f, "X Y i \n");
+            break;
+        case 1:
+            fprintf(f, "X i \n");
+            break;
+    }
+    for(PetscInt p =0; p < Np; p++){
+        for(int d = 0; d < dim; d++){
+            fprintf(f, "%f ", coord[(p*dim)+d]);
+        }fprintf(f, "%d \n", p);
+    }
+    fclose(f);
+    ierr = DMSwarmRestoreField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **) &coord);CHKERRQ(ierr);
+    return 0;
+}
+
+
 static PetscErrorCode advectParticles(TS ts)
 {
     TS                 sts;
     DM                 sdm;
     Vec                p;
-    Particles          particles;
+    ParticleData particles;
     PetscScalar       *coord, *a;
     const PetscScalar *ca;
     PetscReal          time;
@@ -166,12 +205,15 @@ static PetscErrorCode advectParticles(TS ts)
     particles->timeInitial = particles->timeFinal;
 
     ierr = DMSwarmMigrate(sdm, PETSC_TRUE);CHKERRQ(ierr);
-    ierr = DMViewFromOptions(sdm, NULL, "-dm_view");CHKERRQ(ierr);
+
+    // debug code until output is updated
+    ierr = PrintParticlesToFile(ts, sdm);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode getInitialParticleCondition(TS ts, Vec u) {
-    Particles particles;
+    ParticleData particles;
     DM dm;
     PetscFunctionBegin;
     PetscErrorCode ierr = TSGetApplicationContext(ts, &particles);CHKERRQ(ierr);
@@ -182,7 +224,7 @@ static PetscErrorCode getInitialParticleCondition(TS ts, Vec u) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleTracerSetupIntegrator(Particles particles, TS particleTs, TS flowTs) {
+PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particleTs, TS flowTs) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
     ierr = TSSetDM(particleTs, particles->dm);CHKERRQ(ierr);
@@ -216,10 +258,14 @@ PetscErrorCode ParticleTracerSetupIntegrator(Particles particles, TS particleTs,
 
     // setup the initial conditions for error computing
     ierr = TSSetComputeInitialCondition(particleTs, getInitialParticleCondition);CHKERRQ(ierr);
+
+    // debug code until output is updated
+    ierr = PrintParticlesToFile(flowTs, particles->dm);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleTracerCreate(Particles* particles, PetscInt ndims) {
+PetscErrorCode ParticleTracerCreate(ParticleData * particles, PetscInt ndims) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
@@ -234,7 +280,7 @@ PetscErrorCode ParticleTracerCreate(Particles* particles, PetscInt ndims) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleTracerDestroy(Particles* particles) {
+PetscErrorCode ParticleTracerDestroy(ParticleData * particles) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr = VecDestroy(&((*particles)->flowInitial));CHKERRQ(ierr);
     ierr = VecDestroy(&((*particles)->particleSolution));CHKERRQ(ierr);

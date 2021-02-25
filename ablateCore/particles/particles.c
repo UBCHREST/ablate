@@ -1,9 +1,9 @@
 #include "particles.h"
 
-PetscErrorCode ParticleCreate(Particles* particles,PetscInt ndims) {
+PetscErrorCode ParticleCreate(ParticleData* particles,PetscInt ndims) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
-    *particles = malloc(sizeof(struct _Particles));
+    *particles = malloc(sizeof(struct _ParticleData));
 
     // initialize all fields
     (*particles)->dm = NULL;
@@ -19,7 +19,7 @@ PetscErrorCode ParticleCreate(Particles* particles,PetscInt ndims) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleInitializeFlow(Particles particles, DM flowDM, Vec flowField) {
+PetscErrorCode ParticleInitializeFlow(ParticleData particles, DM flowDM, Vec flowField) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
@@ -34,9 +34,15 @@ PetscErrorCode ParticleInitializeFlow(Particles particles, DM flowDM, Vec flowFi
 
     PetscFunctionReturn(0);
 }
+PetscErrorCode ParticleSetExactSolutionFlow(ParticleData particles, PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal *, PetscInt, PetscScalar *, void *),
+                                            void *exactSolutionContext) {
+    PetscFunctionBeginUser;
+    particles->exactSolution = exactSolution;
+    particles->exactSolutionContext = exactSolutionContext;
+    PetscFunctionReturn(0);
+}
 
-
-PETSC_EXTERN PetscErrorCode ParticleDestroy(Particles* particles) {
+PETSC_EXTERN PetscErrorCode ParticleDestroy(ParticleData* particles) {
     PetscErrorCode ierr = DMDestroy(&(*particles)->dm);CHKERRQ(ierr);
     free(*particles);
     particles = NULL;

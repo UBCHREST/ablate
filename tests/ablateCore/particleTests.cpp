@@ -355,12 +355,14 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         ierr = TSSetFromOptions(ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        Particles particles;
+        ParticleData particles;
 
         // Setup the particle domain
         ierr = ParticleTracerCreate(&particles, 2);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        particles->exactSolution = testingParam.particleExact;
+
+        ParticleSetExactSolutionFlow(particles, testingParam.particleExact, NULL);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // link the flow to the particles
         ParticleInitializeFlow(particles, dm, flowField);CHKERRABORT(PETSC_COMM_WORLD, ierr);

@@ -38,7 +38,6 @@ target_sources(ablateLibrary
         builder.hpp
         )
 
-
 # Include the code in any subdirectory
 add_subdirectory(flow)
 add_subdirectory(utilities)
@@ -47,6 +46,7 @@ add_subdirectory(parameters)
 add_subdirectory(solve)
 add_subdirectory(parser)
 add_subdirectory(mathFunctions)
+add_subdirectory(particles)
 
 # Keep a simple main statement
 target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser)

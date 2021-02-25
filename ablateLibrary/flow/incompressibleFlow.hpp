@@ -15,7 +15,7 @@ class IncompressibleFlow : public Flow {
                        std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
                         std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions);
 
-    Vec SetupSolve(TS& timeStepper) override;
+    void SetupSolve(TS& timeStepper) override;
 
    private:
     int GetFieldId(const std::string& field);

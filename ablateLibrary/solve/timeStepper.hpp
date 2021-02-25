@@ -17,7 +17,7 @@ class TimeStepper {
     TimeStepper(std::string name, std::map<std::string, std::string> arguments);
     ~TimeStepper();
 
-    const TS& GetTS() const { return ts; }
+    TS& GetTS() { return ts; }
 
     void Solve(std::shared_ptr<Solvable>);
 };

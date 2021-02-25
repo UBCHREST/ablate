@@ -1,0 +1,32 @@
+#ifndef ABLATELIBRARY_PARTICLES_HPP
+#define ABLATELIBRARY_PARTICLES_HPP
+
+#include "particles.h"
+#include "mathFunctions/mathFunction.hpp"
+#include <memory>
+#include "flow/flow.hpp"
+#include "particles/initializers/initializer.hpp"
+#include "solve/timeStepper.hpp"
+
+namespace ablate::particles{
+
+class Particles {
+   private:
+    std::shared_ptr<mathFunctions::MathFunction> exactSolution = nullptr;
+    std::shared_ptr<particles::initializers::Initializer> initializer = nullptr;
+
+   protected:
+    ParticleData particleData;
+    TS particleTs;
+
+    void SetExactSolution(std::shared_ptr<mathFunctions::MathFunction> exactSolution);
+
+   public:
+    explicit Particles(std::map<std::string, std::string> arguments, std::shared_ptr<particles::initializers::Initializer> initializer);
+    virtual ~Particles() = default;
+
+    virtual void InitializeFlow(std::shared_ptr<flow::Flow> flow, std::shared_ptr<solve::TimeStepper> flowTimeStepper);
+
+};
+}
+#endif  // ABLATELIBRARY_PARTICLES_HPP

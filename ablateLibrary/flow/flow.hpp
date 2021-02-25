@@ -26,7 +26,13 @@ class Flow : public solve::Solvable {
    public:
     Vec GetFlowSolution() { return flowSolution; }
 
-    virtual Vec SetupSolve(TS& timeStepper) = 0;
+    mesh::Mesh& GetMesh() { return *mesh; }
+
+    virtual void SetupSolve(TS& timeStepper) override= 0;
+
+    Vec GetSolutionVector() override{
+        return flowSolution;
+    }
 };
 }  // namespace ablate::flow
 

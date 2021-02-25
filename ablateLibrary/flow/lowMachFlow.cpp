@@ -38,7 +38,7 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
     }
 }
 
-Vec ablate::flow::LowMachFlow::SetupSolve(TS &ts) {
+void ablate::flow::LowMachFlow::SetupSolve(TS &ts) {
     // Setup the solve with the ts
     TSSetDM(ts, mesh->GetDomain()) >> checkError;
 
@@ -51,8 +51,6 @@ Vec ablate::flow::LowMachFlow::SetupSolve(TS &ts) {
 
     // set the dm on the ts
     TSSetDM(ts, mesh->GetDomain()) >> checkError;
-
-    return flowSolution;
 }
 
 int ablate::flow::LowMachFlow::GetFieldId(const std::string &field) {

@@ -76,7 +76,7 @@ ablate::solve::TimeStepper::~TimeStepper() {
 
 void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     // Get the solution vector
-    Vec solutionVec = solvable->SetupSolve(ts);
+    Vec solutionVec = solvable->GetSolutionVector();
 
     // set the ts from options
     TSSetFromOptions(ts) >> checkError;
