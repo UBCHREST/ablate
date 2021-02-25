@@ -24,3 +24,6 @@ The test directory holds four sub-test projects, each focused on a different asp
 - tests/ablateCore: includes tests for the core functionality.  These tests resemble what another client may use from ablateCore.
 - tests/ablateLibrary: includes unit level tests for the ablate library classes.
 - tests/integrationTests: integration level tests built upon the ablateLibrary parser.
+
+## docs
+The Markdown docs for ablate.  These are build with [Jekyll](jekyllrb.com) and published automatically upon merge.

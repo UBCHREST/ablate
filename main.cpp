@@ -14,7 +14,7 @@ int main(int argc, char **args) {
 
     // check to see if we should print options
     PetscBool printParserOptions = PETSC_FALSE;
-    PetscOptionsGetBool(NULL, NULL, "-printParser", &printParserOptions, NULL) >> checkError;
+    PetscOptionsGetBool(NULL, NULL, "-parserHelp", &printParserOptions, NULL) >> checkError;
     if(printParserOptions){
         std::cout << parser::Listing::Get() << std::endl;
     }
