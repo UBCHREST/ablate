@@ -6,7 +6,7 @@
 
 std::string ablate::utilities::Demangler::Demangle(const std::string& name) {
     // hard code some default values
-    if(prettyNames.contains(name)){
+    if (prettyNames.contains(name)) {
         return prettyNames[name];
     }
 

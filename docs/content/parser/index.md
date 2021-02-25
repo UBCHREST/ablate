@@ -38,3 +38,7 @@ particles:
       formula: "t + x + y"
 
 ```
+
+Example Inputs
+- [Incompressible Flow 2D.nb]({{site.url}}{{site.baseurl}}/content/parser/inputs/incompressibleFlow.yaml)
+- [Tracer Particles 3D.nb]({{site.url}}{{site.baseurl}}/content/parser/inputs/particleTracer3D.yaml)
