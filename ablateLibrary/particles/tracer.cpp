@@ -1,23 +1,19 @@
 #include "tracer.hpp"
-#include "particleTracer.h"
-#include "utilities/petscError.hpp"
-#include "solve/timeStepper.hpp"
 #include "parser/registrar.hpp"
+#include "particleTracer.h"
+#include "solve/timeStepper.hpp"
+#include "utilities/petscError.hpp"
 
-
-ablate::particles::Tracer::Tracer(int ndims, std::map<std::string, std::string> arguments, std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution):
-    Particles(arguments, initializer)
-{
+ablate::particles::Tracer::Tracer(int ndims, std::map<std::string, std::string> arguments, std::shared_ptr<particles::initializers::Initializer> initializer,
+                                  std::shared_ptr<mathFunctions::MathFunction> exactSolution)
+    : Particles(arguments, initializer) {
     ParticleTracerCreate(&particleData, ndims) >> checkError;
 
     // set the exact solution
     SetExactSolution(exactSolution);
-
 }
 
-ablate::particles::Tracer::~Tracer() {
-    ParticleTracerDestroy(&particleData);
-}
+ablate::particles::Tracer::~Tracer() { ParticleTracerDestroy(&particleData); }
 void ablate::particles::Tracer::InitializeFlow(std::shared_ptr<flow::Flow> flow, std::shared_ptr<solve::TimeStepper> timeStepper) {
     // Call the base to initialize the flow
     Particles::InitializeFlow(flow, timeStepper);
@@ -26,9 +22,6 @@ void ablate::particles::Tracer::InitializeFlow(std::shared_ptr<flow::Flow> flow,
     ParticleTracerSetupIntegrator(particleData, particleTs, timeStepper->GetTS()) >> checkError;
 }
 
-REGISTER(ablate::particles::Particles, ablate::particles::Tracer, "massless particles that advect with the flow",
-    ARG(int, "ndims", "the number of dimensions for the particle"),
-    ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
-    ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
-    ARG(mathFunctions::MathFunction, "exactSolution", "the particle location exact solution")
-);
+REGISTER(ablate::particles::Particles, ablate::particles::Tracer, "massless particles that advect with the flow", ARG(int, "ndims", "the number of dimensions for the particle"),
+         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
+         ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"), ARG(mathFunctions::MathFunction, "exactSolution", "the particle location exact solution"));

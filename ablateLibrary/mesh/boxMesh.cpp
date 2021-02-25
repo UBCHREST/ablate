@@ -9,7 +9,5 @@ ablate::mesh::BoxMesh::BoxMesh(std::string name, std::map<std::string, std::stri
     DMViewFromOptions(dm, NULL, "-dm_view") >> checkError;
 }
 
-REGISTER(ablate::mesh::Mesh, ablate::mesh::BoxMesh, "a simple uniform box",
-         ARG(std::string, "name", "the name of the mesh/domain"),
-         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
-         ARG(int, "dimensions", "the number of dimensions for the mesh"));
+REGISTER(ablate::mesh::Mesh, ablate::mesh::BoxMesh, "a simple uniform box", ARG(std::string, "name", "the name of the mesh/domain"),
+         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), ARG(int, "dimensions", "the number of dimensions for the mesh"));

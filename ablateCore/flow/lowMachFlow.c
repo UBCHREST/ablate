@@ -361,7 +361,7 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     // get the dm prefix to help name the fe objects
-    const char* dmPrefix;
+    const char *dmPrefix;
     ierr = DMGetOptionsPrefix(dm, &dmPrefix);CHKERRQ(ierr);
     char fieldPrefix[128] = "";
 
@@ -398,10 +398,8 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
     ierr = DMCreateDS(dm);CHKERRQ(ierr);
 
     while (cdm) {
-        ierr = DMCopyDisc(dm, cdm);
-        CHKERRQ(ierr);
-        ierr = DMGetCoarseDM(cdm, &cdm);
-        CHKERRQ(ierr);
+        ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
+        ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
     }
 
     // Clean up the fields
@@ -413,14 +411,10 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        ierr = DMGetField(dm, PRES, NULL, &pressure);
-        CHKERRQ(ierr);
-        ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);
-        CHKERRQ(ierr);
-        ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);
-        CHKERRQ(ierr);
-        ierr = MatNullSpaceDestroy(&nullspacePres);
-        CHKERRQ(ierr);
+        ierr = DMGetField(dm, PRES, NULL, &pressure);CHKERRQ(ierr);
+        ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);CHKERRQ(ierr);
+        ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);CHKERRQ(ierr);
+        ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
@@ -448,7 +442,7 @@ PetscErrorCode LowMachFlow_StartProblemSetup(DM flowDm, PetscInt numberParameter
 
     /* Setup constants */;
     {
-        if(numberParameters != TOTAL_LOW_MACH_FLOW_PARAMETERS){
+        if (numberParameters != TOTAL_LOW_MACH_FLOW_PARAMETERS) {
             SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "wrong number of flow parameters");
         }
         ierr = PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, parameters);CHKERRQ(ierr);
@@ -503,7 +497,7 @@ PetscErrorCode LowMachFlow_ParametersFromPETScOptions(PetscBag *flowParametersBa
     // setup PETSc parameter bag
     ierr = PetscBagGetData(*flowParametersBag, (void **)&p);CHKERRQ(ierr);
     ierr = PetscBagSetName(*flowParametersBag, "flowParameters", "Low Mach Flow Parameters");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->strouhal, 1.0, lowMachFlowParametersTypeNames[STROUHAL] , "Strouhal number");CHKERRQ(ierr);
+    ierr = PetscBagRegisterReal(*flowParametersBag, &p->strouhal, 1.0, lowMachFlowParametersTypeNames[STROUHAL], "Strouhal number");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->reynolds, 1.0, lowMachFlowParametersTypeNames[REYNOLDS], "Reynolds number");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->froude, 1.0, lowMachFlowParametersTypeNames[FROUDE], "Froude number");CHKERRQ(ierr);
     ierr = PetscBagRegisterReal(*flowParametersBag, &p->peclet, 1.0, lowMachFlowParametersTypeNames[PECLET], "Peclet number");CHKERRQ(ierr);

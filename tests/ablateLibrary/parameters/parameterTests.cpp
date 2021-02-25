@@ -365,4 +365,4 @@ TEST(ParameterTestFill, ShouldThrowExceptionForMissingIntValues) {
     // assert
     EXPECT_THROW(mockParameters.Fill(4, names, &values[0]), ParameterException);
 }
-}
+}  // namespace ablateTesting::parameters

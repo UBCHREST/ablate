@@ -1,9 +1,10 @@
 #include "lowMachFlow.hpp"
 #include "lowMachFlow.h"
-#include "utilities/petscError.hpp"
 #include "parser/registrar.hpp"
+#include "utilities/petscError.hpp"
 
-ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions)
+ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters,
+                                       std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions)
     : Flow(mesh, name, arguments, initialization, boundaryConditions) {
     // Setup the problem
     LowMachFlow_SetupDiscretization(mesh->GetDomain()) >> checkError;
@@ -20,13 +21,21 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
     DMGetDS(mesh->GetDomain(), &prob) >> checkError;
 
     // add each boundary condition
-    for(auto boundary: boundaryConditions){
+    for (auto boundary : boundaryConditions) {
         PetscInt id = boundary->GetLabelId();
         PetscDSAddBoundary(prob,
                            DM_BC_ESSENTIAL,
                            boundary->GetBoundaryName().c_str(),
                            boundary->GetLabelName().c_str(),
-                           GetFieldId(boundary->GetFieldName()), 0, NULL, (void (*)(void))boundary->GetBoundaryFunction(), (void (*)(void))boundary->GetBoundaryTimeDerivativeFunction(), 1, &id, boundary->GetContext()) >> checkError;
+                           GetFieldId(boundary->GetFieldName()),
+                           0,
+                           NULL,
+                           (void (*)(void))boundary->GetBoundaryFunction(),
+                           (void (*)(void))boundary->GetBoundaryTimeDerivativeFunction(),
+                           1,
+                           &id,
+                           boundary->GetContext()) >>
+            checkError;
     }
 
     // Set the exact solution
@@ -65,11 +74,7 @@ int ablate::flow::LowMachFlow::GetFieldId(const std::string &field) {
     }
 }
 
-REGISTER(ablate::flow::Flow, ablate::flow::LowMachFlow, "low mach flow",
-    ARG(std::string, "name", "the name of the flow field"),
-    ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
-    ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
-    ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"),
-    ARG(std::vector<flow::FlowFieldSolution>, "initialization", "the exact solution used to initialize the flow field"),
-    ARG(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field")
-);
+REGISTER(ablate::flow::Flow, ablate::flow::LowMachFlow, "low mach flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
+         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"),
+         ARG(std::vector<flow::FlowFieldSolution>, "initialization", "the exact solution used to initialize the flow field"),
+         ARG(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"));

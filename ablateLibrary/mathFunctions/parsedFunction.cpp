@@ -1,10 +1,10 @@
 #include "parsedFunction.hpp"
-#include <algorithm>
 #include <petscsys.h>
+#include <algorithm>
 #include <exception>
 #include "parser/registrar.hpp"
 
-ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString): formula(functionString) {
+ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString) : formula(functionString) {
     // define the x,y,z and t variables
     parser.DefineVar("x", &coordinate[0]);
     parser.DefineVar("y", &coordinate[1]);
@@ -18,7 +18,7 @@ ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString
 }
 double ablate::mathFunctions::ParsedFunction::Eval(const double& x, const double& y, const double& z, const double& t) const {
     coordinate[0] = x;
-    coordinate[1] =y;
+    coordinate[1] = y;
     coordinate[2] = z;
     time = t;
     return parser.Eval();
@@ -29,7 +29,7 @@ double ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int&
     coordinate[1] = 0;
     coordinate[2] = 0;
 
-    for(auto i = 0; i < std::min(ndims, 3); i++){
+    for (auto i = 0; i < std::min(ndims, 3); i++) {
         coordinate[i] = xyz[i];
     }
     time = t;
@@ -44,12 +44,12 @@ void ablate::mathFunctions::ParsedFunction::Eval(const double& x, const double& 
     int functionSize = 0;
     auto rawResult = parser.Eval(functionSize);
 
-    if(result.size() < functionSize){
+    if (result.size() < functionSize) {
         throw std::invalid_argument("The result vector is not sized to hold the function " + parser.GetExpr());
     }
 
     // copy over
-    for(auto i = 0; i < functionSize; i++){
+    for (auto i = 0; i < functionSize; i++) {
         result[i] = rawResult[i];
     }
 }
@@ -59,7 +59,7 @@ void ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int& n
     coordinate[1] = 0;
     coordinate[2] = 0;
 
-    for(auto i = 0; i < std::min(ndims, 3); i++){
+    for (auto i = 0; i < std::min(ndims, 3); i++) {
         coordinate[i] = xyz[i];
     }
     time = t;
@@ -67,12 +67,12 @@ void ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int& n
     int functionSize = 0;
     auto rawResult = parser.Eval(functionSize);
 
-    if(result.size() < functionSize){
+    if (result.size() < functionSize) {
         throw std::invalid_argument("The result vector is not sized to hold the function " + parser.GetExpr());
     }
 
     // copy over
-    for(auto i = 0; i < functionSize; i++){
+    for (auto i = 0; i < functionSize; i++) {
         result[i] = rawResult[i];
     }
 }
@@ -80,7 +80,7 @@ void ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int& n
 PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscInt dim, PetscReal time, const PetscReal* x, PetscInt nf, PetscScalar* u, void* ctx) {
     // wrap in try, so we return petsc error code instead of c++ exception
     PetscFunctionBeginUser;
-    try{
+    try {
         auto parser = (ParsedFunction*)ctx;
 
         // update the coordinates
@@ -88,7 +88,7 @@ PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscI
         parser->coordinate[1] = 0;
         parser->coordinate[2] = 0;
 
-        for(auto i = 0; i < std::min(dim, 3); i++){
+        for (auto i = 0; i < std::min(dim, 3); i++) {
             parser->coordinate[i] = x[i];
         }
         parser->time = time;
@@ -97,12 +97,12 @@ PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscI
         int functionSize = 0;
         auto rawResult = parser->parser.Eval(functionSize);
 
-        if(nf < functionSize){
+        if (nf < functionSize) {
             throw std::invalid_argument("The result vector is not sized to hold the function " + parser->parser.GetExpr());
         }
 
         // copy over
-        for(auto i = 0; i < functionSize; i++){
+        for (auto i = 0; i < functionSize; i++) {
             u[i] = rawResult[i];
         }
 
@@ -113,4 +113,4 @@ PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscI
 }
 
 REGISTERDEFAULT(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedFunction, "a string based function to be parsed with muparser",
-ARG(std::string, "formula", "the formula that may accept x, y, z, t"));
+                ARG(std::string, "formula", "the formula that may accept x, y, z, t"));

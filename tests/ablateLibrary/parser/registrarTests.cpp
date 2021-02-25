@@ -64,9 +64,12 @@ TEST(RegistrarTests, ShouldRegisterClassWithArgumentIdentifiersAndRecordInLog) {
     Listing::ReplaceListing(mockListing);
 
     // act
-    ablate::parser::Registrar<MockInterface>::Register<MockClass2>(
-        false, "MockClass2", "this is a simple mock class", ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"}, ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
-        ablate::parser::ArgumentIdentifier<MockInterface>{"bird", "this is a shared pointer to an interface"});
+    ablate::parser::Registrar<MockInterface>::Register<MockClass2>(false,
+                                                                   "MockClass2",
+                                                                   "this is a simple mock class",
+                                                                   ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"},
+                                                                   ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
+                                                                   ablate::parser::ArgumentIdentifier<MockInterface>{"bird", "this is a shared pointer to an interface"});
 
     // assert
     auto createMethod = Registrar<MockInterface>::GetCreateMethod("MockClass2");
@@ -91,20 +94,23 @@ TEST(RegistrarTests, ShouldRegisterDefaultClassWithArgumentIdentifiersAndRecordI
     EXPECT_CALL(
         *mockListing,
         RecordListing(Listing::ClassEntry{.interface = typeid(MockInterface4).name(),
-            .description = "this is a simple mock class",
-            .className = "MockClass4",
-            .arguments = {Listing::ArgumentEntry{.name = "dog", .interface = typeid(std::string).name(), .description = "this is a string"},
-                          Listing::ArgumentEntry{.name = "cat", .interface = typeid(int).name(), .description = "this is a int"},
-                          Listing::ArgumentEntry{.name = "bird", .interface = typeid(MockInterface4).name(), .description = "this is a shared pointer to an interface"}},
-        .defaultConstructor = true}))
+                                          .description = "this is a simple mock class",
+                                          .className = "MockClass4",
+                                          .arguments = {Listing::ArgumentEntry{.name = "dog", .interface = typeid(std::string).name(), .description = "this is a string"},
+                                                        Listing::ArgumentEntry{.name = "cat", .interface = typeid(int).name(), .description = "this is a int"},
+                                                        Listing::ArgumentEntry{.name = "bird", .interface = typeid(MockInterface4).name(), .description = "this is a shared pointer to an interface"}},
+                                          .defaultConstructor = true}))
         .Times(::testing::Exactly(1));
 
     Listing::ReplaceListing(mockListing);
 
     // act
-    ablate::parser::Registrar<MockInterface4>::Register<MockClass4>(
-        true, "MockClass4", "this is a simple mock class", ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"}, ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
-        ablate::parser::ArgumentIdentifier<MockInterface4>{"bird", "this is a shared pointer to an interface"});
+    ablate::parser::Registrar<MockInterface4>::Register<MockClass4>(true,
+                                                                    "MockClass4",
+                                                                    "this is a simple mock class",
+                                                                    ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"},
+                                                                    ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
+                                                                    ablate::parser::ArgumentIdentifier<MockInterface4>{"bird", "this is a shared pointer to an interface"});
 
     // assert
     auto createMethod = Registrar<MockInterface4>::GetCreateMethod("MockClass4");
@@ -130,16 +136,22 @@ class MockClass5b : public MockInterface5 {
 
 TEST(RegistrarTests, ShouldNotAllowDoubleDefaultRegistar) {
     // arrange
-    ablate::parser::Registrar<MockInterface5>::Register<MockClass5a>(
-        true, "MockClass5a", "this is a simple mock class", ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"}, ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
-        ablate::parser::ArgumentIdentifier<MockInterface5>{"bird", "this is a shared pointer to an interface"});
+    ablate::parser::Registrar<MockInterface5>::Register<MockClass5a>(true,
+                                                                     "MockClass5a",
+                                                                     "this is a simple mock class",
+                                                                     ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"},
+                                                                     ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
+                                                                     ablate::parser::ArgumentIdentifier<MockInterface5>{"bird", "this is a shared pointer to an interface"});
 
     // act
     // assert
-    ASSERT_THROW(ablate::parser::Registrar<MockInterface5>::Register<MockClass5b>(
-        true, "MockClass5b", "this is a simple mock class", ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"}, ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
-        ablate::parser::ArgumentIdentifier<MockInterface5>{"bird", "this is a shared pointer to an interface"}
-    ), std::invalid_argument);
+    ASSERT_THROW(ablate::parser::Registrar<MockInterface5>::Register<MockClass5b>(true,
+                                                                                  "MockClass5b",
+                                                                                  "this is a simple mock class",
+                                                                                  ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"},
+                                                                                  ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
+                                                                                  ablate::parser::ArgumentIdentifier<MockInterface5>{"bird", "this is a shared pointer to an interface"}),
+                 std::invalid_argument);
 }
 
 TEST(RegistrarTests, ShouldResolveAndCreate) {
@@ -211,4 +223,4 @@ TEST(RegistrarTests, ShouldThrowExceptionWhenNoDefaultIsSpecified) {
     // assert
     ASSERT_THROW(ResolveAndCreate<NoDefaultInterface>(mockFactory), std::invalid_argument);
 }
-}
+}  // namespace ablateTesting::parser

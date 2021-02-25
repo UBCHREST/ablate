@@ -6,19 +6,18 @@
    t_n to t_{n+1}. If we use both of these fields, we could use Crank-Nicholson or
    the method of characteristics.
 */
-static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
-{
-    ParticleData particles = (ParticleData) ctx;
-    Vec                 u   = particles->flowInitial;
-    DM                  sdm, dm, vdm;
-    Vec                 vel, locvel, pvel;
-    IS                  vis;
+static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
+    ParticleData particles = (ParticleData)ctx;
+    Vec u = particles->flowInitial;
+    DM sdm, dm, vdm;
+    Vec vel, locvel, pvel;
+    IS vis;
     DMInterpolationInfo ictx;
-    const PetscScalar  *coords, *v;
-    PetscScalar        *f;
-    PetscInt            vf[1] = {0};
-    PetscInt            dim, Np;
-    PetscErrorCode      ierr;
+    const PetscScalar *coords, *v;
+    PetscScalar *f;
+    PetscInt vf[1] = {0};
+    PetscInt dim, Np;
+    PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
     ierr = TSGetDM(ts, &sdm);CHKERRQ(ierr);
@@ -41,7 +40,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     ierr = DMInterpolationSetDim(ictx, dim);CHKERRQ(ierr);
     ierr = DMInterpolationSetDof(ictx, dim);CHKERRQ(ierr);
     ierr = VecGetArrayRead(X, &coords);CHKERRQ(ierr);
-    ierr = DMInterpolationAddPoints(ictx, Np, (PetscReal *) coords);CHKERRQ(ierr);
+    ierr = DMInterpolationAddPoints(ictx, Np, (PetscReal *)coords);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(X, &coords);CHKERRQ(ierr);
     ierr = DMInterpolationSetUp(ictx, vdm, PETSC_FALSE);CHKERRQ(ierr);
     ierr = DMInterpolationEvaluate(ictx, vdm, locvel, pvel);CHKERRQ(ierr);
@@ -51,28 +50,27 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
 
     ierr = VecGetArray(F, &f);CHKERRQ(ierr);
     ierr = VecGetArrayRead(pvel, &v);CHKERRQ(ierr);
-    ierr = PetscArraycpy(f, v, Np*dim);CHKERRQ(ierr);
+    ierr = PetscArraycpy(f, v, Np * dim);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(pvel, &v);CHKERRQ(ierr);
     ierr = VecRestoreArray(F, &f);CHKERRQ(ierr);
     ierr = DMRestoreGlobalVector(sdm, &pvel);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode computeParticleError(TS ts, Vec u, Vec e)
-{
+static PetscErrorCode computeParticleError(TS ts, Vec u, Vec e) {
     ParticleData particles;
-    DM                 sdm;
+    DM sdm;
     const PetscScalar *xp0, *xp;
-    PetscScalar       *ep;
-    PetscReal          time;
-    PetscInt           dim, Np, p;
-    MPI_Comm           comm;
-    PetscErrorCode     ierr;
+    PetscScalar *ep;
+    PetscReal time;
+    PetscInt dim, Np, p;
+    MPI_Comm comm;
+    PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
     ierr = TSGetTime(ts, &time);CHKERRQ(ierr);
-    ierr = TSGetApplicationContext(ts, (void **) &particles);CHKERRQ(ierr);
-    ierr = PetscObjectGetComm((PetscObject) ts, &comm);CHKERRQ(ierr);
+    ierr = TSGetApplicationContext(ts, (void **)&particles);CHKERRQ(ierr);
+    ierr = PetscObjectGetComm((PetscObject)ts, &comm);CHKERRQ(ierr);
     ierr = TSGetDM(ts, &sdm);CHKERRQ(ierr);
     ierr = DMGetDimension(sdm, &dim);CHKERRQ(ierr);
     ierr = DMSwarmGetLocalSize(sdm, &Np);CHKERRQ(ierr);
@@ -81,12 +79,12 @@ static PetscErrorCode computeParticleError(TS ts, Vec u, Vec e)
     ierr = VecGetArrayWrite(e, &ep);CHKERRQ(ierr);
     for (p = 0; p < Np; ++p) {
         PetscScalar x[3];
-        PetscReal   x0[3];
-        PetscInt    d;
+        PetscReal x0[3];
+        PetscInt d;
 
-        for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p*dim+d]);
+        for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p * dim + d]);
         ierr = particles->exactSolution(dim, time, x0, 1, x, particles->exactSolutionContext);CHKERRQ(ierr);
-        for (d = 0; d < dim; ++d) ep[p*dim+d] += x[d] - xp[p*dim+d];
+        for (d = 0; d < dim; ++d) ep[p * dim + d] += x[d] - xp[p * dim + d];
     }
     ierr = VecRestoreArrayRead(particles->initialLocation, &xp0);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(u, &xp);CHKERRQ(ierr);
@@ -94,18 +92,17 @@ static PetscErrorCode computeParticleError(TS ts, Vec u, Vec e)
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode monitorParticleError(TS ts, PetscInt step, PetscReal time, Vec u, void *ctx)
-{
-    ParticleData adv = (ParticleData) ctx;
-    DM                 sdm;
+static PetscErrorCode monitorParticleError(TS ts, PetscInt step, PetscReal time, Vec u, void *ctx) {
+    ParticleData adv = (ParticleData)ctx;
+    DM sdm;
     const PetscScalar *xp0, *xp;
-    PetscReal          error = 0.0;
-    PetscInt           dim, Np, p;
-    MPI_Comm           comm;
-    PetscErrorCode     ierr;
+    PetscReal error = 0.0;
+    PetscInt dim, Np, p;
+    MPI_Comm comm;
+    PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-    ierr = PetscObjectGetComm((PetscObject) ts, &comm);CHKERRQ(ierr);
+    ierr = PetscObjectGetComm((PetscObject)ts, &comm);CHKERRQ(ierr);
     ierr = TSGetDM(ts, &sdm);CHKERRQ(ierr);
     ierr = DMGetDimension(sdm, &dim);CHKERRQ(ierr);
     ierr = DMSwarmGetLocalSize(sdm, &Np);CHKERRQ(ierr);
@@ -113,39 +110,38 @@ static PetscErrorCode monitorParticleError(TS ts, PetscInt step, PetscReal time,
     ierr = VecGetArrayRead(u, &xp);CHKERRQ(ierr);
     for (p = 0; p < Np; ++p) {
         PetscScalar x[3];
-        PetscReal   x0[3];
-        PetscReal   perror = 0.0;
-        PetscInt    d;
+        PetscReal x0[3];
+        PetscReal perror = 0.0;
+        PetscInt d;
 
-        for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p*dim+d]);
+        for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p * dim + d]);
         ierr = adv->exactSolution(dim, time, x0, 1, x, adv->exactSolutionContext);CHKERRQ(ierr);
-        for (d = 0; d < dim; ++d) perror += PetscSqr(PetscRealPart(x[d] - xp[p*dim+d]));
+        for (d = 0; d < dim; ++d) perror += PetscSqr(PetscRealPart(x[d] - xp[p * dim + d]));
         error += perror;
     }
     ierr = VecRestoreArrayRead(adv->initialLocation, &xp0);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(u, &xp);CHKERRQ(ierr);
-    ierr = PetscPrintf(comm, "Timestep: %04d time = %-8.4g \t L_2 Particle Error: [%2.3g]\n", (int) step, (double) time, (double) error);CHKERRQ(ierr);
+    ierr = PetscPrintf(comm, "Timestep: %04d time = %-8.4g \t L_2 Particle Error: [%2.3g]\n", (int)step, (double)time, (double)error);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-
-static PetscErrorCode PrintParticlesToFile(TS flowTS, DM sdm){
+static PetscErrorCode PrintParticlesToFile(TS flowTS, DM sdm) {
     PetscInt timeStep;
     TSGetStepNumber(flowTS, &timeStep);
-    const PetscScalar  *coord;
+    const PetscScalar *coord;
 
     PetscInt dim;
     PetscErrorCode ierr = DMGetDimension(sdm, &dim);CHKERRQ(ierr);
     PetscInt Np;
     ierr = DMSwarmGetLocalSize(sdm, &Np);CHKERRQ(ierr);
 
-    ierr = DMSwarmGetField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **) &coord);CHKERRQ(ierr);
+    ierr = DMSwarmGetField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
 
     char fileName[80];
     sprintf(fileName, "particles.%d.txt", timeStep);
 
-    FILE* f = fopen( fileName, "w" );
-    switch(dim){
+    FILE *f = fopen(fileName, "w");
+    switch (dim) {
         case 3:
             fprintf(f, "X Y Z i \n");
             break;
@@ -156,50 +152,49 @@ static PetscErrorCode PrintParticlesToFile(TS flowTS, DM sdm){
             fprintf(f, "X i \n");
             break;
     }
-    for(PetscInt p =0; p < Np; p++){
-        for(int d = 0; d < dim; d++){
-            fprintf(f, "%f ", coord[(p*dim)+d]);
-        }fprintf(f, "%d \n", p);
+    for (PetscInt p = 0; p < Np; p++) {
+        for (int d = 0; d < dim; d++) {
+            fprintf(f, "%f ", coord[(p * dim) + d]);
+        }
+        fprintf(f, "%d \n", p);
     }
     fclose(f);
-    ierr = DMSwarmRestoreField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **) &coord);CHKERRQ(ierr);
+    ierr = DMSwarmRestoreField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
     return 0;
 }
 
-
-static PetscErrorCode advectParticles(TS ts)
-{
-    TS                 sts;
-    DM                 sdm;
-    Vec                p;
+static PetscErrorCode advectParticles(TS ts) {
+    TS sts;
+    DM sdm;
+    Vec p;
     ParticleData particles;
-    PetscScalar       *coord, *a;
+    PetscScalar *coord, *a;
     const PetscScalar *ca;
-    PetscReal          time;
-    PetscInt           n;
-    PetscErrorCode     ierr;
+    PetscReal time;
+    PetscInt n;
+    PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-    ierr = PetscObjectQuery((PetscObject) ts, "_SwarmTS",  (PetscObject *) &sts);CHKERRQ(ierr);
-    ierr = PetscObjectQuery((PetscObject) ts, "_SwarmSol", (PetscObject *) &p);CHKERRQ(ierr);
+    ierr = PetscObjectQuery((PetscObject)ts, "_SwarmTS", (PetscObject *)&sts);CHKERRQ(ierr);
+    ierr = PetscObjectQuery((PetscObject)ts, "_SwarmSol", (PetscObject *)&p);CHKERRQ(ierr);
     ierr = TSGetDM(sts, &sdm);CHKERRQ(ierr);
-    ierr = TSGetRHSFunction(sts, NULL, NULL, (void **) &particles);CHKERRQ(ierr);
-    ierr = DMSwarmGetField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **) &coord);CHKERRQ(ierr);
+    ierr = TSGetRHSFunction(sts, NULL, NULL, (void **)&particles);CHKERRQ(ierr);
+    ierr = DMSwarmGetField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
     ierr = VecGetLocalSize(p, &n);CHKERRQ(ierr);
     ierr = VecGetArray(p, &a);CHKERRQ(ierr);
     ierr = PetscArraycpy(a, coord, n);CHKERRQ(ierr);
     ierr = VecRestoreArray(p, &a);CHKERRQ(ierr);
-    ierr = DMSwarmRestoreField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **) &coord);CHKERRQ(ierr);
+    ierr = DMSwarmRestoreField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
     ierr = TSGetTime(ts, &time);CHKERRQ(ierr);
     ierr = TSSetMaxTime(sts, time);CHKERRQ(ierr);
     particles->timeFinal = time;
     ierr = TSSolve(sts, p);CHKERRQ(ierr);
-    ierr = DMSwarmGetField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **) &coord);CHKERRQ(ierr);
+    ierr = DMSwarmGetField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
     ierr = VecGetLocalSize(p, &n);CHKERRQ(ierr);
     ierr = VecGetArrayRead(p, &ca);CHKERRQ(ierr);
     ierr = PetscArraycpy(coord, ca, n);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(p, &ca);CHKERRQ(ierr);
-    ierr = DMSwarmRestoreField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **) &coord);CHKERRQ(ierr);
+    ierr = DMSwarmRestoreField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
 
     ierr = VecCopy(particles->flowFinal, particles->flowInitial);CHKERRQ(ierr);
     particles->timeInitial = particles->timeFinal;
@@ -235,14 +230,14 @@ PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particle
 
     // link the solution with the flowTS
     ierr = TSSetPostStep(flowTs, advectParticles);CHKERRQ(ierr);
-    ierr = PetscObjectCompose((PetscObject) flowTs, "_SwarmTS", (PetscObject) particleTs);CHKERRQ(ierr);// to else where
-    ierr = DMSwarmVectorDefineField(particles->dm, DMSwarmPICField_coor);CHKERRQ(ierr); // do else where
+    ierr = PetscObjectCompose((PetscObject)flowTs, "_SwarmTS", (PetscObject)particleTs);CHKERRQ(ierr);  // to else where
+    ierr = DMSwarmVectorDefineField(particles->dm, DMSwarmPICField_coor);CHKERRQ(ierr);  // do else where
     ierr = DMCreateGlobalVector(particles->dm, &(particles->particleSolution));CHKERRQ(ierr);
-    ierr = PetscObjectCompose((PetscObject) flowTs, "_SwarmSol", (PetscObject) (particles->particleSolution));CHKERRQ(ierr);// do else where
+    ierr = PetscObjectCompose((PetscObject)flowTs, "_SwarmSol", (PetscObject)(particles->particleSolution));CHKERRQ(ierr);  // do else where
 
     // If the exact solution is set, setup the monitors
-    if (particles->exactSolution){
-        ierr = TSMonitorSet(particleTs, monitorParticleError, particles, NULL);CHKERRQ(ierr);CHKERRQ(ierr);
+    if (particles->exactSolution) {
+        ierr = TSMonitorSet(particleTs, monitorParticleError, particles, NULL);CHKERRQ(ierr);
     }
     ierr = TSSetFromOptions(particleTs);CHKERRQ(ierr);
     if (particles->exactSolution) {
@@ -265,7 +260,7 @@ PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particle
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleTracerCreate(ParticleData * particles, PetscInt ndims) {
+PetscErrorCode ParticleTracerCreate(ParticleData *particles, PetscInt ndims) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
@@ -280,7 +275,7 @@ PetscErrorCode ParticleTracerCreate(ParticleData * particles, PetscInt ndims) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleTracerDestroy(ParticleData * particles) {
+PetscErrorCode ParticleTracerDestroy(ParticleData *particles) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr = VecDestroy(&((*particles)->flowInitial));CHKERRQ(ierr);
     ierr = VecDestroy(&((*particles)->particleSolution));CHKERRQ(ierr);

@@ -3,8 +3,8 @@
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mesh.h"
-#include "particles.h"
 #include "particleTracer.h"
+#include "particles.h"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -365,11 +365,14 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // link the flow to the particles
-        ParticleInitializeFlow(particles, dm, flowField);CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ParticleInitializeFlow(particles, dm, flowField);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // name the particle domain
-        ierr = PetscObjectSetOptionsPrefix((PetscObject)(particles->dm), "particles_");CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscObjectSetName((PetscObject) particles->dm, "Particles");CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = PetscObjectSetOptionsPrefix((PetscObject)(particles->dm), "particles_");
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = PetscObjectSetName((PetscObject)particles->dm, "Particles");
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // initialize the particles
         ParticleInitialize(dm, particles->dm);
@@ -378,7 +381,7 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         TS particleTs;
         ierr = TSCreate(PETSC_COMM_WORLD, &particleTs);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscObjectSetOptionsPrefix((PetscObject) particleTs, "particle_");
+        ierr = PetscObjectSetOptionsPrefix((PetscObject)particleTs, "particle_");
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         ierr = ParticleTracerSetupIntegrator(particles, particleTs, ts);

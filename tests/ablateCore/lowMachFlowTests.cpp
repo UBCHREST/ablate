@@ -57,7 +57,7 @@ class LowMachFlowMMS : public testingResources::MpiTestFixture, public ::testing
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
- static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
+static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     DM dm;
     PetscReal t;
     PetscErrorCode ierr;
@@ -80,12 +80,13 @@ class LowMachFlowMMS : public testingResources::MpiTestFixture, public ::testing
     CHKERRQ(ierr);
 
     // get the flow to apply the completeFlowInitialization method
-    ierr = LowMachFlow_CompleteFlowInitialization(dm, u);CHKERRQ(ierr);
+    ierr = LowMachFlow_CompleteFlowInitialization(dm, u);
+    CHKERRQ(ierr);
 
-     PetscFunctionReturn(0);
+    PetscFunctionReturn(0);
 }
 
- static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
+static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
     PetscErrorCode (*exactFuncs[3])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
     void *ctxs[3];
     DM dm;
@@ -311,10 +312,10 @@ static void SourceFunction(f0_lowMach_cubic_w) {
 
 TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
     StartWithMPI
-        DM dm;     /* problem definition */
-        TS ts;     /* timestepper */
+        DM dm;                 /* problem definition */
+        TS ts;                 /* timestepper */
         PetscBag parameterBag; /* constant flow parameters */
-        Vec flowField;       /* flow solution vector */
+        Vec flowField;         /* flow solution vector */
 
         PetscReal t;
         PetscErrorCode ierr;
@@ -350,7 +351,7 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         PetscScalar constants[TOTAL_LOW_MACH_FLOW_PARAMETERS];
         ierr = LowMachFlow_PackParameters(flowParameters, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = LowMachFlow_StartProblemSetup(dm,TOTAL_LOW_MACH_FLOW_PARAMETERS, constants);
+        ierr = LowMachFlow_StartProblemSetup(dm, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Override problem with source terms, boundary, and set the exact solution
@@ -383,8 +384,8 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
             /* Setup Boundary Conditions */
             PetscInt id;
             id = 3;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
             ierr = PetscDSAddBoundary(
@@ -395,22 +396,24 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
                 prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 3;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 2;
             ierr =
                 PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
             // Set the exact solution
@@ -431,8 +434,10 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Name the flow field
-        ierr = PetscObjectSetName((PetscObject)flowField, "Numerical Solution");CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = VecSetOptionsPrefix(flowField, "num_sol_");CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = PetscObjectSetName((PetscObject)flowField, "Numerical Solution");
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = VecSetOptionsPrefix(flowField, "num_sol_");
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Setup the TS
         ierr = TSSetFromOptions(ts);

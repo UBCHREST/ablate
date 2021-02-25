@@ -22,9 +22,7 @@ class YamlParser : public Factory {
      */
     YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type);
 
-    inline void MarkUsage(const std::string& key) const{
-        nodeUsages[key] ++;
-    }
+    inline void MarkUsage(const std::string& key) const { nodeUsages[key]++; }
 
    public:
     /***
@@ -40,15 +38,13 @@ class YamlParser : public Factory {
     explicit YamlParser(std::filesystem::path filePath);
 
     /* gets the class type represented by this factory */
-    const std::string& GetClassType() const override{
-        return type;
-    }
+    const std::string& GetClassType() const override { return type; }
 
     /* return a string*/
     std::string Get(const ArgumentIdentifier<std::string>& identifier) const override;
 
     /* and a list of strings */
-    std::vector<std::string>  Get(const ArgumentIdentifier<std::vector<std::string>>& identifier) const override;
+    std::vector<std::string> Get(const ArgumentIdentifier<std::vector<std::string>>& identifier) const override;
 
     std::map<std::string, std::string> Get(const ArgumentIdentifier<std::map<std::string, std::string>>& identifier) const override;
 
@@ -61,9 +57,7 @@ class YamlParser : public Factory {
     /* get all children as factory */
     std::vector<std::shared_ptr<Factory>> GetFactorySequence(const std::string& name) const override;
 
-    bool Contains(const std::string& name) const override{
-        return yamlConfiguration[name] != nullptr;
-    };
+    bool Contains(const std::string& name) const override { return yamlConfiguration[name] != nullptr; };
 
     /** get unused values **/
     std::vector<std::string> GetUnusedValues() const;

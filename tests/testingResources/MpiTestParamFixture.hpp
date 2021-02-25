@@ -11,5 +11,5 @@ class MpiTestParamFixture : public MpiTestFixture, public ::testing::WithParamIn
    protected:
     void SetUp() override { SetMpiParameters(GetParam()); }
 };
-}
+}  // namespace testingResources
 #endif

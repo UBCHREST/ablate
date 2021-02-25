@@ -31,7 +31,7 @@ flow: !ablate::flow::IncompressibleFlow
       vel_petscspace_degree: 2
       pres_petscspace_degree: 1
       temp_petscspace_degree: 1
-  arguments: {}
+  arguments: { }
   parameters:
     strouhal: 1.0
     reynolds: 1.0
@@ -126,4 +126,4 @@ flow: !ablate::flow::IncompressibleFlow
         formula: "t + x + y"
       timeDerivativeValue:
         formula: "1.0"
-particles: []
+particles: [ ]

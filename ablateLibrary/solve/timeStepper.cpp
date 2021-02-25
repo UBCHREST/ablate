@@ -1,8 +1,8 @@
 #include "timeStepper.hpp"
-#include "utilities/petscError.hpp"
-#include "utilities/petscOptions.hpp"
 #include <petscdm.h>
 #include "parser/registrar.hpp"
+#include "utilities/petscError.hpp"
+#include "utilities/petscOptions.hpp"
 
 static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
     PetscErrorCode (*exactFuncs[3])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
@@ -32,9 +32,6 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-
-
-
     ierr = DMGetGlobalVector(dm, &v);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     // ierr = VecSet(v, 0.0);CHKERRABORT(PETSC_COMM_WORLD, ierr);
@@ -50,9 +47,7 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     PetscFunctionReturn(0);
 }
 
-ablate::solve::TimeStepper::TimeStepper(std::string name, std::map<std::string, std::string> arguments):
-    comm(PETSC_COMM_WORLD),name(name)
-{
+ablate::solve::TimeStepper::TimeStepper(std::string name, std::map<std::string, std::string> arguments) : comm(PETSC_COMM_WORLD), name(name) {
     // create an instance of the ts
     TSCreate(PETSC_COMM_WORLD, &ts) >> checkError;
 
@@ -70,9 +65,7 @@ ablate::solve::TimeStepper::TimeStepper(std::string name, std::map<std::string, 
     TSSetApplicationContext(ts, this) >> checkError;
 }
 
-ablate::solve::TimeStepper::~TimeStepper() {
-    TSDestroy(&ts);
-}
+ablate::solve::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
 
 void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     // Get the solution vector
@@ -90,11 +83,10 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     TSGetDM(ts, &dm) >> checkError;
     DMSetOutputSequenceNumber(dm, 0, time) >> checkError;
 
-    TSMonitorSet(ts, MonitorError, NULL, NULL)  >> checkError;
+    TSMonitorSet(ts, MonitorError, NULL, NULL) >> checkError;
 
     TSSolve(ts, solutionVec);
 }
 
-REGISTERDEFAULT(ablate::solve::TimeStepper, ablate::solve::TimeStepper, "the basic stepper",
-         ARG(std::string, "name", "the time stepper name"),
-         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"));
+REGISTERDEFAULT(ablate::solve::TimeStepper, ablate::solve::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
+                ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"));

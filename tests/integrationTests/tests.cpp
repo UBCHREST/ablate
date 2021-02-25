@@ -1,18 +1,17 @@
 static char help[] = "Integration Level Testing";
 
 #include <petsc.h>
-#include "MpiTestFixture.hpp"
-#include "gtest/gtest.h"
-#include "MpiTestParamFixture.hpp"
 #include <filesystem>
+#include "MpiTestFixture.hpp"
+#include "MpiTestParamFixture.hpp"
 #include "builder.hpp"
+#include "gtest/gtest.h"
 #include "parser/yamlParser.hpp"
 
 /**
  * Note: the test name is assumed to be the relative path to the yaml file
  */
-class IntegrationTestsSpecifier : public testingResources::MpiTestParamFixture{
-};
+class IntegrationTestsSpecifier : public testingResources::MpiTestParamFixture {};
 
 TEST_P(IntegrationTestsSpecifier, ShouldRun) {
     StartWithMPI
@@ -34,10 +33,6 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    Tests, IntegrationTestsSpecifier,
-    testing::Values((MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml",
-                                                    .nproc = 1,
-                                                    .expectedOutputFile = "outputs/incompressibleFlow.out",
-                                                    .arguments = ""}),
-    [](const testing::TestParamInfo<MpiTestParameter> &info) { return info.param.getTestName(); });
+INSTANTIATE_TEST_SUITE_P(Tests, IntegrationTestsSpecifier,
+                         testing::Values((MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlow.out", .arguments = ""}),
+                         [](const testing::TestParamInfo<MpiTestParameter> &info) { return info.param.getTestName(); });

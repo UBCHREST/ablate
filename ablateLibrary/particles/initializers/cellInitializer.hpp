@@ -10,6 +10,6 @@ class CellInitializer : public Initializer {
 
     void Initialize(ablate::flow::Flow& flow, DM particleDM) override;
 };
-}
+}  // namespace ablate::particles::initializers
 
 #endif  // ABLATELIBRARY_CELLINITIALIZER_HPP

@@ -23,13 +23,21 @@ ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shar
     DMGetDS(mesh->GetDomain(), &prob) >> checkError;
 
     // add each boundary condition
-    for(auto boundary: boundaryConditions){
+    for (auto boundary : boundaryConditions) {
         PetscInt id = boundary->GetLabelId();
         PetscDSAddBoundary(prob,
                            DM_BC_ESSENTIAL,
                            boundary->GetBoundaryName().c_str(),
                            boundary->GetLabelName().c_str(),
-                           GetFieldId(boundary->GetFieldName()), 0, NULL, (void (*)(void))boundary->GetBoundaryFunction(), (void (*)(void))boundary->GetBoundaryTimeDerivativeFunction(), 1, &id, boundary->GetContext()) >> checkError;
+                           GetFieldId(boundary->GetFieldName()),
+                           0,
+                           NULL,
+                           (void (*)(void))boundary->GetBoundaryFunction(),
+                           (void (*)(void))boundary->GetBoundaryTimeDerivativeFunction(),
+                           1,
+                           &id,
+                           boundary->GetContext()) >>
+            checkError;
     }
 
     // Set the exact solution

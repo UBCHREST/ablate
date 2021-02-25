@@ -9,7 +9,7 @@ class PetscErrorChecker {
    public:
     struct PetscError : public std::runtime_error {
        private:
-        static std::string GetMessage(PetscErrorCode ierr){
+        static std::string GetMessage(PetscErrorCode ierr) {
             const char *text;
             char *specific;
 
@@ -17,9 +17,9 @@ class PetscErrorChecker {
 
             return std::string(text) + ": " + std::string(specific);
         }
+
        public:
-        PetscError(PetscErrorCode ierr) : std::runtime_error(GetMessage(ierr)) {
-        }
+        PetscError(PetscErrorCode ierr) : std::runtime_error(GetMessage(ierr)) {}
     };
 
     friend void operator>>(PetscErrorCode ierr, const PetscErrorChecker &errorChecker) {

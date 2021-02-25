@@ -73,5 +73,5 @@ class MpiTestFixture : public ::testing::Test {
         CompareOutputFiles(); \
     }
 
-}
+}  // namespace testingResources
 #endif  // mpitestfixture_h

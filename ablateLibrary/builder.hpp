@@ -1,8 +1,8 @@
 #ifndef ABLATELIBRARY_BUILDER_HPP
 #define ABLATELIBRARY_BUILDER_HPP
-#include "parser/factory.hpp"
 #include <memory>
-namespace ablate{
+#include "parser/factory.hpp"
+namespace ablate {
 class Builder {
    public:
     /**
@@ -11,6 +11,6 @@ class Builder {
      */
     static void Run(std::shared_ptr<ablate::parser::Factory> factory);
 };
-}
+}  // namespace ablate
 
 #endif  // ABLATELIBRARY_BUILDER_HPP

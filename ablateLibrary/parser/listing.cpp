@@ -27,7 +27,7 @@ std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser:
 }
 
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing::ClassEntry& classEntry) {
-    os << classEntry.className  << (classEntry.defaultConstructor ? "*": "") << " - " << classEntry.description << std::endl;
+    os << classEntry.className << (classEntry.defaultConstructor ? "*" : "") << " - " << classEntry.description << std::endl;
     for (auto argumentEntry : classEntry.arguments) {
         os << '\t' << '\t' << argumentEntry << std::endl;
     }

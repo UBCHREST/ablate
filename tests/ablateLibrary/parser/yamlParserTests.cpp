@@ -259,7 +259,7 @@ TEST(YamlParserTests, ShouldGetMapOfStrings) {
     auto yamlParser = std::make_shared<YamlParser>(yaml.str());
 
     // act
-    auto map = yamlParser->Get(ArgumentIdentifier<std::map<std::string,std::string>>{"item2"});
+    auto map = yamlParser->Get(ArgumentIdentifier<std::map<std::string, std::string>>{"item2"});
 
     // assert
     std::map<std::string, std::string> expectedValues = {{"string1", "1"}, {"string2", "2"}, {"string3", "3"}};

@@ -8,7 +8,7 @@ set(YAML_CPP_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         yaml-cpp
         GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-        GIT_TAG        yaml-cpp-0.6.3
+        GIT_TAG yaml-cpp-0.6.3
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
@@ -19,7 +19,7 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         mu-parser
         GIT_REPOSITORY https://github.com/beltoforion/muparser.git
-        GIT_TAG        v2.3.2
+        GIT_TAG v2.3.2
 )
 FetchContent_MakeAvailable(mu-parser)
 FetchContent_GetProperties(mu-parser)

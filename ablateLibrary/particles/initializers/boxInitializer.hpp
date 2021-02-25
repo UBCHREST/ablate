@@ -8,7 +8,7 @@ class BoxInitializer : public Initializer {
     explicit BoxInitializer(std::map<std::string, std::string> arguments);
     ~BoxInitializer() = default;
 
-    void Initialize(ablate::flow::Flow& flow,DM particleDM) override;
+    void Initialize(ablate::flow::Flow& flow, DM particleDM) override;
 };
 }  // namespace ablate::particles::initializers
 

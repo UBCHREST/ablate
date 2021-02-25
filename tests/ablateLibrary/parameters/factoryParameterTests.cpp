@@ -1,8 +1,8 @@
+#include <memory>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "parameters/factoryParameters.hpp"
 #include "parser/mockFactory.hpp"
-#include <memory>
 using ::testing::AtLeast;
 
 namespace ablateTesting::parameters {
@@ -69,4 +69,4 @@ TEST(FactoryParameterTests, ShouldReturnEmptyValueWhenNotThere) {
     ASSERT_FALSE(intValue.has_value());
 }
 
-}
+}  // namespace ablateTesting::parameters

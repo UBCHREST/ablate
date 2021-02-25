@@ -1,16 +1,16 @@
 #ifndef ABLATELIBRARY_MOCKFACTORY_HPP
 #define ABLATELIBRARY_MOCKFACTORY_HPP
 
-#include "parser/factory.hpp"
 #include <map>
 #include <string>
 #include "gmock/gmock.h"
+#include "parser/factory.hpp"
 
 using namespace ablate::parser;
 
 namespace ablateTesting::parser {
 
-MATCHER_P(NameIs, name ,"") { return (arg.inputName == name); }
+MATCHER_P(NameIs, name, "") { return (arg.inputName == name); }
 
 class MockFactory : public ablate::parser::Factory {
    public:
@@ -20,9 +20,9 @@ class MockFactory : public ablate::parser::Factory {
     MOCK_METHOD(std::string, Get, (const ArgumentIdentifier<std::string>&), (override, const));
     MOCK_METHOD(int, Get, (const ArgumentIdentifier<int>&), (override, const));
     MOCK_METHOD(std::vector<std::string>, Get, (const ArgumentIdentifier<std::vector<std::string>>&), (override, const));
-    MOCK_METHOD((std::map<std::string,std::string>), Get, ((const ArgumentIdentifier<std::map<std::string,std::string>>&)), (override, const));
+    MOCK_METHOD((std::map<std::string, std::string>), Get, ((const ArgumentIdentifier<std::map<std::string, std::string>>&)), (override, const));
     MOCK_METHOD(bool, Contains, (const std::string& name), (override, const));
 };
-}
+}  // namespace ablateTesting::parser
 
 #endif  // ABLATELIBRARY_MOCKFACTORY_HPP

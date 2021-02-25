@@ -57,7 +57,7 @@ class IncompressibleFlowMMS : public testingResources::MpiTestFixture, public ::
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
- static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
+static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     DM dm;
     PetscReal t;
     PetscErrorCode ierr;
@@ -80,12 +80,13 @@ class IncompressibleFlowMMS : public testingResources::MpiTestFixture, public ::
     CHKERRQ(ierr);
 
     // get the flow to apply the completeFlowInitialization method
-    ierr = IncompressibleFlow_CompleteFlowInitialization(dm, u);CHKERRQ(ierr);
+    ierr = IncompressibleFlow_CompleteFlowInitialization(dm, u);
+    CHKERRQ(ierr);
 
-     PetscFunctionReturn(0);
+    PetscFunctionReturn(0);
 }
 
- static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
+static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
     PetscErrorCode (*exactFuncs[3])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
     void *ctxs[3];
     DM dm;
@@ -101,11 +102,10 @@ class IncompressibleFlowMMS : public testingResources::MpiTestFixture, public ::
     ierr = DMGetDS(dm, &ds);
     CHKERRQ(ierr);
 
-     ierr = VecViewFromOptions(u, NULL, "-vec_view_monitor");
-     CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    ierr = VecViewFromOptions(u, NULL, "-vec_view_monitor");
+    CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-
-     for (f = 0; f < 3; ++f) {
+    for (f = 0; f < 3; ++f) {
         ierr = PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
     }
@@ -117,7 +117,7 @@ class IncompressibleFlowMMS : public testingResources::MpiTestFixture, public ::
     ierr = DMGetGlobalVector(dm, &u);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     // ierr = TSGetSolution(ts, &u);CHKERRABORT(PETSC_COMM_WORLD, ierr);
-//    ierr = PetscObjectSetName((PetscObject)u, "Numerical Solution");
+    //    ierr = PetscObjectSetName((PetscObject)u, "Numerical Solution");
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     ierr = DMRestoreGlobalVector(dm, &u);
@@ -142,7 +142,6 @@ class IncompressibleFlowMMS : public testingResources::MpiTestFixture, public ::
 static PetscReal Power(PetscReal x, PetscInt exp) { return PetscPowReal(x, exp); }
 static PetscReal Cos(PetscReal x) { return PetscCosReal(x); }
 static PetscReal Sin(PetscReal x) { return PetscSinReal(x); }
-
 
 /*
   CASE: incompressible quadratic
@@ -362,10 +361,10 @@ static void SourceFunction(f0_incompressible_cubic_trig_w) {
 
 TEST_P(IncompressibleFlowMMS, ShouldConvergeToExactSolution) {
     StartWithMPI
-        DM dm;     /* problem definition */
-        TS ts;     /* timestepper */
+        DM dm;                 /* problem definition */
+        TS ts;                 /* timestepper */
         PetscBag parameterBag; /* constant flow parameters */
-        Vec flowField;       /* flow solution vector */
+        Vec flowField;         /* flow solution vector */
 
         PetscReal t;
         PetscErrorCode ierr;
@@ -401,7 +400,7 @@ TEST_P(IncompressibleFlowMMS, ShouldConvergeToExactSolution) {
         PetscScalar constants[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS];
         ierr = IncompressibleFlow_PackParameters(flowParameters, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = IncompressibleFlow_StartProblemSetup(dm,TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants);
+        ierr = IncompressibleFlow_StartProblemSetup(dm, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Override problem with source terms, boundary, and set the exact solution
@@ -434,8 +433,8 @@ TEST_P(IncompressibleFlowMMS, ShouldConvergeToExactSolution) {
             /* Setup Boundary Conditions */
             PetscInt id;
             id = 3;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
             ierr = PetscDSAddBoundary(
@@ -446,22 +445,24 @@ TEST_P(IncompressibleFlowMMS, ShouldConvergeToExactSolution) {
                 prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 3;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+            ierr = PetscDSAddBoundary(
+                prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 2;
             ierr =
                 PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+            ierr =
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
             // Set the exact solution
@@ -482,7 +483,8 @@ TEST_P(IncompressibleFlowMMS, ShouldConvergeToExactSolution) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Name the flow field
-        ierr = PetscObjectSetName((PetscObject)flowField, "Numerical Solution");CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = PetscObjectSetName((PetscObject)flowField, "Numerical Solution");
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Setup the TS
         ierr = TSSetFromOptions(ts);
@@ -529,15 +531,15 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         (IncompressibleFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
             .TExact = incompressible_quadratic_T,
@@ -547,15 +549,15 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_quadratic_w},
         (IncompressibleFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
-                .nproc = 4,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_nproc4",
-                .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
-                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+                                 .nproc = 4,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_nproc4",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
             .TExact = incompressible_quadratic_T,
@@ -565,16 +567,16 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_quadratic_w},
         (IncompressibleFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic trig tri_p2_p1_p1_tconv",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_tconv",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-ts_max_steps 4 -ts_dt 0.1 -ts_convergence_estimate -convest_num_refine 1 "
-                             "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_tconv",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-ts_max_steps 4 -ts_dt 0.1 -ts_convergence_estimate -convest_num_refine 1 "
+                                              "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .uExact = incompressible_cubic_trig_u,
             .pExact = incompressible_cubic_trig_p,
             .TExact = incompressible_cubic_trig_T,
@@ -584,16 +586,16 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_cubic_trig_w},
         (IncompressibleFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic p2_p1_p1_sconv",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_sconv",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-ts_max_steps 1 -ts_dt 1e-4 -ts_convergence_estimate -ts_convergence_temporal 0 -convest_num_refine 1 "
-                             "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1e-16 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_sconv",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-ts_max_steps 1 -ts_dt 1e-4 -ts_convergence_estimate -ts_convergence_temporal 0 -convest_num_refine 1 "
+                                              "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1e-16 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
             .TExact = incompressible_cubic_T,
@@ -603,16 +605,16 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_cubic_w},
         (IncompressibleFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                             "-snes_convergence_test correct_pressure "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
             .TExact = incompressible_cubic_T,
@@ -622,17 +624,17 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_cubic_w},
         (IncompressibleFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 with real coefficients",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_real_coefficients",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                             "-strouhal 0.00242007695844728 -reynolds 23126.2780617827  -peclet 16373.1785965753 "
-                             "-mu 1.1 -k 1.2 -cp 1.3 "},
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_real_coefficients",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                              "-strouhal 0.00242007695844728 -reynolds 23126.2780617827  -peclet 16373.1785965753 "
+                                              "-mu 1.1 -k 1.2 -cp 1.3 "},
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
             .TExact = incompressible_quadratic_T,
@@ -642,18 +644,18 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_quadratic_w},
         (IncompressibleFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2 with real coefficients",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2_real_coefficients",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                             "-snes_convergence_test correct_pressure "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1E-12 -fieldsplit_pressure_pc_type jacobi "
-                             "-strouhal 0.0024 -reynolds 23126.27 -peclet 16373.178 "
-                             "-mu 1.1 -k 1.2 -cp 1.3 "},
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2_real_coefficients",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1.0e-12 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1E-12 -fieldsplit_pressure_pc_type jacobi "
+                                              "-strouhal 0.0024 -reynolds 23126.27 -peclet 16373.178 "
+                                              "-mu 1.1 -k 1.2 -cp 1.3 "},
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
             .TExact = incompressible_cubic_T,
@@ -665,8 +667,7 @@ INSTANTIATE_TEST_SUITE_P(
 
 TEST(IncompressibleFlow, ShouldPackIncompressibleFlowParameters) {
     // arrange
-    IncompressibleFlowParameters parameters{
-        .strouhal = 1.0, .reynolds = 2.0, .peclet = 4.0, .mu = 7.0, .k = 8.0, .cp = 9.0};
+    IncompressibleFlowParameters parameters{.strouhal = 1.0, .reynolds = 2.0, .peclet = 4.0, .mu = 7.0, .k = 8.0, .cp = 9.0};
 
     PetscScalar packedConstants[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS];
 
@@ -682,7 +683,8 @@ TEST(IncompressibleFlow, ShouldPackIncompressibleFlowParameters) {
     ASSERT_EQ(9.0, packedConstants[CP]) << " CP is incorrect";
 }
 
-class IncompressibleFlowParametersSetupTextFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<std::tuple<testingResources::MpiTestParameter, IncompressibleFlowParameters>> {
+class IncompressibleFlowParametersSetupTextFixture : public testingResources::MpiTestFixture,
+                                                     public ::testing::WithParamInterface<std::tuple<testingResources::MpiTestParameter, IncompressibleFlowParameters>> {
    public:
     void SetUp() override { SetMpiParameters(std::get<0>(GetParam())); }
 };
@@ -714,24 +716,14 @@ TEST_P(IncompressibleFlowParametersSetupTextFixture, ShouldParseFromPetscOptions
 
 INSTANTIATE_TEST_SUITE_P(
     IncompressibleFlow, IncompressibleFlowParametersSetupTextFixture,
-    ::testing::Values(
-        std::make_tuple(
-            testingResources::MpiTestParameter{.testName = "default parameters", .nproc = 1, .arguments = ""},
-            IncompressibleFlowParameters{
-                .strouhal = 1.0, .reynolds = 1.0, .peclet = 1.0, .mu = 1.0, .k = 1.0, .cp = 1.0}),
-        std::make_tuple(
-            testingResources::MpiTestParameter{.testName = "strouhal only", .nproc = 1, .arguments = "-strouhal 10.0"},
-            IncompressibleFlowParameters{
-                .strouhal = 10.0, .reynolds = 1.0, .peclet = 1.0, .mu = 1.0, .k = 1.0, .cp = 1.0}),
-        std::make_tuple(
-            testingResources::MpiTestParameter{
-                .testName = "all parameters",
-                .nproc = 1,
-                .arguments = "-strouhal 10.0 -reynolds 11.1 -froude 12.2 -peclet 13.3 -heatRelease 14.4 -gamma 15.5 -mu 16.6 -k 17.7 -cp 18.8 -beta 19.9 -gravityDirection 2 -pth 20.2"},
-            IncompressibleFlowParameters{.strouhal = 10.0,
-                                  .reynolds = 11.1,
-                                  .peclet = 13.3,
-                                  .mu = 16.6,
-                                  .k = 17.7,
-                                  .cp = 18.8})),
+    ::testing::Values(std::make_tuple(testingResources::MpiTestParameter{.testName = "default parameters", .nproc = 1, .arguments = ""},
+                                      IncompressibleFlowParameters{.strouhal = 1.0, .reynolds = 1.0, .peclet = 1.0, .mu = 1.0, .k = 1.0, .cp = 1.0}),
+                      std::make_tuple(testingResources::MpiTestParameter{.testName = "strouhal only", .nproc = 1, .arguments = "-strouhal 10.0"},
+                                      IncompressibleFlowParameters{.strouhal = 10.0, .reynolds = 1.0, .peclet = 1.0, .mu = 1.0, .k = 1.0, .cp = 1.0}),
+                      std::make_tuple(
+                          testingResources::MpiTestParameter{
+                              .testName = "all parameters",
+                              .nproc = 1,
+                              .arguments = "-strouhal 10.0 -reynolds 11.1 -froude 12.2 -peclet 13.3 -heatRelease 14.4 -gamma 15.5 -mu 16.6 -k 17.7 -cp 18.8 -beta 19.9 -gravityDirection 2 -pth 20.2"},
+                          IncompressibleFlowParameters{.strouhal = 10.0, .reynolds = 11.1, .peclet = 13.3, .mu = 16.6, .k = 17.7, .cp = 18.8})),
     [](const testing::TestParamInfo<std::tuple<testingResources::MpiTestParameter, IncompressibleFlowParameters>> &info) { return std::get<0>(info.param).getTestName(); });

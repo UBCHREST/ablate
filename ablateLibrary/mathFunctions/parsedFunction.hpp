@@ -3,7 +3,7 @@
 #include <muParser.h>
 #include "mathFunction.hpp"
 
-namespace ablate::mathFunctions{
+namespace ablate::mathFunctions {
 /**
  * simple wrapper to compute a function from a x,y,z string.
  * see https://beltoforion.de/en/muparser/index.php
@@ -17,7 +17,7 @@ class ParsedFunction : public MathFunction {
     const std::string formula;
 
    private:
-    static PetscErrorCode ParsedPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
+    static PetscErrorCode ParsedPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
    public:
     ParsedFunction(const ParsedFunction&) = delete;
@@ -25,22 +25,18 @@ class ParsedFunction : public MathFunction {
 
     explicit ParsedFunction(std::string functionString);
 
-    double Eval(const double& x, const double& y, const double& z, const double &t) const override;
+    double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 
-    double Eval(const double* xyz, const int& ndims, const double &t) const override;
+    double Eval(const double* xyz, const int& ndims, const double& t) const override;
 
-    void Eval(const double& x, const double& y, const double& z, const double &t, std::vector<double>& result) const override;
+    void Eval(const double& x, const double& y, const double& z, const double& t, std::vector<double>& result) const override;
 
-    void Eval(const double* xyz, const int& ndims, const double &t, std::vector<double>& result) const override;
+    void Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const override;
 
-    void* GetContext() override{
-        return this;
-    }
+    void* GetContext() override { return this; }
 
-    PetscFunction GetPetscFunction() override{
-        return ParsedPetscFunction;
-    }
+    PetscFunction GetPetscFunction() override { return ParsedPetscFunction; }
 };
-}
+}  // namespace ablate::mathFunctions
 
 #endif  // ABLATELIBRARY_PARSEDFUNCTION_HPP

@@ -4,10 +4,10 @@
 #include <petsc.h>
 #include <memory>
 #include <string>
+#include "boundaryCondition.hpp"
+#include "flowFieldSolution.hpp"
 #include "mesh/mesh.hpp"
 #include "solve/solvable.hpp"
-#include "flowFieldSolution.hpp"
-#include "boundaryCondition.hpp"
 
 namespace ablate::flow {
 class Flow : public solve::Solvable {
@@ -28,11 +28,9 @@ class Flow : public solve::Solvable {
 
     mesh::Mesh& GetMesh() { return *mesh; }
 
-    virtual void SetupSolve(TS& timeStepper) override= 0;
+    virtual void SetupSolve(TS& timeStepper) override = 0;
 
-    Vec GetSolutionVector() override{
-        return flowSolution;
-    }
+    Vec GetSolutionVector() override { return flowSolution; }
 };
 }  // namespace ablate::flow
 

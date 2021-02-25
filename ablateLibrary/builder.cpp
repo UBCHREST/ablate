@@ -1,11 +1,10 @@
 #include "builder.hpp"
-#include "utilities/petscOptions.hpp"
-#include "solve/timeStepper.hpp"
 #include "flow/flow.hpp"
 #include "particles/particles.hpp"
+#include "solve/timeStepper.hpp"
+#include "utilities/petscOptions.hpp"
 
 void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
-
     // get the global arguments
     auto globalArguments = parser->Get(parser::ArgumentIdentifier<std::map<std::string, std::string>>{"arguments"});
     utilities::PetscOptions::Set(globalArguments);
@@ -21,7 +20,7 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     auto particleList = parser->Get(parser::ArgumentIdentifier<std::vector<particles::Particles>>{"particles"});
 
     // initialize the flow for each
-    for(auto particle : particleList){
+    for (auto particle : particleList) {
         particle->InitializeFlow(flow, timeStepper);
     }
 

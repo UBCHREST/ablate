@@ -1,6 +1,6 @@
 #include "particles.h"
 
-PetscErrorCode ParticleCreate(ParticleData* particles,PetscInt ndims) {
+PetscErrorCode ParticleCreate(ParticleData *particles, PetscInt ndims) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
     *particles = malloc(sizeof(struct _ParticleData));
@@ -31,7 +31,6 @@ PetscErrorCode ParticleInitializeFlow(ParticleData particles, DM flowDM, Vec flo
     ierr = VecDuplicate(particles->flowFinal, &(particles->flowInitial));CHKERRQ(ierr);
     ierr = VecCopy(flowField, particles->flowInitial);CHKERRQ(ierr);
 
-
     PetscFunctionReturn(0);
 }
 PetscErrorCode ParticleSetExactSolutionFlow(ParticleData particles, PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal *, PetscInt, PetscScalar *, void *),
@@ -42,24 +41,9 @@ PetscErrorCode ParticleSetExactSolutionFlow(ParticleData particles, PetscErrorCo
     PetscFunctionReturn(0);
 }
 
-PETSC_EXTERN PetscErrorCode ParticleDestroy(ParticleData* particles) {
+PETSC_EXTERN PetscErrorCode ParticleDestroy(ParticleData *particles) {
     PetscErrorCode ierr = DMDestroy(&(*particles)->dm);CHKERRQ(ierr);
     free(*particles);
     particles = NULL;
     return 0;
 }
-
-
-
-//PETSC_EXTERN PetscErrorCode FlowSetupDiscretization(Flow flow) { return flow->setupDiscretization(flow); }
-//
-//PETSC_EXTERN PetscErrorCode FlowInitialization(Flow flow, DM dm, Vec u) {
-//    if (flow->completeFlowInitialization) {
-//        return flow->completeFlowInitialization(dm, u);
-//    } else {
-//        return 0;
-//    }
-//}
-//
-//PETSC_EXTERN PetscErrorCode FlowStartProblemSetup(Flow flow) { return flow->startProblemSetup(flow); }
-//PETSC_EXTERN PetscErrorCode FlowCompleteProblemSetup(Flow flow, TS ts) { return flow->completeProblemSetup(flow, ts); }
