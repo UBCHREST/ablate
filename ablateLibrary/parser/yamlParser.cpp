@@ -49,7 +49,7 @@ int ablate::parser::YamlParser::Get(const ablate::parser::ArgumentIdentifier<int
 
 std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(const std::string& name) const {
     // Check to see if the child factory has already been created
-    if (!childFactories.contains(name)) {
+    if (childFactories.count(name) == 0) {
         auto parameter = yamlConfiguration[name];
         if (!parameter) {
             throw std::invalid_argument("unable to find item " + name + " in " + nodePath);
@@ -89,7 +89,7 @@ std::vector<std::shared_ptr<ablate::parser::Factory>> ablate::parser::YamlParser
     for (auto i = 0; i < parameter.size(); i++) {
         std::string childName = name + "/" + std::to_string(i);
 
-        if (!childFactories.contains(childName)) {
+        if (childFactories.count(childName) == 0) {
             auto childParameter = parameter[i];
 
             if (!childParameter.IsMap()) {
