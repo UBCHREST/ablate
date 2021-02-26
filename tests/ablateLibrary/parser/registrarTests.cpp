@@ -94,8 +94,8 @@ TEST(RegistrarTests, ShouldRegisterDefaultClassWithArgumentIdentifiersAndRecordI
     EXPECT_CALL(
         *mockListing,
         RecordListing(Listing::ClassEntry{.interface = typeid(MockInterface4).name(),
-                                          .description = "this is a simple mock class",
                                           .className = "MockClass4",
+                                          .description = "this is a simple mock class",
                                           .arguments = {Listing::ArgumentEntry{.name = "dog", .interface = typeid(std::string).name(), .description = "this is a string"},
                                                         Listing::ArgumentEntry{.name = "cat", .interface = typeid(int).name(), .description = "this is a int"},
                                                         Listing::ArgumentEntry{.name = "bird", .interface = typeid(MockInterface4).name(), .description = "this is a shared pointer to an interface"}},

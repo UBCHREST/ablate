@@ -23,7 +23,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(mu-parser)
 FetchContent_GetProperties(mu-parser)
-target_include_directories(muparser PUBLIC ${mu-parser_SOURCE_DIR}/include)
+target_include_directories(muparser SYSTEM PUBLIC ${mu-parser_SOURCE_DIR}/include)
 
 
 # Setup the ablate core
@@ -49,4 +49,4 @@ add_subdirectory(mathFunctions)
 add_subdirectory(particles)
 
 # Keep a simple main statement
-target_link_libraries(ablateLibrary PUBLIC ablateCore SYSTEM yaml-cpp muparser)
+target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser)
