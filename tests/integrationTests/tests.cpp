@@ -34,5 +34,5 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
 }
 
 INSTANTIATE_TEST_SUITE_P(Tests, IntegrationTestsSpecifier,
-                         testing::Values((MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlow.out", .arguments = ""}),
+                         testing::Values((MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlow.txt", .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter> &info) { return info.param.getTestName(); });

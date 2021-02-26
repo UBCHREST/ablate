@@ -8,14 +8,3 @@ ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
 # Install dependencies
 RUN apt-get update
 RUN apt-get install -y clang-format
-
-# Copy over the source
-COPY . /source
-WORKDIR /build
-
-# Configure & build
-run cmake -S /source/ -B .
-run make -j $(nproc)
-
-# Specify Entry Point for tests
-CMD bash -c "make format-check && ctest"
