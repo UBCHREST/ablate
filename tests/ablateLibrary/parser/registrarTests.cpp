@@ -27,7 +27,7 @@ class MockClass1 : public MockInterface {
 TEST(RegistrarTests, ShouldRegisterClassAndRecordInLog) {
     // arrange
     auto mockListing = std::make_shared<MockListing>();
-    EXPECT_CALL(*mockListing, RecordListing(Listing::ClassEntry{.interface = typeid(MockInterface).name(), .description = "this is a simple mock class", .className = "mockClass1"}))
+    EXPECT_CALL(*mockListing, RecordListing(Listing::ClassEntry{.interface = typeid(MockInterface).name(), .className = "mockClass1", .description = "this is a simple mock class"}))
         .Times(::testing::Exactly(1));
 
     Listing::ReplaceListing(mockListing);
@@ -54,8 +54,8 @@ TEST(RegistrarTests, ShouldRegisterClassWithArgumentIdentifiersAndRecordInLog) {
     EXPECT_CALL(
         *mockListing,
         RecordListing(Listing::ClassEntry{.interface = typeid(MockInterface).name(),
-                                          .description = "this is a simple mock class",
                                           .className = "MockClass2",
+                                          .description = "this is a simple mock class",
                                           .arguments = {Listing::ArgumentEntry{.name = "dog", .interface = typeid(std::string).name(), .description = "this is a string"},
                                                         Listing::ArgumentEntry{.name = "cat", .interface = typeid(int).name(), .description = "this is a int"},
                                                         Listing::ArgumentEntry{.name = "bird", .interface = typeid(MockInterface).name(), .description = "this is a shared pointer to an interface"}}}))

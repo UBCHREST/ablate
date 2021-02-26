@@ -52,21 +52,32 @@ class Registrar {
 
     using TCreateMethod = std::function<std::shared_ptr<Interface>(std::shared_ptr<Factory>)>;
 
+    static std::map<std::string, TCreateMethod>& GetConstructionMethods() {
+        static std::map<std::string, TCreateMethod>* methods = new std::map<std::string, TCreateMethod>();
+        return *methods;
+    }
+
+    static std::string& GetDefaultClassName() {
+        static std::string* defaultClassName = new std::string();
+        return *defaultClassName;
+    };
+
     /* Register a class that has a constructor that uses a Factory instance */
     template <typename Class>
     static bool Register(bool defaultConstructor, const std::string&& className, const std::string&& description) {
-        if (auto it = s_methods.find(className); it == s_methods.end()) {
+        std::map<std::string, TCreateMethod>& methods = GetConstructionMethods();
+        if (auto it = methods.find(className); it == methods.end()) {
             // Record the entry
             Listing::Get().RecordListing(Listing::ClassEntry{.interface = typeid(Interface).name(), .className = className, .description = description, .defaultConstructor = defaultConstructor});
 
             // create method
-            s_methods[className] = [](std::shared_ptr<Factory> factory) { return std::make_shared<Class>(factory); };
+            methods[className] = [](std::shared_ptr<Factory> factory) { return std::make_shared<Class>(factory); };
 
             if (defaultConstructor) {
-                if (!defaultCreationMethod) {
-                    defaultCreationMethod = s_methods[className];
+                if (GetDefaultClassName().empty()) {
+                    GetDefaultClassName() = className;
                 } else {
-                    throw std::invalid_argument("the default parameter for " + utilities::Demangler::Demangle(typeid(Interface).name()) + " is already set");
+                    throw std::invalid_argument("the default parameter for " + utilities::Demangler::Demangle(typeid(Interface).name()) + " is already set as " + GetDefaultClassName());
                 }
             }
         }
@@ -76,7 +87,8 @@ class Registrar {
     /* Register a class with a function that takes argument identifiers */
     template <typename Class, typename... Args>
     static bool Register(bool defaultConstructor, const std::string&& className, const std::string&& description, ArgumentIdentifier<Args>&&... args) {
-        if (auto it = s_methods.find(className); it == s_methods.end()) {
+        std::map<std::string, TCreateMethod>& methods = GetConstructionMethods();
+        if (auto it = methods.find(className); it == methods.end()) {
             // Record the entry
             Listing::Get().RecordListing(
                 Listing::ClassEntry{.interface = typeid(Interface).name(),
@@ -86,13 +98,13 @@ class Registrar {
                                     .defaultConstructor = defaultConstructor});
 
             // create method
-            s_methods[className] = [=](std::shared_ptr<Factory> factory) { return std::make_shared<Class>(factory->Get(args)...); };
+            methods[className] = [=](std::shared_ptr<Factory> factory) { return std::make_shared<Class>(factory->Get(args)...); };
 
             if (defaultConstructor) {
-                if (!defaultCreationMethod) {
-                    defaultCreationMethod = s_methods[className];
+                if (GetDefaultClassName().empty()) {
+                    GetDefaultClassName() = className;
                 } else {
-                    throw std::invalid_argument("the default parameter for " + utilities::Demangler::Demangle(typeid(Interface).name()) + " is already set");
+                    throw std::invalid_argument("the default parameter for " + utilities::Demangler::Demangle(typeid(Interface).name()) + " is already set as " + GetDefaultClassName());
                 }
             }
 
@@ -102,17 +114,11 @@ class Registrar {
     }
 
     static TCreateMethod GetCreateMethod(const std::string& className) {
-        if (auto it = s_methods.find(className); it != s_methods.end()) return it->second;
+        std::map<std::string, TCreateMethod>& methods = GetConstructionMethods();
+        if (auto it = methods.find(className); it != methods.end()) return it->second;
 
         return nullptr;
     }
-
-    static TCreateMethod GetDefaultCreateMethod() { return defaultCreationMethod; };
-
-   private:
-    inline static std::map<std::string, TCreateMethod> s_methods;
-
-    inline static TCreateMethod defaultCreationMethod;
 };
 
 template <typename Interface>
@@ -131,7 +137,8 @@ std::shared_ptr<Interface> ResolveAndCreate(std::shared_ptr<Factory> factory) {
         return createMethod(factory);
     } else {
         // check for a default
-        std::function<std::shared_ptr<Interface>(std::shared_ptr<Factory>)> createMethod = Registrar<Interface>::GetDefaultCreateMethod();
+        std::string defaultClassName = Registrar<Interface>::GetDefaultClassName();
+        std::function<std::shared_ptr<Interface>(std::shared_ptr<Factory>)> createMethod = Registrar<Interface>::GetCreateMethod(defaultClassName);
         if (!createMethod) {
             throw std::invalid_argument("no default creator specified for interface " + utilities::Demangler::Demangle(typeid(Interface).name()));
         }

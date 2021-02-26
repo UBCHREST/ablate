@@ -24,7 +24,7 @@ TEST(YamlParserTests, ShouldCreateFromString) {
 TEST(YamlParserTests, ShouldCreateFromFile) {
     // arrange
     fs::path tempPath = fs::temp_directory_path();
-    tempPath += "tempFile.yaml";
+    tempPath /= "tempFile.yaml";
 
     std::ofstream ofs(tempPath);
     ofs << "---" << std::endl;
