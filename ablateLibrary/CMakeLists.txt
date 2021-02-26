@@ -49,4 +49,4 @@ add_subdirectory(mathFunctions)
 add_subdirectory(particles)
 
 # Keep a simple main statement
-target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser)
+target_link_libraries(ablateLibrary PUBLIC ablateCore SYSTEM yaml-cpp muparser)

@@ -1,7 +1,9 @@
 #ifndef ABLATELIBRARY_REGISTRAR_HPP
 #define ABLATELIBRARY_REGISTRAR_HPP
 
+#include <functional>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include "argumentIdentifier.hpp"
@@ -80,7 +82,7 @@ class Registrar {
                 Listing::ClassEntry{.interface = typeid(Interface).name(),
                                     .className = className,
                                     .description = description,
-                                    .arguments = std::vector({Listing::ArgumentEntry{.name = args.inputName, .description = args.description, .interface = typeid(Args).name()}...}),
+                                    .arguments = std::vector({Listing::ArgumentEntry{.name = args.inputName, .interface = typeid(Args).name(), .description = args.description}...}),
                                     .defaultConstructor = defaultConstructor});
 
             // create method

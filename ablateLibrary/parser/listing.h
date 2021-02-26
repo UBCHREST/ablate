@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -34,21 +35,22 @@ class Listing {
     Listing(Listing& other) = delete;
     void operator=(const Listing&) = delete;
 
-    // define operators to write to a stream
-    friend std::ostream& operator<<(std::ostream& os, const Listing& listing);
-    friend std::ostream& operator<<(std::ostream& os, const ArgumentEntry& argumentEntry);
-    friend std::ostream& operator<<(std::ostream& os, const ClassEntry& classEntry);
-
     // Provide a way to replace the listing
     static void ReplaceListing(std::shared_ptr<Listing>);
+
+    std::map<std::string, std::vector<ClassEntry>> entries;
 
    protected:
     Listing() = default;
 
    private:
-    std::map<std::string, std::vector<ClassEntry>> entries;
-
     inline static std::shared_ptr<Listing> listing;
 };
+
+// define operators to write to a stream
+std::ostream& operator<<(std::ostream& os, const Listing& listing);
+std::ostream& operator<<(std::ostream& os, const Listing::ArgumentEntry& argumentEntry);
+std::ostream& operator<<(std::ostream& os, const Listing::ClassEntry& classEntry);
+
 }  // namespace ablate::parser
 #endif  // ABLATELIBRARY_LISTING_H

@@ -1,8 +1,10 @@
 #ifndef ABLATELIBRARY_FACTORY_HPP
 #define ABLATELIBRARY_FACTORY_HPP
 
+#include <functional>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include "argumentIdentifier.hpp"
