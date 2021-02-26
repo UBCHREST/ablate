@@ -44,10 +44,11 @@ endif()
 
 # Add a target to allow linting check
 find_program(CLANG_FORMAT "clang-format")
-if(CLANG_FORMAT)
+find_package (Python)
+if(CLANG_FORMAT AND Python_Interpreter_FOUND)
     add_custom_target(
             format-check
-            COMMAND ${PROJECT_SOURCE_DIR}/extern/run-clang-format/run-clang-format.py
+            COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/extern/run-clang-format/run-clang-format.py
             --style=file
             -r
             --extensions=cpp,hpp,cc,hh,c++,h++,cxx,hxx
