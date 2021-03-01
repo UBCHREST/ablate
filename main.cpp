@@ -12,6 +12,14 @@ int main(int argc, char **args) {
     // initialize petsc and mpi
     PetscInitialize(&argc, &args, NULL, NULL) >> checkError;
 
+    // check to see if we should print version
+    PetscBool printVersion = PETSC_FALSE;
+    PetscOptionsGetBool(NULL, NULL, "-version", &printVersion, NULL) >> checkError;
+    if (printVersion) {
+        Builder::PrintVersion(std::cout);
+        std::cout << "----------------------------------------" << std::endl;
+    }
+
     // check to see if we should print options
     PetscBool printParserOptions = PETSC_FALSE;
     PetscOptionsGetBool(NULL, NULL, "-parserHelp", &printParserOptions, NULL) >> checkError;
