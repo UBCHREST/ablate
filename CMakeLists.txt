@@ -15,7 +15,7 @@ pkg_check_modules(PETSc REQUIRED PETSc)
 
 # Set the c/c++ Standards
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # FetContent will allow downloading of other libraries
@@ -30,10 +30,6 @@ endif()
 # Load in the subdirectories
 add_subdirectory(ablateCore)
 add_subdirectory(ablateLibrary)
-
-# Set the ablate library requirements
-set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 20)
-set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED OFF)
 
 # Setup and configure testing
 if(BUILD_TESTING)

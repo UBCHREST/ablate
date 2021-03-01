@@ -11,16 +11,60 @@ The University at Buffalo Center for Computational Research [(CCR)](http://www.b
 * [CCR OnDemand](https://ondemand.ccr.buffalo.edu) - an integrated, single access point for all of your HPC resources
 * [CCR Coldfront](https://coldfront.ccr.buffalo.edu) - resource allocation management tool built
 
+## Building PETSc on CCR
+If a newer version of PETSc is required than those pre-built on CCR you will be required to build PETSC.
+
+1. Download the desired version of PETSc into your desired location.
+   ```bash
+   git clone https://gitlab.com/petsc/petsc.git petsc
+   ```
+1. Load the required modules
+   ```bash
+   module load  intel/20.2
+   module load      intel-mpi/2020.2 
+   module load    mkl/2020.2 
+   module load cmake/3.17.1
+   ```
+1. Inside the petsc folder, configure PETSc and build PETSc
+   ```bash
+       ./configure  \
+        --with-mpi-dir=/util/academic/intel/20.2/compilers_and_libraries_2020.2.254/linux/mpi/intel64/ \
+        --download-hdf5 --download-ctetgen \
+ 	    --download-egads --download-metis \
+ 	    --download-ml --download-mumps --download-netcdf --download-p4est \
+ 	    --download-parmetis --download-pnetcdf --download-scalapack \
+ 	    --download-slepc --download-suitesparse --download-superlu_dist \
+ 	    --download-triangle --download-zlib --download-libpng
+   
+      # Follow the on screen instructions to build and test
+   ```
+1. Make note of the ```PETSC_DIR``` and ```PETSC_ARCH``` reported in the previous step.
+
 ## Building ABLATE on CCR
 1. Clone and checkout the desired branch
     ```bash
     git clone —recursive url/to/repo/or/fork
     ```
 1. Load required modules
-    ```bash
-    module load cmake/3.13.4
-    module load petsc/v3.14.0
-    ```
+   - If loading prebuilt PETSc module
+       ```bash
+       module load cmake/3.13.4
+       module load petsc/v3.14.0
+     
+       export PKG_CONFIG_PATH=${PETSC_DIR}/lib/pkgconfig
+       ```
+   - If loading from custom built PETSc
+       ```bash
+       module load  intel/20.2
+       module load      intel-mpi/2020.2
+       module load    mkl/2020.2
+       module load cmake/3.17.1
+     
+       export PETSC_DIR="path/to/petsc/dir"
+       export PETSC_DIR=petsc_arch
+       export PKG_CONFIG_PATH=${PETSC_DIR}/${PETSC_DIR}/lib/pkgconfig
+
+       ```
 1. Create debug and release build directories
     ```bash
     mkdir debug
@@ -28,7 +72,6 @@ The University at Buffalo Center for Computational Research [(CCR)](http://www.b
     ```
 1. Configure and build
     ```bash
-    export PKG_CONFIG_PATH=${PETSC_DIR}/lib/pkgconfig
 
     ## debug mode
     cmake -DCMAKE_BUILD_TYPE=Debug -B debug -S framework

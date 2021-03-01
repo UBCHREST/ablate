@@ -38,8 +38,7 @@ The framework requires that PETSc be configured and build with certain options. 
 	- To clone a specific version or commit ```git checkout v3.14.2``` 
 1. Configure PETSc with at least the following options from the petsc directory
     ```bash
-    ./configure  --download-mpich --download-fblaslapack \
-        --download-mpich --download-fblaslapack --download-ctetgen \
+    ./configure --download-mpich --download-fblaslapack --download-ctetgen \
  	    --download-egads --download-fftw --download-hdf5 --download-metis \
  	    --download-ml --download-mumps --download-netcdf --download-p4est \
  	    --download-parmetis --download-pnetcdf --download-scalapack \
