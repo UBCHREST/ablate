@@ -33,6 +33,5 @@ void ablate::Builder::PrintVersion(std::ostream& stream) {
     stream << "ABLATE: " << std::endl;
     stream << '\t' << "Documentation: https://ubchrest.github.io/ablate/" << std::endl;
     stream << '\t' << "Source: https://github.com/UBCHREST/ablate" << std::endl;
-    stream << '\t' << "Version: " <<ABLATECORE_VERSION << std::endl;
-
+    stream << '\t' << "Version: " << ABLATECORE_VERSION << std::endl;
 }
