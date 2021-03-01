@@ -17,6 +17,7 @@ pkg_check_modules(PETSc REQUIRED PETSc)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # FetContent will allow downloading of other libraries
 include(FetchContent)
