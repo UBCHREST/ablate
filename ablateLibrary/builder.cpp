@@ -3,6 +3,7 @@
 #include "particles/particles.hpp"
 #include "solve/timeStepper.hpp"
 #include "utilities/petscOptions.hpp"
+#include "version.h"
 
 void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     // get the global arguments
@@ -26,4 +27,11 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
 
     // run
     timeStepper->Solve(flow);
+}
+
+void ablate::Builder::PrintVersion(std::ostream& stream) {
+    stream << "ABLATE: " << std::endl;
+    stream << '\t' << "Documentation: https://ubchrest.github.io/ablate/" << std::endl;
+    stream << '\t' << "Source: https://github.com/UBCHREST/ablate" << std::endl;
+    stream << '\t' << "Version: " << ABLATECORE_VERSION << std::endl;
 }

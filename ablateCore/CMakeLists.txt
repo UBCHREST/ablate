@@ -25,3 +25,4 @@ configure_file (
         "version.h.in"
         "version.h"
 )
+target_include_directories(ablateCore PUBLIC ${CMAKE_CURRENT_BINARY_DIR})

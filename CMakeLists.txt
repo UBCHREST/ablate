@@ -8,15 +8,16 @@ pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
 set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
 
 # Set the project details
-project(ablateLibrary VERSION 0.2.0)
+project(ablateLibrary VERSION 0.2.1)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)
 
 # Set the c/c++ Standards
 set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # FetContent will allow downloading of other libraries
 include(FetchContent)
@@ -32,8 +33,9 @@ add_subdirectory(ablateCore)
 add_subdirectory(ablateLibrary)
 
 # Set the ablate library requirements
-set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 20)
-set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED OFF)
+set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
+set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
 
 # Setup and configure testing
 if(BUILD_TESTING)
