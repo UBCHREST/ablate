@@ -21,17 +21,27 @@ PetscErrorCode ParticleCreate(ParticleData *particles, PetscInt ndims) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleInitializeFlow(ParticleData particles, DM flowDM, Vec flowField) {
+PetscErrorCode ParticleInitializeFlow(ParticleData particles, FlowData flowData) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
     // get the dimensions of the flow and make sure it is the same as particles
-    ierr = DMSwarmSetCellDM(particles->dm, flowDM);CHKERRQ(ierr);
+    ierr = DMSwarmSetCellDM(particles->dm, flowData->dm);CHKERRQ(ierr);
 
     // Store the values in the particles from the ts and flow
-    particles->flowFinal = flowField;
+    particles->flowFinal = flowData->flowField;
     ierr = VecDuplicate(particles->flowFinal, &(particles->flowInitial));CHKERRQ(ierr);
-    ierr = VecCopy(flowField, particles->flowInitial);CHKERRQ(ierr);
+    ierr = VecCopy(flowData->flowField, particles->flowInitial);CHKERRQ(ierr);
+
+    // Find the velocity field
+    PetscBool found;
+    ierr = PetscEListFind(flowData->numberFlowFields,flowData->flowFieldNames, "velocity",&(particles->flowVelocityFieldIndex),&found);CHKERRQ(ierr);
+    if(!found){
+        // get the particle data comm
+        MPI_Comm comm;
+        ierr = PetscObjectGetComm((PetscObject) particles->dm, &comm);CHKERRQ(ierr);
+        SETERRQ(comm, PETSC_ERR_ARG_OUTOFRANGE,"unable to find velocity in flowData");
+    }
 
     PetscFunctionReturn(0);
 }

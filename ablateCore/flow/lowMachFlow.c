@@ -3,6 +3,8 @@
 const char *lowMachFlowParametersTypeNames[TOTAL_LOW_MACH_FLOW_PARAMETERS + 1] = {
     "strouhal", "reynolds", "froude", "peclet", "heatRelease", "gamma", "pth", "mu", "k", "cp", "beta", "gravityDirection", "unknown"};
 
+static const char *lowMachFlowFieldNames[TOTAL_LOW_MACH_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
+
 /* =q \left(-\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right) */
 static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
                                    const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal X[],
@@ -342,7 +344,7 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
+PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
     DM cdm = dm;
     PetscFE fe[3];
     MPI_Comm comm;
@@ -350,6 +352,9 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
+
+    //Store the field data
+    flowData->dm = dm;
 
     // determine if it a simplex element and the number of dimensions
     DMPolytopeType ct;
@@ -371,7 +376,7 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
 
     ierr = PetscObjectGetComm((PetscObject)dm, &comm);CHKERRQ(ierr);
     ierr = PetscFECreateDefault(comm, dim, dim, simplex, fieldPrefix, PETSC_DEFAULT, &fe[0]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[VEL], "velocity");CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)fe[VEL], lowMachFlowFieldNames[VEL]);CHKERRQ(ierr);
 
     // pressure
     ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
@@ -379,7 +384,7 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
 
     ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[1]);CHKERRQ(ierr);
     ierr = PetscFECopyQuadrature(fe[VEL], fe[PRES]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[PRES], "pressure");CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)fe[PRES], lowMachFlowFieldNames[PRES]);CHKERRQ(ierr);
 
     // temperature
     ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
@@ -387,7 +392,10 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
 
     ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[2]);CHKERRQ(ierr);
     ierr = PetscFECopyQuadrature(fe[VEL], fe[TEMP]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[TEMP], "temperature");CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)fe[TEMP], lowMachFlowFieldNames[TEMP]);CHKERRQ(ierr);
+
+    // register the fields
+    ierr = FlowRegisterFields(flowData, TOTAL_LOW_MACH_FLOW_FIELDS, lowMachFlowFieldNames );CHKERRQ(ierr);
 
     /* Set discretization and boundary conditions for each mesh */
     ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);
@@ -420,12 +428,12 @@ PetscErrorCode LowMachFlow_SetupDiscretization(DM dm) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_StartProblemSetup(DM flowDm, PetscInt numberParameters, PetscScalar parameters[]) {
+PetscErrorCode LowMachFlow_StartProblemSetup(FlowData flowData, PetscInt numberParameters, PetscScalar parameters[]) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
     PetscDS prob;
-    ierr = DMGetDS(flowDm, &prob);CHKERRQ(ierr);
+    ierr = DMGetDS(flowData->dm, &prob);CHKERRQ(ierr);
 
     // V, W, Q Test Function
     ierr = PetscDSSetResidual(prob, VTEST, vIntegrandTestFunction, vIntegrandTestGradientFunction);CHKERRQ(ierr);
@@ -450,7 +458,7 @@ PetscErrorCode LowMachFlow_StartProblemSetup(DM flowDm, PetscInt numberParameter
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_CompleteProblemSetup(TS ts, Vec *flowField) {
+PetscErrorCode LowMachFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
     PetscErrorCode ierr;
     DM dm;
 
@@ -458,7 +466,7 @@ PetscErrorCode LowMachFlow_CompleteProblemSetup(TS ts, Vec *flowField) {
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
 
     ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
-    ierr = DMCreateGlobalVector(dm, flowField);CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(dm, &(flowData->flowField));CHKERRQ(ierr);
     ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
 
     ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);

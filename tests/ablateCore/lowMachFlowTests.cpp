@@ -315,7 +315,7 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         DM dm;                 /* problem definition */
         TS ts;                 /* timestepper */
         PetscBag parameterBag; /* constant flow parameters */
-        Vec flowField;         /* flow solution vector */
+        FlowData flowData; /* store some of the flow data*/
 
         PetscReal t;
         PetscErrorCode ierr;
@@ -336,8 +336,12 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         ierr = TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
+        // Setup the flow data
+        ierr = FlowCreate(&flowData);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
         // setup problem
-        ierr = LowMachFlow_SetupDiscretization(dm);
+        ierr = LowMachFlow_SetupDiscretization(flowData, dm);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // get the flow parameters from options
@@ -351,7 +355,7 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         PetscScalar constants[TOTAL_LOW_MACH_FLOW_PARAMETERS];
         ierr = LowMachFlow_PackParameters(flowParameters, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = LowMachFlow_StartProblemSetup(dm, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants);
+        ierr = LowMachFlow_StartProblemSetup(flowData, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Override problem with source terms, boundary, and set the exact solution
@@ -430,13 +434,13 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
             ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, testingParam.T_tExact, parameterBag);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
         }
-        ierr = LowMachFlow_CompleteProblemSetup(ts, &flowField);
+        ierr = LowMachFlow_CompleteProblemSetup(flowData, ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Name the flow field
-        ierr = PetscObjectSetName((PetscObject)flowField, "Numerical Solution");
+        ierr = PetscObjectSetName(((PetscObject)flowData->flowField), "Numerical Solution");
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = VecSetOptionsPrefix(flowField, "num_sol_");
+        ierr = VecSetOptionsPrefix(flowData->flowField, "num_sol_");
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Setup the TS
@@ -446,24 +450,24 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         // Set initial conditions from the exact solution
         ierr = TSSetComputeInitialCondition(ts, SetInitialConditions);
         CHKERRABORT(PETSC_COMM_WORLD, ierr); /* Must come after SetFromOptions() */
-        ierr = SetInitialConditions(ts, flowField);
+        ierr = SetInitialConditions(ts, flowData->flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         ierr = TSGetTime(ts, &t);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = DMSetOutputSequenceNumber(dm, 0, t);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = DMTSCheckFromOptions(ts, flowField);
+        ierr = DMTSCheckFromOptions(ts, flowData->flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = TSMonitorSet(ts, MonitorError, NULL, NULL);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        ierr = TSSolve(ts, flowField);
+        ierr = TSSolve(ts, flowData->flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Compare the actual vs expected values
-        ierr = DMTSCheckFromOptions(ts, flowField);
+        ierr = DMTSCheckFromOptions(ts, flowData->flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Cleanup
@@ -471,7 +475,7 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = TSDestroy(&ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = VecDestroy(&flowField);
+        ierr = FlowDestroy(&flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = PetscBagDestroy(&parameterBag);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);

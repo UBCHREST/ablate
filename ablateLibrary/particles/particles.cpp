@@ -13,7 +13,7 @@ void ablate::particles::Particles::SetExactSolution(std::shared_ptr<mathFunction
 }
 void ablate::particles::Particles::InitializeFlow(std::shared_ptr<flow::Flow> flow, std::shared_ptr<solve::TimeStepper> flowTimeStepper) {
     // link the flow to the particles
-    ParticleInitializeFlow(particleData, flow->GetMesh().GetDomain(), flow->GetFlowSolution()) >> checkError;
+    ParticleInitializeFlow(particleData, flow->GetFlowData()) >> checkError;
 
     // name the particle domain
     PetscObjectSetOptionsPrefix((PetscObject)(particleData->dm), "particle_") >> checkError;

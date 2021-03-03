@@ -5,15 +5,19 @@
 
 struct _FlowData {
     DM dm;               /* flow domain */
-    Vec flowSolution;  /* The solution to the flow */
+    Vec flowField;  /* The solution to the flow */
 
     void* data; /* implementation-specific data */
 
+    PetscInt numberFlowFields;
+    const char *const * flowFieldNames;
 };
 
 typedef struct _FlowData* FlowData;
 
-PetscErrorCode FlowCreate(FlowData* flow, PetscInt numberOfFields);
-PetscErrorCode FlowDestroy(FlowData* flow);
+PETSC_EXTERN PetscErrorCode FlowCreate(FlowData* flow);
+PetscErrorCode FlowRegisterFields(FlowData flow, PetscInt numberFlowFields, const char *const *flowFields);
+
+PETSC_EXTERN PetscErrorCode FlowDestroy(FlowData* flow);
 
 #endif  // ABLATELIBRARY_FLOW_H

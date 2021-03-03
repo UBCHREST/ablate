@@ -83,7 +83,7 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     TSGetDM(ts, &dm) >> checkError;
     DMSetOutputSequenceNumber(dm, 0, time) >> checkError;
 
-    TSMonitorSet(ts, MonitorFlowError, NULL, NULL) >> checkError;
+    TSMonitorSet(ts, MonitorError, NULL, NULL) >> checkError;
 
     TSSolve(ts, solutionVec);
 }
