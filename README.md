@@ -52,7 +52,9 @@ Taylor approximation converging at order (.*)<expects> =2
 ```
 and one value equal to 2.  When using the compare tool, you must escape all regex characters on the line being compared. 
 
-
+There are some useful command line flags that can be used when debugging tests:
+- --inmpitestrun=true : when pass in (along with google test single test selection) allows for a test to be run/debug directly.
+- --keepOutputFile=true : keeps all output files from the tests and reports the file name.
 
 ## Formatting Linting
 The c++ code style is based upon the [Google Style Guide](https://google.github.io/styleguide/) and enforced using clang-format during PR tests.  Specific overrides to the style are controlled in the .clang-format file.

@@ -2,10 +2,6 @@
 #define ABLATE_PARTICLES_H
 
 #include <petsc.h>
-#include "particleInitializer.h"
-
-// Define field id for mass
-#define MASS 0
 
 struct _ParticleData {
     PetscBag parameters; /* constant particle parameters */

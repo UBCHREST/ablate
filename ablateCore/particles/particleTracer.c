@@ -1,4 +1,6 @@
 #include "particleTracer.h"
+#include <petsc/private/dmswarmimpl.h>
+#include <petscdmswarm.h>
 
 /* x_t = v
 
@@ -55,39 +57,6 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     ierr = VecRestoreArrayRead(pvel, &v);CHKERRQ(ierr);
     ierr = VecRestoreArray(F, &f);CHKERRQ(ierr);
     ierr = DMRestoreGlobalVector(sdm, &pvel);CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode monitorParticleError(TS ts, PetscInt step, PetscReal time, Vec u, void *ctx) {
-    ParticleData adv = (ParticleData)ctx;
-    DM sdm;
-    const PetscScalar *xp0, *xp;
-    PetscReal error = 0.0;
-    PetscInt dim, Np, p;
-    MPI_Comm comm;
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-    ierr = PetscObjectGetComm((PetscObject)ts, &comm);CHKERRQ(ierr);
-    ierr = TSGetDM(ts, &sdm);CHKERRQ(ierr);
-    ierr = DMGetDimension(sdm, &dim);CHKERRQ(ierr);
-    ierr = DMSwarmGetLocalSize(sdm, &Np);CHKERRQ(ierr);
-    ierr = VecGetArrayRead(adv->initialLocation, &xp0);CHKERRQ(ierr);
-    ierr = VecGetArrayRead(u, &xp);CHKERRQ(ierr);
-    for (p = 0; p < Np; ++p) {
-        PetscScalar x[3];
-        PetscReal x0[3];
-        PetscReal perror = 0.0;
-        PetscInt d;
-
-        for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p * dim + d]);
-        ierr = adv->exactSolution(dim, time, x0, 1, x, adv->exactSolutionContext);CHKERRQ(ierr);
-        for (d = 0; d < dim; ++d) perror += PetscSqr(PetscRealPart(x[d] - xp[p * dim + d]));
-        error += perror;
-    }
-    ierr = VecRestoreArrayRead(adv->initialLocation, &xp0);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(u, &xp);CHKERRQ(ierr);
-    ierr = PetscPrintf(comm, "Timestep: %04d time = %-8.4g \t L_2 Particle Error: [%2.3g]\n", (int)step, (double)time, (double)error);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -198,10 +167,7 @@ PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particle
     ierr = DMCreateGlobalVector(particles->dm, &(particles->particleSolution));CHKERRQ(ierr);
     ierr = PetscObjectCompose((PetscObject)flowTs, "_SwarmSol", (PetscObject)(particles->particleSolution));CHKERRQ(ierr);  // do else where
 
-    // If the exact solution is set, setup the monitors
-    if (particles->exactSolution) {
-        ierr = TSMonitorSet(particleTs, monitorParticleError, particles, NULL);CHKERRQ(ierr);
-    }
+    // Set up the TS
     ierr = TSSetFromOptions(particleTs);CHKERRQ(ierr);
 
     // extract the initial solution
