@@ -10,6 +10,8 @@ PetscErrorCode ParticleCreate(ParticleData *particles, PetscInt ndims) {
     (*particles)->parameters = NULL;
     (*particles)->data = NULL;
     (*particles)->exactSolution = NULL;
+    (*particles)->timeInitial = 0.0;
+    (*particles)->timeFinal = 0.0;
 
     // create and associate the dm
     ierr = DMCreate(PETSC_COMM_WORLD, &(*particles)->dm);CHKERRQ(ierr);
