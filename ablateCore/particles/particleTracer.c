@@ -17,7 +17,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     DMInterpolationInfo ictx;
     const PetscScalar *coords, *v;
     PetscScalar *f;
-    PetscInt vf[1] = {0};
+    PetscInt vf[1] = {particles->flowVelocityFieldIndex};
     PetscInt dim, Np;
     PetscErrorCode ierr;
 
@@ -28,6 +28,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     ierr = DMGetGlobalVector(sdm, &pvel);CHKERRQ(ierr);
     ierr = DMSwarmGetLocalSize(sdm, &Np);CHKERRQ(ierr);
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+
     /* Get local velocity */
     ierr = DMCreateSubDM(dm, 1, vf, &vis, &vdm);CHKERRQ(ierr);
     ierr = VecGetSubVector(u, vis, &vel);CHKERRQ(ierr);
