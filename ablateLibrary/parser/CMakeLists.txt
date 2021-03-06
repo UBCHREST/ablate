@@ -1,0 +1,10 @@
+target_sources(ablateLibrary
+        PUBLIC
+        registrar.hpp
+        factory.hpp
+        argumentIdentifier.hpp
+        listing.cpp
+        listing.h
+        yamlParser.cpp
+        yamlParser.hpp
+        )

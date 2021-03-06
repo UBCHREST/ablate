@@ -1,4 +1,4 @@
-FROM ghcr.io/ubchrest/petsc-docker/petsc-build:4cb72fa8
+FROM ghcr.io/ubchrest/petsc-docker/petsc-build:42122872
 
 # Setup the petsc env
 ENV PETSC_ARCH=arch-opt
@@ -18,4 +18,5 @@ run cmake -S /source/ -B .
 run make -j $(nproc)
 
 # Specify Entry Point for tests
+CMD ["ctest"]
 CMD bash -c "make format-check && ctest"

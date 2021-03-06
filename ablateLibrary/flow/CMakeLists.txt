@@ -1,0 +1,13 @@
+target_sources(ablateLibrary
+        PUBLIC
+        flow.cpp
+        flow.hpp
+        lowMachFlow.hpp
+        lowMachFlow.cpp
+        incompressibleFlow.hpp
+        incompressibleFlow.cpp
+        flowFieldSolution.cpp
+        flowFieldSolution.hpp
+        boundaryCondition.cpp
+        boundaryCondition.hpp
+        )
