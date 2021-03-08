@@ -1,17 +1,13 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "parameters/parameters.hpp"
+#include "parameters/mockParameters.hpp"
 
 using ::testing::AtLeast;
 
 namespace ablateTesting::parameters {
 
 using namespace ablate::parameters;
-
-class MockParameters : public Parameters {
-   public:
-    MOCK_METHOD(std::optional<std::string>, GetString, (std::string paramName), (const, override));
-};
 
 // double based tests
 class ParameterTestFixtureDouble : public testing::TestWithParam<std::tuple<std::string, double>> {};

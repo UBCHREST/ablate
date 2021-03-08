@@ -41,10 +41,19 @@ int main(int argc, char **args) {
     }
     {
         // create the yaml parser
-        std::shared_ptr<parser::Factory> parser = std::make_shared<parser::YamlParser>(filePath);
+        std::shared_ptr<parser::YamlParser> parser = std::make_shared<parser::YamlParser>(filePath);
 
         // run with the parser
         Builder::Run(parser);
+
+        // check for unused parameters
+        auto unusedValues = parser->GetUnusedValues();
+        if(!unusedValues.empty()){
+            std::cout << "WARNING: The following input parameters were not used:" << std::endl;
+            for(auto unusedValue : unusedValues){
+                std::cout << unusedValue << std::endl;
+            }
+        }
     }
     PetscFinalize() >> checkError;
 }
