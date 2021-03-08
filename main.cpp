@@ -5,6 +5,7 @@
 #include "parser/yamlParser.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
+#include "monitors/runEnvironment.hpp"
 
 using namespace ablate;
 
@@ -42,6 +43,10 @@ int main(int argc, char **args) {
     {
         // create the yaml parser
         std::shared_ptr<parser::YamlParser> parser = std::make_shared<parser::YamlParser>(filePath);
+
+        // setup the monitor
+        auto setupEnvironmentParameters = parser->GetValue<ablate::parameters::Parameters>("environment");
+        monitors::RunEnvironment::Setup(filePath, *setupEnvironmentParameters);
 
         // run with the parser
         Builder::Run(parser);

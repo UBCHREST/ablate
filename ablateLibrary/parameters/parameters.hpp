@@ -8,6 +8,17 @@
 namespace ablate::parameters {
 
 class Parameters {
+   private:
+
+    // overall general implantation
+    template <typename T>
+    static void toValue(const std::string& inputString, T& outputValue){
+        std::istringstream ss(inputString);
+        ss >> outputValue;
+    }
+    // value specific cases
+    static void toValue(const std::string& inputString, bool& outputValue);
+
    public:
     virtual ~Parameters() = default;
 
@@ -17,9 +28,8 @@ class Parameters {
     std::optional<T> Get(std::string paramName) const {
         auto value = GetString(paramName);
         if (value.has_value()) {
-            std::istringstream ss(value.value());
             T num;
-            ss >> num;
+            toValue(value.value(), num);
             return num;
         } else {
             return {};
@@ -30,9 +40,8 @@ class Parameters {
     T Get(std::string paramName, T defaultValue) const {
         auto value = GetString(paramName);
         if (value.has_value()) {
-            std::istringstream ss(value.value());
             T num;
-            ss >> num;
+            toValue(value.value(), num);
             return num;
         } else {
             return defaultValue;
@@ -43,9 +52,8 @@ class Parameters {
     T GetExpect(std::string paramName) const {
         auto value = GetString(paramName);
         if (value.has_value()) {
-            std::istringstream ss(value.value());
             T num;
-            ss >> num;
+            toValue(value.value(), num);
             return num;
         } else {
             throw ParameterException(paramName);

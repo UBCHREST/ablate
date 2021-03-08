@@ -59,6 +59,12 @@ class Factory {
 
         return results;
     }
+
+    template <typename Interface>
+    inline auto GetValue(const std::string inputName){
+        return Get(ArgumentIdentifier<Interface>{.inputName = inputName});
+    }
+
 };
 }  // namespace ablate::parser
 

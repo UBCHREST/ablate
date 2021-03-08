@@ -49,7 +49,7 @@ ablate::monitors::RunEnvironment::RunEnvironment(std::filesystem::path inputPath
         std::filesystem::create_directories(outputDirectory);
 
         // copy over the input file
-        std::filesystem::copy(inputPath, outputDirectory/inputPath.filename());
+        std::filesystem::copy(inputPath, outputDirectory/inputPath.filename(), std::filesystem::copy_options::overwrite_existing);
     }
 
 }

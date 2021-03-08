@@ -5,7 +5,6 @@
 #include "monitors/runEnvironment.hpp"
 #include <stdlib.h>
 #include <time.h>
-#include <stdio.h>
 #include <string>
 #include "parameters/mockParameters.hpp"
 

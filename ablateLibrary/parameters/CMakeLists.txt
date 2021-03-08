@@ -1,6 +1,7 @@
 target_sources(ablateLibrary
         PUBLIC
         parameters.hpp
+        parameters.cpp
         parameterException.hpp
         mapParameters.cpp
         mapParameters.hpp

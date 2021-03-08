@@ -32,6 +32,8 @@ class Flow : public solve::Solvable {
 
     mesh::Mesh& GetMesh() { return *mesh; }
 
+    const std::string& GetName() const { return name; }
+
     virtual void SetupSolve(TS& timeStepper) override = 0;
 
     Vec GetSolutionVector() override { return flowData->flowField; }
