@@ -87,6 +87,13 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
 
     TSSolve(ts, solutionVec);
 }
+void ablate::solve::TimeStepper::AddMonitor(std::shared_ptr<monitors::Monitor> monitor) {
+    // store a reference to the monitor
+    monitors.push_back(monitor);
+
+    // register the monitor with the ts
+    TSMonitorSet(ts, monitor->GetPetscFunction(), monitor->GetContext(), NULL) >> checkError;
+}
 
 REGISTERDEFAULT(ablate::solve::TimeStepper, ablate::solve::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
                 ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"));

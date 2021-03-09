@@ -61,7 +61,7 @@ class Factory {
     }
 
     template <typename Interface>
-    inline auto GetValue(const std::string inputName){
+    inline auto GetByName(const std::string inputName){
         return Get(ArgumentIdentifier<Interface>{.inputName = inputName});
     }
 

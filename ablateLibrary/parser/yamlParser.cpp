@@ -92,8 +92,8 @@ std::vector<std::shared_ptr<ablate::parser::Factory>> ablate::parser::YamlParser
         if (childFactories.count(childName) == 0) {
             auto childParameter = parameter[i];
 
-            if (!childParameter.IsMap()) {
-                throw std::invalid_argument("item " + childName + " is expected to be a map in " + nodePath + "/" + name);
+            if (!childParameter.IsDefined()) {
+                throw std::invalid_argument("item " + childName + " is expected to be a defined in " + nodePath + "/" + name);
             }
 
             std::string childPath = nodePath + "/" + childName;

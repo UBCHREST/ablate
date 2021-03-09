@@ -9,7 +9,7 @@ void ablate::monitors::flow::Hdf5Output::Register(std::shared_ptr<ablate::flow::
     flow = flowIn;
 
     // build the file name
-    auto fileName = monitors::RunEnvironment::Get().GetOutputDirectory() / flow->GetName();
+    auto fileName = monitors::RunEnvironment::Get().GetOutputDirectory() / (flow->GetName() + extension);
 
     // setup the petsc viewer
     PetscViewerHDF5Open(PETSC_COMM_WORLD, fileName.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;

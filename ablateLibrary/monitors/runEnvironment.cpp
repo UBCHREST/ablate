@@ -30,7 +30,7 @@ ablate::monitors::RunEnvironment::RunEnvironment(std::filesystem::path inputPath
 
         // As string
         std::stringstream ss;
-        ss << std::put_time(std::localtime(&startTimeStruct), "_%Y-%m-%dT%X");
+        ss << std::put_time(std::localtime(&startTimeStruct), "_%Y-%m-%dT%H-%M-%S");
 
         // append to the directory
         outputDirectory += ss.str();

@@ -45,7 +45,7 @@ int main(int argc, char **args) {
         std::shared_ptr<parser::YamlParser> parser = std::make_shared<parser::YamlParser>(filePath);
 
         // setup the monitor
-        auto setupEnvironmentParameters = parser->GetValue<ablate::parameters::Parameters>("environment");
+        auto setupEnvironmentParameters = parser->GetByName<ablate::parameters::Parameters>("environment");
         monitors::RunEnvironment::Setup(filePath, *setupEnvironmentParameters);
 
         // run with the parser

@@ -5,6 +5,8 @@
 #include <map>
 #include <memory>
 #include "solvable.hpp"
+#include "monitors/monitor.hpp"
+#include <vector>
 
 namespace ablate::solve {
 class TimeStepper {
@@ -12,6 +14,7 @@ class TimeStepper {
     TS ts;            /** The PETSC time stepper**/
     MPI_Comm comm;    /** the comm used for this ts and any children**/
     std::string name; /** the name for this time stepper **/
+    std::vector<std::shared_ptr<monitors::Monitor>> monitors; /** the monitors **/
 
    public:
     TimeStepper(std::string name, std::map<std::string, std::string> arguments);
@@ -20,6 +23,8 @@ class TimeStepper {
     TS& GetTS() { return ts; }
 
     void Solve(std::shared_ptr<Solvable>);
+
+    void AddMonitor(std::shared_ptr<monitors::Monitor>);
 };
 }  // namespace ablate::solve
 

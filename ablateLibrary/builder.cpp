@@ -4,6 +4,7 @@
 #include "solve/timeStepper.hpp"
 #include "utilities/petscOptions.hpp"
 #include "version.h"
+#include "monitors/flow/monitor.hpp"
 
 void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     // get the global arguments
@@ -14,8 +15,15 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     auto timeStepper = parser->Get(parser::ArgumentIdentifier<solve::TimeStepper>{"timestepper"});
 
     // assume one flow field right now
-    auto flow = parser->Get(parser::ArgumentIdentifier<flow::Flow>{"flow"});
+    auto flow = parser->GetByName<flow::Flow>("flow");
     flow->SetupSolve(timeStepper->GetTS());
+
+    // get the monitors from the flow factory
+    auto flowMonitors = parser->GetFactory("flow")->GetByName<std::vector<monitors::flow::Monitor>>("monitors");
+    for(auto flowMonitor : flowMonitors){
+        flowMonitor->Register(flow);
+        timeStepper->AddMonitor(flowMonitor);
+    }
 
     // get any particles that may be in the flow
     auto particleList = parser->Get(parser::ArgumentIdentifier<std::vector<particles::Particles>>{"particles"});

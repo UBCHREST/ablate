@@ -10,6 +10,9 @@ class Hdf5Output: public monitors::flow::Monitor{
 
     static PetscErrorCode OutputFlow(TS ts,PetscInt steps,PetscReal time,Vec u,void *mctx);
 
+   protected:
+    const std::string extension = ".hdf5";
+
    public:
     Hdf5Output() = default;
     ~Hdf5Output() override;
