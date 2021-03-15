@@ -1,5 +1,7 @@
 #include "builder.hpp"
 #include "flow/flow.hpp"
+#include "monitors/flow/flowMonitor.hpp"
+#include "monitors/particles/particleMonitor.hpp"
 #include "particles/particles.hpp"
 #include "solve/timeStepper.hpp"
 #include "utilities/petscOptions.hpp"
@@ -14,15 +16,34 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     auto timeStepper = parser->Get(parser::ArgumentIdentifier<solve::TimeStepper>{"timestepper"});
 
     // assume one flow field right now
-    auto flow = parser->Get(parser::ArgumentIdentifier<flow::Flow>{"flow"});
+    auto flow = parser->GetByName<flow::Flow>("flow");
     flow->SetupSolve(timeStepper->GetTS());
 
-    // get any particles that may be in the flow
-    auto particleList = parser->Get(parser::ArgumentIdentifier<std::vector<particles::Particles>>{"particles"});
+    // get the monitors from the flow factory
+    auto flowMonitors = parser->GetFactory("flow")->GetByName<std::vector<monitors::flow::FlowMonitor>>("monitors", std::vector<std::shared_ptr<monitors::flow::FlowMonitor>>());
+    for (auto flowMonitor : flowMonitors) {
+        flowMonitor->Register(flow);
+        timeStepper->AddMonitor(flowMonitor);
+    }
 
-    // initialize the flow for each
-    for (auto particle : particleList) {
-        particle->InitializeFlow(flow, timeStepper);
+    // get any particles that may be in the flow
+    auto particleList = parser->GetByName<std::vector<particles::Particles>>("particles", std::vector<std::shared_ptr<particles::Particles>>());
+    if (!particleList.empty()) {
+        auto particleFactorySequence = parser->GetFactorySequence("particles");
+
+        // initialize the flow for each
+        for (auto particleIndex = 0; particleIndex < particleList.size(); particleIndex++) {
+            auto particle = particleList[particleIndex];
+            particle->InitializeFlow(flow, timeStepper);
+
+            // Get any particle monitors
+            auto particleMonitors =
+                particleFactorySequence[particleIndex]->GetByName<std::vector<monitors::particles::ParticleMonitor>>("monitors", std::vector<std::shared_ptr<monitors::particles::ParticleMonitor>>());
+            for (auto particleMonitor : particleMonitors) {
+                particleMonitor->Register(particle);
+                timeStepper->AddMonitor(particleMonitor);
+            }
+        }
     }
 
     // run

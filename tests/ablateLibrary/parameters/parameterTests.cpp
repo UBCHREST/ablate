@@ -1,5 +1,6 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "parameters/mockParameters.hpp"
 #include "parameters/parameters.hpp"
 
 using ::testing::AtLeast;
@@ -7,11 +8,6 @@ using ::testing::AtLeast;
 namespace ablateTesting::parameters {
 
 using namespace ablate::parameters;
-
-class MockParameters : public Parameters {
-   public:
-    MOCK_METHOD(std::optional<std::string>, GetString, (std::string paramName), (const, override));
-};
 
 // double based tests
 class ParameterTestFixtureDouble : public testing::TestWithParam<std::tuple<std::string, double>> {};
@@ -201,7 +197,103 @@ TEST_P(ParameterTestFixtureInt, GetShouldReturnDefaultValue) {
 
 INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureInt, ::testing::Values(std::make_tuple("22.3", 22), std::make_tuple(" 3 ", 3), std::make_tuple("-23", -23)));
 
-// int based tests
+// bool based tests
+class ParameterTestFixtureBool : public testing::TestWithParam<std::tuple<std::string, bool>> {};
+
+TEST_P(ParameterTestFixtureBool, GetShouldReturnValue) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedString));
+
+    // act
+    auto actualValue = mockParameters.Get<bool>(key);
+
+    // assert
+    EXPECT_TRUE(actualValue.has_value());
+    EXPECT_EQ(actualValue.value(), expectedValue);
+}
+
+TEST_P(ParameterTestFixtureBool, GetShouldReturnEmptyOptional) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1));
+
+    // act
+    auto actualValue = mockParameters.Get<bool>(key);
+
+    // assert
+    EXPECT_FALSE(actualValue.has_value());
+}
+
+TEST_P(ParameterTestFixtureBool, GetExpectShouldReturnValue) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedString));
+
+    // act
+    auto actualValue = mockParameters.GetExpect<bool>(key);
+
+    // assert
+    EXPECT_DOUBLE_EQ(actualValue, expectedValue);
+}
+
+TEST_P(ParameterTestFixtureBool, GetShouldThrowExceptionWhenNotFound) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1));
+
+    // act
+    // assert
+    EXPECT_THROW(mockParameters.GetExpect<bool>(key), ParameterException);
+}
+
+TEST_P(ParameterTestFixtureBool, GetExpectShouldReturnValueEvenWithDefault) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedString));
+
+    // act
+    int actualValue = mockParameters.Get<bool>(key, true);
+
+    // assert
+    EXPECT_EQ(actualValue, expectedValue);
+}
+
+TEST_P(ParameterTestFixtureBool, GetShouldReturnDefaultValue) {
+    // arrange
+    const auto [expectedString, _] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1));
+
+    // act
+    auto actualValue = mockParameters.Get<bool>(key, true);
+
+    // assert
+    EXPECT_EQ(actualValue, true);
+}
+
+INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureBool,
+                         ::testing::Values(std::make_tuple("true", true), std::make_tuple("false", false), std::make_tuple("True", true), std::make_tuple("TRUE", true), std::make_tuple("1", true),
+                                           std::make_tuple("0", false), std::make_tuple("yes", true)));
+
+// string based tests
 class ParameterTestFixtureString : public testing::TestWithParam<std::tuple<std::string, std::string>> {};
 
 TEST_P(ParameterTestFixtureString, GetShouldReturnValue) {

@@ -1,0 +1,12 @@
+Timestep: 0000 time = 0        	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-15 <1E-15 <1E-13
+Timestep: 0001 time = 0.01     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <1
+Timestep: 0002 time = 0.02     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <1
+Timestep: 0003 time = 0.03     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <1
+Timestep: 0004 time = 0.04     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <1
+Timestep: 0005 time = 0.05     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <1
+ResultFiles:
+particles.hdf5
+particles.xmf
+theFlowField.hdf5
+theFlowField.xmf
+tracerParticles3D.yaml

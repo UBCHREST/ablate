@@ -6,7 +6,6 @@ ablate::mesh::BoxMesh::BoxMesh(std::string name, std::map<std::string, std::stri
     DMPlexCreateBoxMesh(comm, dimensions, PETSC_TRUE, NULL, NULL, NULL, NULL, PETSC_TRUE, &dm) >> checkError;
     DMSetOptionsPrefix(dm, name.c_str()) >> checkError;
     DMSetFromOptions(dm) >> checkError;
-    DMViewFromOptions(dm, NULL, "-dm_view") >> checkError;
 }
 
 REGISTER(ablate::mesh::Mesh, ablate::mesh::BoxMesh, "a simple uniform box", ARG(std::string, "name", "the name of the mesh/domain"),

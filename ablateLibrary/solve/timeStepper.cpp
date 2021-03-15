@@ -81,11 +81,17 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     // reset the dm
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
-    DMSetOutputSequenceNumber(dm, 0, time) >> checkError;
 
     TSMonitorSet(ts, MonitorError, NULL, NULL) >> checkError;
 
     TSSolve(ts, solutionVec);
+}
+void ablate::solve::TimeStepper::AddMonitor(std::shared_ptr<monitors::Monitor> monitor) {
+    // store a reference to the monitor
+    monitors.push_back(monitor);
+
+    // register the monitor with the ts
+    TSMonitorSet(ts, monitor->GetPetscFunction(), monitor->GetContext(), NULL) >> checkError;
 }
 
 REGISTERDEFAULT(ablate::solve::TimeStepper, ablate::solve::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),

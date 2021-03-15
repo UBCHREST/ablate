@@ -7,14 +7,14 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
                                        std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions)
     : Flow(mesh, name, arguments, initialization, boundaryConditions) {
     // Setup the problem
-    LowMachFlow_SetupDiscretization(mesh->GetDomain()) >> checkError;
+    LowMachFlow_SetupDiscretization(flowData, mesh->GetDomain()) >> checkError;
 
     // Pack up any of the parameters
     PetscScalar constants[TOTAL_LOW_MACH_FLOW_PARAMETERS];
     parameters->Fill(TOTAL_LOW_MACH_FLOW_PARAMETERS, lowMachFlowParametersTypeNames, constants);
 
     // Start the problem setup
-    LowMachFlow_StartProblemSetup(mesh->GetDomain(), TOTAL_LOW_MACH_FLOW_PARAMETERS, constants) >> checkError;
+    LowMachFlow_StartProblemSetup(flowData, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants) >> checkError;
 
     // Apply any boundary condition
     PetscDS prob;
@@ -23,11 +23,16 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
     // add each boundary condition
     for (auto boundary : boundaryConditions) {
         PetscInt id = boundary->GetLabelId();
+        auto fieldId = GetFieldId(boundary->GetFieldName());
+        if (!fieldId) {
+            throw std::invalid_argument("unknown field for boundary: " + boundary->GetFieldName());
+        }
+
         PetscDSAddBoundary(prob,
                            DM_BC_ESSENTIAL,
                            boundary->GetBoundaryName().c_str(),
                            boundary->GetLabelName().c_str(),
-                           GetFieldId(boundary->GetFieldName()),
+                           fieldId.value(),
                            0,
                            NULL,
                            (void (*)(void))boundary->GetBoundaryFunction(),
@@ -41,9 +46,12 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
     // Set the exact solution
     for (auto exact : initialization) {
         auto fieldId = GetFieldId(exact->GetName());
+        if (!fieldId) {
+            throw std::invalid_argument("unknown field for initialization: " + exact->GetName());
+        }
 
-        PetscDSSetExactSolution(prob, fieldId, exact->GetSolutionField().GetPetscFunction(), exact->GetSolutionField().GetContext()) >> checkError;
-        PetscDSSetExactSolutionTimeDerivative(prob, fieldId, exact->GetTimeDerivative().GetPetscFunction(), exact->GetTimeDerivative().GetContext()) >> checkError;
+        PetscDSSetExactSolution(prob, fieldId.value(), exact->GetSolutionField().GetPetscFunction(), exact->GetSolutionField().GetContext()) >> checkError;
+        PetscDSSetExactSolutionTimeDerivative(prob, fieldId.value(), exact->GetTimeDerivative().GetPetscFunction(), exact->GetTimeDerivative().GetContext()) >> checkError;
     }
 }
 
@@ -52,26 +60,14 @@ void ablate::flow::LowMachFlow::SetupSolve(TS &ts) {
     TSSetDM(ts, mesh->GetDomain()) >> checkError;
 
     // finish setup and assign flow field
-    LowMachFlow_CompleteProblemSetup(ts, &flowSolution);
+    LowMachFlow_CompleteProblemSetup(flowData, ts);
 
     // Name the flow field
-    PetscObjectSetName((PetscObject)flowSolution, "Low Mach Numerical Solution") >> checkError;
-    VecSetOptionsPrefix(flowSolution, "num_sol_") >> checkError;
+    PetscObjectSetName((PetscObject)(flowData->flowField), "Low Mach Numerical Solution") >> checkError;
+    VecSetOptionsPrefix(flowData->flowField, "num_sol_") >> checkError;
 
     // set the dm on the ts
     TSSetDM(ts, mesh->GetDomain()) >> checkError;
-}
-
-int ablate::flow::LowMachFlow::GetFieldId(const std::string &field) {
-    if (field == "velocity") {
-        return VEL;
-    } else if (field == "pressure") {
-        return PRES;
-    } else if (field == "temperature") {
-        return TEMP;
-    } else {
-        throw std::invalid_argument("invalid flow field (" + field + ")");
-    }
 }
 
 REGISTER(ablate::flow::Flow, ablate::flow::LowMachFlow, "low mach flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),

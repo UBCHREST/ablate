@@ -5,6 +5,7 @@
 #include "parser/yamlParser.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
+#include "monitors/runEnvironment.hpp"
 
 using namespace ablate;
 
@@ -22,7 +23,7 @@ int main(int argc, char **args) {
 
     // check to see if we should print options
     PetscBool printParserOptions = PETSC_FALSE;
-    PetscOptionsGetBool(NULL, NULL, "-parserHelp", &printParserOptions, NULL) >> checkError;
+    PetscOptionsGetBool(NULL, NULL, "--parserHelp", &printParserOptions, NULL) >> checkError;
     if (printParserOptions) {
         std::cout << parser::Listing::Get() << std::endl;
     }
@@ -30,9 +31,9 @@ int main(int argc, char **args) {
     // check to see if we should print options
     char filename[PETSC_MAX_PATH_LEN] = "";
     PetscBool fileSpecified = PETSC_FALSE;
-    PetscOptionsGetString(NULL, NULL, "-file", filename, PETSC_MAX_PATH_LEN, &fileSpecified) >> checkError;
+    PetscOptionsGetString(NULL, NULL, "--input", filename, PETSC_MAX_PATH_LEN, &fileSpecified) >> checkError;
     if (!fileSpecified) {
-        throw std::invalid_argument("the -file must be specified");
+        throw std::invalid_argument("the --input must be specified");
     }
 
     std::filesystem::path filePath(filename);
@@ -41,10 +42,23 @@ int main(int argc, char **args) {
     }
     {
         // create the yaml parser
-        std::shared_ptr<parser::Factory> parser = std::make_shared<parser::YamlParser>(filePath);
+        std::shared_ptr<parser::YamlParser> parser = std::make_shared<parser::YamlParser>(filePath);
+
+        // setup the monitor
+        auto setupEnvironmentParameters = parser->GetByName<ablate::parameters::Parameters>("environment");
+        monitors::RunEnvironment::Setup(filePath, *setupEnvironmentParameters);
 
         // run with the parser
         Builder::Run(parser);
+
+        // check for unused parameters
+        auto unusedValues = parser->GetUnusedValues();
+        if(!unusedValues.empty()){
+            std::cout << "WARNING: The following input parameters were not used:" << std::endl;
+            for(auto unusedValue : unusedValues){
+                std::cout << unusedValue << std::endl;
+            }
+        }
     }
     PetscFinalize() >> checkError;
 }

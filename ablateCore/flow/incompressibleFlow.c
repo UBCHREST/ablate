@@ -4,6 +4,7 @@ The incompressible flow formulation outlined in docs/content/formulations/incomp
 F*/
 
 const char *incompressibleFlowParametersTypeNames[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS + 1] = {"strouhal", "reynolds", "peclet", "mu", "k", "cp", "unknown"};
+static const char *incompressibleFlowFieldNames[TOTAL_INCOMPRESSIBLE_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
 
 // \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u}
 static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
@@ -248,7 +249,7 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm) {
+PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
     DM cdm = dm;
     PetscFE fe[3];
     MPI_Comm comm;
@@ -256,6 +257,9 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
+
+    //Store the field data
+    flowData->dm = dm;
 
     // determine if it a simplex element and the number of dimensions
     DMPolytopeType ct;
@@ -278,7 +282,7 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm) {
 
     ierr = PetscObjectGetComm((PetscObject)dm, &comm);CHKERRQ(ierr);
     ierr = PetscFECreateDefault(comm, dim, dim, simplex, fieldPrefix, PETSC_DEFAULT, &fe[0]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[VEL], "velocity");CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)fe[VEL], incompressibleFlowFieldNames[VEL]);CHKERRQ(ierr);
 
     // pressure
     ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
@@ -286,7 +290,7 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm) {
 
     ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[1]);CHKERRQ(ierr);
     ierr = PetscFECopyQuadrature(fe[VEL], fe[PRES]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[PRES], "pressure");CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)fe[PRES], incompressibleFlowFieldNames[PRES]);CHKERRQ(ierr);
 
     // temperature
     ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
@@ -294,7 +298,10 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm) {
 
     ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[2]);CHKERRQ(ierr);
     ierr = PetscFECopyQuadrature(fe[VEL], fe[TEMP]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[TEMP], "temperature");CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)fe[TEMP], incompressibleFlowFieldNames[TEMP]);CHKERRQ(ierr);
+
+    // register the fields
+    ierr = FlowRegisterFields(flowData, TOTAL_INCOMPRESSIBLE_FLOW_FIELDS, incompressibleFlowFieldNames);CHKERRQ(ierr);
 
     /* Set discretization and boundary conditions for each mesh */
     ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);
@@ -327,12 +334,12 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, PetscInt numberParameters, PetscScalar parameters[]) {
+PetscErrorCode IncompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt numberParameters, PetscScalar parameters[]) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
     PetscDS prob;
-    ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
+    ierr = DMGetDS(flowData->dm, &prob);CHKERRQ(ierr);
 
     // V, W, Q Test Function
     ierr = PetscDSSetResidual(prob, VTEST, vIntegrandTestFunction, vIntegrandTestGradientFunction);CHKERRQ(ierr);
@@ -354,7 +361,7 @@ PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, PetscInt numberParame
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_CompleteProblemSetup(TS ts, Vec *flowField) {
+PetscErrorCode IncompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
     PetscErrorCode ierr;
     DM dm;
 
@@ -362,7 +369,7 @@ PetscErrorCode IncompressibleFlow_CompleteProblemSetup(TS ts, Vec *flowField) {
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
 
     ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
-    ierr = DMCreateGlobalVector(dm, flowField);CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(dm, &(flowData->flowField));CHKERRQ(ierr);
 
     ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
 

@@ -1,11 +1,7 @@
 #if !defined(lowMachFlow_h)
 #define lowMachFlow_h
 #include <petsc.h>
-
-// Define field id for velocity, pressure, temperature
-#define VEL 0
-#define PRES 1
-#define TEMP 2
+#include "flow.h"
 
 // Define the test field number
 #define VTEST 0
@@ -14,6 +10,8 @@
 
 typedef enum { STROUHAL, REYNOLDS, FROUDE, PECLET, HEATRELEASE, GAMMA, PTH, MU, K, CP, BETA, GRAVITY_DIRECTION, TOTAL_LOW_MACH_FLOW_PARAMETERS } LowMachFlowParametersTypes;
 PETSC_EXTERN const char* lowMachFlowParametersTypeNames[TOTAL_LOW_MACH_FLOW_PARAMETERS + 1];
+
+typedef enum {VEL, PRES, TEMP, TOTAL_LOW_MACH_FLOW_FIELDS} LowMachFlowFields;
 
 typedef struct {
     PetscReal strouhal;
@@ -34,9 +32,9 @@ PETSC_EXTERN PetscErrorCode LowMachFlow_PackParameters(LowMachFlowParameters *pa
 PETSC_EXTERN PetscErrorCode LowMachFlow_ParametersFromPETScOptions(PetscBag *flowParametersBag);
 
 // Define the functions to setup the low mach flow
-PETSC_EXTERN PetscErrorCode LowMachFlow_SetupDiscretization(DM dm);
-PETSC_EXTERN PetscErrorCode LowMachFlow_StartProblemSetup(DM dm, PetscInt, PetscScalar []);
-PETSC_EXTERN PetscErrorCode LowMachFlow_CompleteProblemSetup(TS ts, Vec *flowField);
+PETSC_EXTERN PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm);
+PETSC_EXTERN PetscErrorCode LowMachFlow_StartProblemSetup(FlowData flowData, PetscInt, PetscScalar []);
+PETSC_EXTERN PetscErrorCode LowMachFlow_CompleteProblemSetup(FlowData flowData, TS ts);
 PETSC_EXTERN PetscErrorCode LowMachFlow_CompleteFlowInitialization(DM dm, Vec u);
 
 #endif

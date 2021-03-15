@@ -1,11 +1,7 @@
 #if !defined(incompressibleFlow_h)
 #define incompressibleFlow_h
 #include <petsc.h>
-
-// Define field id for velocity, pressure, temperature
-#define VEL 0
-#define PRES 1
-#define TEMP 2
+#include "flow.h"
 
 // Define the test field number
 #define VTEST 0
@@ -14,6 +10,8 @@
 
 typedef enum { STROUHAL, REYNOLDS, PECLET, MU, K, CP, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS } IncompressibleFlowParametersTypes;
 PETSC_EXTERN const char *incompressibleFlowParametersTypeNames[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS + 1];
+
+typedef enum {VEL, PRES, TEMP, TOTAL_INCOMPRESSIBLE_FLOW_FIELDS} IncompressibleFlowFields;
 
 typedef struct {
     PetscReal strouhal;
@@ -28,9 +26,9 @@ PETSC_EXTERN PetscErrorCode IncompressibleFlow_PackParameters(IncompressibleFlow
 PETSC_EXTERN PetscErrorCode IncompressibleFlow_ParametersFromPETScOptions(PetscBag *flowParametersBag);
 
 // Define the functions to setup the incompressible flow
-PETSC_EXTERN PetscErrorCode IncompressibleFlow_SetupDiscretization(DM dm);
-PETSC_EXTERN PetscErrorCode IncompressibleFlow_StartProblemSetup(DM dm, PetscInt, PetscScalar[]);
-PETSC_EXTERN PetscErrorCode IncompressibleFlow_CompleteProblemSetup(TS ts, Vec *flowField);
+PETSC_EXTERN PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm);
+PETSC_EXTERN PetscErrorCode IncompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt, PetscScalar[]);
+PETSC_EXTERN PetscErrorCode IncompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts);
 PETSC_EXTERN PetscErrorCode IncompressibleFlow_CompleteFlowInitialization(DM dm, Vec u);
 
 #endif

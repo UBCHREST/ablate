@@ -2,10 +2,13 @@
 #define ABLATE_PARTICLES_H
 
 #include <petsc.h>
-#include "particleInitializer.h"
+#include "flow.h"
 
-// Define field id for mass
-#define MASS 0
+typedef struct {
+    const char* fieldName;
+    PetscInt components;
+    PetscDataType type;
+} ParticleFieldDescriptor;
 
 struct _ParticleData {
     PetscBag parameters; /* constant particle parameters */
@@ -20,17 +23,26 @@ struct _ParticleData {
     Vec particleSolution;  /* The solution to the particles */
     Vec initialLocation;   /* The initial location of each particle */
 
+    // Store the velocity field id in the flow
+    PetscInt flowVelocityFieldIndex;
+
     // Allow the user to set the exactSolution
     PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar*, void*);
     void* exactSolutionContext; /* the context for the exact solution */
+
+    /** store the fields on the dm swarm **/
+    PetscInt numberFields;
+    ParticleFieldDescriptor *fieldDescriptors;
 };
 
 typedef struct _ParticleData* ParticleData;
 
 PetscErrorCode ParticleCreate(ParticleData* particles, PetscInt ndims);
-PETSC_EXTERN PetscErrorCode ParticleInitializeFlow(ParticleData particles, DM flowDM, Vec flowField);
-PETSC_EXTERN PetscErrorCode ParticleSetExactSolutionFlow(ParticleData particles, PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar*, void*),
-                                                         void* exactSolutionContext);
+PETSC_EXTERN PetscErrorCode ParticleRegisterPetscDatatypeField(ParticleData particles, const char fieldname[],PetscInt blocksize,PetscDataType type);
+PETSC_EXTERN PetscErrorCode ParticleInitializeFlow(ParticleData particles, FlowData flow);
+PETSC_EXTERN PetscErrorCode ParticleSetExactSolutionFlow(ParticleData particles, PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar*, void*),void* exactSolutionContext);
+PETSC_EXTERN PetscErrorCode ParticleView(ParticleData particleData,PetscViewer viewer);
+PETSC_EXTERN PetscErrorCode ParticleViewFromOptions(ParticleData particleData,PetscObject obj, char *title);
 PetscErrorCode ParticleDestroy(ParticleData* particles);
 
 #endif  // ABLATE_PARTICLES_H

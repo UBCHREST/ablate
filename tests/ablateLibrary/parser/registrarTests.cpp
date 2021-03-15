@@ -33,7 +33,7 @@ TEST(RegistrarTests, ShouldRegisterClassAndRecordInLog) {
     Listing::ReplaceListing(mockListing);
 
     // act
-    Registrar<MockInterface>::Register<MockClass1>(false, "mockClass1", "this is a simple mock class");
+    Registrar<MockInterface>::RegisterWithFactoryConstructor<MockClass1>(false, "mockClass1", "this is a simple mock class");
 
     // assert
     auto createMethod = Registrar<MockInterface>::GetCreateMethod("mockClass1");
@@ -161,7 +161,7 @@ TEST(RegistrarTests, ShouldResolveAndCreate) {
 
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
-    Registrar<MockInterface>::Register<MockClass1>(false, "mockClass1", "this is a simple mock class");
+    Registrar<MockInterface>::RegisterWithFactoryConstructor<MockClass1>(false, "mockClass1", "this is a simple mock class");
 
     // act
     auto instance = ResolveAndCreate<MockInterface>(mockFactory);
@@ -178,7 +178,7 @@ TEST(RegistrarTests, ShouldThrowExceptionWhenCannotResolveAndCreate) {
 
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
-    Registrar<MockInterface>::Register<MockClass1>(false, "mockClass1", "this is a simple mock class");
+    Registrar<MockInterface>::RegisterWithFactoryConstructor<MockClass1>(false, "mockClass1", "this is a simple mock class");
 
     // act
     // assert
@@ -192,7 +192,7 @@ TEST(RegistrarTests, ShouldCreateDefaultAndUseWhenNotSpecified) {
 
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
-    Registrar<MockInterface>::Register<MockClass1>(true, "mockClass54", "this is a simple mock class");
+    Registrar<MockInterface>::RegisterWithFactoryConstructor<MockClass1>(true, "mockClass54", "this is a simple mock class");
 
     // act
     auto result = ResolveAndCreate<MockInterface>(mockFactory);
@@ -217,7 +217,7 @@ TEST(RegistrarTests, ShouldThrowExceptionWhenNoDefaultIsSpecified) {
 
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
-    Registrar<NoDefaultInterface>::Register<MockClass3>(false, "mockClass2", "this is a simple mock class");
+    Registrar<NoDefaultInterface>::RegisterWithFactoryConstructor<MockClass3>(false, "mockClass2", "this is a simple mock class");
 
     // act
     // assert

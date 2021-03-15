@@ -3,4 +3,5 @@ target_sources(libraryTests
         registrarTests.cpp
         mockFactory.hpp
         yamlParserTests.cpp
+        factoryTests.cpp
         )
