@@ -65,6 +65,14 @@ class Factory {
         return Get(ArgumentIdentifier<Interface>{.inputName = inputName});
     }
 
+    template <typename Interface, typename DefaultValueInterface>
+    inline auto GetByName(const std::string inputName, DefaultValueInterface defaultValue){
+        if(Contains(inputName)){
+            return Get(ArgumentIdentifier<Interface>{.inputName = inputName});
+        }else{
+            return defaultValue;
+        }
+    }
 };
 }  // namespace ablate::parser
 

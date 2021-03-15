@@ -25,6 +25,14 @@ FetchContent_MakeAvailable(mu-parser)
 FetchContent_GetProperties(mu-parser)
 target_include_directories(muparser SYSTEM PUBLIC ${mu-parser_SOURCE_DIR}/include)
 
+# install the library for generating xdmf files
+set(DISABLE_PETSCXDMFGENERATOR_TESTS ON CACHE BOOL "" FORCE)
+FetchContent_Declare(
+        petscXdmfGenerator
+        GIT_REPOSITORY https://github.com/UBCHREST/petscXdmfGenerator.git
+        GIT_TAG v0.0.2
+)
+FetchContent_MakeAvailable(petscXdmfGenerator)
 
 # Setup the ablate core
 add_library(ablateLibrary SHARED "")
@@ -50,4 +58,4 @@ add_subdirectory(particles)
 add_subdirectory(monitors)
 
 # Keep a simple main statement
-target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser)
+target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser petscXdmfGeneratorLibrary)

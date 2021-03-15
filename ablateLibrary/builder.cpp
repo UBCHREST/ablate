@@ -1,10 +1,11 @@
 #include "builder.hpp"
 #include "flow/flow.hpp"
+#include "monitors/flow/flowMonitor.hpp"
+#include "monitors/particles/particleMonitor.hpp"
 #include "particles/particles.hpp"
 #include "solve/timeStepper.hpp"
 #include "utilities/petscOptions.hpp"
 #include "version.h"
-#include "monitors/flow/monitor.hpp"
 
 void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     // get the global arguments
@@ -19,7 +20,7 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     flow->SetupSolve(timeStepper->GetTS());
 
     // get the monitors from the flow factory
-    auto flowMonitors = parser->GetFactory("flow")->GetByName<std::vector<monitors::flow::Monitor>>("monitors");
+    auto flowMonitors = parser->GetFactory("flow")->GetByName<std::vector<monitors::flow::FlowMonitor>>("monitors");
     for(auto flowMonitor : flowMonitors){
         flowMonitor->Register(flow);
         timeStepper->AddMonitor(flowMonitor);
@@ -27,10 +28,19 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
 
     // get any particles that may be in the flow
     auto particleList = parser->Get(parser::ArgumentIdentifier<std::vector<particles::Particles>>{"particles"});
+    auto particleFactorySequence = parser->GetFactorySequence("particles");
 
     // initialize the flow for each
-    for (auto particle : particleList) {
+    for (auto particleIndex = 0; particleIndex < particleList.size(); particleIndex++) {
+        auto particle = particleList[particleIndex];
         particle->InitializeFlow(flow, timeStepper);
+
+        // Get any particle monitors
+        auto particleMonitors = particleFactorySequence[particleIndex]->GetByName<std::vector<monitors::particles::ParticleMonitor>>("monitors");
+        for(auto particleMonitor : particleMonitors){
+            particleMonitor->Register(particle);
+            timeStepper->AddMonitor(particleMonitor);
+        }
     }
 
     // run

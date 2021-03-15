@@ -6,9 +6,9 @@
 
 namespace ablate::monitors::flow{
 
-class Monitor : public monitors::Monitor {
+class FlowMonitor : public monitors::Monitor {
    public:
-    virtual ~Monitor() = default;
+    virtual ~FlowMonitor() = default;
 
     virtual void Register(std::shared_ptr<ablate::flow::Flow>) = 0;
 };
