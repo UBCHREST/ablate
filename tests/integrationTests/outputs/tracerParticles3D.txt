@@ -1,9 +1,9 @@
-Timestep: 0000 time = 0        	 L_2 Error: [5.33e-16, 7.68e-17, 1.66e-16]
-Timestep: 0001 time = 0.01     	 L_2 Error: [0.00208, 0.917, 0.0534]
-Timestep: 0002 time = 0.02     	 L_2 Error: [0.00307, 0.911, 0.0874]
-Timestep: 0003 time = 0.03     	 L_2 Error: [0.00358, 0.904, 0.109]
-Timestep: 0004 time = 0.04     	 L_2 Error: [0.00387, 0.897, 0.123]
-Timestep: 0005 time = 0.05     	 L_2 Error: [0.00404, 0.89, 0.132]
+Timestep: 0000 time = 0        	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-15 <1E-15 <1E-13
+Timestep: 0001 time = 0.01     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0002 time = 0.02     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0003 time = 0.03     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0004 time = 0.04     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0005 time = 0.05     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
 ResultFiles:
 particles.hdf5
 particles.xmf

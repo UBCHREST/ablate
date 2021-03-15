@@ -9,7 +9,6 @@ namespace ablate::parameters {
 
 class Parameters {
    private:
-    // overall general implantation
     template <typename T>
     static void toValue(const std::string& inputString, T& outputValue) {
         std::istringstream ss(inputString);

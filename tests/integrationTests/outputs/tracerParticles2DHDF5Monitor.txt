@@ -1,19 +1,19 @@
-Timestep: 0000 time = 0        	 L_2 Error: [2.81e-16, 8.52e-17, 1.09e-16]
-Timestep: 0001 time = 0.01     	 L_2 Error: [0.00207, 0.583, 0.0124]
-Timestep: 0002 time = 0.02     	 L_2 Error: [0.0033, 0.578, 0.0223]
-Timestep: 0003 time = 0.03     	 L_2 Error: [0.00406, 0.574, 0.0305]
-Timestep: 0004 time = 0.04     	 L_2 Error: [0.00455, 0.571, 0.0373]
-Timestep: 0005 time = 0.05     	 L_2 Error: [0.00486, 0.568, 0.0431]
-Timestep: 0006 time = 0.06     	 L_2 Error: [0.00506, 0.565, 0.048]
-Timestep: 0007 time = 0.07     	 L_2 Error: [0.00519, 0.562, 0.0522]
-Timestep: 0008 time = 0.08     	 L_2 Error: [0.00528, 0.559, 0.0558]
-Timestep: 0009 time = 0.09     	 L_2 Error: [0.00533, 0.556, 0.0589]
-Timestep: 0010 time = 0.1      	 L_2 Error: [0.00537, 0.554, 0.0617]
-Timestep: 0011 time = 0.11     	 L_2 Error: [0.00539, 0.551, 0.064]
-Timestep: 0012 time = 0.12     	 L_2 Error: [0.0054, 0.549, 0.0662]
-Timestep: 0013 time = 0.13     	 L_2 Error: [0.00541, 0.546, 0.068]
-Timestep: 0014 time = 0.14     	 L_2 Error: [0.00542, 0.544, 0.0697]
-Timestep: 0015 time = 0.15     	 L_2 Error: [0.00542, 0.542, 0.0713]
+Timestep: 0000 time = 0        	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-15 <1E-15 <1E-13
+Timestep: 0001 time = 0.01     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0002 time = 0.02     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0003 time = 0.03     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0004 time = 0.04     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0005 time = 0.05     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0006 time = 0.06     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0007 time = 0.07     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0008 time = 0.08     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0009 time = 0.09     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0010 time = 0.1      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0011 time = 0.11     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0012 time = 0.12     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0013 time = 0.13     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0014 time = 0.14     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0015 time = 0.15     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
 ResultFiles:
 flowTracerParticles.hdf5
 flowTracerParticles.xmf
