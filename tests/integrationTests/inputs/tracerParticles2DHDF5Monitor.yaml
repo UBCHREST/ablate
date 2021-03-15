@@ -1,14 +1,14 @@
 ---
 environment:
-  title: simpleTestCase
+  title: 2DTracerParticles
   tagDirectory: false
 arguments:
   dm_plex_separate_marker: ""
 timestepper:
   name: theMainTimeStepper
   arguments:
-    ts_dt: .1
-    ts_max_steps: 30
+    ts_dt: .01
+    ts_max_steps: 15
     ksp_type: fgmres
     ksp_gmres_restart: 10
     ksp_rtol: 1.0e-9
@@ -121,3 +121,21 @@ flow: !ablate::flow::IncompressibleFlow
         formula: "t + x + y"
       timeDerivativeValue:
         formula: "1.0"
+  monitors:
+    - !ablate::monitors::flow::Hdf5OutputFlow
+
+particles:
+  - !ablate::particles::Tracer
+    name: flowTracerParticles
+    ndims: 2
+    arguments:
+      ts_dt: 0.005
+    initializer: !ablate::particles::initializers::BoxInitializer
+      arguments:
+        particle_lower: 0.25,0.25
+        particle_upper: 0.75,0.75
+        Npb: 10
+    exactSolution:
+      formula: "t + x + y"
+    monitors:
+      - !ablate::monitors::particles::Hdf5OutputParticle

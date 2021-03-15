@@ -8,7 +8,7 @@ pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
 set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
 
 # Set the project details
-project(ablateLibrary VERSION 0.2.1)
+project(ablateLibrary VERSION 0.2.2)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)
@@ -42,25 +42,9 @@ if(BUILD_TESTING)
     enable_testing()
     include(GoogleTest)
     add_subdirectory(tests)
-endif()
 
-# Add a target to allow linting check
-find_program(CLANG_FORMAT "clang-format")
-find_package (Python)
-if(CLANG_FORMAT AND Python_Interpreter_FOUND)
-    add_custom_target(
-            format-check
-            COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/extern/run-clang-format/run-clang-format.py
-            --style=file
-            -r
-            --extensions=cpp,hpp,cc,hh,c++,h++,cxx,hxx
-            ${PROJECT_SOURCE_DIR}/ablateCore
-            ${PROJECT_SOURCE_DIR}/ablateLibrary
-            ${PROJECT_SOURCE_DIR}/tests
-            COMMAND ${PROJECT_SOURCE_DIR}/extern/petscFormat/petscFormatTest.sh
-            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-            USES_TERMINAL
-    )
+    # Include the format command only if we are building tests
+    include(clangFormatter.cmake)
 endif()
 
 # keep a separate main statement

@@ -1,7 +1,6 @@
 ---
 arguments:
   dm_plex_separate_marker: ""
-  num_sol_vec_view_monitor: hdf5:sol.h5::append
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -26,7 +25,6 @@ flow: !ablate::flow::IncompressibleFlow
     name: simpleBoxField
     dimensions: 2
     arguments:
-      dm_view: hdf5:sol.h5
       dm_refine: 2
       vel_petscspace_degree: 2
       pres_petscspace_degree: 1
@@ -126,4 +124,3 @@ flow: !ablate::flow::IncompressibleFlow
         formula: "t + x + y"
       timeDerivativeValue:
         formula: "1.0"
-particles: [ ]

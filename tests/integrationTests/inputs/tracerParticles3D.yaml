@@ -26,7 +26,7 @@ flow: !ablate::flow::IncompressibleFlow
     name: simpleBoxField
     dimensions: 3
     arguments:
-      dm_refine: 2
+      dm_refine: 1
       vel_petscspace_degree: 2
       pres_petscspace_degree: 1
       temp_petscspace_degree: 1

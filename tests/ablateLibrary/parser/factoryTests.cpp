@@ -41,7 +41,7 @@ TEST(FactoryTests, GetByNameShouldReturnDefaultValue) {
     EXPECT_CALL(mockFactory, Contains("input123")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
 
     // act
-    auto result = mockFactory.GetByName<std::string, std::string>("input123", "default 123");
+    auto result = mockFactory.GetByName<std::string>("input123", std::string("default 123"));
 
     // assert
     ASSERT_EQ("default 123", result);
@@ -59,7 +59,7 @@ TEST(FactoryTests, GetByNameShouldReturnDefaultValueClass) {
     EXPECT_CALL(mockFactory, Contains("input123")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
 
     // act
-    auto result = mockFactory.GetByName<DefaultMockClass, std::shared_ptr<DefaultMockClass>>("input123", std::make_shared<DefaultMockClass>("default 123"));
+    auto result = mockFactory.GetByName<DefaultMockClass>("input123", std::make_shared<DefaultMockClass>("default 123"));
 
     // assert
     ASSERT_EQ("default 123", result->name);
@@ -71,7 +71,7 @@ TEST(FactoryTests, GetByNameShouldReturnDefaultValueWithList) {
     EXPECT_CALL(mockFactory, Contains("input123")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
 
     // act
-    auto result = mockFactory.GetByName<std::vector<DefaultMockClass>, std::vector<std::shared_ptr<DefaultMockClass>>>("input123", std::vector<std::shared_ptr<DefaultMockClass>>{std::make_shared<DefaultMockClass>("default 123")});
+    auto result = mockFactory.GetByName<std::vector<DefaultMockClass>>("input123", std::vector<std::shared_ptr<DefaultMockClass>>{std::make_shared<DefaultMockClass>("default 123")});
 
     // assert
     ASSERT_EQ(1, result.size());
@@ -84,7 +84,7 @@ TEST(FactoryTests, GetByNameShouldReturnDefaultValueWithEmptyList) {
     EXPECT_CALL(mockFactory, Contains("input123")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
 
     // act
-    auto result = mockFactory.GetByName<std::vector<DefaultMockClass>, std::vector<std::shared_ptr<DefaultMockClass>>>("input123", std::vector<std::shared_ptr<DefaultMockClass>>());
+    auto result = mockFactory.GetByName<std::vector<DefaultMockClass>>("input123", std::vector<std::shared_ptr<DefaultMockClass>>());
 
     // assert
     ASSERT_EQ(0, result.size());
