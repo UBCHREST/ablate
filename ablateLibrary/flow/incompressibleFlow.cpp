@@ -26,7 +26,7 @@ ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shar
     for (auto boundary : boundaryConditions) {
         PetscInt id = boundary->GetLabelId();
         auto fieldId = GetFieldId(boundary->GetFieldName());
-        if(!fieldId){
+        if (!fieldId) {
             throw std::invalid_argument("unknown field for boundary: " + boundary->GetFieldName());
         }
 
@@ -48,7 +48,7 @@ ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shar
     // Set the exact solution
     for (auto exact : initialization) {
         auto fieldId = GetFieldId(exact->GetName());
-        if(!fieldId){
+        if (!fieldId) {
             throw std::invalid_argument("unknown field for initialization: " + exact->GetName());
         }
 

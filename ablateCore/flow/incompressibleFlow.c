@@ -301,7 +301,7 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) 
     ierr = PetscObjectSetName((PetscObject)fe[TEMP], incompressibleFlowFieldNames[TEMP]);CHKERRQ(ierr);
 
     // register the fields
-    ierr = FlowRegisterFields(flowData, TOTAL_INCOMPRESSIBLE_FLOW_FIELDS, incompressibleFlowFieldNames );CHKERRQ(ierr);
+    ierr = FlowRegisterFields(flowData, TOTAL_INCOMPRESSIBLE_FLOW_FIELDS, incompressibleFlowFieldNames);CHKERRQ(ierr);
 
     /* Set discretization and boundary conditions for each mesh */
     ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);

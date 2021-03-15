@@ -3,11 +3,11 @@
 #include <filesystem>
 #include "monitors/flow/flowMonitor.hpp"
 #include "monitors/hdf5Output.hpp"
-namespace ablate::monitors::flow{
-class Hdf5OutputFlow: public monitors::flow::FlowMonitor, monitors::Hdf5Output{
+namespace ablate::monitors::flow {
+class Hdf5OutputFlow : public monitors::flow::FlowMonitor, monitors::Hdf5Output {
    private:
     std::shared_ptr<ablate::flow::Flow> flow = nullptr;
-    static PetscErrorCode OutputFlow(TS ts,PetscInt steps,PetscReal time,Vec u,void *mctx);
+    static PetscErrorCode OutputFlow(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx);
 
    public:
     Hdf5OutputFlow() = default;
@@ -15,11 +15,8 @@ class Hdf5OutputFlow: public monitors::flow::FlowMonitor, monitors::Hdf5Output{
 
     void Register(std::shared_ptr<ablate::flow::Flow>) override;
 
-    PetscMonitorFunction GetPetscFunction() override{
-        return OutputFlow;
-    }
+    PetscMonitorFunction GetPetscFunction() override { return OutputFlow; }
 };
-}
-
+}  // namespace ablate::monitors::flow
 
 #endif  // ABLATELIBRARY_HDF5OUTPUTFLOW_HPP

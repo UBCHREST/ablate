@@ -1,5 +1,6 @@
 #include "boundaryCondition.hpp"
 #include "parser/registrar.hpp"
+
 PetscErrorCode ablate::flow::BoundaryCondition::BoundaryValueFunction(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
     auto boundary = (BoundaryCondition *)ctx;
     return boundary->boundaryValue->GetPetscFunction()(dim, time, x, Nf, u, boundary->boundaryValue->GetContext());

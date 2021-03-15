@@ -395,7 +395,7 @@ PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
     ierr = PetscObjectSetName((PetscObject)fe[TEMP], lowMachFlowFieldNames[TEMP]);CHKERRQ(ierr);
 
     // register the fields
-    ierr = FlowRegisterFields(flowData, TOTAL_LOW_MACH_FLOW_FIELDS, lowMachFlowFieldNames );CHKERRQ(ierr);
+    ierr = FlowRegisterFields(flowData, TOTAL_LOW_MACH_FLOW_FIELDS, lowMachFlowFieldNames);CHKERRQ(ierr);
 
     /* Set discretization and boundary conditions for each mesh */
     ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);

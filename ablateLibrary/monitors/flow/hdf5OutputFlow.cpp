@@ -22,7 +22,7 @@ void ablate::monitors::flow::Hdf5OutputFlow::Register(std::shared_ptr<ablate::fl
 
 PetscErrorCode ablate::monitors::flow::Hdf5OutputFlow::OutputFlow(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx) {
     PetscFunctionBeginUser;
-    auto monitor = (ablate::monitors::flow::Hdf5OutputFlow*) mctx;
+    auto monitor = (ablate::monitors::flow::Hdf5OutputFlow *)mctx;
     VecView(monitor->flow->GetSolutionVector(), monitor->petscViewer) >> checkError;
     PetscFunctionReturn(0);
 }

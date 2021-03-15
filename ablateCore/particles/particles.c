@@ -48,7 +48,7 @@ PetscErrorCode ParticleInitializeFlow(ParticleData particles, FlowData flowData)
     // Find the velocity field
     PetscBool found;
     ierr = PetscEListFind(flowData->numberFlowFields,flowData->flowFieldNames, "velocity",&(particles->flowVelocityFieldIndex),&found);CHKERRQ(ierr);
-    if(!found){
+    if (!found){
         // get the particle data comm
         MPI_Comm comm;
         ierr = PetscObjectGetComm((PetscObject) particles->dm, &comm);CHKERRQ(ierr);
@@ -72,7 +72,7 @@ PETSC_EXTERN PetscErrorCode ParticleRegisterPetscDatatypeField(ParticleData part
 
     // store the field
     particles->numberFields++;
-    ierr = PetscRealloc(sizeof(ParticleFieldDescriptor)*particles->numberFields,&(particles->fieldDescriptors)  );CHKERRQ(ierr);
+    ierr = PetscRealloc(sizeof(ParticleFieldDescriptor)*particles->numberFields,&(particles->fieldDescriptors));CHKERRQ(ierr);
     particles->fieldDescriptors[particles->numberFields-1].type = type;
     particles->fieldDescriptors[particles->numberFields-1].components = blocksize;
     PetscStrallocpy(fieldname, (char **)&(particles->fieldDescriptors[particles->numberFields-1].fieldName));
@@ -81,7 +81,7 @@ PETSC_EXTERN PetscErrorCode ParticleRegisterPetscDatatypeField(ParticleData part
 
 PETSC_EXTERN PetscErrorCode ParticleDestroy(ParticleData *particles) {
     // remove each allocated string and
-    for(PetscInt i =0; i < (*particles)->numberFields; i++){
+    for (PetscInt i =0; i < (*particles)->numberFields; i++){
         PetscFree((*particles)->fieldDescriptors[i].fieldName);
     }
     PetscFree((*particles)->fieldDescriptors);
@@ -130,8 +130,8 @@ PetscErrorCode ParticleView(ParticleData particleData, PetscViewer viewer) {
     Vec            particleVector;
     PetscErrorCode ierr;
 
-    for(PetscInt f =0; f < particleData->numberFields; f++){
-        if(particleData->fieldDescriptors[f].type == PETSC_DOUBLE) {
+    for (PetscInt f =0; f < particleData->numberFields; f++){
+        if (particleData->fieldDescriptors[f].type == PETSC_DOUBLE) {
             ierr = DMSwarmCreateGlobalVectorFromField(particleData->dm, particleData->fieldDescriptors[f].fieldName, &particleVector);CHKERRQ(ierr);
             ierr = PetscObjectSetName((PetscObject)particleVector, particleData->fieldDescriptors[f].fieldName);CHKERRQ(ierr);
             ierr = VecView(particleVector, viewer);CHKERRQ(ierr);
@@ -142,7 +142,7 @@ PetscErrorCode ParticleView(ParticleData particleData, PetscViewer viewer) {
     // if this is an hdf5Viewer
     PetscBool ishdf5;
     ierr = PetscObjectTypeCompare((PetscObject) viewer, PETSCVIEWERHDF5,  &ishdf5);CHKERRQ(ierr);
-    if(ishdf5){
+    if (ishdf5){
         DMSequenceViewTimeHDF5(particleData->dm, viewer);
     }
 
@@ -154,8 +154,8 @@ PetscErrorCode ParticleViewFromOptions(ParticleData particleData,PetscObject obj
     Vec            particleVector;
     PetscErrorCode ierr;
 
-    for(PetscInt f =0; f < particleData->numberFields; f++){
-        if(particleData->fieldDescriptors[f].type == PETSC_DOUBLE) {
+    for (PetscInt f =0; f < particleData->numberFields; f++){
+        if (particleData->fieldDescriptors[f].type == PETSC_DOUBLE) {
             ierr = DMSwarmCreateGlobalVectorFromField(particleData->dm, particleData->fieldDescriptors[f].fieldName, &particleVector);CHKERRQ(ierr);
             ierr = PetscObjectSetName((PetscObject)particleVector, particleData->fieldDescriptors[f].fieldName);CHKERRQ(ierr);
             ierr = VecViewFromOptions(particleVector, obj, title);CHKERRQ(ierr);

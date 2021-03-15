@@ -5,10 +5,10 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
 #include "MpiTestFixture.hpp"
+#include "flow.h"
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mesh.h"
-#include "flow.h"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -365,7 +365,7 @@ TEST_P(IncompressibleFlowMMS, ShouldConvergeToExactSolution) {
         DM dm;                 /* problem definition */
         TS ts;                 /* timestepper */
         PetscBag parameterBag; /* constant flow parameters */
-        FlowData flowData; /* store some of the flow data*/
+        FlowData flowData;     /* store some of the flow data*/
         PetscReal t;
         PetscErrorCode ierr;
 

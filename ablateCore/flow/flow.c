@@ -23,10 +23,10 @@ PetscErrorCode FlowRegisterFields(FlowData flow, PetscInt numberFlowFields, cons
 
 PetscErrorCode FlowDestroy(FlowData* flow) {
     PetscFunctionBeginUser;
-    if((*flow)->flowFieldNames){
+    if ((*flow)->flowFieldNames){
         PetscErrorCode ierr = PetscStrNArrayDestroy((*flow)->numberFlowFields,(char***)&((*flow)->flowFieldNames));CHKERRQ(ierr);
     }
-    if((*flow)->flowField){
+    if ((*flow)->flowField){
         PetscErrorCode ierr = VecDestroy(&((*flow)->flowField));CHKERRQ(ierr);
     }
     free(*flow);

@@ -9,10 +9,9 @@ namespace ablate::parameters {
 
 class Parameters {
    private:
-
     // overall general implantation
     template <typename T>
-    static void toValue(const std::string& inputString, T& outputValue){
+    static void toValue(const std::string& inputString, T& outputValue) {
         std::istringstream ss(inputString);
         ss >> outputValue;
     }
@@ -61,7 +60,7 @@ class Parameters {
     }
 
     template <typename T>
-    void Fill(int numberValues, const char *const *valueNames, T *constantArray) const {
+    void Fill(int numberValues, const char* const* valueNames, T* constantArray) const {
         // March over each parameter
         for (int n = 0; n < numberValues; n++) {
             // make a temp string

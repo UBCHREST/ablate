@@ -50,7 +50,7 @@ TEST(FactoryTests, GetByNameShouldReturnDefaultValue) {
 class DefaultMockClass {
    public:
     std::string name;
-    DefaultMockClass(std::string name):name(name){};
+    DefaultMockClass(std::string name) : name(name){};
 };
 
 TEST(FactoryTests, GetByNameShouldReturnDefaultValueClass) {

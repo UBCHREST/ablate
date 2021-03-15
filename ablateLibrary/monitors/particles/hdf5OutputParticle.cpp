@@ -1,11 +1,10 @@
+#include "hdf5OutputParticle.hpp"
 #include <petsc.h>
 #include <petscviewerhdf5.h>
 #include "generators.hpp"
-#include "hdf5OutputParticle.hpp"
 #include "monitors/runEnvironment.hpp"
 #include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
-
 
 void ablate::monitors::particles::Hdf5OutputParticle::Register(std::shared_ptr<ablate::particles::Particles> particlesIn) {
     // store the flow
@@ -22,13 +21,15 @@ void ablate::monitors::particles::Hdf5OutputParticle::Register(std::shared_ptr<a
     ParticleView(particleData, petscViewer) >> checkError;
 }
 
-PetscErrorCode ablate::monitors::particles::Hdf5OutputParticle::OutputParticles(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx) {
+PetscErrorCode ablate::monitors::particles::Hdf5OutputParticle::OutputParticles(TS ts, PetscInt steps, PetscReal time, Vec u, void* mctx) {
     PetscFunctionBeginUser;
-    auto monitor = (ablate::monitors::particles::Hdf5OutputParticle*) mctx;
-    PetscErrorCode ierr = DMSetOutputSequenceNumber(monitor->particles->GetParticleData()->dm, steps, time);CHKERRQ(ierr);
+    auto monitor = (ablate::monitors::particles::Hdf5OutputParticle*)mctx;
+    PetscErrorCode ierr = DMSetOutputSequenceNumber(monitor->particles->GetParticleData()->dm, steps, time);
+    CHKERRQ(ierr);
 
     auto& particleData = monitor->particles->GetParticleData();
-    ierr = ParticleView(particleData, monitor->petscViewer);CHKERRQ(ierr);
+    ierr = ParticleView(particleData, monitor->petscViewer);
+    CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

@@ -1,7 +1,7 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "parameters/parameters.hpp"
 #include "parameters/mockParameters.hpp"
+#include "parameters/parameters.hpp"
 
 using ::testing::AtLeast;
 
@@ -289,8 +289,9 @@ TEST_P(ParameterTestFixtureBool, GetShouldReturnDefaultValue) {
     EXPECT_EQ(actualValue, true);
 }
 
-INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureBool, ::testing::Values(std::make_tuple("true", true), std::make_tuple("false",false), std::make_tuple("True", true), std::make_tuple("TRUE", true), std::make_tuple("1", true), std::make_tuple("0", false), std::make_tuple("yes", true)));
-
+INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureBool,
+                         ::testing::Values(std::make_tuple("true", true), std::make_tuple("false", false), std::make_tuple("True", true), std::make_tuple("TRUE", true), std::make_tuple("1", true),
+                                           std::make_tuple("0", false), std::make_tuple("yes", true)));
 
 // string based tests
 class ParameterTestFixtureString : public testing::TestWithParam<std::tuple<std::string, std::string>> {};

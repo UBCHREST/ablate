@@ -4,13 +4,13 @@
 #include <flow.h>
 #include <petsc.h>
 #include <memory>
+#include <optional>
 #include <string>
 #include "boundaryCondition.hpp"
 #include "flow.h"
 #include "flowFieldSolution.hpp"
 #include "mesh/mesh.hpp"
 #include "solve/solvable.hpp"
-#include <optional>
 
 namespace ablate::flow {
 class Flow : public solve::Solvable {

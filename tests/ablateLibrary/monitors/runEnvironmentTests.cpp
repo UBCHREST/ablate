@@ -1,18 +1,18 @@
+#include <stdlib.h>
+#include <time.h>
 #include <fstream>
 #include <memory>
 #include <sstream>
+#include <string>
 #include "gtest/gtest.h"
 #include "monitors/runEnvironment.hpp"
-#include <stdlib.h>
-#include <time.h>
-#include <string>
 #include "parameters/mockParameters.hpp"
 
 namespace ablateTesting::monitors {
 
 using namespace ablate::monitors;
 
-class RunEnvironmentTestFixture: public ::testing::Test {
+class RunEnvironmentTestFixture : public ::testing::Test {
    public:
     std::filesystem::path tempInputFile;
     std::string uniqueTitle;
@@ -27,13 +27,11 @@ class RunEnvironmentTestFixture: public ::testing::Test {
         ofs.close();
 
         // create a title
-        srand( (unsigned)time(NULL) );
+        srand((unsigned)time(NULL));
         uniqueTitle = "title_" + std::to_string(rand());
     }
 
-    void TearDown() {
-        std::filesystem::remove_all(tempInputFile);
-    }
+    void TearDown() { std::filesystem::remove_all(tempInputFile); }
 };
 
 TEST_F(RunEnvironmentTestFixture, ShouldSetupDefaultEnviroment) {
@@ -51,8 +49,8 @@ TEST_F(RunEnvironmentTestFixture, ShouldSetupDefaultEnviroment) {
     ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(uniqueTitle, 0) == 0) << "the output directory should start with the title";
     ASSERT_EQ(tempInputFile.parent_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be next to the input file";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory()/"tempFile.yaml")) << "the output directory should contain a copy of the input file";
-    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory()/"tempFile.yaml"), std::filesystem::file_size(tempInputFile) ) << "the copied input file should be the same size";
+    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should contain a copy of the input file";
+    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory() / "tempFile.yaml"), std::filesystem::file_size(tempInputFile)) << "the copied input file should be the same size";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -73,8 +71,8 @@ TEST_F(RunEnvironmentTestFixture, ShouldNotTagOutputDirectory) {
     ASSERT_EQ(runEnvironment.GetOutputDirectory().filename().string(), uniqueTitle) << "the output directory should be the title";
     ASSERT_EQ(tempInputFile.parent_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be next to the input file";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory()/"tempFile.yaml")) << "the output directory should contain a copy of the input file";
-    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory()/"tempFile.yaml"), std::filesystem::file_size(tempInputFile) ) << "the copied input file should be the same size";
+    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should contain a copy of the input file";
+    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory() / "tempFile.yaml"), std::filesystem::file_size(tempInputFile)) << "the copied input file should be the same size";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -82,7 +80,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldNotTagOutputDirectory) {
 
 TEST_F(RunEnvironmentTestFixture, ShouldUseAndTagSpecifiedOutputDirectory) {
     // arrange
-    auto outputDirectory = std::filesystem::temp_directory_path()/ ("specified_output_dir_" + std::to_string(rand()));
+    auto outputDirectory = std::filesystem::temp_directory_path() / ("specified_output_dir_" + std::to_string(rand()));
 
     // setup the mock parameters
     ablateTesting::parameters::MockParameters mockParameters;
@@ -97,8 +95,8 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseAndTagSpecifiedOutputDirectory) {
     ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(outputDirectory.filename().string(), 0) == 0) << "the output directory should start with specified_output_dir_";
     ASSERT_EQ(outputDirectory.parent_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be in the specified location";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory()/"tempFile.yaml")) << "the output directory should contain a copy of the input file";
-    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory()/"tempFile.yaml"), std::filesystem::file_size(tempInputFile) ) << "the copied input file should be the same size";
+    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should contain a copy of the input file";
+    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory() / "tempFile.yaml"), std::filesystem::file_size(tempInputFile)) << "the copied input file should be the same size";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -106,7 +104,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseAndTagSpecifiedOutputDirectory) {
 
 TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirectory) {
     // arrange
-    auto outputDirectory = std::filesystem::temp_directory_path()/ ("specified_output_dir_" + std::to_string(rand()));
+    auto outputDirectory = std::filesystem::temp_directory_path() / ("specified_output_dir_" + std::to_string(rand()));
 
     // setup the mock parameters
     ablateTesting::parameters::MockParameters mockParameters;
@@ -120,11 +118,11 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirector
     // assert
     ASSERT_EQ(outputDirectory, runEnvironment.GetOutputDirectory()) << "the output directory should the one specified";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory()/"tempFile.yaml")) << "the output directory should contain a copy of the input file";
-    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory()/"tempFile.yaml"), std::filesystem::file_size(tempInputFile) ) << "the copied input file should be the same size";
+    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should contain a copy of the input file";
+    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory() / "tempFile.yaml"), std::filesystem::file_size(tempInputFile)) << "the copied input file should be the same size";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
 }
 
-}  // namespace ablateTesting::parser
+}  // namespace ablateTesting::monitors

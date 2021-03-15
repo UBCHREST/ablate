@@ -1,10 +1,10 @@
 #ifndef ABLATELIBRARY_PARTICLE_MONITOR_HPP
 #define ABLATELIBRARY_PARTICLE_MONITOR_HPP
+#include <memory>
 #include "monitors/monitor.hpp"
 #include "particles/particles.hpp"
-#include <memory>
 
-namespace ablate::monitors::particles{
+namespace ablate::monitors::particles {
 
 class ParticleMonitor : public monitors::Monitor {
    public:
@@ -13,6 +13,6 @@ class ParticleMonitor : public monitors::Monitor {
     virtual void Register(std::shared_ptr<ablate::particles::Particles>) = 0;
 };
 
-}
+}  // namespace ablate::monitors::particles
 
 #endif

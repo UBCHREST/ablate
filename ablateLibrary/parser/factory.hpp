@@ -61,15 +61,15 @@ class Factory {
     }
 
     template <typename Interface>
-    inline auto GetByName(const std::string inputName){
+    inline auto GetByName(const std::string inputName) {
         return Get(ArgumentIdentifier<Interface>{.inputName = inputName});
     }
 
     template <typename Interface, typename DefaultValueInterface>
-    inline auto GetByName(const std::string inputName, DefaultValueInterface defaultValue){
-        if(Contains(inputName)){
+    inline auto GetByName(const std::string inputName, DefaultValueInterface defaultValue) {
+        if (Contains(inputName)) {
             return Get(ArgumentIdentifier<Interface>{.inputName = inputName});
-        }else{
+        } else {
             return defaultValue;
         }
     }

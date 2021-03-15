@@ -315,7 +315,7 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         DM dm;                 /* problem definition */
         TS ts;                 /* timestepper */
         PetscBag parameterBag; /* constant flow parameters */
-        FlowData flowData; /* store some of the flow data*/
+        FlowData flowData;     /* store some of the flow data*/
 
         PetscReal t;
         PetscErrorCode ierr;

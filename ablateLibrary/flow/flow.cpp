@@ -10,23 +10,20 @@ ablate::flow::Flow::Flow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std
     utilities::PetscOptions::Set(name, arguments);
 
     // setup the flow data
-    FlowCreate(&flowData)  >> checkError;
+    FlowCreate(&flowData) >> checkError;
 }
 
-ablate::flow::Flow::~Flow() {
-    FlowDestroy(&flowData) >> checkError;
-}
+ablate::flow::Flow::~Flow() { FlowDestroy(&flowData) >> checkError; }
 
 std::optional<int> ablate::flow::Flow::GetFieldId(const std::string& fieldName) {
     PetscBool found;
     PetscInt index;
 
-    PetscEListFind(flowData->numberFlowFields,flowData->flowFieldNames, fieldName.c_str(),&index,&found) >> checkError;
+    PetscEListFind(flowData->numberFlowFields, flowData->flowFieldNames, fieldName.c_str(), &index, &found) >> checkError;
 
-    if(found){
+    if (found) {
         return index;
-    }else{
+    } else {
         return {};
     }
-
 }

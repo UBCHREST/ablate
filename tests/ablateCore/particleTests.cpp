@@ -3,9 +3,9 @@
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mesh.h"
+#include "particleInitializer.h"
 #include "particleTracer.h"
 #include "particles.h"
-#include "particleInitializer.h"
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -400,7 +400,7 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         DM dm;                 /* problem definition */
         TS ts;                 /* timestepper */
         PetscBag parameterBag; /* constant flow parameters */
-        FlowData flowData; /* store some of the flow data*/
+        FlowData flowData;     /* store some of the flow data*/
 
         PetscReal t;
         PetscErrorCode ierr;

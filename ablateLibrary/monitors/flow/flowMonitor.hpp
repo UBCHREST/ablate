@@ -1,10 +1,10 @@
 #ifndef ABLATELIBRARY_FLOW_MONITOR_HPP
 #define ABLATELIBRARY_FLOW_MONITOR_HPP
-#include "monitors/monitor.hpp"
-#include "flow/flow.hpp"
 #include <memory>
+#include "flow/flow.hpp"
+#include "monitors/monitor.hpp"
 
-namespace ablate::monitors::flow{
+namespace ablate::monitors::flow {
 
 class FlowMonitor : public monitors::Monitor {
    public:
@@ -13,6 +13,6 @@ class FlowMonitor : public monitors::Monitor {
     virtual void Register(std::shared_ptr<ablate::flow::Flow>) = 0;
 };
 
-}
+}  // namespace ablate::monitors::flow
 
 #endif  // ABLATELIBRARY_MONITOR_HPP

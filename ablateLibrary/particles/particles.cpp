@@ -2,7 +2,8 @@
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
-ablate::particles::Particles::Particles(std::string name, std::map<std::string, std::string> arguments, std::shared_ptr<particles::initializers::Initializer> initializer) : name(name), initializer(initializer) {
+ablate::particles::Particles::Particles(std::string name, std::map<std::string, std::string> arguments, std::shared_ptr<particles::initializers::Initializer> initializer)
+    : name(name), initializer(initializer) {
     utilities::PetscOptions::Set(name + "_", arguments);
 }
 

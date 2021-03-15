@@ -21,14 +21,14 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
 
     // get the monitors from the flow factory
     auto flowMonitors = parser->GetFactory("flow")->GetByName<std::vector<monitors::flow::FlowMonitor>>("monitors", std::vector<std::shared_ptr<monitors::flow::FlowMonitor>>());
-    for(auto flowMonitor : flowMonitors){
+    for (auto flowMonitor : flowMonitors) {
         flowMonitor->Register(flow);
         timeStepper->AddMonitor(flowMonitor);
     }
 
     // get any particles that may be in the flow
     auto particleList = parser->GetByName<std::vector<particles::Particles>>("particles", std::vector<std::shared_ptr<particles::Particles>>());
-    if(!particleList.empty()) {
+    if (!particleList.empty()) {
         auto particleFactorySequence = parser->GetFactorySequence("particles");
 
         // initialize the flow for each

@@ -22,8 +22,6 @@ void ablate::particles::Tracer::InitializeFlow(std::shared_ptr<flow::Flow> flow,
     ParticleTracerSetupIntegrator(particleData, particleTs, timeStepper->GetTS()) >> checkError;
 }
 
-REGISTER(ablate::particles::Particles, ablate::particles::Tracer, "massless particles that advect with the flow",
-         ARG(std::string, "name", "the name of the particle group"),
-         ARG(int, "ndims", "the number of dimensions for the particle"),
-         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
+REGISTER(ablate::particles::Particles, ablate::particles::Tracer, "massless particles that advect with the flow", ARG(std::string, "name", "the name of the particle group"),
+         ARG(int, "ndims", "the number of dimensions for the particle"), ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
          ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"), ARG(mathFunctions::MathFunction, "exactSolution", "the particle location exact solution"));

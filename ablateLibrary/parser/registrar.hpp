@@ -19,9 +19,9 @@
     template <>                                       \
     std::shared_ptr<interfaceTypeFullName> ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Resolved = ablate::parser::ResolveAndCreate<interfaceTypeFullName>(nullptr)
 
-#define REGISTER_FACTORY_CONSTRUCTOR(interfaceTypeFullName, classFullName, description)                                \
-    template <>                                                                                                        \
-    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                       \
+#define REGISTER_FACTORY_CONSTRUCTOR(interfaceTypeFullName, classFullName, description)                                                      \
+    template <>                                                                                                                              \
+    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                             \
         ablate::parser::Registrar<interfaceTypeFullName>::RegisterWithFactoryConstructor<classFullName>(false, #classFullName, description); \
     RESOLVE(interfaceTypeFullName, classFullName)
 
@@ -31,9 +31,9 @@
         ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description, __VA_ARGS__); \
     RESOLVE(interfaceTypeFullName, classFullName)
 
-#define REGISTER_FACTORY_CONSTRUCTOR_DEFAULT(interfaceTypeFullName, classFullName, description)                       \
-    template <>                                                                                                       \
-    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                      \
+#define REGISTER_FACTORY_CONSTRUCTOR_DEFAULT(interfaceTypeFullName, classFullName, description)                                             \
+    template <>                                                                                                                             \
+    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                            \
         ablate::parser::Registrar<interfaceTypeFullName>::RegisterWithFactoryConstructor<classFullName>(true, #classFullName, description); \
     RESOLVE(interfaceTypeFullName, classFullName)
 
@@ -43,12 +43,11 @@
         ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description, __VA_ARGS__); \
     RESOLVE(interfaceTypeFullName, classFullName)
 
-#define REGISTER_WITHOUT_ARGUMENTS(interfaceTypeFullName, classFullName, description, ...)                                                            \
-    template <>                                                                                                                     \
-    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                    \
+#define REGISTER_WITHOUT_ARGUMENTS(interfaceTypeFullName, classFullName, description, ...)                             \
+    template <>                                                                                                        \
+    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                       \
         ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description); \
     RESOLVE(interfaceTypeFullName, classFullName)
-
 
 namespace ablate::parser {
 

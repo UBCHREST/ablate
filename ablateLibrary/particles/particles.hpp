@@ -28,9 +28,7 @@ class Particles {
 
     const std::string& GetName() const { return name; }
 
-    ParticleData& GetParticleData(){
-        return particleData;
-    }
+    ParticleData& GetParticleData() { return particleData; }
 
     virtual void InitializeFlow(std::shared_ptr<flow::Flow> flow, std::shared_ptr<solve::TimeStepper> flowTimeStepper);
 };
