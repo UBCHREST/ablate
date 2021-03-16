@@ -26,8 +26,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     PetscFunctionBeginUser;
     ierr = TSGetDM(ts, &sdm);CHKERRQ(ierr);
     ierr = DMSwarmGetCellDM(sdm, &dm);CHKERRQ(ierr);
-    ierr = DMSwarmVectorDefineField(sdm, ParticleTracerVelocity);CHKERRQ(ierr);
-    ierr = DMGetGlobalVector(sdm, &pvel);CHKERRQ(ierr);
+    ierr = DMSwarmCreateGlobalVectorFromField(sdm, ParticleTracerVelocity, &pvel);CHKERRQ(ierr);
     ierr = DMSwarmGetLocalSize(sdm, &Np);CHKERRQ(ierr);
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
@@ -64,7 +63,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     ierr = PetscArraycpy(f, v, Np * dim);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(pvel, &v);CHKERRQ(ierr);
     ierr = VecRestoreArray(F, &f);CHKERRQ(ierr);
-    ierr = DMRestoreGlobalVector(sdm, &pvel);CHKERRQ(ierr);
+    ierr = DMSwarmDestroyGlobalVectorFromField(sdm, ParticleTracerVelocity, &pvel);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
