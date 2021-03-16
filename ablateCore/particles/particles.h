@@ -20,8 +20,6 @@ struct _ParticleData {
     PetscReal timeFinal;   /* The time for uf, at the end of the advection solve */
     Vec flowInitial;       /* The PDE solution field at ti */
     Vec flowFinal;         /* The PDE solution field at tf */
-    Vec particleSolution;  /* The solution to the particles */
-    Vec initialLocation;   /* The initial location of each particle */
 
     // Store the velocity field id in the flow
     PetscInt flowVelocityFieldIndex;
@@ -33,6 +31,9 @@ struct _ParticleData {
     /** store the fields on the dm swarm **/
     PetscInt numberFields;
     ParticleFieldDescriptor *fieldDescriptors;
+
+    // store a boolean to state if a dmChanged (number of particles local/global changed)
+    PetscBool dmChanged;
 };
 
 typedef struct _ParticleData* ParticleData;

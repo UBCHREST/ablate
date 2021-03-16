@@ -1,11 +1,21 @@
 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-14 <1E-14 <1E-14
 L_2 Residual: (.*)<expects> <1E-14
-Taylor approximation converging at order (.*)<expects> =2.0
+Taylor approximation converging at order 2.00
 Timestep: 0000 time = 0        	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-14 <1E-14 <1E-14 =25
 L_2 convergence rate: (.*)<expects> =1.0
 Timestep: 0001 time = 0.1      	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-14 <1E-14 <1E-14 =25
 L_2 convergence rate: (.*)<expects> =1.0
-Timestep: 0002 time = 0.2      	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-14 <1E-14 <1E-14 =25
+Timestep: 0002 time = 0.2      	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-14 <1E-14 <1E-14 =20
+L_2 convergence rate: (.*)<expects> =1.0
+Timestep: 0003 time = 0.3      	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-14 <1E-14 <1E-14 =10
+L_2 convergence rate: (.*)<expects> =1.0
+Timestep: 0004 time = 0.4      	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-14 <1E-14 <1E-14 =3
+L_2 convergence rate: nan
+Timestep: 0005 time = 0.5      	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-14 <1E-14 <1E-14 =0
+L_2 convergence rate: nan
+Timestep: 0006 time = 0.6      	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-14 <1E-14 <1E-14 =0
+L_2 convergence rate: nan
+Timestep: 0007 time = 0.7      	 L_2 Error: \[(.*), (.*), (.*)\] ParticleCount: (.*)<expects> <1E-14 <1E-14 <1E-14 =0
 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-14 <1E-14 <1E-14
 L_2 Residual: (.*)<expects> <1E-14
 Taylor approximation converging at order (.*)<expects> =2.0
