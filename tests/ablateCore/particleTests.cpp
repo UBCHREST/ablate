@@ -680,7 +680,7 @@ INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, ParticleMMS,
                                                                                                    "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 "
                                                                                                    "-pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full -fieldsplit_0_pc_type lu "
                                                                                                    "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi -particle_layout_type box "
-                                                                                                   "-particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 -particle_ts_max_steps 2 "
+                                                                                                   "-particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 "
                                                                                                    "-particle_ts_dt 0.05 -particle_ts_convergence_estimate -convest_num_refine 1 "
                                                                                                    "-particle_ts_monitor_cancel"},
                                                                  .uExact = trig_trig_u,
