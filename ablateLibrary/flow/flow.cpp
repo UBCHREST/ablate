@@ -17,7 +17,7 @@ ablate::flow::Flow::~Flow() { FlowDestroy(&flowData) >> checkError; }
 
 std::optional<int> ablate::flow::Flow::GetFieldId(const std::string& fieldName) {
     for(auto f = 0; f < flowData->numberFlowFields; f++){
-        if(flowData->fieldDescriptors[f].fieldName == fieldName){
+        if(flowData->flowFieldDescriptors[f].fieldName == fieldName){
             return f;
         }
     }

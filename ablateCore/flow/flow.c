@@ -6,24 +6,28 @@ PetscErrorCode FlowCreate(FlowData* flow) {
 
     // initialize all fields
     (*flow)->dm = NULL;
+    (*flow)->auxDm = NULL;
     (*flow)->data = NULL;
     (*flow)->flowField = NULL;
+    (*flow)->auxField = NULL;
 
     // setup the basic field names
     (*flow)->numberFlowFields = 0;
-    PetscErrorCode ierr = PetscMalloc1((*flow)->numberFlowFields, &((*flow)->fieldDescriptors));CHKERRQ(ierr);
+    PetscErrorCode ierr = PetscMalloc1((*flow)->numberFlowFields, &((*flow)->flowFieldDescriptors));CHKERRQ(ierr);
+    (*flow)->numberAuxFields = 0;
+    ierr = PetscMalloc1((*flow)->numberAuxFields, &((*flow)->auxFieldDescriptors));CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode FlowRegisterFields(FlowData flow, const char fieldName[],const char fieldPrefix[], PetscInt components) {
+PetscErrorCode FlowRegisterField(FlowData flow, const char *fieldName, const char *fieldPrefix, PetscInt components) {
     PetscFunctionBeginUser;
     // store the field
     flow->numberFlowFields++;
-    PetscErrorCode ierr = PetscRealloc(sizeof(FlowFieldDescriptor)*flow->numberFlowFields,&(flow->fieldDescriptors));CHKERRQ(ierr);
-    flow->fieldDescriptors[flow->numberFlowFields-1].components = components;
-    PetscStrallocpy(fieldName, (char **)&(flow->fieldDescriptors[flow->numberFlowFields-1].fieldName));
-    PetscStrallocpy(fieldPrefix, (char **)&(flow->fieldDescriptors[flow->numberFlowFields-1].fieldPrefix));
+    PetscErrorCode ierr = PetscRealloc(sizeof(FlowFieldDescriptor)*flow->numberFlowFields,&(flow->flowFieldDescriptors));CHKERRQ(ierr);
+    flow->flowFieldDescriptors[flow->numberFlowFields-1].components = components;
+    PetscStrallocpy(fieldName, (char **)&(flow->flowFieldDescriptors[flow->numberFlowFields-1].fieldName));
+    PetscStrallocpy(fieldPrefix, (char **)&(flow->flowFieldDescriptors[flow->numberFlowFields-1].fieldPrefix));
 
     // get the dm prefix to help name the fe objects
     const char *dmPrefix;
@@ -65,18 +69,123 @@ PetscErrorCode FlowRegisterFields(FlowData flow, const char fieldName[],const ch
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const char *fieldPrefix, PetscInt components) {
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+
+    // check to see if need to create an aux dm
+    if(flow->auxDm == NULL){
+        /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
+        DM coordDM;
+        ierr = DMGetCoordinateDM(flow->dm, &coordDM);CHKERRQ(ierr);
+        ierr = DMClone(flow->dm, &(flow->auxDm));CHKERRQ(ierr);
+
+        // this is a hard coded "dmAux" that petsc looks for
+        ierr = PetscObjectCompose((PetscObject) flow->dm, "dmAux", (PetscObject) flow->auxField);CHKERRQ(ierr);
+        ierr = DMSetCoordinateDM(flow->auxDm, coordDM);CHKERRQ(ierr);
+    }
+
+    // store the field
+    flow->numberAuxFields++;
+    ierr = PetscRealloc(sizeof(FlowFieldDescriptor)*flow->numberAuxFields,&(flow->auxFieldDescriptors));CHKERRQ(ierr);
+    flow->auxFieldDescriptors[flow->numberAuxFields-1].components = components;
+    PetscStrallocpy(fieldName, (char **)&(flow->auxFieldDescriptors[flow->numberAuxFields-1].fieldName));
+    PetscStrallocpy(fieldPrefix, (char **)&(flow->auxFieldDescriptors[flow->numberAuxFields-1].fieldPrefix));
+
+    // get the dm prefix to help name the fe objects
+    const char *dmPrefix;
+    ierr = DMGetOptionsPrefix(flow->dm, &dmPrefix);CHKERRQ(ierr);
+    char combinedFieldPrefix[128] = "";
+
+    /* Create finite element */
+    ierr = PetscStrlcat(combinedFieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
+    ierr = PetscStrlcat(combinedFieldPrefix, fieldPrefix, 128);CHKERRQ(ierr);
+
+    // determine if it a simplex element and the number of dimensions
+    DMPolytopeType ct;
+    PetscInt cStart;
+    ierr = DMPlexGetHeightStratum(flow->dm, 0, &cStart, NULL);CHKERRQ(ierr);
+    ierr = DMPlexGetCellType(flow->dm, cStart, &ct);CHKERRQ(ierr);
+    PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+
+    // Determine the number of dimensions
+    PetscInt dim;
+    ierr = DMGetDimension(flow->dm, &dim);CHKERRQ(ierr);
+
+    // create a petsc fe
+    MPI_Comm comm;
+    PetscFE petscFE;
+    ierr = PetscObjectGetComm((PetscObject)flow->dm, &comm);CHKERRQ(ierr);
+    ierr = PetscFECreateDefault(comm, dim, components, simplex, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
+
+    //If this is not the first field, copy the quadrature locations
+    if(flow->numberFlowFields > 1){
+        PetscFE referencePetscFE;
+        ierr = DMGetField(flow->dm, 0, NULL, (PetscObject*)&referencePetscFE);CHKERRQ(ierr);
+        ierr = PetscFECopyQuadrature(referencePetscFE, petscFE);CHKERRQ(ierr);
+    }
+
+    // Store the field and destroy copy
+    ierr = DMSetField(flow->auxDm, flow->numberAuxFields-1, NULL, (PetscObject)petscFE);CHKERRQ(ierr);
+    ierr = PetscFEDestroy(&petscFE);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowFinalizeRegisterFields(FlowData flow){
+    PetscFunctionBeginUser;
+    // Create the discrete systems for the DM based upon the fields added to the DM
+    PetscErrorCode ierr = DMCreateDS(flow->dm);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
+    PetscErrorCode ierr;
+    DM dm;
+
+    PetscFunctionBeginUser;
+    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+
+    ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
+    ierr = DMCreateGlobalVector(dm, &(flowData->flowField));CHKERRQ(ierr);
+
+    if(flowData->auxDm){
+        ierr = DMCreateDS(flowData->auxDm);CHKERRQ(ierr);
+        ierr = DMCreateGlobalVector(flowData->auxDm, &(flowData->auxField));CHKERRQ(ierr);
+
+        // attach this field as aux vector to the dm
+        ierr = PetscObjectCompose((PetscObject) flowData->dm, "A", (PetscObject) flowData->auxField);CHKERRQ(ierr);
+    }
+
+    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);
+    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL);CHKERRQ(ierr);
+    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+
 
 PetscErrorCode FlowDestroy(FlowData* flow) {
     PetscFunctionBeginUser;
+    PetscErrorCode ierr;
     // remove each allocated string and flow field
     for (PetscInt i =0; i < (*flow)->numberFlowFields; i++){
-        PetscFree((*flow)->fieldDescriptors[i].fieldName);
-        PetscFree((*flow)->fieldDescriptors[i].fieldPrefix);
+        PetscFree((*flow)->flowFieldDescriptors[i].fieldName);
+        PetscFree((*flow)->flowFieldDescriptors[i].fieldPrefix);
     }
-    PetscFree((*flow)->fieldDescriptors);
+    PetscFree((*flow)->flowFieldDescriptors);
+
+    if ((*flow)->auxField){
+        ierr = VecDestroy(&((*flow)->auxField));CHKERRQ(ierr);
+    }
+
+    if ((*flow)->auxDm){
+        ierr = DMDestroy(&((*flow)->auxDm));CHKERRQ(ierr);
+    }
 
     if ((*flow)->flowField){
-        PetscErrorCode ierr = VecDestroy(&((*flow)->flowField));CHKERRQ(ierr);
+        ierr = VecDestroy(&((*flow)->flowField));CHKERRQ(ierr);
     }
     free(*flow);
     flow = NULL;

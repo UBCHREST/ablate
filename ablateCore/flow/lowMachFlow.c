@@ -346,9 +346,7 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
 
 PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
     DM cdm = dm;
-    PetscFE fe[3];
-    MPI_Comm comm;
-    PetscInt dim, cStart;
+    PetscInt dim;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
@@ -359,12 +357,12 @@ PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     // Register each field, this order must match the order in LowMachFlowFields enum
-    ierr = FlowRegisterFields(flowData, lowMachFlowFieldNames[VEL], "vel_",  dim);CHKERRQ(ierr);
-    ierr = FlowRegisterFields(flowData, lowMachFlowFieldNames[PRES], "pres_",  1);CHKERRQ(ierr);
-    ierr = FlowRegisterFields(flowData, lowMachFlowFieldNames[TEMP], "temp_",  1);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, lowMachFlowFieldNames[VEL], "vel_", dim);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, lowMachFlowFieldNames[PRES], "pres_", 1);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, lowMachFlowFieldNames[TEMP], "temp_", 1);CHKERRQ(ierr);
 
     // Create the discrete systems for the DM based upon the fields added to the DM
-    ierr = DMCreateDS(dm);CHKERRQ(ierr);
+    ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
 
     while (cdm) {
         ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
@@ -419,18 +417,11 @@ PetscErrorCode LowMachFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
     DM dm;
 
     PetscFunctionBeginUser;
+    ierr =  FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
+
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
-
-    ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
-    ierr = DMCreateGlobalVector(dm, &(flowData->flowField));CHKERRQ(ierr);
     ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
-
-    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);
-    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL);CHKERRQ(ierr);
-    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL);CHKERRQ(ierr);
-
     ierr = TSSetPreStep(ts, removeDiscretePressureNullspaceOnTs);CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
 }
 
