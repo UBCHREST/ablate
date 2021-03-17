@@ -1,10 +1,11 @@
 add_executable(coreTests "")
-target_link_libraries(coreTests PUBLIC gtest gmock ablateCore testingResources)
+target_link_libraries(coreTests PUBLIC gtest gmock ablateCore testingResources muparser)
 
 target_sources(coreTests
         PRIVATE
         lowMachFlowTests.cpp
         incompressibleFlowTests.cpp
+        incompressibleFlowDynamicSourceTests.cpp
         particleTests.cpp
         main.cpp
         )

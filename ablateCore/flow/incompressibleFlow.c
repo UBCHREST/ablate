@@ -5,6 +5,7 @@ F*/
 
 const char *incompressibleFlowParametersTypeNames[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS + 1] = {"strouhal", "reynolds", "peclet", "mu", "k", "cp", "unknown"};
 static const char *incompressibleFlowFieldNames[TOTAL_INCOMPRESSIBLE_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
+static const char *incompressibleSourceFieldNames[TOTAL_INCOMPRESSIBLE_SOURCE_FIELDS + 1] = {"momentum_source", "mass_source", "energy_source", "unknown"};
 
 // \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u}
 static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
@@ -21,6 +22,13 @@ static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     for (c = 0; c < Nc; ++c) {
         for (d = 0; d < dim; ++d) {
             f0[c] += u[uOff[VEL] + d] * u_x[uOff_x[VEL] + c * dim + d];  // rho is assumed to be unity
+        }
+    }
+
+    // Add in any fixed source term
+    if(NfAux > 0){
+        for(d =0; d < dim; ++d){
+            f0[d] += a[aOff[MOM] + d];
         }
     }
 }
@@ -52,6 +60,11 @@ static void wIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     for (d = 0; d < dim; ++d) {
         f0[0] += constants[CP] * u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];  // rho is assumed unity
     }
+
+    // Add in any fixed source term
+    if(NfAux > 0){
+        f0[0] += a[aOff[ENERGY]];
+    }
 }
 
 //  \nabla w \cdot \frac{k}{P} \nabla T
@@ -72,6 +85,11 @@ static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     PetscInt d;
     for (d = 0, f0[0] = 0.0; d < dim; ++d) {
         f0[0] += u_x[uOff_x[VEL] + d * dim + d];
+    }
+
+    // Add in any fixed source term
+    if(NfAux > 0){
+        f0[0] += a[aOff[MASS]];
     }
 }
 
@@ -267,9 +285,6 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) 
     ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[PRES], "pres_", 1);CHKERRQ(ierr);
     ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[TEMP], "temp_", 1);CHKERRQ(ierr);
 
-    // Add in a source term
-    ierr = FlowRegisterAuxField(flowData, "source", "source_", 1);CHKERRQ(ierr);
-
     // Create the discrete systems for the DM based upon the fields added to the DM
     ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
 
@@ -288,6 +303,18 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) 
         ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
     }
 
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode IncompressibleFlow_EnableAuxFields(FlowData flowData) {
+    PetscFunctionBeginUser;
+    // Determine the number of dimensions
+    PetscInt dim;
+    PetscErrorCode ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
+
+    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[MOM] , incompressibleSourceFieldNames[MOM], dim);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[MASS] , incompressibleSourceFieldNames[MASS], 1);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[ENERGY] , incompressibleSourceFieldNames[ENERGY], 1);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
