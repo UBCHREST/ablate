@@ -261,17 +261,17 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
     // compute the average particle location
-    const PetscReal* coords;
+    const PetscReal *coords;
     PetscInt dims;
     PetscReal avg[3] = {0.0, 0.0, 0.0};
-    ierr = DMSwarmGetField(particlesData->dm,DMSwarmPICField_coor, &dims, NULL,(void**)&coords);
+    ierr = DMSwarmGetField(particlesData->dm, DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    for(PetscInt p =0; p < particleCount; p++){
-        for(PetscInt n =0; n < dims; n++){
-            avg[n] += coords[p*dims + n]/PetscReal(particleCount);
+    for (PetscInt p = 0; p < particleCount; p++) {
+        for (PetscInt n = 0; n < dims; n++) {
+            avg[n] += coords[p * dims + n] / PetscReal(particleCount);
         }
     }
-    ierr = DMSwarmRestoreField(particlesData->dm,DMSwarmPICField_coor, &dims, NULL,(void**)&coords);
+    ierr = DMSwarmRestoreField(particlesData->dm, DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
     ierr = PetscPrintf(PETSC_COMM_WORLD,
@@ -285,11 +285,7 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
                        (double)avg[0],
                        (double)avg[1]);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
-    ierr = PetscPrintf(PETSC_COMM_WORLD,
-                       "Avg Particle Location: [%2.3g, %2.3g, %2.3g]\n",
-                       (double)avg[0],
-                       (double)avg[1],
-                       (double)avg[2]);
+    ierr = PetscPrintf(PETSC_COMM_WORLD, "Avg Particle Location: [%2.3g, %2.3g, %2.3g]\n", (double)avg[0], (double)avg[1], (double)avg[2]);
 
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     PetscFunctionReturn(0);
