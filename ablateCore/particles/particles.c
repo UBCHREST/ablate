@@ -13,6 +13,7 @@ PetscErrorCode ParticleCreate(ParticleData *particles, PetscInt ndims) {
     (*particles)->exactSolution = NULL;
     (*particles)->timeInitial = 0.0;
     (*particles)->timeFinal = 0.0;
+    (*particles)->dmChanged = PETSC_FALSE;
 
     // create and associate the dm
     ierr = DMCreate(PETSC_COMM_WORLD, &(*particles)->dm);CHKERRQ(ierr);
@@ -28,7 +29,7 @@ PetscErrorCode ParticleCreate(ParticleData *particles, PetscInt ndims) {
     (*particles)->fieldDescriptors[0].type = PETSC_DOUBLE;
     (*particles)->fieldDescriptors[0].components = ndims;
     PetscStrallocpy(DMSwarmField_pid, (char **)&(*particles)->fieldDescriptors[1].fieldName);
-    (*particles)->fieldDescriptors[1].type = PETSC_INT;
+    (*particles)->fieldDescriptors[1].type = PETSC_INT64;
     (*particles)->fieldDescriptors[1].components = 1;
     PetscFunctionReturn(0);
 }
@@ -36,6 +37,9 @@ PetscErrorCode ParticleCreate(ParticleData *particles, PetscInt ndims) {
 PetscErrorCode ParticleInitializeFlow(ParticleData particles, FlowData flowData) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
+
+    // before setting up the flow finalize the fields
+    ierr = DMSwarmFinalizeFieldRegister(particles->dm);CHKERRQ(ierr);
 
     // get the dimensions of the flow and make sure it is the same as particles
     ierr = DMSwarmSetCellDM(particles->dm, flowData->dm);CHKERRQ(ierr);

@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <petsc.h>
 #include "MpiTestFixture.hpp"
 #include "gtest/gtest.h"
@@ -6,7 +7,6 @@
 #include "particleInitializer.h"
 #include "particleTracer.h"
 #include "particles.h"
-
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
 typedef void (*IntegrandTestFunction)(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *u, const PetscScalar *u_t, const PetscScalar *u_x,
@@ -260,6 +260,20 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     ierr = DMSwarmGetSize(particlesData->dm, &particleCount);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
+    // compute the average particle location
+    const PetscReal *coords;
+    PetscInt dims;
+    PetscReal avg[3] = {0.0, 0.0, 0.0};
+    ierr = DMSwarmGetField(particlesData->dm, DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
+    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    for (PetscInt p = 0; p < particleCount; p++) {
+        for (PetscInt n = 0; n < dims; n++) {
+            avg[n] += coords[p * dims + n] / PetscReal(particleCount);
+        }
+    }
+    ierr = DMSwarmRestoreField(particlesData->dm, DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
+    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
     ierr = PetscPrintf(PETSC_COMM_WORLD,
                        "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g] ParticleCount: %d\n",
                        (int)step,
@@ -267,7 +281,12 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
                        (double)ferrors[0],
                        (double)ferrors[1],
                        (double)ferrors[2],
-                       particleCount);
+                       particleCount,
+                       (double)avg[0],
+                       (double)avg[1]);
+    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD, "Avg Particle Location: [%2.3g, %2.3g, %2.3g]\n", (double)avg[0], (double)avg[1], (double)avg[2]);
+
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     PetscFunctionReturn(0);
 }
@@ -282,11 +301,10 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
 static PetscErrorCode computeParticleError(TS particleTS, Vec u, Vec e) {
     ParticleData particles;
     DM sdm;
-    const PetscScalar *xp0, *xp;
-    PetscScalar *ep;
+    const PetscScalar *xp0;
+    Vec exactLocationVec;
+    PetscScalar *exactLocation;
     PetscReal time;
-    PetscInt dim, Np, p;
-    MPI_Comm comm;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
@@ -297,21 +315,31 @@ static PetscErrorCode computeParticleError(TS particleTS, Vec u, Vec e) {
     CHKERRQ(ierr);
     time += particles->timeInitial;
 
-    ierr = PetscObjectGetComm((PetscObject)particleTS, &comm);
+    // extract needed objects
     CHKERRQ(ierr);
     ierr = TSGetDM(particleTS, &sdm);
     CHKERRQ(ierr);
+
+    // create a vector to hold the exact solution
+    ierr = DMSwarmVectorDefineField(sdm, "InitialLocation");
+    CHKERRQ(ierr);
+    ierr = DMGetGlobalVector(sdm, &exactLocationVec);
+    CHKERRQ(ierr);
+
+    // use the initial location to compute the exact
+    ierr = DMSwarmGetField(particles->dm, "InitialLocation", NULL, NULL, (void **)&xp0);
+    CHKERRQ(ierr);
+    ierr = VecGetArrayWrite(exactLocationVec, &exactLocation);
+    CHKERRQ(ierr);
+
+    // exact the exact solution from the initial location
+    PetscInt dim;
     ierr = DMGetDimension(sdm, &dim);
     CHKERRQ(ierr);
+    PetscInt Np;
     ierr = DMSwarmGetLocalSize(sdm, &Np);
     CHKERRQ(ierr);
-    ierr = VecGetArrayRead(particles->initialLocation, &xp0);
-    CHKERRQ(ierr);
-    ierr = VecGetArrayRead(u, &xp);
-    CHKERRQ(ierr);
-    ierr = VecGetArrayWrite(e, &ep);
-    CHKERRQ(ierr);
-    for (p = 0; p < Np; ++p) {
+    for (PetscInt p = 0; p < Np; ++p) {
         PetscScalar x[3];
         PetscReal x0[3];
         PetscInt d;
@@ -322,14 +350,48 @@ static PetscErrorCode computeParticleError(TS particleTS, Vec u, Vec e) {
         ierr = particles->exactSolution(dim, time, x0, 1, x, particles->exactSolutionContext);
         CHKERRQ(ierr);
         for (d = 0; d < dim; ++d) {
-            ep[p * dim + d] += xp[p * dim + d] - x[d];
+            exactLocation[p * dim + d] = x[d];
         }
     }
-    ierr = VecRestoreArrayRead(particles->initialLocation, &xp0);
+    ierr = VecRestoreArrayWrite(exactLocationVec, &exactLocation);
     CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(u, &xp);
+
+    // Get all points still in this mesh
+    DM flowDM;
+    ierr = VecGetDM(particles->flowFinal, &flowDM);
     CHKERRQ(ierr);
-    ierr = VecRestoreArrayWrite(e, &ep);
+    PetscSF cellSF = NULL;
+    ierr = DMLocatePoints(flowDM, exactLocationVec, DM_POINTLOCATION_NONE, &cellSF);
+    CHKERRQ(ierr);
+    const PetscSFNode *cells;
+    ierr = PetscSFGetGraph(cellSF, NULL, NULL, NULL, &cells);
+    CHKERRQ(ierr);
+
+    // compute the difference between exact and u
+    ierr = VecWAXPY(e, -1, exactLocationVec, u);
+    CHKERRQ(ierr);
+
+    // zero out the error if any particle moves outside of the domain
+    for (PetscInt p = 0; p < Np; ++p) {
+        PetscInt d;
+        if (cells[p].index == DMLOCATEPOINT_POINT_NOT_FOUND) {
+            for (d = 0; d < dim; ++d) {
+                ierr = VecSetValue(e, p * dim + d, 0.0, INSERT_VALUES);
+                CHKERRQ(ierr);
+            }
+        }
+    }
+    ierr = VecAssemblyBegin(e);
+    CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(e);
+    CHKERRQ(ierr);
+
+    // restore all of the vecs/fields
+    ierr = PetscSFDestroy(&cellSF);
+    CHKERRQ(ierr);
+    ierr = DMSwarmRestoreField(particles->dm, "InitialLocation", NULL, NULL, (void **)&xp0);
+    CHKERRQ(ierr);
+    ierr = DMRestoreGlobalVector(sdm, &exactLocationVec);
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
@@ -372,7 +434,7 @@ static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
     CHKERRQ(ierr);
     ierr = DMSwarmGetLocalSize(sdm, &Np);
     CHKERRQ(ierr);
-    ierr = VecGetArrayRead(particles->initialLocation, &xp0);
+    ierr = DMSwarmGetField(particles->dm, "InitialLocation", NULL, NULL, (void **)&xp0);
     CHKERRQ(ierr);
     ierr = VecGetArrayWrite(u, &xp);
     CHKERRQ(ierr);
@@ -388,7 +450,7 @@ static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
             xp[p * dim + d] = x[d];
         }
     }
-    ierr = VecRestoreArrayRead(particles->initialLocation, &xp0);
+    ierr = DMSwarmRestoreField(particles->dm, "InitialLocation", NULL, NULL, (void **)&xp0);
     CHKERRQ(ierr);
     ierr = VecRestoreArrayWrite(u, &xp);
     CHKERRQ(ierr);
@@ -543,6 +605,10 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         ierr = ParticleTracerCreate(&particles, 2);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
+        // For this test suite keep track of the initial particle location
+        ierr = ParticleRegisterPetscDatatypeField(particles, "InitialLocation", 2, PETSC_REAL);
+
+        // Set the exact solution
         ParticleSetExactSolutionFlow(particles, testingParam.particleExact, NULL);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
@@ -581,6 +647,24 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         ierr = TSSetComputeInitialCondition(particleTs, setParticleExactSolution);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
+        // copy over the initial location
+        PetscReal *coord;
+        PetscReal *initialLocation;
+        PetscInt numberParticles;
+        ierr = DMSwarmGetLocalSize(particles->dm, &numberParticles);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = DMSwarmGetField(particles->dm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = DMSwarmGetField(particles->dm, "InitialLocation", NULL, NULL, (void **)&initialLocation);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        for (int i = 0; i < numberParticles * 2; ++i) {
+            initialLocation[i] = coord[i];
+        }
+        ierr = DMSwarmRestoreField(particles->dm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = DMSwarmRestoreField(particles->dm, "InitialLocation", NULL, NULL, (void **)&initialLocation);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
         // Solve the one way coupled system
         ierr = TSSolve(ts, flowData->flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
@@ -615,7 +699,7 @@ INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, ParticleMMS,
                                                                                                    "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 "
                                                                                                    "-pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full -fieldsplit_0_pc_type lu "
                                                                                                    "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi -particle_layout_type box "
-                                                                                                   "-particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 -particle_ts_max_steps 2 "
+                                                                                                   "-particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 "
                                                                                                    "-particle_ts_dt 0.05 -particle_ts_convergence_estimate -convest_num_refine 1 "
                                                                                                    "-particle_ts_monitor_cancel"},
                                                                  .uExact = trig_trig_u,
@@ -627,24 +711,23 @@ INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, ParticleMMS,
                                                                  .f0_v = f0_trig_trig_v,
                                                                  .f0_w = f0_trig_trig_w,
                                                                  .omega = 0.5},
-                                         (ParticleMMSParameters){
-                                             .mpiTestParameter = {.testName = "particle deletion with simple fluid tri_p2_p1_p1",
-                                                                  .nproc = 1,
-                                                                  .expectedOutputFile = "outputs/particle_deletion_with_simple_fluid_tri_p2_p1_p1",
-                                                                  .arguments = "-dm_plex_separate_marker -dm_refine 2 "
-                                                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                                                               "-dmts_check .001 -ts_max_steps 2 -ts_dt 0.1 -ksp_type fgmres -ksp_gmres_restart 10 "
-                                                                               "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
-                                                                               "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                               "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                                                               "-particle_layout_type box -particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 "
-                                                                               "-particle_ts_max_steps 2 -particle_ts_dt 0.05 -particle_ts_convergence_estimate -convest_num_refine 1 "},
-                                             .uExact = linear_u,
-                                             .pExact = linear_p,
-                                             .TExact = linear_T,
-                                             .u_tExact = linear_u_t,
-                                             .T_tExact = linear_T_t,
-                                             .particleExact = linear_x,
-                                             .f0_v = f0_linear_v,
-                                             .f0_w = f0_linear_w}),
+                                         (ParticleMMSParameters){.mpiTestParameter = {.testName = "particle deletion with simple fluid tri_p2_p1_p1",
+                                                                                      .nproc = 1,
+                                                                                      .expectedOutputFile = "outputs/particle_deletion_with_simple_fluid_tri_p2_p1_p1",
+                                                                                      .arguments = "-dm_plex_separate_marker -dm_refine 2 "
+                                                                                                   "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                                                                   "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                                   "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                                                                   "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                                                                   "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                                                                   "-particle_layout_type box -particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 "
+                                                                                                   "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
+                                                                 .uExact = linear_u,
+                                                                 .pExact = linear_p,
+                                                                 .TExact = linear_T,
+                                                                 .u_tExact = linear_u_t,
+                                                                 .T_tExact = linear_T_t,
+                                                                 .particleExact = linear_x,
+                                                                 .f0_v = f0_linear_v,
+                                                                 .f0_w = f0_linear_w}),
                          [](const testing::TestParamInfo<ParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

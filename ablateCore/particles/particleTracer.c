@@ -2,6 +2,8 @@
 #include <petsc/private/dmswarmimpl.h>
 #include <petscdmswarm.h>
 
+const char ParticleTracerVelocity[] = "ParticleTracerVelocity";
+
 /* x_t = v
 
    Note that here we use the velocity field at t_{n+1} to advect the particles from
@@ -24,8 +26,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     PetscFunctionBeginUser;
     ierr = TSGetDM(ts, &sdm);CHKERRQ(ierr);
     ierr = DMSwarmGetCellDM(sdm, &dm);CHKERRQ(ierr);
-    ierr = DMSwarmVectorDefineField(sdm, DMSwarmPICField_coor);CHKERRQ(ierr);
-    ierr = DMGetGlobalVector(sdm, &pvel);CHKERRQ(ierr);
+    ierr = DMSwarmCreateGlobalVectorFromField(sdm, ParticleTracerVelocity, &pvel);CHKERRQ(ierr);
     ierr = DMSwarmGetLocalSize(sdm, &Np);CHKERRQ(ierr);
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
@@ -46,7 +47,12 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     ierr = VecGetArrayRead(X, &coords);CHKERRQ(ierr);
     ierr = DMInterpolationAddPoints(ictx, Np, (PetscReal *)coords);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(X, &coords);CHKERRQ(ierr);
-    ierr = DMInterpolationSetUp(ictx, vdm, PETSC_FALSE);CHKERRQ(ierr);
+
+    /* Particles that lie outside the domain should be dropped,
+     whereas particles that move to another partition should trigger a migration */
+    ierr = DMInterpolationSetUp(ictx, vdm, PETSC_FALSE, PETSC_TRUE);CHKERRQ(ierr);
+    ierr = VecSet(pvel, 0.);CHKERRQ(ierr);
+
     ierr = DMInterpolationEvaluate(ictx, vdm, locvel, pvel);CHKERRQ(ierr);
     ierr = DMInterpolationDestroy(&ictx);CHKERRQ(ierr);
     ierr = DMRestoreLocalVector(vdm, &locvel);CHKERRQ(ierr);
@@ -57,32 +63,38 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     ierr = PetscArraycpy(f, v, Np * dim);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(pvel, &v);CHKERRQ(ierr);
     ierr = VecRestoreArray(F, &f);CHKERRQ(ierr);
-    ierr = DMRestoreGlobalVector(sdm, &pvel);CHKERRQ(ierr);
+    ierr = DMSwarmDestroyGlobalVectorFromField(sdm, ParticleTracerVelocity, &pvel);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
 static PetscErrorCode advectParticles(TS ts) {
     TS sts;
     DM sdm;
-    Vec p;
+    Vec particlePosition;
     ParticleData particles;
-    PetscScalar *coord, *a;
-    const PetscScalar *ca;
     PetscReal time;
-    PetscInt n;
     PetscErrorCode ierr;
+    PetscInt numberLocal; // current number of local particles
+    PetscInt numberGlobal; // current number of local particles
 
     PetscFunctionBeginUser;
     ierr = PetscObjectQuery((PetscObject)ts, "_SwarmTS", (PetscObject *)&sts);CHKERRQ(ierr);
-    ierr = PetscObjectQuery((PetscObject)ts, "_SwarmSol", (PetscObject *)&p);CHKERRQ(ierr);
     ierr = TSGetDM(sts, &sdm);CHKERRQ(ierr);
     ierr = TSGetRHSFunction(sts, NULL, NULL, (void **)&particles);CHKERRQ(ierr);
-    ierr = DMSwarmGetField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
-    ierr = VecGetLocalSize(p, &n);CHKERRQ(ierr);
-    ierr = VecGetArray(p, &a);CHKERRQ(ierr);
-    ierr = PetscArraycpy(a, coord, n);CHKERRQ(ierr);
-    ierr = VecRestoreArray(p, &a);CHKERRQ(ierr);
-    ierr = DMSwarmRestoreField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
+
+    // if the dm has changed size (new particles, particles moved between ranks, particles deleted) reset the ts
+    if (particles->dmChanged){
+        ierr = TSReset(sts);CHKERRQ(ierr);
+        particles->dmChanged = PETSC_FALSE;
+    }
+
+    // Get the current size
+    ierr = DMSwarmGetLocalSize(sdm,&numberLocal);CHKERRQ(ierr);
+    ierr = DMSwarmGetSize(sdm,&numberGlobal);CHKERRQ(ierr);
+
+    // Get the position vector
+    ierr = DMSwarmCreateGlobalVectorFromField(sdm,DMSwarmPICField_coor, &particlePosition);CHKERRQ(ierr);
 
     // Set the start time for TSSolve
     ierr = TSSetTime(sts, particles->timeInitial);CHKERRQ(ierr);
@@ -93,18 +105,31 @@ static PetscErrorCode advectParticles(TS ts) {
     particles->timeFinal = time;
 
     // take the needed timesteps to get to the flow time
-    ierr = TSSolve(sts, p);CHKERRQ(ierr);
-    ierr = DMSwarmGetField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
-    ierr = VecGetLocalSize(p, &n);CHKERRQ(ierr);
-    ierr = VecGetArrayRead(p, &ca);CHKERRQ(ierr);
-    ierr = PetscArraycpy(coord, ca, n);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(p, &ca);CHKERRQ(ierr);
-    ierr = DMSwarmRestoreField(sdm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);CHKERRQ(ierr);
-
+    ierr = TSSolve(sts, particlePosition);CHKERRQ(ierr);
     ierr = VecCopy(particles->flowFinal, particles->flowInitial);CHKERRQ(ierr);
     particles->timeInitial = particles->timeFinal;
 
+    // Return the coord vector
+    ierr = DMSwarmDestroyGlobalVectorFromField(sdm,DMSwarmPICField_coor, &particlePosition);CHKERRQ(ierr);
+
+    // Migrate any particles that have moved
     ierr = DMSwarmMigrate(sdm, PETSC_TRUE);CHKERRQ(ierr);
+
+    // get the new sizes
+    PetscInt newNumberLocal;
+    PetscInt newNumberGlobal;
+
+    // Get the updated size
+    ierr = DMSwarmGetLocalSize(sdm,&newNumberLocal);CHKERRQ(ierr);
+    ierr = DMSwarmGetSize(sdm,&newNumberGlobal);CHKERRQ(ierr);
+
+    // Check to see if any of the ranks changed size after migration
+    PetscInt dmChanged = newNumberGlobal != numberGlobal ||  newNumberLocal != numberLocal;
+    MPI_Comm comm;
+    ierr = PetscObjectGetComm((PetscObject)sts, &comm);CHKERRQ(ierr);
+    PetscInt dmChangedAll;
+    MPIU_Allreduce(&dmChanged,&dmChangedAll,1,MPIU_INT, MPIU_MAX, comm);
+    particles->dmChanged = (PetscBool)dmChangedAll;
 
     PetscFunctionReturn(0);
 }
@@ -117,23 +142,15 @@ PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particle
     ierr = TSSetExactFinalTime(particleTs, TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
     ierr = TSSetApplicationContext(particleTs, particles);CHKERRQ(ierr);
     ierr = TSSetRHSFunction(particleTs, NULL, freeStreaming, particles);CHKERRQ(ierr);
+    ierr = TSSetMaxSteps(particleTs, 100000000);CHKERRQ(ierr); // set the max ts to a very large number. This can be over written using ts_max_steps options
 
     // link the solution with the flowTS
     ierr = TSSetPostStep(flowTs, advectParticles);CHKERRQ(ierr);
     ierr = PetscObjectCompose((PetscObject)flowTs, "_SwarmTS", (PetscObject)particleTs);CHKERRQ(ierr);
     ierr = DMSwarmVectorDefineField(particles->dm, DMSwarmPICField_coor);CHKERRQ(ierr);
-    ierr = DMCreateGlobalVector(particles->dm, &(particles->particleSolution));CHKERRQ(ierr);
-    ierr = PetscObjectCompose((PetscObject)flowTs, "_SwarmSol", (PetscObject)(particles->particleSolution));CHKERRQ(ierr);  // do else where
 
     // Set up the TS
     ierr = TSSetFromOptions(particleTs);CHKERRQ(ierr);
-
-    // extract the initial solution
-    Vec xtmp;
-    ierr = DMCreateGlobalVector(particles->dm, &(particles->initialLocation));CHKERRQ(ierr);
-    ierr = DMSwarmCreateGlobalVectorFromField(particles->dm, DMSwarmPICField_coor, &xtmp);CHKERRQ(ierr);
-    ierr = VecCopy(xtmp, particles->initialLocation);CHKERRQ(ierr);
-    ierr = DMSwarmDestroyGlobalVectorFromField(particles->dm, DMSwarmPICField_coor, &xtmp);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -147,18 +164,13 @@ PetscErrorCode ParticleTracerCreate(ParticleData *particles, PetscInt ndims) {
 
     // register all particle fields
     ierr = DMSwarmSetType((*particles)->dm, DMSWARM_PIC);CHKERRQ(ierr);
-//    ierr = DMSwarmRegisterPetscDatatypeField((*particles)->dm, "mass", 1, PETSC_REAL);CHKERRQ(ierr);
-    ierr = ParticleRegisterPetscDatatypeField(*particles, "mass", 1, PETSC_REAL);CHKERRQ(ierr);
-    ierr = DMSwarmFinalizeFieldRegister((*particles)->dm);CHKERRQ(ierr);
-
+    ierr = ParticleRegisterPetscDatatypeField(*particles, ParticleTracerVelocity, ndims, PETSC_REAL);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ParticleTracerDestroy(ParticleData *particles) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr = VecDestroy(&((*particles)->flowInitial));CHKERRQ(ierr);
-    ierr = VecDestroy(&((*particles)->particleSolution));CHKERRQ(ierr);
-    ierr = VecDestroy(&((*particles)->initialLocation));CHKERRQ(ierr);
 
     // Call the base destroy
     ierr = ParticleDestroy(particles);CHKERRQ(ierr);
