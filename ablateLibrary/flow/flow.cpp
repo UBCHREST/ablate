@@ -16,14 +16,10 @@ ablate::flow::Flow::Flow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std
 ablate::flow::Flow::~Flow() { FlowDestroy(&flowData) >> checkError; }
 
 std::optional<int> ablate::flow::Flow::GetFieldId(const std::string& fieldName) {
-    PetscBool found;
-    PetscInt index;
-
-    PetscEListFind(flowData->numberFlowFields, flowData->flowFieldNames, fieldName.c_str(), &index, &found) >> checkError;
-
-    if (found) {
-        return index;
-    } else {
-        return {};
+    for(auto f = 0; f < flowData->numberFlowFields; f++){
+        if(flowData->fieldDescriptors[f].fieldName == fieldName){
+            return f;
+        }
     }
+    return {};
 }

@@ -51,7 +51,13 @@ PetscErrorCode ParticleInitializeFlow(ParticleData particles, FlowData flowData)
 
     // Find the velocity field
     PetscBool found;
-    ierr = PetscEListFind(flowData->numberFlowFields,flowData->flowFieldNames, "velocity",&(particles->flowVelocityFieldIndex),&found);CHKERRQ(ierr);
+    for (PetscInt f =0; f < flowData->numberFlowFields; f++){
+        ierr = PetscStrcmp("velocity",flowData->fieldDescriptors[f].fieldName, &found );CHKERRQ(ierr);
+        if(found){
+            particles->flowVelocityFieldIndex = f;
+            break;
+        }
+    }
     if (!found){
         // get the particle data comm
         MPI_Comm comm;

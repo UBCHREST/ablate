@@ -352,55 +352,16 @@ PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-
     //Store the field data
     flowData->dm = dm;
-
-    // determine if it a simplex element and the number of dimensions
-    DMPolytopeType ct;
-    ierr = DMPlexGetHeightStratum(dm, 0, &cStart, NULL);CHKERRQ(ierr);
-    ierr = DMPlexGetCellType(dm, cStart, &ct);CHKERRQ(ierr);
-    PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
 
     // Determine the number of dimensions
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
-    // get the dm prefix to help name the fe objects
-    const char *dmPrefix;
-    ierr = DMGetOptionsPrefix(dm, &dmPrefix);CHKERRQ(ierr);
-    char fieldPrefix[128] = "";
-
-    /* Create finite element */
-    ierr = PetscStrlcat(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(fieldPrefix, "vel_", 128);CHKERRQ(ierr);
-
-    ierr = PetscObjectGetComm((PetscObject)dm, &comm);CHKERRQ(ierr);
-    ierr = PetscFECreateDefault(comm, dim, dim, simplex, fieldPrefix, PETSC_DEFAULT, &fe[0]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[VEL], lowMachFlowFieldNames[VEL]);CHKERRQ(ierr);
-
-    // pressure
-    ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(fieldPrefix, "pres_", 128);CHKERRQ(ierr);
-
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[1]);CHKERRQ(ierr);
-    ierr = PetscFECopyQuadrature(fe[VEL], fe[PRES]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[PRES], lowMachFlowFieldNames[PRES]);CHKERRQ(ierr);
-
-    // temperature
-    ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(fieldPrefix, "temp_", 128);CHKERRQ(ierr);
-
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[2]);CHKERRQ(ierr);
-    ierr = PetscFECopyQuadrature(fe[VEL], fe[TEMP]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[TEMP], lowMachFlowFieldNames[TEMP]);CHKERRQ(ierr);
-
-    // register the fields
-    ierr = FlowRegisterFields(flowData, TOTAL_LOW_MACH_FLOW_FIELDS, lowMachFlowFieldNames);CHKERRQ(ierr);
-
-    /* Set discretization and boundary conditions for each mesh */
-    ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);
-    ierr = DMSetField(dm, PRES, NULL, (PetscObject)fe[PRES]);CHKERRQ(ierr);
-    ierr = DMSetField(dm, TEMP, NULL, (PetscObject)fe[TEMP]);CHKERRQ(ierr);
+    // Register each field, this order must match the order in LowMachFlowFields enum
+    ierr = FlowRegisterFields(flowData, lowMachFlowFieldNames[VEL], "vel_",  dim);CHKERRQ(ierr);
+    ierr = FlowRegisterFields(flowData, lowMachFlowFieldNames[PRES], "pres_",  1);CHKERRQ(ierr);
+    ierr = FlowRegisterFields(flowData, lowMachFlowFieldNames[TEMP], "temp_",  1);CHKERRQ(ierr);
 
     // Create the discrete systems for the DM based upon the fields added to the DM
     ierr = DMCreateDS(dm);CHKERRQ(ierr);
@@ -409,11 +370,6 @@ PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
         ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
         ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
     }
-
-    // Clean up the fields
-    ierr = PetscFEDestroy(&fe[VEL]);CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&fe[PRES]);CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&fe[TEMP]);CHKERRQ(ierr);
 
     {
         PetscObject pressure;
