@@ -237,7 +237,7 @@ PetscErrorCode IncompressibleFlow_CompleteFlowInitialization(DM dm, Vec u) {
 }
 
 /* Make the discrete pressure discretely divergence free */
-static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
+static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, void* cts) {
     Vec u;
     PetscErrorCode ierr;
     DM dm;
@@ -257,6 +257,7 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) 
     PetscFunctionBeginUser;
     //Store the field data
     flowData->dm = dm;
+    ierr = DMSetApplicationContext(flowData->dm, flowData);CHKERRQ(ierr);
 
     // Determine the number of dimensions
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
@@ -326,7 +327,7 @@ PetscErrorCode IncompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts)
 
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
     ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
-    ierr = TSSetPreStep(ts, removeDiscretePressureNullspaceOnTs);CHKERRQ(ierr);
+    ierr = FlowRegisterPreStep(flowData, removeDiscretePressureNullspaceOnTs, NULL);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

@@ -68,7 +68,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode advectParticles(TS ts) {
+static PetscErrorCode advectParticles(TS flowTS, void* ctx) {
     TS sts;
     DM sdm;
     Vec particlePosition;
@@ -79,7 +79,7 @@ static PetscErrorCode advectParticles(TS ts) {
     PetscInt numberGlobal; // current number of local particles
 
     PetscFunctionBeginUser;
-    ierr = PetscObjectQuery((PetscObject)ts, "_SwarmTS", (PetscObject *)&sts);CHKERRQ(ierr);
+    sts = (TS)ctx;
     ierr = TSGetDM(sts, &sdm);CHKERRQ(ierr);
     ierr = TSGetRHSFunction(sts, NULL, NULL, (void **)&particles);CHKERRQ(ierr);
 
@@ -100,7 +100,7 @@ static PetscErrorCode advectParticles(TS ts) {
     ierr = TSSetTime(sts, particles->timeInitial);CHKERRQ(ierr);
 
     // Set the max end time based upon the flow end time
-    ierr = TSGetTime(ts, &time);CHKERRQ(ierr);
+    ierr = TSGetTime(flowTS, &time);CHKERRQ(ierr);
     ierr = TSSetMaxTime(sts, time);CHKERRQ(ierr);
     particles->timeFinal = time;
 
@@ -134,7 +134,7 @@ static PetscErrorCode advectParticles(TS ts) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particleTs, TS flowTs) {
+PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particleTs, FlowData flowData) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
     ierr = TSSetDM(particleTs, particles->dm);CHKERRQ(ierr);
@@ -145,9 +145,7 @@ PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particle
     ierr = TSSetMaxSteps(particleTs, 100000000);CHKERRQ(ierr); // set the max ts to a very large number. This can be over written using ts_max_steps options
 
     // link the solution with the flowTS
-    ierr = TSSetPostStep(flowTs, advectParticles);CHKERRQ(ierr);
-    ierr = PetscObjectCompose((PetscObject)flowTs, "_SwarmTS", (PetscObject)particleTs);CHKERRQ(ierr);
-    ierr = DMSwarmVectorDefineField(particles->dm, DMSwarmPICField_coor);CHKERRQ(ierr);
+    ierr = FlowRegisterPostStep(flowData, advectParticles, particleTs);CHKERRQ(ierr);
 
     // Set up the TS
     ierr = TSSetFromOptions(particleTs);CHKERRQ(ierr);

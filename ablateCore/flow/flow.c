@@ -17,6 +17,13 @@ PetscErrorCode FlowCreate(FlowData* flow) {
     (*flow)->numberAuxFields = 0;
     ierr = PetscMalloc1((*flow)->numberAuxFields, &((*flow)->auxFieldDescriptors));CHKERRQ(ierr);
 
+    // setup empty update fields
+    (*flow)->numberPreStepFunctions = 0;
+    ierr = PetscMalloc1((*flow)->numberPreStepFunctions, &((*flow)->preStepFunctions));CHKERRQ(ierr);
+    (*flow)->numberPostStepFunctions = 0;
+    ierr = PetscMalloc1((*flow)->numberPostStepFunctions, &((*flow)->postStepFunctions));CHKERRQ(ierr);
+
+
     PetscFunctionReturn(0);
 }
 
@@ -139,6 +146,34 @@ PetscErrorCode FlowFinalizeRegisterFields(FlowData flow){
     PetscFunctionReturn(0);
 }
 
+static PetscErrorCode FlowTSPreStepFunction(TS ts){
+    PetscFunctionBeginUser;
+    DM dm;
+    PetscErrorCode ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+    FlowData flowData;
+    ierr = DMGetApplicationContext(dm, &flowData);CHKERRQ(ierr);
+
+    for(PetscInt i =0; i < flowData->numberPreStepFunctions; i++){
+        ierr = flowData->preStepFunctions[i].updateFunction(ts, flowData->preStepFunctions[i].context);CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode FlowTSPostStepFunction(TS ts){
+    PetscFunctionBeginUser;
+    DM dm;
+    PetscErrorCode ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+    FlowData flowData;
+    ierr = DMGetApplicationContext(dm, &flowData);CHKERRQ(ierr);
+
+    for(PetscInt i =0; i < flowData->numberPostStepFunctions; i++){
+        ierr = flowData->postStepFunctions[i].updateFunction(ts, flowData->postStepFunctions[i].context);CHKERRQ(ierr);
+    }
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
     PetscErrorCode ierr;
     DM dm;
@@ -161,10 +196,33 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
     ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL);CHKERRQ(ierr);
     ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL);CHKERRQ(ierr);
 
+    ierr = TSSetPreStep(ts, FlowTSPreStepFunction);CHKERRQ(ierr);
+    ierr = TSSetPostStep(ts, FlowTSPostStepFunction);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode FlowRegisterPreStep(FlowData flowData, PetscErrorCode (*updateFunction)(TS ts, void* context), void* context) {
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
 
+    flowData->numberPreStepFunctions++;
+    ierr = PetscRealloc(sizeof(FlowUpdateFunction)*flowData->numberPreStepFunctions,&(flowData->preStepFunctions));CHKERRQ(ierr);
+    flowData->preStepFunctions[flowData->numberPreStepFunctions-1].updateFunction = updateFunction;
+    flowData->preStepFunctions[flowData->numberPreStepFunctions-1].context = context;
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowRegisterPostStep(FlowData flowData, PetscErrorCode (*updateFunction)(TS ts, void* context), void* context) {
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+
+    flowData->numberPostStepFunctions++;
+    ierr = PetscRealloc(sizeof(FlowUpdateFunction)*flowData->numberPostStepFunctions,&(flowData->postStepFunctions));CHKERRQ(ierr);
+    flowData->postStepFunctions[flowData->numberPostStepFunctions-1].updateFunction = updateFunction;
+    flowData->postStepFunctions[flowData->numberPostStepFunctions-1].context = context;
+    PetscFunctionReturn(0);
+}
 
 PetscErrorCode FlowDestroy(FlowData* flow) {
     PetscFunctionBeginUser;
@@ -187,6 +245,10 @@ PetscErrorCode FlowDestroy(FlowData* flow) {
     if ((*flow)->flowField){
         ierr = VecDestroy(&((*flow)->flowField));CHKERRQ(ierr);
     }
+
+    PetscFree((*flow)->preStepFunctions);
+    PetscFree((*flow)->postStepFunctions);
+
     free(*flow);
     flow = NULL;
     PetscFunctionReturn(0);
