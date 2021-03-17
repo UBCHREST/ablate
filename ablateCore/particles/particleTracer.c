@@ -142,7 +142,7 @@ PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particle
     ierr = TSSetExactFinalTime(particleTs, TS_EXACTFINALTIME_MATCHSTEP);CHKERRQ(ierr);
     ierr = TSSetApplicationContext(particleTs, particles);CHKERRQ(ierr);
     ierr = TSSetRHSFunction(particleTs, NULL, freeStreaming, particles);CHKERRQ(ierr);
-    ierr = TSSetMaxSteps(particleTs, INT_MAX);CHKERRQ(ierr); // set the max ts to a very large number. This can be over written using ts_max_steps options
+    ierr = TSSetMaxSteps(particleTs, 100000000);CHKERRQ(ierr); // set the max ts to a very large number. This can be over written using ts_max_steps options
 
     // link the solution with the flowTS
     ierr = TSSetPostStep(flowTs, advectParticles);CHKERRQ(ierr);

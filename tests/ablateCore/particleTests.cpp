@@ -260,6 +260,20 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     ierr = DMSwarmGetSize(particlesData->dm, &particleCount);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
+    // compute the average particle location
+    const PetscReal* coords;
+    PetscInt dims;
+    PetscReal avg[3] = {0.0, 0.0, 0.0};
+    ierr = DMSwarmGetField(particlesData->dm,DMSwarmPICField_coor, &dims, NULL,(void**)&coords);
+    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    for(PetscInt p =0; p < particleCount; p++){
+        for(PetscInt n =0; n < dims; n++){
+            avg[n] += coords[p*dims + n]/PetscReal(particleCount);
+        }
+    }
+    ierr = DMSwarmRestoreField(particlesData->dm,DMSwarmPICField_coor, &dims, NULL,(void**)&coords);
+    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
     ierr = PetscPrintf(PETSC_COMM_WORLD,
                        "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g] ParticleCount: %d\n",
                        (int)step,
@@ -267,7 +281,16 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
                        (double)ferrors[0],
                        (double)ferrors[1],
                        (double)ferrors[2],
-                       particleCount);
+                       particleCount,
+                       (double)avg[0],
+                       (double)avg[1]);
+    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+    ierr = PetscPrintf(PETSC_COMM_WORLD,
+                       "Avg Particle Location: [%2.3g, %2.3g, %2.3g]\n",
+                       (double)avg[0],
+                       (double)avg[1],
+                       (double)avg[2]);
+
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     PetscFunctionReturn(0);
 }
@@ -697,12 +720,12 @@ INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, ParticleMMS,
                                                                                       .expectedOutputFile = "outputs/particle_deletion_with_simple_fluid_tri_p2_p1_p1",
                                                                                       .arguments = "-dm_plex_separate_marker -dm_refine 2 "
                                                                                                    "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                                                                                   "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.1 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                                   "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
                                                                                                    "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
                                                                                                    "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                                                                                    "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
                                                                                                    "-particle_layout_type box -particle_lower 0.25,0.25 -particle_upper 0.75,0.75 -Npb 5 "
-                                                                                                   "-particle_ts_dt 0.05 -particle_ts_convergence_estimate -convest_num_refine 1 "},
+                                                                                                   "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
                                                                  .uExact = linear_u,
                                                                  .pExact = linear_p,
                                                                  .TExact = linear_T,

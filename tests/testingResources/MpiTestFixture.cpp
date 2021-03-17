@@ -1,4 +1,5 @@
 #include "MpiTestFixture.hpp"
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -134,7 +135,12 @@ void testingResources::MpiTestFixture::CompareOutputFiles() {
                         ASSERT_GT(actualValue, expectedValue) << " on line " << expectedLine;
                         break;
                     case '=':
-                        ASSERT_DOUBLE_EQ(actualValue, expectedValue) << " on line " << expectedLine;
+                        // check some special cases for double values
+                        if (std::isnan(expectedValue)) {
+                            ASSERT_TRUE(std::isnan(actualValue)) << " on line " << expectedLine;
+                        } else {
+                            ASSERT_DOUBLE_EQ(actualValue, expectedValue) << " on line " << expectedLine;
+                        }
                         break;
                     default:
                         FAIL() << "Unknown compare char " << compareChar << " on line " << expectedLine;
