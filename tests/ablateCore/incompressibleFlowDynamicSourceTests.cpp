@@ -379,17 +379,17 @@ INSTANTIATE_TEST_SUITE_P(
             .qSource = ".0"},
         (IncompressibleFlowDynamicSourceMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
-                .nproc = 1,
-                .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2",
-                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                             "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                             "-snes_convergence_test correct_pressure "
-                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                             "-fieldsplit_0_pc_type lu "
-                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                             "-momentum_sourcepetscspace_degree 5 -mass_sourcepetscspace_degree 1 -energy_sourcepetscspace_degree 5"},
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                              "-momentum_sourcepetscspace_degree 5 -mass_sourcepetscspace_degree 1 -energy_sourcepetscspace_degree 5"},
             .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y, 1.0, 1.0",
             .pExact = "3/2 *x^2 + 3/2*y^2 -1, 0.0",
             .TExact = "t + 1/2*x^2 +1/2*y^2, 1.0",

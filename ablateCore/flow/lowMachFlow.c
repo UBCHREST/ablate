@@ -26,16 +26,9 @@ static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     }
 
     // Add in any fixed source term
-    if(NfAux > 0){
+    if (NfAux > 0) {
         f0[0] += a[aOff[MASS]];
     }
-//    const PetscReal S = constants[STROUHAL];
-//    const PetscReal Pth = constants[PTH];
-//    const PetscReal x = X[0];
-//    const PetscReal y = X[1];
-//
-//    f0[0] -= -((Pth * S) / PetscPowReal(1 + t + PetscPowReal(x, 2) / 2. + PetscPowReal(y, 2) / 2., 2)) - (Pth * y * (t + 2 * PetscPowReal(x, 3) + 3 * PetscPowReal(x, 2) * y)) / PetscPowReal(1 + t + PetscPowReal(x, 2) / 2. + PetscPowReal(y, 2) / 2., 2) +
-//             (6 * Pth * PetscPowReal(x, 2)) / (1 + t + PetscPowReal(x, 2) / 2. + PetscPowReal(y, 2) / 2.) - (Pth * x * (t + PetscPowReal(x, 3) + PetscPowReal(y, 3))) / PetscPowReal(1 + t + PetscPowReal(x, 2) / 2. + PetscPowReal(y, 2) / 2., 2);
 }
 
 /* \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{\rho \hat{\boldsymbol{z}}}{F^2} \cdot
@@ -64,8 +57,8 @@ static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     f0[(PetscInt)constants[GRAVITY_DIRECTION]] += rho / (constants[FROUDE] * constants[FROUDE]);
 
     // Add in any fixed source term
-    if(NfAux > 0) {
-        for(d =0; d < dim; ++d){
+    if (NfAux > 0) {
+        for (d =0; d < dim; ++d){
             f0[d] += a[aOff[MOM] + d];
         }
     }
@@ -127,7 +120,7 @@ static void wIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     }
 
     // Add in any fixed source term
-    if(NfAux > 0) {
+    if (NfAux > 0) {
         f0[0] += a[aOff[ENERGY]];
     }
 }

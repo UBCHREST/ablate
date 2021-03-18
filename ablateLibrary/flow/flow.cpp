@@ -1,7 +1,6 @@
 #include "flow.hpp"
 #include "../utilities/petscError.hpp"
 #include "../utilities/petscOptions.hpp"
-#include "utilities/petscError.hpp"
 
 ablate::flow::Flow::Flow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std::map<std::string, std::string> arguments, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
                          std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions)
@@ -16,8 +15,8 @@ ablate::flow::Flow::Flow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std
 ablate::flow::Flow::~Flow() { FlowDestroy(&flowData) >> checkError; }
 
 std::optional<int> ablate::flow::Flow::GetFieldId(const std::string& fieldName) {
-    for(auto f = 0; f < flowData->numberFlowFields; f++){
-        if(flowData->flowFieldDescriptors[f].fieldName == fieldName){
+    for (auto f = 0; f < flowData->numberFlowFields; f++) {
+        if (flowData->flowFieldDescriptors[f].fieldName == fieldName) {
             return f;
         }
     }

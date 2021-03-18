@@ -64,7 +64,7 @@ PetscErrorCode FlowRegisterField(FlowData flow, const char *fieldName, const cha
     ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
 
     //If this is not the first field, copy the quadrature locations
-    if(flow->numberFlowFields > 1){
+    if (flow->numberFlowFields > 1){
         PetscFE referencePetscFE;
         ierr = DMGetField(flow->dm, 0, NULL, (PetscObject*)&referencePetscFE);CHKERRQ(ierr);
         ierr = PetscFECopyQuadrature(referencePetscFE, petscFE);CHKERRQ(ierr);
@@ -81,7 +81,7 @@ PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const 
     PetscErrorCode ierr;
 
     // check to see if need to create an aux dm
-    if(flow->auxDm == NULL){
+    if (flow->auxDm == NULL){
         /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
         DM coordDM;
         ierr = DMGetCoordinateDM(flow->dm, &coordDM);CHKERRQ(ierr);
@@ -127,7 +127,7 @@ PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const 
     ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
 
     //If this is not the first field, copy the quadrature locations
-    if(flow->numberFlowFields > 1){
+    if (flow->numberFlowFields > 1){
         PetscFE referencePetscFE;
         ierr = DMGetField(flow->dm, 0, NULL, (PetscObject*)&referencePetscFE);CHKERRQ(ierr);
         ierr = PetscFECopyQuadrature(referencePetscFE, petscFE);CHKERRQ(ierr);
@@ -153,7 +153,7 @@ static PetscErrorCode FlowTSPreStepFunction(TS ts){
     FlowData flowData;
     ierr = DMGetApplicationContext(dm, &flowData);CHKERRQ(ierr);
 
-    for(PetscInt i =0; i < flowData->numberPreStepFunctions; i++){
+    for (PetscInt i =0; i < flowData->numberPreStepFunctions; i++){
         ierr = flowData->preStepFunctions[i].updateFunction(ts, flowData->preStepFunctions[i].context);CHKERRQ(ierr);
     }
 
@@ -167,7 +167,7 @@ static PetscErrorCode FlowTSPostStepFunction(TS ts){
     FlowData flowData;
     ierr = DMGetApplicationContext(dm, &flowData);CHKERRQ(ierr);
 
-    for(PetscInt i =0; i < flowData->numberPostStepFunctions; i++){
+    for (PetscInt i =0; i < flowData->numberPostStepFunctions; i++){
         ierr = flowData->postStepFunctions[i].updateFunction(ts, flowData->postStepFunctions[i].context);CHKERRQ(ierr);
     }
 
@@ -184,7 +184,7 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
     ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
     ierr = DMCreateGlobalVector(dm, &(flowData->flowField));CHKERRQ(ierr);
 
-    if(flowData->auxDm){
+    if (flowData->auxDm){
         ierr = DMCreateDS(flowData->auxDm);CHKERRQ(ierr);
         ierr = DMCreateLocalVector(flowData->auxDm, &(flowData->auxField));CHKERRQ(ierr);
 

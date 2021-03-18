@@ -11,8 +11,8 @@ class PetscTestingFunction {
     mu::Parser parser;
 
    public:
-    PetscTestingFunction(const PetscTestingFunction&) = delete;
-    void operator=(const PetscTestingFunction&) = delete;
+    PetscTestingFunction(const PetscTestingFunction &) = delete;
+    void operator=(const PetscTestingFunction &) = delete;
     explicit PetscTestingFunction(std::string formula);
     static PetscErrorCode ApplySolution(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
     static PetscErrorCode ApplySolutionTimeDerivative(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx);

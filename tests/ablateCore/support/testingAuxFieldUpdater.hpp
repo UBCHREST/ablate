@@ -3,7 +3,9 @@
 #include <petsc.h>
 #include <vector>
 #include "petscTestingFunction.hpp"
+
 namespace tests::ablateCore::support {
+
 typedef PetscErrorCode (*SolutionFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
 class TestingAuxFieldUpdater {

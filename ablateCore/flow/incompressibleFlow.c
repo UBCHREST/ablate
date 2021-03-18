@@ -26,8 +26,8 @@ static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     }
 
     // Add in any fixed source term
-    if(NfAux > 0){
-        for(d =0; d < dim; ++d){
+    if (NfAux > 0){
+        for (d =0; d < dim; ++d){
             f0[d] += a[aOff[MOM] + d];
         }
     }
@@ -62,7 +62,7 @@ static void wIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     }
 
     // Add in any fixed source term
-    if(NfAux > 0){
+    if (NfAux > 0){
         f0[0] += a[aOff[ENERGY]];
     }
 }
@@ -88,7 +88,7 @@ static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     }
 
     // Add in any fixed source term
-    if(NfAux > 0){
+    if (NfAux > 0){
         f0[0] += a[aOff[MASS]];
     }
 }
