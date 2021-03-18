@@ -4,8 +4,9 @@ target_link_libraries(coreTests PUBLIC gtest gmock ablateCore testingResources m
 target_sources(coreTests
         PRIVATE
         lowMachFlowTests.cpp
-        incompressibleFlowTests.cpp
+        incompressibleFlowFunctionSourceTests.cpp
         incompressibleFlowDynamicSourceTests.cpp
+        incompressibleFlowParameterTests.cpp
         particleTests.cpp
         main.cpp
         )
@@ -24,3 +25,8 @@ add_custom_command(
         $<TARGET_FILE_DIR:coreTests>/outputs
 )
 
+# add testing support specific to ablateCore
+add_subdirectory(support)
+
+# Allow private access to the header files in the directory
+target_include_directories(coreTests PRIVATE ${CMAKE_CURRENT_LIST_DIR})

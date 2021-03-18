@@ -10,6 +10,9 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mesh.h"
+#include "support/testingAuxFieldUpdater.hpp"
+#include <iostream>
+using namespace tests::ablateCore::support;
 
 struct IncompressibleFlowDynamicSourceMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -19,121 +22,7 @@ struct IncompressibleFlowDynamicSourceMMSParameters {
     std::string vSource;
     std::string wSource;
     std::string qSource;
-
 };
-
-struct ParsedSolutionData {
-    mutable double coordinate[3] = {0, 0, 0};
-    mutable double time = 0.0;
-    mu::Parser parser;
-
-    ParsedSolutionData(std::string formula){
-        // define the x,y,z and t variables
-        parser.DefineVar("x", &coordinate[0]);
-        parser.DefineVar("y", &coordinate[1]);
-        parser.DefineVar("z", &coordinate[2]);
-        parser.DefineVar("t", &time);
-
-        parser.SetExpr(formula);
-    }
-    static PetscErrorCode ApplySolution(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx){
-        PetscFunctionBeginUser;
-        try {
-            auto parser = (ParsedSolutionData*)ctx;
-
-            // update the coordinates
-            parser->coordinate[0] = 0;
-            parser->coordinate[1] = 0;
-            parser->coordinate[2] = 0;
-
-            for (auto i = 0; i < std::min(dim, 3); i++) {
-                parser->coordinate[i] = x[i];
-            }
-            parser->time = time;
-
-            // Evaluate
-            int functionSize = 0;
-            auto rawResult = parser->parser.Eval(functionSize);
-
-            // copy over
-            for (auto i = 0; i < Nf; i++) {
-                u[i] = rawResult[i];
-            }
-
-        } catch (std::exception exception) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
-        }
-        PetscFunctionReturn(0);
-    }
-
-    static PetscErrorCode ApplySolutionTimeDerivative(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx){
-        PetscFunctionBeginUser;
-        try {
-            auto parser = (ParsedSolutionData*)ctx;
-
-            // update the coordinates
-            parser->coordinate[0] = 0;
-            parser->coordinate[1] = 0;
-            parser->coordinate[2] = 0;
-
-            for (auto i = 0; i < std::min(dim, 3); i++) {
-                parser->coordinate[i] = x[i];
-            }
-            parser->time = time;
-
-            // Evaluate
-            int functionSize = 0;
-            auto rawResult = parser->parser.Eval(functionSize);
-
-            // copy over
-            for (auto i = 0; i < Nf; i++) {
-                u[i] = rawResult[i + Nf];
-            }
-
-        } catch (std::exception exception) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
-        }
-        PetscFunctionReturn(0);
-    }
-
-
-};
-
-struct SourceTermUpdater {
-    ParsedSolutionData fieldData[3];
-
-    static PetscErrorCode UpdateSourceTerms(TS ts, void* ctx) {
-        PetscFunctionBegin;
-        auto sourceTermUpdater = (SourceTermUpdater*)ctx;
-
-        DM dm;
-        PetscErrorCode ierr = TSGetDM(ts, &dm);
-        CHKERRQ(ierr);
-        FlowData flowData;
-        ierr = DMGetApplicationContext(dm, &flowData);     CHKERRQ(ierr);
-
-        PetscErrorCode (*funcs[3])(PetscInt, PetscReal, const PetscReal [], PetscInt, PetscScalar *, void *);
-        funcs[0] = ParsedSolutionData::ApplySolution;
-        funcs[1] = ParsedSolutionData::ApplySolution;
-        funcs[2] = ParsedSolutionData::ApplySolution;
-        void          *ctxs[3];
-        ctxs[0] = &sourceTermUpdater->fieldData[0];
-        ctxs[1] = &sourceTermUpdater->fieldData[1];
-        ctxs[2] = &sourceTermUpdater->fieldData[2];
-
-        // get the time at the end of the time step
-        PetscReal time;
-        ierr = TSGetTime(ts, &time);     CHKERRQ(ierr);
-        PetscReal dt;
-        ierr = TSGetTimeStep(ts, &dt);     CHKERRQ(ierr);
-
-        // Update the source terms
-        ierr =  DMProjectFunction(flowData->auxDm, time + dt, funcs,ctxs , INSERT_ALL_VALUES, flowData->auxField);     CHKERRQ(ierr);
-
-        PetscFunctionReturn(0);
-    }
-};
-
 
 class IncompressibleFlowDynamicSourceMMS : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<IncompressibleFlowDynamicSourceMMSParameters> {
    public:
@@ -196,11 +85,8 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g, %2.3g, %2.3g]\n", (int)step, (double)crtime, (double)ferrors[0], (double)ferrors[1], (double)ferrors[2]);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-
     PetscFunctionReturn(0);
 }
-
-
 
 TEST_P(IncompressibleFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
     StartWithMPI
@@ -249,9 +135,9 @@ TEST_P(IncompressibleFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
         ierr = IncompressibleFlow_StartProblemSetup(flowData, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        ParsedSolutionData uExact(testingParam.uExact);
-        ParsedSolutionData pExact(testingParam.pExact);
-        ParsedSolutionData TExact(testingParam.TExact);
+        PetscTestingFunction uExact(testingParam.uExact);
+        PetscTestingFunction pExact(testingParam.pExact);
+        PetscTestingFunction TExact(testingParam.TExact);
 
         // Override problem with source terms, boundary, and set the exact solution
         {
@@ -262,44 +148,130 @@ TEST_P(IncompressibleFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
             /* Setup Boundary Conditions */
             PetscInt id;
             id = 3;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))ParsedSolutionData::ApplySolution, (void (*)(void))ParsedSolutionData::ApplySolutionTimeDerivative, 1, &id, &uExact);
+            ierr = PetscDSAddBoundary(prob,
+                                      DM_BC_ESSENTIAL,
+                                      "top wall velocity",
+                                      "marker",
+                                      VEL,
+                                      0,
+                                      NULL,
+                                      (void (*)(void))PetscTestingFunction::ApplySolution,
+                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
+                                      1,
+                                      &id,
+                                      &uExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))ParsedSolutionData::ApplySolution, (void (*)(void))ParsedSolutionData::ApplySolutionTimeDerivative, 1, &id, &uExact);
+            ierr = PetscDSAddBoundary(prob,
+                                      DM_BC_ESSENTIAL,
+                                      "bottom wall velocity",
+                                      "marker",
+                                      VEL,
+                                      0,
+                                      NULL,
+                                      (void (*)(void))PetscTestingFunction::ApplySolution,
+                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
+                                      1,
+                                      &id,
+                                      &uExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 2;
-            ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))ParsedSolutionData::ApplySolution, (void (*)(void))ParsedSolutionData::ApplySolutionTimeDerivative, 1, &id, &uExact);
+            ierr = PetscDSAddBoundary(prob,
+                                      DM_BC_ESSENTIAL,
+                                      "right wall velocity",
+                                      "marker",
+                                      VEL,
+                                      0,
+                                      NULL,
+                                      (void (*)(void))PetscTestingFunction::ApplySolution,
+                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
+                                      1,
+                                      &id,
+                                      &uExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))ParsedSolutionData::ApplySolution, (void (*)(void))ParsedSolutionData::ApplySolutionTimeDerivative, 1, &id, &uExact);
+            ierr = PetscDSAddBoundary(prob,
+                                      DM_BC_ESSENTIAL,
+                                      "left wall velocity",
+                                      "marker",
+                                      VEL,
+                                      0,
+                                      NULL,
+                                      (void (*)(void))PetscTestingFunction::ApplySolution,
+                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
+                                      1,
+                                      &id,
+                                      &uExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 3;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))ParsedSolutionData::ApplySolution, (void (*)(void))ParsedSolutionData::ApplySolutionTimeDerivative, 1, &id, &TExact);
+            ierr = PetscDSAddBoundary(prob,
+                                      DM_BC_ESSENTIAL,
+                                      "top wall temp",
+                                      "marker",
+                                      TEMP,
+                                      0,
+                                      NULL,
+                                      (void (*)(void))PetscTestingFunction::ApplySolution,
+                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
+                                      1,
+                                      &id,
+                                      &TExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))ParsedSolutionData::ApplySolution, (void (*)(void))ParsedSolutionData::ApplySolutionTimeDerivative, 1, &id, &TExact);
+            ierr = PetscDSAddBoundary(prob,
+                                      DM_BC_ESSENTIAL,
+                                      "bottom wall temp",
+                                      "marker",
+                                      TEMP,
+                                      0,
+                                      NULL,
+                                      (void (*)(void))PetscTestingFunction::ApplySolution,
+                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
+                                      1,
+                                      &id,
+                                      &TExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 2;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))ParsedSolutionData::ApplySolution, (void (*)(void))ParsedSolutionData::ApplySolutionTimeDerivative, 1, &id, &TExact);
+            ierr = PetscDSAddBoundary(prob,
+                                      DM_BC_ESSENTIAL,
+                                      "right wall temp",
+                                      "marker",
+                                      TEMP,
+                                      0,
+                                      NULL,
+                                      (void (*)(void))PetscTestingFunction::ApplySolution,
+                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
+                                      1,
+                                      &id,
+                                      &TExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
-            ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))ParsedSolutionData::ApplySolution, (void (*)(void))ParsedSolutionData::ApplySolutionTimeDerivative, 1, &id, &TExact);
+            ierr = PetscDSAddBoundary(prob,
+                                      DM_BC_ESSENTIAL,
+                                      "left wall temp",
+                                      "marker",
+                                      TEMP,
+                                      0,
+                                      NULL,
+                                      (void (*)(void))PetscTestingFunction::ApplySolution,
+                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
+                                      1,
+                                      &id,
+                                      &TExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
             // Set the exact solution
-            ierr = PetscDSSetExactSolution(prob, VEL, ParsedSolutionData::ApplySolution, &uExact);
+            ierr = PetscDSSetExactSolution(prob, VEL, PetscTestingFunction::ApplySolution, &uExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolution(prob, PRES, ParsedSolutionData::ApplySolution, &pExact);
+            ierr = PetscDSSetExactSolution(prob, PRES, PetscTestingFunction::ApplySolution, &pExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolution(prob, TEMP, ParsedSolutionData::ApplySolution, &TExact);
+            ierr = PetscDSSetExactSolution(prob, TEMP, PetscTestingFunction::ApplySolution, &TExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, VEL, ParsedSolutionData::ApplySolutionTimeDerivative, &uExact);
+            ierr = PetscDSSetExactSolutionTimeDerivative(prob, VEL, PetscTestingFunction::ApplySolutionTimeDerivative, &uExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, PRES, ParsedSolutionData::ApplySolutionTimeDerivative, &pExact);
+            ierr = PetscDSSetExactSolutionTimeDerivative(prob, PRES, PetscTestingFunction::ApplySolutionTimeDerivative, &pExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, ParsedSolutionData::ApplySolutionTimeDerivative, &TExact);
+            ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, PetscTestingFunction::ApplySolutionTimeDerivative, &TExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
         }
         // enable aux fields
@@ -313,17 +285,23 @@ TEST_P(IncompressibleFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
         ierr = PetscObjectSetName(((PetscObject)flowData->flowField), "Numerical Solution");
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        // Setup the TS
-        ierr = TSSetFromOptions(ts);
+        // update the source terms before each time step
+        PetscTestingFunction vSource(testingParam.vSource);
+        PetscTestingFunction qSource(testingParam.qSource);
+        PetscTestingFunction wSource(testingParam.wSource);
+        TestingAuxFieldUpdater updater;
+        updater.AddField(vSource);
+        updater.AddField(qSource);
+        updater.AddField(wSource);
+
+        ierr = TSSetTimeStep(ts, 0.0);  // set the initial time step to 0 for the initial UpdateSourceTerms run
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = FlowRegisterPreStep(flowData, TestingAuxFieldUpdater::UpdateSourceTerms, &updater);
+        TestingAuxFieldUpdater::UpdateSourceTerms(ts, &updater);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        // update the source terms before each time step
-        SourceTermUpdater updater{
-            .fieldData = {ParsedSolutionData(testingParam.vSource), ParsedSolutionData(testingParam.qSource), ParsedSolutionData(testingParam.wSource)}
-        };
-
-        ierr = FlowRegisterPreStep(flowData, SourceTermUpdater::UpdateSourceTerms, &updater);
-        SourceTermUpdater::UpdateSourceTerms(ts, &updater);
+        // Setup the TS
+        ierr = TSSetFromOptions(ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Set initial conditions from the exact solution
@@ -375,13 +353,58 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                              "-momentum_sourcepetscspace_degree 2 -mass_sourcepetscspace_degree 1 -energy_sourcepetscspace_degree 2"},
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
             .pExact = "x + y -1, 0.0",
             .TExact = "t + x +y, 1.0",
             .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
             .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
-        .qSource=".0"}
-
-    ),
+            .qSource = ".0"},
+        (IncompressibleFlowDynamicSourceMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
+                                 .nproc = 4,
+                                 .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_nproc4",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                              "-momentum_sourcepetscspace_degree 2 -mass_sourcepetscspace_degree 1 -energy_sourcepetscspace_degree 2"},
+            .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
+            .pExact = "x + y -1, 0.0",
+            .TExact = "t + x +y, 1.0",
+            .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
+            .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
+            .qSource = ".0"},
+        (IncompressibleFlowDynamicSourceMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
+                .nproc = 1,
+                .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2",
+                .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                             "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                             "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                             "-snes_convergence_test correct_pressure "
+                             "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                             "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                             "-fieldsplit_0_pc_type lu "
+                             "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                             "-momentum_sourcepetscspace_degree 5 -mass_sourcepetscspace_degree 1 -energy_sourcepetscspace_degree 5"},
+            .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y, 1.0, 1.0",
+            .pExact = "3/2 *x^2 + 3/2*y^2 -1, 0.0",
+            .TExact = "t + 1/2*x^2 +1/2*y^2, 1.0",
+            .vSource = "-(1+3*x + 3*y^2 * (t+2*x^3 - 3*x^2*y) + 3* x^2 *(t + x^3 + y^3) - (12*x -6*x + 6*y)),-(1-(12*x-6*y) + 3*y - 3*x^2 * (t +2*x^3 - 3*x^2*y) + (6*x^2 - 6*x*y)*(t+x^3+y^3))",
+            .wSource = "-(-2 + 1 + y*(t+2*x^3-3*x^2*y) + x*(t+x^3+y^3))",
+            .qSource = "0.0"}),
     [](const testing::TestParamInfo<IncompressibleFlowDynamicSourceMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+
+TEST(QuickPar, QuckParser){
+    try {
+        PetscTestingFunction uExact("1+3*x + 3*y^2 * (t*2*x^3 - 3*x^2*y) + 3* x^2 *(t + x^3 + y^3) - 12*x -6*x + 6*y");
+    }catch(std::exception e){
+        std::cout << e.what() << std::endl;
+    }
+
+}

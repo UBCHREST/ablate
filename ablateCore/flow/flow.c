@@ -186,7 +186,7 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
 
     if(flowData->auxDm){
         ierr = DMCreateDS(flowData->auxDm);CHKERRQ(ierr);
-        ierr = DMCreateGlobalVector(flowData->auxDm, &(flowData->auxField));CHKERRQ(ierr);
+        ierr = DMCreateLocalVector(flowData->auxDm, &(flowData->auxField));CHKERRQ(ierr);
 
         // attach this field as aux vector to the dm
         ierr = PetscObjectCompose((PetscObject) flowData->dm, "A", (PetscObject) flowData->auxField);CHKERRQ(ierr);
