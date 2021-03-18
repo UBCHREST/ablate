@@ -4,6 +4,7 @@ const char *lowMachFlowParametersTypeNames[TOTAL_LOW_MACH_FLOW_PARAMETERS + 1] =
     "strouhal", "reynolds", "froude", "peclet", "heatRelease", "gamma", "pth", "mu", "k", "cp", "beta", "gravityDirection", "unknown"};
 
 static const char *lowMachFlowFieldNames[TOTAL_LOW_MACH_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
+static const char *lowMachSourceFieldNames[TOTAL_LOW_MACH_SOURCE_FIELDS + 1] = {"momentum_source", "mass_source", "energy_source", "unknown"};
 
 /* =q \left(-\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right) */
 static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
@@ -23,6 +24,18 @@ static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     for (d = 0; d < dim; ++d) {
         f0[0] -= constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) * u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];
     }
+
+    // Add in any fixed source term
+    if(NfAux > 0){
+        f0[0] += a[aOff[MASS]];
+    }
+//    const PetscReal S = constants[STROUHAL];
+//    const PetscReal Pth = constants[PTH];
+//    const PetscReal x = X[0];
+//    const PetscReal y = X[1];
+//
+//    f0[0] -= -((Pth * S) / PetscPowReal(1 + t + PetscPowReal(x, 2) / 2. + PetscPowReal(y, 2) / 2., 2)) - (Pth * y * (t + 2 * PetscPowReal(x, 3) + 3 * PetscPowReal(x, 2) * y)) / PetscPowReal(1 + t + PetscPowReal(x, 2) / 2. + PetscPowReal(y, 2) / 2., 2) +
+//             (6 * Pth * PetscPowReal(x, 2)) / (1 + t + PetscPowReal(x, 2) / 2. + PetscPowReal(y, 2) / 2.) - (Pth * x * (t + PetscPowReal(x, 3) + PetscPowReal(y, 3))) / PetscPowReal(1 + t + PetscPowReal(x, 2) / 2. + PetscPowReal(y, 2) / 2., 2);
 }
 
 /* \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{\rho \hat{\boldsymbol{z}}}{F^2} \cdot
@@ -49,6 +62,13 @@ static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
 
     // rho \hat{z}/F^2
     f0[(PetscInt)constants[GRAVITY_DIRECTION]] += rho / (constants[FROUDE] * constants[FROUDE]);
+
+    // Add in any fixed source term
+    if(NfAux > 0) {
+        for(d =0; d < dim; ++d){
+            f0[d] += a[aOff[MOM] + d];
+        }
+    }
 }
 
 /*.5 (\nabla \boldsymbol{v} + \nabla \boldsymbol{v}^T) \cdot 2 \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T) - 1/3 (\nabla \cdot \bolsymbol{u})\boldsymbol{I}) - p \nabla \cdot
@@ -104,6 +124,11 @@ static void wIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     // \frac{C_p p^{th}}{T} \boldsymbol{u} \cdot \nabla T
     for (PetscInt d = 0; d < dim; ++d) {
         f0[0] += constants[CP] * constants[PTH] / u[uOff[TEMP]] * u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];
+    }
+
+    // Add in any fixed source term
+    if(NfAux > 0) {
+        f0[0] += a[aOff[ENERGY]];
     }
 }
 
@@ -380,6 +405,18 @@ PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
         ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
     }
 
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode LowMachFlow_EnableAuxFields(FlowData flowData) {
+    PetscFunctionBeginUser;
+    // Determine the number of dimensions
+    PetscInt dim;
+    PetscErrorCode ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
+
+    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[MOM] , lowMachSourceFieldNames[MOM], dim);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[MASS] , lowMachSourceFieldNames[MASS], 1);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[ENERGY] , lowMachSourceFieldNames[ENERGY], 1);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
