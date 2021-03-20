@@ -176,10 +176,11 @@ static PetscErrorCode FlowTSPostStepFunction(TS ts){
 
 PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
     PetscErrorCode ierr;
-    DM dm;
 
     PetscFunctionBeginUser;
-    ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
+    // Setup the solve with the ts
+    DM dm = flowData->dm;
+    ierr = TSSetDM(ts, flowData->dm);CHKERRQ(ierr);
 
     ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
     ierr = DMCreateGlobalVector(dm, &(flowData->flowField));CHKERRQ(ierr);
@@ -190,6 +191,8 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
 
         // attach this field as aux vector to the dm
         ierr = PetscObjectCompose((PetscObject) flowData->dm, "A", (PetscObject) flowData->auxField);CHKERRQ(ierr);
+
+        ierr = PetscObjectSetName((PetscObject)flowData->auxField, "auxField");CHKERRQ(ierr);
     }
 
     ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);

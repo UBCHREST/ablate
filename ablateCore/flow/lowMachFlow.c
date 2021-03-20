@@ -407,9 +407,9 @@ PetscErrorCode LowMachFlow_EnableAuxFields(FlowData flowData) {
     PetscInt dim;
     PetscErrorCode ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
 
-    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[MOM] , lowMachSourceFieldNames[MOM], dim);CHKERRQ(ierr);
-    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[MASS] , lowMachSourceFieldNames[MASS], 1);CHKERRQ(ierr);
-    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[ENERGY] , lowMachSourceFieldNames[ENERGY], 1);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[MOM] , "momentum_source_", dim);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[MASS] , "mass_source_", 1);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[ENERGY] , "energy_source_", 1);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

@@ -6,8 +6,8 @@
 
 ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments,
                                                      std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
-                                                     std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions)
-    : Flow(mesh, name, arguments, initialization, boundaryConditions) {
+                                                     std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
+    : Flow(mesh, name, arguments, initialization, boundaryConditions, auxiliaryFields) {
     // Setup the problem
     IncompressibleFlow_SetupDiscretization(flowData, mesh->GetDomain()) >> checkError;
 
@@ -18,64 +18,21 @@ ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shar
     // Start the problem setup
     IncompressibleFlow_StartProblemSetup(flowData, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants) >> checkError;
 
-    // Apply any boundary conditions
-    PetscDS prob;
-    DMGetDS(mesh->GetDomain(), &prob) >> checkError;
-
-    // add each boundary condition
-    for (auto boundary : boundaryConditions) {
-        PetscInt id = boundary->GetLabelId();
-        auto fieldId = GetFieldId(boundary->GetFieldName());
-        if (!fieldId) {
-            throw std::invalid_argument("unknown field for boundary: " + boundary->GetFieldName());
-        }
-
-        PetscDSAddBoundary(prob,
-                           DM_BC_ESSENTIAL,
-                           boundary->GetBoundaryName().c_str(),
-                           boundary->GetLabelName().c_str(),
-                           fieldId.value(),
-                           0,
-                           NULL,
-                           (void (*)(void))boundary->GetBoundaryFunction(),
-                           (void (*)(void))boundary->GetBoundaryTimeDerivativeFunction(),
-                           1,
-                           &id,
-                           boundary->GetContext()) >>
-            checkError;
+    if (!auxiliaryFields.empty()) {
+        IncompressibleFlow_EnableAuxFields(flowData);
     }
 
-    // Set the exact solution
-    for (auto exact : initialization) {
-        auto fieldId = GetFieldId(exact->GetName());
-        if (!fieldId) {
-            throw std::invalid_argument("unknown field for initialization: " + exact->GetName());
-        }
-
-        PetscDSSetExactSolution(prob, fieldId.value(), exact->GetSolutionField().GetPetscFunction(), exact->GetSolutionField().GetContext()) >> checkError;
-        PetscDSSetExactSolutionTimeDerivative(prob, fieldId.value(), exact->GetTimeDerivative().GetPetscFunction(), exact->GetTimeDerivative().GetContext()) >> checkError;
-    }
+    CompleteInitialization();
 }
 
 void ablate::flow::IncompressibleFlow::SetupSolve(TS &ts) {
-    // Setup the solve with the ts
-    TSSetDM(ts, mesh->GetDomain()) >> checkError;
-
     // finish setup and assign flow field
-    IncompressibleFlow_CompleteProblemSetup(flowData, ts);
-
-    // Initialize the flow field
-    DMComputeExactSolution(mesh->GetDomain(), 0, flowData->flowField, NULL) >> checkError;
-
-    // Name the flow field
-    PetscObjectSetName((PetscObject)(flowData->flowField), "Incompressible Flow Numerical Solution") >> checkError;
-    VecSetOptionsPrefix(flowData->flowField, "num_sol_") >> checkError;
-
-    // set the dm on the ts
-    TSSetDM(ts, mesh->GetDomain()) >> checkError;
+    IncompressibleFlow_CompleteProblemSetup(flowData, ts) >> checkError;
+    ablate::flow::Flow::SetupSolve(ts);
 }
 
 REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
          ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"),
          ARG(std::vector<flow::FlowFieldSolution>, "initialization", "the exact solution used to initialize the flow field"),
-         ARG(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"));
+         ARG(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+         OPT(std::vector<flow::FlowFieldSolution>, "auxFields", "enables and sets the update functions for the auxFields"));

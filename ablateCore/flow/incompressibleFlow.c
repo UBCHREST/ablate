@@ -312,9 +312,9 @@ PetscErrorCode IncompressibleFlow_EnableAuxFields(FlowData flowData) {
     PetscInt dim;
     PetscErrorCode ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
 
-    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[MOM] , incompressibleSourceFieldNames[MOM], dim);CHKERRQ(ierr);
-    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[MASS] , incompressibleSourceFieldNames[MASS], 1);CHKERRQ(ierr);
-    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[ENERGY] , incompressibleSourceFieldNames[ENERGY], 1);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[MOM] , "momentum_source_", dim);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[MASS] , "mass_source_", 1);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[ENERGY] , "energy_source_", 1);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

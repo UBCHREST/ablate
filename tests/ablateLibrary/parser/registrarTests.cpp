@@ -79,6 +79,37 @@ TEST(RegistrarTests, ShouldRegisterClassWithArgumentIdentifiersAndRecordInLog) {
     Listing::ReplaceListing(nullptr);
 }
 
+TEST(RegistrarTests, ShouldRegisterClassWithArgumentIdentifiersAndOptAndRecordInLog) {
+    // arrange
+    auto mockListing = std::make_shared<MockListing>();
+    EXPECT_CALL(*mockListing,
+                RecordListing(Listing::ClassEntry{
+                    .interface = typeid(MockInterface).name(),
+                    .className = "MockClass2a",
+                    .description = "this is a simple mock class",
+                    .arguments = {Listing::ArgumentEntry{.name = "dog", .interface = typeid(std::string).name(), .description = "this is a string", .optional = true},
+                                  Listing::ArgumentEntry{.name = "cat", .interface = typeid(int).name(), .description = "this is a int", .optional = true},
+                                  Listing::ArgumentEntry{.name = "bird", .interface = typeid(MockInterface).name(), .description = "this is a shared pointer to an interface", .optional = true}}}))
+        .Times(::testing::Exactly(1));
+
+    Listing::ReplaceListing(mockListing);
+
+    // act
+    ablate::parser::Registrar<MockInterface>::Register<MockClass2>(false,
+                                                                   "MockClass2a",
+                                                                   "this is a simple mock class",
+                                                                   ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string", true},
+                                                                   ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int", true},
+                                                                   ablate::parser::ArgumentIdentifier<MockInterface>{"bird", "this is a shared pointer to an interface", true});
+
+    // assert
+    auto createMethod = Registrar<MockInterface>::GetCreateMethod("MockClass2a");
+    ASSERT_TRUE(createMethod != nullptr);
+
+    // cleanup
+    Listing::ReplaceListing(nullptr);
+}
+
 class MockInterface4 {
     virtual void Test(){};
 };

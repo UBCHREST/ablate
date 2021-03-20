@@ -43,12 +43,20 @@ class Factory {
     /* produce a shared pointer for the specified interface and type */
     template <typename Interface>
     std::shared_ptr<Interface> Get(const ArgumentIdentifier<Interface>& identifier) const {
+        if (identifier.optional && !Contains(identifier.inputName)) {
+            return {};
+        }
+
         auto childFactory = GetFactory(identifier.inputName);
         return ResolveAndCreate<Interface>(childFactory);
     }
 
     template <typename Interface>
     std::vector<std::shared_ptr<Interface>> Get(const ArgumentIdentifier<std::vector<Interface>>& identifier) const {
+        if (identifier.optional && !Contains(identifier.inputName)) {
+            return {};
+        }
+
         auto childFactories = GetFactorySequence(identifier.inputName);
 
         // Build and resolve the list

@@ -118,12 +118,12 @@ class Registrar {
         std::map<std::string, TCreateMethod>& methods = GetConstructionMethods();
         if (auto it = methods.find(className); it == methods.end()) {
             // Record the entry
-            Listing::Get().RecordListing(
-                Listing::ClassEntry{.interface = typeid(Interface).name(),
-                                    .className = className,
-                                    .description = description,
-                                    .arguments = std::vector({Listing::ArgumentEntry{.name = args.inputName, .interface = typeid(Args).name(), .description = args.description}...}),
-                                    .defaultConstructor = defaultConstructor});
+            Listing::Get().RecordListing(Listing::ClassEntry{
+                .interface = typeid(Interface).name(),
+                .className = className,
+                .description = description,
+                .arguments = std::vector({Listing::ArgumentEntry{.name = args.inputName, .interface = typeid(Args).name(), .description = args.description, .optional = args.optional}...}),
+                .defaultConstructor = defaultConstructor});
 
             // create method
             methods[className] = [=](std::shared_ptr<Factory> factory) { return std::make_shared<Class>(factory->Get(args)...); };

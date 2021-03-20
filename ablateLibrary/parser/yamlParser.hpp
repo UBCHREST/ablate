@@ -24,6 +24,20 @@ class YamlParser : public Factory {
 
     inline void MarkUsage(const std::string& key) const { nodeUsages[key]++; }
 
+    template <typename T>
+    inline T GetValueFromYaml(const ArgumentIdentifier<T>& identifier) const {
+        auto parameter = yamlConfiguration[identifier.inputName];
+        if (!parameter) {
+            if (identifier.optional) {
+                return {};
+            } else {
+                throw std::invalid_argument("unable to " + identifier.inputName + " in " + nodePath);
+            }
+        }
+        MarkUsage(identifier.inputName);
+        return parameter.template as<T>();
+    }
+
    public:
     /***
      * Direct creation using a yaml string
@@ -41,15 +55,17 @@ class YamlParser : public Factory {
     const std::string& GetClassType() const override { return type; }
 
     /* return a string*/
-    std::string Get(const ArgumentIdentifier<std::string>& identifier) const override;
+    std::string Get(const ArgumentIdentifier<std::string>& identifier) const override { return GetValueFromYaml<std::string>(identifier); }
 
     /* and a list of strings */
-    std::vector<std::string> Get(const ArgumentIdentifier<std::vector<std::string>>& identifier) const override;
+    std::vector<std::string> Get(const ArgumentIdentifier<std::vector<std::string>>& identifier) const override { return GetValueFromYaml<std::vector<std::string>>(identifier); }
 
-    std::map<std::string, std::string> Get(const ArgumentIdentifier<std::map<std::string, std::string>>& identifier) const override;
+    std::map<std::string, std::string> Get(const ArgumentIdentifier<std::map<std::string, std::string>>& identifier) const override {
+        return GetValueFromYaml<std::map<std::string, std::string>>(identifier);
+    }
 
     /* return an int for the specified identifier*/
-    int Get(const ArgumentIdentifier<int>& identifier) const override;
+    int Get(const ArgumentIdentifier<int>& identifier) const override { return GetValueFromYaml<int>(identifier); }
 
     /* return a factory that serves as the root of the requested item */
     std::shared_ptr<Factory> GetFactory(const std::string& name) const override;

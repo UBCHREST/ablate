@@ -352,7 +352,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                              "-momentum_sourcepetscspace_degree 2 -mass_sourcepetscspace_degree 1 -energy_sourcepetscspace_degree 2"},
+                                              "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
             .pExact = "x + y -1, 0.0",
             .TExact = "t + x +y, 1.0",
@@ -370,7 +370,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                              "-momentum_sourcepetscspace_degree 2 -mass_sourcepetscspace_degree 1 -energy_sourcepetscspace_degree 2"},
+                                              "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
             .pExact = "x + y -1, 0.0",
             .TExact = "t + x +y, 1.0",
@@ -389,7 +389,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                              "-momentum_sourcepetscspace_degree 5 -mass_sourcepetscspace_degree 1 -energy_sourcepetscspace_degree 5"},
+                                              "-momentum_source_petscspace_degree 5 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 5"},
             .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y, 1.0, 1.0",
             .pExact = "3/2 *x^2 + 3/2*y^2 -1, 0.0",
             .TExact = "t + 1/2*x^2 +1/2*y^2, 1.0",

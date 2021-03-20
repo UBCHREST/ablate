@@ -354,7 +354,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                               "-dmts_check -1 -snes_linesearch_type basic "
                                               "-gravityDirection 1 "
-                                              "-momentum_sourcepetscspace_degree 8 -mass_sourcepetscspace_degree 8  -energy_sourcepetscspace_degree 8"},
+                                              "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .uExact = "t + x^2 + y^2, t + 2*x^2 + 2*x*y, 1.0, 1.0",
             .pExact = "x + y -1, 0.0",
             .TExact = "t + x +y +1, 1.0",
@@ -374,7 +374,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                               "-dmts_check -1 -snes_linesearch_type basic "
                                               "-gravityDirection 1 "
-                                              "-momentum_sourcepetscspace_degree 8 -mass_sourcepetscspace_degree 8  -energy_sourcepetscspace_degree 8"},
+                                              "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .uExact = "t + x^3 + y^3, t + 2*x^3 + 3*x^2*y, 1.0, 1.0",
             .pExact = "3/2*x^2 + 3/2*y^2 -1.125, 0.0",
             .TExact = "t + .5*x^2 +.5*y^2 +1, 1.0",

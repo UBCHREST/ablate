@@ -35,7 +35,7 @@ PetscErrorCode tests::ablateCore::support::PetscTestingFunction::ApplySolution(P
             u[i] = rawResult[i];
         }
 
-    } catch (std::exception exception) {
+    } catch (std::exception &exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
     }
     PetscFunctionReturn(0);
@@ -65,7 +65,7 @@ PetscErrorCode tests::ablateCore::support::PetscTestingFunction::ApplySolutionTi
             u[i] = rawResult[i + Nf];
         }
 
-    } catch (std::exception exception) {
+    } catch (std::exception &exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
     }
     PetscFunctionReturn(0);
