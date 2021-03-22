@@ -84,6 +84,7 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
 
     TSMonitorSet(ts, MonitorError, NULL, NULL) >> checkError;
 
+    // Before solving, run TSPreStep to initialize any fields
     TSSolve(ts, solutionVec) >> checkError;
 }
 void ablate::solve::TimeStepper::AddMonitor(std::shared_ptr<monitors::Monitor> monitor) {
