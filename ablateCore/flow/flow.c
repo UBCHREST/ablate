@@ -31,7 +31,12 @@ PetscErrorCode FlowRegisterField(FlowData flow, const char *fieldName, const cha
     PetscFunctionBeginUser;
     // store the field
     flow->numberFlowFields++;
-    PetscErrorCode ierr = PetscRealloc(sizeof(FlowFieldDescriptor)*flow->numberFlowFields,&(flow->flowFieldDescriptors));CHKERRQ(ierr);
+    PetscErrorCode ierr;
+    if(flow->flowFieldDescriptors == NULL){
+        ierr = PetscMalloc1(flow->numberFlowFields, &(flow->flowFieldDescriptors));CHKERRQ(ierr);
+    }else{
+        ierr = PetscRealloc(sizeof(FlowFieldDescriptor)*flow->numberFlowFields,&(flow->flowFieldDescriptors));CHKERRQ(ierr);
+    }
     flow->flowFieldDescriptors[flow->numberFlowFields-1].components = components;
     PetscStrallocpy(fieldName, (char **)&(flow->flowFieldDescriptors[flow->numberFlowFields-1].fieldName));
     PetscStrallocpy(fieldPrefix, (char **)&(flow->flowFieldDescriptors[flow->numberFlowFields-1].fieldPrefix));
@@ -94,7 +99,11 @@ PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const 
 
     // store the field
     flow->numberAuxFields++;
-    ierr = PetscRealloc(sizeof(FlowFieldDescriptor)*flow->numberAuxFields,&(flow->auxFieldDescriptors));CHKERRQ(ierr);
+    if(flow->auxFieldDescriptors == NULL){
+        ierr = PetscMalloc1(flow->numberAuxFields, &(flow->auxFieldDescriptors));CHKERRQ(ierr);
+    }else{
+        ierr = PetscRealloc(sizeof(FlowFieldDescriptor)*flow->numberAuxFields,&(flow->auxFieldDescriptors));CHKERRQ(ierr);
+    }
     flow->auxFieldDescriptors[flow->numberAuxFields-1].components = components;
     PetscStrallocpy(fieldName, (char **)&(flow->auxFieldDescriptors[flow->numberAuxFields-1].fieldName));
     PetscStrallocpy(fieldPrefix, (char **)&(flow->auxFieldDescriptors[flow->numberAuxFields-1].fieldPrefix));
@@ -210,7 +219,11 @@ PetscErrorCode FlowRegisterPreStep(FlowData flowData, PetscErrorCode (*updateFun
     PetscErrorCode ierr;
 
     flowData->numberPreStepFunctions++;
-    ierr = PetscRealloc(sizeof(FlowUpdateFunction)*flowData->numberPreStepFunctions,&(flowData->preStepFunctions));CHKERRQ(ierr);
+    if(flowData->preStepFunctions == NULL){
+        ierr = PetscMalloc1(flowData->numberPreStepFunctions, &(flowData->preStepFunctions));CHKERRQ(ierr);
+    }else{
+        ierr = PetscRealloc(sizeof(FlowUpdateFunction)*flowData->numberPreStepFunctions,&(flowData->preStepFunctions));CHKERRQ(ierr);
+    }
     flowData->preStepFunctions[flowData->numberPreStepFunctions-1].updateFunction = updateFunction;
     flowData->preStepFunctions[flowData->numberPreStepFunctions-1].context = context;
     PetscFunctionReturn(0);
@@ -221,7 +234,11 @@ PetscErrorCode FlowRegisterPostStep(FlowData flowData, PetscErrorCode (*updateFu
     PetscErrorCode ierr;
 
     flowData->numberPostStepFunctions++;
-    ierr = PetscRealloc(sizeof(FlowUpdateFunction)*flowData->numberPostStepFunctions,&(flowData->postStepFunctions));CHKERRQ(ierr);
+    if(flowData->postStepFunctions == NULL){
+        ierr = PetscMalloc1(flowData->numberPostStepFunctions, &(flowData->postStepFunctions));CHKERRQ(ierr);
+    }else{
+        ierr = PetscRealloc(sizeof(FlowUpdateFunction)*flowData->numberPostStepFunctions,&(flowData->postStepFunctions));CHKERRQ(ierr);
+    }
     flowData->postStepFunctions[flowData->numberPostStepFunctions-1].updateFunction = updateFunction;
     flowData->postStepFunctions[flowData->numberPostStepFunctions-1].context = context;
     PetscFunctionReturn(0);
