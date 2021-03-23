@@ -82,7 +82,7 @@ PETSC_EXTERN PetscErrorCode ParticleRegisterPetscDatatypeField(ParticleData part
 
     // store the field
     particles->numberFields++;
-    if(particles->fieldDescriptors == NULL){
+    if (particles->fieldDescriptors == NULL){
         ierr = PetscMalloc1(particles->numberFields, &(particles->fieldDescriptors));CHKERRQ(ierr);
     }else{
         ierr = PetscRealloc(sizeof(ParticleFieldDescriptor)*particles->numberFields,&(particles->fieldDescriptors));CHKERRQ(ierr);
