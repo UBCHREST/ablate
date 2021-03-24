@@ -28,13 +28,15 @@ If a newer version of PETSc is required than those pre-built on CCR you will be 
 1. Inside the petsc folder, configure PETSc and build PETSc
    ```bash
        ./configure  \
-        --with-mpi-dir=/util/academic/intel/20.2/compilers_and_libraries_2020.2.254/linux/mpi/intel64/ \
-        --with-hdf5 --download-ctetgen --download-fftw  \
+        --with-mpi-dir=${I_MPI_ROOT}/intel64/ \
+        --with-hdf5-dir=${HDF5} --download-ctetgen --download-fftw  \
  	    --download-egads --download-metis \
  	    --download-ml --download-mumps --download-netcdf --download-p4est \
  	    --download-parmetis --download-pnetcdf --download-scalapack \
  	    --download-slepc --download-suitesparse --download-superlu_dist \
- 	    --download-triangle --download-zlib --download-libpng
+ 	    --download-triangle --with-zlib --with-libpng
+   
+      #  --with-debugging=0 can be added to build PETSc in release
    
       # Follow the on screen instructions to build and test
    ```
@@ -61,7 +63,7 @@ If a newer version of PETSc is required than those pre-built on CCR you will be 
        module load hdf5/1.12.0
      
        export PETSC_DIR="path/to/petsc/dir"
-       export PETSC_DIR=petsc_arch
+       export PETSC_ARCH=petsc_arch
        export PKG_CONFIG_PATH=${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig
 
        ```

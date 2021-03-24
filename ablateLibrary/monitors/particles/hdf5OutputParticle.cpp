@@ -1,7 +1,6 @@
 #include "hdf5OutputParticle.hpp"
 #include <petsc.h>
 #include <petscviewerhdf5.h>
-#include "generators.hpp"
 #include "monitors/runEnvironment.hpp"
 #include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
