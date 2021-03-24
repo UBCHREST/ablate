@@ -113,7 +113,7 @@ static PetscErrorCode advectParticles(TS flowTS, void* ctx) {
     // get the updated time step, and reset if it has gone down
     PetscReal dtUpdated;
     ierr = TSGetTimeStep(sts, &dtUpdated);CHKERRQ(ierr);
-    if(dtUpdated < dtInitial){
+    if (dtUpdated < dtInitial){
         ierr = TSSetTimeStep(sts, dtInitial);CHKERRQ(ierr);
     }
 
