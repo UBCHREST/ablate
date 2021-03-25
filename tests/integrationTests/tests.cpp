@@ -27,7 +27,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             // precompute the resultDirectory directory so we can remove it if it here
             auto testName = GetParam().getTestName();
             std::filesystem::path resultDirectory = std::filesystem::current_path() / testName;
-            if(rank == 0) {
+            if (rank == 0) {
                 std::filesystem::remove_all(resultDirectory);
             }
             MPI_Barrier(PETSC_COMM_WORLD);
@@ -46,7 +46,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             ablate::Builder::Run(parser);
 
             // print all files in the directory so that they are compared with expected
-            if(rank == 0) {
+            if (rank == 0) {
                 std::vector<std::string> resultFileInfo;
                 for (const auto& entry : fs::directory_iterator(ablate::monitors::RunEnvironment::Get().GetOutputDirectory())) {
                     resultFileInfo.push_back(entry.path().filename());
