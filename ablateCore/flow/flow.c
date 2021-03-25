@@ -55,17 +55,23 @@ PetscErrorCode FlowRegisterField(FlowData flow, const char *fieldName, const cha
     PetscInt cStart;
     ierr = DMPlexGetHeightStratum(flow->dm, 0, &cStart, NULL);CHKERRQ(ierr);
     ierr = DMPlexGetCellType(flow->dm, cStart, &ct);CHKERRQ(ierr);
-    PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+    PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+    PetscInt simplexGlobal;
+
+    // extract the object comm
+    MPI_Comm comm;
+    ierr = PetscObjectGetComm((PetscObject)flow->dm, &comm);CHKERRQ(ierr);
+
+    // Assume true if any rank says true
+    ierr = MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, comm);CHKERRMPI(ierr);
 
     // Determine the number of dimensions
     PetscInt dim;
     ierr = DMGetDimension(flow->dm, &dim);CHKERRQ(ierr);
 
     // create a petsc fe
-    MPI_Comm comm;
     PetscFE petscFE;
-    ierr = PetscObjectGetComm((PetscObject)flow->dm, &comm);CHKERRQ(ierr);
-    ierr = PetscFECreateDefault(comm, dim, components, simplex, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
+    ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
 
     //If this is not the first field, copy the quadrature locations
@@ -123,16 +129,22 @@ PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const 
     ierr = DMPlexGetHeightStratum(flow->dm, 0, &cStart, NULL);CHKERRQ(ierr);
     ierr = DMPlexGetCellType(flow->dm, cStart, &ct);CHKERRQ(ierr);
     PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+    PetscInt simplexGlobal;
+
+    // extract the object comm
+    MPI_Comm comm;
+    ierr = PetscObjectGetComm((PetscObject)flow->dm, &comm);CHKERRQ(ierr);
+
+    // Assume true if any rank says true
+    ierr = MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, comm);CHKERRMPI(ierr);
 
     // Determine the number of dimensions
     PetscInt dim;
     ierr = DMGetDimension(flow->dm, &dim);CHKERRQ(ierr);
 
     // create a petsc fe
-    MPI_Comm comm;
     PetscFE petscFE;
-    ierr = PetscObjectGetComm((PetscObject)flow->dm, &comm);CHKERRQ(ierr);
-    ierr = PetscFECreateDefault(comm, dim, components, simplex, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
+    ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
 
     //If this is not the first field, copy the quadrature locations
