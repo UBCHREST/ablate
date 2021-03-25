@@ -29,6 +29,7 @@ flow: !ablate::flow::IncompressibleFlow
     dimensions: 2
     arguments:
       dm_refine: 2
+      dm_distribute: true
       vel_petscspace_degree: 2
       pres_petscspace_degree: 1
       temp_petscspace_degree: 1
