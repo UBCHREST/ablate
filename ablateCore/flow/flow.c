@@ -71,7 +71,7 @@ PetscErrorCode FlowRegisterField(FlowData flow, const char *fieldName, const cha
 
     // create a petsc fe
     PetscFE petscFE;
-    ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
+    ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal? PETSC_TRUE : PETSC_FALSE, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
 
     //If this is not the first field, copy the quadrature locations
@@ -128,7 +128,7 @@ PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const 
     PetscInt cStart;
     ierr = DMPlexGetHeightStratum(flow->dm, 0, &cStart, NULL);CHKERRQ(ierr);
     ierr = DMPlexGetCellType(flow->dm, cStart, &ct);CHKERRQ(ierr);
-    PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+    PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
     PetscInt simplexGlobal;
 
     // extract the object comm
@@ -144,7 +144,7 @@ PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const 
 
     // create a petsc fe
     PetscFE petscFE;
-    ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
+    ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal? PETSC_TRUE : PETSC_FALSE, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
 
     //If this is not the first field, copy the quadrature locations
