@@ -20,10 +20,9 @@ If a newer version of PETSc is required than those pre-built on CCR you will be 
    ```
 1. Load the required modules
    ```bash
-   module load intel-mpi/2020.2 
-   module load gcc/10.2.0 
+   module load hdf5/1.12.0-mpi 
+   module load gcc/10.2.0
    module load cmake/3.17.1
-   module load hdf5/1.12.0
    ```
 1. Inside the petsc folder, configure PETSc and build PETSc
    ```bash
@@ -57,10 +56,9 @@ If a newer version of PETSc is required than those pre-built on CCR you will be 
        ```
    - If loading from custom built PETSc
        ```bash
-       module load intel-mpi/2020.2
+       module load hdf5/1.12.0-mpi 
        module load gcc/10.2.0
        module load cmake/3.17.1
-       module load hdf5/1.12.0
      
        export PETSC_DIR="path/to/petsc/dir"
        export PETSC_ARCH=petsc_arch
@@ -116,14 +114,9 @@ CCR uses SLURMS for scheduling and therefore job scripts specifying the job. Det
  module list
  
  # Uncomment and set paths if built with custom petsc
- #module load intel-mpi/2020.2
- #module load gcc/10.2.0
- #module load cmake/3.17.1
- #module load hdf5/1.12.0
- #
- #export PETSC_DIR="path/to/petsc/dir"
- #export PETSC_DIR=petsc_arch
- #export PKG_CONFIG_PATH=${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig
+#module load hdf5/1.12.0-mpi 
+#module load gcc/10.2.0
+#module load cmake/3.17.1
 
  # The initial srun will trigger the SLURM prologue on the compute nodes.
  NPROCS=`srun --nodes=${SLURM_NNODES} bash -c 'hostname' |wc -l`
