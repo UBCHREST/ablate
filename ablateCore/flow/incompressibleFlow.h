@@ -13,6 +13,8 @@ PETSC_EXTERN const char *incompressibleFlowParametersTypeNames[TOTAL_INCOMPRESSI
 
 typedef enum {VEL, PRES, TEMP, TOTAL_INCOMPRESSIBLE_FLOW_FIELDS} IncompressibleFlowFields;
 
+typedef enum {MOM, MASS, ENERGY, TOTAL_INCOMPRESSIBLE_SOURCE_FIELDS} IncompressibleSourceFields;
+
 typedef struct {
     PetscReal strouhal;
     PetscReal reynolds;
@@ -30,5 +32,6 @@ PETSC_EXTERN PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flow
 PETSC_EXTERN PetscErrorCode IncompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt, PetscScalar[]);
 PETSC_EXTERN PetscErrorCode IncompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts);
 PETSC_EXTERN PetscErrorCode IncompressibleFlow_CompleteFlowInitialization(DM dm, Vec u);
+PETSC_EXTERN PetscErrorCode IncompressibleFlow_EnableAuxFields(FlowData flowData);
 
 #endif

@@ -106,7 +106,7 @@ PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscI
             u[i] = rawResult[i];
         }
 
-    } catch (std::exception exception) {
+    } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
     }
     PetscFunctionReturn(0);

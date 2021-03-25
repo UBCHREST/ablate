@@ -51,7 +51,13 @@ PetscErrorCode ParticleInitializeFlow(ParticleData particles, FlowData flowData)
 
     // Find the velocity field
     PetscBool found;
-    ierr = PetscEListFind(flowData->numberFlowFields,flowData->flowFieldNames, "velocity",&(particles->flowVelocityFieldIndex),&found);CHKERRQ(ierr);
+    for (PetscInt f =0; f < flowData->numberFlowFields; f++){
+        ierr = PetscStrcmp("velocity",flowData->flowFieldDescriptors[f].fieldName, &found);CHKERRQ(ierr);
+        if (found){
+            particles->flowVelocityFieldIndex = f;
+            break;
+        }
+    }
     if (!found){
         // get the particle data comm
         MPI_Comm comm;
@@ -76,7 +82,11 @@ PETSC_EXTERN PetscErrorCode ParticleRegisterPetscDatatypeField(ParticleData part
 
     // store the field
     particles->numberFields++;
-    ierr = PetscRealloc(sizeof(ParticleFieldDescriptor)*particles->numberFields,&(particles->fieldDescriptors));CHKERRQ(ierr);
+    if (particles->fieldDescriptors == NULL){
+        ierr = PetscMalloc1(particles->numberFields, &(particles->fieldDescriptors));CHKERRQ(ierr);
+    }else{
+        ierr = PetscRealloc(sizeof(ParticleFieldDescriptor)*particles->numberFields,&(particles->fieldDescriptors));CHKERRQ(ierr);
+    }
     particles->fieldDescriptors[particles->numberFields-1].type = type;
     particles->fieldDescriptors[particles->numberFields-1].components = blocksize;
     PetscStrallocpy(fieldname, (char **)&(particles->fieldDescriptors[particles->numberFields-1].fieldName));

@@ -19,7 +19,7 @@ void ablate::particles::Tracer::InitializeFlow(std::shared_ptr<flow::Flow> flow,
     Particles::InitializeFlow(flow, timeStepper);
 
     // call tracer specific setup
-    ParticleTracerSetupIntegrator(particleData, particleTs, timeStepper->GetTS()) >> checkError;
+    ParticleTracerSetupIntegrator(particleData, particleTs, flow->GetFlowData()) >> checkError;
 }
 
 REGISTER(ablate::particles::Particles, ablate::particles::Tracer, "massless particles that advect with the flow", ARG(std::string, "name", "the name of the particle group"),

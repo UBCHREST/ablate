@@ -13,6 +13,8 @@ PETSC_EXTERN const char* lowMachFlowParametersTypeNames[TOTAL_LOW_MACH_FLOW_PARA
 
 typedef enum {VEL, PRES, TEMP, TOTAL_LOW_MACH_FLOW_FIELDS} LowMachFlowFields;
 
+typedef enum {MOM, MASS, ENERGY, TOTAL_LOW_MACH_SOURCE_FIELDS} LowMachSourceFields;
+
 typedef struct {
     PetscReal strouhal;
     PetscReal reynolds;
@@ -36,5 +38,6 @@ PETSC_EXTERN PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, D
 PETSC_EXTERN PetscErrorCode LowMachFlow_StartProblemSetup(FlowData flowData, PetscInt, PetscScalar []);
 PETSC_EXTERN PetscErrorCode LowMachFlow_CompleteProblemSetup(FlowData flowData, TS ts);
 PETSC_EXTERN PetscErrorCode LowMachFlow_CompleteFlowInitialization(DM dm, Vec u);
+PETSC_EXTERN PetscErrorCode LowMachFlow_EnableAuxFields(FlowData flowData);
 
 #endif

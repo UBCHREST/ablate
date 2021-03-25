@@ -10,6 +10,38 @@ namespace ablateTesting::parser {
 
 using namespace ablate::parser;
 
+class FactoryMockClass1 {};
+
+TEST(FactoryTests, GetShouldReturnNullPtrWhenOptional) {
+    // arrange
+
+    ablate::parser::Registrar<FactoryMockClass1>::Register<FactoryMockClass1>(true, "FactoryMockClass1", "this is a simple mock class");
+    auto mockFactory = std::make_shared<MockFactory>();
+    EXPECT_CALL(*mockFactory, Contains(std::string("input123"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
+
+    // act
+    auto argument = ArgumentIdentifier<FactoryMockClass1>{.inputName = "input123", .optional = true};
+    auto result = std::dynamic_pointer_cast<Factory>(mockFactory)->Get(argument);
+
+    // assert
+    ASSERT_TRUE(result == nullptr);
+}
+
+TEST(FactoryTests, ShouldReturnEmptyListWhenOptional) {
+    // arrange
+
+    ablate::parser::Registrar<FactoryMockClass1>::Register<FactoryMockClass1>(true, "FactoryMockClass1", "this is a simple mock class");
+    auto mockFactory = std::make_shared<MockFactory>();
+    EXPECT_CALL(*mockFactory, Contains(std::string("input123"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
+
+    // act
+    auto argument = ArgumentIdentifier<std::vector<FactoryMockClass1>>{.inputName = "input123", .optional = true};
+    auto result = std::dynamic_pointer_cast<Factory>(mockFactory)->Get(argument);
+
+    // assert
+    ASSERT_TRUE(result.empty());
+}
+
 TEST(FactoryTests, GetByNameShouldCallGetWithCorrectArguments) {
     // arrange
     MockFactory mockFactory;

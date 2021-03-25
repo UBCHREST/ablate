@@ -68,7 +68,7 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode advectParticles(TS ts) {
+static PetscErrorCode advectParticles(TS flowTS, void* ctx) {
     TS sts;
     DM sdm;
     Vec particlePosition;
@@ -79,7 +79,7 @@ static PetscErrorCode advectParticles(TS ts) {
     PetscInt numberGlobal; // current number of local particles
 
     PetscFunctionBeginUser;
-    ierr = PetscObjectQuery((PetscObject)ts, "_SwarmTS", (PetscObject *)&sts);CHKERRQ(ierr);
+    sts = (TS)ctx;
     ierr = TSGetDM(sts, &sdm);CHKERRQ(ierr);
     ierr = TSGetRHSFunction(sts, NULL, NULL, (void **)&particles);CHKERRQ(ierr);
 
@@ -96,11 +96,12 @@ static PetscErrorCode advectParticles(TS ts) {
     // Get the position vector
     ierr = DMSwarmCreateGlobalVectorFromField(sdm,DMSwarmPICField_coor, &particlePosition);CHKERRQ(ierr);
 
-    // Set the start time for TSSolve
-    ierr = TSSetTime(sts, particles->timeInitial);CHKERRQ(ierr);
+    // get the particle time step
+    PetscReal dtInitial;
+    ierr = TSGetTimeStep(sts, &dtInitial);CHKERRQ(ierr);
 
     // Set the max end time based upon the flow end time
-    ierr = TSGetTime(ts, &time);CHKERRQ(ierr);
+    ierr = TSGetTime(flowTS, &time);CHKERRQ(ierr);
     ierr = TSSetMaxTime(sts, time);CHKERRQ(ierr);
     particles->timeFinal = time;
 
@@ -108,6 +109,13 @@ static PetscErrorCode advectParticles(TS ts) {
     ierr = TSSolve(sts, particlePosition);CHKERRQ(ierr);
     ierr = VecCopy(particles->flowFinal, particles->flowInitial);CHKERRQ(ierr);
     particles->timeInitial = particles->timeFinal;
+
+    // get the updated time step, and reset if it has gone down
+    PetscReal dtUpdated;
+    ierr = TSGetTimeStep(sts, &dtUpdated);CHKERRQ(ierr);
+    if (dtUpdated < dtInitial){
+        ierr = TSSetTimeStep(sts, dtInitial);CHKERRQ(ierr);
+    }
 
     // Return the coord vector
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,DMSwarmPICField_coor, &particlePosition);CHKERRQ(ierr);
@@ -134,7 +142,7 @@ static PetscErrorCode advectParticles(TS ts) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particleTs, TS flowTs) {
+PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particleTs, FlowData flowData) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
     ierr = TSSetDM(particleTs, particles->dm);CHKERRQ(ierr);
@@ -144,14 +152,15 @@ PetscErrorCode ParticleTracerSetupIntegrator(ParticleData particles, TS particle
     ierr = TSSetRHSFunction(particleTs, NULL, freeStreaming, particles);CHKERRQ(ierr);
     ierr = TSSetMaxSteps(particleTs, 100000000);CHKERRQ(ierr); // set the max ts to a very large number. This can be over written using ts_max_steps options
 
+    // Set the start time for TSSolve
+    ierr = TSSetTime(particleTs, particles->timeInitial);CHKERRQ(ierr);
+
     // link the solution with the flowTS
-    ierr = TSSetPostStep(flowTs, advectParticles);CHKERRQ(ierr);
-    ierr = PetscObjectCompose((PetscObject)flowTs, "_SwarmTS", (PetscObject)particleTs);CHKERRQ(ierr);
-    ierr = DMSwarmVectorDefineField(particles->dm, DMSwarmPICField_coor);CHKERRQ(ierr);
+    ierr = FlowRegisterPostStep(flowData, advectParticles, particleTs);CHKERRQ(ierr);
 
     // Set up the TS
     ierr = TSSetFromOptions(particleTs);CHKERRQ(ierr);
-
+    ierr = TSViewFromOptions(particleTs,NULL, "-ts_view");CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

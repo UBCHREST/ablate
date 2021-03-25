@@ -11,42 +11,6 @@ ablate::parser::YamlParser::YamlParser(std::string yamlString) : YamlParser(YAML
 
 ablate::parser::YamlParser::YamlParser(std::filesystem::path filePath) : YamlParser(YAML::LoadFile(filePath), "root", "") {}
 
-std::string ablate::parser::YamlParser::Get(const ablate::parser::ArgumentIdentifier<std::string>& identifier) const {
-    auto parameter = yamlConfiguration[identifier.inputName];
-    if (!parameter) {
-        throw std::invalid_argument("unable to find string " + identifier.inputName + " in " + nodePath);
-    }
-    MarkUsage(identifier.inputName);
-    return parameter.as<std::string>();
-}
-
-std::vector<std::string> ablate::parser::YamlParser::Get(const ablate::parser::ArgumentIdentifier<std::vector<std::string>>& identifier) const {
-    auto parameter = yamlConfiguration[identifier.inputName];
-    if (!parameter) {
-        throw std::invalid_argument("unable to find string vector" + identifier.inputName + " in " + nodePath);
-    }
-    MarkUsage(identifier.inputName);
-    return parameter.as<std::vector<std::string>>();
-}
-
-std::map<std::string, std::string> ablate::parser::YamlParser::Get(const ablate::parser::ArgumentIdentifier<std::map<std::string, std::string>>& identifier) const {
-    auto parameter = yamlConfiguration[identifier.inputName];
-    if (!parameter) {
-        throw std::invalid_argument("unable to find string map" + identifier.inputName + " in " + nodePath);
-    }
-    MarkUsage(identifier.inputName);
-    return parameter.as<std::map<std::string, std::string>>();
-}
-
-int ablate::parser::YamlParser::Get(const ablate::parser::ArgumentIdentifier<int>& identifier) const {
-    auto parameter = yamlConfiguration[identifier.inputName];
-    if (!parameter) {
-        throw std::invalid_argument("unable to find int " + identifier.inputName + " in " + nodePath);
-    }
-    MarkUsage(identifier.inputName);
-    return parameter.as<int>();
-}
-
 std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(const std::string& name) const {
     // Check to see if the child factory has already been created
     if (childFactories.count(name) == 0) {

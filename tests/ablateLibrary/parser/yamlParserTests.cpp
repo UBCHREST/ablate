@@ -73,6 +73,21 @@ TEST(YamlParserTests, ShouldThrowErrorForMissingString) {
     ASSERT_THROW(yamlParser->Get(ArgumentIdentifier<std::string>{"itemNotThere"}), std::invalid_argument);
 }
 
+TEST(YamlParserTests, ShouldReturnCorrectStringForOptionalValue) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: im_a_string " << std::endl;
+    std::string emptyString = {};
+
+    // act
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+    // assert
+    ASSERT_EQ("im_a_string", yamlParser->Get(ArgumentIdentifier<std::string>{"item", .optional = true}));
+    ASSERT_EQ(emptyString, yamlParser->Get(ArgumentIdentifier<std::string>{"item 2", .optional = true}));
+    ASSERT_EQ("", yamlParser->GetClassType());
+}
+
 TEST(YamlParserTests, ShouldParseInts) {
     // arrange
     std::stringstream yaml;
@@ -103,6 +118,21 @@ TEST(YamlParserTests, ShouldThrowErrorForMissingInt) {
 
     // assert
     ASSERT_THROW(yamlParser->Get(ArgumentIdentifier<std::string>{"itemNotThere"}), std::invalid_argument);
+}
+
+TEST(YamlParserTests, ShouldReturnCorrectInForOptionalValue) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: 22" << std::endl;
+    int defaultValue = {};
+
+    // act
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // assert
+    ASSERT_EQ(22, yamlParser->Get(ArgumentIdentifier<int>{"item", .optional = true}));
+    ASSERT_EQ(defaultValue, yamlParser->Get(ArgumentIdentifier<int>{"item 2", .optional = true}));
 }
 
 TEST(YamlParserTests, ShouldParseSubFactory) {
@@ -246,6 +276,22 @@ TEST(YamlParserTests, ShouldGetListOfStrings) {
     ASSERT_EQ(list, expectedValues);
 }
 
+TEST(YamlParserTests, ShouldGetCorrectValueForOptionalListOfStrings) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto list = yamlParser->Get(ArgumentIdentifier<std::vector<std::string>>{"item2", .optional = true});
+
+    // assert
+    std::vector<std::string> expectedValues = {};
+    ASSERT_EQ(list, expectedValues);
+}
+
 TEST(YamlParserTests, ShouldGetMapOfStrings) {
     // arrange
     std::stringstream yaml;
@@ -263,6 +309,22 @@ TEST(YamlParserTests, ShouldGetMapOfStrings) {
 
     // assert
     std::map<std::string, std::string> expectedValues = {{"string1", "1"}, {"string2", "2"}, {"string3", "3"}};
+    ASSERT_EQ(map, expectedValues);
+}
+
+TEST(YamlParserTests, ShouldGetCorrectValueForOptionalMap) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto map = yamlParser->Get(ArgumentIdentifier<std::map<std::string, std::string>>{"item2", .optional = true});
+
+    // assert
+    std::map<std::string, std::string> expectedValues = {};
     ASSERT_EQ(map, expectedValues);
 }
 

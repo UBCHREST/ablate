@@ -5,6 +5,7 @@ F*/
 
 const char *incompressibleFlowParametersTypeNames[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS + 1] = {"strouhal", "reynolds", "peclet", "mu", "k", "cp", "unknown"};
 static const char *incompressibleFlowFieldNames[TOTAL_INCOMPRESSIBLE_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
+static const char *incompressibleSourceFieldNames[TOTAL_INCOMPRESSIBLE_SOURCE_FIELDS + 1] = {"momentum_source", "mass_source", "energy_source", "unknown"};
 
 // \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u}
 static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
@@ -21,6 +22,13 @@ static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     for (c = 0; c < Nc; ++c) {
         for (d = 0; d < dim; ++d) {
             f0[c] += u[uOff[VEL] + d] * u_x[uOff_x[VEL] + c * dim + d];  // rho is assumed to be unity
+        }
+    }
+
+    // Add in any fixed source term
+    if (NfAux > 0){
+        for (d =0; d < dim; ++d){
+            f0[d] += a[aOff[MOM] + d];
         }
     }
 }
@@ -52,6 +60,11 @@ static void wIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     for (d = 0; d < dim; ++d) {
         f0[0] += constants[CP] * u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];  // rho is assumed unity
     }
+
+    // Add in any fixed source term
+    if (NfAux > 0){
+        f0[0] += a[aOff[ENERGY]];
+    }
 }
 
 //  \nabla w \cdot \frac{k}{P} \nabla T
@@ -72,6 +85,11 @@ static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     PetscInt d;
     for (d = 0, f0[0] = 0.0; d < dim; ++d) {
         f0[0] += u_x[uOff_x[VEL] + d * dim + d];
+    }
+
+    // Add in any fixed source term
+    if (NfAux > 0){
+        f0[0] += a[aOff[MASS]];
     }
 }
 
@@ -237,7 +255,7 @@ PetscErrorCode IncompressibleFlow_CompleteFlowInitialization(DM dm, Vec u) {
 }
 
 /* Make the discrete pressure discretely divergence free */
-static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
+static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, void* cts) {
     Vec u;
     PetscErrorCode ierr;
     DM dm;
@@ -251,75 +269,29 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
 
 PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
     DM cdm = dm;
-    PetscFE fe[3];
-    MPI_Comm comm;
-    PetscInt dim, cStart;
+    PetscInt dim;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-
     //Store the field data
     flowData->dm = dm;
-
-    // determine if it a simplex element and the number of dimensions
-    DMPolytopeType ct;
-    ierr = DMPlexGetHeightStratum(dm, 0, &cStart, NULL);CHKERRQ(ierr);
-    ierr = DMPlexGetCellType(dm, cStart, &ct);CHKERRQ(ierr);
-    PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+    ierr = DMSetApplicationContext(flowData->dm, flowData);CHKERRQ(ierr);
 
     // Determine the number of dimensions
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
-    // get the dm prefix to help name the fe objects
-    const char *dmPrefix;
-    ierr = DMGetOptionsPrefix(dm, &dmPrefix);CHKERRQ(ierr);
-    char fieldPrefix[128] = "";
-
-    /* Create finite element */
-    // set the velocity prefix
-    ierr = PetscStrlcat(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(fieldPrefix, "vel_", 128);CHKERRQ(ierr);
-
-    ierr = PetscObjectGetComm((PetscObject)dm, &comm);CHKERRQ(ierr);
-    ierr = PetscFECreateDefault(comm, dim, dim, simplex, fieldPrefix, PETSC_DEFAULT, &fe[0]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[VEL], incompressibleFlowFieldNames[VEL]);CHKERRQ(ierr);
-
-    // pressure
-    ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(fieldPrefix, "pres_", 128);CHKERRQ(ierr);
-
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[1]);CHKERRQ(ierr);
-    ierr = PetscFECopyQuadrature(fe[VEL], fe[PRES]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[PRES], incompressibleFlowFieldNames[PRES]);CHKERRQ(ierr);
-
-    // temperature
-    ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(fieldPrefix, "temp_", 128);CHKERRQ(ierr);
-
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[2]);CHKERRQ(ierr);
-    ierr = PetscFECopyQuadrature(fe[VEL], fe[TEMP]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[TEMP], incompressibleFlowFieldNames[TEMP]);CHKERRQ(ierr);
-
-    // register the fields
-    ierr = FlowRegisterFields(flowData, TOTAL_INCOMPRESSIBLE_FLOW_FIELDS, incompressibleFlowFieldNames);CHKERRQ(ierr);
-
-    /* Set discretization and boundary conditions for each mesh */
-    ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);
-    ierr = DMSetField(dm, PRES, NULL, (PetscObject)fe[PRES]);CHKERRQ(ierr);
-    ierr = DMSetField(dm, TEMP, NULL, (PetscObject)fe[TEMP]);CHKERRQ(ierr);
+    // Register each field, this order must match the order in IncompressibleFlowFields enum
+    ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[VEL], "vel_", dim);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[PRES], "pres_", 1);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[TEMP], "temp_", 1);CHKERRQ(ierr);
 
     // Create the discrete systems for the DM based upon the fields added to the DM
-    ierr = DMCreateDS(dm);CHKERRQ(ierr);
+    ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
 
     while (cdm) {
         ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
         ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
     }
-
-    // Clean up the fields
-    ierr = PetscFEDestroy(&fe[VEL]);CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&fe[PRES]);CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&fe[TEMP]);CHKERRQ(ierr);
 
     {
         PetscObject pressure;
@@ -331,6 +303,18 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) 
         ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
     }
 
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode IncompressibleFlow_EnableAuxFields(FlowData flowData) {
+    PetscFunctionBeginUser;
+    // Determine the number of dimensions
+    PetscInt dim;
+    PetscErrorCode ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
+
+    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[MOM] , "momentum_source_", dim);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[MASS] , "mass_source_", 1);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, incompressibleSourceFieldNames[ENERGY] , "energy_source_", 1);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -366,19 +350,11 @@ PetscErrorCode IncompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts)
     DM dm;
 
     PetscFunctionBeginUser;
+    ierr =  FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
+
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
-
-    ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
-    ierr = DMCreateGlobalVector(dm, &(flowData->flowField));CHKERRQ(ierr);
-
     ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
-
-    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);
-    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL);CHKERRQ(ierr);
-    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL);CHKERRQ(ierr);
-
-    ierr = TSSetPreStep(ts, removeDiscretePressureNullspaceOnTs);CHKERRQ(ierr);
-
+    ierr = FlowRegisterPreStep(flowData, removeDiscretePressureNullspaceOnTs, NULL);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

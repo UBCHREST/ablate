@@ -3,4 +3,6 @@ target_sources(ablateLibrary
         flowMonitor.hpp
         hdf5OutputFlow.hpp
         hdf5OutputFlow.cpp
+        convergenceCheck.hpp
+        convergenceCheck.cpp
         )

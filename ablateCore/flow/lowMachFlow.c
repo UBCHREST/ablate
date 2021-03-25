@@ -4,6 +4,7 @@ const char *lowMachFlowParametersTypeNames[TOTAL_LOW_MACH_FLOW_PARAMETERS + 1] =
     "strouhal", "reynolds", "froude", "peclet", "heatRelease", "gamma", "pth", "mu", "k", "cp", "beta", "gravityDirection", "unknown"};
 
 static const char *lowMachFlowFieldNames[TOTAL_LOW_MACH_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
+static const char *lowMachSourceFieldNames[TOTAL_LOW_MACH_SOURCE_FIELDS + 1] = {"momentum_source", "mass_source", "energy_source", "unknown"};
 
 /* =q \left(-\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right) */
 static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
@@ -22,6 +23,11 @@ static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     // - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right)
     for (d = 0; d < dim; ++d) {
         f0[0] -= constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) * u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];
+    }
+
+    // Add in any fixed source term
+    if (NfAux > 0) {
+        f0[0] += a[aOff[MASS]];
     }
 }
 
@@ -49,6 +55,13 @@ static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
 
     // rho \hat{z}/F^2
     f0[(PetscInt)constants[GRAVITY_DIRECTION]] += rho / (constants[FROUDE] * constants[FROUDE]);
+
+    // Add in any fixed source term
+    if (NfAux > 0) {
+        for (d =0; d < dim; ++d){
+            f0[d] += a[aOff[MOM] + d];
+        }
+    }
 }
 
 /*.5 (\nabla \boldsymbol{v} + \nabla \boldsymbol{v}^T) \cdot 2 \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T) - 1/3 (\nabla \cdot \bolsymbol{u})\boldsymbol{I}) - p \nabla \cdot
@@ -104,6 +117,11 @@ static void wIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, co
     // \frac{C_p p^{th}}{T} \boldsymbol{u} \cdot \nabla T
     for (PetscInt d = 0; d < dim; ++d) {
         f0[0] += constants[CP] * constants[PTH] / u[uOff[TEMP]] * u[uOff[VEL] + d] * u_x[uOff_x[TEMP] + d];
+    }
+
+    // Add in any fixed source term
+    if (NfAux > 0) {
+        f0[0] += a[aOff[ENERGY]];
     }
 }
 
@@ -332,7 +350,7 @@ PetscErrorCode LowMachFlow_CompleteFlowInitialization(DM dm, Vec u) {
 }
 
 /* Make the discrete pressure discretely divergence free */
-static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
+static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, void* context) {
     Vec u;
     PetscErrorCode ierr;
     DM dm;
@@ -346,74 +364,29 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts) {
 
 PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
     DM cdm = dm;
-    PetscFE fe[3];
-    MPI_Comm comm;
-    PetscInt dim, cStart;
+    PetscInt dim;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-
     //Store the field data
     flowData->dm = dm;
-
-    // determine if it a simplex element and the number of dimensions
-    DMPolytopeType ct;
-    ierr = DMPlexGetHeightStratum(dm, 0, &cStart, NULL);CHKERRQ(ierr);
-    ierr = DMPlexGetCellType(dm, cStart, &ct);CHKERRQ(ierr);
-    PetscBool simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+    ierr = DMSetApplicationContext(flowData->dm, flowData);CHKERRQ(ierr);
 
     // Determine the number of dimensions
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
-    // get the dm prefix to help name the fe objects
-    const char *dmPrefix;
-    ierr = DMGetOptionsPrefix(dm, &dmPrefix);CHKERRQ(ierr);
-    char fieldPrefix[128] = "";
-
-    /* Create finite element */
-    ierr = PetscStrlcat(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(fieldPrefix, "vel_", 128);CHKERRQ(ierr);
-
-    ierr = PetscObjectGetComm((PetscObject)dm, &comm);CHKERRQ(ierr);
-    ierr = PetscFECreateDefault(comm, dim, dim, simplex, fieldPrefix, PETSC_DEFAULT, &fe[0]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[VEL], lowMachFlowFieldNames[VEL]);CHKERRQ(ierr);
-
-    // pressure
-    ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(fieldPrefix, "pres_", 128);CHKERRQ(ierr);
-
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[1]);CHKERRQ(ierr);
-    ierr = PetscFECopyQuadrature(fe[VEL], fe[PRES]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[PRES], lowMachFlowFieldNames[PRES]);CHKERRQ(ierr);
-
-    // temperature
-    ierr = PetscStrncpy(fieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(fieldPrefix, "temp_", 128);CHKERRQ(ierr);
-
-    ierr = PetscFECreateDefault(comm, dim, 1, simplex, fieldPrefix, PETSC_DEFAULT, &fe[2]);CHKERRQ(ierr);
-    ierr = PetscFECopyQuadrature(fe[VEL], fe[TEMP]);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)fe[TEMP], lowMachFlowFieldNames[TEMP]);CHKERRQ(ierr);
-
-    // register the fields
-    ierr = FlowRegisterFields(flowData, TOTAL_LOW_MACH_FLOW_FIELDS, lowMachFlowFieldNames);CHKERRQ(ierr);
-
-    /* Set discretization and boundary conditions for each mesh */
-    ierr = DMSetField(dm, VEL, NULL, (PetscObject)fe[VEL]);CHKERRQ(ierr);
-    ierr = DMSetField(dm, PRES, NULL, (PetscObject)fe[PRES]);CHKERRQ(ierr);
-    ierr = DMSetField(dm, TEMP, NULL, (PetscObject)fe[TEMP]);CHKERRQ(ierr);
+    // Register each field, this order must match the order in LowMachFlowFields enum
+    ierr = FlowRegisterField(flowData, lowMachFlowFieldNames[VEL], "vel_", dim);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, lowMachFlowFieldNames[PRES], "pres_", 1);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, lowMachFlowFieldNames[TEMP], "temp_", 1);CHKERRQ(ierr);
 
     // Create the discrete systems for the DM based upon the fields added to the DM
-    ierr = DMCreateDS(dm);CHKERRQ(ierr);
+    ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
 
     while (cdm) {
         ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
         ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
     }
-
-    // Clean up the fields
-    ierr = PetscFEDestroy(&fe[VEL]);CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&fe[PRES]);CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&fe[TEMP]);CHKERRQ(ierr);
 
     {
         PetscObject pressure;
@@ -425,6 +398,18 @@ PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
         ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
     }
 
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode LowMachFlow_EnableAuxFields(FlowData flowData) {
+    PetscFunctionBeginUser;
+    // Determine the number of dimensions
+    PetscInt dim;
+    PetscErrorCode ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
+
+    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[MOM] , "momentum_source_", dim);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[MASS] , "mass_source_", 1);CHKERRQ(ierr);
+    ierr = FlowRegisterAuxField(flowData, lowMachSourceFieldNames[ENERGY] , "energy_source_", 1);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -463,18 +448,11 @@ PetscErrorCode LowMachFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
     DM dm;
 
     PetscFunctionBeginUser;
+    ierr =  FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
+
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
-
-    ierr = DMPlexCreateClosureIndex(dm, NULL);CHKERRQ(ierr);
-    ierr = DMCreateGlobalVector(dm, &(flowData->flowField));CHKERRQ(ierr);
     ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
-
-    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);
-    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL);CHKERRQ(ierr);
-    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL);CHKERRQ(ierr);
-
-    ierr = TSSetPreStep(ts, removeDiscretePressureNullspaceOnTs);CHKERRQ(ierr);
-
+    ierr = FlowRegisterPreStep(flowData, removeDiscretePressureNullspaceOnTs, NULL);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 

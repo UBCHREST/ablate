@@ -638,7 +638,7 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
         ierr = PetscObjectSetOptionsPrefix((PetscObject)particleTs, "particle_");
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        ierr = ParticleTracerSetupIntegrator(particles, particleTs, ts);
+        ierr = ParticleTracerSetupIntegrator(particles, particleTs, flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // setup the initial conditions for error computing

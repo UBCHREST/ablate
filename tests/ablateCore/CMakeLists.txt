@@ -1,10 +1,15 @@
 add_executable(coreTests "")
-target_link_libraries(coreTests PUBLIC gtest gmock ablateCore testingResources)
+target_link_libraries(coreTests PUBLIC gtest gmock ablateCore testingResources muparser)
 
 target_sources(coreTests
         PRIVATE
-        lowMachFlowTests.cpp
-        incompressibleFlowTests.cpp
+        lowMachFlowDynamicSourceTests.cpp
+        incompressibleFlowFunctionSourceTests.cpp
+        incompressibleFlowDynamicSourceTests.cpp
+        incompressibleFlowParameterTests.cpp
+        lowMachFlowFunctionSourceTests.cpp
+        lowMachFlowDynamicSourceTests.cpp
+        lowMachFlowParameterTests.cpp
         particleTests.cpp
         main.cpp
         )
@@ -23,3 +28,8 @@ add_custom_command(
         $<TARGET_FILE_DIR:coreTests>/outputs
 )
 
+# add testing support specific to ablateCore
+add_subdirectory(support)
+
+# Allow private access to the header files in the directory
+target_include_directories(coreTests PRIVATE ${CMAKE_CURRENT_LIST_DIR})

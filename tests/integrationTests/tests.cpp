@@ -21,10 +21,16 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
         PetscErrorCode ierr = PetscInitialize(argc, argv, NULL, help);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         {
+            int rank;
+            MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
             // precompute the resultDirectory directory so we can remove it if it here
             auto testName = GetParam().getTestName();
             std::filesystem::path resultDirectory = std::filesystem::current_path() / testName;
-            std::filesystem::remove_all(resultDirectory);
+            if (rank == 0) {
+                std::filesystem::remove_all(resultDirectory);
+            }
+            MPI_Barrier(PETSC_COMM_WORLD);
 
             // get the file
             std::filesystem::path inputPath = GetParam().testName;
@@ -40,15 +46,17 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             ablate::Builder::Run(parser);
 
             // print all files in the directory so that they are compared with expected
-            std::vector<std::string> resultFileInfo;
-            for (const auto& entry : fs::directory_iterator(ablate::monitors::RunEnvironment::Get().GetOutputDirectory())) {
-                resultFileInfo.push_back(entry.path().filename());
-            }
-            // sort the names so that the output order is defined
-            std::sort(resultFileInfo.begin(), resultFileInfo.end());
-            std::cout << "ResultFiles:" << std::endl;
-            for (const auto& fileInfo : resultFileInfo) {
-                std::cout << fileInfo << std::endl;
+            if (rank == 0) {
+                std::vector<std::string> resultFileInfo;
+                for (const auto& entry : fs::directory_iterator(ablate::monitors::RunEnvironment::Get().GetOutputDirectory())) {
+                    resultFileInfo.push_back(entry.path().filename());
+                }
+                // sort the names so that the output order is defined
+                std::sort(resultFileInfo.begin(), resultFileInfo.end());
+                std::cout << "ResultFiles:" << std::endl;
+                for (const auto& fileInfo : resultFileInfo) {
+                    std::cout << fileInfo << std::endl;
+                }
             }
         }
         ierr = PetscFinalize();
@@ -59,6 +67,6 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
 INSTANTIATE_TEST_SUITE_P(Tests, IntegrationTestsSpecifier,
                          testing::Values((MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlow.txt", .arguments = ""},
                                          (MpiTestParameter){
-                                             .testName = "inputs/tracerParticles2DHDF5Monitor.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt", .arguments = ""},
+                                             .testName = "inputs/tracerParticles2DHDF5Monitor.yaml", .nproc = 2, .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt", .arguments = ""},
                                          (MpiTestParameter){.testName = "inputs/tracerParticles3D.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles3D.txt", .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
