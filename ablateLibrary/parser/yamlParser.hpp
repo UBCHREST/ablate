@@ -57,8 +57,11 @@ class YamlParser : public Factory {
     /* return a string*/
     std::string Get(const ArgumentIdentifier<std::string>& identifier) const override { return GetValueFromYaml<std::string>(identifier); }
 
-    /* and a list of strings */
     std::vector<std::string> Get(const ArgumentIdentifier<std::vector<std::string>>& identifier) const override { return GetValueFromYaml<std::vector<std::string>>(identifier); }
+
+    std::vector<int> Get(const ArgumentIdentifier<std::vector<int>>& identifier) const override { return GetValueFromYaml<std::vector<int>>(identifier); }
+
+    std::vector<double> Get(const ArgumentIdentifier<std::vector<double>>& identifier) const override { return GetValueFromYaml<std::vector<double>>(identifier); }
 
     std::map<std::string, std::string> Get(const ArgumentIdentifier<std::map<std::string, std::string>>& identifier) const override {
         return GetValueFromYaml<std::map<std::string, std::string>>(identifier);

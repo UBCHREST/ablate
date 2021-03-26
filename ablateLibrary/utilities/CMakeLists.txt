@@ -1,7 +1,7 @@
 target_sources(ablateLibrary
         PUBLIC
-        petscError.cpp
         petscError.hpp
+        mpiError.hpp
         petscOptions.cpp
         petscOptions.hpp
         demangler.cpp
