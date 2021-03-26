@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_BOXMESH_HPP
 #define ABLATELIBRARY_BOXMESH_HPP
 
+#include <vector>
 #include "mesh.hpp"
 
 namespace ablate::mesh {
