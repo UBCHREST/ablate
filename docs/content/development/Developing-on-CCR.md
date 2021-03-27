@@ -2,6 +2,7 @@
 layout: default
 title: Developing on CCR
 parent: Development Guides
+nav_order: 2
 ---
 
 The University at Buffalo Center for Computational Research [(CCR)](http://www.buffalo.edu/ccr.html) is UB's Supercomputing center. The following are useful links to get started at CCR:
