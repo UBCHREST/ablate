@@ -24,7 +24,9 @@ flow: !ablate::flow::IncompressibleFlow
   name: theFlowField
   mesh: !ablate::mesh::BoxMesh
     name: simpleBoxField
-    dimensions: 3
+    faces: [ 2, 2, 2 ]
+    lower: [ 0, 0, 0]
+    upper: [1, 1, 1]
     arguments:
       dm_refine: 2
       vel_petscspace_degree: 2
