@@ -34,6 +34,12 @@ class Factory {
     /* return a vector of strings */
     virtual std::vector<std::string> Get(const ArgumentIdentifier<std::vector<std::string>>& identifier) const = 0;
 
+    /* return a vector of int */
+    virtual std::vector<int> Get(const ArgumentIdentifier<std::vector<int>>& identifier) const = 0;
+
+    /* return a vector of double */
+    virtual std::vector<double> Get(const ArgumentIdentifier<std::vector<double>>& identifier) const = 0;
+
     /* return a map of strings */
     virtual std::map<std::string, std::string> Get(const ArgumentIdentifier<std::map<std::string, std::string>>& identifier) const = 0;
 

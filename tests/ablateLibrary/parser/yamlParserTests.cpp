@@ -292,6 +292,86 @@ TEST(YamlParserTests, ShouldGetCorrectValueForOptionalListOfStrings) {
     ASSERT_EQ(list, expectedValues);
 }
 
+TEST(YamlParserTests, ShouldGetListOfInts) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+    yaml << " item2:" << std::endl;
+    yaml << "   - 1  " << std::endl;
+    yaml << "   - 2 " << std::endl;
+    yaml << "   - 3 " << std::endl;
+    yaml << " item3: [4, 5, 6]" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto list1 = yamlParser->Get(ArgumentIdentifier<std::vector<int>>{"item2"});
+    auto list2 = yamlParser->Get(ArgumentIdentifier<std::vector<int>>{"item3"});
+
+    // assert
+    std::vector<int> expectedValues1 = {1, 2, 3};
+    ASSERT_EQ(list1, expectedValues1);
+    std::vector<int> expectedValues2 = {4, 5, 6};
+    ASSERT_EQ(list2, expectedValues2);
+}
+
+TEST(YamlParserTests, ShouldGetCorrectValueForOptionalListOfInt) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto list = yamlParser->Get(ArgumentIdentifier<std::vector<int>>{"item2", .optional = true});
+
+    // assert
+    std::vector<int> expectedValues = {};
+    ASSERT_EQ(list, expectedValues);
+}
+
+TEST(YamlParserTests, ShouldGetListOfDouble) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+    yaml << " item2:" << std::endl;
+    yaml << "   - 1.1  " << std::endl;
+    yaml << "   - 2 " << std::endl;
+    yaml << "   - 3.3 " << std::endl;
+    yaml << " item3: [4.4, 5, 6.6]" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto list1 = yamlParser->Get(ArgumentIdentifier<std::vector<double>>{"item2"});
+    auto list2 = yamlParser->Get(ArgumentIdentifier<std::vector<double>>{"item3"});
+
+    // assert
+    std::vector<double> expectedValues1 = {1.1, 2, 3.3};
+    ASSERT_EQ(list1, expectedValues1);
+    std::vector<double> expectedValues2 = {4.4, 5, 6.6};
+    ASSERT_EQ(list2, expectedValues2);
+}
+
+TEST(YamlParserTests, ShouldGetCorrectValueForOptionalListOfDouble) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto list = yamlParser->Get(ArgumentIdentifier<std::vector<int>>{"item2", .optional = true});
+
+    // assert
+    std::vector<int> expectedValues = {};
+    ASSERT_EQ(list, expectedValues);
+}
+
 TEST(YamlParserTests, ShouldGetMapOfStrings) {
     // arrange
     std::stringstream yaml;
