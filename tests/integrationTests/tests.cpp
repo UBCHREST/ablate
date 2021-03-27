@@ -67,6 +67,6 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
 INSTANTIATE_TEST_SUITE_P(Tests, IntegrationTestsSpecifier,
                          testing::Values((MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlow.txt", .arguments = ""},
                                          (MpiTestParameter){
-                                             .testName = "inputs/tracerParticles2DHDF5Monitor.yaml", .nproc = 3, .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt", .arguments = ""},
+                                             .testName = "inputs/tracerParticles2DHDF5Monitor.yaml", .nproc = 2, .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt", .arguments = ""},
                                          (MpiTestParameter){.testName = "inputs/tracerParticles3D.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles3D.txt", .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });

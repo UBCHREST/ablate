@@ -30,8 +30,7 @@ flow: !ablate::flow::IncompressibleFlow
     lower: [ 0, 0]
     upper: [1, 1]
     arguments:
-      dm_refine: 1
-      dm_distribute: true
+      dm_refine: 0
       vel_petscspace_degree: 2
       pres_petscspace_degree: 1
       temp_petscspace_degree: 1
