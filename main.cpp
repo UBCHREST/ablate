@@ -2,7 +2,7 @@
 #include <iostream>
 #include <memory>
 #include "builder.hpp"
-#include "monitors/runEnvironment.hpp"
+#include "environment/runEnvironment.hpp"
 #include "parser/listing.h"
 #include "parser/yamlParser.hpp"
 #include "utilities/petscError.hpp"
@@ -50,7 +50,7 @@ int main(int argc, char **args) {
 
         // setup the monitor
         auto setupEnvironmentParameters = parser->GetByName<ablate::parameters::Parameters>("environment");
-        monitors::RunEnvironment::Setup(filePath, *setupEnvironmentParameters);
+        environment::RunEnvironment::Setup(*setupEnvironmentParameters, filePath);
 
         // run with the parser
         Builder::Run(parser);

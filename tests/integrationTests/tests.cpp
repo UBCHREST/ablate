@@ -5,8 +5,8 @@ static char help[] = "Integration Level Testing";
 #include "MpiTestFixture.hpp"
 #include "MpiTestParamFixture.hpp"
 #include "builder.hpp"
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
-#include "monitors/runEnvironment.hpp"
 #include "parameters/mapParameters.hpp"
 #include "parser/yamlParser.hpp"
 
@@ -37,7 +37,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
 
             // Setup the run environment
             ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"outputDirectory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
-            ablate::monitors::RunEnvironment::Setup(inputPath, runEnvironmentParameters);
+            ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // load a yaml file
             std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath);
@@ -48,7 +48,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             // print all files in the directory so that they are compared with expected
             if (rank == 0) {
                 std::vector<std::string> resultFileInfo;
-                for (const auto& entry : fs::directory_iterator(ablate::monitors::RunEnvironment::Get().GetOutputDirectory())) {
+                for (const auto& entry : fs::directory_iterator(ablate::environment::RunEnvironment::Get().GetOutputDirectory())) {
                     resultFileInfo.push_back(entry.path().filename());
                 }
                 // sort the names so that the output order is defined
