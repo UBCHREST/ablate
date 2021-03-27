@@ -67,8 +67,17 @@ It is highly recommend that you merge your changes back into ABLATE often.  This
     ```
 1. Update the ABLATE version in the CMakeLists.txt file in the root of the project following [semantic versioning](https://semver.org/).
 1. Follow the [Working with Git](#working-with-git) steps to commit and push any additional changes.
-1. 
-
+1. Navigate to your fork of ABLATE on GitHub.com.
+1. If presented with the button to "Compare & pull request" you can select this.  Otherwise, select the "Pull requests" tab and select the "New pull request" button.
+   ![github start pr](assets/github_start_pr.png)
+1. Configure and create your pull request
+   1. Check the source and destination repositories.  The source repository should be your feature branch on your fork.  The destination repository should be UBCHREST/ablate main.
+   1. Add a title and detailed description.  Within the description you should link/close any related issues.
+   1. Assign any reviewer that you would like to review the pr.
+   1. Create the pull request
+   ![github configuring pr issue](assets/github_issue_pr.png)
+1. Squash and Merge your pull request once all of the tests have run/pass and your code changes are reviewed.  If the tests fail or if changes are requested you can simply make changes to your local branch and push.  The PR will be automatically updated and the test re-run.
+1. Once your code changes have been merged, you will want to [update your fork](#updating-your-fork).
 
 # Updating your Fork
 Before you can do complete a Pull Request or if you need a newer version of ABLATE you will need to update your fork with changes to ABLATE.  [GitHub Syncing](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#step-3-configure-git-to-sync-your-fork-with-the-original-spoon-knife-repository) provides detailed direction for updating your repository. A summary specific to ABLATE is provided here.

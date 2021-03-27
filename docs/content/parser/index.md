@@ -1,22 +1,38 @@
 ---
 layout: default
-title: Parser
+title: Input Files
 nav_order: 5
+has_children: true
 ---
-## Registrar
+ABLATE includes a yaml parser for setting up and configuring simulations.  The yaml input files specifies all of the details of the simulation without the need to recompile the code.   These directions assume you have built ABLATE as outlined in [Building ABLATE Locally]({{ site.baseurl}}{%link content/development/BuildingABLATELocally.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover using ablate built with the command line and [CLion](https://www.jetbrains.com/clion/).
 
-The ablateLibrary uses a factory/parser paradigm that allows you to register that your class meets an interface requirement.  When registering your class you must describe how to build your class (the arguments, their names, and a brief description).  To access the registrar you must  ```#include "parser/registrar.hpp"```.
- 
-For instance, in hte following example the ParsedFunction implements MathFunction where it takes a single string argument for the formula.
+# Obtaining an Input File
+Download an example file and move to a location on your computer (should be outside of your ablate repository).  The following example files are available, where additional details on the [file structured] is detailed.
+- [Incompressible Flow 2D.yaml]({{site.url}}{{site.baseurl}}/content/parser/inputs/incompressibleFlow.yaml)
+- [Tracer Particles 3D.yaml]({{site.url}}{{site.baseurl}}/content/parser/inputs/particleTracer3D.yaml)
 
-```c++
-REGISTERDEFAULT(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedFunction, "a string based function to be parsed with muparser",
-ARG(std::string, "formula", "the formula that may accept x, y, z, t"));
-```
+# Running ABLATE from the Command Line
+If you built ABLATE using the command line you can run ABLATE using either the debug or release builds.
+    
+    ```bash
+    # navigate to either the debug or release directory of ABLATE
+    ./ablate --input /path/to/the/inputfile.yaml
 
-In order to view all registered classes run the ablate main statement with the ```-parserHelp``` command flag.
+    # similarly, ABLATE can be run using mpi
+    mpirun -n 3 ./abalte --input /path/to/the/inputfile.yaml
+    ```
 
-## Parser
+Other available command line arguments are listed in [Parser Command Line Arguments](#parser-command-line-arguments).
+
+# Running ABLATE from CLion
+1. If you are new to CLion it is recommend that you read through the [CLion Quick Start Guide](https://www.jetbrains.com/help/clion/clion-quick-start-guide.html).
+1. Select the ablate configuration from the configuration drop down.
+    ![clion ablate configuration selection](assets/clion_ablate_configuration.png)
+1. Under the same menu select "Edit Configurations..." and enter the input file argument as shown.  Other available command line arguments are listed in [Parser Command Line Arguments](#parser-command-line-arguments).
+    ![clion ablate configuration setup](assets/clion_ablate_configuration_setup.png)
+1. Run or Debug ABLATE using the icons in the toolbar or under the Run menu.
+
+# Yaml Input Files
 At this point in time there is only a single YAML based implementation of a parser/factory. In this implementation arguments are passed as dictionary objects and list available.  When a class must be specified in YAML (no default specified) this must be done with a YAML tag.  For instance, in the following example the first particle in the list specified as a tracer particle initialized using a BoxInitializer.
 
 ```yaml
@@ -39,6 +55,12 @@ particles:
 
 ```
 
-Example Inputs
-- [Incompressible Flow 2D.yaml]({{site.url}}{{site.baseurl}}/content/parser/inputs/incompressibleFlow.yaml)
-- [Tracer Particles 3D.yaml]({{site.url}}{{site.baseurl}}/content/parser/inputs/particleTracer3D.yaml)
+# Parser Command Line Arguments
+
+| Argument | Description |
+| --- | ----------- |
+| \-\-input | (required) The path to the Yaml input file |
+| \-version | Prints the combined ABLATE and PETSc version information |
+| \-\-version | Prints the ABLATE version information |
+| \-\-help | Prints all available arguments for the Yaml input file |
+

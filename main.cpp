@@ -17,6 +17,9 @@ int main(int argc, char **args) {
     // check to see if we should print version
     PetscBool printVersion = PETSC_FALSE;
     PetscOptionsGetBool(NULL, NULL, "-version", &printVersion, NULL) >> checkError;
+    if(!printVersion){
+        PetscOptionsGetBool(NULL, NULL, "--version", &printVersion, NULL) >> checkError;
+    }
     if (printVersion) {
         Builder::PrintVersion(std::cout);
         std::cout << "----------------------------------------" << std::endl;
@@ -24,7 +27,7 @@ int main(int argc, char **args) {
 
     // check to see if we should print options
     PetscBool printParserOptions = PETSC_FALSE;
-    PetscOptionsGetBool(NULL, NULL, "--parserHelp", &printParserOptions, NULL) >> checkError;
+    PetscOptionsGetBool(NULL, NULL, "--help", &printParserOptions, NULL) >> checkError;
     if (printParserOptions) {
         std::cout << parser::Listing::Get() << std::endl;
     }
