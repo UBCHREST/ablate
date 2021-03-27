@@ -1,7 +1,9 @@
 ---
 layout: about
+title: About
+nav_order: 1
 ---
-**ABLATE** **A**blative **B**oundary **L**ayers **A**t **T**he **E**xascale
+# **ABLATE** **A**blative **B**oundary **L**ayers **A**t **T**he **E**xascale
 
 ABLATE is a [UB CHREST](https://www.buffalo.edu/chrest.html) project focused on leveraging advances in both exascale computing and machine learning to better understand the turbulent mixing and fuel entrainment in the combustion environment that is critical to the operation of hybrid rocket motors.
 
@@ -9,6 +11,9 @@ The ABLATE documentation that should contain:
 * building/running the framework
 * physics overview and assumptions
 * development guides
+
+# Getting Started
+New to Ablate? Get up and running with the [Getting Started Guide.]({{ site.baseurl}}{%link content/GettingStarted.md  %})
 
 # Repository Layout
 ## ablateCore
@@ -26,4 +31,4 @@ The test directory holds four sub-test projects, each focused on a different asp
 - tests/integrationTests: integration level tests built upon the ablateLibrary parser.
 
 ## docs
-The Markdown docs for ablate.  These are build with [Jekyll](jekyllrb.com) and published automatically upon merge.
+The Markdown docs for ablate.  These are build with [Jekyll](jekyllrb.com) and published automatically upon merge. Follow the [Quickstart](https://jekyllrb.com/docs/) steps to preview your changes locally.  
