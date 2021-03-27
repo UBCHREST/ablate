@@ -1,7 +1,7 @@
 #include "hdf5OutputParticle.hpp"
 #include <petsc.h>
 #include <petscviewerhdf5.h>
-#include "monitors/runEnvironment.hpp"
+#include "environment/runEnvironment.hpp"
 #include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
 
@@ -10,7 +10,7 @@ void ablate::monitors::particles::Hdf5OutputParticle::Register(std::shared_ptr<a
     particles = particlesIn;
 
     // build the file name
-    outputFilePath = monitors::RunEnvironment::Get().GetOutputDirectory() / (particles->GetName() + extension);
+    outputFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / (particles->GetName() + extension);
 
     // setup the petsc viewer
     PetscViewerHDF5Open(PETSC_COMM_WORLD, outputFilePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;

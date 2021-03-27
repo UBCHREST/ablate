@@ -1,7 +1,7 @@
 #include "hdf5OutputFlow.hpp"
 #include <petsc.h>
 #include <petscviewerhdf5.h>
-#include "monitors/runEnvironment.hpp"
+#include "environment/runEnvironment.hpp"
 #include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
 
@@ -10,7 +10,7 @@ void ablate::monitors::flow::Hdf5OutputFlow::Register(std::shared_ptr<ablate::fl
     flow = flowIn;
 
     // build the file name
-    outputFilePath = monitors::RunEnvironment::Get().GetOutputDirectory() / (flow->GetName() + extension);
+    outputFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / (flow->GetName() + extension);
 
     // setup the petsc viewer
     PetscViewerHDF5Open(PETSC_COMM_WORLD, outputFilePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;
