@@ -17,7 +17,7 @@ New to Ablate? Get up and running with the [Getting Started Guide.]({{ site.base
 
 ## Repository Layout
 ### ablateCore
-AblateCore builds a c library of reusable functions and datastructures for solving flow and particle based system.
+AblateCore builds a c library of reusable functions and data structures for solving flow and particle based system.  Use of this library requires knowledge of PETSc. 
 
 ### ablateLibrary
 AblateLibrary is a c++ library used to setup and run simulations.  It is built upon ablateCore and provides a level of abstraction that simplifies setting up complex simulations.
@@ -25,10 +25,10 @@ AblateLibrary is a c++ library used to setup and run simulations.  It is built u
 ### tests
 The test directory holds four sub-test projects, each focused on a different aspect of testing.
 
-- tests/testingResources: testingResources build a library used by the other projects.  This includes helper classes for running mpi based tests.
+- tests/testingResources: testingResources build a library used by the other testing projects.  This includes helper classes for running mpi based tests.
 - tests/ablateCore: includes tests for the core functionality.  These tests resemble what another client may use from ablateCore.
 - tests/ablateLibrary: includes unit level tests for the ablate library classes.
 - tests/integrationTests: integration level tests built upon the ablateLibrary parser.
 
 ### docs
-The Markdown docs for ablate.  These are build with [Jekyll](jekyllrb.com) and published automatically upon merge. Follow the [Quickstart](https://jekyllrb.com/docs/) steps to preview your changes locally.  
+The Markdown documents for ablate.  These are build with [Jekyll](jekyllrb.com) and published automatically upon merge. Follow the [Quickstart](https://jekyllrb.com/docs/) steps to preview your changes locally.  

@@ -7,7 +7,7 @@ parent: Input Files
 ABLATE includes a yaml parser for setting up and configuring simulations.  The yaml input files specifies all of the details of the simulation without the need to recompile the code.   These directions assume you have built ABLATE as outlined in [Building ABLATE Locally]({{ site.baseurl}}{%link content/development/BuildingABLATELocally.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover using ablate built with the command line and [CLion](https://www.jetbrains.com/clion/).
 
 ## Obtaining an Input File
-Download an example file and move to a location on your computer (should be outside of your ablate repository).  The following example files are available, where additional details on the [file structured] is detailed.
+Download an example file and move to a location on your computer (should be outside of your ablate repository).  The following example files are available, where additional details on the [file structured](#yaml-input-files) are available.
 - [Incompressible Flow 2D.yaml]({{site.url}}{{site.baseurl}}/content/parser/inputs/incompressibleFlow.yaml)
 - [Tracer Particles 3D.yaml]({{site.url}}{{site.baseurl}}/content/parser/inputs/particleTracer3D.yaml)
 
@@ -33,7 +33,7 @@ Other available command line arguments are listed in [Parser Command Line Argume
 1. Run or Debug ABLATE using the icons in the toolbar or under the Run menu.
 
 ## Yaml Input Files
-At this point in time there is only a single YAML based implementation of a parser/factory. In this implementation arguments are passed as dictionary objects and list available.  When a class must be specified in YAML (no default specified) this must be done with a YAML tag.  For instance, in the following example the first particle in the list specified as a tracer particle initialized using a BoxInitializer.
+At this point in time there is only a single YAML based implementation of a parser/factory. In this implementation arguments are passed as dictionary objects and lists.  When a class must be specified in YAML (no default specified) this must be done with a YAML tag.  For instance, in the following example the first particle in the list specified as a tracer particle initialized using a BoxInitializer.
 
 ```yaml
 particles:

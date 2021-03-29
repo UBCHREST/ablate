@@ -5,7 +5,7 @@ parent: Development Guides
 nav_order: 3
 ---
 
-These directions for the details for downloading, building, and testing ABLATE on your local computer.  These directions assume you have installed PETSc and setup the environmental variables outlined in [Installing PETSc for ABLATE]({{ site.baseurl}}{%link content/development/InstallingPETSc.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover building with the command line (WSL on Windows) and [CLion](https://www.jetbrains.com/clion/).
+These directions outline the steps for for downloading, building, and testing ABLATE on your local computer.  These directions assume you have installed PETSc and setup the environmental variables outlined in [Installing PETSc for ABLATE]({{ site.baseurl}}{%link content/development/InstallingPETSc.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover building with the command line (WSL on Windows) and [CLion](https://www.jetbrains.com/clion/).
 
 ## Downloading and Building with the Command Line
 1. Clone your [ABLATE fork]({{ site.baseurl}}{%link content/development/UsingGitWithABLATE.md  %}#forking-ablate) onto your local machine. It is recommended that you [setup passwordless ssh](https://docs.github.com/en/github/authenticating-to-github/adding-a-new-ssh-key-to-your-github-account) for accessing GitHub.

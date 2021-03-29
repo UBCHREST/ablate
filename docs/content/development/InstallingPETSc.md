@@ -26,7 +26,7 @@ Using the terminal, install the required prerequisites
 ### Windows
 It is recommended that development on Windows uses the [Windows Subsystem for Linux 2 (WSL2)](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
 1. Follow Microsoft's instructions for installing [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10) and Ubuntu.
-1. Open the Ubuntu Terminal window.  The news [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701?activetab=pivot:overviewtab) can be used to access Ubuntu.
+1. Open the Ubuntu Terminal window.  The [Windows Terminal](https://www.microsoft.com/en-us/p/windows-terminal/9n0dx20hk701?activetab=pivot:overviewtab) can be used to access Ubuntu.
 1. Using the terminal, install the required prerequisites
     ```bash
     sudo apt-get update
@@ -34,9 +34,9 @@ It is recommended that development on Windows uses the [Windows Subsystem for Li
     ```
 
 ## Install PETSc
-The framework requires that PETSc be configured and build with certain options.  Detailed instructions for installing PETSc are available at [https://www.mcs.anl.gov/petsc/documentation/installation.html](https://www.mcs.anl.gov/petsc/documentation/installation.html), but an abbreviated guide is provided for convenience.
-1. Clone the PETSc ```git clone https://gitlab.com/petsc/petsc.git ```
-	- To clone a specific version or commit ```git checkout v3.14.2``` 
+The framework requires that PETSc be configured and built with certain options.  Detailed instructions for installing PETSc are available at [https://www.mcs.anl.gov/petsc/documentation/installation.html](https://www.mcs.anl.gov/petsc/documentation/installation.html), but an abbreviated guide is provided for convenience.
+1. Clone PETSc ```git clone https://gitlab.com/petsc/petsc.git ```
+	- To checkout a specific version or commit ```git checkout v3.14.2``` 
 1. Configure PETSc with at least the following options from the petsc directory
     ```bash
     ./configure --download-mpich --download-fblaslapack --download-ctetgen \

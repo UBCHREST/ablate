@@ -7,7 +7,7 @@ nav_order: 2
 
 ## Git Introduction
 
-Version control is a fundamental aspect of successfully software development regardless of the target product or development team.  ABLATE is using Git for version control hosted on [Github.com](https://github.com/UBCHREST/ablate).  Git and the associated workflows define how people develop, document, test, and contribute code to the project.  If you are new to Git or unsure/unconfinced why we are using version control it is recommend that you watch the [Git Introduction by Alicia Klinvex](https://www.youtube.com/watch?v=0dkvuC8MzPI) presented at Argonne Training Program on Extreme-Scale Computing 2017.  The following guide provides quick reference to some of the common Git workflows as applied to ABLATE.
+Version control is a fundamental aspect of successful software development regardless of the target product or development team.  ABLATE is using Git for version control hosted on [Github.com](https://github.com/UBCHREST/ablate).  Git and the associated workflows define how people develop, document, test, and contribute code to the project.  If you are new to Git or unsure/unconvinced why we are using version control it is recommend that you watch the [Git Introduction by Alicia Klinvex](https://www.youtube.com/watch?v=0dkvuC8MzPI) presented at Argonne Training Program on Extreme-Scale Computing 2017.  The following guide provides quick reference to some of the common Git workflows as applied to ABLATE.
 
 <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/0dkvuC8MzPI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
@@ -20,7 +20,7 @@ If you plan on making any contributions to ABLATE you must first fork ABLATE.  T
 1. **Navigate to ABLATE Repo** Navigate to the ablate repo at https://github.com/UBCHREST/ablate.
 1. **Fork the Repo**  Press the "Fork" button in the upper-right-hand corner of the page and follow the on-screen directions to create your own fork.
    ![GitHub fork button location](assets/github_fork_button.png)
-1. **Get your Fork Address** You now have a fork of the ABLATE repository.  You can make changes and try new things without concern of breaking ABLATE.  You can tell when you are in your fork by looking at the upper left-hand corner where it should YOURUSERNAME/ablate.  You will need your fork git url in future steps.  This can be found by clicking the Code button.
+1. **Get your Fork Url** You now have a fork of the ABLATE repository.  You can make changes and try new things without concern of breaking ABLATE.  You can tell when you are in your fork by looking at the upper left-hand corner where it should say YOURUSERNAME/ablate.  You will need your fork git url in future steps.  This can be found by clicking the Code button.
    ![GitHub fork repo](assets/github_fork_repo.png)
 
 ## Working with Git
@@ -36,7 +36,7 @@ Git allows you to easily collaborate between people, back-up your code, and keep
    # Get a list of changes to your code
    git status
    
-   # Review the changes.  To add all files
+   # Stage the changes.  To add all files
    git add -A
 
    # or a specific file
@@ -59,7 +59,7 @@ Git allows you to easily collaborate between people, back-up your code, and keep
 It is highly recommend that you merge your changes back into ABLATE often.  This is done using a [Pull Request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests), which asks the team to review and "pull" your changes back into ABLATE from your fork/branch. 
 1. Start on your feature branch outlined in [Working with Git](#working-with-git) with any changes that you would like to share.
 1. Update any documentation within the docs folder.
-1. Update or create any tests.  The [GoogleTest](https://github.com/google/googletest) framework is used to control and monitor tests.
+1. Update and create any needed tests.  The [GoogleTest](https://github.com/google/googletest) framework is used to control and monitor tests.
 1. Make sure that all code meets formatting requirements [Google Style Guide](https://google.github.io/styleguide/) for c++ and [PETSc Style and Usage Guide](https://docs.petsc.org/en/latest/developers/style/) for C.
     ```bash
     # To run a format check from build directory
@@ -76,14 +76,14 @@ It is highly recommend that you merge your changes back into ABLATE often.  This
    1. Assign any reviewer that you would like to review the pr.
    1. Create the pull request
    ![github configuring pr issue](assets/github_issue_pr.png)
-1. Squash and Merge your pull request once all of the tests have run/pass and your code changes are reviewed.  If the tests fail or if changes are requested you can simply make changes to your local branch and push.  The PR will be automatically updated and the test re-run.
+1. Squash and Merge your pull request once all of the tests have run/pass and your code changes are reviewed.  If the tests fail or if changes are requested you can simply make changes to your local branch and push.  The PR will be automatically updated and the tests re-run.
 1. Once your code changes have been merged, you will want to [update your fork](#updating-your-fork).
 
 ## Updating your Fork
-Before you can do complete a Pull Request or if you need a newer version of ABLATE you will need to update your fork with changes to ABLATE.  [GitHub Syncing](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#step-3-configure-git-to-sync-your-fork-with-the-original-spoon-knife-repository) provides detailed direction for updating your repository. A summary specific to ABLATE is provided here.
+Before you can do complete a Pull Request or if you need a newer version of ABLATE you will need to update your fork with the changes to ABLATE.  [GitHub Syncing](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#step-3-configure-git-to-sync-your-fork-with-the-original-spoon-knife-repository) provides detailed direction for updating your repository. A summary specific to ABLATE is provided here.
 
 1. **Access your Git Fork** If you have been using your repository it probably has been locally cloned.
-2. **Add Upstream URL** You need to tell git to check the ABLATE repository for changes.  This is done by setting the Git repository as upstream.
+2. **Add Upstream URL** You need to tell git to check the ABLATE repository for changes.  This is done by setting the Git repository as upstream.  This only needs to be done once.
    ```bash
    # Navigate into your local fork repository
    
