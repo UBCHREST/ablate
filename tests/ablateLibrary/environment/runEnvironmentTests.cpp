@@ -146,7 +146,6 @@ TEST_F(RunEnvironmentTestFixture, ShouldSetupDefaultWithoutInputFile) {
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
 }
 
-
 TEST_F(RunEnvironmentTestFixture, ShouldNotTagOutputDirectoryWithoutInputFile) {
     // arrange
     // setup the mock parameters

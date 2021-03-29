@@ -6,7 +6,7 @@
 ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters& parameters, std::filesystem::path inputPath) : title(parameters.GetExpect<std::string>("title")) {
     // check to see if the output directory is set
     auto specifiedOutputDirectory = parameters.Get<std::filesystem::path>("outputDirectory");
-    outputDirectory = specifiedOutputDirectory.value_or((inputPath.empty()? std::filesystem::current_path() : inputPath.parent_path()) / title);
+    outputDirectory = specifiedOutputDirectory.value_or((inputPath.empty() ? std::filesystem::current_path() : inputPath.parent_path()) / title);
 
     // Append the current time set to tag directory
     if (parameters.Get("tagDirectory", true)) {
@@ -47,7 +47,7 @@ ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters
         std::filesystem::create_directories(outputDirectory);
 
         // copy over the input file
-        if(!inputPath.empty()) {
+        if (!inputPath.empty()) {
             std::filesystem::copy(inputPath, outputDirectory / inputPath.filename(), std::filesystem::copy_options::overwrite_existing);
         }
     }

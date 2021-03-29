@@ -2,5 +2,10 @@ target_sources(ablateLibrary
         PUBLIC
         parsedFunction.cpp
         parsedFunction.hpp
+        functionWrapper.cpp
+        functionWrapper.hpp
+        functionPointer.hpp
+        functionPointer.cpp
         mathFunction.hpp
+        functionFactory.hpp
         )

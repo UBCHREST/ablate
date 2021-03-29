@@ -25,6 +25,6 @@ class RunEnvironment {
    private:
     inline static std::unique_ptr<RunEnvironment> runEnvironment = nullptr;
 };
-}  // namespace ablate::monitors
+}  // namespace ablate::environment
 
 #endif  // ABLATELIBRARY_RUNENVIRONMENT_H
