@@ -6,12 +6,12 @@ parent: Input Files
 ---
 ABLATE includes a yaml parser for setting up and configuring simulations.  The yaml input files specifies all of the details of the simulation without the need to recompile the code.   These directions assume you have built ABLATE as outlined in [Building ABLATE Locally]({{ site.baseurl}}{%link content/development/BuildingABLATELocally.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover using ablate built with the command line and [CLion](https://www.jetbrains.com/clion/).
 
-# Obtaining an Input File
+## Obtaining an Input File
 Download an example file and move to a location on your computer (should be outside of your ablate repository).  The following example files are available, where additional details on the [file structured] is detailed.
 - [Incompressible Flow 2D.yaml]({{site.url}}{{site.baseurl}}/content/parser/inputs/incompressibleFlow.yaml)
 - [Tracer Particles 3D.yaml]({{site.url}}{{site.baseurl}}/content/parser/inputs/particleTracer3D.yaml)
 
-# Running ABLATE from the Command Line
+## Running ABLATE from the Command Line
 If you built ABLATE using the command line you can run ABLATE using either the debug or release builds.
     
     ```bash
@@ -24,7 +24,7 @@ If you built ABLATE using the command line you can run ABLATE using either the d
 
 Other available command line arguments are listed in [Parser Command Line Arguments](#parser-command-line-arguments).
 
-# Running ABLATE from CLion
+## Running ABLATE from CLion
 1. If you are new to CLion it is recommend that you read through the [CLion Quick Start Guide](https://www.jetbrains.com/help/clion/clion-quick-start-guide.html).
 1. Select the ablate configuration from the configuration drop down.
     ![clion ablate configuration selection](assets/clion_ablate_configuration.png)
@@ -32,7 +32,7 @@ Other available command line arguments are listed in [Parser Command Line Argume
     ![clion ablate configuration setup](assets/clion_ablate_configuration_setup.png)
 1. Run or Debug ABLATE using the icons in the toolbar or under the Run menu.
 
-# Yaml Input Files
+## Yaml Input Files
 At this point in time there is only a single YAML based implementation of a parser/factory. In this implementation arguments are passed as dictionary objects and list available.  When a class must be specified in YAML (no default specified) this must be done with a YAML tag.  For instance, in the following example the first particle in the list specified as a tracer particle initialized using a BoxInitializer.
 
 ```yaml
@@ -55,7 +55,7 @@ particles:
 
 ```
 
-# Parser Command Line Arguments
+## Parser Command Line Arguments
 
 | Argument | Description |
 | --- | ----------- |

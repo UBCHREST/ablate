@@ -5,13 +5,13 @@ parent: Development Guides
 nav_order: 2
 ---
 
-# Git Introduction
+## Git Introduction
 
 Version control is a fundamental aspect of successfully software development regardless of the target product or development team.  ABLATE is using Git for version control hosted on [Github.com](https://github.com/UBCHREST/ablate).  Git and the associated workflows define how people develop, document, test, and contribute code to the project.  If you are new to Git or unsure/unconfinced why we are using version control it is recommend that you watch the [Git Introduction by Alicia Klinvex](https://www.youtube.com/watch?v=0dkvuC8MzPI) presented at Argonne Training Program on Extreme-Scale Computing 2017.  The following guide provides quick reference to some of the common Git workflows as applied to ABLATE.
 
 <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/0dkvuC8MzPI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
-# Forking ABLATE
+## Forking ABLATE
 If you plan on making any contributions to ABLATE you must first fork ABLATE.  This creates a version of ABLATE that you can modify, commit, and test. When complete, you can create a Pull Request to bring your changes back to the main branch. [GitHub Forking Documentation](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo) provides a very detailed summary of creating and using forks.
 
 > "A fork is a copy of a repository. Forking a repository allows you to freely experiment with changes without affecting the original project." - GitHub
@@ -23,7 +23,7 @@ If you plan on making any contributions to ABLATE you must first fork ABLATE.  T
 1. **Get your Fork Address** You now have a fork of the ABLATE repository.  You can make changes and try new things without concern of breaking ABLATE.  You can tell when you are in your fork by looking at the upper left-hand corner where it should YOURUSERNAME/ablate.  You will need your fork git url in future steps.  This can be found by clicking the Code button.
    ![GitHub fork repo](assets/github_fork_repo.png)
 
-# Working with Git
+## Working with Git
 Git allows you to easily collaborate between people, back-up your code, and keep track of your changes. It is recommend that you make your code changes on a branch within your fork. The "feature" branch is usually a single set of changes to accomplish one feature or fix a bug.  The following steps use the command line but can often be performed using your IDE (i.e. [Clion](https://www.jetbrains.com/clion/), [VisualStudio Code](https://code.visualstudio.com)) or a stand alone app (i.e.[GitHub Desktop](https://desktop.github.com)).
 
 1. **Creating a Branch** Before working on new code you should create a feature branch.  You probably want to [update your fork](#updating-your-fork) before branching.  Common convection is to name your branch after the feature/bug you are addressing (e.g. USERNAME/FEATURE-BUG, mmcgurn/faster-algorithm)
@@ -55,7 +55,7 @@ Git allows you to easily collaborate between people, back-up your code, and keep
    # If this is the first time pushing a branch you get an error like "fatal: The current branch mcgurn/doc-getting-started has no upstream branch." Follow the on screen instructions to set the remote information and push. 
    ```
 
-# Contributing Code (aka Pull Request)
+## Contributing Code (aka Pull Request)
 It is highly recommend that you merge your changes back into ABLATE often.  This is done using a [Pull Request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests), which asks the team to review and "pull" your changes back into ABLATE from your fork/branch. 
 1. Start on your feature branch outlined in [Working with Git](#working-with-git) with any changes that you would like to share.
 1. Update any documentation within the docs folder.
@@ -79,7 +79,7 @@ It is highly recommend that you merge your changes back into ABLATE often.  This
 1. Squash and Merge your pull request once all of the tests have run/pass and your code changes are reviewed.  If the tests fail or if changes are requested you can simply make changes to your local branch and push.  The PR will be automatically updated and the test re-run.
 1. Once your code changes have been merged, you will want to [update your fork](#updating-your-fork).
 
-# Updating your Fork
+## Updating your Fork
 Before you can do complete a Pull Request or if you need a newer version of ABLATE you will need to update your fork with changes to ABLATE.  [GitHub Syncing](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#step-3-configure-git-to-sync-your-fork-with-the-original-spoon-knife-repository) provides detailed direction for updating your repository. A summary specific to ABLATE is provided here.
 
 1. **Access your Git Fork** If you have been using your repository it probably has been locally cloned.
