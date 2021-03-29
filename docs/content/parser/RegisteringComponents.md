@@ -2,7 +2,7 @@
 layout: default
 title: Registering Components
 parent: Input Files
-nav_order: 1
+nav_order: 2
 ---
 ## Registering Your Class
 
