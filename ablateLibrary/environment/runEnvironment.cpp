@@ -3,10 +3,10 @@
 #include <chrono>
 #include <iostream>
 
-ablate::monitors::RunEnvironment::RunEnvironment(std::filesystem::path inputPath, const parameters::Parameters& parameters) : title(parameters.GetExpect<std::string>("title")) {
+ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters& parameters, std::filesystem::path inputPath) : title(parameters.GetExpect<std::string>("title")) {
     // check to see if the output directory is set
     auto specifiedOutputDirectory = parameters.Get<std::filesystem::path>("outputDirectory");
-    outputDirectory = specifiedOutputDirectory.value_or(inputPath.parent_path() / title);
+    outputDirectory = specifiedOutputDirectory.value_or((inputPath.empty() ? std::filesystem::current_path() : inputPath.parent_path()) / title);
 
     // Append the current time set to tag directory
     if (parameters.Get("tagDirectory", true)) {
@@ -47,9 +47,12 @@ ablate::monitors::RunEnvironment::RunEnvironment(std::filesystem::path inputPath
         std::filesystem::create_directories(outputDirectory);
 
         // copy over the input file
-        std::filesystem::copy(inputPath, outputDirectory / inputPath.filename(), std::filesystem::copy_options::overwrite_existing);
+        if (!inputPath.empty()) {
+            std::filesystem::copy(inputPath, outputDirectory / inputPath.filename(), std::filesystem::copy_options::overwrite_existing);
+        }
     }
 }
-void ablate::monitors::RunEnvironment::Setup(std::filesystem::path inputPath, const ablate::parameters::Parameters& parameters) {
-    monitors::RunEnvironment::runEnvironment = std::unique_ptr<monitors::RunEnvironment>(new monitors::RunEnvironment(inputPath, parameters));
+
+void ablate::environment::RunEnvironment::Setup(const ablate::parameters::Parameters& parameters, std::filesystem::path inputPath) {
+    environment::RunEnvironment::runEnvironment = std::unique_ptr<environment::RunEnvironment>(new environment::RunEnvironment(parameters, inputPath));
 }

@@ -3,21 +3,21 @@
 #include <filesystem>
 #include "parameters/parameters.hpp"
 
-namespace ablate::monitors {
+namespace ablate::environment {
 class RunEnvironment {
    private:
     std::filesystem::path outputDirectory;
     const std::string title;
 
    public:
-    explicit RunEnvironment(std::filesystem::path inputPath, const parameters::Parameters&);
+    explicit RunEnvironment(const parameters::Parameters&, std::filesystem::path inputPath = {});
 
     // force RunEnvironment to be a singleton
     RunEnvironment(RunEnvironment& other) = delete;
     void operator=(const RunEnvironment&) = delete;
 
     // static access methods
-    static void Setup(std::filesystem::path inputPath, const parameters::Parameters&);
+    static void Setup(const parameters::Parameters&, std::filesystem::path inputPath = {});
     inline static const RunEnvironment& Get() { return *runEnvironment; }
 
     inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
@@ -25,6 +25,6 @@ class RunEnvironment {
    private:
     inline static std::unique_ptr<RunEnvironment> runEnvironment = nullptr;
 };
-}  // namespace ablate::monitors
+}  // namespace ablate::environment
 
 #endif  // ABLATELIBRARY_RUNENVIRONMENT_H

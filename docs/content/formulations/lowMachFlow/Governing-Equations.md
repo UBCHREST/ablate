@@ -6,7 +6,7 @@ grand_parent: Flow Formulations
 nav_order: 1
 ---
 
-### Governing Equations
+## Governing Equations
 The low mach number flow formulation is based upon the work of J. Principe and R. Codina reproduced here in dimensionless form (see [Non-Dimensional Terms]({{ site.baseurl}}{%link content/formulations/NonDimensional.md %}).).
 
 $$\begin{eqnarray}

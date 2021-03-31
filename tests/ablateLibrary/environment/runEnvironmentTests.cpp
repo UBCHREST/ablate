@@ -4,13 +4,13 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
-#include "monitors/runEnvironment.hpp"
 #include "parameters/mockParameters.hpp"
 
 namespace ablateTesting::monitors {
 
-using namespace ablate::monitors;
+using namespace ablate::environment;
 
 class RunEnvironmentTestFixture : public ::testing::Test {
    public:
@@ -43,7 +43,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldSetupDefaultEnviroment) {
     EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1));
 
     // act
-    ablate::monitors::RunEnvironment runEnvironment(tempInputFile, mockParameters);
+    ablate::environment::RunEnvironment runEnvironment(mockParameters, tempInputFile);
 
     // assert
     ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(uniqueTitle, 0) == 0) << "the output directory should start with the title";
@@ -65,7 +65,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldNotTagOutputDirectory) {
     EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1));
 
     // act
-    ablate::monitors::RunEnvironment runEnvironment(tempInputFile, mockParameters);
+    ablate::environment::RunEnvironment runEnvironment(mockParameters, tempInputFile);
 
     // assert
     ASSERT_EQ(runEnvironment.GetOutputDirectory().filename().string(), uniqueTitle) << "the output directory should be the title";
@@ -89,7 +89,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseAndTagSpecifiedOutputDirectory) {
     EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
 
     // act
-    ablate::monitors::RunEnvironment runEnvironment(tempInputFile, mockParameters);
+    ablate::environment::RunEnvironment runEnvironment(mockParameters, tempInputFile);
 
     // assert
     ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(outputDirectory.filename().string(), 0) == 0) << "the output directory should start with specified_output_dir_";
@@ -113,13 +113,100 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirector
     EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
 
     // act
-    ablate::monitors::RunEnvironment runEnvironment(tempInputFile, mockParameters);
+    ablate::environment::RunEnvironment runEnvironment(mockParameters, tempInputFile);
 
     // assert
     ASSERT_EQ(outputDirectory, runEnvironment.GetOutputDirectory()) << "the output directory should the one specified";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
     ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should contain a copy of the input file";
     ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory() / "tempFile.yaml"), std::filesystem::file_size(tempInputFile)) << "the copied input file should be the same size";
+
+    // cleanup
+    std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
+}
+
+TEST_F(RunEnvironmentTestFixture, ShouldSetupDefaultWithoutInputFile) {
+    // arrange
+    // setup the mock parameters
+    ablateTesting::parameters::MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
+    EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1));
+    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1));
+
+    // act
+    ablate::environment::RunEnvironment runEnvironment(mockParameters);
+
+    // assert
+    ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(uniqueTitle, 0) == 0) << "the output directory should start with the title";
+    ASSERT_EQ(std::filesystem::current_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be next to the input file";
+    ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
+    ASSERT_FALSE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should not contain a copy of the input file";
+
+    // cleanup
+    std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
+}
+
+TEST_F(RunEnvironmentTestFixture, ShouldNotTagOutputDirectoryWithoutInputFile) {
+    // arrange
+    // setup the mock parameters
+    ablateTesting::parameters::MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
+    EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("false"));
+    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1));
+
+    // act
+    ablate::environment::RunEnvironment runEnvironment(mockParameters);
+
+    // assert
+    ASSERT_EQ(runEnvironment.GetOutputDirectory().filename().string(), uniqueTitle) << "the output directory should be the title";
+    ASSERT_EQ(std::filesystem::current_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be next to the input file";
+    ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
+    ASSERT_FALSE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should not contain a copy of the input file";
+
+    // cleanup
+    std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
+}
+
+TEST_F(RunEnvironmentTestFixture, ShouldUseAndTagSpecifiedOutputDirectoryWithoutInputFile) {
+    // arrange
+    auto outputDirectory = std::filesystem::temp_directory_path() / ("specified_output_dir_" + std::to_string(rand()));
+
+    // setup the mock parameters
+    ablateTesting::parameters::MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
+    EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1));
+    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
+
+    // act
+    ablate::environment::RunEnvironment runEnvironment(mockParameters);
+
+    // assert
+    ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(outputDirectory.filename().string(), 0) == 0) << "the output directory should start with specified_output_dir_";
+    ASSERT_EQ(outputDirectory.parent_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be in the specified location";
+    ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
+    ASSERT_FALSE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should not contain a copy of the input file";
+
+    // cleanup
+    std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
+}
+
+TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirectoryWithoutInputFile) {
+    // arrange
+    auto outputDirectory = std::filesystem::temp_directory_path() / ("specified_output_dir_" + std::to_string(rand()));
+
+    // setup the mock parameters
+    ablateTesting::parameters::MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
+    EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("false"));
+    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
+
+    // act
+    ablate::environment::RunEnvironment runEnvironment(mockParameters);
+
+    // assert
+    ASSERT_EQ(outputDirectory, runEnvironment.GetOutputDirectory()) << "the output directory should the one specified";
+    ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
+    ASSERT_FALSE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should not contain a copy of the input file";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());

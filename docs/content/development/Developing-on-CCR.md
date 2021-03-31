@@ -2,6 +2,7 @@
 layout: default
 title: Developing on CCR
 parent: Development Guides
+nav_order: 10
 ---
 
 The University at Buffalo Center for Computational Research [(CCR)](http://www.buffalo.edu/ccr.html) is UB's Supercomputing center. The following are useful links to get started at CCR:
@@ -74,11 +75,11 @@ If a newer version of PETSc is required than those pre-built on CCR you will be 
     ```bash
 
     ## debug mode
-    cmake -DCMAKE_BUILD_TYPE=Debug -B debug -S framework
+    cmake -DCMAKE_BUILD_TYPE=Debug -B debug -S ablate
     make -C debug
 
     # release
-    cmake -DCMAKE_BUILD_TYPE=Release -B release -S framework
+    cmake -DCMAKE_BUILD_TYPE=Release -B release -S ablate
     make -C release
     ```
  
