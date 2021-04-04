@@ -27,7 +27,7 @@ PetscErrorCode FlowCreate(FlowData* flow) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode FlowRegisterField(FlowData flow, const char *fieldName, const char *fieldPrefix, PetscInt components) {
+PetscErrorCode FlowRegisterField(FlowData flow, const char* fieldName, const char* fieldPrefix, PetscInt components, enum FieldType fieldType) {
     PetscFunctionBeginUser;
     // store the field
     flow->numberFlowFields++;
@@ -38,6 +38,7 @@ PetscErrorCode FlowRegisterField(FlowData flow, const char *fieldName, const cha
         ierr = PetscRealloc(sizeof(FlowFieldDescriptor)*flow->numberFlowFields,&(flow->flowFieldDescriptors));CHKERRQ(ierr);
     }
     flow->flowFieldDescriptors[flow->numberFlowFields-1].components = components;
+    flow->flowFieldDescriptors[flow->numberFlowFields-1].fieldType = fieldType;
     PetscStrallocpy(fieldName, (char **)&(flow->flowFieldDescriptors[flow->numberFlowFields-1].fieldName));
     PetscStrallocpy(fieldPrefix, (char **)&(flow->flowFieldDescriptors[flow->numberFlowFields-1].fieldPrefix));
 
@@ -46,44 +47,67 @@ PetscErrorCode FlowRegisterField(FlowData flow, const char *fieldName, const cha
     ierr = DMGetOptionsPrefix(flow->dm, &dmPrefix);CHKERRQ(ierr);
     char combinedFieldPrefix[128] = "";
 
-    /* Create finite element */
-    ierr = PetscStrlcat(combinedFieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
-    ierr = PetscStrlcat(combinedFieldPrefix, fieldPrefix, 128);CHKERRQ(ierr);
-
-    // determine if it a simplex element and the number of dimensions
-    DMPolytopeType ct;
-    PetscInt cStart;
-    ierr = DMPlexGetHeightStratum(flow->dm, 0, &cStart, NULL);CHKERRQ(ierr);
-    ierr = DMPlexGetCellType(flow->dm, cStart, &ct);CHKERRQ(ierr);
-    PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
-    PetscInt simplexGlobal;
-
     // extract the object comm
     MPI_Comm comm;
     ierr = PetscObjectGetComm((PetscObject)flow->dm, &comm);CHKERRQ(ierr);
 
-    // Assume true if any rank says true
-    ierr = MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, comm);CHKERRMPI(ierr);
+    /* Create finite element */
+    ierr = PetscStrlcat(combinedFieldPrefix, dmPrefix, 128);CHKERRQ(ierr);
+    ierr = PetscStrlcat(combinedFieldPrefix, fieldPrefix, 128);CHKERRQ(ierr);
 
     // Determine the number of dimensions
     PetscInt dim;
     ierr = DMGetDimension(flow->dm, &dim);CHKERRQ(ierr);
 
-    // create a petsc fe
-    PetscFE petscFE;
-    ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal? PETSC_TRUE : PETSC_FALSE, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
+    switch (fieldType) {
+        case FE:{
+            // determine if it a simplex element and the number of dimensions
+            DMPolytopeType ct;
+            PetscInt cStart;
+            ierr = DMPlexGetHeightStratum(flow->dm, 0, &cStart, NULL);CHKERRQ(ierr);
+            ierr = DMPlexGetCellType(flow->dm, cStart, &ct);CHKERRQ(ierr);
+            PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+            PetscInt simplexGlobal;
 
-    //If this is not the first field, copy the quadrature locations
-    if (flow->numberFlowFields > 1){
-        PetscFE referencePetscFE;
-        ierr = DMGetField(flow->dm, 0, NULL, (PetscObject*)&referencePetscFE);CHKERRQ(ierr);
-        ierr = PetscFECopyQuadrature(referencePetscFE, petscFE);CHKERRQ(ierr);
+            // Assume true if any rank says true
+            ierr = MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, comm);CHKERRMPI(ierr);
+
+            // create a petsc fe
+            PetscFE petscFE;
+            ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal? PETSC_TRUE : PETSC_FALSE, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
+            ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
+
+            //If this is not the first field, copy the quadrature locations
+            if (flow->numberFlowFields > 1){
+                PetscFE referencePetscFE;
+                ierr = DMGetField(flow->dm, 0, NULL, (PetscObject*)&referencePetscFE);CHKERRQ(ierr);
+                ierr = PetscFECopyQuadrature(referencePetscFE, petscFE);CHKERRQ(ierr);
+            }
+
+            // Store the field and destroy copy
+            ierr = DMSetField(flow->dm, flow->numberFlowFields-1, NULL, (PetscObject)petscFE);CHKERRQ(ierr);
+            ierr = PetscFEDestroy(&petscFE);CHKERRQ(ierr);
+        }break;
+        case FV:{
+            PetscFV           fvm;
+            ierr = PetscFVCreate(PETSC_COMM_WORLD, &fvm);CHKERRQ(ierr);
+            ierr = PetscObjectSetOptionsPrefix((PetscObject) fvm, combinedFieldPrefix);CHKERRQ(ierr);
+            ierr = PetscObjectSetName((PetscObject) fvm, fieldName);CHKERRQ(ierr);
+
+            ierr = PetscFVSetFromOptions(fvm);CHKERRQ(ierr);
+            ierr = PetscFVSetNumComponents(fvm, components);CHKERRQ(ierr);
+            ierr = PetscFVSetSpatialDimension(fvm, dim);CHKERRQ(ierr);
+
+            /* FV is now structured with one field having all physics as components */
+            ierr = DMSetField(flow->dm, flow->numberFlowFields-1, NULL, (PetscObject)fvm);CHKERRQ(ierr);
+            ierr = PetscFVDestroy(&fvm);CHKERRQ(ierr);
+        }break;
+        default:{
+            SETERRQ(comm,PETSC_ERR_ARG_WRONG,"Unknown field type for flow");
+        }
     }
 
-    // Store the field and destroy copy
-    ierr = DMSetField(flow->dm, flow->numberFlowFields-1, NULL, (PetscObject)petscFE);CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&petscFE);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
@@ -216,10 +240,30 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
         ierr = PetscObjectSetName((PetscObject)flowData->auxField, "auxField");CHKERRQ(ierr);
     }
 
-    ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);
-    ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL);CHKERRQ(ierr);
-    ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL);CHKERRQ(ierr);
+    // Check if any of the fields are fe
+    PetscBool isFE = PETSC_FALSE;
+    PetscBool isFV = PETSC_FALSE;
+    for(PetscInt f =0; f < flowData->numberFlowFields; f++){
+        switch(flowData->flowFieldDescriptors[f].fieldType){
+            case(FE):
+                isFE = PETSC_TRUE;
+                break;
+            case(FV):
+                isFV = PETSC_TRUE;
+                break;
+            default:
+                SETERRQ(PetscObjectComm(dm), PETSC_ERR_ARG_WRONG,"Unknown field type for flow");
+        }
+    }
 
+    if(isFE) {
+        ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);
+        ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL);CHKERRQ(ierr);
+        ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL);CHKERRQ(ierr);
+    }
+    if(isFV){
+        ierr = DMTSSetRHSFunctionLocal(dm, DMPlexTSComputeRHSFunctionFVM, flowData);CHKERRQ(ierr);
+    }
     ierr = TSSetPreStep(ts, FlowTSPreStepFunction);CHKERRQ(ierr);
     ierr = TSSetPostStep(ts, FlowTSPostStepFunction);CHKERRQ(ierr);
 
