@@ -163,18 +163,17 @@ PetscErrorCode ParticleView(ParticleData particleData, PetscViewer viewer) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ParticleViewFromOptions(ParticleData particleData,PetscObject obj, char *title) {
+PetscErrorCode ParticleViewFromOptions(ParticleData particleData, char *optionname) {
     PetscFunctionBegin;
-    Vec            particleVector;
     PetscErrorCode ierr;
+    PetscViewer viewer;
+    PetscBool         viewerCreated;
 
-    for (PetscInt f =0; f < particleData->numberFields; f++){
-        if (particleData->fieldDescriptors[f].type == PETSC_DOUBLE) {
-            ierr = DMSwarmCreateGlobalVectorFromField(particleData->dm, particleData->fieldDescriptors[f].fieldName, &particleVector);CHKERRQ(ierr);
-            ierr = PetscObjectSetName((PetscObject)particleVector, particleData->fieldDescriptors[f].fieldName);CHKERRQ(ierr);
-            ierr = VecViewFromOptions(particleVector, obj, title);CHKERRQ(ierr);
-            ierr = DMSwarmDestroyGlobalVectorFromField(particleData->dm, particleData->fieldDescriptors[f].fieldName, &particleVector);CHKERRQ(ierr);
-        }
+    // generate a petsc viewer from the options provided
+    ierr = PetscOptionsGetViewer(PetscObjectComm((PetscObject)particleData->dm),NULL,NULL,optionname,&viewer, NULL,&viewerCreated);CHKERRQ(ierr);
+    if (viewerCreated){
+        ierr = ParticleView(particleData, viewer);CHKERRQ(ierr);
+        ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
