@@ -252,7 +252,7 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
                 isFV = PETSC_TRUE;
                 break;
             default:
-                SETERRQ(PetscObjectComm(dm), PETSC_ERR_ARG_WRONG,"Unknown field type for flow");
+                SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG,"Unknown field type for flow");
         }
     }
 
