@@ -57,96 +57,120 @@ static PetscReal sM1m (PetscReal M) {
     // Equation: 1/2*[M-|M|]
     return (0.5*(M-PetscAbsReal(M)));
 }
+//
+///*
+// * Computes the minus values...
+// * sPm: minus split pressure (P-), Capital script P in reference
+// * sMm: minus split Mach Number (M-), Capital script M in reference
+// * Reference: "A Sequel to AUSM: AUSM+" Liou, pg 368, Eqns (21a, 21b), 1996
+// */
+//static void AusmpSplitCalculatorMinus (PetscReal M, PetscReal* sPm, PetscReal* sMm ){
+//    if(PetscAbsReal(M) >= 1.0){// Supersonic
+//        // sMm:
+//        *sMm = sM1m(M);
+//
+//        // spm:
+//        // Equation v1: 1/2*[1 - sign(M)]
+//        // Equation v2: 1/2*[1 - |M|/M]
+//        *sPm = (*sMm)/(M);
+//    }else{// Subsonic
+//        {// sMm:
+//            // term1 = 1/4*[M-1]^2
+//            PetscReal term1 = M - 1.e0;
+//            term1 = term1 * term1;
+//            term1 = 0.25e+0 * term1;
+//            // term2 = [M^2-1]^2
+//            PetscReal term2 = M;
+//            term2 = term2 * term2;
+//            term2 = term2 - 1.e0;
+//            term2 = term2 * term2;
+//            // Equation: -1/4*[M-1]^2 - beta*[M^2-1]^2
+//            *sMm = -term1;//TODO: - AUSMbeta * term2;
+//        }
+//        {// sPm:
+//            // term1 = 1/4*[M-1]^2
+//            PetscReal term1 = M - 1.e+0;
+//            term1 = term1 * term1;
+//            term1 = 0.25e+0 * term1;
+//            // term2 = [M^2-1]^2
+//            PetscReal term2 = M;
+//            term2 = term2 * term2;
+//            term2 = term2 - 1.e+0;
+//            term2 = term2 * term2;
+//            // Equation: 1/4*[M-1]^2*[2+M] - alpha*M*[M^2-1]^2
+//            *sPm = term1 * (2.e+0 + M) - AUSMalpha * M * term2;
+//        }
+//    }
+//}
+///*
+// * Computes the plus values...
+// * sPp: plus split pressure (P+), Capital script P in reference
+// * sMp: plus split Mach Number (M+), Capital script M in reference
+// * Reference: "A Sequel to AUSM: AUSM+" Liou, pg 368, Eqns (21a, 21b), 1996
+// */
+//static void AusmpSplitCalculatorPlus (PetscReal M, PetscReal* sPp, PetscReal *sMp ){
+//    if(PetscAbsReal(M) >= 1.0){// Supersonic
+//        // sMp:
+//        *sMp = sM1p(M);
+//
+//        // sPp:
+//        // Equation v1: 1/2*[1 + sign(M)]
+//        // Equation v2: 1/2*[1 + |M|/M]
+//        *sPp = (*sMp)/(M);
+//    }else{// Subsonic
+//        {// sMp:
+//            // term1 = 1/4*[M+1]^2
+//            PetscReal term1 = M + 1;
+//            term1 = term1 * term1;
+//            term1 = 0.25e+0 * term1;
+//            // term2 = [M^2-1]^2
+//            PetscReal term2 = M;
+//            term2 = term2 * term2;
+//            term2 = term2 - 1.;
+//            term2 = term2 * term2;
+//            // Equation: 1/4*[M+1]^2 + beta*[M^2-1]^2
+//            *sMp = term1 + AUSMbeta * term2;
+//        }
+//        {// sPp:
+//            // term1 = 1/4*[M+1]^2
+//            PetscReal term1 = M + 1.e+0;
+//            term1 = term1 * term1;
+//            term1 = 0.25e+0 * term1;
+//            // term2 = [M^2-1]^2
+//            PetscReal term2 = M;
+//            term2 = term2 * term2;
+//            term2 = term2 - 1.e+0;
+//            term2 = term2 * term2;
+//            // Equation: 1/4*[M+1]^2*[2-M] + alpha*M*[M^2-1]^2
+//            *sPp = (term1 * (2.e+0 - M) + AUSMalpha * M * term2);
+//        }
+//    }
+//}
 
-/*
- * Computes the minus values...
+/* Computes the min/plus values..
  * sPm: minus split pressure (P-), Capital script P in reference
  * sMm: minus split Mach Number (M-), Capital script M in reference
- * Reference: "A Sequel to AUSM: AUSM+" Liou, pg 368, Eqns (21a, 21b), 1996
- */
-static void AusmpSplitCalculatorMinus (PetscReal M, PetscReal* sPm, PetscReal* sMm ){
-    if(PetscAbsReal(M) >= 1.0){// Supersonic
-        // sMm:
-        *sMm = sM1m(M);
-
-        // spm:
-        // Equation v1: 1/2*[1 - sign(M)]
-        // Equation v2: 1/2*[1 - |M|/M]
-        *sPm = (*sMm)/(M);
-    }else{// Subsonic
-        {// sMm:
-            // term1 = 1/4*[M-1]^2
-            PetscReal term1 = M - 1.e0;
-            term1 = term1 * term1;
-            term1 = 0.25e+0 * term1;
-            // term2 = [M^2-1]^2
-            PetscReal term2 = M;
-            term2 = term2 * term2;
-            term2 = term2 - 1.e0;
-            term2 = term2 * term2;
-            // Equation: -1/4*[M-1]^2 - beta*[M^2-1]^2
-            *sMm = -term1 - AUSMbeta * term2;
-        }
-        {// sPm:
-            // term1 = 1/4*[M-1]^2
-            PetscReal term1 = M - 1.e+0;
-            term1 = term1 * term1;
-            term1 = 0.25e+0 * term1;
-            // term2 = [M^2-1]^2
-            PetscReal term2 = M;
-            term2 = term2 * term2;
-            term2 = term2 - 1.e+0;
-            term2 = term2 * term2;
-            // Equation: 1/4*[M-1]^2*[2+M] - alpha*M*[M^2-1]^2
-            *sPm = term1 * (2.e+0 + M) - AUSMalpha * M * term2;
-        }
-    }
-}
-/*
- * Computes the plus values...
  * sPp: plus split pressure (P+), Capital script P in reference
  * sMp: plus split Mach Number (M+), Capital script M in reference
- * Reference: "A Sequel to AUSM: AUSM+" Liou, pg 368, Eqns (21a, 21b), 1996
  */
-static void AusmpSplitCalculatorPlus (PetscReal M, PetscReal* sPp, PetscReal *sMp ){
-    if(PetscAbsReal(M) >= 1.0){// Supersonic
-        // sMp:
-        *sMp = sM1p(M);
+static void AusmSplitCalculator(PetscReal Mm, PetscReal* sPm, PetscReal* sMm,
+                                      PetscReal Mp, PetscReal* sPp, PetscReal *sMp) {
 
-        // sPp:
-        // Equation v1: 1/2*[1 + sign(M)]
-        // Equation v2: 1/2*[1 + |M|/M]
-        *sPp = (*sMp)/(M);
-    }else{// Subsonic
-        {// sMp:
-            // term1 = 1/4*[M+1]^2
-            PetscReal term1 = M + 1;
-            term1 = term1 * term1;
-            term1 = 0.25e+0 * term1;
-            // term2 = [M^2-1]^2
-            PetscReal term2 = M;
-            term2 = term2 * term2;
-            term2 = term2 - 1.;
-            term2 = term2 * term2;
-            // Equation: 1/4*[M+1]^2 + beta*[M^2-1]^2
-            *sMp = term1 + AUSMbeta * term2;
-        }
-        {// sPp:
-            // term1 = 1/4*[M+1]^2
-            PetscReal term1 = M + 1.e+0;
-            term1 = term1 * term1;
-            term1 = 0.25e+0 * term1;
-            // term2 = [M^2-1]^2
-            PetscReal term2 = M;
-            term2 = term2 * term2;
-            term2 = term2 - 1.e+0;
-            term2 = term2 * term2;
-            // Equation: 1/4*[M+1]^2*[2-M] + alpha*M*[M^2-1]^2
-            *sPp = (term1 * (2.e+0 - M) + AUSMalpha * M * term2);
-        }
+    if (PetscAbsReal(Mm) <= 1. ) {
+        *sMm = -0.25 * PetscSqr(Mm - 1);
+        *sPm = -(*sMm) * (2 + Mm);
+    }else {
+        *sMm = 0.5 * (Mm - PetscAbsReal(Mm));
+        *sPm = (*sMm) / Mm;
+    }
+    if (PetscAbsReal(Mp) <= 1. ) {
+        *sMp = 0.25 * PetscSqr(Mp + 1);
+        *sPp = (*sMp) * (2 - Mp);
+    }else {
+        *sMp = 0.5 * (Mp + PetscAbsReal(Mp));
+        *sPp = (*sMp) / Mp;
     }
 }
-
 
 /**
  * Function to get the density, velocity, and energy from the conserved variables
@@ -173,11 +197,25 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
     *M = (*velocity)/(*a);
 }
 
-static void ComputeFluxRho(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *n, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
+static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
+    PetscReal mag;
+    for (PetscInt d=0; d< dim; d++) {
+        mag += in[d]*in[d];
+    }
+    mag = PetscSqrtReal(mag);
+    for (PetscInt d=0; d< dim; d++) {
+        out[d] = in[d]/mag;
+    }
+}
+
+static void ComputeFluxRho(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
     FlowData flowData = (FlowData)ctx;
     EulerFlowParameters* flowParameters = (EulerFlowParameters*)flowData->data;
     // this is a hack, only add in flux from left/right
-    if(PetscAbs(n[0]) > 1E-5) {
+    if(PetscAbs(area[0]) > 1E-5) {
+        // Compute the norm
+        PetscReal norm[3];
+        NormVector(dim, area, norm);
 
         // Decode the left and right states
         PetscReal densityL;
@@ -186,7 +224,7 @@ static void ComputeFluxRho(PetscInt dim, PetscInt Nf, const PetscReal *qp, const
         PetscReal aL;
         PetscReal ML;
         PetscReal pL;
-        DecodeState(dim, xL, n, flowParameters->gamma, &densityL, &velocityL, &internalEnergyL, &aL, &ML, &pL);
+        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityL, &internalEnergyL, &aL, &ML, &pL);
 
         PetscReal densityR;
         PetscReal velocityR;
@@ -194,37 +232,38 @@ static void ComputeFluxRho(PetscInt dim, PetscInt Nf, const PetscReal *qp, const
         PetscReal aR;
         PetscReal MR;
         PetscReal pR;
-        DecodeState(dim, xR, n, flowParameters->gamma, &densityR, &velocityR, &internalEnergyR, &aR, &MR, &pR);
+        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityR, &internalEnergyR, &aR, &MR, &pR);
 
         PetscReal sPm;
         PetscReal sPp;
         PetscReal sMm;
         PetscReal sMp;
 
-        AusmpSplitCalculatorMinus(MR, &sPm, &sMm);
-        AusmpSplitCalculatorPlus(ML, &sPp, &sMp);
+        AusmSplitCalculator(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
         // Compute M and P on the face
         PetscReal M = sMm + sMp;
-        PetscReal p = sPm + sPm;
 
         if(M < 0){
             // M- on Right
-            flux[0] = M * densityR * aR;
+            flux[0] = M * densityR * aR * area[0];
         }else{
             // M+ on Left
-            flux[0] = M * densityL * aL;
+            flux[0] = M * densityL * aL * area[0];
         }
     }else{
         flux[0] = 0.0;
     }
 }
 
-static void ComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *n, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
+static void ComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
     FlowData flowData = (FlowData)ctx;
     EulerFlowParameters* flowParameters = (EulerFlowParameters*)flowData->data;
     // this is a hack, only add in flux from left/right
-    if(PetscAbs(n[0]) > 1E-5) {
+    if(PetscAbs(area[0]) > 1E-5) {
+        // Compute the norm
+        PetscReal norm[3];
+        NormVector(dim, area, norm);
 
         // Decode the left and right states
         PetscReal densityL;
@@ -233,7 +272,7 @@ static void ComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal *qp, cons
         PetscReal aL;
         PetscReal ML;
         PetscReal pL;
-        DecodeState(dim, xL, n, flowParameters->gamma, &densityL, &velocityL, &internalEnergyL, &aL, &ML, &pL);
+        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityL, &internalEnergyL, &aL, &ML, &pL);
 
         PetscReal densityR;
         PetscReal velocityR;
@@ -241,26 +280,25 @@ static void ComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal *qp, cons
         PetscReal aR;
         PetscReal MR;
         PetscReal pR;
-        DecodeState(dim, xR, n, flowParameters->gamma, &densityR, &velocityR, &internalEnergyR, &aR, &MR, &pR);
+        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityR, &internalEnergyR, &aR, &MR, &pR);
 
         PetscReal sPm;
         PetscReal sPp;
         PetscReal sMm;
         PetscReal sMp;
 
-        AusmpSplitCalculatorMinus(MR, &sPm, &sMm);
-        AusmpSplitCalculatorPlus(ML, &sPp, &sMp);
+        AusmSplitCalculator(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
         // Compute M and P on the face
         PetscReal M = sMm + sMp;
-        PetscReal p = sPm + sPm;
+        PetscReal p = pR*sPm + pL*sPp;
 
         if(M < 0){
             // M- on Right
-            flux[0] = M * densityR * aR * velocityR + p;
+            flux[0] = (M * densityR * aR * velocityR + p) * area[0];;
         }else{
             // M+ on Left
-            flux[0] = M * densityL * aL * velocityL + p;
+            flux[0] = (M * densityL * aL * velocityL + p) * area[0];;
         }
         flux[1] = 0.0;
     }else{
@@ -269,11 +307,14 @@ static void ComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal *qp, cons
     }
 }
 
-static void ComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *n, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
+static void ComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
     FlowData flowData = (FlowData)ctx;
     EulerFlowParameters* flowParameters = (EulerFlowParameters*)flowData->data;
     // this is a hack, only add in flux from left/right
-    if(PetscAbs(n[0]) > 1E-5) {
+    if(PetscAbs(area[0]) > 1E-5) {
+        // Compute the norm
+        PetscReal norm[3];
+        NormVector(dim, area, norm);
 
         // Decode the left and right states
         PetscReal densityL;
@@ -282,7 +323,7 @@ static void ComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal *qp, cons
         PetscReal aL;
         PetscReal ML;
         PetscReal pL;
-        DecodeState(dim, xL, n, flowParameters->gamma, &densityL, &velocityL, &internalEnergyL, &aL, &ML, &pL);
+        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityL, &internalEnergyL, &aL, &ML, &pL);
 
         PetscReal densityR;
         PetscReal velocityR;
@@ -290,34 +331,31 @@ static void ComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal *qp, cons
         PetscReal aR;
         PetscReal MR;
         PetscReal pR;
-        DecodeState(dim, xR, n, flowParameters->gamma, &densityR, &velocityR, &internalEnergyR, &aR, &MR, &pR);
+        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityR, &internalEnergyR, &aR, &MR, &pR);
 
         PetscReal sPm;
         PetscReal sPp;
         PetscReal sMm;
         PetscReal sMp;
 
-        AusmpSplitCalculatorMinus(MR, &sPm, &sMm);
-        AusmpSplitCalculatorPlus(ML, &sPp, &sMp);
+        AusmSplitCalculator(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
         // Compute M and P on the face
         PetscReal M = sMm + sMp;
-        PetscReal p = sPm + sPm;
 
         if(M < 0){
             // M- on Right
             PetscReal HR = internalEnergyR + velocityR*velocityR/2.0 + pR/densityR;
-            flux[0] = M * densityR * aR * HR;
+            flux[0] = (M * densityR * aR * HR) * area[0];;
         }else{
             // M+ on Left
-            PetscReal HL = internalEnergyL + velocityL*velocityL/2.0 + pR/densityL;
-            flux[0] = M * densityL * aL * HL;
+            PetscReal HL = internalEnergyL + velocityL*velocityL/2.0 + pL/densityL;
+            flux[0] = (M * densityL * aL * HL) * area[0];;
         }
     }else{
         flux[0] = 0.0;
     }
 }
-
 
 PetscErrorCode CompressibleFlow_SetupFlowParameters(FlowData flowData, EulerFlowParameters* eulerFlowParameters){
     PetscFunctionBeginUser;
@@ -441,6 +479,10 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
 
     PetscPrintf(PetscObjectComm((PetscObject)ts), "TimeStep: %f\n", dtMinGlobal);
     ierr = TSSetTimeStep(ts, dtMinGlobal);CHKERRQ(ierr);
+
+    if(PetscIsNanReal(dtMinGlobal)){
+        SETERRQ(PetscObjectComm((PetscObject)ts), PETSC_ERR_FP, "Invalid timestep selected for flow");
+    }
 
     ierr = VecRestoreArrayRead(cellgeom, &cgeom);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(v, &x);CHKERRQ(ierr);
