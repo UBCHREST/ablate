@@ -43,7 +43,7 @@ PETSC_EXTERN PetscErrorCode ParticleRegisterPetscDatatypeField(ParticleData part
 PETSC_EXTERN PetscErrorCode ParticleInitializeFlow(ParticleData particles, FlowData flow);
 PETSC_EXTERN PetscErrorCode ParticleSetExactSolutionFlow(ParticleData particles, PetscErrorCode (*exactSolution)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar*, void*),void* exactSolutionContext);
 PETSC_EXTERN PetscErrorCode ParticleView(ParticleData particleData,PetscViewer viewer);
-PETSC_EXTERN PetscErrorCode ParticleViewFromOptions(ParticleData particleData,PetscObject obj, char *title);
+PETSC_EXTERN PetscErrorCode ParticleViewFromOptions(ParticleData particleData, char *title);
 PetscErrorCode ParticleDestroy(ParticleData* particles);
 
 #endif  // ABLATE_PARTICLES_H
