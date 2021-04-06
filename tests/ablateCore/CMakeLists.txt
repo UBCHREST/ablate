@@ -11,6 +11,8 @@ target_sources(coreTests
         lowMachFlowDynamicSourceTests.cpp
         lowMachFlowParameterTests.cpp
         particleTests.cpp
+        fluxDifferencerTests.cpp
+        compressibleFlowTests.cpp
         main.cpp
         )
 

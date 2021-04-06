@@ -325,6 +325,10 @@ PetscErrorCode FlowDestroy(FlowData* flow) {
     PetscFree((*flow)->preStepFunctions);
     PetscFree((*flow)->postStepFunctions);
 
+    if((*flow)->flowField){
+        PetscFree((*flow)->data);
+    }
+
     free(*flow);
     flow = NULL;
     PetscFunctionReturn(0);
