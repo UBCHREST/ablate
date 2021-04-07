@@ -339,7 +339,7 @@ PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
     DM dm;
 
     PetscFunctionBeginUser;
-    ierr =  FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
+    ierr = FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
     ierr = FlowRegisterPreStep(flowData, ComputeTimeStep, flowData);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
