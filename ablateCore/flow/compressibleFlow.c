@@ -30,7 +30,7 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
 }
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
-    PetscReal mag;
+    PetscReal mag = 0.0;
     for (PetscInt d=0; d< dim; d++) {
         mag += in[d]*in[d];
     }
