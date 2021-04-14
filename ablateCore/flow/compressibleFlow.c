@@ -4,30 +4,6 @@
 static const char *compressibleFlowFieldNames[TOTAL_COMPRESSIBLE_FLOW_FIELDS + 1] = {"density", "momentum", "energy", "unknown"};
 static const char *incompressibleSourceFieldNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "unknown"};
 
-/**
- * Function to get the density, velocity, and energy from the conserved variables
- * @return
- */
-static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const PetscReal *normal, PetscReal gamma, PetscReal* density,
-                                  PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p){
-
-    // decode
-    *density = conservedValues[RHO];
-    PetscReal totalEnergy = conservedValues[RHOE + dim-1]/(*density);
-
-    // Get the velocity in this direction
-    (*velocity) = 0.0;
-    for(PetscInt d =0; d < dim; d++){
-        (*velocity) += conservedValues[RHOU + d]*normal[d]/(*density);
-    }
-
-    // assumed eos
-    (*internalEnergy) = (totalEnergy) - 0.5 *(*velocity)*(*velocity);
-    *p = (gamma - 1.0)*(*density)*(*internalEnergy);
-    *a = PetscSqrtReal(gamma*(*p)/(*density));
-
-    *M = (*velocity)/(*a);
-}
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
@@ -38,6 +14,44 @@ static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out)
     for (PetscInt d=0; d< dim; d++) {
         out[d] = in[d]/mag;
     }
+}
+
+static inline PetscReal MagVector(PetscInt dim, const PetscReal* in){
+    PetscReal mag = 0.0;
+    for (PetscInt d=0; d< dim; d++) {
+        mag += in[d]*in[d];
+    }
+    return PetscSqrtReal(mag);
+}
+
+
+/**
+ * Function to get the density, velocity, and energy from the conserved variables
+ * @return
+ */
+static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const PetscReal *normal, PetscReal gamma, PetscReal* density,
+                                  PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p){
+
+    // decode
+    *density = conservedValues[RHO];
+    PetscReal totalEnergy = conservedValues[RHOE + dim-1]/(*density);
+
+    // Get the velocity in this direction
+    (*normalVelocity) = 0.0;
+    for(PetscInt d =0; d < dim; d++){
+        velocity[d] = conservedValues[RHOU + d]/(*density);
+        (*normalVelocity) += velocity[d]*normal[d];
+    }
+
+    // get the speed
+    PetscReal speed = MagVector(dim, velocity);
+
+    // assumed eos
+    (*internalEnergy) = (totalEnergy) - 0.5 * speed * speed;
+    *p = (gamma - 1.0)*(*density)*(*internalEnergy);
+    *a = PetscSqrtReal(gamma*(*p)/(*density));
+
+    *M = (*normalVelocity)/(*a);
 }
 
  void CompressibleFlowComputeFluxRho(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
@@ -51,20 +65,22 @@ static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out)
 
         // Decode the left and right states
         PetscReal densityL;
-        PetscReal velocityL;
+        PetscReal velocityNormalL;
+        PetscReal velocityL[3];
         PetscReal internalEnergyL;
         PetscReal aL;
         PetscReal ML;
         PetscReal pL;
-        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityL, &internalEnergyL, &aL, &ML, &pL);
+        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityNormalL,velocityL, &internalEnergyL, &aL, &ML, &pL);
 
         PetscReal densityR;
-        PetscReal velocityR;
+        PetscReal velocityNormalR;
+        PetscReal velocityR[3];
         PetscReal internalEnergyR;
         PetscReal aR;
         PetscReal MR;
         PetscReal pR;
-        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityR, &internalEnergyR, &aR, &MR, &pR);
+        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityNormalR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
         PetscReal sPm;
         PetscReal sPp;
@@ -78,10 +94,10 @@ static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out)
 
         if(M < 0){
             // M- on Right
-            flux[0] = M * densityR * aR * area[0];
+            flux[0] = M * densityR * aR * MagVector(dim, area);
         }else{
             // M+ on Left
-            flux[0] = M * densityL * aL * area[0];
+            flux[0] = M * densityL * aL * MagVector(dim, area);
         }
     }else{
         flux[0] = 0.0;
@@ -96,23 +112,26 @@ void CompressibleFlowComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal 
         // Compute the norm
         PetscReal norm[3];
         NormVector(dim, area, norm);
+        const PetscReal areaMag = MagVector(dim, area);
 
         // Decode the left and right states
         PetscReal densityL;
-        PetscReal velocityL;
+        PetscReal velocityNormalL;
+        PetscReal velocityL[3];
         PetscReal internalEnergyL;
         PetscReal aL;
         PetscReal ML;
         PetscReal pL;
-        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityL, &internalEnergyL, &aL, &ML, &pL);
+        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityNormalL,velocityL, &internalEnergyL, &aL, &ML, &pL);
 
         PetscReal densityR;
-        PetscReal velocityR;
+        PetscReal velocityNormalR;
+        PetscReal velocityR[3];
         PetscReal internalEnergyR;
         PetscReal aR;
         PetscReal MR;
         PetscReal pR;
-        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityR, &internalEnergyR, &aR, &MR, &pR);
+        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityNormalR,velocityR,  &internalEnergyR, &aR, &MR, &pR);
 
         PetscReal sPm;
         PetscReal sPp;
@@ -125,14 +144,16 @@ void CompressibleFlowComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal 
         PetscReal M = sMm + sMp;
         PetscReal p = pR*sPm + pL*sPp;
 
-        if(M < 0){
-            // M- on Right
-            flux[0] = (M * densityR * aR * velocityR + p) * area[0];;
-        }else{
-            // M+ on Left
-            flux[0] = (M * densityL * aL * velocityL + p) * area[0];;
+        // March over each component of momentum
+        for(PetscInt n =0; n < dim; n++){
+            if(M < 0){
+                // M- on Right
+                flux[n] = (M * densityR * aR * velocityR[n]) * areaMag + p*area[n];
+            }else{
+                // M+ on Left
+                flux[n] = (M * densityL * aL * velocityL[n]) * areaMag + p*area[n];
+            }
         }
-        flux[1] = 0.0;
     }else{
         flux[0] = 0.0;
         flux[1] = 0.0;
@@ -147,23 +168,26 @@ void CompressibleFlowComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal 
         // Compute the norm
         PetscReal norm[3];
         NormVector(dim, area, norm);
+        const PetscReal areaMag = MagVector(dim, area);
 
         // Decode the left and right states
         PetscReal densityL;
-        PetscReal velocityL;
+        PetscReal normalVelocityL;
+        PetscReal velocityL[3];
         PetscReal internalEnergyL;
         PetscReal aL;
         PetscReal ML;
         PetscReal pL;
-        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityL, &internalEnergyL, &aL, &ML, &pL);
+        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 
         PetscReal densityR;
-        PetscReal velocityR;
+        PetscReal normalVelocityR;
+        PetscReal velocityR[3];
         PetscReal internalEnergyR;
         PetscReal aR;
         PetscReal MR;
         PetscReal pR;
-        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityR, &internalEnergyR, &aR, &MR, &pR);
+        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
         PetscReal sPm;
         PetscReal sPp;
@@ -177,12 +201,14 @@ void CompressibleFlowComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal 
 
         if(M < 0){
             // M- on Right
-            PetscReal HR = internalEnergyR + velocityR*velocityR/2.0 + pR/densityR;
-            flux[0] = (M * densityR * aR * HR) * area[0];;
+            PetscReal velMag = MagVector(dim, velocityR);
+            PetscReal HR = internalEnergyR + velMag*velMag/2.0 + pR/densityR;
+            flux[0] = (M * densityR * aR * HR) * areaMag;
         }else{
             // M+ on Left
-            PetscReal HL = internalEnergyL + velocityL*velocityL/2.0 + pL/densityL;
-            flux[0] = (M * densityL * aL * HL) * area[0];;
+            PetscReal velMag = MagVector(dim, velocityL);
+            PetscReal HL = internalEnergyL + velMag*velMag/2.0 + pL/densityL;
+            flux[0] = (M * densityL * aL * HL) * areaMag;
         }
     }else{
         flux[0] = 0.0;
