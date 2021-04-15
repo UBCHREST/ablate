@@ -352,34 +352,3 @@ PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
     ierr = FlowRegisterPreStep(flowData, ComputeTimeStep, flowData);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-
-//PetscErrorCode IncompressibleFlow_PackParameters(IncompressibleFlowParameters *parameters, PetscScalar *constantArray) {
-//    constantArray[STROUHAL] = parameters->strouhal;
-//    constantArray[REYNOLDS] = parameters->reynolds;
-//    constantArray[PECLET] = parameters->peclet;
-//    constantArray[MU] = parameters->mu;
-//    constantArray[K] = parameters->k;
-//    constantArray[CP] = parameters->cp;
-//    return 0;
-//}
-//
-//PetscErrorCode IncompressibleFlow_ParametersFromPETScOptions(PetscBag *flowParametersBag) {
-//    IncompressibleFlowParameters *p;
-//    PetscErrorCode ierr;
-//
-//    PetscFunctionBeginUser;
-//    // create an empty bag
-//    ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(IncompressibleFlowParameters), flowParametersBag);CHKERRQ(ierr);
-//
-//    // setup PETSc parameter bag
-//    ierr = PetscBagGetData(*flowParametersBag, (void **)&p);CHKERRQ(ierr);
-//    ierr = PetscBagSetName(*flowParametersBag, "flowParameters", "Low Mach Flow Parameters");CHKERRQ(ierr);
-//    ierr = PetscBagRegisterReal(*flowParametersBag, &p->strouhal, 1.0, incompressibleFlowParametersTypeNames[STROUHAL], "Strouhal number");CHKERRQ(ierr);
-//    ierr = PetscBagRegisterReal(*flowParametersBag, &p->reynolds, 1.0, incompressibleFlowParametersTypeNames[REYNOLDS], "Reynolds number");CHKERRQ(ierr);
-//    ierr = PetscBagRegisterReal(*flowParametersBag, &p->peclet, 1.0, incompressibleFlowParametersTypeNames[PECLET], "Peclet number");CHKERRQ(ierr);
-//    ierr = PetscBagRegisterReal(*flowParametersBag, &p->mu, 1.0, incompressibleFlowParametersTypeNames[MU], "non-dimensional viscosity");CHKERRQ(ierr);
-//    ierr = PetscBagRegisterReal(*flowParametersBag, &p->k, 1.0, incompressibleFlowParametersTypeNames[K], "non-dimensional thermal conductivity");CHKERRQ(ierr);
-//    ierr = PetscBagRegisterReal(*flowParametersBag, &p->cp, 1.0, incompressibleFlowParametersTypeNames[CP], "non-dimensional specific heat capacity");CHKERRQ(ierr);
-//
-//    PetscFunctionReturn(0);
-//}
