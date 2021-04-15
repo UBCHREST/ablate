@@ -13,6 +13,7 @@ target_sources(coreTests
         particleTests.cpp
         fluxDifferencerTests.cpp
         compressibleFlowTests.cpp
+        compressibleShockTubeTests.cpp
         main.cpp
         )
 

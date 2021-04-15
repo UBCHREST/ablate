@@ -57,161 +57,147 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
  void CompressibleFlowComputeFluxRho(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
     FlowData flowData = (FlowData)ctx;
     EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
-    // this is a hack, only add in flux from left/right
-    if(PetscAbs(area[0]) > 1E-5) {
-        // Compute the norm
-        PetscReal norm[3];
-        NormVector(dim, area, norm);
+    // Compute the norm
+    PetscReal norm[3];
+    NormVector(dim, area, norm);
 
-        // Decode the left and right states
-        PetscReal densityL;
-        PetscReal velocityNormalL;
-        PetscReal velocityL[3];
-        PetscReal internalEnergyL;
-        PetscReal aL;
-        PetscReal ML;
-        PetscReal pL;
-        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityNormalL,velocityL, &internalEnergyL, &aL, &ML, &pL);
+    // Decode the left and right states
+    PetscReal densityL;
+    PetscReal velocityNormalL;
+    PetscReal velocityL[3];
+    PetscReal internalEnergyL;
+    PetscReal aL;
+    PetscReal ML;
+    PetscReal pL;
+    DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityNormalL,velocityL, &internalEnergyL, &aL, &ML, &pL);
 
-        PetscReal densityR;
-        PetscReal velocityNormalR;
-        PetscReal velocityR[3];
-        PetscReal internalEnergyR;
-        PetscReal aR;
-        PetscReal MR;
-        PetscReal pR;
-        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityNormalR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    PetscReal densityR;
+    PetscReal velocityNormalR;
+    PetscReal velocityR[3];
+    PetscReal internalEnergyR;
+    PetscReal aR;
+    PetscReal MR;
+    PetscReal pR;
+    DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityNormalR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
-        PetscReal sPm;
-        PetscReal sPp;
-        PetscReal sMm;
-        PetscReal sMp;
+    PetscReal sPm;
+    PetscReal sPp;
+    PetscReal sMm;
+    PetscReal sMp;
 
-        flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
+    flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
-        // Compute M and P on the face
-        PetscReal M = sMm + sMp;
+    // Compute M and P on the face
+    PetscReal M = sMm + sMp;
 
-        if(M < 0){
-            // M- on Right
-            flux[0] = M * densityR * aR * MagVector(dim, area);
-        }else{
-            // M+ on Left
-            flux[0] = M * densityL * aL * MagVector(dim, area);
-        }
+    if(M < 0){
+        // M- on Right
+        flux[0] = M * densityR * aR * MagVector(dim, area);
     }else{
-        flux[0] = 0.0;
+        // M+ on Left
+        flux[0] = M * densityL * aL * MagVector(dim, area);
     }
 }
 
 void CompressibleFlowComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
     FlowData flowData = (FlowData)ctx;
     EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
-    // this is a hack, only add in flux from left/right
-    if(PetscAbs(area[0]) > 1E-5) {
-        // Compute the norm
-        PetscReal norm[3];
-        NormVector(dim, area, norm);
-        const PetscReal areaMag = MagVector(dim, area);
 
-        // Decode the left and right states
-        PetscReal densityL;
-        PetscReal velocityNormalL;
-        PetscReal velocityL[3];
-        PetscReal internalEnergyL;
-        PetscReal aL;
-        PetscReal ML;
-        PetscReal pL;
-        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityNormalL,velocityL, &internalEnergyL, &aL, &ML, &pL);
+    // Compute the norm
+    PetscReal norm[3];
+    NormVector(dim, area, norm);
+    const PetscReal areaMag = MagVector(dim, area);
 
-        PetscReal densityR;
-        PetscReal velocityNormalR;
-        PetscReal velocityR[3];
-        PetscReal internalEnergyR;
-        PetscReal aR;
-        PetscReal MR;
-        PetscReal pR;
-        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityNormalR,velocityR,  &internalEnergyR, &aR, &MR, &pR);
+    // Decode the left and right states
+    PetscReal densityL;
+    PetscReal velocityNormalL;
+    PetscReal velocityL[3];
+    PetscReal internalEnergyL;
+    PetscReal aL;
+    PetscReal ML;
+    PetscReal pL;
+    DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityNormalL,velocityL, &internalEnergyL, &aL, &ML, &pL);
 
-        PetscReal sPm;
-        PetscReal sPp;
-        PetscReal sMm;
-        PetscReal sMp;
+    PetscReal densityR;
+    PetscReal velocityNormalR;
+    PetscReal velocityR[3];
+    PetscReal internalEnergyR;
+    PetscReal aR;
+    PetscReal MR;
+    PetscReal pR;
+    DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityNormalR,velocityR,  &internalEnergyR, &aR, &MR, &pR);
 
-        flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
+    PetscReal sPm;
+    PetscReal sPp;
+    PetscReal sMm;
+    PetscReal sMp;
 
-        // Compute M and P on the face
-        PetscReal M = sMm + sMp;
-        PetscReal p = pR*sPm + pL*sPp;
+    flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
-        // March over each component of momentum
-        for(PetscInt n =0; n < dim; n++){
-            if(M < 0){
-                // M- on Right
-                flux[n] = (M * densityR * aR * velocityR[n]) * areaMag + p*area[n];
-            }else{
-                // M+ on Left
-                flux[n] = (M * densityL * aL * velocityL[n]) * areaMag + p*area[n];
-            }
+    // Compute M and P on the face
+    PetscReal M = sMm + sMp;
+    PetscReal p = pR*sPm + pL*sPp;
+
+    // March over each component of momentum
+    for(PetscInt n =0; n < dim; n++){
+        if(M < 0){
+            // M- on Right
+            flux[n] = (M * densityR * aR * velocityR[n]) * areaMag + p*area[n];
+        }else{
+            // M+ on Left
+            flux[n] = (M * densityL * aL * velocityL[n]) * areaMag + p*area[n];
         }
-    }else{
-        flux[0] = 0.0;
-        flux[1] = 0.0;
     }
 }
 
 void CompressibleFlowComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
     FlowData flowData = (FlowData)ctx;
     EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
-    // this is a hack, only add in flux from left/right
-    if(PetscAbs(area[0]) > 1E-5) {
-        // Compute the norm
-        PetscReal norm[3];
-        NormVector(dim, area, norm);
-        const PetscReal areaMag = MagVector(dim, area);
 
-        // Decode the left and right states
-        PetscReal densityL;
-        PetscReal normalVelocityL;
-        PetscReal velocityL[3];
-        PetscReal internalEnergyL;
-        PetscReal aL;
-        PetscReal ML;
-        PetscReal pL;
-        DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+    // Compute the norm
+    PetscReal norm[3];
+    NormVector(dim, area, norm);
+    const PetscReal areaMag = MagVector(dim, area);
 
-        PetscReal densityR;
-        PetscReal normalVelocityR;
-        PetscReal velocityR[3];
-        PetscReal internalEnergyR;
-        PetscReal aR;
-        PetscReal MR;
-        PetscReal pR;
-        DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    // Decode the left and right states
+    PetscReal densityL;
+    PetscReal normalVelocityL;
+    PetscReal velocityL[3];
+    PetscReal internalEnergyL;
+    PetscReal aL;
+    PetscReal ML;
+    PetscReal pL;
+    DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 
-        PetscReal sPm;
-        PetscReal sPp;
-        PetscReal sMm;
-        PetscReal sMp;
+    PetscReal densityR;
+    PetscReal normalVelocityR;
+    PetscReal velocityR[3];
+    PetscReal internalEnergyR;
+    PetscReal aR;
+    PetscReal MR;
+    PetscReal pR;
+    DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
-        flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
+    PetscReal sPm;
+    PetscReal sPp;
+    PetscReal sMm;
+    PetscReal sMp;
 
-        // Compute M and P on the face
-        PetscReal M = sMm + sMp;
+    flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
-        if(M < 0){
-            // M- on Right
-            PetscReal velMag = MagVector(dim, velocityR);
-            PetscReal HR = internalEnergyR + velMag*velMag/2.0 + pR/densityR;
-            flux[0] = (M * densityR * aR * HR) * areaMag;
-        }else{
-            // M+ on Left
-            PetscReal velMag = MagVector(dim, velocityL);
-            PetscReal HL = internalEnergyL + velMag*velMag/2.0 + pL/densityL;
-            flux[0] = (M * densityL * aL * HL) * areaMag;
-        }
+    // Compute M and P on the face
+    PetscReal M = sMm + sMp;
+
+    if(M < 0){
+        // M- on Right
+        PetscReal velMag = MagVector(dim, velocityR);
+        PetscReal HR = internalEnergyR + velMag*velMag/2.0 + pR/densityR;
+        flux[0] = (M * densityR * aR * HR) * areaMag;
     }else{
-        flux[0] = 0.0;
+        // M+ on Left
+        PetscReal velMag = MagVector(dim, velocityL);
+        PetscReal HL = internalEnergyL + velMag*velMag/2.0 + pL/densityL;
+        flux[0] = (M * densityL * aL * HL) * areaMag;
     }
 }
 

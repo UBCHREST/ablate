@@ -1,10 +1,7 @@
 #include <compressibleFlow.h>
 #include <petsc.h>
 #include <vector>
-#include "asserts.hpp"
 #include "gtest/gtest.h"
-
-using namespace testingResources;
 
 struct CompressibleFlowFluxTestParameters {
     std::string fluxDifferencer;
@@ -43,11 +40,11 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     CompressibleFlowComputeFluxRhoE(params.area.size(), 1, NULL, &params.area[0], &params.xLeft[0], &params.xRight[0], 0, NULL, &computedRowEFlux, flowData);
 
     // assert
-    ASSERT_ABOUT(computedRowFlux, params.expectedRhoFlux, 1E-3);
+    ASSERT_NEAR(computedRowFlux, params.expectedRhoFlux, 1E-3);
     for (auto i = 0; i < params.expectedRhoUFlux.size(); i++) {
-        ASSERT_ABOUT(computedRowUFlux[i], params.expectedRhoUFlux[i], 1E-3);
+        ASSERT_NEAR(computedRowUFlux[i], params.expectedRhoUFlux[i], 1E-3);
     }
-    ASSERT_ABOUT(computedRowEFlux, params.expectedRhoEFlux, 1E-3);
+    ASSERT_NEAR(computedRowEFlux, params.expectedRhoEFlux, 1E-3);
 
     // cleanup
     ierr = FlowDestroy(&flowData);
