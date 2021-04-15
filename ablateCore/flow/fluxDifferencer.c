@@ -13,14 +13,14 @@ static PetscFunctionList fluxDifferencerList = NULL;
 static void AusmFluxSplitCalculator(PetscReal Mm, PetscReal* sPm, PetscReal* sMm,
                                     PetscReal Mp, PetscReal* sPp, PetscReal *sMp) {
 
-    if (PetscAbsReal(Mm) <= 1. ) {
+    if (PetscAbsReal(Mm) <= 1.) {
         *sMm = -0.25 * PetscSqr(Mm - 1);
         *sPm = -(*sMm) * (2 + Mm);
     }else {
         *sMm = 0.5 * (Mm - PetscAbsReal(Mm));
         *sPm = (*sMm) / Mm;
     }
-    if (PetscAbsReal(Mp) <= 1. ) {
+    if (PetscAbsReal(Mp) <= 1.) {
         *sMp = 0.25 * PetscSqr(Mp + 1);
         *sPp = (*sMp) * (2 - Mp);
     }else {
@@ -73,15 +73,14 @@ static PetscErrorCode FluxDifferencerInitialize(){
 PetscErrorCode FluxDifferencerRegister(const char * name, const FluxDifferencerFunction function) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
-    if(!fluxDifferenceInitialized) {
-        ierr = FluxDifferencerInitialize();
-        CHKERRQ(ierr);
+    if (!fluxDifferenceInitialized) {
+        ierr = FluxDifferencerInitialize();CHKERRQ(ierr);
     }
     ierr = PetscFunctionListAdd(&fluxDifferencerList,name,function);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode FluxDifferencerGet(const char* name, FluxDifferencerFunction* function ){
+PetscErrorCode FluxDifferencerGet(const char* name, FluxDifferencerFunction* function){
     PetscFunctionBeginUser;
     PetscErrorCode ierr = FluxDifferencerInitialize();CHKERRQ(ierr);
     ierr = PetscFunctionListFind(fluxDifferencerList,name,function);CHKERRQ(ierr);

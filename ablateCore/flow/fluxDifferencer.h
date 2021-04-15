@@ -7,6 +7,6 @@ typedef void (*FluxDifferencerFunction)(PetscReal Mm, PetscReal* sPm, PetscReal*
                                             PetscReal Mp, PetscReal* sPp, PetscReal *sMp);
 
 PETSC_EXTERN PetscErrorCode FluxDifferencerRegister(const char*,const FluxDifferencerFunction);
-PETSC_EXTERN PetscErrorCode FluxDifferencerGet(const char*, FluxDifferencerFunction* );
+PETSC_EXTERN PetscErrorCode FluxDifferencerGet(const char*, FluxDifferencerFunction*);
 PETSC_EXTERN PetscErrorCode FluxDifferencerListGet(PetscFunctionList* list);
 #endif

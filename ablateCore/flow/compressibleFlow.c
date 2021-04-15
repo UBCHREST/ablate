@@ -38,7 +38,7 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
 
     // Get the velocity in this direction
     (*normalVelocity) = 0.0;
-    for(PetscInt d =0; d < dim; d++){
+    for (PetscInt d =0; d < dim; d++){
         velocity[d] = conservedValues[RHOU + d]/(*density);
         (*normalVelocity) += velocity[d]*normal[d];
     }
@@ -90,7 +90,7 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
     // Compute M and P on the face
     PetscReal M = sMm + sMp;
 
-    if(M < 0){
+    if (M < 0){
         // M- on Right
         flux[0] = M * densityR * aR * MagVector(dim, area);
     }else{
@@ -139,8 +139,8 @@ void CompressibleFlowComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal 
     PetscReal p = pR*sPm + pL*sPp;
 
     // March over each component of momentum
-    for(PetscInt n =0; n < dim; n++){
-        if(M < 0){
+    for (PetscInt n =0; n < dim; n++){
+        if (M < 0){
             // M- on Right
             flux[n] = (M * densityR * aR * velocityR[n]) * areaMag + p*area[n];
         }else{
@@ -188,7 +188,7 @@ void CompressibleFlowComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal 
     // Compute M and P on the face
     PetscReal M = sMm + sMp;
 
-    if(M < 0){
+    if (M < 0){
         // M- on Right
         PetscReal velMag = MagVector(dim, velocityR);
         PetscReal HR = internalEnergyR + velMag*velMag/2.0 + pR/densityR;
@@ -315,8 +315,7 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
         ierr = DMPlexPointLocalRead(dmCell, c, cgeom, &cg);CHKERRQ(ierr);
         ierr = DMPlexPointGlobalFieldRead(dm, c, 0, x, &xc);CHKERRQ(ierr);
 
-        if(xc) {  // must be real cell and not ghost
-
+        if (xc) {  // must be real cell and not ghost
             PetscReal rho = xc[RHO];
             PetscReal u = xc[RHOU] / rho;
             PetscReal e = (xc[RHOE + 1] / rho) - 0.5 * u * u;//TODO: remove hard code
@@ -329,15 +328,13 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
     }
     PetscInt rank;
     MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
-    printf("dtMin(%d): %f\n", rank,dtMin );
 
     PetscReal dtMinGlobal;
     ierr = MPI_Allreduce(&dtMin, &dtMinGlobal, 1,MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts));
 
-    PetscPrintf(PetscObjectComm((PetscObject)ts), "TimeStep: %f\n", dtMinGlobal);
     ierr = TSSetTimeStep(ts, dtMinGlobal);CHKERRQ(ierr);
 
-    if(PetscIsNanReal(dtMinGlobal)){
+    if (PetscIsNanReal(dtMinGlobal)){
         SETERRQ(PetscObjectComm((PetscObject)ts), PETSC_ERR_FP, "Invalid timestep selected for flow");
     }
 

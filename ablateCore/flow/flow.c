@@ -243,7 +243,7 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
     // Check if any of the fields are fe
     PetscBool isFE = PETSC_FALSE;
     PetscBool isFV = PETSC_FALSE;
-    for(PetscInt f =0; f < flowData->numberFlowFields; f++){
+    for (PetscInt f =0; f < flowData->numberFlowFields; f++){
         switch(flowData->flowFieldDescriptors[f].fieldType){
             case(FE):
                 isFE = PETSC_TRUE;
@@ -256,12 +256,12 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
         }
     }
 
-    if(isFE) {
+    if (isFE) {
         ierr = DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL);CHKERRQ(ierr);
         ierr = DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL);CHKERRQ(ierr);
         ierr = DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL);CHKERRQ(ierr);
     }
-    if(isFV){
+    if (isFV){
         ierr = DMTSSetRHSFunctionLocal(dm, DMPlexTSComputeRHSFunctionFVM, flowData);CHKERRQ(ierr);
     }
     ierr = TSSetPreStep(ts, FlowTSPreStepFunction);CHKERRQ(ierr);
@@ -325,7 +325,7 @@ PetscErrorCode FlowDestroy(FlowData* flow) {
     PetscFree((*flow)->preStepFunctions);
     PetscFree((*flow)->postStepFunctions);
 
-    if((*flow)->flowField){
+    if ((*flow)->flowField){
         PetscFree((*flow)->data);
     }
 

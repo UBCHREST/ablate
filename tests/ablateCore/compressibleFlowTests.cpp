@@ -79,5 +79,4 @@ INSTANTIATE_TEST_SUITE_P(FluxDifferencer, CompressibleFlowFluxTestFixture,
                                                                               .xRight = {0.864333, 1.637664, 2.369795},
                                                                               .expectedRhoFlux = -1.637664,
                                                                               .expectedRhoUFlux = {-3.430243, 0},
-                                                                              .expectedRhoEFlux = -5.110295}
-                                         ));
+                                                                              .expectedRhoEFlux = -5.110295}));
