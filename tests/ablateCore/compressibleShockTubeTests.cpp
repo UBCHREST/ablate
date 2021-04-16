@@ -269,7 +269,7 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         (CompressibleShockTubeParameters){
             .mpiTestParameter = {.testName = "case 1 sod problem", .nproc = 1, .arguments = ""},
-            .initialConditions{.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = 0.0, .pL = 1.0, .rhoR = 0.125, .uR = 0.0, .pR = .1},
+            .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = 0.0, .pL = 1.0, .rhoR = 0.125, .uR = 0.0, .pR = .1},
             .nx = 100,
             .maxTime = 0.25,
             .cfl = 0.5,
@@ -300,7 +300,7 @@ INSTANTIATE_TEST_SUITE_P(
                         2.850984, 2.852143, 2.851980, 2.850423, 2.846502, 2.837507, 2.816975, 2.770113, 2.664507, 2.452125, 2.183781, 2.040254, 2.006730, 2.001068, 2.000172}}}},
         (CompressibleShockTubeParameters){
             .mpiTestParameter = {.testName = "case 2 expansion left and expansion right", .nproc = 1, .arguments = ""},
-            .initialConditions{.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = -2.0, .pL = 0.4, .rhoR = 1.0, .uR = 2.0, .pR = 0.4},
+            .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = -2.0, .pL = 0.4, .rhoR = 1.0, .uR = 2.0, .pR = 0.4},
             .nx = 100,
             .maxTime = 0.15,
             .cfl = 0.5,
@@ -332,7 +332,7 @@ INSTANTIATE_TEST_SUITE_P(
                         0.870216, 0.884393, 0.898241, 0.911616, 0.924374, 0.936370, 0.947465, 0.957534, 0.966477, 0.974227, 0.980756, 0.986086, 0.990287, 0.993472, 0.995787}}}},
         (CompressibleShockTubeParameters){
             .mpiTestParameter = {.testName = "case 5 shock collision shock left and shock right", .nproc = 1, .arguments = ""},
-            .initialConditions{.gamma = 1.4, .length = 1.0, .rhoL = 5.99924, .uL = 19.5975, .pL = 460.894, .rhoR = 5.99242, .uR = -6.19633, .pR = 46.0950},
+            .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 5.99924, .uL = 19.5975, .pL = 460.894, .rhoR = 5.99242, .uR = -6.19633, .pR = 46.0950},
             .nx = 100,
             .maxTime = 0.035,
             .cfl = 0.5,

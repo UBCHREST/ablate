@@ -1,9 +1,7 @@
 #include "compressibleFlow.h"
 
-
 static const char *compressibleFlowFieldNames[TOTAL_COMPRESSIBLE_FLOW_FIELDS + 1] = {"density", "momentum", "energy", "unknown"};
 static const char *incompressibleSourceFieldNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "unknown"};
-
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
@@ -295,14 +293,10 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
     EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
 
     // Get the fv geom
-    Vec                cellgeom;
-    ierr = DMPlexGetGeometryFVM(dm, NULL, &cellgeom, NULL);CHKERRQ(ierr);
+    PetscReal minCellRadius;
+    ierr = DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius);CHKERRQ(ierr);
     PetscInt cStart, cEnd;
     ierr = DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd);CHKERRQ(ierr);
-    DM dmCell;
-    ierr = VecGetDM(cellgeom, &dmCell);CHKERRQ(ierr);
-    const PetscScalar *cgeom;
-    ierr = VecGetArrayRead(cellgeom, &cgeom);CHKERRQ(ierr);
     const PetscScalar      *x;
     ierr = VecGetArrayRead(v, &x);CHKERRQ(ierr);
 
@@ -310,13 +304,13 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
     PetscInt dim;
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
-    // March over volume
-    PetscReal dtMin = 1.0;
-    for (PetscInt c = cStart; c < cEnd; ++c) {
-        PetscFVCellGeom       *cg;
-        const PetscReal           *xc;
+    // assume the smallest cell is the limiting factor for now
+    const PetscReal dx = 2.0 *minCellRadius;
 
-        ierr = DMPlexPointLocalRead(dmCell, c, cgeom, &cg);CHKERRQ(ierr);
+    // March over each cell
+    PetscReal dtMin = 1000.0;
+    for (PetscInt c = cStart; c < cEnd; ++c) {
+        const PetscReal           *xc;
         ierr = DMPlexPointGlobalFieldRead(dm, c, 0, x, &xc);CHKERRQ(ierr);
 
         if (xc) {  // must be real cell and not ghost
@@ -324,7 +318,7 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
 
             // Compute the kinetic energy
             PetscReal velMag = 0.0;
-            for(PetscInt i =0; i < dim; i++){
+            for (PetscInt i =0; i < dim; i++){
                 velMag += PetscSqr(xc[RHOU + i] / rho);
             }
 
@@ -332,8 +326,6 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
             PetscReal e = (xc[RHOE + dim-1] / rho) - 0.5 * velMag;
             PetscReal p = (flowParameters->gamma - 1) * rho * e;
 
-            // estimate the effective dx
-            PetscReal dx = PetscPowReal(cg->volume, 1.0/((PetscReal)dim));
 
             PetscReal a = PetscSqrtReal(flowParameters->gamma * p / rho);
             PetscReal dt = flowParameters->cfl * dx / (a + PetscAbsReal(u));
@@ -352,7 +344,6 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
         SETERRQ(PetscObjectComm((PetscObject)ts), PETSC_ERR_FP, "Invalid timestep selected for flow");
     }
 
-    ierr = VecRestoreArrayRead(cellgeom, &cgeom);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(v, &x);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
