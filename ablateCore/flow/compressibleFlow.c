@@ -306,6 +306,10 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
     const PetscScalar      *x;
     ierr = VecGetArrayRead(v, &x);CHKERRQ(ierr);
 
+    //Get the dim from the dm
+    PetscInt dim;
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+
     // March over volume
     PetscReal dtMin = 1.0;
     for (PetscInt c = cStart; c < cEnd; ++c) {
@@ -317,12 +321,22 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
 
         if (xc) {  // must be real cell and not ghost
             PetscReal rho = xc[RHO];
+
+            // Compute the kinetic energy
+            PetscReal velMag = 0.0;
+            for(PetscInt i =0; i < dim; i++){
+                velMag += PetscSqr(xc[RHOU + i] / rho);
+            }
+
             PetscReal u = xc[RHOU] / rho;
-            PetscReal e = (xc[RHOE + 1] / rho) - 0.5 * u * u;//TODO: remove hard code
+            PetscReal e = (xc[RHOE + dim-1] / rho) - 0.5 * velMag;
             PetscReal p = (flowParameters->gamma - 1) * rho * e;
 
+            // estimate the effective dx
+            PetscReal dx = PetscPowReal(cg->volume, 1.0/((PetscReal)dim));
+
             PetscReal a = PetscSqrtReal(flowParameters->gamma * p / rho);
-            PetscReal dt = flowParameters->cfl * cg->volume / (a + PetscAbsReal(u));
+            PetscReal dt = flowParameters->cfl * dx / (a + PetscAbsReal(u));
             dtMin = PetscMin(dtMin, dt);
         }
     }
