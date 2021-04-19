@@ -99,11 +99,11 @@ static PetscErrorCode Extract1DPrimitives(DM dm, Vec v, std::map<std::string, st
         CHKERRQ(ierr);
         if (xc) {  // must be real cell and not ghost
             results["x"].push_back(cg->centroid[0]);
-            PetscReal rho = xc[0];
+            PetscReal rho = xc[RHO];
             results["rho"].push_back(rho);
-            PetscReal u = xc[1] / rho;
+            PetscReal u = xc[RHOU + 1] / rho;
             results["u"].push_back(u);
-            PetscReal e = (xc[3] / rho) - 0.5 * u * u;
+            PetscReal e = (xc[RHOE] / rho) - 0.5 * u * u;
             results["e"].push_back(e);
         }
     }
@@ -126,23 +126,23 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     InitialConditions *initialConditions = (InitialConditions *)ctx;
 
     if (c[0] < initialConditions->length / 2.0) {
-        a_xG[0] = initialConditions->rhoL;
+        a_xG[RHO] = initialConditions->rhoL;
 
-        a_xG[1] = initialConditions->rhoL * initialConditions->uL;
-        a_xG[2] = 0.0;
+        a_xG[RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
+        a_xG[RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
-        a_xG[3] = et * initialConditions->rhoL;
+        a_xG[RHOE] = et * initialConditions->rhoL;
     } else {
-        a_xG[0] = initialConditions->rhoR;
+        a_xG[RHO] = initialConditions->rhoR;
 
-        a_xG[1] = initialConditions->rhoR * initialConditions->uR;
-        a_xG[2] = 0.0;
+        a_xG[RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
+        a_xG[RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
-        a_xG[3] = et * initialConditions->rhoR;
+        a_xG[RHOE] = et * initialConditions->rhoR;
     }
     return 0;
     PetscFunctionReturn(0);
@@ -228,7 +228,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // set the initial conditions
-        PetscErrorCode (*func[3])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) = {SetInitialRho, SetInitialRhoU, SetInitialRhoE};
+        PetscErrorCode (*func[3])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) = {SetInitialRho, SetInitialRhoE, SetInitialRhoU};
         void *ctxs[3] = {(void *)&testingParam.initialConditions, (void *)&testingParam.initialConditions, (void *)&testingParam.initialConditions};
         ierr = DMProjectFunction(flowData->dm, 0.0, func, ctxs, INSERT_ALL_VALUES, flowData->flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);

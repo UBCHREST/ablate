@@ -1,6 +1,6 @@
 #include "compressibleFlow.h"
 
-static const char *compressibleFlowFieldNames[TOTAL_COMPRESSIBLE_FLOW_FIELDS + 1] = {"density", "momentum", "energy", "unknown"};
+static const char *compressibleFlowFieldNames[TOTAL_COMPRESSIBLE_FLOW_FIELDS + 1] = {"density", "energy", "momentum", "unknown"};
 static const char *incompressibleSourceFieldNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "unknown"};
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
@@ -32,7 +32,7 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
 
     // decode
     *density = conservedValues[RHO];
-    PetscReal totalEnergy = conservedValues[RHOE + dim-1]/(*density);
+    PetscReal totalEnergy = conservedValues[RHOE]/(*density);
 
     // Get the velocity in this direction
     (*normalVelocity) = 0.0;
@@ -232,8 +232,8 @@ PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
 
     // Register each field, this order must match the order in IncompressibleFlowFields enum
     ierr = FlowRegisterField(flowData, compressibleFlowFieldNames[RHO], compressibleFlowFieldNames[RHO], 1, FV);CHKERRQ(ierr);
-    ierr = FlowRegisterField(flowData, compressibleFlowFieldNames[RHOU], compressibleFlowFieldNames[RHOU], dim, FV);CHKERRQ(ierr);
     ierr = FlowRegisterField(flowData, compressibleFlowFieldNames[RHOE], compressibleFlowFieldNames[RHOE], 1, FV);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, compressibleFlowFieldNames[RHOU], compressibleFlowFieldNames[RHOU], dim, FV);CHKERRQ(ierr);
 
     // Create the discrete systems for the DM based upon the fields added to the DM
     ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
@@ -251,10 +251,10 @@ PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt nu
     // Set the flux calculator solver for each component
     ierr = PetscDSSetRiemannSolver(prob, RHO, CompressibleFlowComputeFluxRho);CHKERRQ(ierr);
     ierr = PetscDSSetContext(prob, RHO, flowData);CHKERRQ(ierr);
-    ierr = PetscDSSetRiemannSolver(prob, RHOU,CompressibleFlowComputeFluxRhoU);CHKERRQ(ierr);
-    ierr = PetscDSSetContext(prob, RHOU, flowData);CHKERRQ(ierr);
     ierr = PetscDSSetRiemannSolver(prob, RHOE,CompressibleFlowComputeFluxRhoE);CHKERRQ(ierr);
     ierr = PetscDSSetContext(prob, RHOE, flowData);CHKERRQ(ierr);
+    ierr = PetscDSSetRiemannSolver(prob, RHOU,CompressibleFlowComputeFluxRhoU);CHKERRQ(ierr);
+    ierr = PetscDSSetContext(prob, RHOU, flowData);CHKERRQ(ierr);
     ierr = PetscDSSetFromOptions(prob);CHKERRQ(ierr);
 
     // Create the euler data
@@ -323,7 +323,7 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
             }
 
             PetscReal u = xc[RHOU] / rho;
-            PetscReal e = (xc[RHOE + dim-1] / rho) - 0.5 * velMag;
+            PetscReal e = (xc[RHOE] / rho) - 0.5 * velMag;
             PetscReal p = (flowParameters->gamma - 1) * rho * e;
 
 
