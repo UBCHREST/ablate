@@ -22,7 +22,6 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal* in){
     return PetscSqrtReal(mag);
 }
 
-
 /**
  * Function to get the density, velocity, and energy from the conserved variables
  * @return
@@ -52,109 +51,7 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
     *M = (*normalVelocity)/(*a);
 }
 
- void CompressibleFlowComputeFluxRho(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
-    FlowData flowData = (FlowData)ctx;
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
-    // Compute the norm
-    PetscReal norm[3];
-    NormVector(dim, area, norm);
-
-    // Decode the left and right states
-    PetscReal densityL;
-    PetscReal velocityNormalL;
-    PetscReal velocityL[3];
-    PetscReal internalEnergyL;
-    PetscReal aL;
-    PetscReal ML;
-    PetscReal pL;
-    DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityNormalL,velocityL, &internalEnergyL, &aL, &ML, &pL);
-
-    PetscReal densityR;
-    PetscReal velocityNormalR;
-    PetscReal velocityR[3];
-    PetscReal internalEnergyR;
-    PetscReal aR;
-    PetscReal MR;
-    PetscReal pR;
-    DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityNormalR, velocityR, &internalEnergyR, &aR, &MR, &pR);
-
-    PetscReal sPm;
-    PetscReal sPp;
-    PetscReal sMm;
-    PetscReal sMp;
-
-    flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
-
-    // Compute M and P on the face
-    PetscReal M = sMm + sMp;
-
-    flux[0] = 0.5*(MR*densityR*aR + ML *densityL*aL)*MagVector(dim, area);
-//    if (M < 0){
-//        // M- on Right
-//        flux[0] = M * densityR * aR * MagVector(dim, area);
-//    }else{
-//        // M+ on Left
-//        flux[0] = M * densityL * aL * MagVector(dim, area);
-//    }
-}
-
-void CompressibleFlowComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
-    FlowData flowData = (FlowData)ctx;
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
-
-    // Compute the norm
-    PetscReal norm[3];
-    NormVector(dim, area, norm);
-    const PetscReal areaMag = MagVector(dim, area);
-
-    // Decode the left and right states
-    PetscReal densityL;
-    PetscReal velocityNormalL;
-    PetscReal velocityL[3];
-    PetscReal internalEnergyL;
-    PetscReal aL;
-    PetscReal ML;
-    PetscReal pL;
-    DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &velocityNormalL,velocityL, &internalEnergyL, &aL, &ML, &pL);
-
-    PetscReal densityR;
-    PetscReal velocityNormalR;
-    PetscReal velocityR[3];
-    PetscReal internalEnergyR;
-    PetscReal aR;
-    PetscReal MR;
-    PetscReal pR;
-    DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &velocityNormalR,velocityR,  &internalEnergyR, &aR, &MR, &pR);
-
-    PetscReal sPm;
-    PetscReal sPp;
-    PetscReal sMm;
-    PetscReal sMp;
-
-    flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
-
-    // Compute M and P on the face
-    PetscReal M = sMm + sMp;
-    PetscReal p = pR*sPm + pL*sPp;
-
-    // March over each component of momentum
-//    for (PetscInt n =0; n < dim; n++){
-//        if (M < 0){
-//            // M- on Right
-//            flux[n] = (M * densityR * aR * velocityR[n]) * areaMag + p*area[n];
-//        }else{
-//            // M+ on Left
-//            flux[n] = (M * densityL * aL * velocityL[n]) * areaMag + p*area[n];
-//        }
-//    }
-     for (PetscInt n =0; n < dim; n++) {
-         flux[n] = 0.5*(MR * densityR * aR * velocityR[n] + ML * densityL * aL * velocityL[n]) * areaMag + 0.5*(pL+pR)*area[n];
-//         flux[n] = MR * densityR * aR * velocityR[n] * areaMag + pR*area[n];
-
-     }
-}
-
-void CompressibleFlowComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
+void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
     FlowData flowData = (FlowData)ctx;
     EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
 
@@ -191,19 +88,31 @@ void CompressibleFlowComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal 
 
     // Compute M and P on the face
     PetscReal M = sMm + sMp;
+    PetscReal p = pR*sPm + pL*sPp;
 
-//    if (M < 0){
-//        // M- on Right
+    if (M < 0){
+        // M- on Right
+        flux[RHO] = M * densityR * aR * MagVector(dim, area);
+
         PetscReal velMagR = MagVector(dim, velocityR);
         PetscReal HR = internalEnergyR + velMagR*velMagR/2.0 + pR/densityR;
-//        flux[0] = (M * densityR * aR * HR) * areaMag;
-//    }else{
-//        // M+ on Left
+        flux[RHOE] = (M * densityR * aR * HR) * areaMag;
+
+        for (PetscInt n =0; n < dim; n++) {
+            flux[RHOU + n] = (M * densityR * aR * velocityR[n]) * areaMag + p * area[n];
+        }
+    }else{
+        // M+ on Left
+        flux[RHO] = M * densityL * aL * MagVector(dim, area);
+
         PetscReal velMagL = MagVector(dim, velocityL);
         PetscReal HL = internalEnergyL + velMagL*velMagL/2.0 + pL/densityL;
-//        flux[0] = (M * densityL * aL * HL) * areaMag;
-//    }
-    flux[0] = 0.5*(ML*densityL*aL*HL + MR*densityR*aR*HR)*areaMag;
+        flux[RHOE] = (M * densityL * aL * HL) * areaMag;
+
+        for (PetscInt n =0; n < dim; n++) {
+            flux[RHOU + n] = (M * densityL * aL * velocityL[n]) * areaMag + p * area[n];
+        }
+    }
 }
 
 PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
@@ -237,10 +146,8 @@ PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
     // Determine the number of dimensions
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
-    // Register each field, this order must match the order in IncompressibleFlowFields enum
-    ierr = FlowRegisterField(flowData, compressibleFlowFieldNames[RHO], compressibleFlowFieldNames[RHO], 1, FV);CHKERRQ(ierr);
-    ierr = FlowRegisterField(flowData, compressibleFlowFieldNames[RHOE], compressibleFlowFieldNames[RHOE], 1, FV);CHKERRQ(ierr);
-    ierr = FlowRegisterField(flowData, compressibleFlowFieldNames[RHOU], compressibleFlowFieldNames[RHOU], dim, FV);CHKERRQ(ierr);
+    // Register a single field
+    ierr = FlowRegisterField(flowData, "euler", "euler", 2+dim, FV);CHKERRQ(ierr);
 
     // Create the discrete systems for the DM based upon the fields added to the DM
     ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
@@ -256,12 +163,8 @@ PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt nu
     ierr = DMGetDS(flowData->dm, &prob);CHKERRQ(ierr);
 
     // Set the flux calculator solver for each component
-    ierr = PetscDSSetRiemannSolver(prob, RHO, CompressibleFlowComputeFluxRho);CHKERRQ(ierr);
-    ierr = PetscDSSetContext(prob, RHO, flowData);CHKERRQ(ierr);
-    ierr = PetscDSSetRiemannSolver(prob, RHOE,CompressibleFlowComputeFluxRhoE);CHKERRQ(ierr);
-    ierr = PetscDSSetContext(prob, RHOE, flowData);CHKERRQ(ierr);
-    ierr = PetscDSSetRiemannSolver(prob, RHOU,CompressibleFlowComputeFluxRhoU);CHKERRQ(ierr);
-    ierr = PetscDSSetContext(prob, RHOU, flowData);CHKERRQ(ierr);
+    ierr = PetscDSSetRiemannSolver(prob, 0, CompressibleFlowComputeEulerFlux);CHKERRQ(ierr);
+    ierr = PetscDSSetContext(prob, 0, flowData);CHKERRQ(ierr);
     ierr = PetscDSSetFromOptions(prob);CHKERRQ(ierr);
 
     // Create the euler data

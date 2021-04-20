@@ -32,43 +32,28 @@ class CompressibleShockTubeTestFixture : public testingResources::MpiTestFixture
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
-static PetscErrorCode SetInitialRho(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) {
+static PetscErrorCode SetInitialCondition(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) {
     InitialConditions *initialConditions = (InitialConditions *)ctx;
 
     if (x[0] < initialConditions->length / 2.0) {
-        u[0] = initialConditions->rhoL;
-    } else {
-        u[0] = initialConditions->rhoR;
-    }
+        u[RHO] = initialConditions->rhoL;
+        u[RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
+        u[RHOU + 1] = 0.0;
 
-    return 0;
-}
-
-static PetscErrorCode SetInitialRhoU(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) {
-    InitialConditions *initialConditions = (InitialConditions *)ctx;
-
-    if (x[0] < initialConditions->length / 2.0) {
-        u[0] = initialConditions->rhoL * initialConditions->uL;
-        u[1] = 0.0;
-    } else {
-        u[0] = initialConditions->rhoR * initialConditions->uR;
-        u[1] = 0.0;
-    }
-    return 0;
-}
-
-static PetscErrorCode SetInitialRhoE(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) {
-    InitialConditions *initialConditions = (InitialConditions *)ctx;
-
-    if (x[0] < initialConditions->length / 2.0) {
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
-        u[0] = et * initialConditions->rhoL;
+        u[RHOE] = et * initialConditions->rhoL;
+
     } else {
+        u[RHO] = initialConditions->rhoR;
+        u[RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
+        u[RHOU + 1] = 0.0;
+
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
-        u[0] = et * initialConditions->rhoR;
+        u[RHOE] = et * initialConditions->rhoR;
     }
+
     return 0;
 }
 
@@ -101,7 +86,7 @@ static PetscErrorCode Extract1DPrimitives(DM dm, Vec v, std::map<std::string, st
             results["x"].push_back(cg->centroid[0]);
             PetscReal rho = xc[RHO];
             results["rho"].push_back(rho);
-            PetscReal u = xc[RHOU + 1] / rho;
+            PetscReal u = xc[RHOU] / rho;
             results["u"].push_back(u);
             PetscReal e = (xc[RHOE] / rho) - 0.5 * u * u;
             results["e"].push_back(e);
@@ -228,8 +213,8 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // set the initial conditions
-        PetscErrorCode (*func[3])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) = {SetInitialRho, SetInitialRhoE, SetInitialRhoU};
-        void *ctxs[3] = {(void *)&testingParam.initialConditions, (void *)&testingParam.initialConditions, (void *)&testingParam.initialConditions};
+        PetscErrorCode (*func[1])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) = {SetInitialCondition};
+        void *ctxs[1] = {(void *)&testingParam.initialConditions};
         ierr = DMProjectFunction(flowData->dm, 0.0, func, ctxs, INSERT_ALL_VALUES, flowData->flowField);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
