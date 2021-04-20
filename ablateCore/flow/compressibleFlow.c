@@ -88,13 +88,14 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
     // Compute M and P on the face
     PetscReal M = sMm + sMp;
 
-    if (M < 0){
-        // M- on Right
-        flux[0] = M * densityR * aR * MagVector(dim, area);
-    }else{
-        // M+ on Left
-        flux[0] = M * densityL * aL * MagVector(dim, area);
-    }
+    flux[0] = 0.5*(MR*densityR*aR + ML *densityL*aL)*MagVector(dim, area);
+//    if (M < 0){
+//        // M- on Right
+//        flux[0] = M * densityR * aR * MagVector(dim, area);
+//    }else{
+//        // M+ on Left
+//        flux[0] = M * densityL * aL * MagVector(dim, area);
+//    }
 }
 
 void CompressibleFlowComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
@@ -137,15 +138,20 @@ void CompressibleFlowComputeFluxRhoU(PetscInt dim, PetscInt Nf, const PetscReal 
     PetscReal p = pR*sPm + pL*sPp;
 
     // March over each component of momentum
-    for (PetscInt n =0; n < dim; n++){
-        if (M < 0){
-            // M- on Right
-            flux[n] = (M * densityR * aR * velocityR[n]) * areaMag + p*area[n];
-        }else{
-            // M+ on Left
-            flux[n] = (M * densityL * aL * velocityL[n]) * areaMag + p*area[n];
-        }
-    }
+//    for (PetscInt n =0; n < dim; n++){
+//        if (M < 0){
+//            // M- on Right
+//            flux[n] = (M * densityR * aR * velocityR[n]) * areaMag + p*area[n];
+//        }else{
+//            // M+ on Left
+//            flux[n] = (M * densityL * aL * velocityL[n]) * areaMag + p*area[n];
+//        }
+//    }
+     for (PetscInt n =0; n < dim; n++) {
+         flux[n] = 0.5*(MR * densityR * aR * velocityR[n] + ML * densityL * aL * velocityL[n]) * areaMag + 0.5*(pL+pR)*area[n];
+//         flux[n] = MR * densityR * aR * velocityR[n] * areaMag + pR*area[n];
+
+     }
 }
 
 void CompressibleFlowComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
@@ -186,17 +192,18 @@ void CompressibleFlowComputeFluxRhoE(PetscInt dim, PetscInt Nf, const PetscReal 
     // Compute M and P on the face
     PetscReal M = sMm + sMp;
 
-    if (M < 0){
-        // M- on Right
-        PetscReal velMag = MagVector(dim, velocityR);
-        PetscReal HR = internalEnergyR + velMag*velMag/2.0 + pR/densityR;
-        flux[0] = (M * densityR * aR * HR) * areaMag;
-    }else{
-        // M+ on Left
-        PetscReal velMag = MagVector(dim, velocityL);
-        PetscReal HL = internalEnergyL + velMag*velMag/2.0 + pL/densityL;
-        flux[0] = (M * densityL * aL * HL) * areaMag;
-    }
+//    if (M < 0){
+//        // M- on Right
+        PetscReal velMagR = MagVector(dim, velocityR);
+        PetscReal HR = internalEnergyR + velMagR*velMagR/2.0 + pR/densityR;
+//        flux[0] = (M * densityR * aR * HR) * areaMag;
+//    }else{
+//        // M+ on Left
+        PetscReal velMagL = MagVector(dim, velocityL);
+        PetscReal HL = internalEnergyL + velMagL*velMagL/2.0 + pL/densityL;
+//        flux[0] = (M * densityL * aL * HL) * areaMag;
+//    }
+    flux[0] = 0.5*(ML*densityL*aL*HL + MR*densityR*aR*HR)*areaMag;
 }
 
 PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
