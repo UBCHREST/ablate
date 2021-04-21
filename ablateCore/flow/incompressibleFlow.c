@@ -281,9 +281,9 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) 
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     // Register each field, this order must match the order in IncompressibleFlowFields enum
-    ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[VEL], "vel_", dim);CHKERRQ(ierr);
-    ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[PRES], "pres_", 1);CHKERRQ(ierr);
-    ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[TEMP], "temp_", 1);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[VEL], "vel_", dim, FE);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[PRES], "pres_", 1, FE);CHKERRQ(ierr);
+    ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[TEMP], "temp_", 1, FE);CHKERRQ(ierr);
 
     // Create the discrete systems for the DM based upon the fields added to the DM
     ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);

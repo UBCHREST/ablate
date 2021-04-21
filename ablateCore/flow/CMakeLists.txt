@@ -8,6 +8,10 @@ target_sources(ablateCore
         incompressibleFlow.h
         lowMachFlow.c
         lowMachFlow.h
+        compressibleFlow.c
+        compressibleFlow.h
+        fluxDifferencer.h
+        fluxDifferencer.c
         )
 
 # Allow public access to the header files in the directory

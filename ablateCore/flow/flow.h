@@ -3,17 +3,19 @@
 
 #include <petsc.h>
 
+enum FieldType {FE, FV};
+
 typedef struct {
     const char* fieldName;
     const char* fieldPrefix;
     PetscInt components;
+    enum FieldType fieldType;
 } FlowFieldDescriptor;
 
 typedef struct {
     void* context;
     PetscErrorCode (*updateFunction)(TS ts, void* context);
 } FlowUpdateFunction;
-
 
 struct _FlowData {
     DM dm;    /* flow domain */
@@ -42,7 +44,7 @@ struct _FlowData {
 typedef struct _FlowData* FlowData;
 
 PETSC_EXTERN PetscErrorCode FlowCreate(FlowData* flow);
-PetscErrorCode FlowRegisterField(FlowData flow, const char* fieldName, const char* fieldPrefix, PetscInt components);
+PetscErrorCode FlowRegisterField(FlowData flow, const char* fieldName, const char* fieldPrefix, PetscInt components, enum FieldType fieldType);
 PetscErrorCode FlowRegisterAuxField(FlowData flow, const char* fieldName, const char* fieldPrefix, PetscInt components);
 PetscErrorCode FlowCompleteProblemSetup(FlowData flow, TS ts);
 PetscErrorCode FlowFinalizeRegisterFields(FlowData flow);
