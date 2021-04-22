@@ -86,32 +86,17 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
 
     flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
-    // Compute M and P on the face
-    PetscReal M = sMm + sMp;
-    PetscReal p = pR*sPm + pL*sPp;
+    flux[RHO] = (sMm* densityR * aR + sMp* densityL * aL) * areaMag;
 
-    if (M < 0){
-        // M- on Right
-        flux[RHO] = M * densityR * aR * MagVector(dim, area);
+    PetscReal velMagR = MagVector(dim, velocityR);
+    PetscReal HR = internalEnergyR + velMagR*velMagR/2.0 + pR/densityR;
+    PetscReal velMagL = MagVector(dim, velocityL);
+    PetscReal HL = internalEnergyL + velMagL*velMagL/2.0 + pL/densityL;
 
-        PetscReal velMagR = MagVector(dim, velocityR);
-        PetscReal HR = internalEnergyR + velMagR*velMagR/2.0 + pR/densityR;
-        flux[RHOE] = (M * densityR * aR * HR) * areaMag;
+    flux[RHOE] = (sMm * densityR * aR * HR + sMp * densityL * aL * HL) * areaMag;
 
-        for (PetscInt n =0; n < dim; n++) {
-            flux[RHOU + n] = (M * densityR * aR * velocityR[n]) * areaMag + p * area[n];
-        }
-    }else{
-        // M+ on Left
-        flux[RHO] = M * densityL * aL * MagVector(dim, area);
-
-        PetscReal velMagL = MagVector(dim, velocityL);
-        PetscReal HL = internalEnergyL + velMagL*velMagL/2.0 + pL/densityL;
-        flux[RHOE] = (M * densityL * aL * HL) * areaMag;
-
-        for (PetscInt n =0; n < dim; n++) {
-            flux[RHOU + n] = (M * densityL * aL * velocityL[n]) * areaMag + p * area[n];
-        }
+    for (PetscInt n =0; n < dim; n++) {
+        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR*sPm + pL*sPp) * area[n];
     }
 }
 

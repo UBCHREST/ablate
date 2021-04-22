@@ -8,7 +8,7 @@ target_sources(testingResources
         MpiTestFixture.hpp
         MpiTestFixture.cpp
         MpiTestParamFixture.hpp
-        MpiTestEventListener.h
+        MpiTestEventListener.hpp
         )
 
 # Allow public access to the header files in the directory

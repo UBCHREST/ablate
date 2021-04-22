@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "MpiTestEventListener.h"
+#include "MpiTestEventListener.hpp"
 #include "MpiTestFixture.hpp"
 
 int main(int argc, char** argv) {

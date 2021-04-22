@@ -27,7 +27,31 @@ static void AusmFluxSplitCalculator(PetscReal Mm, PetscReal* sPm, PetscReal* sMm
         *sMp = 0.5 * (Mp + PetscAbsReal(Mp));
         *sPp = (*sMp) / Mp;
     }
+
+    // compute the combined M
+    PetscReal m = *sMm + *sMp;
+
+    if (m < 0){
+        // M- on Right
+        *sMm = m;
+        *sMp = 0.0;//Zero out the left contribution
+    }else{
+        // M+ on Left
+        *sMm = 0.0;
+        *sMp = m;//Zero out the right contribution
+    }
 }
+
+/* Produces a split Mach and pressure that reproduces the average face value.
+*/
+static void AverageSplitCalculator(PetscReal Mm, PetscReal* sPm, PetscReal* sMm,
+                                    PetscReal Mp, PetscReal* sPp, PetscReal *sMp) {
+    *sPm = 0.5;
+    *sPp = 0.5;
+    *sMm = Mm/2.0;
+    *sMp = Mp/2.0;
+}
+
 
 /*
  * Returns the plus split Mach number (+) using Van Leer splitting
@@ -66,6 +90,7 @@ static PetscErrorCode FluxDifferencerInitialize(){
     if (!fluxDifferenceInitialized){
         fluxDifferenceInitialized = PETSC_TRUE;
         ierr = FluxDifferencerRegister("ausm", AusmFluxSplitCalculator);CHKERRQ(ierr);
+        ierr = FluxDifferencerRegister("average", AverageSplitCalculator);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }
