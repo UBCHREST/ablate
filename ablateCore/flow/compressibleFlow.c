@@ -1,7 +1,7 @@
 #include "compressibleFlow.h"
 
-static const char *compressibleFlowFieldNames[TOTAL_COMPRESSIBLE_FLOW_FIELDS + 1] = {"density", "energy", "momentum", "unknown"};
-static const char *incompressibleSourceFieldNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "unknown"};
+static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
+const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "unknown"};
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
@@ -105,6 +105,7 @@ PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
+    ierr = DMSetFromOptions(dm);CHKERRQ(ierr);
     const PetscInt ghostCellDepth = 1;
     {// Make sure that the flow is setup distributed
         DM dmDist;
@@ -132,7 +133,15 @@ PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     // Register a single field
-    ierr = FlowRegisterField(flowData, "euler", "euler", 2+dim, FV);CHKERRQ(ierr);
+    PetscInt numberComponents = 2+dim;
+    ierr = FlowRegisterField(flowData, "euler", "euler", numberComponents, FV);CHKERRQ(ierr);
+
+    // Name each of the components, this is used by some of the output fields
+    PetscFV fvm;
+    ierr = DMGetField(flowData->dm,0, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
+    for(PetscInt c =0; c <numberComponents; c++){
+        ierr = PetscFVSetComponentName(fvm, c, compressibleFlowComponentNames[c]);CHKERRQ(ierr);
+    }
 
     // Create the discrete systems for the DM based upon the fields added to the DM
     ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
