@@ -58,12 +58,16 @@ static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx)
     ierr = DMRestoreLocalVector(vdm, &locvel);CHKERRQ(ierr);
     ierr = DMDestroy(&vdm);CHKERRQ(ierr);
 
+
+
+    // right hand side storing
     ierr = VecGetArray(F, &f);CHKERRQ(ierr);
     ierr = VecGetArrayRead(pvel, &v);CHKERRQ(ierr);
     ierr = PetscArraycpy(f, v, Np * dim);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(pvel, &v);CHKERRQ(ierr);
     ierr = VecRestoreArray(F, &f);CHKERRQ(ierr);
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm, ParticleTracerVelocity, &pvel);CHKERRQ(ierr);
+
 
     PetscFunctionReturn(0);
 }
