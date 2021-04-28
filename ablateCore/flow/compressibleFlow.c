@@ -109,7 +109,7 @@ PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
     const PetscInt ghostCellDepth = 1;
     {// Make sure that the flow is setup distributed
         DM dmDist;
-        // ierr = DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE);CHKERRQ(ierr);
+        ierr = DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE);CHKERRQ(ierr);
         ierr = DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist);CHKERRQ(ierr);
         if (dmDist) {
             ierr = DMDestroy(&dm);CHKERRQ(ierr);
@@ -139,7 +139,7 @@ PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
     // Name each of the components, this is used by some of the output fields
     PetscFV fvm;
     ierr = DMGetField(flowData->dm,0, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
-    for(PetscInt c =0; c <numberComponents; c++){
+    for (PetscInt c =0; c <numberComponents; c++){
         ierr = PetscFVSetComponentName(fvm, c, compressibleFlowComponentNames[c]);CHKERRQ(ierr);
     }
 
