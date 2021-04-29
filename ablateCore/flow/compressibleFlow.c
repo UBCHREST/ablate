@@ -1,7 +1,7 @@
 #include "compressibleFlow.h"
 
-static const char *compressibleFlowFieldNames[TOTAL_COMPRESSIBLE_FLOW_FIELDS + 1] = {"density", "energy", "momentum", "unknown"};
-static const char *incompressibleSourceFieldNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "unknown"};
+static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
+const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "unknown"};
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
@@ -86,32 +86,17 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
 
     flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
-    // Compute M and P on the face
-    PetscReal M = sMm + sMp;
-    PetscReal p = pR*sPm + pL*sPp;
+    flux[RHO] = (sMm* densityR * aR + sMp* densityL * aL) * areaMag;
 
-    if (M < 0){
-        // M- on Right
-        flux[RHO] = M * densityR * aR * MagVector(dim, area);
+    PetscReal velMagR = MagVector(dim, velocityR);
+    PetscReal HR = internalEnergyR + velMagR*velMagR/2.0 + pR/densityR;
+    PetscReal velMagL = MagVector(dim, velocityL);
+    PetscReal HL = internalEnergyL + velMagL*velMagL/2.0 + pL/densityL;
 
-        PetscReal velMagR = MagVector(dim, velocityR);
-        PetscReal HR = internalEnergyR + velMagR*velMagR/2.0 + pR/densityR;
-        flux[RHOE] = (M * densityR * aR * HR) * areaMag;
+    flux[RHOE] = (sMm * densityR * aR * HR + sMp * densityL * aL * HL) * areaMag;
 
-        for (PetscInt n =0; n < dim; n++) {
-            flux[RHOU + n] = (M * densityR * aR * velocityR[n]) * areaMag + p * area[n];
-        }
-    }else{
-        // M+ on Left
-        flux[RHO] = M * densityL * aL * MagVector(dim, area);
-
-        PetscReal velMagL = MagVector(dim, velocityL);
-        PetscReal HL = internalEnergyL + velMagL*velMagL/2.0 + pL/densityL;
-        flux[RHOE] = (M * densityL * aL * HL) * areaMag;
-
-        for (PetscInt n =0; n < dim; n++) {
-            flux[RHOU + n] = (M * densityL * aL * velocityL[n]) * areaMag + p * area[n];
-        }
+    for (PetscInt n =0; n < dim; n++) {
+        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR*sPm + pL*sPp) * area[n];
     }
 }
 
@@ -120,10 +105,11 @@ PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
+    ierr = DMSetFromOptions(dm);CHKERRQ(ierr);
     const PetscInt ghostCellDepth = 1;
     {// Make sure that the flow is setup distributed
         DM dmDist;
-        // ierr = DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE);CHKERRQ(ierr);
+        ierr = DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE);CHKERRQ(ierr);
         ierr = DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist);CHKERRQ(ierr);
         if (dmDist) {
             ierr = DMDestroy(&dm);CHKERRQ(ierr);
@@ -147,7 +133,15 @@ PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     // Register a single field
-    ierr = FlowRegisterField(flowData, "euler", "euler", 2+dim, FV);CHKERRQ(ierr);
+    PetscInt numberComponents = 2+dim;
+    ierr = FlowRegisterField(flowData, "euler", "euler", numberComponents, FV);CHKERRQ(ierr);
+
+    // Name each of the components, this is used by some of the output fields
+    PetscFV fvm;
+    ierr = DMGetField(flowData->dm,0, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
+    for (PetscInt c =0; c <numberComponents; c++){
+        ierr = PetscFVSetComponentName(fvm, c, compressibleFlowComponentNames[c]);CHKERRQ(ierr);
+    }
 
     // Create the discrete systems for the DM based upon the fields added to the DM
     ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);

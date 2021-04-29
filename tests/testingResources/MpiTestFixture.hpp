@@ -21,6 +21,14 @@ struct MpiTestParameter {
     }
 };
 
+class PetscTestErrorChecker {
+    friend void operator>>(int ierr, const PetscTestErrorChecker& errorChecker) {
+        if (ierr != 0) {
+            exit(ierr);
+        }
+    }
+};
+
 class MpiTestFixture : public ::testing::Test {
    private:
     static bool inMpiTestRun;
@@ -35,6 +43,7 @@ class MpiTestFixture : public ::testing::Test {
     static const std::string InTestRunFlag;
     static const std::string Test_Mpi_Command_Name;
     static const std::string Keep_Output_File;
+    PetscTestErrorChecker errorChecker;
 
     void SetUp() override;
 

@@ -44,7 +44,7 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    FluxDifferencer, CompressibleFlowFluxTestFixture,
+    CompressibleFlow, CompressibleFlowFluxTestFixture,
     testing::Values(
         (CompressibleFlowFluxTestParameters){
             .fluxDifferencer = "ausm", .area = {1}, .xLeft = {0.400688, 0.929113, 0.371908}, .xRight = {0.391646, 0.924943, 0.363631}, .expectedFlux = {0.371703, 1.142619, 0.648038}},

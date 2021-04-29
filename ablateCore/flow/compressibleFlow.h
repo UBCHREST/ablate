@@ -4,8 +4,7 @@
 #include "flow.h"
 #include "fluxDifferencer.h"
 
-typedef enum {RHO, RHOE, RHOU, TOTAL_COMPRESSIBLE_FLOW_FIELDS} CompressibleFlowFields;
-
+typedef enum {RHO, RHOE, RHOU, RHOV, RHOW, TOTAL_COMPRESSIBLE_FLOW_COMPONENTS} CompressibleFlowComponents;
 typedef enum { CFL, GAMMA, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS } CompressibleFlowParametersTypes;
 PETSC_EXTERN const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1];
 
