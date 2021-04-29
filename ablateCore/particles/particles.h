@@ -14,6 +14,7 @@ typedef struct {
     PetscDataType type;
 } ParticleFieldDescriptor;
 
+
 struct _ParticleData {
     PetscBag parameters; /* constant particle parameters */
     DM dm;               /* particle domain */

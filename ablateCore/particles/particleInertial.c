@@ -78,14 +78,16 @@ static PetscErrorCode UnpackKinematics(TS ts, Vec kinematics, Vec position, Vec 
 
 /* calculating RHS of the following equations
  * x_t = vp
- * u_t = (vf-vp)/tau_p + g(1-\rho_f/\rho_p)
+ * u_t = f(vf-vp)/tau_p + g(1-\rho_f/\rho_p)
 
    Note that here we use the velocity field at t_{n+1} to advect the particles from
    t_n to t_{n+1}. If we use both of these fields, we could use Crank-Nicholson or
    the method of characteristics.
 */
 static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
+
     ParticleData particles = (ParticleData)ctx;
+    InertialParticleParameters * partParameters = (InertialParticleParameters *)particles->data;
     Vec u = particles->flowFinal;
     DM sdm, dm, vdm;
     Vec vel, locvel, fluidVelocity;
@@ -149,13 +151,14 @@ static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
     //Calculate RHS of particle position and velocity equations
     PetscInt p,n;
     const PetscScalar *partVel, *fluidVel, *partDiam, *partDens;
-    PetscScalar tauP; // particle Stokes relaxation time
-    PetscScalar gravity[3] = {0,1.0,0}; // gravity field
-    PetscScalar rhoF = 1.0; // fluid density is set one due to non-dimensionalization
-    //PetscScalar rhoP = 5.0; // fluid density
+
+    PetscReal g[3] = {partParameters->gravityField[0], partParameters->gravityField[1],partParameters->gravityField[2]}; // gravity field
+    PetscScalar muF = partParameters->fluidViscosity;
+    PetscScalar rhoF = partParameters->fluidDensity;
+    ierr = PetscPrintf(PETSC_COMM_WORLD, "muF,rhoF,gx,gy,gz %lf %lf %lf %lf %lf=\n", muF, rhoF, g[0],g[1],g[2]);CHKERRQ(ierr);
+
     PetscReal Rep, corFactor;
-    PetscReal muF = 1.0;
-    IncompressibleFlowParameters flowParameters;
+    PetscScalar tauP; // particle Stokes relaxation time
 
     ierr = VecGetArray(F, &f);CHKERRQ(ierr);
     ierr = VecGetArrayRead(particleVelocity, &partVel);CHKERRQ(ierr);
@@ -170,10 +173,13 @@ static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
         }
         //Correction factor to account for finite Rep on Stokes drag (see Schiller-Naumann drag closure)
         corFactor = 1.0+0.15*PetscPowReal(PetscSqrtReal(Rep),0.687);
+        if (Rep < 0.1) {
+            corFactor =1.0; //returns Stokes drag
+        }
         tauP = partDens[p]*PetscSqr(partDiam[p])/(18.0*muF); // particle relaxation time
         for (n = 0; n < dim; n++) {
             f[p*TotalParticleField*dim+n] = partVel[p+n];
-            f[p*TotalParticleField*dim+dim+n] = corFactor*(fluidVel[p+n]- partVel[p+n])/tauP + gravity[n]*(1.0-rhoF/partDens[p]);
+            f[p*TotalParticleField*dim+dim+n] = corFactor*(fluidVel[p+n]- partVel[p+n])/tauP + g[n]*(1.0-rhoF/partDens[p]);
         }
     }
     ierr = VecRestoreArray(F, &f);CHKERRQ(ierr);
