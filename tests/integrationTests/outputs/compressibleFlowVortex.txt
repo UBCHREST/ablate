@@ -218,5 +218,3 @@ ResultFiles:
 compressibleFlowVortex.yaml
 vortexFlowField.hdf5
 vortexFlowField.xmf
-The following objects were never freed
------------------------------------------

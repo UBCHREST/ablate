@@ -11,22 +11,6 @@ static char help[] = "Integration Level Testing";
 #include "parser/yamlParser.hpp"
 #include "petscsys.h"
 
-PetscErrorCode PetscObjectsView(PetscViewer viewer) {
-    PetscErrorCode ierr;
-    PetscBool isascii;
-    FILE* fd;
-    PetscFunctionBegin;
-    if (!viewer) viewer = PETSC_VIEWER_STDOUT_WORLD;
-    ierr = PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERASCII, &isascii);
-    CHKERRQ(ierr);
-    if (!isascii) SETERRQ(PetscObjectComm((PetscObject)viewer), PETSC_ERR_SUP, "Only supports ASCII viewer");
-    ierr = PetscViewerASCIIGetPointer(viewer, &fd);
-    CHKERRQ(ierr);
-    ierr = PetscObjectsDump(fd, PETSC_FALSE);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-
 /**
  * Note: the test name is assumed to be the relative path to the yaml file
  */
@@ -79,7 +63,6 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
                 }
             }
         }
-        PetscObjectsView(PETSC_VIEWER_STDOUT_WORLD) >> errorChecker;
         PetscFinalize() >> errorChecker;
         exit(0);
     EndWithMPI
