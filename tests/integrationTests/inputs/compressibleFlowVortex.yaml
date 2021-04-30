@@ -1,0 +1,40 @@
+---
+environment:
+  title: eulerVortex
+  tagDirectory: false
+arguments:
+  eulerpetscfv_type: leastsquares
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_adapt_type: none
+    ts_max_time: 0.009633
+flow: !ablate::flow::CompressibleFlow
+  name: vortexFlowField
+  mesh: !ablate::mesh::BoxMesh
+    name: simpleBoxField
+    faces: [ 6, 6 ]
+    lower: [ 0, 0]
+    upper: [1, 1]
+    boundary: ["PERIODIC", "PERIODIC"]
+    simplex: false
+    arguments:
+      dm_refine: 1
+  arguments: {}
+  parameters:
+    cfl: 0.5
+    gamma: 1.4
+  initialization:
+    - fieldName: "euler" #for euler all components are in a single field
+      solutionField:
+        formula: >-
+            1.*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004),
+            1.*(0.5*(Power(0. + 1028.869904770776*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + x),2) +         Power(103.80884355390921 - 102.88699047707759*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*           (-0.5 + y),2)) + 213815.00000000003*Power(1 -         1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*         (Power(-0.5 + x,2) + Power(-0.5 + y,2)),1.))*   Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*      (Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004),
+            1.*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004)*(103.80884355390921 - 102.88699047707759*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + y)),
+            1.*(0. + 1028.869904770776*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + x))*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004)
+      timeDerivative:
+        formula: "0.0, 0.0, 0.0, 0.0"
+  monitors:
+    - !ablate::monitors::flow::Hdf5OutputFlow
+

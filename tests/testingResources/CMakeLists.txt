@@ -1,7 +1,7 @@
 
 # Setup the framework library
 add_library(testingResources "")
-target_link_libraries(testingResources PUBLIC gtest gmock)
+target_link_libraries(testingResources PUBLIC gtest gmock ablateCore)
 
 target_sources(testingResources
         PUBLIC

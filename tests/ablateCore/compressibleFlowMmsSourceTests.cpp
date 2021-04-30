@@ -587,7 +587,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             problemSetup.constants = constants;
 
             // Setup
-            CompressibleFlow_SetupDiscretization(flowData, dm);
+            CompressibleFlow_SetupDiscretization(flowData, &dm);
 
             // Add in the flow parameters
             PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];

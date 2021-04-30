@@ -28,3 +28,9 @@ void ablate::particles::Particles::InitializeFlow(std::shared_ptr<flow::Flow> fl
     TSCreate(PETSC_COMM_WORLD, &particleTs) >> checkError;
     PetscObjectSetOptionsPrefix((PetscObject)particleTs, namePrefix.c_str()) >> checkError;
 }
+
+ablate::particles::Particles::~Particles() {
+    if (particleTs) {
+        TSDestroy(&particleTs) >> checkError;
+    }
+}

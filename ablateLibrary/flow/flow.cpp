@@ -45,8 +45,21 @@ void ablate::flow::Flow::CompleteInitialization() {
             throw std::invalid_argument("unknown field for boundary: " + boundary->GetFieldName());
         }
 
+        // Get the current field type
+        DMBoundaryConditionType boundaryConditionType;
+        switch (flowData->flowFieldDescriptors[fieldId.value()].fieldType) {
+            case FE:
+                boundaryConditionType = DM_BC_ESSENTIAL;
+                break;
+            case FV:
+                boundaryConditionType = DM_BC_NATURAL_RIEMANN;
+                break;
+            default:
+                throw std::invalid_argument("unknown field type " + std::to_string(flowData->flowFieldDescriptors[fieldId.value()].fieldType));
+        }
+
         PetscDSAddBoundary(prob,
-                           DM_BC_ESSENTIAL,
+                           boundaryConditionType,
                            boundary->GetBoundaryName().c_str(),
                            boundary->GetLabelName().c_str(),
                            fieldId.value(),

@@ -171,7 +171,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Setup
-        ierr = CompressibleFlow_SetupDiscretization(flowData, dm);
+        ierr = CompressibleFlow_SetupDiscretization(flowData, &dm);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Add in the flow parameters

@@ -7,7 +7,7 @@ nav_order: 2
 
 ## Git Introduction
 
-Version control is a fundamental aspect of successful software development regardless of the target product or development team.  ABLATE is using Git for version control hosted on [Github.com](https://github.com/UBCHREST/ablate).  Git and the associated workflows define how people develop, document, test, and contribute code to the project.  If you are new to Git or unsure/unconvinced why we are using version control it is recommend that you watch the [Git Introduction by Alicia Klinvex](https://www.youtube.com/watch?v=0dkvuC8MzPI) presented at Argonne Training Program on Extreme-Scale Computing 2017.  [Learn Git Branching](https://learngitbranching.js.org) is an interactive tutorial to help learn Git and is recommend for anyone new to Git or version control. The following guide provides quick reference to some of the common Git workflows as applied to ABLATE.
+Version control is a fundamental aspect of successful software development regardless of the target product or development team.  ABLATE is using Git for version control hosted on [Github.com](https://github.com/UBCHREST/ablate).  Git and the associated workflows define how people develop, document, test, and contribute code to the project.  If you are new to Git or unsure/unconvinced why we are using version control it is recommended that you watch the [Git Introduction by Alicia Klinvex](https://www.youtube.com/watch?v=0dkvuC8MzPI) presented at Argonne Training Program on Extreme-Scale Computing 2017.  [Learn Git Branching](https://learngitbranching.js.org) is an interactive tutorial to help learn Git and is recommend for anyone new to Git or version control. The following guide provides quick reference to some of the common Git workflows as applied to ABLATE.
 
 <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/0dkvuC8MzPI" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 
@@ -24,12 +24,12 @@ If you plan on making any contributions to ABLATE you must first fork ABLATE.  T
    ![GitHub fork repo](assets/github_fork_repo.png)
 
 ## Working with Git
-Git allows you to easily collaborate between people, back-up your code, and keep track of your changes. It is recommend that you make your code changes on a branch within your fork. The "feature" branch is usually a single set of changes to accomplish one feature or fix a bug.  The following steps use the command line but can often be performed using your IDE (i.e. [Clion](https://www.jetbrains.com/clion/), [VisualStudio Code](https://code.visualstudio.com)) or a stand alone app (i.e.[GitHub Desktop](https://desktop.github.com)).
+Git allows you to easily collaborate between people, back-up your code, and keep track of your changes. It is recommended that you make your code changes on a branch within your fork. The "feature" branch is usually a single set of changes to accomplish one feature or fix a bug.  The following steps use the command line but can often be performed using your IDE (i.e. [Clion](https://www.jetbrains.com/clion/), [VisualStudio Code](https://code.visualstudio.com)) or a stand alone app (i.e.[GitHub Desktop](https://desktop.github.com)).
 
 1. **Creating a Branch** Before working on new code you should create a feature branch.  You probably want to [update your fork](#updating-your-fork) before branching.  Common convection is to name your branch after the feature/bug you are addressing (e.g. USERNAME/FEATURE-BUG, mmcgurn/faster-algorithm)
    ```bash
    # From inside your repository create a branch using the following naming template
-   git branch -b USERNAME/FEATURE-BUG
+   git checkout -b USERNAME/FEATURE-BUG
    ```
 2. **Committing your Code** Because you are on your own branch/fork you can and should commit your code often.
    ```bash
