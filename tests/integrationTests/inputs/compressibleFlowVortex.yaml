@@ -9,7 +9,7 @@ timestepper:
   arguments:
     ts_type: rk
     ts_adapt_type: none
-    ts_max_time: 0.009633
+    ts_max_steps: 25
 flow: !ablate::flow::CompressibleFlow
   name: vortexFlowField
   mesh: !ablate::mesh::BoxMesh
