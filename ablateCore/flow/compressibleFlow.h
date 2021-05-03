@@ -15,7 +15,7 @@ typedef struct {
 } EulerFlowData;
 
 // Define the functions to setup the incompressible flow
-PETSC_EXTERN PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm);
+PETSC_EXTERN PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM* dm);
 PETSC_EXTERN PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt, PetscScalar []);
 PETSC_EXTERN PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts);
 

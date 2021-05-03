@@ -41,4 +41,4 @@ CLion is a C/C++ IDE that uses cmake files for configuration. These directions o
    - Select Git from the *Version Control* drop down and enter your [ABLATE fork url]({{ site.baseurl}}{%link content/development/UsingGitWithABLATE.md  %}#forking-ablate).
 1. Build and run all tests using the *All CTest* configuration.
    ![Clion All CTest configuration location](assets/clion_ctest_configuration.png)
-1. If you are new to CLion it is recommend that you read through the [CLion Quick Start Guide](https://www.jetbrains.com/help/clion/clion-quick-start-guide.html).
+1. If you are new to CLion it is recommended that you read through the [CLion Quick Start Guide](https://www.jetbrains.com/help/clion/clion-quick-start-guide.html).

@@ -1,7 +1,9 @@
 #ifndef mpitestfixture_h
 #define mpitestfixture_h
 #include <gtest/gtest.h>
+#include <petscsys.h>
 #include <filesystem>
+
 namespace fs = std::filesystem;
 
 namespace testingResources {
@@ -24,6 +26,11 @@ struct MpiTestParameter {
 class PetscTestErrorChecker {
     friend void operator>>(int ierr, const PetscTestErrorChecker& errorChecker) {
         if (ierr != 0) {
+            const char* text;
+            char* specific;
+
+            PetscErrorMessage(ierr, &text, &specific);
+            std::cerr << text << std::endl << specific << std::endl;
             exit(ierr);
         }
     }

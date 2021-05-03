@@ -7,7 +7,8 @@
 namespace ablate::mesh {
 class BoxMesh : public Mesh {
    public:
-    BoxMesh(std::string name, std::map<std::string, std::string> arguments, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper);
+    BoxMesh(std::string name, std::map<std::string, std::string> arguments, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary,
+            bool simplex);
 
    protected:
     inline static std::map<std::string, std::string> Merge(std::map<std::string, std::string> a, std::map<std::string, std::string> b) {

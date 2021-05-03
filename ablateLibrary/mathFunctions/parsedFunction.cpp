@@ -4,12 +4,17 @@
 #include <exception>
 #include "parser/registrar.hpp"
 
+static mu::value_type powerFunction(mu::value_type a, mu::value_type b) { return PetscPowReal(a, b); }
+
 ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString) : formula(functionString) {
     // define the x,y,z and t variables
     parser.DefineVar("x", &coordinate[0]);
     parser.DefineVar("y", &coordinate[1]);
     parser.DefineVar("z", &coordinate[2]);
     parser.DefineVar("t", &time);
+
+    // define some helper functions
+    parser.DefineFun("Power", powerFunction, true);
 
     parser.SetExpr(formula);
 

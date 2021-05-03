@@ -100,37 +100,37 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     }
 }
 
-PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
+PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM* dm) {
     PetscInt dim;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-    ierr = DMSetFromOptions(dm);CHKERRQ(ierr);
+    ierr = DMSetFromOptions(*dm);CHKERRQ(ierr);
     const PetscInt ghostCellDepth = 1;
     {// Make sure that the flow is setup distributed
         DM dmDist;
-        ierr = DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE);CHKERRQ(ierr);
-        ierr = DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist);CHKERRQ(ierr);
+        ierr = DMSetBasicAdjacency(*dm, PETSC_TRUE, PETSC_FALSE);CHKERRQ(ierr);
+        ierr = DMPlexDistribute(*dm, ghostCellDepth, NULL, &dmDist);CHKERRQ(ierr);
         if (dmDist) {
-            ierr = DMDestroy(&dm);CHKERRQ(ierr);
-            dm   = dmDist;
+            ierr = DMDestroy(dm);CHKERRQ(ierr);
+            *dm   = dmDist;
         }
     }
 
     // create any ghost cells that are needed
     {
         DM gdm;
-        ierr = DMPlexConstructGhostCells(dm, NULL, NULL, &gdm);CHKERRQ(ierr);
-        ierr = DMDestroy(&dm);CHKERRQ(ierr);
-        dm   = gdm;
+        ierr = DMPlexConstructGhostCells(*dm, NULL, NULL, &gdm);CHKERRQ(ierr);
+        ierr = DMDestroy(dm);CHKERRQ(ierr);
+        *dm   = gdm;
     }
 
     //Store the field data
-    flowData->dm = dm;
+    flowData->dm = *dm;
     ierr = DMSetApplicationContext(flowData->dm, flowData);CHKERRQ(ierr);
 
     // Determine the number of dimensions
-    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+    ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
 
     // Register a single field
     PetscInt numberComponents = 2+dim;

@@ -135,6 +135,57 @@ TEST(YamlParserTests, ShouldReturnCorrectInForOptionalValue) {
     ASSERT_EQ(defaultValue, yamlParser->Get(ArgumentIdentifier<int>{"item 2", .optional = true}));
 }
 
+TEST(YamlParserTests, ShouldParseBools) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: true" << std::endl;
+    yaml << " item 2: False " << std::endl;
+    yaml << " item3: false " << std::endl;
+    yaml << " item4: \"truafeae \" " << std::endl;
+    yaml << " item5: True " << std::endl;
+    yaml << " item6: true " << std::endl;
+
+    // act
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // assert
+    ASSERT_EQ(true, yamlParser->Get(ArgumentIdentifier<bool>{"item"}));
+    ASSERT_EQ(false, yamlParser->Get(ArgumentIdentifier<bool>{"item 2"}));
+    ASSERT_EQ(false, yamlParser->Get(ArgumentIdentifier<bool>{"item3"}));
+    ASSERT_THROW(yamlParser->Get(ArgumentIdentifier<bool>{"item4"}), YAML::BadConversion);
+    ASSERT_EQ(true, yamlParser->Get(ArgumentIdentifier<bool>{"item5"}));
+    ASSERT_EQ(true, yamlParser->Get(ArgumentIdentifier<bool>{"item6"}));
+}
+
+TEST(YamlParserTests, ShouldThrowErrorForMissingBool) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: im_a_string " << std::endl;
+
+    // act
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // assert
+    ASSERT_THROW(yamlParser->Get(ArgumentIdentifier<bool>{"itemNotThere"}), std::invalid_argument);
+}
+
+TEST(YamlParserTests, ShouldReturnCorrectBoolForOptionalValue) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: true" << std::endl;
+    bool defaultValue = {};
+
+    // act
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // assert
+    ASSERT_EQ(true, yamlParser->Get(ArgumentIdentifier<bool>{"item", .optional = true}));
+    ASSERT_EQ(defaultValue, yamlParser->Get(ArgumentIdentifier<int>{"item 2", .optional = true}));
+}
+
 TEST(YamlParserTests, ShouldParseSubFactory) {
     // arrange
     std::stringstream yaml;

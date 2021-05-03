@@ -10,4 +10,6 @@ target_sources(ablateLibrary
         flowFieldSolution.hpp
         boundaryCondition.cpp
         boundaryCondition.hpp
+        compressibleFlow.cpp
+        compressibleFlow.hpp
         )

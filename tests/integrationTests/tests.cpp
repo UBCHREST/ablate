@@ -9,6 +9,7 @@ static char help[] = "Integration Level Testing";
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
 #include "parser/yamlParser.hpp"
+#include "petscsys.h"
 
 /**
  * Note: the test name is assumed to be the relative path to the yaml file
@@ -18,8 +19,11 @@ class IntegrationTestsSpecifier : public testingResources::MpiTestParamFixture {
 TEST_P(IntegrationTestsSpecifier, ShouldRun) {
     StartWithMPI
         // initialize petsc and mpi
-        PetscErrorCode ierr = PetscInitialize(argc, argv, NULL, help);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        if (!PETSC_USE_LOG) {
+            FAIL() << "Integration testing requires PETSC_LOG";
+        }
+        PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> errorChecker;
+        PetscInitialize(argc, argv, NULL, help) >> errorChecker;
         {
             int rank;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -59,8 +63,8 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
                 }
             }
         }
-        ierr = PetscFinalize();
-        exit(ierr);
+        PetscFinalize() >> errorChecker;
+        exit(0);
     EndWithMPI
 }
 
@@ -68,5 +72,6 @@ INSTANTIATE_TEST_SUITE_P(Tests, IntegrationTestsSpecifier,
                          testing::Values((MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlow.txt", .arguments = ""},
                                          (MpiTestParameter){
                                              .testName = "inputs/tracerParticles2DHDF5Monitor.yaml", .nproc = 2, .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt", .arguments = ""},
-                                         (MpiTestParameter){.testName = "inputs/tracerParticles3D.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles3D.txt", .arguments = ""}),
+                                         (MpiTestParameter){.testName = "inputs/tracerParticles3D.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles3D.txt", .arguments = ""},
+                                         (MpiTestParameter){.testName = "inputs/compressibleFlowVortex.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlowVortex.txt", .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
