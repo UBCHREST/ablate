@@ -124,23 +124,27 @@ void testingResources::MpiTestFixture::CompareOutputFiles() {
             // march over each value
             for (int v = 0; v < expectedValues.size(); v++) {
                 char compareChar = expectedValues[v][0];
-                double expectedValue = stod(expectedValues[v].substr(1));
-                double actualValue = stod(matches[v + 1]);
+                double expectedValue = expectedValues[v].size() > 1 ? stod(expectedValues[v].substr(1)) : NAN;
+                std::string actualValueString = matches[v + 1];
 
                 switch (compareChar) {
                     case '<':
-                        ASSERT_LT(actualValue, expectedValue) << " on line " << expectedLine;
+                        ASSERT_LT(std::stod(actualValueString), expectedValue) << " on line " << expectedLine;
                         break;
                     case '>':
-                        ASSERT_GT(actualValue, expectedValue) << " on line " << expectedLine;
+                        ASSERT_GT(std::stod(actualValueString), expectedValue) << " on line " << expectedLine;
                         break;
                     case '=':
                         // check some special cases for double values
                         if (std::isnan(expectedValue)) {
-                            ASSERT_TRUE(std::isnan(actualValue)) << " on line " << expectedLine;
+                            ASSERT_TRUE(std::isnan(std::stod(actualValueString))) << " on line " << expectedLine;
                         } else {
-                            ASSERT_DOUBLE_EQ(actualValue, expectedValue) << " on line " << expectedLine;
+                            ASSERT_DOUBLE_EQ(std::stod(actualValueString), expectedValue) << " on line " << expectedLine;
                         }
+                        break;
+                    case '~':
+                        // is anything once trimmed
+                        ASSERT_TRUE(actualValueString.find_first_not_of(" \t\n\v\f\r") != std::string::npos) << " on line " << expectedLine;
                         break;
                     default:
                         FAIL() << "Unknown compare char " << compareChar << " on line " << expectedLine;
