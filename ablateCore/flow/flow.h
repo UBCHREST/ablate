@@ -45,11 +45,13 @@ typedef struct _FlowData* FlowData;
 
 PETSC_EXTERN PetscErrorCode FlowCreate(FlowData* flow);
 PetscErrorCode FlowRegisterField(FlowData flow, const char* fieldName, const char* fieldPrefix, PetscInt components, enum FieldType fieldType);
-PetscErrorCode FlowRegisterAuxField(FlowData flow, const char* fieldName, const char* fieldPrefix, PetscInt components);
+PetscErrorCode FlowRegisterAuxField(FlowData flow, const char* fieldName, const char* fieldPrefix, PetscInt components, enum FieldType fieldType);
 PetscErrorCode FlowCompleteProblemSetup(FlowData flow, TS ts);
 PetscErrorCode FlowFinalizeRegisterFields(FlowData flow);
 PETSC_EXTERN PetscErrorCode FlowRegisterPreStep(FlowData flowData, PetscErrorCode (*updateFunction)(TS ts, void* context), void* context);
 PETSC_EXTERN PetscErrorCode FlowRegisterPostStep(FlowData flowData, PetscErrorCode (*updateFunction)(TS ts, void* context), void* context);
+PETSC_EXTERN PetscErrorCode FlowView(FlowData flowData,PetscViewer viewer);
+PETSC_EXTERN PetscErrorCode FlowViewFromOptions(FlowData flowData, char *title);
 
 PETSC_EXTERN PetscErrorCode FlowDestroy(FlowData* flow);
 

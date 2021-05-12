@@ -98,7 +98,6 @@ PetscErrorCode FlowRegisterField(FlowData flow, const char* fieldName, const cha
             ierr = PetscFVSetNumComponents(fvm, components);CHKERRQ(ierr);
             ierr = PetscFVSetSpatialDimension(fvm, dim);CHKERRQ(ierr);
 
-            /* FV is now structured with one field having all physics as components */
             ierr = DMSetField(flow->dm, flow->numberFlowFields-1, NULL, (PetscObject)fvm);CHKERRQ(ierr);
             ierr = PetscFVDestroy(&fvm);CHKERRQ(ierr);
         }break;
@@ -107,11 +106,10 @@ PetscErrorCode FlowRegisterField(FlowData flow, const char* fieldName, const cha
         }
     }
 
-
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const char *fieldPrefix, PetscInt components) {
+PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const char *fieldPrefix, PetscInt components, enum FieldType fieldType) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
@@ -135,6 +133,7 @@ PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const 
         ierr = PetscRealloc(sizeof(FlowFieldDescriptor)*flow->numberAuxFields,&(flow->auxFieldDescriptors));CHKERRQ(ierr);
     }
     flow->auxFieldDescriptors[flow->numberAuxFields-1].components = components;
+    flow->auxFieldDescriptors[flow->numberAuxFields-1].fieldType = fieldType;
     PetscStrallocpy(fieldName, (char **)&(flow->auxFieldDescriptors[flow->numberAuxFields-1].fieldName));
     PetscStrallocpy(fieldPrefix, (char **)&(flow->auxFieldDescriptors[flow->numberAuxFields-1].fieldPrefix));
 
@@ -166,21 +165,42 @@ PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const 
     PetscInt dim;
     ierr = DMGetDimension(flow->dm, &dim);CHKERRQ(ierr);
 
-    // create a petsc fe
-    PetscFE petscFE;
-    ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal? PETSC_TRUE : PETSC_FALSE, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
-    ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
+    switch (fieldType) {
+        case FE: {
+            // create a petsc fe
+            PetscFE petscFE;
+            ierr = PetscFECreateDefault(comm, dim, components, simplexGlobal? PETSC_TRUE : PETSC_FALSE, combinedFieldPrefix, PETSC_DEFAULT, &petscFE);CHKERRQ(ierr);
+            ierr = PetscObjectSetName((PetscObject)petscFE, fieldName);CHKERRQ(ierr);
 
-    //If this is not the first field, copy the quadrature locations
-    if (flow->numberFlowFields > 1){
-        PetscFE referencePetscFE;
-        ierr = DMGetField(flow->dm, 0, NULL, (PetscObject*)&referencePetscFE);CHKERRQ(ierr);
-        ierr = PetscFECopyQuadrature(referencePetscFE, petscFE);CHKERRQ(ierr);
+            //If this is not the first field, copy the quadrature locations
+            if (flow->numberFlowFields > 1){
+                PetscFE referencePetscFE;
+                ierr = DMGetField(flow->dm, 0, NULL, (PetscObject*)&referencePetscFE);CHKERRQ(ierr);
+                ierr = PetscFECopyQuadrature(referencePetscFE, petscFE);CHKERRQ(ierr);
+            }
+
+            // Store the field and destroy copy
+            ierr = DMSetField(flow->auxDm, flow->numberAuxFields-1, NULL, (PetscObject)petscFE);CHKERRQ(ierr);
+            ierr = PetscFEDestroy(&petscFE);CHKERRQ(ierr);
+        }break;
+        case FV:{
+            PetscFV           fvm;
+            ierr = PetscFVCreate(PETSC_COMM_WORLD, &fvm);CHKERRQ(ierr);
+            ierr = PetscObjectSetOptionsPrefix((PetscObject) fvm, combinedFieldPrefix);CHKERRQ(ierr);
+            ierr = PetscObjectSetName((PetscObject) fvm, fieldName);CHKERRQ(ierr);
+
+            ierr = PetscFVSetFromOptions(fvm);CHKERRQ(ierr);
+            ierr = PetscFVSetNumComponents(fvm, components);CHKERRQ(ierr);
+            ierr = PetscFVSetSpatialDimension(fvm, dim);CHKERRQ(ierr);
+
+            ierr = DMSetField(flow->auxDm, flow->numberFlowFields-1, NULL, (PetscObject)fvm);CHKERRQ(ierr);
+            ierr = PetscFVDestroy(&fvm);CHKERRQ(ierr);
+        }break;
+            default:{
+            SETERRQ(comm,PETSC_ERR_ARG_WRONG,"Unknown field type for flow");
+        }
     }
 
-    // Store the field and destroy copy
-    ierr = DMSetField(flow->auxDm, flow->numberAuxFields-1, NULL, (PetscObject)petscFE);CHKERRQ(ierr);
-    ierr = PetscFEDestroy(&petscFE);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
@@ -297,6 +317,52 @@ PetscErrorCode FlowRegisterPostStep(FlowData flowData, PetscErrorCode (*updateFu
     }
     flowData->postStepFunctions[flowData->numberPostStepFunctions-1].updateFunction = updateFunction;
     flowData->postStepFunctions[flowData->numberPostStepFunctions-1].context = context;
+    PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode FlowView(FlowData flowData,PetscViewer viewer) {
+    PetscFunctionBegin;
+    PetscErrorCode ierr;
+    // Always save the main flowField
+    ierr = VecView(flowData->flowField, viewer);CHKERRQ(ierr);
+
+    //If there is aux data output
+    if (flowData->auxField) {
+        // copy over the sequence data from the main dm
+        PetscReal dmTime;
+        PetscInt dmSequence;
+        ierr = DMGetOutputSequenceNumber(flowData->dm, &dmSequence, &dmTime);CHKERRQ(ierr);
+        ierr = DMSetOutputSequenceNumber(flowData->auxDm, dmSequence, dmTime);CHKERRQ(ierr);
+
+        Vec auxGlobalField;
+        ierr = DMGetGlobalVector(flowData->auxDm, &auxGlobalField);CHKERRQ(ierr);
+
+        // copy over the name of the auxFieldVector
+        const char *name;
+        ierr = PetscObjectGetName((PetscObject)flowData->auxField, &name);CHKERRQ(ierr);
+        ierr = PetscObjectSetName((PetscObject)auxGlobalField, name);CHKERRQ(ierr);
+
+        ierr = DMLocalToGlobal(flowData->auxDm, flowData->auxField, INSERT_VALUES, auxGlobalField);CHKERRQ(ierr);
+        ierr = VecView(auxGlobalField, viewer);CHKERRQ(ierr);
+        ierr = DMRestoreGlobalVector(flowData->auxDm, &auxGlobalField);CHKERRQ(ierr);
+    }
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowViewFromOptions(FlowData flowData, char *optionName) {
+    PetscFunctionBegin;
+    PetscErrorCode ierr;
+    PetscViewer viewer;
+    PetscBool         viewerCreated;
+
+    // generate a petsc viewer from the options provided
+    ierr = PetscOptionsGetViewer(PetscObjectComm((PetscObject)flowData->dm),NULL,NULL,optionName,&viewer, NULL,&viewerCreated);CHKERRQ(ierr);
+    if (viewerCreated){
+        ierr = FlowView(flowData, viewer);CHKERRQ(ierr);
+        ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
+    }
+
     PetscFunctionReturn(0);
 }
 

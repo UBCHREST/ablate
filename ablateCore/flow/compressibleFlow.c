@@ -168,6 +168,7 @@ PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt nu
 
     data->cfl = values[CFL];
     data->gamma = values[GAMMA];
+    data->Rgas = values[RGAS];
 
     const char *prefix;
     ierr = DMGetOptionsPrefix(flowData->dm, &prefix);CHKERRQ(ierr);
