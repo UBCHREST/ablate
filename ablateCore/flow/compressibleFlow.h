@@ -5,7 +5,7 @@
 #include "fluxDifferencer.h"
 
 typedef enum {RHO, RHOE, RHOU, RHOV, RHOW, TOTAL_COMPRESSIBLE_FLOW_COMPONENTS} CompressibleFlowComponents;
-typedef enum { CFL, GAMMA, RGAS, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS } CompressibleFlowParametersTypes;
+typedef enum { CFL, GAMMA, RGAS, K, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS } CompressibleFlowParametersTypes;
 PETSC_EXTERN const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1];
 
 typedef struct {
@@ -13,6 +13,7 @@ typedef struct {
     PetscReal gamma;
     PetscReal Rgas;
     FluxDifferencerFunction fluxDifferencer;
+    PetscBool automaticTimeStepCalculator;
 } EulerFlowData;
 
 // Define the functions to setup the incompressible flow

@@ -52,6 +52,16 @@ static void AverageSplitCalculator(PetscReal Mm, PetscReal* sPm, PetscReal* sMm,
     *sMp = Mp/2.0;
 }
 
+/* Turns off the values resulting no flux.  This is useful for debug and testinjg
+*/
+static void OffSplitCalculator(PetscReal Mm, PetscReal* sPm, PetscReal* sMm,
+                                   PetscReal Mp, PetscReal* sPp, PetscReal *sMp) {
+    *sPm = 0.0;
+    *sPp = 0.0;
+    *sMm = 0.0;
+    *sMp = 0.0;
+}
+
 
 /*
  * Returns the plus split Mach number (+) using Van Leer splitting
@@ -91,6 +101,7 @@ static PetscErrorCode FluxDifferencerInitialize(){
         fluxDifferenceInitialized = PETSC_TRUE;
         ierr = FluxDifferencerRegister("ausm", AusmFluxSplitCalculator);CHKERRQ(ierr);
         ierr = FluxDifferencerRegister("average", AverageSplitCalculator);CHKERRQ(ierr);
+        ierr = FluxDifferencerRegister("off", OffSplitCalculator);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }

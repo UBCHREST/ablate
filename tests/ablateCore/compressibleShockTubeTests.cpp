@@ -4,8 +4,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include "MpiTestFixture.hpp"
 #include "compressibleFlow.h"
 #include "gtest/gtest.h"
-#include "incompressibleFlow.h"
-#include "mesh.h"
+ #include "mesh.h"
 
 typedef struct {
     PetscReal gamma;

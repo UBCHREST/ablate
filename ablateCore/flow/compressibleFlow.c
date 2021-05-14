@@ -1,7 +1,7 @@
 #include "compressibleFlow.h"
 
 static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
-const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "unknown"};
+const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "Rgas", "k", "unknown"};
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
@@ -174,11 +174,18 @@ PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt nu
     ierr = DMGetOptionsPrefix(flowData->dm, &prefix);CHKERRQ(ierr);
 
     ierr = PetscOptionsBegin(PetscObjectComm((PetscObject)flowData->dm),prefix,"Compressible Flow Options",NULL);CHKERRQ(ierr);
+
+    // setup the flux differencer
     PetscFunctionList fluxDifferencerList;
     ierr = FluxDifferencerListGet(&fluxDifferencerList);CHKERRQ(ierr);
     char fluxDiffValue[128] = "ausm";
     ierr = PetscOptionsFList("-flux_diff","Flux differencer","",fluxDifferencerList,fluxDiffValue,fluxDiffValue,sizeof fluxDiffValue,NULL);CHKERRQ(ierr);
     ierr = FluxDifferencerGet(fluxDiffValue, &(data->fluxDifferencer));CHKERRQ(ierr);
+
+    // allow the user to disable the autm
+    data->automaticTimeStepCalculator = PETSC_TRUE;
+    ierr = PetscOptionsBool("-automaticTimeStepCalculator", "determines if a time step is calculated", NULL, data->automaticTimeStepCalculator, &data->automaticTimeStepCalculator, NULL);CHKERRQ(ierr);
+
     ierr = PetscOptionsEnd();CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -231,7 +238,6 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
             PetscReal e = (xc[RHOE] / rho) - 0.5 * velMag;
             PetscReal p = (flowParameters->gamma - 1) * rho * e;
 
-
             PetscReal a = PetscSqrtReal(flowParameters->gamma * p / rho);
             PetscReal dt = flowParameters->cfl * dx / (a + PetscAbsReal(u));
             dtMin = PetscMin(dtMin, dt);
@@ -255,10 +261,13 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
 
 PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
     PetscErrorCode ierr;
-    DM dm;
 
     PetscFunctionBeginUser;
     ierr = FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
-    ierr = FlowRegisterPreStep(flowData, ComputeTimeStep, flowData);CHKERRQ(ierr);
+    EulerFlowData * compressibleFlowData = (EulerFlowData *)flowData->data;
+    if(compressibleFlowData->automaticTimeStepCalculator){
+        ierr = FlowRegisterPreStep(flowData, ComputeTimeStep, flowData);CHKERRQ(ierr);
+    }
+
     PetscFunctionReturn(0);
 }
