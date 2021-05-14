@@ -593,6 +593,8 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];
             params[CFL] = 0.5;
             params[GAMMA] = constants.gamma;
+            params[RGAS] = 0.0;
+            params[K] = 0.0;
 
             // set up the finite volume fluxes
             CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params) >> errorChecker;

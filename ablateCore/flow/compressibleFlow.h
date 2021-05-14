@@ -12,6 +12,7 @@ typedef struct {
     PetscReal cfl;
     PetscReal gamma;
     PetscReal Rgas;
+    PetscReal k;
     FluxDifferencerFunction fluxDifferencer;
     PetscBool automaticTimeStepCalculator;
 } EulerFlowData;

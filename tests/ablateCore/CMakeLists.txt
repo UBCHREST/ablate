@@ -16,7 +16,7 @@ target_sources(coreTests
         compressibleFlowTests.cpp
         compressibleShockTubeTests.cpp
         compressibleFlowMmsSourceTests.cpp
-        compressibleFlowConductionTests.cpp
+        compressibleFlowDiffusionTests.cpp
         main.cpp
         )
 

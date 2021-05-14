@@ -4,7 +4,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include "MpiTestFixture.hpp"
 #include "compressibleFlow.h"
 #include "gtest/gtest.h"
- #include "mesh.h"
+#include "mesh.h"
 
 typedef struct {
     PetscReal gamma;
@@ -177,6 +177,8 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];
         params[CFL] = testingParam.cfl;
         params[GAMMA] = testingParam.initialConditions.gamma;
+        params[RGAS] = 0.0;
+        params[K] = 0.0;
 
         // set up the finite volume fluxes
         CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params);
