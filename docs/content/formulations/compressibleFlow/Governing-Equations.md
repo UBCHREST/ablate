@@ -33,7 +33,7 @@ $$\begin{eqnarray}
     n_x \tau_{xx}  + n_y \tau_{xy} + n_z \tau_{xz} \\
     n_x \tau_{yx}  + n_y \tau_{yy} + n_z \tau_{yz} \\
     n_x \tau_{zx}  + n_y \tau_{zy} + n_z \tau_{zz} \\
-    nx \Theta_x    + n_y \Theta_y  + n_z \Theta_z 
+    n_x \Theta_x   + n_y \Theta_y  + n_z \Theta_z 
 \end{bmatrix} 
 \end{eqnarray}$$
 
