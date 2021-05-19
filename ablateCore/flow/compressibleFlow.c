@@ -1,6 +1,7 @@
 #include "compressibleFlow.h"
 
 static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
+static const char *compressibleAuxComponentNames[TOTAL_COMPRESSIBLE_AUX_COMPONENTS + 1] = {"T", "unknown"};
 const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "Rgas", "k", "unknown"};
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
@@ -20,6 +21,224 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal* in){
         mag += in[d]*in[d];
     }
     return PetscSqrtReal(mag);
+}
+
+/**
+ * Helper function to march over each cell and update the aux Fields
+ * @param flow
+ * @param time
+ * @param locXVec
+ * @param updateFunction
+ * @return
+ */
+static PetscErrorCode FVFlowUpdateAuxFieldsFV(FlowData flowData, PetscReal time, Vec locXVec, FVAuxFieldUpdateFunction* updateFunctions) {
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+
+    // Extract the cell geometry, and the dm that holds the information
+    Vec cellGeomVec;
+    DM dmCell;
+    const PetscScalar *cellGeomArray;
+    ierr = DMPlexGetGeometryFVM(flowData->dm, NULL, &cellGeomVec, NULL);CHKERRQ(ierr);
+    ierr = VecGetDM(cellGeomVec, &dmCell);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
+
+    // Assume that the euler field is always zero
+    PetscInt EULER = 0;
+
+    // Get the cell start and end for the fv cells
+    PetscInt cellStart, cellEnd;
+    ierr = DMPlexGetHeightStratum(flowData->dm, EULER, &cellStart, &cellEnd);CHKERRQ(ierr);
+
+    // extract the low flow and aux fields
+    const PetscScalar      *locFlowFieldArray;
+    ierr = VecGetArrayRead(locXVec, &locFlowFieldArray);CHKERRQ(ierr);
+
+    PetscScalar     *localAuxFlowFieldArray;
+    ierr = VecGetArray(flowData->auxField, &localAuxFlowFieldArray);CHKERRQ(ierr);
+
+    // Get the cell dim
+    PetscInt dim;
+    ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
+
+    // March over each cell volume
+    for (PetscInt c = cellStart; c < cellEnd; ++c) {
+        PetscFVCellGeom       *cellGeom;
+        const PetscReal           *fieldValues;
+        PetscReal           *auxValues;
+
+        ierr = DMPlexPointLocalRead(dmCell, c, cellGeomArray, &cellGeom);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalFieldRead(flowData->dm, c, EULER, locFlowFieldArray, &fieldValues);CHKERRQ(ierr);
+
+        for (PetscInt auxFieldIndex = 0; auxFieldIndex < flowData->numberAuxFields; auxFieldIndex ++){
+            ierr = DMPlexPointLocalFieldRef(flowData->auxDm, c, auxFieldIndex, localAuxFlowFieldArray, &auxValues);CHKERRQ(ierr);
+
+            // If an update function was passed
+            if (updateFunctions[auxFieldIndex]){
+                updateFunctions[auxFieldIndex](flowData, time, dim, cellGeom, fieldValues, auxValues);
+            }
+        }
+    }
+
+    ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(locXVec, &locFlowFieldArray);CHKERRQ(ierr);
+    ierr = VecRestoreArray(flowData->auxField, &localAuxFlowFieldArray);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+/**
+ * Hard coded function to compute the boundary cell gradient.  This should be relaxed to a boundary condition
+ * @param dim
+ * @param dof
+ * @param faceGeom
+ * @param cellGeom
+ * @param cellGeomG
+ * @param a_xI
+ * @param a_xGradI
+ * @param a_xG
+ * @param a_xGradG
+ * @param ctx
+ * @return
+ */
+static PetscErrorCode ComputeBoundaryCellGradient(PetscInt dim, PetscInt dof, const PetscFVFaceGeom *faceGeom, const PetscFVCellGeom *cellGeom, const PetscFVCellGeom *cellGeomG, const PetscScalar *a_xI, const PetscScalar *a_xGradI, const PetscScalar *a_xG,  PetscScalar *a_xGradG, void *ctx){
+    PetscFunctionBeginUser;
+
+    for (PetscInt pd = 0; pd < dof; ++pd) {
+        PetscReal dPhidS = a_xG[pd] - a_xI[pd];
+
+        // over each direction
+        for (PetscInt dir = 0; dir < dim; dir++) {
+            PetscReal dx = (cellGeomG->centroid[dir] - faceGeom->centroid[dir]);
+
+            // If there is a contribution in this direction
+            if (PetscAbs(dx) > 1E-8) {
+                a_xGradG[pd*dim + dir] = dPhidS / (dx);
+            } else {
+                a_xGradG[pd*dim + dir] = 0.0;
+            }
+        }
+    }
+    PetscFunctionReturn(0);
+}
+
+/**
+ * this function updates the boundaries with the gradient computed from the boundary cell value
+ * @param dm
+ * @param auxFvm
+ * @param gradLocalVec
+ * @return
+ */
+static PetscErrorCode FVFlowFillGradientBoundary(DM dm, PetscFV auxFvm, Vec localXVec, Vec gradLocalVec){
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+
+    // Get the dmGrad
+    DM dmGrad;
+    ierr = VecGetDM(gradLocalVec, &dmGrad);CHKERRQ(ierr);
+
+    // get the problem
+    PetscDS prob;
+    PetscInt nFields;
+    ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
+    ierr = PetscDSGetNumFields(prob, &nFields);CHKERRQ(ierr);
+    if (nFields > 1){
+        SETERRQ(PetscObjectComm((PetscObject) dm), PETSC_ERR_ARG_WRONG, "Cannot fill DMPlexFillGradientInBoundaryFVM with more than a single field.");
+    }
+    PetscInt field;
+    ierr = PetscDSGetFieldIndex(prob, (PetscObject) auxFvm, &field);CHKERRQ(ierr);
+    PetscInt dof;
+    ierr = PetscDSGetFieldSize(prob, field, &dof);CHKERRQ(ierr);
+
+    // Obtaining local cell ownership
+    PetscInt cellStart, cellEnd, cEndInterior;
+    ierr = DMPlexGetHeightStratum(dm, 0, &cellStart, &cellEnd);CHKERRQ(ierr);
+    ierr = DMPlexGetGhostCellStratum(dm, &cEndInterior, NULL);CHKERRQ(ierr);
+    cEndInterior = cEndInterior < 0 ? cellEnd: cEndInterior;
+
+    // Get the fvm face and cell geometry
+    Vec cellGeomVec = NULL;/* vector of structs related to cell geometry*/
+    Vec faceGeomVec = NULL;/* vector of structs related to face geometry*/
+    ierr = DMPlexGetGeometryFVM(dm, &faceGeomVec, &cellGeomVec, NULL);CHKERRQ(ierr);
+
+    // get the dm for each geom type
+    DM dmFaceGeom, dmCellGeom;
+    ierr = VecGetDM(faceGeomVec, &dmFaceGeom);CHKERRQ(ierr);
+    ierr = VecGetDM(cellGeomVec, &dmCellGeom);CHKERRQ(ierr);
+
+    // extract the gradLocalVec
+    PetscScalar * gradLocalArray;
+    ierr = VecGetArray(gradLocalVec, &gradLocalArray);CHKERRQ(ierr);
+
+    const PetscScalar* localArray;
+    ierr = VecGetArrayRead(localXVec, &localArray);CHKERRQ(ierr);
+
+    // get the dim
+    PetscInt dim;
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+
+    // extract the arrays for the face and cell geom, along with their dm
+    const PetscScalar *cellGeomArray;
+    ierr = VecGetArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
+
+    const PetscScalar *faceGeomArray;
+    ierr = VecGetArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
+
+    // March over each face
+    for (PetscInt cell = cellStart; cell < cEndInterior; ++cell) {
+        // Get the face information
+        PetscInt               numFaces;
+        const PetscInt        *faces;
+        ierr = DMPlexGetConeSize(dm, cell, &numFaces);CHKERRQ(ierr);
+        ierr = DMPlexGetCone(dm, cell, &faces);CHKERRQ(ierr);
+
+        //March over each face
+        for (PetscInt f =0 ; f < numFaces; f++){
+            PetscBool boundary;
+            ierr = DMIsBoundaryPoint(dm, faces[f], &boundary);CHKERRQ(ierr);
+
+            // if this is on the boundary
+            if (boundary){
+                // get the boundary cell index
+                const PetscInt        *fcells;
+                ierr  = DMPlexGetSupport(dm, faces[f], &fcells);CHKERRQ(ierr);
+                PetscInt side  = (cell != fcells[0]); /* c is on left=0 or right=1 of face */
+                PetscInt ncell = fcells[!side];    /* the neighbor */
+
+                // get the face geom
+                const PetscFVFaceGeom  *faceGeom;
+                ierr  = DMPlexPointLocalRead(dmFaceGeom, faces[f], faceGeomArray, &faceGeom);CHKERRQ(ierr);
+
+                // get the cell centroid information
+                const PetscFVCellGeom       *cellGeom;
+                const PetscFVCellGeom       *cellGeomGhost;
+                ierr  = DMPlexPointLocalRead(dmCellGeom, cell, cellGeomArray, &cellGeom);CHKERRQ(ierr);
+                ierr  = DMPlexPointLocalRead(dmCellGeom, ncell, cellGeomArray, &cellGeomGhost);CHKERRQ(ierr);
+
+                // Read the local point
+                PetscScalar* boundaryGradCellValues;
+                ierr  = DMPlexPointLocalRef(dmGrad, ncell, gradLocalArray, &boundaryGradCellValues);CHKERRQ(ierr);
+
+                const PetscScalar*  cellGradValues;
+                ierr  = DMPlexPointLocalRead(dmGrad, cell, gradLocalArray, &cellGradValues);CHKERRQ(ierr);
+
+                const PetscScalar* boundaryCellValues;
+                ierr  = DMPlexPointLocalRead(dm, ncell, localArray, &boundaryCellValues);CHKERRQ(ierr);
+                const PetscScalar* cellValues;
+                ierr  = DMPlexPointLocalRead(dm, cell, localArray, &cellValues);CHKERRQ(ierr);
+
+                // compute the gradient for the boundary node and pass in
+                ierr = ComputeBoundaryCellGradient(dim, dof, faceGeom, cellGeom, cellGeomGhost, cellValues, cellGradValues, boundaryCellValues, boundaryGradCellValues, NULL);CHKERRQ(ierr);
+            }
+        }
+    }
+
+    ierr = VecRestoreArrayRead(localXVec, &localArray);CHKERRQ(ierr);
+    ierr = VecRestoreArray(gradLocalVec, &gradLocalArray);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 }
 
 /**
@@ -99,43 +318,19 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     }
 }
 
-/**
- * Simple function to compute the temperature for the inputs assuming a perfect gas
- * @param dim
- * @param conservedValues
- * @param gamma
- * @param Rgas
- * @return
- */
-static PetscReal computeTemperature(PetscInt dim, const PetscScalar* conservedValues, PetscReal gamma, PetscReal Rgas){
-    PetscReal density = conservedValues[RHO];
-    PetscReal totalEnergy = conservedValues[RHOE]/density;
-
-    // Get the velocity in this direction
-    PetscReal speedSquare = 0.0;
-    for (PetscInt d =0; d < dim; d++){
-        speedSquare += PetscSqr(conservedValues[RHOU + d]/density);
-    }
-
-    // assumed eos
-    PetscReal internalEnergy = (totalEnergy) - 0.5 * speedSquare;
-    PetscReal p = (gamma - 1.0)*density*internalEnergy;
-
-    PetscReal T = p/(Rgas*density);
-
-    return T;
-}
-
 /*
  * Compute the rhs source terms for diffusion processes
  */
-static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void *ctx) {
+static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, FlowData flowData) {
     PetscFunctionBeginUser;
+    // Call the flux calculation
     PetscErrorCode ierr;
 
-    FlowData flowData = (FlowData)ctx;
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+    // get the fvm field assuming that it is the first
+    PetscFV auxFvm;
+    ierr = DMGetField(flowData->auxDm, T , NULL, (PetscObject*)&auxFvm);CHKERRQ(ierr);
 
+    // get the dim
     PetscInt dim;
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
@@ -143,10 +338,19 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     const PetscScalar *locXArray;
     ierr = VecGetArrayRead(locXVec, &locXArray);CHKERRQ(ierr);
 
+    // Get the needed auxDm
+    DM auxFieldGradDM = NULL; /* dm holding the grad information */
+    ierr = DMPlexGetDataFVM(flowData->auxDm, auxFvm, NULL, NULL, &auxFieldGradDM);CHKERRQ(ierr);
+    if (!auxFieldGradDM){
+        SETERRQ(PetscObjectComm((PetscObject)flowData->auxDm), PETSC_ERR_ARG_WRONGSTATE, "The FVM method for aux variables must support computing gradients.");
+    }
+
     // Get the fvm face and cell geometry
     Vec cellGeomVec = NULL;/* vector of structs related to cell geometry*/
     Vec faceGeomVec = NULL;/* vector of structs related to face geometry*/
-    ierr = DMPlexGetGeometryFVM(dm, &faceGeomVec, &cellGeomVec, NULL);CHKERRQ(ierr);
+
+    // extract the fvm data
+    ierr = DMPlexGetGeometryFVM(flowData->dm, &faceGeomVec, &cellGeomVec, NULL);CHKERRQ(ierr);
 
     // get the dm for each geom type
     DM dmFaceGeom, dmCellGeom;
@@ -164,12 +368,6 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     ierr = DMPlexGetHeightStratum(dm, 1, &faceStart, &faceEnd);CHKERRQ(ierr);
     ierr = DMPlexGetHeightStratum(dm, 0, &cellStart, &cellEnd);CHKERRQ(ierr);
 
-    // get the fvm and the number of fields
-    PetscFV fvm;
-    ierr = DMGetField(dm,0, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
-    PetscInt components;
-    ierr = PetscFVGetNumComponents(fvm, &components);CHKERRQ(ierr);
-
     // get the ghost label
     DMLabel ghostLabel;
     ierr = DMGetLabel(dm, "ghost", &ghostLabel);CHKERRQ(ierr);
@@ -181,10 +379,35 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     ierr = VecZeroEntries(locFVec);CHKERRQ(ierr);
     ierr = VecGetArray(locFVec, &fa);CHKERRQ(ierr);
 
+    // create a global and local grad vector for the auxField
+    Vec gradAuxGlobalVec, gradAuxLocalVec;
+    ierr = DMCreateGlobalVector(auxFieldGradDM, &gradAuxGlobalVec);CHKERRQ(ierr);
+    ierr = VecSet(gradAuxGlobalVec, NAN);CHKERRQ(ierr);
+
+    // compute the global grad values
+    ierr = DMPlexReconstructGradientsFVM(flowData->auxDm, flowData->auxField, gradAuxGlobalVec);CHKERRQ(ierr);
+
+    // Map to a local grad vector
+    ierr = DMCreateLocalVector(auxFieldGradDM, &gradAuxLocalVec);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalBegin(auxFieldGradDM, gradAuxGlobalVec, INSERT_VALUES, gradAuxLocalVec);CHKERRQ(ierr);
+    ierr = DMGlobalToLocalEnd(auxFieldGradDM, gradAuxGlobalVec, INSERT_VALUES, gradAuxLocalVec);CHKERRQ(ierr);
+
+    // fill the boundary conditions
+    ierr = FVFlowFillGradientBoundary(flowData->auxDm, auxFvm, flowData->auxField,  gradAuxLocalVec);CHKERRQ(ierr);
+
+    // access the local vector
+    const PetscScalar *localGradArray;
+    ierr = VecGetArrayRead(gradAuxLocalVec,&localGradArray);CHKERRQ(ierr);
+
+    // Get the flow parameters
+    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+
     // march over each face
     for (PetscInt face = faceStart; face < faceEnd; ++face) {
         PetscFVFaceGeom       *fg;
         PetscFVCellGeom       *cgL, *cgR;
+        const PetscScalar           *gradL;
+        const PetscScalar           *gradR;
 
         // make sure that this is a valid face to check
         PetscInt  ghost, nsupp, nchild;
@@ -206,33 +429,26 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
         ierr = DMPlexPointLocalRead(dmCellGeom, faceCells[0], cellGeomArray, &cgL);CHKERRQ(ierr);
         ierr = DMPlexPointLocalRead(dmCellGeom, faceCells[1], cellGeomArray, &cgR);CHKERRQ(ierr);
 
+        // extract the cell grad
+        ierr = DMPlexPointLocalRead(auxFieldGradDM, faceCells[0], localGradArray, &gradL);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalRead(auxFieldGradDM, faceCells[1], localGradArray, &gradR);CHKERRQ(ierr);
+
         PetscInt f = 0;
 
         // extract the field values
-        PetscScalar *xL, *xR,
+        PetscScalar *xL, *xR;
         ierr = DMPlexPointLocalFieldRead(dm, faceCells[0], f, locXArray, &xL);CHKERRQ(ierr);
         ierr = DMPlexPointLocalFieldRead(dm, faceCells[1], f, locXArray, &xR);CHKERRQ(ierr);
 
-        // compute the temperature at the left and right nodes
-        PetscReal TL = computeTemperature(dim, xL, flowParameters->gamma, flowParameters->Rgas);
-        PetscReal TR = computeTemperature(dim, xR, flowParameters->gamma, flowParameters->Rgas);
-
-        // Compute the ds vector
-        PetscReal dsVec[3];
-        PetscReal ds = 0.0;
-        PetscReal dsDotNorm = 0.0;
-        PetscReal normalArea = 0.0;
-        for (PetscInt d = 0; d < dim; ++d) {
-            dsVec[d] = cgR->centroid[d] - cgL->centroid[d];
-            ds += PetscSqr(dsVec[d]);
-            dsDotNorm += dsVec[d]*fg->normal[d];
-            normalArea += PetscSqr(fg->normal[d]);
+        // Compute the normal grad
+        PetscReal normalGrad = 0.0;
+        PetscInt dof = 0;
+        for (PetscInt d = 0; d < dim; ++d){
+            normalGrad += fg->normal[d]*0.5*(gradL[dof*dim + d] + gradR[dof*dim + d]);
         }
-        ds = PetscSqrtReal(ds);
-        normalArea = PetscSqrtReal(normalArea);
 
-        // Compute the normal flux
-        PetscReal normalFlux =  -flowParameters->k*normalArea * (TR - TL)/ds;
+        // compute the normal heatFlux
+        PetscReal normalHeatFlux = -flowParameters->k* normalGrad;
 
         // Add to the source terms of f
         PetscScalar    *fL = NULL, *fR = NULL;
@@ -242,10 +458,10 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
         if (ghost <= 0) {ierr = DMPlexPointLocalFieldRef(dm, faceCells[1], f, fa, &fR);CHKERRQ(ierr);}
 
         if (fL){
-            fL[RHOE] -= normalFlux/cgL->volume;
+            fL[RHOE] -= normalHeatFlux/cgL->volume;
         }
         if (fR){
-            fR[RHOE] += normalFlux/cgR->volume;
+            fR[RHOE] += normalHeatFlux/cgR->volume;
         }
     }
 
@@ -256,9 +472,15 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     ierr = DMRestoreLocalVector(dm, &locFVec);CHKERRQ(ierr);
 
     // restore the arrays
+    ierr = VecRestoreArrayRead(gradAuxLocalVec, &localGradArray);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(locXVec, &locXArray);CHKERRQ(ierr);
+
+    // destroy grad vectors
+    ierr = VecDestroy(&gradAuxGlobalVec);CHKERRQ(ierr);
+    ierr = VecDestroy(&gradAuxLocalVec);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
@@ -274,6 +496,10 @@ static PetscErrorCode CompressibleFlowRHSFunctionLocal(DM dm, PetscReal time, Ve
 
     // if there are any coefficients for diffusion, compute diffusion
     if (flowParameters->k){
+        // update any aux fields
+        ierr = FVFlowUpdateAuxFieldsFV(flowData, time, locXVec, flowParameters->auxFieldUpdateFunctions);CHKERRQ(ierr);
+
+        // compute the RHS sources
         ierr = CompressibleFlowDiffusionSourceRHSFunctionLocal(dm, time, locXVec, globFVec, ctx);CHKERRQ(ierr);
     }
 
@@ -326,6 +552,30 @@ PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM* dm) {
     // Create the discrete systems for the DM based upon the fields added to the DM
     ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
 
+    // Register the aux fields, note the order should match the enum
+    ierr = FlowRegisterAuxField(flowData, compressibleAuxComponentNames[T], compressibleAuxComponentNames[T], 1, FV);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode UpdateAuxTemperatureField(FlowData flowData, PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField){
+    PetscFunctionBeginUser;
+    PetscReal density = conservedValues[RHO];
+    PetscReal totalEnergy = conservedValues[RHOE]/density;
+
+    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+
+    // Get the velocity in this direction
+    PetscReal speedSquare = 0.0;
+    for (PetscInt d =0; d < dim; d++){
+        speedSquare += PetscSqr(conservedValues[RHOU + d]/density);
+    }
+
+    // assumed eos
+    PetscReal internalEnergy = (totalEnergy) - 0.5 * speedSquare;
+    PetscReal p = (flowParameters->gamma - 1.0)*density*internalEnergy;
+
+    auxField[T] = p/(flowParameters->Rgas*density);
     PetscFunctionReturn(0);
 }
 
@@ -350,6 +600,9 @@ PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt nu
     data->gamma = values[GAMMA];
     data->Rgas = values[RGAS];
     data->k = values[K];
+
+    // Set the update fields
+    data->auxFieldUpdateFunctions[T] = UpdateAuxTemperatureField;
 
     const char *prefix;
     ierr = DMGetOptionsPrefix(flowData->dm, &prefix);CHKERRQ(ierr);
@@ -453,6 +706,39 @@ PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
 
     // Override the DMTSSetRHSFunctionLocal in DMPlexTSComputeRHSFunctionFVM with a function that includes euler and diffusion source terms
     ierr = DMTSSetRHSFunctionLocal(flowData->dm, CompressibleFlowRHSFunctionLocal, flowData);CHKERRQ(ierr);
+
+    // copy over any boundary information from the dm, to the aux dm and set the sideset
+    if (flowData->auxDm) {
+        PetscDS flowProblem;
+        ierr = DMGetDS(flowData->dm, &flowProblem);CHKERRQ(ierr);
+        PetscDS auxProblem;
+        ierr = DMGetDS(flowData->auxDm, &auxProblem);CHKERRQ(ierr);
+
+        // Get the number of boundary conditions and other info
+        PetscInt numberBC;
+        ierr = PetscDSGetNumBoundary(flowProblem, &numberBC);CHKERRQ(ierr);
+        PetscInt numberAuxFields;
+        ierr = PetscDSGetNumFields(auxProblem, &numberAuxFields);CHKERRQ(ierr);
+
+        for (PetscInt bc =0; bc < numberBC; bc++){
+            DMBoundaryConditionType type;
+            const char* name;
+            const char* labelName;
+            PetscInt field;
+            PetscInt numberIds;
+            const PetscInt* ids;
+
+            // Get the boundary
+            ierr = PetscDSGetBoundary(flowProblem, bc, &type, &name, &labelName, &field, NULL, NULL, NULL, NULL, &numberIds, &ids, NULL);CHKERRQ(ierr);
+
+            // If this is for euler and DM_BC_NATURAL_RIEMANN add it to the aux
+            if (type == DM_BC_NATURAL_RIEMANN && field == 0){
+                for (PetscInt af =0; af < numberAuxFields; af++) {
+                    ierr = PetscDSAddBoundary(auxProblem, type, name, labelName, af, 0, NULL, NULL, NULL, numberIds, ids, NULL);CHKERRQ(ierr);
+                }
+            }
+        }
+    }
 
     PetscFunctionReturn(0);
 }

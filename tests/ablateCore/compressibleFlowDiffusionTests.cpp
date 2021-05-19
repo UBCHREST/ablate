@@ -76,17 +76,7 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscFunctionBeginUser;
     InputParameters *parameters = (InputParameters *)ctx;
 
-    // compute the centroid location of the real cell
-    // Offset the calc assuming the cells are square
-    PetscReal x[3];
-    for (PetscInt i = 0; i < parameters->dim; i++) {
-        x[i] = c[i] - n[i] * 0.5;
-    }
-
-    // compute the temperature of the real inside cell
-    PetscReal Tinside = ComputeTExact(time, x, parameters);
-
-    PetscReal T = parameters->Tboundary - (Tinside - parameters->Tboundary);
+    PetscReal T = parameters->Tboundary;
     PetscReal u = 0.0;
     PetscReal v = 0.0;
     PetscReal p = parameters->rho * parameters->Rgas * T;
@@ -160,86 +150,6 @@ static void ComputeErrorNorms(TS ts, FlowData flowData, std::vector<PetscReal> &
     VecStrideNormAll(exactVec, NORM_INFINITY, &residualNormInf[0]) >> errorChecker;
     VecDestroy(&exactVec) >> errorChecker;
 }
-//
-// static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal time, Vec u, void *ctx) {
-//    PetscFunctionBeginUser;
-//    PetscErrorCode     ierr;
-//
-//    FlowData flowData = (FlowData)ctx;
-//
-//    // Get the DM
-//    DM dm;
-//    ierr = TSGetDM(ts, &dm);
-//    CHKERRQ(ierr);
-//
-//    // Open a vtk viewer
-//    //    PetscViewer viewer;
-//    //    char        filename[PETSC_MAX_PATH_LEN];
-//    //    ierr = PetscSNPrintf(filename,sizeof(filename),"/Users/mcgurn/chrestScratch/results/vortex/flow%.4D.vtu",step);CHKERRQ(ierr);
-//    //    ierr = PetscViewerVTKOpen(PetscObjectComm((PetscObject)dm),filename,FILE_MODE_WRITE,&viewer);CHKERRQ(ierr);
-//    //    ierr = VecView(u,viewer);CHKERRQ(ierr);
-//    //    ierr = PetscViewerDestroy(&viewer);CHKERRQ(ierr);
-//
-//    ierr = PetscPrintf(PetscObjectComm((PetscObject)dm), "TS at %f\n", time);
-//    CHKERRQ(ierr);
-//
-//    // Compute the error
-//    void *exactCtxs[1];
-//    PetscErrorCode (*exactFuncs[1])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
-//    PetscDS ds;
-//    ierr = DMGetDS(dm, &ds);
-//    CHKERRQ(ierr);
-//
-//    // Get the exact solution
-//    ierr = PetscDSGetExactSolution(ds, 0, &exactFuncs[0], &exactCtxs[0]);
-//    CHKERRQ(ierr);
-//
-//
-//    VecView(u, PETSC_VIEWER_STDOUT_WORLD);
-//
-//    // Create an vector to hold the exact solution
-//    Vec exactVec;
-//    ierr = VecDuplicate(u, &exactVec);
-//    CHKERRQ(ierr);
-//    ierr = DMProjectFunction(dm, time, exactFuncs, exactCtxs, INSERT_ALL_VALUES, exactVec);
-//    CHKERRQ(ierr);
-//
-//    ierr = PetscObjectSetName((PetscObject)exactVec, "exact");
-//    CHKERRQ(ierr);
-//    ierr = VecViewFromOptions(exactVec, NULL, "-sol_view");
-//    CHKERRQ(ierr);
-//
-//    // For each component, compute the l2 norms
-//    ierr = VecAXPY(exactVec, -1.0, u);
-//    CHKERRQ(ierr);
-//
-//    PetscReal ferrors[4];
-//    ierr = VecSetBlockSize(exactVec, 4);
-//    CHKERRQ(ierr);
-//
-//    ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t\n", (int)step, (double)time);
-//    CHKERRQ(ierr);
-//    ierr = VecStrideNormAll(exactVec, NORM_2, ferrors);
-//    CHKERRQ(ierr);
-//    ierr = PetscPrintf(PETSC_COMM_WORLD, "\tL_2 Error: [%2.3g, %2.3g, %2.3g, %2.3g]\n", (double)(ferrors[0]), (double)(ferrors[1]), (double)(ferrors[2]), (double)(ferrors[3]));
-//    CHKERRQ(ierr);
-//
-//    // And the infinity error
-//    ierr = VecStrideNormAll(exactVec, NORM_INFINITY, ferrors);
-//    CHKERRQ(ierr);
-//    ierr = PetscPrintf(PETSC_COMM_WORLD, "\tL_Inf Error: [%2.3g, %2.3g, %2.3g, %2.3g]\n", (double)ferrors[0], (double)ferrors[1], (double)ferrors[2], (double)ferrors[3]);
-//    CHKERRQ(ierr);
-//
-//    ierr = PetscObjectSetName((PetscObject)exactVec, "error");
-//    CHKERRQ(ierr);
-//    ierr = VecViewFromOptions(exactVec, NULL, "-sol_view");
-//    CHKERRQ(ierr);
-//
-//    ierr = VecDestroy(&exactVec);
-//    CHKERRQ(ierr);
-//    PetscFunctionReturn(0);
-//}
-//
 
 TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
@@ -259,7 +169,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
         // March over each level
         for (PetscInt l = 0; l < GetParam().levels; l++) {
-            PetscPrintf(PETSC_COMM_WORLD, "Running RHS Calculation at Level %d\n", l);
+            PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d\n", l);
 
             DM dm; /* problem definition */
             TS ts; /* timestepper */
@@ -362,7 +272,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscReal lInfIntercept;
             PetscLinearRegression(hHistory.size(), &hHistory[0], &lInfHistory[b][0], &lInfSlope, &lInfIntercept) >> errorChecker;
 
-            PetscPrintf(PETSC_COMM_WORLD, "RHS Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> errorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> errorChecker;
 
             if (std::isnan(GetParam().expectedL2Convergence[b])) {
                 ASSERT_TRUE(std::isnan(l2Slope)) << "incorrect L2 convergence order for component[" << b << "]";
@@ -382,15 +292,15 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    CompressibleFlow, CompressibleFlowDiffusionTestFixture,
-    testing::Values((CompressibleFlowDiffusionTestParameters){
-        .mpiTestParameter = {.testName = "conduction",
-                             .nproc = 1,
-                             .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -flux_diff off -automaticTimeStepCalculator off -ts_max_steps 600 -ts_dt 0.00000625 "},
-        .parameters = {.dim = 2, .L = 0.2, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
-        .initialNx = 4,
-        .levels = 3,
-        .expectedL2Convergence = {NAN, 1.5, NAN, NAN},
-        .expectedLInfConvergence = {NAN, 1.3, NAN, NAN}}),
-    [](const testing::TestParamInfo<CompressibleFlowDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowDiffusionTestFixture,
+                         testing::Values((CompressibleFlowDiffusionTestParameters){
+                             .mpiTestParameter = {.testName = "conduction",
+                                                  .nproc = 1,
+                                                  .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -flux_diff off -automaticTimeStepCalculator off -Tpetscfv_type "
+                                                               "leastsquares -ts_max_steps 600 -ts_dt 0.00000625 "},
+                             .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
+                             .initialNx = 3,
+                             .levels = 3,
+                             .expectedL2Convergence = {NAN, 1.5, NAN, NAN},
+                             .expectedLInfConvergence = {NAN, 1.3, NAN, NAN}}),
+                         [](const testing::TestParamInfo<CompressibleFlowDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

@@ -5,8 +5,12 @@
 #include "fluxDifferencer.h"
 
 typedef enum {RHO, RHOE, RHOU, RHOV, RHOW, TOTAL_COMPRESSIBLE_FLOW_COMPONENTS} CompressibleFlowComponents;
+typedef enum {T, TOTAL_COMPRESSIBLE_AUX_COMPONENTS} CompressibleAuxComponents;
+
 typedef enum { CFL, GAMMA, RGAS, K, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS } CompressibleFlowParametersTypes;
 PETSC_EXTERN const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1];
+
+typedef PetscErrorCode (*FVAuxFieldUpdateFunction)(FlowData flowData, PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField);
 
 typedef struct {
     PetscReal cfl;
@@ -15,6 +19,9 @@ typedef struct {
     PetscReal k;
     FluxDifferencerFunction fluxDifferencer;
     PetscBool automaticTimeStepCalculator;
+
+    // functions to update each aux field
+    FVAuxFieldUpdateFunction auxFieldUpdateFunctions[TOTAL_COMPRESSIBLE_AUX_COMPONENTS];
 } EulerFlowData;
 
 // Define the functions to setup the incompressible flow

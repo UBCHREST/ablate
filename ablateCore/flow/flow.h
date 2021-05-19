@@ -43,6 +43,7 @@ struct _FlowData {
 
 typedef struct _FlowData* FlowData;
 
+
 PETSC_EXTERN PetscErrorCode FlowCreate(FlowData* flow);
 PetscErrorCode FlowRegisterField(FlowData flow, const char* fieldName, const char* fieldPrefix, PetscInt components, enum FieldType fieldType);
 PetscErrorCode FlowRegisterAuxField(FlowData flow, const char* fieldName, const char* fieldPrefix, PetscInt components, enum FieldType fieldType);

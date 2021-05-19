@@ -86,7 +86,7 @@ class MpiTestFixture : public ::testing::Test {
         std::snprintf(buff, sizeof(buff), format, values[0]);
 
         std::string result = "[" + std::string(buff);
-        for (auto i = 0; i < values.size(); i++) {
+        for (auto i = 1; i < values.size(); i++) {
             std::snprintf(buff, sizeof(buff), format, values[i]);
             result += ", " + std::string(buff);
         }
