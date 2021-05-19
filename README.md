@@ -69,7 +69,7 @@ Taylor approximation converging at order (.*)<expects> =2
 and one value equal to 2.  When using the compare tool, you must escape all regex characters on the line being compared. 
 
 There are some useful command line flags that can be used when debugging tests:
-- --inmpitestrun=true : when pass in (along with google test single test selection) allows for a test to be run/debug directly.
+- --runMpiTestDirectly=true : when passed in (along with google test single test selection or through CLion run configuration) this flag allows for a test to be run/debug directly.  This bypasses the separate process launch making it easier to debug, but you must directly pass in any needed arguments. 
 - --keepOutputFile=true : keeps all output files from the tests and reports the file name.
 
 ## Formatting Linting

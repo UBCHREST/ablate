@@ -7,7 +7,7 @@
 
 int* testingResources::MpiTestFixture::argc;
 char*** testingResources::MpiTestFixture::argv;
-const std::string testingResources::MpiTestFixture::InTestRunFlag = "--inmpitestrun=true";
+const std::string testingResources::MpiTestFixture::InTestRunFlag = "--runMpiTestDirectly=true";
 const std::string testingResources::MpiTestFixture::Test_Mpi_Command_Name = "TEST_MPI_COMMAND";
 const std::string testingResources::MpiTestFixture::Keep_Output_File = "--keepOutputFile=true";
 const std::string expectedResultDelimiter = std::string("<expects>");

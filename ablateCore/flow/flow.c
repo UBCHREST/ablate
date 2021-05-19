@@ -193,7 +193,7 @@ PetscErrorCode FlowRegisterAuxField(FlowData flow, const char *fieldName, const 
             ierr = PetscFVSetNumComponents(fvm, components);CHKERRQ(ierr);
             ierr = PetscFVSetSpatialDimension(fvm, dim);CHKERRQ(ierr);
 
-            ierr = DMSetField(flow->auxDm, flow->numberFlowFields-1, NULL, (PetscObject)fvm);CHKERRQ(ierr);
+            ierr = DMSetField(flow->auxDm, flow->numberAuxFields-1, NULL, (PetscObject)fvm);CHKERRQ(ierr);
             ierr = PetscFVDestroy(&fvm);CHKERRQ(ierr);
         }break;
             default:{
