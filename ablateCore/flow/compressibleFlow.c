@@ -267,6 +267,30 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
     *M = (*normalVelocity)/(*a);
 }
 
+PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVelL, const PetscReal * gradVelR, PetscReal* tau){
+    PetscFunctionBeginUser;
+    // pre compute the div of the velocity field
+    PetscReal divVel = 0.0;
+    for (PetscInt c =0; c < dim; ++c){
+        divVel += 0.5*(gradVelL[c*dim + c] + gradVelR[c*dim + c]);
+    }
+
+    // March over each velocity component, u, v, w
+    for (PetscInt c =0; c < dim; ++c){
+        // March over each physical coordinate coordinate
+        for (PetscInt d =0; d < dim; ++d) {
+            if (d == c) {
+                // for the xx, yy, zz, components
+                tau[c*dim + d] = 2.0 * mu * (0.5 * (gradVelL[c * dim + d] + gradVelR[c * dim + d]) - divVel / 3.0);
+            } else {
+                // for xy, xz, etc
+                tau[c*dim + d]  = mu *( 0.5 * (gradVelL[c * dim + d] + gradVelR[c * dim + d]) + 0.5 * (gradVelL[d * dim + c] + gradVelR[d * dim + c]));
+            }
+        }
+    }
+    PetscFunctionReturn(0);
+}
+
 void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
     FlowData flowData = (FlowData)ctx;
     EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
@@ -342,8 +366,8 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     // Get the locXArray
-    const PetscScalar *locXArray;
-    ierr = VecGetArrayRead(locXVec, &locXArray);CHKERRQ(ierr);
+    const PetscScalar *locAuxArray;
+    ierr = VecGetArrayRead(flowData->auxField, &locAuxArray);CHKERRQ(ierr);
 
     // Get the fvm face and cell geometry
     Vec cellGeomVec = NULL;/* vector of structs related to cell geometry*/
@@ -444,19 +468,9 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
         PetscInt euler = 0;
 
         // extract the field values
-        PetscScalar *xL, *xR;
-        ierr = DMPlexPointLocalFieldRead(dm, faceCells[0], euler, locXArray, &xL);CHKERRQ(ierr);
-        ierr = DMPlexPointLocalFieldRead(dm, faceCells[1], euler, locXArray, &xR);CHKERRQ(ierr);
-
-        // Compute the normal grad
-        PetscReal normalGrad = 0.0;
-        PetscInt dof = 0;
-        for (PetscInt d = 0; d < dim; ++d){
-            normalGrad += fg->normal[d]*0.5*(gradL[T][dof*dim + d] + gradR[T][dof*dim + d]);
-        }
-
-        // compute the normal heatFlux
-        PetscReal normalHeatFlux = -flowParameters->k* normalGrad;
+        PetscScalar *auxL, *auxR;
+        ierr = DMPlexPointLocalFieldRead(flowData->auxDm, faceCells[0], euler, locAuxArray, &auxL);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalFieldRead(flowData->auxDm, faceCells[1], euler, locAuxArray, &auxR);CHKERRQ(ierr);
 
         // Add to the source terms of f
         PetscScalar    *fL = NULL, *fR = NULL;
@@ -465,11 +479,50 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
         ierr = DMLabelGetValue(ghostLabel,faceCells[1],&ghost);CHKERRQ(ierr);
         if (ghost <= 0) {ierr = DMPlexPointLocalFieldRef(dm, faceCells[1], euler, fa, &fR);CHKERRQ(ierr);}
 
-        if (fL){
-            fL[RHOE] -= normalHeatFlux/cgL->volume;
-        }
-        if (fR){
-            fR[RHOE] += normalHeatFlux/cgR->volume;
+        {// everything here should be a separate function to allow reuse of the code to march over faces
+            // Compute the stress tensor tau
+            PetscReal tau[9];// Maximum size without symmetry
+            ierr = CompressibleFlowComputeStressTensor(dim, flowParameters->mu, gradL[VEL], gradR[VEL], tau);CHKERRQ(ierr);
+
+            // for each velocity component
+            for (PetscInt c =0; c < dim; ++c) {
+                PetscReal viscousFlux = 0.0;
+
+                // March over each direction
+                for (PetscInt d = 0; d < dim; ++d) {
+                    viscousFlux += fg->normal[d]*tau[c*dim + d];// This is tau[c][d]
+                }
+
+                // add in the contribution
+                if (fL){
+                    fL[RHOU + c] -= viscousFlux/cgL->volume;
+                }
+                if (fR){
+                    fR[RHOU + c] += viscousFlux/cgR->volume;
+                }
+            }
+
+            // energy equation
+            for (PetscInt d = 0; d < dim; ++d) {
+                PetscReal heatFlux = 0.0;
+                // add in the contributions for this viscous terms
+                for(PetscInt c =0; c < dim; ++c){
+                    heatFlux += 0.5*(auxL[VEL + dim] + auxR[VEL+dim]) * tau[d * dim + c];
+                }
+
+               // heat conduction (-k dT/dx - k dT/dy - k dT/dz) . n A
+                heatFlux += -flowParameters->k * 0.5 * (gradL[T][d] + gradR[T][d]);
+
+                // Multiply by the area normal
+                heatFlux *= fg->normal[d];
+
+                if (fL) {
+                    fL[RHOE] -= heatFlux / cgL->volume;
+                }
+                if (fR) {
+                    fR[RHOE] += heatFlux / cgR->volume;
+                }
+            }
         }
     }
 
@@ -480,7 +533,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     ierr = DMRestoreLocalVector(dm, &locFVec);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(locXVec, &locXArray);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(flowData->auxField, &locAuxArray);CHKERRQ(ierr);
 
     for(PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++) {
         // restore the arrays
