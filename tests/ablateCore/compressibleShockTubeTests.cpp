@@ -179,6 +179,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         params[GAMMA] = testingParam.initialConditions.gamma;
         params[RGAS] = 0.0;
         params[K] = 0.0;
+        params[MU] = 0.0;
 
         // set up the finite volume fluxes
         CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params);

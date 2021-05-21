@@ -490,7 +490,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
 
                 // March over each direction
                 for (PetscInt d = 0; d < dim; ++d) {
-                    viscousFlux += fg->normal[d]*tau[c*dim + d];// This is tau[c][d]
+                    viscousFlux += -fg->normal[d]*tau[c*dim + d];// This is tau[c][d]
                 }
 
                 // add in the contribution
@@ -507,14 +507,14 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
                 PetscReal heatFlux = 0.0;
                 // add in the contributions for this viscous terms
                 for(PetscInt c =0; c < dim; ++c){
-                    heatFlux += 0.5*(auxL[VEL + dim] + auxR[VEL+dim]) * tau[d * dim + c];
+                    heatFlux += 0.5*(auxL[VEL + c] + auxR[VEL+c]) * tau[d * dim + c];
                 }
 
                // heat conduction (-k dT/dx - k dT/dy - k dT/dz) . n A
-                heatFlux += -flowParameters->k * 0.5 * (gradL[T][d] + gradR[T][d]);
+                heatFlux += +flowParameters->k * 0.5 * (gradL[T][d] + gradR[T][d]);
 
                 // Multiply by the area normal
-                heatFlux *= fg->normal[d];
+                heatFlux *= -fg->normal[d];
 
                 if (fL) {
                     fL[RHOE] -= heatFlux / cgL->volume;
@@ -547,7 +547,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode CompressibleFlowRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void *ctx) {
+PetscErrorCode CompressibleFlowRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void *ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
