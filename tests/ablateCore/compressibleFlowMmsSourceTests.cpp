@@ -32,12 +32,14 @@ typedef struct {
     PetscReal gamma;
     PetscReal R;
     PetscReal mu;
+    PetscReal k;
 } Constants;
 
 struct CompressibleFlowMmsTestParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     Constants constants;
     PetscInt initialNx;
+    PetscInt levels;
     std::vector<PetscReal> expectedL2Convergence;
     std::vector<PetscReal> expectedLInfConvergence;
 };
@@ -146,6 +148,9 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
     Constants *constants = (Constants *)ctx;
     PetscReal L = constants->L;
     PetscReal gamma = constants->gamma;
+    PetscReal R = constants->R;
+    PetscReal k = constants->k;
+    PetscReal mu = constants->mu;
 
     PetscReal rhoO = constants->rho.phiO;
     PetscReal rhoX = constants->rho.phiX;
@@ -198,11 +203,56 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
              (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L -
              (aWZ * Pi * wZ * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) / L;
 
-    u[RHOE] = -((aPX * Pi * pX * Sin((aPX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L) +
+    u[RHOE] = -((aWY * mu * Pi * wY * Cos((aWY * Pi * y) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L) -
+              (aVZ * mu * Pi * vZ * Cos((aVZ * Pi * z) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L +
+              (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / Power(L, 2) +
+              (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / Power(L, 2) -
+              (aPX * Pi * pX * Sin((aPX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
+              (4 * Power(aUX, 2) * mu * Power(Pi, 2) * uX * Sin((aUX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) /
+                  (3. * Power(L, 2)) +
               (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) / L +
-              (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) / L -
-              (aPZ * Pi * pZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) * Sin((aPZ * Pi * z) / L)) / L +
+              (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) / L +
+              (aVX * mu * Pi * vX * Sin((aVX * Pi * x) / L) * (-((aVX * Pi * vX * Sin((aVX * Pi * x) / L)) / L) - (aUY * Pi * uY * Sin((aUY * Pi * y) / L)) / L)) / L +
+              (aUY * mu * Pi * uY * Sin((aUY * Pi * y) / L) * (-((aVX * Pi * vX * Sin((aVX * Pi * x) / L)) / L) - (aUY * Pi * uY * Sin((aUY * Pi * y) / L)) / L)) / L +
+              (4 * Power(aWZ, 2) * mu * Power(Pi, 2) * wZ * Cos((aWZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
+                  (3. * Power(L, 2)) +
+              (Power(aWX, 2) * mu * Power(Pi, 2) * wX * Sin((aWX * Pi * x) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / Power(L, 2) +
+              (Power(aWY, 2) * mu * Power(Pi, 2) * wY * Sin((aWY * Pi * y) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / Power(L, 2) -
+              (aPZ * Pi * pZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) * Sin((aPZ * Pi * z) / L)) / L -
+              k * ((2 * Power(aRhoX, 2) * Power(Pi, 2) * Power(rhoX, 2) * Power(Cos((aRhoX * Pi * x) / L), 2) *
+                    (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 3)) +
+                   (2 * aPX * aRhoX * Power(Pi, 2) * pX * rhoX * Cos((aRhoX * Pi * x) / L) * Sin((aPX * Pi * x) / L)) /
+                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
+                   (Power(aRhoX, 2) * Power(Pi, 2) * rhoX * Sin((aRhoX * Pi * x) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) -
+                   (Power(aPX, 2) * Power(Pi, 2) * pX * Cos((aPX * Pi * x) / L)) /
+                       (Power(L, 2) * R * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)))) -
+              k * ((2 * Power(aRhoZ, 2) * Power(Pi, 2) * Power(rhoZ, 2) * Power(Cos((aRhoZ * Pi * z) / L), 2) *
+                    (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 3)) +
+                   (2 * aPZ * aRhoZ * Power(Pi, 2) * pZ * rhoZ * Cos((aRhoZ * Pi * z) / L) * Sin((aPZ * Pi * z) / L)) /
+                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
+                   (Power(aRhoZ, 2) * Power(Pi, 2) * rhoZ * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) * Sin((aRhoZ * Pi * z) / L)) /
+                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) -
+                   (Power(aPZ, 2) * Power(Pi, 2) * pZ * Cos((aPZ * Pi * z) / L)) /
+                       (Power(L, 2) * R * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)))) -
+              k * ((2 * Power(aRhoY, 2) * Power(Pi, 2) * Power(rhoY, 2) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) *
+                    Power(Sin((aRhoY * Pi * y) / L), 2)) /
+                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 3)) +
+                   (Power(aRhoY, 2) * Power(Pi, 2) * rhoY * Cos((aRhoY * Pi * y) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
+                   (2 * aPY * aRhoY * Power(Pi, 2) * pY * rhoY * Cos((aPY * Pi * y) / L) * Sin((aRhoY * Pi * y) / L)) /
+                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) -
+                   (Power(aPY, 2) * Power(Pi, 2) * pY * Sin((aPY * Pi * y) / L)) /
+                       (Power(L, 2) * R * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)))) -
+              (aWX * mu * Pi * wX * Cos((aWX * Pi * x) / L) * ((aWX * Pi * wX * Cos((aWX * Pi * x) / L)) / L - (aUZ * Pi * uZ * Sin((aUZ * Pi * z) / L)) / L)) / L +
+              (aUZ * mu * Pi * uZ * Sin((aUZ * Pi * z) / L) * ((aWX * Pi * wX * Cos((aWX * Pi * x) / L)) / L - (aUZ * Pi * uZ * Sin((aUZ * Pi * z) / L)) / L)) / L +
+              (Power(aVX, 2) * mu * Power(Pi, 2) * vX * Cos((aVX * Pi * x) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / Power(L, 2) +
               (aPY * Pi * pY * Cos((aPY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L +
+              (4 * Power(aVY, 2) * mu * Power(Pi, 2) * vY * Sin((aVY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+                  (3. * Power(L, 2)) +
+              (Power(aVZ, 2) * mu * Power(Pi, 2) * vZ * Sin((aVZ * Pi * z) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / Power(L, 2) +
               (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
                   (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L)) *
                   ((aRhoY * Pi * rhoY * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) * Sin((aRhoY * Pi * y) / L)) /
@@ -270,6 +320,18 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
                  Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
                     2.) *
                Sin((aWZ * Pi * z) / L)) /
+                  L -
+              (2 * aUX * mu * Pi * uX * Cos((aUX * Pi * x) / L) *
+               ((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L +
+                (-((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L) - (aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L + (aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) / 3.)) /
+                  L -
+              (2 * aVY * mu * Pi * vY * Cos((aVY * Pi * y) / L) *
+               ((aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L +
+                (-((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L) - (aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L + (aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) / 3.)) /
+                  L +
+              (2 * aWZ * mu * Pi * wZ * Sin((aWZ * Pi * z) / L) *
+               (-((aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) +
+                (-((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L) - (aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L + (aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) / 3.)) /
                   L +
               (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
                   (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
@@ -281,7 +343,8 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
                     (2 * aWZ * Pi * wZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) * Sin((aWZ * Pi * z) / L)) / L) /
                        2.);
 
-    u[RHOU + 0] = -((aPX * Pi * pX * Sin((aPX * Pi * x) / L)) / L) +
+    u[RHOU + 0] = (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L)) / Power(L, 2) + (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L)) / Power(L, 2) -
+                  (aPX * Pi * pX * Sin((aPX * Pi * x) / L)) / L + (4 * Power(aUX, 2) * mu * Power(Pi, 2) * uX * Sin((aUX * Pi * x) / L)) / (3. * Power(L, 2)) +
                   (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2)) / L +
                   (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
                    (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
@@ -305,13 +368,15 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
                    (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
                       L;
 
-    u[RHOU + 1] = (aPY * Pi * pY * Cos((aPY * Pi * y) / L)) / L -
+    u[RHOU + 1] = (Power(aVX, 2) * mu * Power(Pi, 2) * vX * Cos((aVX * Pi * x) / L)) / Power(L, 2) + (aPY * Pi * pY * Cos((aPY * Pi * y) / L)) / L +
+                  (4 * Power(aVY, 2) * mu * Power(Pi, 2) * vY * Sin((aVY * Pi * y) / L)) / (3. * Power(L, 2)) -
                   (aVX * Pi * vX * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aVX * Pi * x) / L) *
                    (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
                       L +
                   (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
                    (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
                       L +
+                  (Power(aVZ, 2) * mu * Power(Pi, 2) * vZ * Sin((aVZ * Pi * z) / L)) / Power(L, 2) +
                   (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
                    (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
                       L +
@@ -330,7 +395,9 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
                       L;
 
     if (dim > 2) {
-        u[RHOU + 2] = (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+        u[RHOU + 2] = (4 * Power(aWZ, 2) * mu * Power(Pi, 2) * wZ * Cos((aWZ * Pi * z) / L)) / (3. * Power(L, 2)) + (Power(aWX, 2) * mu * Power(Pi, 2) * wX * Sin((aWX * Pi * x) / L)) / Power(L, 2) +
+                      (Power(aWY, 2) * mu * Power(Pi, 2) * wY * Sin((aWY * Pi * y) / L)) / Power(L, 2) +
+                      (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
                        (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
                           L +
                       (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2)) / L -
@@ -363,7 +430,7 @@ static PetscErrorCode ComputeRHSWithSourceTerms(DM dm, PetscReal time, Vec locXV
     ProblemSetup *setup = (ProblemSetup *)ctx;
 
     // Call the flux calculation
-    ierr = DMPlexTSComputeRHSFunctionFVM(dm, time, locXVec, globFVec, setup->flowData);
+    ierr = CompressibleFlowRHSFunctionLocal(dm, time, locXVec, globFVec, setup->flowData);
     CHKERRQ(ierr);
 
     // Convert the dm to a plex
@@ -545,11 +612,10 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
         // initialize petsc and mpi
         PetscInitialize(argc, argv, NULL, "HELP") >> errorChecker;
 
-        PetscInt levels = 4;
-
         Constants constants = GetParam().constants;
         PetscInt blockSize = 2 + constants.dim;
         PetscInt initialNx = GetParam().initialNx;
+        PetscInt levels = GetParam().levels;
 
         std::vector<PetscReal> hHistory;
         std::vector<std::vector<PetscReal>> l2History(blockSize);
@@ -557,7 +623,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 
         // March over each level
         for (PetscInt l = 0; l < levels; l++) {
-            PetscPrintf(PETSC_COMM_WORLD, "Running RHS Calculation at Level %d", l);
+            PetscPrintf(PETSC_COMM_WORLD, "Running RHS Calculation at Level %d\n", l);
 
             DM dm; /* problem definition */
             TS ts; /* timestepper */
@@ -593,8 +659,9 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];
             params[CFL] = 0.5;
             params[GAMMA] = constants.gamma;
-            params[RGAS] = 0.0;
-            params[K] = 0.0;
+            params[RGAS] = constants.R;
+            params[K] = constants.k;
+            params[MU] = constants.mu;
 
             // set up the finite volume fluxes
             CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params) >> errorChecker;
@@ -630,17 +697,18 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             TSSolve(ts, flowData->flowField) >> errorChecker;
 
             // Check the current residual
-            PetscReal l2Residual[5];
-            PetscReal infResidual[5];
+            std::vector<PetscReal> l2Residual(blockSize);
+            std::vector<PetscReal> infResidual(blockSize);
 
             // Only take the residual over the central 1/3
             PetscReal resStart[3] = {constants.L / 3.0, constants.L / 3.0, constants.L / 3.0};
             PetscReal resEnd[3] = {2.0 * constants.L / 3.0, 2.0 * constants.L / 3.0, 2.0 * constants.L / 3.0};
 
-            ComputeRHS(ts, flowData->dm, 0.0, flowData->flowField, blockSize, l2Residual, infResidual, resStart, resEnd) >> errorChecker;
-            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 Residual: [%2.3g, %2.3g, %2.3g, %2.3g]\n", (double)l2Residual[0], (double)l2Residual[1], (double)l2Residual[2], (double)l2Residual[3]) >> errorChecker;
-            PetscPrintf(PETSC_COMM_WORLD, "\tL_Inf Residual: [%2.3g, %2.3g, %2.3g, %2.3g]\n", (double)infResidual[0], (double)infResidual[1], (double)infResidual[2], (double)infResidual[3]) >>
-                errorChecker;
+            ComputeRHS(ts, flowData->dm, 0.0, flowData->flowField, blockSize, &l2Residual[0], &infResidual[0], resStart, resEnd) >> errorChecker;
+            auto l2String = PrintVector(l2Residual, "%2.3g");
+            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 Residual: %s\n", l2String.c_str()) >> errorChecker;
+            auto lInfString = PrintVector(infResidual, "%2.3g");
+            PetscPrintf(PETSC_COMM_WORLD, "\tL_Inf Residual: %s\n", lInfString.c_str()) >> errorChecker;
 
             // Store the residual into history
             hHistory.push_back(PetscLog10Real(constants.L / nx1D));
@@ -685,8 +753,12 @@ INSTANTIATE_TEST_SUITE_P(
                                                                       .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
                                                                       .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
                                                                       .L = 1.0,
-                                                                      .gamma = 1.4},
+                                                                      .gamma = 1.4,
+                                                                      .R = 287.0,
+                                                                      .mu = 0.0,
+                                                                      .k = 0.0},
                                                         .initialNx = 4,
+                                                        .levels = 4,
                                                         .expectedL2Convergence = {2, 2, 2, 2},
                                                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed average", .nproc = 1, .arguments = "-dm_plex_separate_marker -flux_diff average"},
@@ -697,8 +769,12 @@ INSTANTIATE_TEST_SUITE_P(
                                                                       .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
                                                                       .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
                                                                       .L = 1.0,
-                                                                      .gamma = 1.4},
+                                                                      .gamma = 1.4,
+                                                                      .R = 287.0,
+                                                                      .mu = 0.0,
+                                                                      .k = 0.0},
                                                         .initialNx = 4,
+                                                        .levels = 4,
                                                         .expectedL2Convergence = {2, 2, 2, 2},
                                                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed ausm", .nproc = 1, .arguments = "-dm_plex_separate_marker -flux_diff ausm"},
@@ -709,8 +785,12 @@ INSTANTIATE_TEST_SUITE_P(
                                                                       .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
                                                                       .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
                                                                       .L = 1.0,
-                                                                      .gamma = 1.4},
+                                                                      .gamma = 1.4,
+                                                                      .R = 287.0,
+                                                                      .mu = 0.0,
+                                                                      .k = 0.0},
                                                         .initialNx = 16,
+                                                        .levels = 4,
                                                         .expectedL2Convergence = {1.0, 1.0, 1.4, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.4, 1.0}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed ausm", .nproc = 1, .arguments = "-dm_plex_separate_marker -flux_diff ausm"},
@@ -721,8 +801,12 @@ INSTANTIATE_TEST_SUITE_P(
                                                                       .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
                                                                       .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
                                                                       .L = 1.0,
-                                                                      .gamma = 1.4},
+                                                                      .gamma = 1.4,
+                                                                      .R = 287.0,
+                                                                      .mu = 0.0,
+                                                                      .k = 0.0},
                                                         .initialNx = 16,
+                                                        .levels = 4,
                                                         .expectedL2Convergence = {1.0, 1.0, 1.0, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){
@@ -734,8 +818,12 @@ INSTANTIATE_TEST_SUITE_P(
                                       .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
                                       .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
                                       .L = 1.0,
-                                      .gamma = 1.4},
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 0.0,
+                                      .k = 0.0},
                         .initialNx = 16,
+                        .levels = 4,
                         .expectedL2Convergence = {1.5, 1.5, 1.5, 1.5},
                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){
@@ -747,8 +835,107 @@ INSTANTIATE_TEST_SUITE_P(
                                       .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
                                       .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
                                       .L = 1.0,
-                                      .gamma = 1.4},
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 0.0,
+                                      .k = 0.0},
                         .initialNx = 16,
+                        .levels = 4,
                         .expectedL2Convergence = {1.5, 1.5, 1.5, 1.5},
-                        .expectedLInfConvergence = {1.0, 0.5, 1.0, 1.0}}),
+                        .expectedLInfConvergence = {1.0, 0.5, 1.0, 1.0}},
+                    (CompressibleFlowMmsTestParameters){
+                        .mpiTestParameter = {.testName = "low speed average with conduction",
+                                             .nproc = 1,
+                                             .arguments = "-dm_plex_separate_marker -flux_diff average -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
+                        .constants = {.dim = 2,
+                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
+                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
+                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
+                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
+                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
+                                      .L = 1.0,
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 0.0,
+                                      .k = 1000.0},
+                        .initialNx = 4,
+                        .levels = 4,
+                        .expectedL2Convergence = {2, 2, 2, 2},
+                        .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
+                    (CompressibleFlowMmsTestParameters){
+                        .mpiTestParameter = {.testName = "high speed average with conduction",
+                                             .nproc = 1,
+                                             .arguments = "-dm_plex_separate_marker -flux_diff average -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none "},
+                        .constants = {.dim = 2,
+                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
+                                      .u = {.phiO = 800, .phiX = 50, .phiY = -30.0, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
+                                      .v = {.phiO = 800, .phiX = -75, .phiY = 40, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
+                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
+                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
+                                      .L = 1.0,
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 0.0,
+                                      .k = 1000.0},
+                        .initialNx = 4,
+                        .levels = 4,
+                        .expectedL2Convergence = {2, 2, 2, 2},
+                        .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
+                    (CompressibleFlowMmsTestParameters){
+                        .mpiTestParameter = {.testName = "low speed average with conduction and diffusion",
+                                             .nproc = 1,
+                                             .arguments = "-dm_plex_separate_marker -flux_diff average -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
+                        .constants = {.dim = 2,
+                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
+                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
+                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
+                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
+                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
+                                      .L = 1.0,
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 300.0,
+                                      .k = 1000.0},
+                        .initialNx = 4,
+                        .levels = 4,
+                        .expectedL2Convergence = {2, 2, 2, 2.2},
+                        .expectedLInfConvergence = {1.9, 1.8, 1.8, 2.0}},
+                    (CompressibleFlowMmsTestParameters){
+                        .mpiTestParameter = {.testName = "high speed average with conduction and diffusion",
+                                             .nproc = 1,
+                                             .arguments = "-dm_plex_separate_marker -flux_diff average -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none "},
+                        .constants = {.dim = 2,
+                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
+                                      .u = {.phiO = 800, .phiX = 50, .phiY = -30.0, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
+                                      .v = {.phiO = 800, .phiX = -75, .phiY = 40, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
+                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
+                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
+                                      .L = 1.0,
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 300.0,
+                                      .k = 1000.0},
+                        .initialNx = 4,
+                        .levels = 4,
+                        .expectedL2Convergence = {2, 2, 2, 2.0},
+                        .expectedLInfConvergence = {1.9, 2.0, 1.8, 1.8}},
+                    (CompressibleFlowMmsTestParameters){
+                        .mpiTestParameter = {.testName = "low speed average with conduction and diffusion 3D",
+                                             .nproc = 1,
+                                             .arguments = "-dm_plex_separate_marker -flux_diff average -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
+                        .constants = {.dim = 3,
+                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = .4},
+                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 5, .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.5},
+                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 6.5, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.6},
+                                      .w = {.phiO = 80, .phiX = -25, .phiY = 8.2, .phiZ = -10, .aPhiX = .75, .aPhiY = .2, .aPhiZ = 0.7},
+                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.4e5, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.8},
+                                      .L = 1.0,
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 300.0,
+                                      .k = 1000.0},
+                        .initialNx = 10,
+                        .levels = 2,
+                        .expectedL2Convergence = {2, 2.2, 2.2, 2.2, 2.},
+                        .expectedLInfConvergence = {1.9, 2.2, 2.0, 2.0, 2.}}),
     [](const testing::TestParamInfo<CompressibleFlowMmsTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

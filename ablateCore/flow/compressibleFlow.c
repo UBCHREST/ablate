@@ -351,7 +351,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     // get the fvm fields, for now we assume we need grad for all
     PetscFV auxFvm[TOTAL_COMPRESSIBLE_AUX_COMPONENTS];
     DM auxFieldGradDM[TOTAL_COMPRESSIBLE_AUX_COMPONENTS]; /* dm holding the grad information */
-    for(PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++){
+    for (PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++){
         ierr = DMGetField(flowData->auxDm, af, NULL, (PetscObject*)&auxFvm[af]);CHKERRQ(ierr);
 
         // Get the needed auxDm
@@ -406,7 +406,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     // create a global and local grad vector for the auxField
     Vec gradAuxGlobalVec[TOTAL_COMPRESSIBLE_AUX_COMPONENTS], gradAuxLocalVec[TOTAL_COMPRESSIBLE_AUX_COMPONENTS];
     const PetscScalar *localGradArray[TOTAL_COMPRESSIBLE_AUX_COMPONENTS];
-    for(PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++) {
+    for (PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++) {
         ierr = DMCreateGlobalVector(auxFieldGradDM[af], &gradAuxGlobalVec[af]);CHKERRQ(ierr);
 
         // compute the global grad values
@@ -459,11 +459,9 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
         ierr = DMPlexPointLocalRead(dmCellGeom, faceCells[1], cellGeomArray, &cgR);CHKERRQ(ierr);
 
         // extract the cell grad
-        for(PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++) {
-            ierr = DMPlexPointLocalRead(auxFieldGradDM[af], faceCells[0], localGradArray[af], &gradL[af]);
-            CHKERRQ(ierr);
-            ierr = DMPlexPointLocalRead(auxFieldGradDM[af], faceCells[1], localGradArray[af], &gradR[af]);
-            CHKERRQ(ierr);
+        for (PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++) {
+            ierr = DMPlexPointLocalRead(auxFieldGradDM[af], faceCells[0], localGradArray[af], &gradL[af]);CHKERRQ(ierr);
+            ierr = DMPlexPointLocalRead(auxFieldGradDM[af], faceCells[1], localGradArray[af], &gradR[af]);CHKERRQ(ierr);
         }
         PetscInt euler = 0;
 
@@ -506,7 +504,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
             for (PetscInt d = 0; d < dim; ++d) {
                 PetscReal heatFlux = 0.0;
                 // add in the contributions for this viscous terms
-                for(PetscInt c =0; c < dim; ++c){
+                for (PetscInt c =0; c < dim; ++c){
                     heatFlux += 0.5*(auxL[VEL + c] + auxR[VEL+c]) * tau[d * dim + c];
                 }
 
@@ -535,7 +533,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     ierr = VecRestoreArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(flowData->auxField, &locAuxArray);CHKERRQ(ierr);
 
-    for(PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++) {
+    for (PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++) {
         // restore the arrays
         ierr = VecRestoreArrayRead(gradAuxLocalVec[af], &localGradArray[af]);CHKERRQ(ierr);
 
@@ -672,7 +670,7 @@ PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt nu
     flowData->data =data;
 
     // make sure we have enough params
-    if(num <= RGAS){
+    if (num <= RGAS){
         SETERRQ(PetscObjectComm((PetscObject) flowData->dm), PETSC_ERR_ARG_OUTOFRANGE, "insufficient number of arguments for compressible flow");
     }
 
