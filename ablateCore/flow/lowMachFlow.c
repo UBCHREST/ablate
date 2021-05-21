@@ -251,7 +251,7 @@ static void g3_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff
             g3[((c * Nc + c) * dim + d) * dim + d] += constants[MU] / constants[REYNOLDS];  // gradU
             g3[((c * Nc + d) * dim + d) * dim + c] += constants[MU] / constants[REYNOLDS];  // gradU transpose
 
-            g3[((c * Nc + d) * dim + d) * dim + c] -= 2.0 / 3.0 * constants[MU] / constants[REYNOLDS];
+            g3[((c * Nc + d) * dim + c) * dim + d] -= 2.0 / 3.0 * constants[MU] / constants[REYNOLDS];
         }
     }
 }
