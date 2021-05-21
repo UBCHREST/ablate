@@ -203,6 +203,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             params[GAMMA] = parameters.gamma;
             params[RGAS] = parameters.Rgas;
             params[K] = parameters.k;
+            params[MU] = 0.0;
 
             // set up the finite volume fluxes
             CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params) >> errorChecker;

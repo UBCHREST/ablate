@@ -3,7 +3,7 @@
 
 static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
 static const char *compressibleAuxComponentNames[TOTAL_COMPRESSIBLE_AUX_COMPONENTS + 1] = {"T", "vel", "unknown"};
-const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "Rgas", "k", "unknown"};
+const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "Rgas", "k", "mu", "unknown"};
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
@@ -671,10 +671,16 @@ PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt nu
     PetscNew(&data);
     flowData->data =data;
 
+    // make sure we have enough params
+    if(num <= RGAS){
+        SETERRQ(PetscObjectComm((PetscObject) flowData->dm), PETSC_ERR_ARG_OUTOFRANGE, "insufficient number of arguments for compressible flow");
+    }
+
     data->cfl = values[CFL];
     data->gamma = values[GAMMA];
     data->Rgas = values[RGAS];
-    data->k = values[K];
+    data->k = num > K ? values[K] : 0.0;
+    data->mu = num > MU ? values[MU] : 0.0;
 
     // Set the update fields
     data->auxFieldUpdateFunctions[T] = UpdateAuxTemperatureField;
