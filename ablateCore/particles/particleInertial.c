@@ -33,8 +33,8 @@ static PetscErrorCode PackKinematics(TS ts, Vec position, Vec velocity, Vec kine
     Np /= dim;
     for (p = 0; p < Np; ++p) {
         for (n = 0; n < dim; n++) {
-            kin[p*TotalParticleField*dim+n] = pos[p+n];
-            kin[p*TotalParticleField*dim+dim+n] = vel[p+n];
+            kin[p*TotalParticleField*dim+n] = pos[ p * dim + n];
+            kin[p*TotalParticleField*dim+dim+n] = vel[p * dim + n];
         }
     }
     ierr = VecRestoreArray(kinematics, &kin);CHKERRQ(ierr);
@@ -66,8 +66,8 @@ static PetscErrorCode UnpackKinematics(TS ts, Vec kinematics, Vec position, Vec 
     Np /= dim;
     for (p = 0; p < Np; ++p) {
         for (n = 0; n < dim; n++) {
-            pos[p+n] = kin[p*TotalParticleField*dim+n];
-            vel[p+n] = kin[p*TotalParticleField*dim+dim+n];
+            pos[p * dim +n] = kin[p*TotalParticleField*dim+n];
+            vel[p * dim +n] = kin[p*TotalParticleField*dim+dim+n];
         }
     }
     ierr = VecRestoreArrayRead(kinematics, &kin);CHKERRQ(ierr);
@@ -155,7 +155,6 @@ static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
     PetscReal g[3] = {partParameters->gravityField[0], partParameters->gravityField[1],partParameters->gravityField[2]}; // gravity field
     PetscScalar muF = partParameters->fluidViscosity;
     PetscScalar rhoF = partParameters->fluidDensity;
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "muF,rhoF,gx,gy,gz %lf %lf %lf %lf %lf=\n", muF, rhoF, g[0],g[1],g[2]);CHKERRQ(ierr);
 
     PetscReal Rep, corFactor;
     PetscScalar tauP; // particle Stokes relaxation time
@@ -169,17 +168,17 @@ static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
     for (p = 0; p < Np; ++p) {
         Rep = 0.0;
         for (n = 0; n < dim; n++){
-            Rep += rhoF*PetscSqr(fluidVel[p+n]- partVel[p+n])*partDiam[p]/muF;
+            Rep += rhoF*PetscSqr(fluidVel[p * dim + n]- partVel[p * dim + n])*partDiam[p]/muF;
         }
         //Correction factor to account for finite Rep on Stokes drag (see Schiller-Naumann drag closure)
         corFactor = 1.0+0.15*PetscPowReal(PetscSqrtReal(Rep),0.687);
         if (Rep < 0.1) {
-            corFactor =1.0; //returns Stokes drag
+            corFactor =1.0; //returns Stokes drag for low speed particles
         }
         tauP = partDens[p]*PetscSqr(partDiam[p])/(18.0*muF); // particle relaxation time
         for (n = 0; n < dim; n++) {
-            f[p*TotalParticleField*dim+n] = partVel[p+n];
-            f[p*TotalParticleField*dim+dim+n] = corFactor*(fluidVel[p+n]- partVel[p+n])/tauP + g[n]*(1.0-rhoF/partDens[p]);
+            f[p*TotalParticleField*dim+n] = partVel[p * dim + n];
+            f[p*TotalParticleField*dim+dim+n] = corFactor*(fluidVel[p * dim + n]- partVel[p *dim + n])/tauP + g[n]*(1.0-rhoF/partDens[p]);
         }
     }
     ierr = VecRestoreArray(F, &f);CHKERRQ(ierr);
@@ -188,7 +187,6 @@ static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
     ierr = VecRestoreArrayRead(particleDensity, &partDens);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(particleDiameter, &partDiam);CHKERRQ(ierr);
 
-    //
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm, FluidVelocity, &fluidVelocity);CHKERRQ(ierr);
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,DMSwarmPICField_coor, &particlePosition);CHKERRQ(ierr);
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,ParticleVelocity, &particleVelocity);CHKERRQ(ierr);
@@ -264,7 +262,7 @@ static PetscErrorCode advectParticles(TS flowTS, void* ctx) {
 
     // unpack kinematics to get particle position and velocity separately
     ierr = UnpackKinematics(sts, particleKinematics, particlePosition, particleVelocity);CHKERRQ(ierr);
-    ierr = VecView(particleVelocity,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+
 
     // Return position, velocity and kinematics vectors
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,ParticleKinematics, &particleKinematics);CHKERRQ(ierr);
