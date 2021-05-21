@@ -11,6 +11,7 @@ target_sources(coreTests
         lowMachFlowDynamicSourceTests.cpp
         lowMachFlowParameterTests.cpp
         particleTests.cpp
+        inertialParticleTests.cpp
         fluxDifferencerTests.cpp
         compressibleFlowTests.cpp
         compressibleShockTubeTests.cpp
