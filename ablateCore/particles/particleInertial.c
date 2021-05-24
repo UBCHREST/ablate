@@ -3,12 +3,9 @@
 #include <petscdmswarm.h>
 #include "incompressibleFlow.h"
 
-
 const char FluidVelocity[] = "FluidVelocity";
 const char ParticleKinematics[] = "ParticleKinematics";
-
 enum InertialParticleFields {Position, Velocity, TotalParticleField};
-
 
 /*
  * Kinematics vector is a combination of particle velocity and position
@@ -41,7 +38,6 @@ static PetscErrorCode PackKinematics(TS ts, Vec position, Vec velocity, Vec kine
     ierr = VecRestoreArrayRead(position, &pos);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(velocity, &vel);CHKERRQ(ierr);
     PetscFunctionReturn(0);
-
 };
 
 /*
@@ -132,7 +128,6 @@ static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
 
     //Unpack kinematics to get updated position and velocity
     ierr = UnpackKinematics(ts, X, particlePosition, particleVelocity);CHKERRQ(ierr);
-
     ierr = VecGetArrayRead(particlePosition, &coords);CHKERRQ(ierr);
     ierr = DMInterpolationAddPoints(ictx, Np, (PetscReal *)coords);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(particlePosition, &coords);CHKERRQ(ierr);
@@ -147,11 +142,9 @@ static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
     ierr = DMRestoreLocalVector(vdm, &locvel);CHKERRQ(ierr);
     ierr = DMDestroy(&vdm);CHKERRQ(ierr);
 
-
     //Calculate RHS of particle position and velocity equations
     PetscInt p,n;
     const PetscScalar *partVel, *fluidVel, *partDiam, *partDens;
-
     PetscReal g[3] = {partParameters->gravityField[0], partParameters->gravityField[1],partParameters->gravityField[2]}; // gravity field
     PetscScalar muF = partParameters->fluidViscosity;
     PetscScalar rhoF = partParameters->fluidDensity;
@@ -186,17 +179,13 @@ static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
     ierr = VecRestoreArrayRead(fluidVelocity, &fluidVel);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(particleDensity, &partDens);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(particleDiameter, &partDiam);CHKERRQ(ierr);
-
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm, FluidVelocity, &fluidVelocity);CHKERRQ(ierr);
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,DMSwarmPICField_coor, &particlePosition);CHKERRQ(ierr);
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,ParticleVelocity, &particleVelocity);CHKERRQ(ierr);
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,ParticleDiameter, &particleDiameter);CHKERRQ(ierr);
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,ParticleDensity, &particleDensity);CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
 }
-
-
 
 static PetscErrorCode advectParticles(TS flowTS, void* ctx) {
     TS sts;
@@ -263,7 +252,6 @@ static PetscErrorCode advectParticles(TS flowTS, void* ctx) {
     // unpack kinematics to get particle position and velocity separately
     ierr = UnpackKinematics(sts, particleKinematics, particlePosition, particleVelocity);CHKERRQ(ierr);
 
-
     // Return position, velocity and kinematics vectors
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,ParticleKinematics, &particleKinematics);CHKERRQ(ierr);
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm,DMSwarmPICField_coor, &particlePosition);CHKERRQ(ierr);
@@ -329,7 +317,6 @@ PetscErrorCode ParticleInertialCreate(ParticleData *particles, PetscInt ndims) {
     ierr = ParticleRegisterPetscDatatypeField(*particles, ParticleDensity, 1, PETSC_REAL);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-
 
 PetscErrorCode ParticleInertialDestroy(ParticleData *particles) {
     PetscFunctionBeginUser;
