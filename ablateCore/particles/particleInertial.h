@@ -2,7 +2,6 @@
 #define ABLATE_PARTICLEINERTIAL_H
 #include "particles.h"
 
-
 typedef struct {
     PetscReal fluidDensity; // fluid density needed for particle drag force
     PetscReal fluidViscosity; // fluid viscosity needed for particle drag force

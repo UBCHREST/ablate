@@ -74,10 +74,8 @@ class InertialParticleMMS : public testingResources::MpiTestFixture, public ::te
 static PetscErrorCode settling(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *x, void *ctx) {
     const PetscReal x0 = X[0];
     const PetscReal y0 = X[1];
-
     PetscReal tauP = rhoP * dp * dp / (18.0 * muF); //particle relaxation time
     PetscReal uSt = tauP * grav * (1.0 - rhoF / rhoP); //particle terminal (settling) velocity
-
     x[0] = uSt * (time + tauP * PetscExpReal(-time / tauP) - tauP) + x0;
     x[1] = y0;
     x[2] = uSt * (1.0 - PetscExpReal(-time / tauP));
@@ -113,14 +111,12 @@ static PetscErrorCode quiescent_T_t(PetscInt Dim, PetscReal time, const PetscRea
 
 static void SourceFunction(f0_quiescent_v) {
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-
     f0[0] = 0;
     f0[1] = 0;
 }
 
 static void SourceFunction(f0_quiescent_w) {
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-
     f0[0] = 0;
 }
 
@@ -149,7 +145,6 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     // get the flow to apply the completeFlowInitialization method
     ierr = IncompressibleFlow_CompleteFlowInitialization(dm, u);
     CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
 }
 
@@ -402,7 +397,6 @@ static PetscErrorCode ParticleInertialInitialize(ParticleData particles, PetscRe
     PetscErrorCode ierr;
     Vec vel, diam, dens;
     DM particleDm = particles->dm;
-
 
     ierr = DMSwarmCreateGlobalVectorFromField(particleDm, ParticleVelocity, &vel);
     CHKERRQ(ierr);
@@ -693,7 +687,6 @@ TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
 
 INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                          testing::Values(
-
                               (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "single inertial particle settling in quiescent fluid",
                                                                                               .nproc = 1,
                                                                                               .expectedOutputFile = "outputs/single_inertialParticle_settling_in_quiescent_fluid",
@@ -772,7 +765,7 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                  .muF = 1.0,
                                  .grav = 1.0}),
                          [](const testing::TestParamInfo<InertialParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
-/* foe debugging the followings can be helpful
+/* for debugging the following commands are helpful
 --keepOutputFile=true
 --inmpitestrun=true
  */
