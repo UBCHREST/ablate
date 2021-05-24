@@ -9,10 +9,14 @@ set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
 
 # Set the project details
 <<<<<<< HEAD
+<<<<<<< HEAD
 project(ablateLibrary VERSION 0.3.3)
 =======
 project(ablateLibrary VERSION 0.3.4)
 >>>>>>> 11c0954 (version got updated)
+=======
+project(ablateLibrary VERSION 0.3.3)
+>>>>>>> 70ba631 (fixed version to original)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)
