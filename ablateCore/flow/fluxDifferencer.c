@@ -93,7 +93,6 @@ static PetscReal sM1m (PetscReal M) {
 const static PetscReal AUSMbeta  = 1.e+0 / 8.e+0;
 const static PetscReal AUSMalpha = 3.e+0 / 16.e+0;
 
-
 static PetscErrorCode FluxDifferencerInitialize(){
     PetscFunctionBeginUser;
     PetscErrorCode ierr;

@@ -9,6 +9,9 @@ target_sources(testingResources
         MpiTestFixture.cpp
         MpiTestParamFixture.hpp
         MpiTestEventListener.hpp
+        PetscTestFixture.hpp
+        PetscTestViewer.hpp
+        PetscTestViewer.cpp
         )
 
 # Allow public access to the header files in the directory
