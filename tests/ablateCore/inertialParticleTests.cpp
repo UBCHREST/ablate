@@ -58,7 +58,7 @@ struct InertialParticleMMSParameters {
     IntegrandTestFunction f0_w;
     IntegrandTestFunction f0_q;
     PetscInt dim;
-    PetscReal pVel; //particle initial velocity
+    PetscReal pVel;  // particle initial velocity
     PetscReal dp;
     PetscReal rhoP;
     PetscReal rhoF;
@@ -74,8 +74,8 @@ class InertialParticleMMS : public testingResources::MpiTestFixture, public ::te
 static PetscErrorCode settling(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *x, void *ctx) {
     const PetscReal x0 = X[0];
     const PetscReal y0 = X[1];
-    PetscReal tauP = rhoP * dp * dp / (18.0 * muF); //particle relaxation time
-    PetscReal uSt = tauP * grav * (1.0 - rhoF / rhoP); //particle terminal (settling) velocity
+    PetscReal tauP = rhoP * dp * dp / (18.0 * muF);     // particle relaxation time
+    PetscReal uSt = tauP * grav * (1.0 - rhoF / rhoP);  // particle terminal (settling) velocity
     x[0] = uSt * (time + tauP * PetscExpReal(-time / tauP) - tauP) + x0;
     x[1] = y0;
     x[2] = uSt * (1.0 - PetscExpReal(-time / tauP));
@@ -266,8 +266,8 @@ static PetscErrorCode computeParticleError(TS particleTS, Vec u, Vec e) {
     ierr = DMSwarmGetLocalSize(sdm, &Np);
     CHKERRQ(ierr);
     for (PetscInt p = 0; p < Np; ++p) {
-        PetscScalar x[4];  // includes both position and velocity in 2D
-        PetscReal x0[4]={0.0,0.0,0.0,0.0};   // includes both initial position and velocity in 2D
+        PetscScalar x[4];                        // includes both position and velocity in 2D
+        PetscReal x0[4] = {0.0, 0.0, 0.0, 0.0};  // includes both initial position and velocity in 2D
         PetscInt d;
 
         for (d = 0; d < totalFields * dim; ++d) {
@@ -278,7 +278,7 @@ static PetscErrorCode computeParticleError(TS particleTS, Vec u, Vec e) {
         for (d = 0; d < totalFields * dim; ++d) {
             exactSolution[p * totalFields * dim + d] = x[d];  // exactSolution including velocity and position
             if (d < 2) {
-                exactPosition[p*dim + d] = x[d];  // stores the position only and hard coded for 2D cases
+                exactPosition[p * dim + d] = x[d];  // stores the position only and hard coded for 2D cases
             }
         }
     }
@@ -425,8 +425,8 @@ static PetscErrorCode ParticleInertialInitialize(ParticleData particles, PetscRe
     // set fluid parameters
     data->fluidDensity = fluidDens;
     data->fluidViscosity = fluidVisc;
-    data->gravityField[0] = gravity;  //only for one direction
-    data->gravityField[1] = 0.0;      //zero out other components
+    data->gravityField[0] = gravity;  // only for one direction
+    data->gravityField[1] = 0.0;      // zero out other components
     data->gravityField[2] = 0.0;
     PetscFunctionReturn(0);
 }
@@ -443,7 +443,7 @@ TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
 
         // Get the testing param
         auto testingParam = GetParam();
-        pVel = testingParam.pVel; //particle initial velocity
+        pVel = testingParam.pVel;  // particle initial velocity
         dp = testingParam.dp;
         rhoP = testingParam.rhoP;
         rhoF = testingParam.rhoF;
@@ -606,7 +606,7 @@ TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
         ierr = ParticleInitialize(dm, particles->dm);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         // initialize inertial particles with velocity, diameter and density
-        ierr=ParticleInertialInitialize(particles, pVel, dp, rhoP, rhoF, muF, grav);
+        ierr = ParticleInertialInitialize(particles, pVel, dp, rhoP, rhoF, muF, grav);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // setup the flow monitor to also check particles
@@ -645,11 +645,11 @@ TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
         ierr = DMSwarmGetField(particles->dm, "InitialSolution", NULL, NULL, (void **)&initialSolution);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        //filling initialSolution with particles initial position and velocity
-        PetscInt d,p;
+        // filling initialSolution with particles initial position and velocity
+        PetscInt d, p;
         for (p = 0; p < numberParticles; ++p) {
             for (d = 0; d < dimen; d++) {
-                initialSolution[p * totalFields * dimen + d] = coord[ p * dimen + d];
+                initialSolution[p * totalFields * dimen + d] = coord[p * dimen + d];
                 initialSolution[p * totalFields * dimen + dimen + d] = partVel[p * dimen + d];
             }
         }
@@ -686,8 +686,7 @@ TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
 }
 
 INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
-                         testing::Values(
-                              (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "single inertial particle settling in quiescent fluid",
+                         testing::Values((InertialParticleMMSParameters){.mpiTestParameter = {.testName = "single inertial particle settling in quiescent fluid",
                                                                                               .nproc = 1,
                                                                                               .expectedOutputFile = "outputs/single_inertialParticle_settling_in_quiescent_fluid",
                                                                                               .arguments = "-dm_plex_separate_marker -dm_refine 2 "
@@ -712,61 +711,56 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                                                          .rhoF = 1.0,
                                                                          .muF = 1.0,
                                                                          .grav = 1.0},
-                             (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "multi inertial particle settling in quiescent fluid",
-                                             .nproc = 1,
-                                             .expectedOutputFile = "outputs/multi_inertialParticle_settling_in_quiescent_fluid",
-                                             .arguments = "-dm_plex_separate_marker -dm_refine 2 "
-                                                          "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                                          "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
-                                                          "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
-                                                          " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                          "-particle_layout_type box -particle_lower 0.2,0.3 -particle_upper 0.4,0.6 -Npb 10 "
-                                                          "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
-                                                         // --keepOutputFile=true --inmpitestrun=true
-                                             .uExact = quiescent_u,
-                                             .pExact = quiescent_p,
-                                             .TExact = quiescent_T,
-                                             .u_tExact = quiescent_u_t,
-                                             .T_tExact = quiescent_T_t,
-                                             .particleExact = settling,
-                                             .f0_v = f0_quiescent_v,
-                                             .f0_w = f0_quiescent_w,
-                                             .dim = 2,
-                                             .pVel = 0.0,
-                                             .dp = 0.22,
-                                             .rhoP = 90.0,
-                                             .rhoF = 1.0,
-                                             .muF = 1.0,
-                                             .grav = 1.0},
-                             (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "deletion inertial particles settling in quiescent fluid",
-                                 .nproc = 1,
-                                 .expectedOutputFile = "outputs/deletion_inertialParticles_settling_in_quiescent_fluid",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 2 "
-                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                              "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
-                                              "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
-                                              " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                              "-particle_layout_type box -particle_lower 0.92,0.3 -particle_upper 0.98,0.6 -Npb 10 "
-                                              "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
-                                 // --keepOutputFile=true --inmpitestrun=true
-                                 .uExact = quiescent_u,
-                                 .pExact = quiescent_p,
-                                 .TExact = quiescent_T,
-                                 .u_tExact = quiescent_u_t,
-                                 .T_tExact = quiescent_T_t,
-                                 .particleExact = settling,
-                                 .f0_v = f0_quiescent_v,
-                                 .f0_w = f0_quiescent_w,
-                                 .dim = 2,
-                                 .pVel = 0.0,
-                                 .dp = 0.22,
-                                 .rhoP = 90.0,
-                                 .rhoF = 1.0,
-                                 .muF = 1.0,
-                                 .grav = 1.0}),
+                                         (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "multi inertial particle settling in quiescent fluid",
+                                                                                              .nproc = 1,
+                                                                                              .expectedOutputFile = "outputs/multi_inertialParticle_settling_in_quiescent_fluid",
+                                                                                              .arguments = "-dm_plex_separate_marker -dm_refine 2 "
+                                                                                                           "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                                                                           "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                                           "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
+                                                                                                           " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                                                                           "-particle_layout_type box -particle_lower 0.2,0.3 -particle_upper 0.4,0.6 -Npb 10 "
+                                                                                                           "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
+                                                                         // --keepOutputFile=true --inmpitestrun=true
+                                                                         .uExact = quiescent_u,
+                                                                         .pExact = quiescent_p,
+                                                                         .TExact = quiescent_T,
+                                                                         .u_tExact = quiescent_u_t,
+                                                                         .T_tExact = quiescent_T_t,
+                                                                         .particleExact = settling,
+                                                                         .f0_v = f0_quiescent_v,
+                                                                         .f0_w = f0_quiescent_w,
+                                                                         .dim = 2,
+                                                                         .pVel = 0.0,
+                                                                         .dp = 0.22,
+                                                                         .rhoP = 90.0,
+                                                                         .rhoF = 1.0,
+                                                                         .muF = 1.0,
+                                                                         .grav = 1.0},
+                                         (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "deletion inertial particles settling in quiescent fluid",
+                                                                                              .nproc = 1,
+                                                                                              .expectedOutputFile = "outputs/deletion_inertialParticles_settling_in_quiescent_fluid",
+                                                                                              .arguments = "-dm_plex_separate_marker -dm_refine 2 "
+                                                                                                           "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                                                                           "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                                           "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
+                                                                                                           " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                                                                           "-particle_layout_type box -particle_lower 0.92,0.3 -particle_upper 0.98,0.6 -Npb 10 "
+                                                                                                           "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
+                                                                         // --keepOutputFile=true --inmpitestrun=true
+                                                                         .uExact = quiescent_u,
+                                                                         .pExact = quiescent_p,
+                                                                         .TExact = quiescent_T,
+                                                                         .u_tExact = quiescent_u_t,
+                                                                         .T_tExact = quiescent_T_t,
+                                                                         .particleExact = settling,
+                                                                         .f0_v = f0_quiescent_v,
+                                                                         .f0_w = f0_quiescent_w,
+                                                                         .dim = 2,
+                                                                         .pVel = 0.0,
+                                                                         .dp = 0.22,
+                                                                         .rhoP = 90.0,
+                                                                         .rhoF = 1.0,
+                                                                         .muF = 1.0,
+                                                                         .grav = 1.0}),
                          [](const testing::TestParamInfo<InertialParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
-/* for debugging the following commands are helpful
---keepOutputFile=true
---inmpitestrun=true
- */
-
