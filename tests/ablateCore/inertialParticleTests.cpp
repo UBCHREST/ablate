@@ -688,7 +688,7 @@ TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
 INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                          testing::Values((InertialParticleMMSParameters){.mpiTestParameter = {.testName = "single inertial particle settling in quiescent fluid",
                                                                                               .nproc = 1,
-                                                                                              .expectedOutputFile = "outputs/single_inertialParticle_settling_in_quiescent_fluid",
+                                                                                              .expectedOutputFile = "outputs/inertialParticle_settling_in_quiescent_fluid_single",
                                                                                               .arguments = "-dm_plex_separate_marker -dm_refine 2 "
                                                                                                            "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                                                                                            "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
@@ -713,7 +713,7 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                                                          .grav = 1.0},
                                          (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "multi inertial particle settling in quiescent fluid",
                                                                                               .nproc = 1,
-                                                                                              .expectedOutputFile = "outputs/multi_inertialParticle_settling_in_quiescent_fluid",
+                                                                                              .expectedOutputFile = "outputs/inertialParticle_settling_in_quiescent_fluid_multi",
                                                                                               .arguments = "-dm_plex_separate_marker -dm_refine 2 "
                                                                                                            "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                                                                                            "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
@@ -739,7 +739,7 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                                                          .grav = 1.0},
                                          (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "deletion inertial particles settling in quiescent fluid",
                                                                                               .nproc = 1,
-                                                                                              .expectedOutputFile = "outputs/deletion_inertialParticles_settling_in_quiescent_fluid",
+                                                                                              .expectedOutputFile = "outputs/inertialParticles_settling_in_quiescent_fluid_deletion",
                                                                                               .arguments = "-dm_plex_separate_marker -dm_refine 2 "
                                                                                                            "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                                                                                            "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "

@@ -18,10 +18,10 @@ Avg Particle Location: [0.985, 0.45,  0]
 L_2 convergence rate: 1.0
 Timestep: 0005 time = 0.3      	 L_2 Error: [ 0,  0,  0] ParticleCount: 10
 Avg Particle Location: [0.997, 0.45,  0]
-L_2 convergence rate: nan
+L_2 convergence rate: (.*)<expects> =nan
 Timestep: 0006 time = 0.36     	 L_2 Error: [ 0,  0,  0] ParticleCount: 0
 Avg Particle Location: [ 0,  0,  0]
-L_2 convergence rate: nan
+L_2 convergence rate: (.*)<expects> =nan
 Timestep: 0007 time = 0.42     	 L_2 Error: [ 0,  0,  0] ParticleCount: 0
 Avg Particle Location: [ 0,  0,  0]
 L_2 Error: [0., 0., 0.]
