@@ -5,6 +5,8 @@ target_sources(ablateCore
         particles.h
         particleTracer.c
         particleTracer.h
+        particleInertial.c
+        particleInertial.h
         )
 
 # Include the code in any subdirectory

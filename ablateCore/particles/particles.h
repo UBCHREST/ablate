@@ -4,6 +4,10 @@
 #include <petsc.h>
 #include "flow.h"
 
+PETSC_EXTERN const char ParticleVelocity[];
+PETSC_EXTERN const char ParticleDiameter[];
+PETSC_EXTERN const char ParticleDensity[];
+
 typedef struct {
     const char* fieldName;
     PetscInt components;

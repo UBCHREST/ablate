@@ -8,7 +8,7 @@ pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
 set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
 
 # Set the project details
-project(ablateLibrary VERSION 0.3.3)
+project(ablateLibrary VERSION 0.3.4)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)

@@ -1,6 +1,10 @@
 #include "particles.h"
 #include <petscviewerhdf5.h>
 
+const char ParticleVelocity[] = "ParticleVelocity";
+const char ParticleDiameter[] = "ParticleDiameter";
+const char ParticleDensity[] = "ParticleDensity";
+
 PetscErrorCode ParticleCreate(ParticleData *particles, PetscInt ndims) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
