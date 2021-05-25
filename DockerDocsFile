@@ -1,0 +1,20 @@
+# Docker file used to serve the ABLATE docs.
+# The environment assumes that the docs folder has been mounted with -v $PWD/docs:/docs
+
+FROM gcc:11.1.0
+
+# Install ruby
+RUN apt-get update
+RUN apt-get install -y ruby-dev ruby-bundler
+
+# Write the launch script
+RUN echo "#!/bin/bash" > start.sh
+RUN echo bundle install >> start.sh
+RUN echo bundle exec jekyll serve --host 0.0.0.0 >> start.sh
+RUN ["chmod", "+x", "/start.sh"]
+
+# Set the working directory to the mounted docs folder
+WORKDIR /docs
+
+# Set the entry point
+ENTRYPOINT ["/start.sh"]
