@@ -149,10 +149,8 @@ static PetscErrorCode FVFlowFillGradientBoundary(DM dm, PetscFV auxFvm, Vec loca
     ierr = PetscDSGetFieldSize(prob, field, &dof);CHKERRQ(ierr);
 
     // Obtaining local cell ownership
-    PetscInt cellStart, cellEnd, cEndInterior;
-    ierr = DMPlexGetHeightStratum(dm, 0, &cellStart, &cellEnd);CHKERRQ(ierr);
-    ierr = DMPlexGetGhostCellStratum(dm, &cEndInterior, NULL);CHKERRQ(ierr);
-    cEndInterior = cEndInterior < 0 ? cellEnd: cEndInterior;
+    PetscInt faceStart, faceEnd;
+    ierr = DMPlexGetHeightStratum(dm, 1, &faceStart, &faceEnd);CHKERRQ(ierr);
 
     // Get the fvm face and cell geometry
     Vec cellGeomVec = NULL;/* vector of structs related to cell geometry*/
@@ -182,26 +180,65 @@ static PetscErrorCode FVFlowFillGradientBoundary(DM dm, PetscFV auxFvm, Vec loca
     const PetscScalar *faceGeomArray;
     ierr = VecGetArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
 
-    // March over each face
-    for (PetscInt cell = cellStart; cell < cEndInterior; ++cell) {
-        // Get the face information
-        PetscInt               numFaces;
-        const PetscInt        *faces;
-        ierr = DMPlexGetConeSize(dm, cell, &numFaces);CHKERRQ(ierr);
-        ierr = DMPlexGetCone(dm, cell, &faces);CHKERRQ(ierr);
+    // march over each boundary for this problem
+    PetscInt numBd;
+    ierr = PetscDSGetNumBoundary(prob, &numBd);CHKERRQ(ierr);
+    for (PetscInt b = 0; b < numBd; ++b) {
+        // extract the boundary information
+        PetscInt                numids;
+        const PetscInt         *ids;
+        const char *                 labelName;
+        PetscInt boundaryField;
+        ierr = DMGetBoundary(dm, b, NULL, NULL, &labelName, &boundaryField, NULL, NULL, NULL, NULL, &numids, &ids, NULL);CHKERRQ(ierr);
 
-        //March over each face
-        for (PetscInt f =0 ; f < numFaces; f++){
-            PetscBool boundary;
-            ierr = DMIsBoundaryPoint(dm, faces[f], &boundary);CHKERRQ(ierr);
+        if(boundaryField != field){
+            continue;
+        }
 
-            // if this is on the boundary
-            if (boundary){
-                // get the boundary cell index
-                const PetscInt        *fcells;
-                ierr  = DMPlexGetSupport(dm, faces[f], &fcells);CHKERRQ(ierr);
-                PetscInt side  = (cell != fcells[0]); /* c is on left=0 or right=1 of face */
-                PetscInt ncell = fcells[!side];    /* the neighbor */
+        // use the correct label for this boundary field
+        DMLabel label;
+        ierr = DMGetLabel(dm, labelName, &label);CHKERRQ(ierr);
+
+        // get the correct boundary/ghost pattern
+        PetscSF            sf;
+        PetscInt        nleaves;
+        const PetscInt    *leaves;
+        ierr = DMGetPointSF(dm, &sf);CHKERRQ(ierr);
+        ierr = PetscSFGetGraph(sf, NULL, &nleaves, &leaves, NULL);CHKERRQ(ierr);
+        nleaves = PetscMax(0, nleaves);
+
+        // march over each id on this process
+        for (PetscInt i = 0; i < numids; ++i) {
+            IS              faceIS;
+            const PetscInt *faces;
+            PetscInt        numFaces, f;
+
+            ierr = DMLabelGetStratumIS(label, ids[i], &faceIS);CHKERRQ(ierr);
+            if (!faceIS) continue; /* No points with that id on this process */
+            ierr = ISGetLocalSize(faceIS, &numFaces);CHKERRQ(ierr);
+            ierr = ISGetIndices(faceIS, &faces);CHKERRQ(ierr);
+
+            // march over each face in this boundary
+            for (f = 0; f < numFaces; ++f) {
+                const PetscInt* cells;
+                PetscFVFaceGeom        *fg;
+
+                if ((faces[f] < faceStart) || (faces[f] >= faceEnd)){
+                    continue; /* Refinement adds non-faces to labels */
+                }
+                PetscInt loc;
+                ierr = PetscFindInt(faces[f], nleaves, (PetscInt *) leaves, &loc);CHKERRQ(ierr);
+                if (loc >= 0){
+                    continue;
+                }
+
+                PetscBool boundary;
+                ierr = DMIsBoundaryPoint(dm, faces[f], &boundary);CHKERRQ(ierr);
+
+                // get the ghost and interior nodes
+                ierr = DMPlexGetSupport(dm, faces[f], &cells);CHKERRQ(ierr);
+                const PetscInt cellI = cells[0];
+                const PetscInt cellG = cells[1];
 
                 // get the face geom
                 const PetscFVFaceGeom  *faceGeom;
@@ -210,24 +247,26 @@ static PetscErrorCode FVFlowFillGradientBoundary(DM dm, PetscFV auxFvm, Vec loca
                 // get the cell centroid information
                 const PetscFVCellGeom       *cellGeom;
                 const PetscFVCellGeom       *cellGeomGhost;
-                ierr  = DMPlexPointLocalRead(dmCellGeom, cell, cellGeomArray, &cellGeom);CHKERRQ(ierr);
-                ierr  = DMPlexPointLocalRead(dmCellGeom, ncell, cellGeomArray, &cellGeomGhost);CHKERRQ(ierr);
+                ierr  = DMPlexPointLocalRead(dmCellGeom, cellI, cellGeomArray, &cellGeom);CHKERRQ(ierr);
+                ierr  = DMPlexPointLocalRead(dmCellGeom, cellG, cellGeomArray, &cellGeomGhost);CHKERRQ(ierr);
 
                 // Read the local point
                 PetscScalar* boundaryGradCellValues;
-                ierr  = DMPlexPointLocalRef(dmGrad, ncell, gradLocalArray, &boundaryGradCellValues);CHKERRQ(ierr);
+                ierr  = DMPlexPointLocalRef(dmGrad, cellG, gradLocalArray, &boundaryGradCellValues);CHKERRQ(ierr);
 
                 const PetscScalar*  cellGradValues;
-                ierr  = DMPlexPointLocalRead(dmGrad, cell, gradLocalArray, &cellGradValues);CHKERRQ(ierr);
+                ierr  = DMPlexPointLocalRead(dmGrad, cellI, gradLocalArray, &cellGradValues);CHKERRQ(ierr);
 
                 const PetscScalar* boundaryCellValues;
-                ierr  = DMPlexPointLocalFieldRead(dm, ncell, field, localArray, &boundaryCellValues);CHKERRQ(ierr);
+                ierr  = DMPlexPointLocalFieldRead(dm, cellG, field, localArray, &boundaryCellValues);CHKERRQ(ierr);
                 const PetscScalar* cellValues;
-                ierr  = DMPlexPointLocalFieldRead(dm, cell, field, localArray, &cellValues);CHKERRQ(ierr);
+                ierr  = DMPlexPointLocalFieldRead(dm, cellI, field, localArray, &cellValues);CHKERRQ(ierr);
 
                 // compute the gradient for the boundary node and pass in
                 ierr = ComputeBoundaryCellGradient(dim, dof, faceGeom, cellGeom, cellGeomGhost, cellValues, cellGradValues, boundaryCellValues, boundaryGradCellValues, NULL);CHKERRQ(ierr);
             }
+            ierr = ISRestoreIndices(faceIS, &faces);CHKERRQ(ierr);
+            ierr = ISDestroy(&faceIS);CHKERRQ(ierr);
         }
     }
 
