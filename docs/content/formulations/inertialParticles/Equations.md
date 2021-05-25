@@ -1,9 +1,8 @@
 ---
 layout: default
 title: Governing Equations
-parent: Cold Inertial Particles
-grand_parent: Particle Formulations
-nav_order: 3
+parent: Flow Formulations
+nav_order: 5
 ---
 
 ### Governing Equations
