@@ -191,7 +191,7 @@ static PetscErrorCode FVFlowFillGradientBoundary(DM dm, PetscFV auxFvm, Vec loca
         PetscInt boundaryField;
         ierr = DMGetBoundary(dm, b, NULL, NULL, &labelName, &boundaryField, NULL, NULL, NULL, NULL, &numids, &ids, NULL);CHKERRQ(ierr);
 
-        if(boundaryField != field){
+        if (boundaryField != field){
             continue;
         }
 
