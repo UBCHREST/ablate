@@ -18,10 +18,7 @@ testingResources::PetscTestViewer::~PetscTestViewer() {
     file = NULL;
 
     // and destroy the viewer
-    PetscErrorCode ierr = PetscViewerDestroy(&viewer);
-    if (ierr > 0) {
-        throw std::runtime_error("cannot destroy PetscTestViewer");
-    }
+    PetscViewerDestroy(&viewer);
 }
 std::string testingResources::PetscTestViewer::GetString() {
     // build a string stream to hold the file
