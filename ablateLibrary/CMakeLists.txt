@@ -56,6 +56,8 @@ add_subdirectory(parser)
 add_subdirectory(mathFunctions)
 add_subdirectory(particles)
 add_subdirectory(monitors)
+add_subdirectory(eos)
+add_subdirectory(environment)
 
 # Keep a simple main statement
 target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser petscXdmfGeneratorLibrary)

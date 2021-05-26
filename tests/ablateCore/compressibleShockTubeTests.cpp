@@ -176,13 +176,23 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         // Add in the flow parameters
         PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];
         params[CFL] = testingParam.cfl;
-        params[GAMMA] = testingParam.initialConditions.gamma;
-        params[RGAS] = 0.0;
         params[K] = 0.0;
         params[MU] = 0.0;
 
         // set up the finite volume fluxes
         CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params);
+
+        // set a simple perfect gas eos for testing
+        EOSData eos;
+        EOSCreate(&eos);
+        EOSSetType(eos, "perfectGas");
+
+        PetscOptions eosOptions;
+        PetscOptionsCreate(&eosOptions) >> errorChecker;
+        PetscOptionsSetValue(eosOptions, "-gamma", std::to_string(testingParam.initialConditions.gamma).c_str()) >> errorChecker;
+
+        EOSSetFromOptions(eos);
+        CompressibleFlow_SetEOS(flowData, eos);
 
         // Add in any boundary conditions
         PetscDS prob;
@@ -241,6 +251,10 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         }
 
         // Cleanup
+        ierr = PetscOptionsDestroy(&eosOptions);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = EOSDestroy(&eos);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = FlowDestroy(&flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = TSDestroy(&ts);

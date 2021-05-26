@@ -15,7 +15,9 @@ struct _EOSData{
     // implementation-specific methods
     PetscErrorCode (*eosView)(struct _EOSData* eos,PetscViewer viewer);
     PetscErrorCode (*eosDestroy)(struct _EOSData* eos);
-    PetscErrorCode (*eosDecodeState)(struct _EOSData* eos, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* p);
+    PetscErrorCode (*eosDecodeState)(struct _EOSData* eos, const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* p);
+    PetscErrorCode (*eosTemperature)(struct _EOSData* eos, const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, PetscReal* T);
+
 };
 
 typedef struct _EOSData* EOSData;
@@ -37,6 +39,7 @@ PETSC_EXTERN PetscErrorCode EOSDestroy(EOSData* eos);
 /**
  * Support method for the eos that combines multiple decode values for efficiency
  * @param eos
+ * @param yi
  * @param dim
  * @param density
  * @param totalEnergy
@@ -46,6 +49,19 @@ PETSC_EXTERN PetscErrorCode EOSDestroy(EOSData* eos);
  * @param[out] p pressure of the flow
  * @return
  */
-PETSC_EXTERN PetscErrorCode EOSDecodeState(EOSData eos, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* p);
+PETSC_EXTERN PetscErrorCode EOSDecodeState(EOSData eos, const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* p);
+
+/**
+ * Compute the temperature from total energy, density, and velocity
+ * @param eos
+ * @param yi
+ * @param dim
+ * @param density
+ * @param totalEnergy
+ * @param massFlux (rho*vel)
+ * @param T
+ * @return
+ */
+PETSC_EXTERN PetscErrorCode EOSTemperature(EOSData eos, const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, PetscReal* T);
 
 #endif  // ABLATELIBRARY_EOS_H

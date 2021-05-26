@@ -44,7 +44,6 @@ PetscErrorCode EOSCreate(EOSData* eos) {
 PETSC_EXTERN PetscErrorCode EOSSetType(EOSData eos, const char* type) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr = PetscStrallocpy(type, &eos->type);CHKERRQ(ierr);
-    CHKERRQ(ierr);
     return 0;
 }
 
@@ -68,10 +67,10 @@ PETSC_EXTERN PetscErrorCode EOSSetFromOptions(EOSData eos){
     PetscInt value;
     PetscBool set;
     ierr = PetscOptionsGetEList(eos->options, NULL, "-eosType", typeList, numberTypes,&value,&set);CHKERRQ(ierr);
-    if(!set && !eos->type){
+    if (!set && !eos->type){
         SETERRQ(PETSC_COMM_SELF,PETSC_ERR_ARG_TYPENOTSET, "The EOS type must be set with EOSSetType() or -eosType");
     }
-    if(set){
+    if (set){
         ierr =  PetscStrallocpy(typeList[value], (char**) &eos->type);CHKERRQ(ierr);
     }
 
@@ -92,9 +91,9 @@ PetscErrorCode EOSView(EOSData eos,PetscViewer viewer){
     PetscBool isAscii;
     PetscErrorCode ierr = PetscObjectTypeCompare((PetscObject) viewer, PETSCVIEWERASCII,  &isAscii);CHKERRQ(ierr);
 
-    if(isAscii){
+    if (isAscii){
         ierr = PetscViewerASCIIPrintf(viewer, "EOS: %s\n", eos->type);CHKERRQ(ierr);
-        if(eos->eosView) {
+        if (eos->eosView) {
             ierr = PetscViewerASCIIPushTab(viewer);CHKERRQ(ierr);
             ierr = eos->eosView(eos, viewer);CHKERRQ(ierr);
             ierr = PetscViewerASCIIPopTab(viewer);CHKERRQ(ierr);
@@ -107,7 +106,7 @@ PetscErrorCode EOSView(EOSData eos,PetscViewer viewer){
 PetscErrorCode EOSDestroy(EOSData* eos) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
-    if((*eos)->eosDestroy){
+    if ((*eos)->eosDestroy){
         (*eos)->eosDestroy(*eos);
     }
 
@@ -117,7 +116,10 @@ PetscErrorCode EOSDestroy(EOSData* eos) {
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode EOSDecodeState(EOSData eos, const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* p){
+    return eos->eosDecodeState(eos, yi, dim, density, totalEnergy, velocity, internalEnergy, a, p);
+}
 
-PetscErrorCode EOSDecodeState(EOSData eos, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* p){
-    return eos->eosDecodeState(eos, dim, density, totalEnergy, velocity, internalEnergy, a, p);
+PetscErrorCode EOSTemperature(EOSData eos, const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, PetscReal* T) {
+    return eos->eosTemperature(eos, yi, dim, density, totalEnergy, massFlux, T);
 }

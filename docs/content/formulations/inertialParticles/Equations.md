@@ -37,7 +37,7 @@ In the limit of small $$Re_p$$ (thus $$f{=}1$$), analytical
 solution for the particle velocity is obtained as,
 
 $$\begin{eqnarray}
-\boldsymbol{u}_p(t) = \boldsymbol{u}_{st}\left(1-\exp\left(\frac{t}{\tau_p}\right)\right)
+\boldsymbol{u}_p(t) = \boldsymbol{u}_{st}\left(1-\exp\left(\frac{-t}{\tau_p}\right)\right)
 \end{eqnarray}$$
 
 where,

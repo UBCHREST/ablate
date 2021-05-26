@@ -16,9 +16,39 @@ static PetscErrorCode EOSDestroy_PerfectGas(EOSData eos){
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode EOSDecodeState_PerfectGas(EOSData eos, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* p){
+static PetscErrorCode EOSDecodeState_PerfectGas(EOSData eos, const PetscReal* yi,PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* p){
     PetscFunctionBeginUser;
-    PetscErrorCode ierr = PetscFree((eos->data));CHKERRQ(ierr);
+    EOSData_PerfectGas perfectGasData = (EOSData_PerfectGas)eos->data;
+
+    // Get the velocity in this direction
+    PetscReal ke = 0.0;
+    for (PetscInt d =0; d < dim; d++){
+        ke += PetscSqr(velocity[d]);
+    }
+    ke *= 0.5;
+
+    // assumed eos
+    (*internalEnergy) = (totalEnergy) - ke;
+    *p = (perfectGasData->gamma - 1.0)*density*(*internalEnergy);
+    *a = PetscSqrtReal(perfectGasData->gamma*(*p)/density);
+    PetscFunctionReturn(0);
+}
+
+static PetscErrorCode EOSTemperature_PerfectGas(EOSData eos, const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, PetscReal* T){
+    PetscFunctionBeginUser;
+    EOSData_PerfectGas perfectGasData = (EOSData_PerfectGas)eos->data;
+
+    // Get the velocity in this direction
+    PetscReal speedSquare = 0.0;
+    for (PetscInt d =0; d < dim; d++){
+        speedSquare += PetscSqr(massFlux[d]/density);
+    }
+
+    // assumed eos
+    PetscReal internalEnergy = (totalEnergy) - 0.5 * speedSquare;
+    PetscReal p = (perfectGasData->gamma - 1.0)*density*internalEnergy;
+
+    (*T) = p/(perfectGasData->Rgas*density);
     PetscFunctionReturn(0);
 }
 
@@ -42,6 +72,7 @@ PetscErrorCode EOSSetFromOptions_PerfectGas(EOSData eos){
     eos->eosView = EOSView_PerfectGas;
     eos->eosDestroy = EOSDestroy_PerfectGas;
     eos->eosDecodeState = EOSDecodeState_PerfectGas;
+    eos->eosTemperature = EOSTemperature_PerfectGas;
 
     PetscFunctionReturn(0);
 }

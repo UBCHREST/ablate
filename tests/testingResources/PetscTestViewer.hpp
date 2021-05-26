@@ -7,7 +7,7 @@
 
 namespace testingResources {
 
-class PetscTestViewer{
+class PetscTestViewer {
    private:
     PetscViewer viewer;
     std::FILE* file;
@@ -16,9 +16,7 @@ class PetscTestViewer{
     PetscTestViewer(MPI_Comm comm = PETSC_COMM_WORLD);
     ~PetscTestViewer();
 
-    PetscViewer GetViewer() const{
-        return viewer;
-    }
+    PetscViewer GetViewer() const { return viewer; }
 
     std::string GetString();
 };

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <petscsys.h>
 #include <filesystem>
+#include "PetscTestErrorChecker.hpp"
 
 namespace fs = std::filesystem;
 
@@ -20,19 +21,6 @@ struct MpiTestParameter {
         std::replace(s.begin(), s.end(), '/', '_');
         std::replace(s.begin(), s.end(), '.', '_');
         return s;
-    }
-};
-
-class PetscTestErrorChecker {
-    friend void operator>>(int ierr, const PetscTestErrorChecker& errorChecker) {
-        if (ierr != 0) {
-            const char* text;
-            char* specific;
-
-            PetscErrorMessage(ierr, &text, &specific);
-            std::cerr << text << std::endl << specific << std::endl;
-            exit(ierr);
-        }
     }
 };
 

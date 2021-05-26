@@ -3,7 +3,7 @@
 
 static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
 static const char *compressibleAuxComponentNames[TOTAL_COMPRESSIBLE_AUX_COMPONENTS + 1] = {"T", "vel", "unknown"};
-const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "gamma", "Rgas", "k", "mu", "unknown"};
+const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "k", "mu", "unknown"};
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
@@ -282,7 +282,7 @@ static PetscErrorCode FVFlowFillGradientBoundary(DM dm, PetscFV auxFvm, Vec loca
  * Function to get the density, velocity, and energy from the conserved variables
  * @return
  */
-static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const PetscReal *normal, PetscReal gamma, PetscReal* density,
+static void DecodeEulerState(EOSData eos, PetscInt dim, const PetscReal* conservedValues,  const PetscReal *normal, PetscReal* density,
                                   PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p){
     // decode
     *density = conservedValues[RHO];
@@ -295,14 +295,8 @@ static void DecodeState(PetscInt dim, const PetscReal* conservedValues,  const P
         (*normalVelocity) += velocity[d]*normal[d];
     }
 
-    // get the speed
-    PetscReal speed = MagVector(dim, velocity);
-
-    // assumed eos
-    (*internalEnergy) = (totalEnergy) - 0.5 * speed * speed;
-    *p = (gamma - 1.0)*(*density)*(*internalEnergy);
-    *a = PetscSqrtReal(gamma*(*p)/(*density));
-
+    // decode the state in the eos
+    EOSDecodeState(eos, NULL, dim, *density, totalEnergy, velocity, internalEnergy, a, p);
     *M = (*normalVelocity)/(*a);
 }
 
@@ -347,7 +341,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     PetscReal aL;
     PetscReal ML;
     PetscReal pL;
-    DecodeState(dim, xL, norm, flowParameters->gamma, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+    DecodeEulerState(flowParameters->eos, dim, xL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 
     PetscReal densityR;
     PetscReal normalVelocityR;
@@ -356,7 +350,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     PetscReal aR;
     PetscReal MR;
     PetscReal pR;
-    DecodeState(dim, xR, norm, flowParameters->gamma, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    DecodeEulerState(flowParameters->eos, dim, xR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
     PetscReal sPm;
     PetscReal sPp;
@@ -665,18 +659,8 @@ static PetscErrorCode UpdateAuxTemperatureField(FlowData flowData, PetscReal tim
     PetscReal totalEnergy = conservedValues[RHOE]/density;
 
     EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+    PetscErrorCode ierr = EOSTemperature(flowParameters->eos, NULL, dim, density, totalEnergy, conservedValues + RHOU, &auxField[T]);CHKERRQ(ierr);
 
-    // Get the velocity in this direction
-    PetscReal speedSquare = 0.0;
-    for (PetscInt d =0; d < dim; d++){
-        speedSquare += PetscSqr(conservedValues[RHOU + d]/density);
-    }
-
-    // assumed eos
-    PetscReal internalEnergy = (totalEnergy) - 0.5 * speedSquare;
-    PetscReal p = (flowParameters->gamma - 1.0)*density*internalEnergy;
-
-    auxField[T] = p/(flowParameters->Rgas*density);
     PetscFunctionReturn(0);
 }
 
@@ -708,20 +692,14 @@ PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt nu
     PetscNew(&data);
     flowData->data =data;
 
-    // make sure we have enough params
-    if (num <= RGAS){
-        SETERRQ(PetscObjectComm((PetscObject) flowData->dm), PETSC_ERR_ARG_OUTOFRANGE, "insufficient number of arguments for compressible flow");
-    }
-
     data->cfl = values[CFL];
-    data->gamma = values[GAMMA];
-    data->Rgas = values[RGAS];
     data->k = num > K ? values[K] : 0.0;
     data->mu = num > MU ? values[MU] : 0.0;
 
     // Set the update fields
     data->auxFieldUpdateFunctions[T] = UpdateAuxTemperatureField;
     data->auxFieldUpdateFunctions[VEL] = UpdateAuxVelocityField;
+    data-> eos = NULL;
 
     const char *prefix;
     ierr = DMGetOptionsPrefix(flowData->dm, &prefix);CHKERRQ(ierr);
@@ -780,19 +758,18 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
 
         if (xc) {  // must be real cell and not ghost
             PetscReal rho = xc[RHO];
-
-            // Compute the kinetic energy
-            PetscReal velMag = 0.0;
+            PetscReal vel[3];
             for (PetscInt i =0; i < dim; i++){
-                velMag += PetscSqr(xc[RHOU + i] / rho);
+                vel[i] = xc[RHOU + i] / rho;
             }
 
+            // Get the speed of sound from the eos
+            PetscReal ie;
+            PetscReal a;
+            PetscReal p;
+            ierr = EOSDecodeState(flowParameters->eos, NULL, dim, rho, xc[RHOE]/rho, vel, &ie, &a, &p);CHKERRQ(ierr);
+
             PetscReal u = xc[RHOU] / rho;
-            PetscReal e = (xc[RHOE] / rho) - 0.5 * velMag;
-            PetscReal p = (flowParameters->gamma - 1) * rho * e;
-
-
-            PetscReal a = PetscSqrtReal(flowParameters->gamma * p / rho);
             PetscReal dt = flowParameters->cfl * dx / (a + PetscAbsReal(u));
             dtMin = PetscMin(dtMin, dt);
         }
@@ -815,8 +792,12 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
 
 PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
     PetscErrorCode ierr;
-
     PetscFunctionBeginUser;
+    // make sure that the eos has been set
+    if (!((EulerFlowData*)flowData->data)->eos){
+        SETERRQ(PetscObjectComm((PetscObject)flowData->dm),PETSC_ERR_ARG_WRONGSTATE, "The EOS has not been set for the flow");
+    }
+
     ierr = FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
     EulerFlowData * compressibleFlowData = (EulerFlowData *)flowData->data;
     if (compressibleFlowData->automaticTimeStepCalculator){
@@ -859,5 +840,11 @@ PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
         }
     }
 
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode CompressibleFlow_SetEOS(FlowData flowData, EOSData eosData) {
+    PetscFunctionBeginUser;
+    ((EulerFlowData*)flowData->data)->eos = eosData;
     PetscFunctionReturn(0);
 }

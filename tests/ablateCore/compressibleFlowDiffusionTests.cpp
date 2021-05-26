@@ -5,6 +5,7 @@ static char help[] = "1D conduction and diffusion cases compared to exact soluti
 #include <cmath>
 #include <vector>
 #include "MpiTestFixture.hpp"
+#include "PetscTestErrorChecker.hpp"
 #include "gtest/gtest.h"
 
 typedef struct {
@@ -103,7 +104,7 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
 }
 
 static void ComputeErrorNorms(TS ts, FlowData flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf, InputParameters *parameters,
-                              testingResources::PetscTestErrorChecker &errorChecker) {
+                              PetscTestErrorChecker &errorChecker) {
     // Compute the error
     PetscDS ds;
     DMGetDS(flowData->dm, &ds) >> errorChecker;
@@ -200,13 +201,25 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             // Add in the flow parameters
             PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];
             params[CFL] = 0.5;
-            params[GAMMA] = parameters.gamma;
-            params[RGAS] = parameters.Rgas;
             params[K] = parameters.k;
             params[MU] = 0.0;
 
             // set up the finite volume fluxes
             CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params) >> errorChecker;
+
+            // set a simple perfect gas eos for testing
+            EOSData eos;
+            EOSCreate(&eos);
+            EOSSetType(eos, "perfectGas");
+
+            PetscOptions eosOptions;
+            PetscOptionsCreate(&eosOptions) >> errorChecker;
+            PetscOptionsSetValue(eosOptions, "-gamma", std::to_string(parameters.gamma).c_str()) >> errorChecker;
+            PetscOptionsSetValue(eosOptions, "-Rgas", std::to_string(parameters.Rgas).c_str()) >> errorChecker;
+            EOSSetOptions(eos, eosOptions) >> errorChecker;
+
+            EOSSetFromOptions(eos);
+            CompressibleFlow_SetEOS(flowData, eos);
 
             // Add in any boundary conditions
             PetscDS prob;
@@ -258,7 +271,8 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                 l2History[b].push_back(PetscLog10Real(l2Norm[b]));
                 lInfHistory[b].push_back(PetscLog10Real(lInfNorm[b]));
             }
-
+            PetscOptionsDestroy(&eosOptions) >> errorChecker;
+            EOSDestroy(&eos) >> errorChecker;
             FlowDestroy(&flowData) >> errorChecker;
             TSDestroy(&ts) >> errorChecker;
         }
