@@ -46,9 +46,9 @@ static PetscErrorCode EOSTemperature_PerfectGas(EOSData eos, const PetscReal* yi
 
     // assumed eos
     PetscReal internalEnergy = (totalEnergy) - 0.5 * speedSquare;
-    PetscReal p = (perfectGasData->gamma - 1.0)*density*internalEnergy;
+    PetscReal cv = perfectGasData->Rgas/(perfectGasData->gamma - 1.0);
 
-    (*T) = p/(perfectGasData->Rgas*density);
+    (*T) = internalEnergy/cv;
     PetscFunctionReturn(0);
 }
 

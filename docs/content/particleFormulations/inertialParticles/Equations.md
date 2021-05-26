@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Inertial Particles
-parent: Flow Formulations
-nav_order: 5
+parent: Particle Formulations
+nav_order: 1
 ---
 
 ### Inertial Particles
