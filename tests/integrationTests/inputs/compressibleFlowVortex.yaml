@@ -25,6 +25,9 @@ flow: !ablate::flow::CompressibleFlow
   parameters:
     cfl: 0.5
     gamma: 1.4
+    Rgas : 287.0
+    k: 0.0
+    mu: 0.0
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
       solutionField:

@@ -76,6 +76,24 @@ class MpiTestFixture : public ::testing::Test {
 
     bool ShouldRunMpiCode() const { return inMpiTestRun || mpiTestParameter.nproc == 0; }
 
+    template <typename T>
+    std::string PrintVector(std::vector<T> values, const char* format) const {
+        if (values.empty()) {
+            return "[]";
+        }
+
+        char buff[100];
+        std::snprintf(buff, sizeof(buff), format, values[0]);
+
+        std::string result = "[" + std::string(buff);
+        for (auto i = 1; i < values.size(); i++) {
+            std::snprintf(buff, sizeof(buff), format, values[i]);
+            result += ", " + std::string(buff);
+        }
+        result += "]";
+        return result;
+    }
+
    public:
     static bool InitializeTestingEnvironment(int* argc, char*** argv);
 };

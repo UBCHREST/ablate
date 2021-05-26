@@ -104,7 +104,9 @@ void ablate::flow::Flow::CompleteInitialization() {
             auxiliaryFieldFunctions[fieldId.value()] = auxFieldDescription->GetSolutionField().GetPetscFunction();
         }
 
-        FlowRegisterPreStep(flowData, UpdateAuxiliaryFields, this);
+        if (!auxiliaryFieldFunctions.empty()) {
+            FlowRegisterPreStep(flowData, UpdateAuxiliaryFields, this);
+        }
     }
 }
 
@@ -135,7 +137,7 @@ void ablate::flow::Flow::SetupSolve(TS& timeStepper) {
     DMComputeExactSolution(mesh->GetDomain(), 0, flowData->flowField, NULL) >> checkError;
 
     // Initialize the aux variables
-    if (flowData->numberAuxFields > 0) {
+    if (flowData->numberAuxFields > 0 && !auxiliaryFieldFunctions.empty()) {
         UpdateAuxiliaryFields(timeStepper, this) >> checkError;
     }
 
