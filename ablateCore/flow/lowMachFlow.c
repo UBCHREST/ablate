@@ -1,10 +1,25 @@
 #include "lowMachFlow.h"
 
-const char *lowMachFlowParametersTypeNames[TOTAL_LOW_MACH_FLOW_PARAMETERS + 1] = {
-    "strouhal", "reynolds", "froude", "peclet", "heatRelease", "gamma", "pth", "mu", "k", "cp", "beta", "gravityDirection", "unknown"};
-
 static const char *lowMachFlowFieldNames[TOTAL_LOW_MACH_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
 static const char *lowMachSourceFieldNames[TOTAL_LOW_MACH_SOURCE_FIELDS + 1] = {"momentum_source", "mass_source", "energy_source", "unknown"};
+
+struct _FlowData_LowMachFlow{
+    PetscReal strouhal;
+    PetscReal reynolds;
+    PetscReal froude;
+    PetscReal peclet;
+    PetscReal heatRelease;
+    PetscReal gamma;
+    PetscReal pth;  /* non-dimensional constant thermodynamic pressure */
+    PetscReal mu;   /* non-dimensional viscosity */
+    PetscReal k;    /* non-dimensional thermal conductivity */
+    PetscReal cp;   /* non-dimensional specific heat capacity */
+    PetscReal beta; /* non-dimensional thermal expansion coefficient */
+    PetscInt gravityDirection;
+    PetscBool enableAuxFields;
+};
+
+typedef struct _FlowData_LowMachFlow* FlowData_LowMachFlow;
 
 /* =q \left(-\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right) */
 static void qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
@@ -338,7 +353,7 @@ static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt n
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_CompleteFlowInitialization(DM dm, Vec u) {
+PetscErrorCode FlowCompleteFlowInitialization_LowMachFlow(DM dm, Vec u) {
     MatNullSpace nullsp;
     PetscErrorCode ierr;
 
@@ -358,22 +373,22 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, void* context) 
     PetscFunctionBegin;
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
     ierr = TSGetSolution(ts, &u);CHKERRQ(ierr);
-    ierr = LowMachFlow_CompleteFlowInitialization(dm, u);CHKERRQ(ierr);
+    ierr = FlowCompleteFlowInitialization_LowMachFlow(dm, u);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
-    DM cdm = dm;
+PetscErrorCode FlowSetupDiscretization_LowMachFlow(FlowData flowData, DM* dm) {
+    DM cdm = *dm;
     PetscInt dim;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
     //Store the field data
-    flowData->dm = dm;
+    flowData->dm = *dm;
     ierr = DMSetApplicationContext(flowData->dm, flowData);CHKERRQ(ierr);
 
     // Determine the number of dimensions
-    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+    ierr = DMGetDimension(*dm, &dim);CHKERRQ(ierr);
 
     // Register each field, this order must match the order in LowMachFlowFields enum
     ierr = FlowRegisterField(flowData, lowMachFlowFieldNames[VEL], "vel_", dim, FE);CHKERRQ(ierr);
@@ -384,7 +399,7 @@ PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
     ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
 
     while (cdm) {
-        ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
+        ierr = DMCopyDisc(*dm, cdm);CHKERRQ(ierr);
         ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
     }
 
@@ -392,7 +407,7 @@ PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        ierr = DMGetField(dm, PRES, NULL, &pressure);CHKERRQ(ierr);
+        ierr = DMGetField(*dm, PRES, NULL, &pressure);CHKERRQ(ierr);
         ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);CHKERRQ(ierr);
         ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);CHKERRQ(ierr);
         ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
@@ -401,7 +416,7 @@ PetscErrorCode LowMachFlow_SetupDiscretization(FlowData flowData, DM dm) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_EnableAuxFields(FlowData flowData) {
+static PetscErrorCode LowMachFlow_EnableAuxFields(FlowData flowData) {
     PetscFunctionBeginUser;
     // Determine the number of dimensions
     PetscInt dim;
@@ -413,10 +428,33 @@ PetscErrorCode LowMachFlow_EnableAuxFields(FlowData flowData) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_StartProblemSetup(FlowData flowData, PetscInt numberParameters, PetscScalar parameters[]) {
+
+static PetscErrorCode LowMachFlow_PackParameters(FlowData_LowMachFlow parameters, PetscScalar *constantArray) {
+    constantArray[STROUHAL] = parameters->strouhal;
+    constantArray[REYNOLDS] = parameters->reynolds;
+    constantArray[FROUDE] = parameters->froude;
+    constantArray[PECLET] = parameters->peclet;
+    constantArray[HEATRELEASE] = parameters->heatRelease;
+    constantArray[PTH] = parameters->pth;
+    constantArray[GAMMA] = parameters->gamma;
+    constantArray[MU] = parameters->mu;
+    constantArray[K] = parameters->k;
+    constantArray[CP] = parameters->cp;
+    constantArray[BETA] = parameters->beta;
+    constantArray[GRAVITY_DIRECTION] = parameters->gravityDirection;
+    return 0;
+}
+
+PetscErrorCode FlowStartProblemSetup_LowMachFlow(FlowData flowData) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
+    // If set, enable the aux fields
+    FlowData_LowMachFlow lowMachData = (FlowData_LowMachFlow)flowData->data;
+    if(lowMachData->enableAuxFields){
+        LowMachFlow_EnableAuxFields(flowData);
+    }
+
     PetscDS prob;
     ierr = DMGetDS(flowData->dm, &prob);CHKERRQ(ierr);
 
@@ -434,67 +472,74 @@ PetscErrorCode LowMachFlow_StartProblemSetup(FlowData flowData, PetscInt numberP
     ierr = PetscDSSetJacobian(prob, WTEST, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
 
     /* Setup constants */;
-    {
-        if (numberParameters != TOTAL_LOW_MACH_FLOW_PARAMETERS) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "wrong number of flow parameters");
-        }
-        ierr = PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, parameters);CHKERRQ(ierr);
-    }
+    PetscReal parameters[TOTAL_LOW_MACH_FLOW_PARAMETERS];
+    ierr = LowMachFlow_PackParameters(lowMachData, parameters);;CHKERRQ(ierr);
+    ierr = PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, parameters);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
+PetscErrorCode FlowCompleteProblemSetup_LowMachFlow(FlowData flowData, TS ts) {
     PetscErrorCode ierr;
     DM dm;
 
     PetscFunctionBeginUser;
-    ierr =  FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
-
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
     ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
     ierr = FlowRegisterPreStep(flowData, removeDiscretePressureNullspaceOnTs, NULL);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_PackParameters(LowMachFlowParameters *parameters, PetscScalar *constantArray) {
-    constantArray[STROUHAL] = parameters->strouhal;
-    constantArray[REYNOLDS] = parameters->reynolds;
-    constantArray[FROUDE] = parameters->froude;
-    constantArray[PECLET] = parameters->peclet;
-    constantArray[HEATRELEASE] = parameters->heatRelease;
-    constantArray[PTH] = parameters->pth;
-    constantArray[GAMMA] = parameters->gamma;
-    constantArray[MU] = parameters->mu;
-    constantArray[K] = parameters->k;
-    constantArray[CP] = parameters->cp;
-    constantArray[BETA] = parameters->beta;
-    constantArray[GRAVITY_DIRECTION] = parameters->gravityDirection;
-    return 0;
+static PetscErrorCode FlowDestroy_LowMachFlow(FlowData flow){
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr = PetscFree((flow->data));CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
 
-PetscErrorCode LowMachFlow_ParametersFromPETScOptions(PetscBag *flowParametersBag) {
-    LowMachFlowParameters *p;
+PetscErrorCode FlowSetFromOptions_LowMachFlow(FlowData flow){
+    PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
-    PetscFunctionBeginUser;
-    // create an empty bag
-    ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(LowMachFlowParameters), flowParametersBag);CHKERRQ(ierr);
+    // link the private methods
+    flow->flowSetupDiscretization = FlowSetupDiscretization_LowMachFlow;
+    flow->flowStartProblemSetup = FlowStartProblemSetup_LowMachFlow;
+    flow->flowCompleteProblemSetup = FlowCompleteProblemSetup_LowMachFlow;
+    flow->flowCompleteFlowInitialization = FlowCompleteFlowInitialization_LowMachFlow;
+    flow->flowDestroy = FlowDestroy_LowMachFlow;
 
-    // setup PETSc parameter bag
-    ierr = PetscBagGetData(*flowParametersBag, (void **)&p);CHKERRQ(ierr);
-    ierr = PetscBagSetName(*flowParametersBag, "flowParameters", "Low Mach Flow Parameters");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->strouhal, 1.0, lowMachFlowParametersTypeNames[STROUHAL], "Strouhal number");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->reynolds, 1.0, lowMachFlowParametersTypeNames[REYNOLDS], "Reynolds number");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->froude, 1.0, lowMachFlowParametersTypeNames[FROUDE], "Froude number");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->peclet, 1.0, lowMachFlowParametersTypeNames[PECLET], "Peclet number");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->heatRelease, 1.0, lowMachFlowParametersTypeNames[HEATRELEASE], "Heat Release number");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->gamma, 1.0, lowMachFlowParametersTypeNames[GAMMA], "gamma: p_o/(\rho_o Cp_o T_o");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->pth, 1.0, lowMachFlowParametersTypeNames[PTH], "non-dimensional thermodyamic pressure");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->mu, 1.0, lowMachFlowParametersTypeNames[MU], "non-dimensional viscosity");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->k, 1.0, lowMachFlowParametersTypeNames[K], "non-dimensional thermal conductivity");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->cp, 1.0, lowMachFlowParametersTypeNames[CP], "non-dimensional specific heat capacity");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->beta, 1.0, lowMachFlowParametersTypeNames[BETA], "non-dimensional thermal expansion coefficient ");CHKERRQ(ierr);
-    ierr = PetscBagRegisterInt(*flowParametersBag, &p->gravityDirection, 0, lowMachFlowParametersTypeNames[GRAVITY_DIRECTION], "axis");CHKERRQ(ierr);
+    // Create the LowMachData
+    FlowData_LowMachFlow flowData;
+    PetscNew(&flowData);
+    flow->data =flowData;
+
+    // set the default options
+    flowData->strouhal = 1.0;
+    flowData->reynolds = 1.0;
+    flowData->froude = 1.0;
+    flowData->peclet = 1.0;
+    flowData->heatRelease = 1.0;
+    flowData->gamma = 1.0;
+    flowData->pth = 1.0;
+    flowData->mu = 1.0;
+    flowData->k = 1.0;
+    flowData->cp = 1.0;
+    flowData->beta = 1.0;
+    flowData->gravityDirection = 0;
+    flowData->enableAuxFields = PETSC_FALSE;
+
+    // Read the inputs from the options
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-strouhal", &flowData->strouhal, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-reynolds", &flowData->reynolds, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-froude", &flowData->froude, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-peclet", &flowData->peclet, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-heatRelease", &flowData->heatRelease, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-gamma", &flowData->gamma, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-pth", &flowData->pth, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-mu", &flowData->mu, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-k", &flowData->k, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-cp", &flowData->cp, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-beta", &flowData->beta, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetInt(flow->options, NULL,  "-gravityDirection", &flowData->gravityDirection, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetBool(flow->options, NULL, "-enableAuxFields",&(flowData->enableAuxFields), NULL);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

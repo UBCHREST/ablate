@@ -49,8 +49,13 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     ierr = VecDestroy(&e);
     CHKERRQ(ierr);
 
+    // Get the flowData
+    FlowData flowData;
+    ierr = DMGetApplicationContext(dm, &flowData);
+    CHKERRQ(ierr);
+
     // get the flow to apply the completeFlowInitialization method
-    ierr = IncompressibleFlow_CompleteFlowInitialization(dm, u);
+    ierr = FlowCompleteFlowInitialization(flowData, dm, u);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -90,7 +95,6 @@ TEST_P(IncompressibleFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
     StartWithMPI
         DM dm;                 /* problem definition */
         TS ts;                 /* timestepper */
-        PetscBag parameterBag; /* constant flow parameters */
         FlowData flowData;     /* store some of the flow data*/
         PetscReal t;
         PetscErrorCode ierr;
@@ -114,23 +118,17 @@ TEST_P(IncompressibleFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
         // Setup the flow data
         ierr = FlowCreate(&flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = FlowSetType(flowData, "incompressible");
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = FlowSetFromOptions(flowData);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // setup problem
-        ierr = IncompressibleFlow_SetupDiscretization(flowData, dm);
+        ierr = FlowSetupDiscretization(flowData, &dm);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // get the flow parameters from options
-        IncompressibleFlowParameters *flowParameters;
-        ierr = IncompressibleFlow_ParametersFromPETScOptions(&parameterBag);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscBagGetData(parameterBag, (void **)&flowParameters);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // Start the problem setup
-        PetscScalar constants[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS];
-        ierr = IncompressibleFlow_PackParameters(flowParameters, constants);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = IncompressibleFlow_StartProblemSetup(flowData, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, constants);
+        ierr = FlowStartProblemSetup(flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         PetscTestingFunction uExact(testingParam.uExact);
@@ -273,10 +271,7 @@ TEST_P(IncompressibleFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
         }
         // enable aux fields
-        ierr = IncompressibleFlow_EnableAuxFields(flowData);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        ierr = IncompressibleFlow_CompleteProblemSetup(flowData, ts);
+        ierr = FlowCompleteProblemSetup(flowData, ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Name the flow field
@@ -331,8 +326,6 @@ TEST_P(IncompressibleFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = TSDestroy(&ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscBagDestroy(&parameterBag);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = PetscFinalize();
         exit(ierr);
     EndWithMPI
@@ -352,7 +345,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                              "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
+                                              "-enableAuxFields -momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
             .pExact = "x + y -1, 0.0",
             .TExact = "t + x +y, 1.0",
@@ -370,7 +363,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                              "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
+                                              "-enableAuxFields -momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
             .pExact = "x + y -1, 0.0",
             .TExact = "t + x +y, 1.0",
@@ -389,7 +382,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                              "-momentum_source_petscspace_degree 5 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 5"},
+                                              "-enableAuxFields -momentum_source_petscspace_degree 5 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 5"},
             .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y, 1.0, 1.0",
             .pExact = "3/2 *x^2 + 3/2*y^2 -1, 0.0",
             .TExact = "t + 1/2*x^2 +1/2*y^2, 1.0",

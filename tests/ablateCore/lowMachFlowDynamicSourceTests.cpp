@@ -48,8 +48,13 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     ierr = VecDestroy(&e);
     CHKERRQ(ierr);
 
+    // Get the flowData
+    FlowData flowData;
+    ierr = DMGetApplicationContext(dm, &flowData);
+    CHKERRQ(ierr);
+
     // get the flow to apply the completeFlowInitialization method
-    ierr = LowMachFlow_CompleteFlowInitialization(dm, u);
+    ierr = FlowCompleteFlowInitialization(flowData, dm, u);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -87,7 +92,6 @@ TEST_P(LowMachFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
     StartWithMPI
         DM dm;                 /* problem definition */
         TS ts;                 /* timestepper */
-        PetscBag parameterBag; /* constant flow parameters */
         FlowData flowData;     /* store some of the flow data*/
 
         PetscReal t;
@@ -112,23 +116,16 @@ TEST_P(LowMachFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
         // Setup the flow data
         ierr = FlowCreate(&flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = FlowSetType(flowData, "lowMach");
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = FlowSetFromOptions(flowData);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // setup problem
-        ierr = LowMachFlow_SetupDiscretization(flowData, dm);
+        ierr = FlowSetupDiscretization(flowData, &dm);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        // get the flow parameters from options
-        LowMachFlowParameters *flowParameters;
-        ierr = LowMachFlow_ParametersFromPETScOptions(&parameterBag);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscBagGetData(parameterBag, (void **)&flowParameters);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // Start the problem setup
-        PetscScalar constants[TOTAL_LOW_MACH_FLOW_PARAMETERS];
-        ierr = LowMachFlow_PackParameters(flowParameters, constants);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = LowMachFlow_StartProblemSetup(flowData, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants);
+        ierr = FlowStartProblemSetup(flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         PetscTestingFunction uExact(testingParam.uExact);
@@ -270,11 +267,8 @@ TEST_P(LowMachFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
             ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, PetscTestingFunction::ApplySolutionTimeDerivative, &TExact);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
         }
-        // enable aux fields
-        ierr = LowMachFlow_EnableAuxFields(flowData);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        ierr = LowMachFlow_CompleteProblemSetup(flowData, ts);
+        ierr = FlowCompleteProblemSetup(flowData, ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Name the flow field
@@ -332,8 +326,6 @@ TEST_P(LowMachFlowDynamicSourceMMS, ShouldConvergeToExactSolution) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = FlowDestroy(&flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscBagDestroy(&parameterBag);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = PetscFinalize();
         exit(ierr);
     EndWithMPI
@@ -354,7 +346,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                               "-dmts_check -1 -snes_linesearch_type basic "
                                               "-gravityDirection 1 "
-                                              "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
+                                              "-enableAuxFields -momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .uExact = "t + x^2 + y^2, t + 2*x^2 + 2*x*y, 1.0, 1.0",
             .pExact = "x + y -1, 0.0",
             .TExact = "t + x +y +1, 1.0",
@@ -374,7 +366,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                               "-dmts_check -1 -snes_linesearch_type basic "
                                               "-gravityDirection 1 "
-                                              "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
+                                              "-enableAuxFields -momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .uExact = "t + x^3 + y^3, t + 2*x^3 + 3*x^2*y, 1.0, 1.0",
             .pExact = "3/2*x^2 + 3/2*y^2 -1.125, 0.0",
             .TExact = "t + .5*x^2 +.5*y^2 +1, 1.0",

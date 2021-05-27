@@ -1,15 +1,27 @@
 #include "flow.h"
 
+static PetscBool flowInitialized = PETSC_FALSE;
+static PetscFunctionList flowSetupFunctionList = NULL;
+
 PetscErrorCode FlowCreate(FlowData* flow) {
     PetscFunctionBeginUser;
     *flow = malloc(sizeof(struct _FlowData));
 
     // initialize all fields
+    (*flow)->type = NULL;
     (*flow)->dm = NULL;
     (*flow)->auxDm = NULL;
     (*flow)->data = NULL;
     (*flow)->flowField = NULL;
     (*flow)->auxField = NULL;
+    (*flow)->options = NULL;
+
+    // set default methods to null
+    (*flow)->flowSetupDiscretization = NULL;
+    (*flow)->flowStartProblemSetup = NULL;
+    (*flow)->flowCompleteProblemSetup = NULL;
+    (*flow)->flowCompleteFlowInitialization = NULL;
+    (*flow)->flowDestroy = NULL;
 
     // setup the basic field names
     (*flow)->numberFlowFields = 0;
@@ -23,7 +35,74 @@ PetscErrorCode FlowCreate(FlowData* flow) {
     (*flow)->numberPostStepFunctions = 0;
     ierr = PetscMalloc1((*flow)->numberPostStepFunctions, &((*flow)->postStepFunctions));CHKERRQ(ierr);
 
+    PetscFunctionReturn(0);
+}
 
+PetscErrorCode FlowSetFromOptions_LowMachFlow(FlowData);
+PetscErrorCode FlowSetFromOptions_IncompressibleFlow(FlowData);
+
+static PetscErrorCode FlowInitialize(){
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+    if (!flowInitialized){
+        flowInitialized = PETSC_TRUE;
+        ierr = FlowRegister("lowMach", FlowSetFromOptions_LowMachFlow);CHKERRQ(ierr);
+        ierr = FlowRegister("incompressible", FlowSetFromOptions_IncompressibleFlow);CHKERRQ(ierr);
+    }
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowRegister(const char* name,const FlowSetupFunction function){
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+    if (!flowInitialized) {
+        ierr = FlowInitialize();CHKERRQ(ierr);
+    }
+    ierr = PetscFunctionListAdd(&flowSetupFunctionList,name,function);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowSetType(FlowData flow, const char* type){
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr = PetscStrallocpy(type, &flow->type);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowSetOptions(FlowData flow, PetscOptions options){
+    PetscFunctionBeginUser;
+    flow->options = options;
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowSetFromOptions(FlowData flow){
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+    ierr = FlowInitialize();CHKERRQ(ierr);
+
+    // get the
+    const char ** typeList;
+    PetscInt numberTypes;
+    ierr = PetscFunctionListGet(flowSetupFunctionList,&typeList, &numberTypes);CHKERRQ(ierr);
+
+    // get the value from the options
+    PetscInt value;
+    PetscBool set;
+    ierr = PetscOptionsGetEList(flow->options, NULL, "-flowType", typeList, numberTypes,&value,&set);CHKERRQ(ierr);
+    if (!set && !flow->type){
+        SETERRQ(PETSC_COMM_SELF,PETSC_ERR_ARG_TYPENOTSET, "The Fow type must be set with EOSSetType() or -eosType");
+    }
+    if (set){
+        ierr =  PetscStrallocpy(typeList[value], (char**) &flow->type);CHKERRQ(ierr);
+    }
+
+    // Get the create function from the function list
+    FlowSetupFunction setupFunction;
+    ierr = PetscFunctionListFind(flowSetupFunctionList,flow->type, &setupFunction);CHKERRQ(ierr);
+
+    // call and setup the eos
+    ierr = setupFunction(flow);CHKERRQ(ierr);
+
+    PetscFree(typeList);
     PetscFunctionReturn(0);
 }
 
@@ -239,10 +318,31 @@ static PetscErrorCode FlowTSPostStepFunction(TS ts){
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode FlowSetupDiscretization(FlowData flowData, DM* dm){
+    PetscFunctionBeginUser;
+    if(flowData->flowSetupDiscretization){
+        PetscErrorCode ierr = flowData->flowSetupDiscretization(flowData, dm);CHKERRQ(ierr);
+    }
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowStartProblemSetup(FlowData flowData){
+    PetscFunctionBeginUser;
+    if(flowData->flowStartProblemSetup){
+        PetscErrorCode ierr = flowData->flowStartProblemSetup(flowData);CHKERRQ(ierr);
+    }
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
+    PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
-    PetscFunctionBeginUser;
+    // Call the class specific implementation
+    if(flowData->flowCompleteProblemSetup){
+        PetscErrorCode ierr = flowData->flowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
+    }
+
     // Setup the solve with the ts
     DM dm = flowData->dm;
     ierr = TSSetDM(ts, flowData->dm);CHKERRQ(ierr);
@@ -287,6 +387,14 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
     ierr = TSSetPreStep(ts, FlowTSPreStepFunction);CHKERRQ(ierr);
     ierr = TSSetPostStep(ts, FlowTSPostStepFunction);CHKERRQ(ierr);
 
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowCompleteFlowInitialization(FlowData flowData, DM dm, Vec u){
+    PetscFunctionBeginUser;
+    if(flowData->flowCompleteFlowInitialization){
+        PetscErrorCode ierr = flowData->flowCompleteFlowInitialization(dm, u);CHKERRQ(ierr);
+    }
     PetscFunctionReturn(0);
 }
 
@@ -369,6 +477,10 @@ PetscErrorCode FlowViewFromOptions(FlowData flowData, char *optionName) {
 PetscErrorCode FlowDestroy(FlowData* flow) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
+    if((*flow)->flowDestroy){
+        ierr = (*flow)->flowDestroy(*flow);CHKERRQ(ierr);
+    }
+
     // remove each allocated string and flow field
     for (PetscInt i =0; i < (*flow)->numberFlowFields; i++){
         PetscFree((*flow)->flowFieldDescriptors[i].fieldName);
@@ -399,5 +511,4 @@ PetscErrorCode FlowDestroy(FlowData* flow) {
     flow = NULL;
     PetscFunctionReturn(0);
 }
-
 

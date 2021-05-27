@@ -8,14 +8,14 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
                                        std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
     : Flow(mesh, name, arguments, initialization, boundaryConditions, auxiliaryFields) {
     // Setup the problem
-    LowMachFlow_SetupDiscretization(flowData, mesh->GetDomain()) >> checkError;
+    FlowSetupDiscretization_LowMachFlow(flowData, mesh->GetDomain()) >> checkError;
 
     // Pack up any of the parameters
     PetscScalar constants[TOTAL_LOW_MACH_FLOW_PARAMETERS];
     parameters->Fill(TOTAL_LOW_MACH_FLOW_PARAMETERS, lowMachFlowParametersTypeNames, constants);
 
     // Start the problem setup
-    LowMachFlow_StartProblemSetup(flowData, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants) >> checkError;
+    FlowStartProblemSetup_LowMachFlow(flowData, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants) >> checkError;
 
     PetscDS prob;
     DMGetDS(mesh->GetDomain(), &prob) >> checkError;
@@ -29,7 +29,7 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
 
 void ablate::flow::LowMachFlow::SetupSolve(TS &ts) {
     // finish setup and assign flow field
-    LowMachFlow_CompleteProblemSetup(flowData, ts);
+    FlowCompleteProblemSetup_LowMachFlow(flowData, ts);
     ablate::flow::Flow::SetupSolve(ts);
 }
 

@@ -6,10 +6,8 @@ target_sources(coreTests
         lowMachFlowDynamicSourceTests.cpp
         incompressibleFlowFunctionSourceTests.cpp
         incompressibleFlowDynamicSourceTests.cpp
-        incompressibleFlowParameterTests.cpp
         lowMachFlowFunctionSourceTests.cpp
         lowMachFlowDynamicSourceTests.cpp
-        lowMachFlowParameterTests.cpp
         particleTests.cpp
         inertialParticleTests.cpp
         fluxDifferencerTests.cpp

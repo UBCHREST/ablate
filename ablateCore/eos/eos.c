@@ -44,7 +44,7 @@ PetscErrorCode EOSCreate(EOSData* eos) {
 PETSC_EXTERN PetscErrorCode EOSSetType(EOSData eos, const char* type) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr = PetscStrallocpy(type, &eos->type);CHKERRQ(ierr);
-    return 0;
+    PetscFunctionReturn(0);
 }
 
 PETSC_EXTERN PetscErrorCode EOSSetOptions(EOSData eos, PetscOptions options){

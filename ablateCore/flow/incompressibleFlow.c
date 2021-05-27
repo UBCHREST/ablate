@@ -7,6 +7,18 @@ const char *incompressibleFlowParametersTypeNames[TOTAL_INCOMPRESSIBLE_FLOW_PARA
 static const char *incompressibleFlowFieldNames[TOTAL_INCOMPRESSIBLE_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
 static const char *incompressibleSourceFieldNames[TOTAL_INCOMPRESSIBLE_SOURCE_FIELDS + 1] = {"momentum_source", "mass_source", "energy_source", "unknown"};
 
+struct _FlowData_IncompressibleFlow{
+    PetscReal strouhal;
+    PetscReal reynolds;
+    PetscReal peclet;
+    PetscReal mu; /* non-dimensional viscosity */
+    PetscReal k;  /* non-dimensional thermal conductivity */
+    PetscReal cp; /* non-dimensional specific heat capacity */
+    PetscBool enableAuxFields;
+};
+
+typedef struct _FlowData_IncompressibleFlow* FlowData_IncompressibleFlow;
+
 // \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u}
 static void vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
                                    const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal X[],
@@ -243,7 +255,7 @@ static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt n
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_CompleteFlowInitialization(DM dm, Vec u) {
+PetscErrorCode FlowCompleteFlowInitialization_IncompressibleFlow(DM dm, Vec u) {
     MatNullSpace nullsp;
     PetscErrorCode ierr;
 
@@ -263,22 +275,22 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, void* cts) {
     PetscFunctionBegin;
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
     ierr = TSGetSolution(ts, &u);CHKERRQ(ierr);
-    ierr = IncompressibleFlow_CompleteFlowInitialization(dm, u);CHKERRQ(ierr);
+    ierr = FlowCompleteFlowInitialization_IncompressibleFlow(dm, u);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) {
-    DM cdm = dm;
+PetscErrorCode FlowSetupDiscretization_IncompressibleFlow(FlowData flowData, DM *dm) {
+    DM cdm = *dm;
     PetscInt dim;
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
     //Store the field data
-    flowData->dm = dm;
+    flowData->dm = *dm;
     ierr = DMSetApplicationContext(flowData->dm, flowData);CHKERRQ(ierr);
 
     // Determine the number of dimensions
-    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+    ierr = DMGetDimension(*dm, &dim);CHKERRQ(ierr);
 
     // Register each field, this order must match the order in IncompressibleFlowFields enum
     ierr = FlowRegisterField(flowData, incompressibleFlowFieldNames[VEL], "vel_", dim, FE);CHKERRQ(ierr);
@@ -289,7 +301,7 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) 
     ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
 
     while (cdm) {
-        ierr = DMCopyDisc(dm, cdm);CHKERRQ(ierr);
+        ierr = DMCopyDisc(*dm, cdm);CHKERRQ(ierr);
         ierr = DMGetCoarseDM(cdm, &cdm);CHKERRQ(ierr);
     }
 
@@ -297,7 +309,7 @@ PetscErrorCode IncompressibleFlow_SetupDiscretization(FlowData flowData, DM dm) 
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        ierr = DMGetField(dm, PRES, NULL, &pressure);CHKERRQ(ierr);
+        ierr = DMGetField(*dm, PRES, NULL, &pressure);CHKERRQ(ierr);
         ierr = MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres);CHKERRQ(ierr);
         ierr = PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres);CHKERRQ(ierr);
         ierr = MatNullSpaceDestroy(&nullspacePres);CHKERRQ(ierr);
@@ -318,10 +330,26 @@ PetscErrorCode IncompressibleFlow_EnableAuxFields(FlowData flowData) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt numberParameters, PetscScalar parameters[]) {
+static PetscErrorCode IncompressibleFlow_PackParameters(FlowData_IncompressibleFlow parameters, PetscScalar *constantArray) {
+    constantArray[STROUHAL] = parameters->strouhal;
+    constantArray[REYNOLDS] = parameters->reynolds;
+    constantArray[PECLET] = parameters->peclet;
+    constantArray[MU] = parameters->mu;
+    constantArray[K] = parameters->k;
+    constantArray[CP] = parameters->cp;
+    return 0;
+}
+
+PetscErrorCode FlowStartProblemSetup_IncompressibleFlow(FlowData flowData) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
+    // If set, enable the aux fields
+    FlowData_IncompressibleFlow incompressibleData = (FlowData_IncompressibleFlow)flowData->data;
+    if(incompressibleData->enableAuxFields){
+        IncompressibleFlow_EnableAuxFields(flowData);
+    }
+
     PetscDS prob;
     ierr = DMGetDS(flowData->dm, &prob);CHKERRQ(ierr);
 
@@ -335,56 +363,64 @@ PetscErrorCode IncompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt 
     ierr = PetscDSSetJacobian(prob, QTEST, VEL, NULL, g1_qu, NULL, NULL);CHKERRQ(ierr);
     ierr = PetscDSSetJacobian(prob, WTEST, VEL, g0_wu, NULL, NULL, NULL);CHKERRQ(ierr);
     ierr = PetscDSSetJacobian(prob, WTEST, TEMP, g0_wT, g1_wT, NULL, g3_wT);CHKERRQ(ierr);
+
     /* Setup constants */;
-    {
-        if (numberParameters != TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "wrong number of flow parameters");
-        }
-        ierr = PetscDSSetConstants(prob, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, parameters);CHKERRQ(ierr);
-    }
+    PetscReal parameters[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS];
+    ierr = IncompressibleFlow_PackParameters(incompressibleData, parameters);;CHKERRQ(ierr);
+    ierr = PetscDSSetConstants(prob, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, parameters);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
+PetscErrorCode FlowCompleteProblemSetup_IncompressibleFlow(FlowData flowData, TS ts) {
     PetscErrorCode ierr;
     DM dm;
 
     PetscFunctionBeginUser;
-    ierr =  FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
-
     ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
     ierr = DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace);CHKERRQ(ierr);
     ierr = FlowRegisterPreStep(flowData, removeDiscretePressureNullspaceOnTs, NULL);CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_PackParameters(IncompressibleFlowParameters *parameters, PetscScalar *constantArray) {
-    constantArray[STROUHAL] = parameters->strouhal;
-    constantArray[REYNOLDS] = parameters->reynolds;
-    constantArray[PECLET] = parameters->peclet;
-    constantArray[MU] = parameters->mu;
-    constantArray[K] = parameters->k;
-    constantArray[CP] = parameters->cp;
-    return 0;
+static PetscErrorCode FlowDestroy_IncompressibleFlow(FlowData flow){
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr = PetscFree((flow->data));CHKERRQ(ierr);
+    PetscFunctionReturn(0);
 }
 
-PetscErrorCode IncompressibleFlow_ParametersFromPETScOptions(PetscBag *flowParametersBag) {
-    IncompressibleFlowParameters *p;
+PetscErrorCode FlowSetFromOptions_IncompressibleFlow(FlowData flow){
+    PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
-    PetscFunctionBeginUser;
-    // create an empty bag
-    ierr = PetscBagCreate(PETSC_COMM_WORLD, sizeof(IncompressibleFlowParameters), flowParametersBag);CHKERRQ(ierr);
+    // link the private methods
+    flow->flowSetupDiscretization = FlowSetupDiscretization_IncompressibleFlow;
+    flow->flowStartProblemSetup = FlowStartProblemSetup_IncompressibleFlow;
+    flow->flowCompleteProblemSetup = FlowCompleteProblemSetup_IncompressibleFlow;
+    flow->flowCompleteFlowInitialization = FlowCompleteFlowInitialization_IncompressibleFlow;
+    flow->flowDestroy = FlowDestroy_IncompressibleFlow;
 
-    // setup PETSc parameter bag
-    ierr = PetscBagGetData(*flowParametersBag, (void **)&p);CHKERRQ(ierr);
-    ierr = PetscBagSetName(*flowParametersBag, "flowParameters", "Low Mach Flow Parameters");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->strouhal, 1.0, incompressibleFlowParametersTypeNames[STROUHAL], "Strouhal number");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->reynolds, 1.0, incompressibleFlowParametersTypeNames[REYNOLDS], "Reynolds number");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->peclet, 1.0, incompressibleFlowParametersTypeNames[PECLET], "Peclet number");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->mu, 1.0, incompressibleFlowParametersTypeNames[MU], "non-dimensional viscosity");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->k, 1.0, incompressibleFlowParametersTypeNames[K], "non-dimensional thermal conductivity");CHKERRQ(ierr);
-    ierr = PetscBagRegisterReal(*flowParametersBag, &p->cp, 1.0, incompressibleFlowParametersTypeNames[CP], "non-dimensional specific heat capacity");CHKERRQ(ierr);
+    // Create the IncompressibleFlow
+    FlowData_IncompressibleFlow flowData;
+    PetscNew(&flowData);
+    flow->data =flowData;
+
+    // set the default options
+    flowData->strouhal = 1.0;
+    flowData->reynolds = 1.0;
+    flowData->peclet = 1.0;
+    flowData->mu = 1.0;
+    flowData->k = 1.0;
+    flowData->cp = 1.0;
+    flowData->enableAuxFields = PETSC_FALSE;
+
+    // Read the inputs from the options
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-strouhal", &flowData->strouhal, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-reynolds", &flowData->reynolds, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-peclet", &flowData->peclet, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-mu", &flowData->mu, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-k", &flowData->k, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-cp", &flowData->cp, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetBool(flow->options, NULL, "-enableAuxFields",&(flowData->enableAuxFields), NULL);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }

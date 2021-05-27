@@ -68,6 +68,11 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     ierr = TSGetTime(ts, &t);
     CHKERRQ(ierr);
 
+    // Get the flowData
+    FlowData flowData;
+    ierr = DMGetApplicationContext(dm, &flowData);
+    CHKERRQ(ierr);
+
     // This function Tags the u vector as the exact solution.  We need to copy the values to prevent this.
     Vec e;
     ierr = VecDuplicate(u, &e);
@@ -80,7 +85,7 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     CHKERRQ(ierr);
 
     // get the flow to apply the completeFlowInitialization method
-    ierr = LowMachFlow_CompleteFlowInitialization(dm, u);
+    ierr = FlowCompleteFlowInitialization(flowData, dm, u);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -314,7 +319,6 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
     StartWithMPI
         DM dm;                 /* problem definition */
         TS ts;                 /* timestepper */
-        PetscBag parameterBag; /* constant flow parameters */
         FlowData flowData;     /* store some of the flow data*/
 
         PetscReal t;
@@ -339,23 +343,16 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         // Setup the flow data
         ierr = FlowCreate(&flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = FlowSetType(flowData, "lowMach");
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ierr = FlowSetFromOptions(flowData);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // setup problem
-        ierr = LowMachFlow_SetupDiscretization(flowData, dm);
+        ierr = FlowSetupDiscretization(flowData, &dm);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // get the flow parameters from options
-        LowMachFlowParameters *flowParameters;
-        ierr = LowMachFlow_ParametersFromPETScOptions(&parameterBag);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscBagGetData(parameterBag, (void **)&flowParameters);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // Start the problem setup
-        PetscScalar constants[TOTAL_LOW_MACH_FLOW_PARAMETERS];
-        ierr = LowMachFlow_PackParameters(flowParameters, constants);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = LowMachFlow_StartProblemSetup(flowData, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants);
+        
+        ierr = FlowStartProblemSetup(flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Override problem with source terms, boundary, and set the exact solution
@@ -389,52 +386,52 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
             PetscInt id;
             id = 3;
             ierr = PetscDSAddBoundary(
-                prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+                prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
             ierr = PetscDSAddBoundary(
-                prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+                prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 2;
             ierr = PetscDSAddBoundary(
-                prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+                prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
             ierr = PetscDSAddBoundary(
-                prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, parameterBag);
+                prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 3;
             ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 1;
             ierr = PetscDSAddBoundary(
-                prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+                prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 2;
             ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             id = 4;
             ierr =
-                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, parameterBag);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
             // Set the exact solution
-            ierr = PetscDSSetExactSolution(prob, VEL, testingParam.uExact, parameterBag);
+            ierr = PetscDSSetExactSolution(prob, VEL, testingParam.uExact, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolution(prob, PRES, testingParam.pExact, parameterBag);
+            ierr = PetscDSSetExactSolution(prob, PRES, testingParam.pExact, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolution(prob, TEMP, testingParam.TExact, parameterBag);
+            ierr = PetscDSSetExactSolution(prob, TEMP, testingParam.TExact, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, VEL, testingParam.u_tExact, parameterBag);
+            ierr = PetscDSSetExactSolutionTimeDerivative(prob, VEL, testingParam.u_tExact, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, parameterBag);
+            ierr = PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, testingParam.T_tExact, parameterBag);
+            ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, testingParam.T_tExact, NULL);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
         }
-        ierr = LowMachFlow_CompleteProblemSetup(flowData, ts);
+        ierr = FlowCompleteProblemSetup(flowData, ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Name the flow field
@@ -476,8 +473,6 @@ TEST_P(LowMachFlowMMS, ShouldConvergeToExactSolution) {
         ierr = TSDestroy(&ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = FlowDestroy(&flowData);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscBagDestroy(&parameterBag);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = PetscFinalize();
         exit(ierr);
