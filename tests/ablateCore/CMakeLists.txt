@@ -3,11 +3,9 @@ target_link_libraries(coreTests PUBLIC gtest gmock ablateCore testingResources m
 
 target_sources(coreTests
         PRIVATE
-        lowMachFlowDynamicSourceTests.cpp
-        incompressibleFlowFunctionSourceTests.cpp
-        incompressibleFlowDynamicSourceTests.cpp
-        lowMachFlowFunctionSourceTests.cpp
-        lowMachFlowDynamicSourceTests.cpp
+        feFlowDynamicSourceTests.cpp
+        feFlowFunctionSourceTests.cpp
+        feFlowDynamicSourceTests.cpp
         particleTests.cpp
         inertialParticleTests.cpp
         fluxDifferencerTests.cpp
