@@ -4,7 +4,7 @@
 
 ablate::particles::Particles::Particles(std::string name, std::map<std::string, std::string> arguments, std::shared_ptr<particles::initializers::Initializer> initializer)
     : name(name), initializer(initializer) {
-    utilities::PetscOptions::Set(name + "_", arguments);
+    utilities::PetscOptionsUtils::Set(name + "_", arguments);
 }
 
 void ablate::particles::Particles::SetExactSolution(std::shared_ptr<mathFunctions::MathFunction> exactSolutionIn) {

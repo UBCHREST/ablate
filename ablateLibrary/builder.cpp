@@ -10,7 +10,7 @@
 void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     // get the global arguments
     auto globalArguments = parser->Get(parser::ArgumentIdentifier<std::map<std::string, std::string>>{"arguments"});
-    utilities::PetscOptions::Set(globalArguments);
+    utilities::PetscOptionsUtils::Set(globalArguments);
 
     // create a time stepper
     auto timeStepper = parser->Get(parser::ArgumentIdentifier<solve::TimeStepper>{"timestepper"});

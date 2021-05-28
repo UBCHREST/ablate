@@ -24,8 +24,6 @@ flow: !ablate::flow::CompressibleFlow
   arguments: {}
   parameters:
     cfl: 0.5
-    gamma: 1.4
-    Rgas : 287.0
     k: 0.0
     mu: 0.0
   initialization:
@@ -40,4 +38,8 @@ flow: !ablate::flow::CompressibleFlow
         formula: "0.0, 0.0, 0.0, 0.0"
   monitors:
     - !ablate::monitors::flow::Hdf5OutputFlow
-
+  eos:
+    type: perfectGas
+    parameters:
+      gamma: 1.4
+      Rgas : 287.0

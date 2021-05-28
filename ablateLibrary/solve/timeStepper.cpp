@@ -53,7 +53,7 @@ ablate::solve::TimeStepper::TimeStepper(std::string name, std::map<std::string, 
     TSSetOptionsPrefix(ts, name.c_str()) >> checkError;
 
     // append any prefix values
-    ablate::utilities::PetscOptions::Set(name, arguments);
+    ablate::utilities::PetscOptionsUtils::Set(name, arguments);
 
     // Set this as the context
     TSSetApplicationContext(ts, this) >> checkError;

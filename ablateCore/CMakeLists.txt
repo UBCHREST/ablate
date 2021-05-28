@@ -19,6 +19,7 @@ target_include_directories(ablateCore PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 # Include the code in any subdirectory
 add_subdirectory(flow)
 add_subdirectory(particles)
+add_subdirectory(eos)
 
 # Tag the version file
 configure_file (

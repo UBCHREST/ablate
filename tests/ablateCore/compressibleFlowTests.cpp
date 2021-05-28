@@ -1,5 +1,6 @@
 #include <compressibleFlow.h>
 #include <petsc.h>
+#include <PetscTestFixture.hpp>
 #include <vector>
 #include "gtest/gtest.h"
 
@@ -11,7 +12,7 @@ struct CompressibleFlowFluxTestParameters {
     std::vector<PetscReal> expectedFlux;
 };
 
-class CompressibleFlowFluxTestFixture : public ::testing::TestWithParam<CompressibleFlowFluxTestParameters> {};
+class CompressibleFlowFluxTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<CompressibleFlowFluxTestParameters> {};
 
 TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     // arrange
@@ -24,10 +25,17 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     EulerFlowData* eulerFlowData;
     PetscNew(&eulerFlowData);
     eulerFlowData->cfl = NAN;
-    eulerFlowData->gamma = 1.4;
+
     ierr = FluxDifferencerGet(params.fluxDifferencer.c_str(), &(eulerFlowData->fluxDifferencer));
     ASSERT_EQ(0, ierr);
     flowData->data = eulerFlowData;
+
+    // set a perfect gas for testing
+    EOSData eos;
+    EOSCreate(&eos);
+    EOSSetType(eos, "perfectGas");
+    EOSSetFromOptions(eos);
+    CompressibleFlow_SetEOS(flowData, eos);
 
     // act
     std::vector<PetscReal> computedFlux(params.expectedFlux.size());
@@ -39,6 +47,8 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     }
 
     // cleanup
+    ierr = EOSDestroy(&eos);
+    ASSERT_EQ(0, ierr);
     ierr = FlowDestroy(&flowData);
     ASSERT_EQ(0, ierr);
 }

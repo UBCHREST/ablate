@@ -6,7 +6,7 @@ ablate::flow::Flow::Flow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std
                          std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
     : mesh(mesh), name(name), initialization(initialization), boundaryConditions(boundaryConditions), auxiliaryFields(auxiliaryFields) {
     // append any prefix values
-    utilities::PetscOptions::Set(name, arguments);
+    utilities::PetscOptionsUtils::Set(name, arguments);
 
     // setup the flow data
     FlowCreate(&flowData) >> checkError;

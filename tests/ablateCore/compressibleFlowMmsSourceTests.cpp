@@ -658,13 +658,26 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             // Add in the flow parameters
             PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];
             params[CFL] = 0.5;
-            params[GAMMA] = constants.gamma;
-            params[RGAS] = constants.R;
             params[K] = constants.k;
             params[MU] = constants.mu;
 
             // set up the finite volume fluxes
             CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params) >> errorChecker;
+
+            // set a simple perfect gas eos for testing
+            EOSData eos;
+            EOSCreate(&eos) >> errorChecker;
+
+            EOSSetType(eos, "perfectGas") >> errorChecker;
+
+            PetscOptions eosOptions;
+            PetscOptionsCreate(&eosOptions) >> errorChecker;
+            PetscOptionsSetValue(eosOptions, "-gamma", std::to_string(constants.gamma).c_str()) >> errorChecker;
+            PetscOptionsSetValue(eosOptions, "-Rgas", std::to_string(constants.R).c_str()) >> errorChecker;
+
+            EOSSetOptions(eos, eosOptions) >> errorChecker;
+            EOSSetFromOptions(eos) >> errorChecker;
+            CompressibleFlow_SetEOS(flowData, eos) >> errorChecker;
 
             // Add in any boundary conditions
             PetscDS prob;
@@ -717,6 +730,8 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                 lInfHistory[b].push_back(PetscLog10Real(infResidual[b]));
             }
 
+            PetscOptionsDestroy(&eosOptions) >> errorChecker;
+            EOSDestroy(&eos) >> errorChecker;
             FlowDestroy(&flowData) >> errorChecker;
             TSDestroy(&ts) >> errorChecker;
         }
