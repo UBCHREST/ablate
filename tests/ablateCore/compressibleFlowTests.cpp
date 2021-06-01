@@ -22,7 +22,7 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     PetscErrorCode ierr = FlowCreate(&flowData);
     ASSERT_EQ(0, ierr);
 
-    EulerFlowData* eulerFlowData;
+    FlowData_CompressibleFlow eulerFlowData;
     PetscNew(&eulerFlowData);
     eulerFlowData->cfl = NAN;
 

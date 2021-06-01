@@ -194,18 +194,22 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             // Setup the flow data
             FlowData flowData; /* store some of the flow data*/
             FlowCreate(&flowData) >> errorChecker;
+            FlowSetType(flowData, "compressible") >> errorChecker;
+
+            PetscOptions flowOptions;
+            PetscOptionsCreate(&flowOptions) >> errorChecker;
+            PetscOptionsSetValue(flowOptions, "-cfl", "0.5")  >> errorChecker;;
+            PetscOptionsSetValue(flowOptions, "-mu", "0.0")  >> errorChecker;;
+            PetscOptionsSetValue(flowOptions, "-k", std::to_string(parameters.k).c_str())  >> errorChecker;;
+            FlowSetOptions(flowData, flowOptions) >> errorChecker;
+
+            FlowSetFromOptions(flowData)  >> errorChecker;
 
             // Setup
-            CompressibleFlow_SetupDiscretization(flowData, &dm);
-
-            // Add in the flow parameters
-            PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];
-            params[CFL] = 0.5;
-            params[K] = parameters.k;
-            params[MU] = 0.0;
+            FlowSetupDiscretization(flowData, &dm);
 
             // set up the finite volume fluxes
-            CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params) >> errorChecker;
+            FlowStartProblemSetup(flowData) >> errorChecker;
 
             // set a simple perfect gas eos for testing
             EOSData eos;
@@ -232,7 +236,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "top/bottom", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Mirror, NULL, 2, idsTop, &parameters) >> errorChecker;
 
             // Complete the problem setup
-            CompressibleFlow_CompleteProblemSetup(flowData, ts) >> errorChecker;
+            FlowCompleteProblemSetup(flowData, ts) >> errorChecker;
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)flowData->flowField), "Numerical Solution") >> errorChecker;
@@ -271,6 +275,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                 l2History[b].push_back(PetscLog10Real(l2Norm[b]));
                 lInfHistory[b].push_back(PetscLog10Real(lInfNorm[b]));
             }
+            PetscOptionsDestroy(&flowOptions) >> errorChecker;
             PetscOptionsDestroy(&eosOptions) >> errorChecker;
             EOSDestroy(&eos) >> errorChecker;
             FlowDestroy(&flowData) >> errorChecker;

@@ -646,6 +646,16 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             // Setup the flow data
             FlowData flowData; /* store some of the flow data*/
             FlowCreate(&flowData) >> errorChecker;
+            FlowSetType(flowData, "compressible") >> errorChecker;
+
+            PetscOptions flowOptions;
+            PetscOptionsCreate(&flowOptions) >> errorChecker;
+            PetscOptionsSetValue(flowOptions, "-cfl", "0.5")  >> errorChecker;;
+            PetscOptionsSetValue(flowOptions, "-mu", std::to_string(constants.mu).c_str())  >> errorChecker;;
+            PetscOptionsSetValue(flowOptions, "-k", std::to_string(constants.k).c_str())  >> errorChecker;;
+            FlowSetOptions(flowData, flowOptions) >> errorChecker;
+
+            FlowSetFromOptions(flowData)  >> errorChecker;
 
             // Combine the flow data
             ProblemSetup problemSetup;
@@ -653,16 +663,10 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             problemSetup.constants = constants;
 
             // Setup
-            CompressibleFlow_SetupDiscretization(flowData, &dm);
-
-            // Add in the flow parameters
-            PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];
-            params[CFL] = 0.5;
-            params[K] = constants.k;
-            params[MU] = constants.mu;
+            FlowSetupDiscretization(flowData, &dm);
 
             // set up the finite volume fluxes
-            CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params) >> errorChecker;
+            FlowStartProblemSetup(flowData) >> errorChecker;
 
             // set a simple perfect gas eos for testing
             EOSData eos;
@@ -687,7 +691,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "wall left", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler, NULL, 4, idsLeft, &constants) >> errorChecker;
 
             // Complete the problem setup
-            CompressibleFlow_CompleteProblemSetup(flowData, ts) >> errorChecker;
+            FlowCompleteProblemSetup(flowData, ts) >> errorChecker;
 
             // Override the flow calc for now
             DMTSSetRHSFunctionLocal(flowData->dm, ComputeRHSWithSourceTerms, &problemSetup) >> errorChecker;
@@ -729,7 +733,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                 l2History[b].push_back(PetscLog10Real(l2Residual[b]));
                 lInfHistory[b].push_back(PetscLog10Real(infResidual[b]));
             }
-
+            PetscOptionsDestroy(&flowOptions) >> errorChecker;
             PetscOptionsDestroy(&eosOptions) >> errorChecker;
             EOSDestroy(&eos) >> errorChecker;
             FlowDestroy(&flowData) >> errorChecker;

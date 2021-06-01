@@ -3,7 +3,6 @@
 
 static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
 static const char *compressibleAuxComponentNames[TOTAL_COMPRESSIBLE_AUX_COMPONENTS + 1] = {"T", "vel", "unknown"};
-const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "k", "mu", "unknown"};
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
@@ -326,7 +325,7 @@ PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, c
 
 void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
     FlowData flowData = (FlowData)ctx;
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)flowData->data;
 
     // Compute the norm
     PetscReal norm[3];
@@ -462,7 +461,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     }
 
     // Get the flow parameters
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)flowData->data;
 
     // march over each face
     for (PetscInt face = faceStart; face < faceEnd; ++face) {
@@ -583,7 +582,7 @@ PetscErrorCode CompressibleFlowRHSFunctionLocal(DM dm, PetscReal time, Vec locXV
     PetscErrorCode ierr;
 
     FlowData flowData = (FlowData)ctx;
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)flowData->data;
 
     // compute the euler flux across each face (note CompressibleFlowComputeEulerFlux has already been registered)
     ierr = DMPlexTSComputeRHSFunctionFVM(dm, time, locXVec, globFVec, ctx);CHKERRQ(ierr);
@@ -600,7 +599,7 @@ PetscErrorCode CompressibleFlowRHSFunctionLocal(DM dm, PetscReal time, Vec locXV
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM* dm) {
+PetscErrorCode FlowSetupDiscretization_CompressibleFlow(FlowData flowData, DM* dm) {
     PetscInt dim;
     PetscErrorCode ierr;
 
@@ -658,7 +657,7 @@ static PetscErrorCode UpdateAuxTemperatureField(FlowData flowData, PetscReal tim
     PetscReal density = conservedValues[RHO];
     PetscReal totalEnergy = conservedValues[RHOE]/density;
 
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)flowData->data;
     PetscErrorCode ierr = EOSTemperature(flowParameters->eos, NULL, dim, density, totalEnergy, conservedValues + RHOU, &auxField[T]);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -675,7 +674,7 @@ static PetscErrorCode UpdateAuxVelocityField(FlowData flowData, PetscReal time, 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt num, PetscScalar values[]) {
+static PetscErrorCode FlowStartProblemSetup_CompressibleFlow(FlowData flowData) {
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
@@ -687,14 +686,7 @@ PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt nu
     ierr = PetscDSSetContext(prob, 0, flowData);CHKERRQ(ierr);
     ierr = PetscDSSetFromOptions(prob);CHKERRQ(ierr);
 
-    // Create the euler data
-    EulerFlowData *data;
-    PetscNew(&data);
-    flowData->data =data;
-
-    data->cfl = values[CFL];
-    data->k = num > K ? values[K] : 0.0;
-    data->mu = num > MU ? values[MU] : 0.0;
+    FlowData_CompressibleFlow data = (FlowData_CompressibleFlow)flowData->data;
 
     // Set the update fields
     data->auxFieldUpdateFunctions[T] = UpdateAuxTemperatureField;
@@ -733,7 +725,7 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
     // Get the flow param
     FlowData flowData;
     ierr = DMGetApplicationContext(dm, &flowData);CHKERRQ(ierr);
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)flowData->data;
 
     // Get the fv geom
     PetscReal minCellRadius;
@@ -790,16 +782,15 @@ static PetscErrorCode ComputeTimeStep(TS ts, void* context){
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
+PetscErrorCode FlowCompleteProblemSetup_CompressibleFlow(FlowData flowData, TS ts) {
     PetscErrorCode ierr;
     PetscFunctionBeginUser;
     // make sure that the eos has been set
-    if (!((EulerFlowData*)flowData->data)->eos){
+    if (!((FlowData_CompressibleFlow)flowData->data)->eos){
         SETERRQ(PetscObjectComm((PetscObject)flowData->dm),PETSC_ERR_ARG_WRONGSTATE, "The EOS has not been set for the flow");
     }
 
-    ierr = FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
-    EulerFlowData * compressibleFlowData = (EulerFlowData *)flowData->data;
+    FlowData_CompressibleFlow compressibleFlowData = (FlowData_CompressibleFlow)flowData->data;
     if (compressibleFlowData->automaticTimeStepCalculator){
         ierr = FlowRegisterPreStep(flowData, ComputeTimeStep, flowData);CHKERRQ(ierr);
     }
@@ -845,6 +836,36 @@ PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
 
 PetscErrorCode CompressibleFlow_SetEOS(FlowData flowData, EOSData eosData) {
     PetscFunctionBeginUser;
-    ((EulerFlowData*)flowData->data)->eos = eosData;
+    ((FlowData_CompressibleFlow)flowData->data)->eos = eosData;
+    PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode FlowSetFromOptions_CompressibleFlow(FlowData flow){
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+
+    // link the private methods
+    flow->flowSetupDiscretization = FlowSetupDiscretization_CompressibleFlow;
+    flow->flowStartProblemSetup = FlowStartProblemSetup_CompressibleFlow;
+    flow->flowCompleteProblemSetup = FlowCompleteProblemSetup_CompressibleFlow;
+    flow->flowCompleteFlowInitialization = NULL;
+    flow->flowDestroy = NULL;
+
+    // Create the IncompressibleFlow
+    FlowData_CompressibleFlow flowData;
+    PetscNew(&flowData);
+    flow->data =flowData;
+
+    // set the default options
+    flowData->cfl = 0.5;
+    flowData->mu = 0.0;
+    flowData->k = 0.0;
+
+    // Read the inputs from the options
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-cfl", &flowData->cfl, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-mu", &flowData->mu, NULL);CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(flow->options, NULL, "-k", &flowData->k, NULL);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }

@@ -40,6 +40,7 @@ PetscErrorCode FlowCreate(FlowData* flow) {
 
 PetscErrorCode FlowSetFromOptions_LowMachFlow(FlowData);
 PetscErrorCode FlowSetFromOptions_IncompressibleFlow(FlowData);
+PetscErrorCode FlowSetFromOptions_CompressibleFlow(FlowData);
 
 static PetscErrorCode FlowInitialize(){
     PetscFunctionBeginUser;
@@ -48,6 +49,7 @@ static PetscErrorCode FlowInitialize(){
         flowInitialized = PETSC_TRUE;
         ierr = FlowRegister("lowMach", FlowSetFromOptions_LowMachFlow);CHKERRQ(ierr);
         ierr = FlowRegister("incompressible", FlowSetFromOptions_IncompressibleFlow);CHKERRQ(ierr);
+        ierr = FlowRegister("compressible", FlowSetFromOptions_CompressibleFlow);CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);
 }
@@ -338,11 +340,6 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
-    // Call the class specific implementation
-    if(flowData->flowCompleteProblemSetup){
-        PetscErrorCode ierr = flowData->flowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
-    }
-
     // Setup the solve with the ts
     DM dm = flowData->dm;
     ierr = TSSetDM(ts, flowData->dm);CHKERRQ(ierr);
@@ -387,6 +384,10 @@ PetscErrorCode FlowCompleteProblemSetup(FlowData flowData, TS ts){
     ierr = TSSetPreStep(ts, FlowTSPreStepFunction);CHKERRQ(ierr);
     ierr = TSSetPostStep(ts, FlowTSPostStepFunction);CHKERRQ(ierr);
 
+    // Call the class specific implementation
+    if(flowData->flowCompleteProblemSetup){
+        PetscErrorCode ierr = flowData->flowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
+    }
     PetscFunctionReturn(0);
 }
 

@@ -166,21 +166,26 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
 
         // Setup the flow data
         FlowData flowData; /* store some of the flow data*/
-        ierr = FlowCreate(&flowData);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        FlowCreate(&flowData) >> errorChecker;
+        FlowSetType(flowData, "compressible") >> errorChecker;
+
+        PetscOptions flowOptions;
+        PetscOptionsCreate(&flowOptions) >> errorChecker;
+        PetscOptionsSetValue(flowOptions, "-cfl", std::to_string(testingParam.cfl).c_str())  >> errorChecker;;
+        PetscOptionsSetValue(flowOptions, "-mu", "0.0")  >> errorChecker;
+        PetscOptionsSetValue(flowOptions, "-k", "0.0")  >> errorChecker;;
+        FlowSetOptions(flowData, flowOptions) >> errorChecker;
+
+        FlowSetFromOptions(flowData)  >> errorChecker;
+
 
         // Setup
-        ierr = CompressibleFlow_SetupDiscretization(flowData, &dm);
+        ierr = FlowSetupDiscretization(flowData, &dm);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        // Add in the flow parameters
-        PetscScalar params[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS];
-        params[CFL] = testingParam.cfl;
-        params[K] = 0.0;
-        params[MU] = 0.0;
-
         // set up the finite volume fluxes
-        CompressibleFlow_StartProblemSetup(flowData, TOTAL_COMPRESSIBLE_FLOW_PARAMETERS, params);
+        ierr = FlowStartProblemSetup(flowData);
+        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // set a simple perfect gas eos for testing
         EOSData eos;
@@ -211,7 +216,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Complete the problem setup
-        ierr = CompressibleFlow_CompleteProblemSetup(flowData, ts);
+        ierr = FlowCompleteProblemSetup(flowData, ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Name the flow field
