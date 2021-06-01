@@ -10,9 +10,8 @@ class Mesh {
    protected:
     std::string name;
     DM dm;
-    MPI_Comm comm;
 
-    Mesh(MPI_Comm comm, std::string name, std::map<std::string, std::string> arguments);
+    Mesh(std::string name, std::map<std::string, std::string> arguments);
     virtual ~Mesh();
 
    public:

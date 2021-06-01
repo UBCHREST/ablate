@@ -1,4 +1,5 @@
 # Setup any ablateLibrary specific dependencies
+### YAML CPP ###
 # turn off yaml-cpp options
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
@@ -12,6 +13,21 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(yaml-cpp)
 
+### MuParser ###
+# install muparser for reading text equations
+set(ENABLE_OPENMP OFF CACHE BOOL "" FORCE)
+set(ENABLE_SAMPLES OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+        mu-parser
+        GIT_REPOSITORY https://github.com/beltoforion/muparser.git
+        GIT_TAG v2.3.2
+)
+FetchContent_MakeAvailable(mu-parser)
+FetchContent_GetProperties(mu-parser)
+target_include_directories(muparser SYSTEM PUBLIC ${mu-parser_SOURCE_DIR}/include)
+
+### XDMF Generation ###
 # install the library for generating xdmf files
 set(DISABLE_PETSCXDMFGENERATOR_TESTS ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
@@ -21,17 +37,17 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(petscXdmfGenerator)
 
-# Setup the ablate core
+### Ablate Library Setup ###
 add_library(ablateLibrary SHARED "")
 
 # Allow public access to the header files in the directory
 target_include_directories(ablateLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 
-target_sources(ablateLibrary
-        PUBLIC
-        builder.cpp
-        builder.hpp
-        )
+#target_sources(ablateLibrary
+#        PUBLIC
+#        builder.cpp
+#        builder.hpp
+#        )
 
 # Include the code in any subdirectory
 add_subdirectory(flow)
@@ -41,10 +57,10 @@ add_subdirectory(parameters)
 add_subdirectory(solve)
 add_subdirectory(parser)
 add_subdirectory(mathFunctions)
-add_subdirectory(particles)
-add_subdirectory(monitors)
-add_subdirectory(eos)
+#add_subdirectory(particles)
+#add_subdirectory(monitors)
+#add_subdirectory(eos)
 add_subdirectory(environment)
 
-# Keep a simple main statement
+# Add link to required libraries to the ablate library
 target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser petscXdmfGeneratorLibrary)

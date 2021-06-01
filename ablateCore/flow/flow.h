@@ -22,7 +22,7 @@ struct _FlowData {
     char* type;
 
     DM dm;    /* flow domain */
-    DM auxDm; /* holds non solution vector fields */
+    DM auxDm; /* */
 
     Vec flowField; /* The solution to the flow */
     Vec auxField;  /* The aux field to the flow */

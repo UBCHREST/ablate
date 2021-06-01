@@ -3,38 +3,144 @@
 #include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters,
+ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
                                        std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions,
                                        std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
-    : Flow(mesh, name, arguments, initialization, boundaryConditions, auxiliaryFields) {
-    // Setup the problem
-    FlowSetupDiscretization_LowMachFlow(flowData, mesh->GetDomain()) >> checkError;
+    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields) {
+    // Register each expected fields
+    // Register each field, this order must match the order in LowMachFlowFields enum
+    RegisterField({.fieldName = "velocity", .fieldPrefix = "vel_", .components = dim, .fieldType = FieldType::FE});
+    RegisterField({.fieldName = "pressure", .fieldPrefix = "pres_", .components = 1, .fieldType = FieldType::FE});
+    RegisterField({.fieldName = "temperature", .fieldPrefix = "temp_", .components = 1, .fieldType = FieldType::FE});
 
-    // Pack up any of the parameters
-    PetscScalar constants[TOTAL_LOW_MACH_FLOW_PARAMETERS];
-    parameters->Fill(TOTAL_LOW_MACH_FLOW_PARAMETERS, lowMachFlowParametersTypeNames, constants);
+    FinalizeRegisterFields();
 
-    // Start the problem setup
-    FlowStartProblemSetup_LowMachFlow(flowData, TOTAL_LOW_MACH_FLOW_PARAMETERS, constants) >> checkError;
-
-    PetscDS prob;
-    DMGetDS(mesh->GetDomain(), &prob) >> checkError;
-    if (!auxiliaryFields.empty()) {
-        LowMachFlow_EnableAuxFields(flowData);
+    DM cdm = dm;
+    while (cdm) {
+        DMCopyDisc(dm, cdm) >> checkError;
+        DMGetCoarseDM(cdm, &cdm) >> checkError;
     }
 
-    // Apply any boundary condition
-    CompleteInitialization();
+    {
+        PetscObject pressure;
+        MatNullSpace nullspacePres;
+
+        DMGetField(dm, 1, NULL, &pressure) >> checkError;  // TODO: replace 1 with pressure
+        MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
+        PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres) >> checkError;
+        MatNullSpaceDestroy(&nullspacePres) >> checkError;
+    }
+
+    // Add in any aux fields the
+    if (!auxiliaryFields.empty()) {
+        RegisterAuxField({.fieldName = "momentum_source", .fieldPrefix = "momentum_source_", .components = dim, .fieldType = FieldType::FE});
+        RegisterAuxField({.fieldName = "mass_source", .fieldPrefix = "mass_source_", .components = 1, .fieldType = FieldType::FE});
+        RegisterAuxField({.fieldName = "energy_source", .fieldPrefix = "energy_source_", .components = 1, .fieldType = FieldType::FE});
+    }
+
+    PetscDS prob;
+    DMGetDS(dm, &prob) >> checkError;
+
+    // V, W, Q Test Function
+    PetscDSSetResidual(prob, VTEST, LowMachFlow_vIntegrandTestFunction, LowMachFlow_vIntegrandTestGradientFunction) >> checkError;
+    PetscDSSetResidual(prob, WTEST, LowMachFlow_wIntegrandTestFunction, LowMachFlow_wIntegrandTestGradientFunction) >> checkError;
+    PetscDSSetResidual(prob, QTEST, LowMachFlow_qIntegrandTestFunction, NULL) >> checkError;
+
+    PetscDSSetJacobian(prob, VTEST, VEL, LowMachFlow_g0_vu, LowMachFlow_g1_vu, NULL, LowMachFlow_g3_vu) >> checkError;
+    PetscDSSetJacobian(prob, VTEST, PRES, NULL, NULL, LowMachFlow_g2_vp, NULL) >> checkError;
+    PetscDSSetJacobian(prob, VTEST, TEMP, LowMachFlow_g0_vT, NULL, NULL, NULL) >> checkError;
+    PetscDSSetJacobian(prob, QTEST, VEL, LowMachFlow_g0_qu, LowMachFlow_g1_qu, NULL, NULL) >> checkError;
+    PetscDSSetJacobian(prob, QTEST, TEMP, LowMachFlow_g0_qT, LowMachFlow_g1_qT, NULL, NULL) >> checkError;
+    PetscDSSetJacobian(prob, WTEST, VEL, LowMachFlow_g0_wu, NULL, NULL, NULL) >> checkError;
+    PetscDSSetJacobian(prob, WTEST, TEMP, LowMachFlow_g0_wT, LowMachFlow_g1_wT, NULL, LowMachFlow_g3_wT) >> checkError;
+
+    /* Setup constants */;
+    PetscReal parameterArray[TOTAL_LOW_MACH_FLOW_PARAMETERS];
+    parameters->Fill(TOTAL_LOW_MACH_FLOW_PARAMETERS, lowMachFlowParametersTypeNames, parameterArray);
+    PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, parameterArray) >> checkError;
 }
 
-void ablate::flow::LowMachFlow::SetupSolve(TS &ts) {
-    // finish setup and assign flow field
-    FlowCompleteProblemSetup_LowMachFlow(flowData, ts);
-    ablate::flow::Flow::SetupSolve(ts);
+static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx) {
+    PetscInt d;
+    for (d = 0; d < Nc; ++d) u[d] = 0.0;
+    return 0;
 }
 
-REGISTER(ablate::flow::Flow, ablate::flow::LowMachFlow, "low mach flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
-         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"),
-         ARG(std::vector<flow::FlowFieldSolution>, "initialization", "the exact solution used to initialize the flow field"),
-         ARG(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         OPT(std::vector<flow::FlowFieldSolution>, "auxFields", "enables and sets the update functions for the auxFields"));
+static PetscErrorCode constant(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx) {
+    PetscInt d;
+    for (d = 0; d < Nc; ++d) {
+        u[d] = 1.0;
+    }
+    return 0;
+}
+
+static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace) {
+    Vec vec;
+    PetscErrorCode (*funcs[3])(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *) = {zero, zero, zero};
+    PetscErrorCode ierr;
+
+    PetscFunctionBeginUser;
+    if (ofield != PRES) SETERRQ1(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Nullspace must be for pressure field at correct index, not %D", ofield);
+    funcs[nfield] = constant;
+    ierr = DMCreateGlobalVector(dm, &vec);
+    CHKERRQ(ierr);
+    ierr = DMProjectFunction(dm, 0.0, funcs, NULL, INSERT_ALL_VALUES, vec);
+    CHKERRQ(ierr);
+    ierr = VecNormalize(vec, NULL);
+    CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)vec, "Pressure Null Space");
+    CHKERRQ(ierr);
+    ierr = VecViewFromOptions(vec, NULL, "-pressure_nullspace_view");
+    CHKERRQ(ierr);
+    ierr = MatNullSpaceCreate(PetscObjectComm((PetscObject)dm), PETSC_FALSE, PRES, &vec, nullSpace);
+    CHKERRQ(ierr);
+    ierr = VecDestroy(&vec);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode FlowCompleteFlowInitialization_LowMachFlow(DM dm, Vec u) {
+    MatNullSpace nullsp;
+    PetscErrorCode ierr;
+
+    PetscFunctionBegin;
+    ierr = createPressureNullSpace(dm, PRES, PRES, &nullsp);
+    CHKERRQ(ierr);
+    ierr = MatNullSpaceRemove(nullsp, u);
+    CHKERRQ(ierr);
+    ierr = MatNullSpaceDestroy(&nullsp);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+/* Make the discrete pressure discretely divergence free */
+static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, const ablate::flow::Flow &) {
+    Vec u;
+    PetscErrorCode ierr;
+    DM dm;
+
+    PetscFunctionBegin;
+    ierr = TSGetDM(ts, &dm);
+    CHKERRQ(ierr);
+    ierr = TSGetSolution(ts, &u);
+    CHKERRQ(ierr);
+    ierr = FlowCompleteFlowInitialization_LowMachFlow(dm, u);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+
+void ablate::flow::LowMachFlow::CompleteProblemSetup(TS ts) {
+    ablate::flow::Flow::CompleteProblemSetup(ts);
+
+    DM dm;
+    TSGetDM(ts, &dm) >> checkError;
+    DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace) >> checkError;
+    preStepFunctions.push_back(removeDiscretePressureNullspaceOnTs);
+}
+
+// REGISTER(ablate::flow::Flow, ablate::flow::LowMachFlow, "low mach flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
+//          ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"),
+//          ARG(std::vector<flow::FlowFieldSolution>, "initialization", "the exact solution used to initialize the flow field"),
+//          ARG(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+//          OPT(std::vector<flow::FlowFieldSolution>, "auxFields", "enables and sets the update functions for the auxFields"));

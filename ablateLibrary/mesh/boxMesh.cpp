@@ -6,7 +6,7 @@
 
 ablate::mesh::BoxMesh::BoxMesh(std::string name, std::map<std::string, std::string> arguments, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper,
                                std::vector<std::string> boundary, bool simplex)
-    : Mesh(PETSC_COMM_WORLD, name, Merge(arguments, {{"dm_distribute", "true"}})) {
+    : Mesh(name, Merge(arguments, {{"dm_distribute", "true"}})) {
     PetscInt dimensions = faces.size();
     if ((dimensions != lower.size()) || (dimensions != upper.size())) {
         throw std::runtime_error("BoxMesh Error: The faces, lower, and upper vectors must all be the same dimension.");
@@ -25,7 +25,7 @@ ablate::mesh::BoxMesh::BoxMesh(std::string name, std::map<std::string, std::stri
         }
     }
 
-    DMPlexCreateBoxMesh(comm, dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &faces[0], &lower[0], &upper[0], &boundaryTypes[0], PETSC_TRUE, &dm) >> checkError;
+    DMPlexCreateBoxMesh(PETSC_COMM_WORLD, dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &faces[0], &lower[0], &upper[0], &boundaryTypes[0], PETSC_TRUE, &dm) >> checkError;
     DMSetOptionsPrefix(dm, name.c_str()) >> checkError;
     DMSetFromOptions(dm) >> checkError;
 
@@ -35,7 +35,7 @@ ablate::mesh::BoxMesh::BoxMesh(std::string name, std::map<std::string, std::stri
     ISGetLocalSize(globalCellNumbers, &size) >> checkError;
     if (size == 0) {
         int rank;
-        MPI_Comm_rank(comm, &rank) >> checkMpiError;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
         throw std::runtime_error("BoxMesh Error: Rank " + std::to_string(rank) + " distribution resulted in no cells.  Increase the number of cells in each direction.");
     }
 }

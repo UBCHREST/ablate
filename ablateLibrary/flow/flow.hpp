@@ -1,53 +1,72 @@
 #ifndef ABLATELIBRARY_FLOW_HPP
 #define ABLATELIBRARY_FLOW_HPP
 
-#include <flow.h>
 #include <petsc.h>
 #include <memory>
 #include <optional>
+#include <parameters/parameters.hpp>
 #include <string>
 #include "boundaryCondition.hpp"
-#include "flow.h"
+#include "flowFieldDescriptor.hpp"
 #include "flowFieldSolution.hpp"
 #include "mesh/mesh.hpp"
 #include "solve/solvable.hpp"
-
 namespace ablate::flow {
+
 class Flow : public solve::Solvable {
+   private:
+    // descriptions to the fields on the dm
+    std::vector<FlowFieldDescriptor> flowFieldDescriptors;
+
+    // descriptions to the fields on the auxDM
+    std::vector<FlowFieldDescriptor> auxFieldDescriptors;
+
+    static PetscErrorCode TSPreStepFunction(TS ts);
+    static PetscErrorCode TSPostStepFunction(TS ts);
+
    protected:
-    const std::shared_ptr<mesh::Mesh> mesh;
     const std::string name;
+
+    // holds non solution vector fields
+    DM dm;
+    DM auxDM;
+
+    // The solution to the flow
+    Vec flowField;
+
+    // The aux field to the flow
+    Vec auxField;
+
+    // pre and post step functions for the flow
+    std::vector<std::function<void(TS ts, const Flow&)>> preStepFunctions;
+    std::vector<std::function<void(TS ts, const Flow&)>> postStepFunctions;
+
     const std::vector<std::shared_ptr<FlowFieldSolution>> initialization;
     const std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields;
 
-    // Store the flow data
-    FlowData flowData;
+    // Register the field
+    void RegisterField(FlowFieldDescriptor flowFieldDescription);
+    void RegisterAuxField(FlowFieldDescriptor flowFieldDescription);
+    void FinalizeRegisterFields();
 
-    Flow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std::map<std::string, std::string> arguments, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
-         std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields);
-    virtual ~Flow();
-
-    /**
-     * Method should be call at the end of each constructor to setup boundary conditions and aux field
-     */
-    void CompleteInitialization();
-
-   private:
-    std::vector<mathFunctions::PetscFunction> auxiliaryFieldFunctions;
-    std::vector<void*> auxiliaryFieldContexts;
-    static PetscErrorCode UpdateAuxiliaryFields(TS ts, void* ctx);
+    // Quick reference to used properties,
+    PetscInt dim;
 
    public:
-    FlowData GetFlowData() { return flowData; }
+    Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
+         std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields );
+    virtual ~Flow();
 
-    mesh::Mesh& GetMesh() { return *mesh; }
+    virtual void CompleteProblemSetup(TS ts);
 
     const std::string& GetName() const { return name; }
 
-    virtual void SetupSolve(TS& timeStepper) override;
+    void SetupSolve(TS& timeStepper) override{
+        CompleteProblemSetup(timeStepper);
+    }
 
-    Vec GetSolutionVector() override { return flowData->flowField; }
+    Vec GetSolutionVector() override { return flowField; }
 
     std::optional<int> GetFieldId(const std::string& fieldName);
 

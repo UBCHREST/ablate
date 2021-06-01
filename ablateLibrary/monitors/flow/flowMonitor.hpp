@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_FLOW_MONITOR_HPP
 #define ABLATELIBRARY_FLOW_MONITOR_HPP
 #include <memory>
-#include "flow/flow.hpp"
+//#include "flow/flow.hpp"
 #include "monitors/monitor.hpp"
 
 namespace ablate::monitors::flow {

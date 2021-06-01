@@ -30,36 +30,22 @@ endif()
 
 # Load in the subdirectories
 add_subdirectory(ablateCore)
-#add_subdirectory(ablateLibrary)
+add_subdirectory(ablateLibrary)
 
 # Set the ablate library requirements
-#set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
-#set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)
-#set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
-
-# install muparser for reading text equations
-set(ENABLE_OPENMP OFF CACHE BOOL "" FORCE)
-set(ENABLE_SAMPLES OFF CACHE BOOL "" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
-FetchContent_Declare(
-        mu-parser
-        GIT_REPOSITORY https://github.com/beltoforion/muparser.git
-        GIT_TAG v2.3.2
-)
-FetchContent_MakeAvailable(mu-parser)
-FetchContent_GetProperties(mu-parser)
-target_include_directories(muparser SYSTEM PUBLIC ${mu-parser_SOURCE_DIR}/include)
-
+set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
+set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)
+set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
 
 # Setup and configure testing
-if(BUILD_TESTING)
-    enable_testing()
-    include(GoogleTest)
-    add_subdirectory(tests)
-
-    # Include the format command only if we are building tests
-    include(clangFormatter.cmake)
-endif()
+#if(BUILD_TESTING)
+#    enable_testing()
+#    include(GoogleTest)
+#    add_subdirectory(tests)
+#
+#    # Include the format command only if we are building tests
+#    include(clangFormatter.cmake)
+#endif()
 
 # keep a separate main statement
 #add_executable(ablate main.cpp)

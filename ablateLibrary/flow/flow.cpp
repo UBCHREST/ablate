@@ -1,147 +1,239 @@
 #include "flow.hpp"
 #include "../utilities/petscError.hpp"
 #include "../utilities/petscOptions.hpp"
+#include "utilities/mpiError.hpp"
 
-ablate::flow::Flow::Flow(std::shared_ptr<mesh::Mesh> mesh, std::string name, std::map<std::string, std::string> arguments, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
-                         std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
-    : mesh(mesh), name(name), initialization(initialization), boundaryConditions(boundaryConditions), auxiliaryFields(auxiliaryFields) {
-    // append any prefix values
-    utilities::PetscOptionsUtils::Set(name, arguments);
+ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> option,
+                         std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions,
+                         std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
+    : name(name), dm(nullptr), auxDM(nullptr), flowField(nullptr), auxField(nullptr), initialization(initialization), boundaryConditions(boundaryConditions), auxiliaryFields(auxiliaryFields) {
+    // Copy the dm and set the value
+    dm = mesh->GetDomain();
 
-    // setup the flow data
-    FlowCreate(&flowData) >> checkError;
+    // Set the application context with this dm
+    DMSetApplicationContext(dm, this) >> checkError;
+
+    // Get the dim and store the flows
+    DMGetDimension(dm, &dim) >> checkError;
 }
 
-ablate::flow::Flow::~Flow() { FlowDestroy(&flowData) >> checkError; }
-
-std::optional<int> ablate::flow::Flow::GetFieldId(const std::string& fieldName) {
-    for (auto f = 0; f < flowData->numberFlowFields; f++) {
-        if (flowData->flowFieldDescriptors[f].fieldName == fieldName) {
-            return f;
-        }
+ablate::flow::Flow::~Flow() {
+    // clean up the petsc objects
+    if (dm) {
+        DMDestroy(&dm) >> checkError;
     }
-    return {};
+    if (auxDM) {
+        DMDestroy(&auxDM) >> checkError;
+    }
+    if (flowField) {
+        VecDestroy(&flowField) >> checkError;
+    }
+    if (auxField) {
+        VecDestroy(&flowField) >> checkError;
+    }
 }
 
-std::optional<int> ablate::flow::Flow::GetAuxFieldId(const std::string& fieldName) {
-    for (auto f = 0; f < flowData->numberAuxFields; f++) {
-        if (flowData->auxFieldDescriptors[f].fieldName == fieldName) {
-            return f;
-        }
-    }
-    return {};
-}
+void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription) {
+    // store the field
+    flowFieldDescriptors.push_back(flowFieldDescription);
 
-void ablate::flow::Flow::CompleteInitialization() {
-    // Apply any boundary conditions
-    PetscDS prob;
-    DMGetDS(mesh->GetDomain(), &prob) >> checkError;
+    switch (flowFieldDescription.fieldType) {
+        case FieldType::FE: {
+            // determine if it a simplex element and the number of dimensions
+            DMPolytopeType ct;
+            PetscInt cStart;
+            DMPlexGetHeightStratum(dm, 0, &cStart, NULL) >> checkError;
+            DMPlexGetCellType(dm, cStart, &ct) >> checkError;
+            PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+            PetscInt simplexGlobal;
 
-    // add each boundary condition
-    for (auto boundary : boundaryConditions) {
-        PetscInt id = boundary->GetLabelId();
-        auto fieldId = GetFieldId(boundary->GetFieldName());
-        if (!fieldId) {
-            throw std::invalid_argument("unknown field for boundary: " + boundary->GetFieldName());
-        }
+            // Assume true if any rank says true
+            MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm)) >> checkMpiError;
 
-        // Get the current field type
-        DMBoundaryConditionType boundaryConditionType;
-        switch (flowData->flowFieldDescriptors[fieldId.value()].fieldType) {
-            case FE:
-                boundaryConditionType = DM_BC_ESSENTIAL;
-                break;
-            case FV:
-                boundaryConditionType = DM_BC_NATURAL_RIEMANN;
-                break;
-            default:
-                throw std::invalid_argument("unknown field type " + std::to_string(flowData->flowFieldDescriptors[fieldId.value()].fieldType));
-        }
+            // create a petsc fe
+            PetscFE petscFE;
+            PetscFECreateDefault(
+                PetscObjectComm((PetscObject)dm), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+                checkMpiError;
+            PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
+            PetscObjectSetOptions((PetscObject)petscFE, NULL) >> checkError;  // TODO: update with options
 
-        PetscDSAddBoundary(prob,
-                           boundaryConditionType,
-                           boundary->GetBoundaryName().c_str(),
-                           boundary->GetLabelName().c_str(),
-                           fieldId.value(),
-                           0,
-                           NULL,
-                           (void (*)(void))boundary->GetBoundaryFunction(),
-                           (void (*)(void))boundary->GetBoundaryTimeDerivativeFunction(),
-                           1,
-                           &id,
-                           boundary->GetContext()) >>
-            checkError;
-    }
-
-    // Set the exact solution
-    for (auto exact : initialization) {
-        auto fieldId = GetFieldId(exact->GetName());
-        if (!fieldId) {
-            throw std::invalid_argument("unknown field for initialization: " + exact->GetName());
-        }
-
-        PetscDSSetExactSolution(prob, fieldId.value(), exact->GetSolutionField().GetPetscFunction(), exact->GetSolutionField().GetContext()) >> checkError;
-        PetscDSSetExactSolutionTimeDerivative(prob, fieldId.value(), exact->GetTimeDerivative().GetPetscFunction(), exact->GetTimeDerivative().GetContext()) >> checkError;
-    }
-
-    // check to see if
-    if (flowData->numberAuxFields > 0 && !auxiliaryFields.empty()) {
-        PetscInt numberAuxFields;
-        DMGetNumFields(flowData->auxDm, &numberAuxFields) >> checkError;
-
-        // size up the update and context functions
-        auxiliaryFieldContexts.resize(numberAuxFields, NULL);
-        auxiliaryFieldFunctions.resize(numberAuxFields, NULL);
-
-        // for each given aux field
-        for (auto auxFieldDescription : auxiliaryFields) {
-            auto fieldId = GetAuxFieldId(auxFieldDescription->GetName());
-            if (!fieldId) {
-                throw std::invalid_argument("unknown field for aux field: " + auxFieldDescription->GetName());
+            // If this is not the first field, copy the quadrature locations
+            if (flowFieldDescriptors.size() > 1) {
+                PetscFE referencePetscFE;
+                DMGetField(dm, 0, NULL, (PetscObject*)&referencePetscFE) >> checkError;
+                PetscFECopyQuadrature(referencePetscFE, petscFE) >> checkError;
             }
 
-            auxiliaryFieldContexts[fieldId.value()] = auxFieldDescription->GetSolutionField().GetContext();
-            auxiliaryFieldFunctions[fieldId.value()] = auxFieldDescription->GetSolutionField().GetPetscFunction();
-        }
+            // Store the field and destroy copy
+            DMAddField(dm, NULL, (PetscObject)petscFE) >> checkError;
+            PetscFEDestroy(&petscFE) >> checkError;
+        } break;
+        case FieldType::FV: {
+            PetscFV fvm;
+            PetscFVCreate(PETSC_COMM_WORLD, &fvm) >> checkError;
+            PetscObjectSetOptionsPrefix((PetscObject)fvm, flowFieldDescription.fieldPrefix.c_str()) >> checkError;
+            PetscObjectSetName((PetscObject)fvm, flowFieldDescription.fieldName.c_str()) >> checkError;
+            PetscObjectSetOptions((PetscObject)fvm, NULL) >> checkError;  // TODO: update with options
 
-        if (!auxiliaryFieldFunctions.empty()) {
-            FlowRegisterPreStep(flowData, UpdateAuxiliaryFields, this);
+            PetscFVSetFromOptions(fvm) >> checkError;
+            PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;
+            PetscFVSetSpatialDimension(fvm, dim) >> checkError;
+
+            DMAddField(dm, NULL, (PetscObject)fvm) >> checkError;
+            PetscFVDestroy(&fvm) >> checkError;
+        } break;
+        default: {
+            throw std::invalid_argument("Unknown field type for flow");
         }
     }
 }
 
-PetscErrorCode ablate::flow::Flow::UpdateAuxiliaryFields(TS ts, void* ctx) {
-    PetscFunctionBegin;
-    PetscErrorCode ierr;
-    auto flow = (Flow*)ctx;
+void ablate::flow::Flow::FinalizeRegisterFields() { DMCreateDS(dm) >> checkError; }
 
-    // get the time at the end of the time step
-    PetscReal time = 0;
-    PetscReal dt = 0;
+void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescription) {
+    // store the field
+    auxFieldDescriptors.push_back(flowFieldDescription);
 
-    ierr = TSGetTime(ts, &time);
-    CHKERRQ(ierr);
-    if (time > 0) {
-        ierr = TSGetTimeStep(ts, &dt);
-        CHKERRQ(ierr);
+    // check to see if need to create an aux dm
+    if (auxDM == NULL) {
+        /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
+        DM coordDM;
+        DMGetCoordinateDM(dm, &coordDM) >> checkError;
+        DMClone(dm, &auxDM) >> checkError;
+
+        // this is a hard coded "dmAux" that petsc looks for
+        PetscObjectCompose((PetscObject)dm, "dmAux", (PetscObject)auxDM) >> checkError;
+        DMSetCoordinateDM(auxDM, coordDM) >> checkError;
     }
-    // Update the source terms
-    ierr = DMProjectFunctionLocal(flow->GetFlowData()->auxDm, time + dt, &(flow->auxiliaryFieldFunctions[0]), &(flow->auxiliaryFieldContexts[0]), INSERT_ALL_VALUES, flow->GetFlowData()->auxField);
+
+    switch (flowFieldDescription.fieldType) {
+        case FieldType::FE: {
+            // determine if it a simplex element and the number of dimensions
+            DMPolytopeType ct;
+            PetscInt cStart;
+            DMPlexGetHeightStratum(dm, 0, &cStart, NULL) >> checkError;
+            DMPlexGetCellType(dm, cStart, &ct) >> checkError;
+            PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+            PetscInt simplexGlobal;
+
+            // Assume true if any rank says true
+            MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm)) >> checkMpiError;
+            // create a petsc fe
+            PetscFE petscFE;
+            PetscFECreateDefault(
+                PetscObjectComm((PetscObject)dm), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+                checkError;
+            PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
+            PetscObjectSetOptions((PetscObject)petscFE, NULL) >> checkError;  // TODO: update with options
+
+            // If this is not the first field, copy the quadrature locations
+            if (!flowFieldDescriptors.empty()) {
+                PetscFE referencePetscFE;
+                DMGetField(dm, 0, NULL, (PetscObject*)&referencePetscFE) >> checkError;
+                PetscFECopyQuadrature(referencePetscFE, petscFE) >> checkError;
+            }
+
+            // Store the field and destroy copy
+            DMAddField(auxDM, NULL, (PetscObject)petscFE) >> checkError;
+            PetscFEDestroy(&petscFE) >> checkError;
+        } break;
+        case FieldType::FV: {
+            PetscFV fvm;
+            PetscFVCreate(PETSC_COMM_WORLD, &fvm) >> checkError;
+            PetscObjectSetOptionsPrefix((PetscObject)fvm, flowFieldDescription.fieldPrefix.c_str()) >> checkError;
+            PetscObjectSetName((PetscObject)fvm, flowFieldDescription.fieldName.c_str()) >> checkError;
+            PetscObjectSetOptions((PetscObject)fvm, NULL) >> checkError;  // TODO: update with options
+
+            PetscFVSetFromOptions(fvm) >> checkError;
+            PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;
+            PetscFVSetSpatialDimension(fvm, dim) >> checkError;
+
+            DMAddField(auxDM, NULL, (PetscObject)fvm) >> checkError;
+            PetscFVDestroy(&fvm) >> checkError;
+        } break;
+        default: {
+            throw std::invalid_argument("Unknown field type for flow");
+        }
+    }
+}
+PetscErrorCode ablate::flow::Flow::TSPreStepFunction(TS ts) {
+    PetscFunctionBeginUser;
+    DM dm;
+    PetscErrorCode ierr = TSGetDM(ts, &dm);
     CHKERRQ(ierr);
+    ablate::flow::Flow* flowObject;
+    ierr = DMGetApplicationContext(dm, &flowObject);
+    CHKERRQ(ierr);
+
+    for (const auto& function : flowObject->preStepFunctions) {
+        try {
+            function(ts, *flowObject);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
+    }
 
     PetscFunctionReturn(0);
 }
 
-void ablate::flow::Flow::SetupSolve(TS& timeStepper) {
-    // Initialize the flow field
-    DMComputeExactSolution(mesh->GetDomain(), 0, flowData->flowField, NULL) >> checkError;
+PetscErrorCode ablate::flow::Flow::TSPostStepFunction(TS ts) {
+    PetscFunctionBeginUser;
+    DM dm;
+    PetscErrorCode ierr = TSGetDM(ts, &dm);
+    CHKERRQ(ierr);
+    ablate::flow::Flow* flowObject;
+    ierr = DMGetApplicationContext(dm, &flowObject);
+    CHKERRQ(ierr);
 
-    // Initialize the aux variables
-    if (flowData->numberAuxFields > 0 && !auxiliaryFieldFunctions.empty()) {
-        UpdateAuxiliaryFields(timeStepper, this) >> checkError;
+    for (const auto& function : flowObject->postStepFunctions) {
+        try {
+            function(ts, *flowObject);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
     }
 
-    // Re Name the flow field
-    PetscObjectSetName((PetscObject)(flowData->flowField), this->name.c_str()) >> checkError;
-    VecSetOptionsPrefix(flowData->flowField, "num_sol_") >> checkError;
+    PetscFunctionReturn(0);
+}
+
+void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
+    // Setup the solve with the ts
+    TSSetDM(ts, dm) >> checkError;
+    DMPlexCreateClosureIndex(dm, NULL) >> checkError;
+    DMCreateGlobalVector(dm, &(flowField)) >> checkError;
+
+    if (auxDM) {
+        DMCreateDS(auxDM) >> checkError;
+        DMCreateLocalVector(auxDM, &(auxField)) >> checkError;
+
+        // attach this field as aux vector to the dm
+        PetscObjectCompose((PetscObject)dm, "A", (PetscObject)auxField) >> checkError;
+        PetscObjectSetName((PetscObject)auxField, "auxField") >> checkError;
+    }
+
+    // Check if any of the fields are fe
+    PetscBool isFE = PETSC_FALSE;
+    PetscBool isFV = PETSC_FALSE;
+    for (const auto& flowField : flowFieldDescriptors) {
+        switch (flowField.fieldType) {
+            case (FieldType::FE):
+                isFE = PETSC_TRUE;
+                break;
+            case (FieldType::FV):
+                isFV = PETSC_TRUE;
+                break;
+        }
+    }
+
+    if (isFE) {
+        DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL)  >> checkError;
+        DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL)  >> checkError;
+        DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL) >> checkError;
+    }
+    if (isFV) {
+        DMTSSetRHSFunctionLocal(dm, DMPlexTSComputeRHSFunctionFVM, this) >> checkError;
+    }
+    TSSetPreStep(ts, TSPreStepFunction) >> checkError;
+    TSSetPostStep(ts, TSPostStepFunction) >> checkError;
 }

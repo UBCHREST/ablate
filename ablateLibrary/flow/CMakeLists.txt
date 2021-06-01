@@ -2,14 +2,15 @@ target_sources(ablateLibrary
         PUBLIC
         flow.cpp
         flow.hpp
+        flowFieldDescriptor.hpp
         lowMachFlow.hpp
         lowMachFlow.cpp
-        incompressibleFlow.hpp
-        incompressibleFlow.cpp
+#        incompressibleFlow.hpp
+#        incompressibleFlow.cpp
         flowFieldSolution.cpp
         flowFieldSolution.hpp
-        boundaryCondition.cpp
-        boundaryCondition.hpp
-        compressibleFlow.cpp
-        compressibleFlow.hpp
+#        boundaryCondition.cpp
+#        boundaryCondition.hpp
+#        compressibleFlow.cpp
+#        compressibleFlow.hpp
         )

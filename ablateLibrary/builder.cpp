@@ -1,11 +1,11 @@
 #include "builder.hpp"
-#include "flow/flow.hpp"
-#include "monitors/flow/flowMonitor.hpp"
-#include "monitors/particles/particleMonitor.hpp"
-#include "particles/particles.hpp"
+//#include "flow/flow.hpp"
+//#include "monitors/flow/flowMonitor.hpp"
+//#include "monitors/particles/particleMonitor.hpp"
+//#include "particles/particles.hpp"
 #include "solve/timeStepper.hpp"
 #include "utilities/petscOptions.hpp"
-#include "version.h"
+//#include "version.h"
 
 void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     // get the global arguments
@@ -54,5 +54,5 @@ void ablate::Builder::PrintVersion(std::ostream& stream) {
     stream << "ABLATE: " << std::endl;
     stream << '\t' << "Documentation: https://ubchrest.github.io/ablate/" << std::endl;
     stream << '\t' << "Source: https://github.com/UBCHREST/ablate" << std::endl;
-    stream << '\t' << "Version: " << ABLATECORE_VERSION << std::endl;
+//    stream << '\t' << "Version: " << ABLATECORE_VERSION << std::endl;
 }
