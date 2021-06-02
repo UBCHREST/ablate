@@ -6,7 +6,8 @@
 ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
                          std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions,
                          std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
-    : name(name), dm(nullptr), auxDM(nullptr), flowField(nullptr), auxField(nullptr), petscOptions(nullptr), initialization(initialization), boundaryConditions(boundaryConditions), auxiliaryFields(auxiliaryFields) {
+    : name(name), dm(nullptr), auxDM(nullptr), flowField(nullptr), auxField(nullptr), petscOptions(nullptr), initialization(initialization), boundaryConditions(boundaryConditions),
+      auxiliaryFieldsUpdaters(auxiliaryFields) {
     // Copy the dm and set the value
     dm = mesh->GetDomain();
 
@@ -20,6 +21,11 @@ ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std
     if(options){
         PetscOptionsCreate(&petscOptions)  >> checkError;
         options->Fill(petscOptions);
+    }
+
+    // Register the aux fields updater if specified
+    if(!auxiliaryFields.empty()){
+        this->preStepFunctions.push_back(UpdateAuxFields);
     }
 }
 
@@ -40,6 +46,24 @@ ablate::flow::Flow::~Flow() {
     if(petscOptions){
         PetscOptionsDestroy(&petscOptions) >> checkError;
     }
+}
+
+std::optional<int> ablate::flow::Flow::GetFieldId(const std::string& fieldName) const {
+    for (auto f = 0; f < flowFieldDescriptors.size(); f++) {
+        if (flowFieldDescriptors[f].fieldName == fieldName) {
+            return f;
+        }
+    }
+    return {};
+}
+
+std::optional<int> ablate::flow::Flow::GetAuxFieldId(const std::string& fieldName) const{
+    for (auto f = 0; f < auxFieldDescriptors.size(); f++) {
+        if (auxFieldDescriptors[f].fieldName == fieldName) {
+            return f;
+        }
+    }
+    return {};
 }
 
 void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription) {
@@ -245,4 +269,38 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     }
     TSSetPreStep(ts, TSPreStepFunction) >> checkError;
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
+}
+
+/**
+ * Static function that is called by the flow object to update the aux variables if an aux variable soltuion was provided
+ * @param ts
+ * @param flow
+ */
+void ablate::flow::Flow::UpdateAuxFields(TS ts, ablate::flow::Flow& flow) {
+    PetscInt numberAuxFields;
+    DMGetNumFields(flow.auxDM, &numberAuxFields) >> checkError;
+
+    // size up the update and context functions
+    std::vector<mathFunctions::PetscFunction> auxiliaryFieldFunctions(numberAuxFields, NULL);
+    std::vector<void*> auxiliaryFieldContexts(numberAuxFields, NULL);
+
+    // for each given aux field
+    for (auto auxFieldDescription : flow.auxiliaryFieldsUpdaters) {
+        auto fieldId = flow.GetAuxFieldId(auxFieldDescription->GetName());
+        if (!fieldId) {
+            throw std::invalid_argument("unknown field for aux field: " + auxFieldDescription->GetName());
+        }
+
+        auxiliaryFieldContexts[fieldId.value()] = auxFieldDescription->GetSolutionField().GetContext();
+        auxiliaryFieldFunctions[fieldId.value()] = auxFieldDescription->GetSolutionField().GetPetscFunction();
+    }
+
+    // get the time at the end of the time step
+    PetscReal time = 0;
+    PetscReal dt = 0;
+    TSGetTime(ts, &time) >> checkError;
+    TSGetTimeStep(ts, &dt)  >> checkError;
+
+    // Update the source terms
+    DMProjectFunctionLocal(flow.auxDM, time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, flow.auxField) >> checkError;
 }

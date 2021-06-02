@@ -10,11 +10,22 @@
 namespace ablate::flow {
 class IncompressibleFlow : public Flow {
    public:
-    IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters,
-                       std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions,
-                       std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields);
+    IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
+                       std::vector<std::shared_ptr<FlowFieldSolution>> initialization = {}, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions = {},
+                       std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields = {});
 
-    void SetupSolve(TS& timeStepper) override;
+    void CompleteProblemSetup(TS ts) override;
+    void CompleteFlowInitialization(DM, Vec) override;
+
+   private:
+    inline static std::map<std::string, PetscReal> defaultParameters{
+        {"strouhal", 1.0},
+        {"reynolds", 1.0},
+        {"peclet", 1.0},
+        {"mu", 1.0},
+        {"k", 1.0},
+        {"cp", 1.0}
+    };
 };
 }  // namespace ablate::flow
 

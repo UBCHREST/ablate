@@ -1,16 +1,11 @@
 #include "testingAuxFieldUpdater.hpp"
-#include "flow.h"
 
-PetscErrorCode tests::ablateCore::support::TestingAuxFieldUpdater::UpdateSourceTerms(TS ts, void *ctx) {
+PetscErrorCode tests::ablateCore::support::TestingAuxFieldUpdater::UpdateSourceTerms(TS ts, ablate::flow::Flow& flow) {
     PetscFunctionBegin;
-    auto sourceTermUpdater = (TestingAuxFieldUpdater *)ctx;
-
     // extract the flow data from ts
     DM dm;
     PetscErrorCode ierr = TSGetDM(ts, &dm);
     CHKERRQ(ierr);
-    FlowData flowData;
-    ierr = DMGetApplicationContext(dm, &flowData);
     CHKERRQ(ierr);
 
     // get the time at the end of the time step
@@ -22,7 +17,7 @@ PetscErrorCode tests::ablateCore::support::TestingAuxFieldUpdater::UpdateSourceT
     CHKERRQ(ierr);
 
     // Update the source terms
-    ierr = DMProjectFunctionLocal(flowData->auxDm, time + dt, &(sourceTermUpdater->funcs[0]), &(sourceTermUpdater->ctxs[0]), INSERT_ALL_VALUES, flowData->auxField);
+    ierr = DMProjectFunctionLocal(flow.GetAuxDM(), time + dt, &(funcs[0]), &(ctxs[0]), INSERT_ALL_VALUES, flow.GetAuxField());
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

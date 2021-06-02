@@ -1,19 +1,36 @@
 static char help[] =
-    "Time-dependent Low Mach Flow in 2d channels with finite elements.\n\
-We solve the Low Mach flow problem in a rectangular\n\
-domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
+    "Time-dependent Low Mach Flow in 2d channels with finite elements. We solve the Low Mach flow problem in a rectangular domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
+#include <mathFunctions/parsedFunction.hpp>
+#include <mesh/dmWrapper.hpp>
+#include <parameters/petscOptionParameters.hpp>
 #include "MpiTestFixture.hpp"
+#include "flow/incompressibleFlow.hpp"
+#include "flow/lowMachFlow.hpp"
 #include "gtest/gtest.h"
-#include "lowMachFlow.h"
 #include "mesh.h"
 #include "support/testingAuxFieldUpdater.hpp"
+
+// We can define them because they are the same between fe flows
+#define VTEST 0
+#define QTEST 1
+#define WTEST 2
+
+#define VEL 0
+#define PRES 1
+#define TEMP 2
+
 using namespace tests::ablateCore::support;
+using namespace ablate;
+using namespace ablate::flow;
 
 struct FEFlowDynamicSourceMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
-    std::string type;
+    std::function<std::shared_ptr<ablate::flow::Flow>(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
+                                                      std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
+                                                      std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)>
+        createMethod;
     std::string uExact;
     std::string pExact;
     std::string TExact;
@@ -50,12 +67,12 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     CHKERRQ(ierr);
 
     // Get the flowData
-    FlowData flowData;
-    ierr = DMGetApplicationContext(dm, &flowData);
+    ablate::flow::Flow *flow;
+    ierr = DMGetApplicationContext(dm, &flow);
     CHKERRQ(ierr);
 
     // get the flow to apply the completeFlowInitialization method
-    ierr = FlowCompleteFlowInitialization(flowData, dm, u);
+    flow->CompleteFlowInitialization(dm, u);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -91,9 +108,8 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
 
 TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        DM dm;                 /* problem definition */
-        TS ts;                 /* timestepper */
-        FlowData flowData;     /* store some of the flow data*/
+        DM dmCreate; /* problem definition */
+        TS ts;       /* timestepper */
 
         PetscReal t;
         PetscErrorCode ierr;
@@ -107,27 +123,28 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
         // setup the ts
         ierr = TSCreate(PETSC_COMM_WORLD, &ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = CreateMesh(PETSC_COMM_WORLD, &dm, PETSC_TRUE, 2);
+        ierr = CreateMesh(PETSC_COMM_WORLD, &dmCreate, PETSC_TRUE, 2);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = TSSetDM(ts, dm);
+        ierr = TSSetDM(ts, dmCreate);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Setup the flow data
-        ierr = FlowCreate(&flowData);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = FlowSetType(flowData, testingParam.type.c_str());
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = FlowSetFromOptions(flowData);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        // pull the parameters from the petsc options
+        auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
-        // setup problem
-        ierr = FlowSetupDiscretization(flowData, &dm);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        ierr = FlowStartProblemSetup(flowData);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        // Create the flow object
+        std::shared_ptr<ablate::flow::Flow> flowObject = testingParam.createMethod(
+            "testFlow",
+            std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
+            parameters,
+            nullptr,
+            std::vector<std::shared_ptr<FlowFieldSolution>>{},
+            std::vector<std::shared_ptr<BoundaryCondition>>{},
+            std::vector<std::shared_ptr<FlowFieldSolution>>{std::make_shared<FlowFieldSolution>("momentum_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.vSource)),
+                                                            std::make_shared<FlowFieldSolution>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
+                                                            std::make_shared<FlowFieldSolution>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
 
         PetscTestingFunction uExact(testingParam.uExact);
         PetscTestingFunction pExact(testingParam.pExact);
@@ -136,7 +153,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
         // Override problem with source terms, boundary, and set the exact solution
         {
             PetscDS prob;
-            ierr = DMGetDS(dm, &prob);
+            ierr = DMGetDS(flowObject->GetDM(), &prob);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
             /* Setup Boundary Conditions */
@@ -269,29 +286,35 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
         }
 
-        ierr = FlowCompleteProblemSetup(flowData, ts);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        flowObject->CompleteProblemSetup(ts);
 
         // Name the flow field
-        ierr = PetscObjectSetName(((PetscObject)flowData->flowField), "Numerical Solution");
+        ierr = PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution");
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = VecSetOptionsPrefix(flowData->flowField, "num_sol_");
+        ierr = VecSetOptionsPrefix(flowObject->GetSolutionVector(), "num_sol_");
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // update the source terms before each time step
-        PetscTestingFunction vSource(testingParam.vSource);
-        PetscTestingFunction qSource(testingParam.qSource);
-        PetscTestingFunction wSource(testingParam.wSource);
-        TestingAuxFieldUpdater updater;
-        updater.AddField(vSource);
-        updater.AddField(qSource);
-        updater.AddField(wSource);
+        //        PetscTestingFunction vSource(testingParam.vSource);
+        //        PetscTestingFunction qSource(testingParam.qSource);
+        //        PetscTestingFunction wSource(testingParam.wSource);
+        //        TestingAuxFieldUpdater updater;
+        //        updater.AddField(vSource);
+        //        updater.AddField(qSource);
+        //        updater.AddField(wSource);
+        //
+        //        flowObject->RegisterPreStepFunction([&updater](auto ts, auto &flow) { updater.UpdateSourceTerms(ts, flow); });
+
+        //        ierr = TSSetTimeStep(ts, 0.0);  // set the initial time step to 0 for the initial UpdateSourceTerms run
+        //        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        //        flowObject->R
+        //        ierr = FlowRegisterPreStep(flowData, TestingAuxFieldUpdater::UpdateSourceTerms, &updater);
+        //        TestingAuxFieldUpdater::UpdateSourceTerms(ts, &updater);
+        //        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         ierr = TSSetTimeStep(ts, 0.0);  // set the initial time step to 0 for the initial UpdateSourceTerms run
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = FlowRegisterPreStep(flowData, TestingAuxFieldUpdater::UpdateSourceTerms, &updater);
-        TestingAuxFieldUpdater::UpdateSourceTerms(ts, &updater);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        ablate::flow::Flow::UpdateAuxFields(ts, *flowObject);
 
         // Setup the TS
         ierr = TSSetFromOptions(ts);
@@ -300,32 +323,29 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
         // Set initial conditions from the exact solution
         ierr = TSSetComputeInitialCondition(ts, SetInitialConditions);
         CHKERRABORT(PETSC_COMM_WORLD, ierr); /* Must come after SetFromOptions() */
-        ierr = SetInitialConditions(ts, flowData->flowField);
+        ierr = SetInitialConditions(ts, flowObject->GetSolutionVector());
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         ierr = TSGetTime(ts, &t);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = DMSetOutputSequenceNumber(dm, 0, t);
+        ierr = DMSetOutputSequenceNumber(flowObject->GetDM(), 0, t);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = DMTSCheckFromOptions(ts, flowData->flowField);
+        ierr = DMTSCheckFromOptions(ts, flowObject->GetSolutionVector());
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = TSMonitorSet(ts, MonitorError, NULL, NULL);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        ierr = TSSolve(ts, flowData->flowField);
+        ierr = TSSolve(ts, flowObject->GetSolutionVector());
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Compare the actual vs expected values
-        ierr = DMTSCheckFromOptions(ts, flowData->flowField);
+        ierr = DMTSCheckFromOptions(ts, flowObject->GetSolutionVector());
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Cleanup
-        ierr = DMDestroy(&dm);
+        ierr = DMDestroy(&dmCreate);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = TSDestroy(&ts);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = FlowDestroy(&flowData);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = PetscFinalize();
         exit(ierr);
@@ -338,7 +358,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowDynamicSourceMMSParameters){
             .mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/lowMach_dynamicSource_2d_tri_p3_p2_p2",
+                                 .expectedOutputFile = "outputs/flow/lowMach_dynamicSource_2d_tri_p3_p2_p2",
                                  .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
@@ -347,8 +367,9 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                               "-dmts_check -1 -snes_linesearch_type basic "
                                               "-gravityDirection 1 "
-                                              "-enableAuxFields -momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
-            .type= "lowMach",
+                                              "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
+            .createMethod = [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions,
+                               auto auxiliaryFields) { return std::make_shared<ablate::flow::LowMachFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields); },
             .uExact = "t + x^2 + y^2, t + 2*x^2 + 2*x*y, 1.0, 1.0",
             .pExact = "x + y -1, 0.0",
             .TExact = "t + x +y +1, 1.0",
@@ -359,7 +380,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowDynamicSourceMMSParameters){
             .mpiTestParameter = {.testName = "lowMach 2d cubic tri_p3_p2_p2",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/lowMach_dynamicSource_2d_cubic_tri_p3_p2_p2",
+                                 .expectedOutputFile = "outputs/flow/lowMach_dynamicSource_2d_cubic_tri_p3_p2_p2",
                                  .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
@@ -368,8 +389,9 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                               "-dmts_check -1 -snes_linesearch_type basic "
                                               "-gravityDirection 1 "
-                                              "-enableAuxFields -momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
-            .type= "lowMach",
+                                              "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
+            .createMethod = [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions,
+                               auto auxiliaryFields) { return std::make_shared<ablate::flow::LowMachFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields); },
             .uExact = "t + x^3 + y^3, t + 2*x^3 + 3*x^2*y, 1.0, 1.0",
             .pExact = "3/2*x^2 + 3/2*y^2 -1.125, 0.0",
             .TExact = "t + .5*x^2 +.5*y^2 +1, 1.0",
@@ -379,65 +401,74 @@ INSTANTIATE_TEST_SUITE_P(
             .wSource = "-(-2 + ((1 + y*(t + 2*x^3 + 3*x^2*y) + x*(t + x^3 + y^3)))/( 1 + t + x^2/2 + y^2/2))",
             .qSource =
                 "-(-(1/(1 + t + x^2/2 + y^2/2)^2) - ( y * (t + 2*x^3 + 3*x^2*y))/(1 + t + x^2/2 + y^2/2)^2  + (6 * x^2)/(1 + t + x^2/2 + y^2/2) - (x * (t + x^3 + y^3))/(1 + t + x^2/2 + y^2/2)^2)"},
-    (FEFlowDynamicSourceMMSParameters){
-        .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1",
-            .nproc = 1,
-            .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1",
-            .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                         "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                         "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                         "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                         "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                         "-fieldsplit_0_pc_type lu "
-                         "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                         "-enableAuxFields -momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
-        .type= "incompressible",
-        .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
-        .pExact = "x + y -1, 0.0",
-        .TExact = "t + x +y, 1.0",
-        .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
-        .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
-        .qSource = ".0"},
-    (FEFlowDynamicSourceMMSParameters){
-        .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
-            .nproc = 4,
-            .expectedOutputFile = "outputs/incompressible_2d_tri_p2_p1_p1_nproc4",
-            .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
-                         "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                         "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                         "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                         "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                         "-fieldsplit_0_pc_type lu "
-                         "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                         "-enableAuxFields -momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
-        .type= "incompressible",
-        .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
-        .pExact = "x + y -1, 0.0",
-        .TExact = "t + x +y, 1.0",
-        .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
-        .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
-        .qSource = ".0"},
-    (FEFlowDynamicSourceMMSParameters){
-        .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
-            .nproc = 1,
-            .expectedOutputFile = "outputs/incompressible_2d_tri_p3_p2_p2",
-            .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                         "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
-                         "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
-                         "-snes_convergence_test correct_pressure "
-                         "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                         "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                         "-fieldsplit_0_pc_type lu "
-                         "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                         "-enableAuxFields -momentum_source_petscspace_degree 5 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 5"},
-        .type= "incompressible",
-        .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y, 1.0, 1.0",
-        .pExact = "3/2 *x^2 + 3/2*y^2 -1, 0.0",
-        .TExact = "t + 1/2*x^2 +1/2*y^2, 1.0",
-        .vSource = "-(1+3*x + 3*y^2 * (t+2*x^3 - 3*x^2*y) + 3* x^2 *(t + x^3 + y^3) - (12*x -6*x + 6*y)),-(1-(12*x-6*y) + 3*y - 3*x^2 * (t +2*x^3 - 3*x^2*y) + (6*x^2 - 6*x*y)*(t+x^3+y^3))",
-        .wSource = "-(-2 + 1 + y*(t+2*x^3-3*x^2*y) + x*(t+x^3+y^3))",
-        .qSource = "0.0"}),
-    [](const testing::TestParamInfo<FEFlowDynamicSourceMMSParameters> &info) { return info.param.type + "_" + info.param.mpiTestParameter.getTestName(); });
+        (FEFlowDynamicSourceMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1",
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p2_p1_p1",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                              "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
+            .createMethod =
+                [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields);
+                },
+            .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
+            .pExact = "x + y -1, 0.0",
+            .TExact = "t + x +y, 1.0",
+            .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
+            .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
+            .qSource = ".0"},
+        (FEFlowDynamicSourceMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
+                                 .nproc = 4,
+                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p2_p1_p1_nproc4",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
+                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                              "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
+            .createMethod =
+                [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields);
+                },
+            .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
+            .pExact = "x + y -1, 0.0",
+            .TExact = "t + x +y, 1.0",
+            .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
+            .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
+            .qSource = ".0"},
+        (FEFlowDynamicSourceMMSParameters){
+            .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
+                                 .nproc = 1,
+                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p3_p2_p2",
+                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
+                                              "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
+                                              "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
+                                              "-snes_convergence_test correct_pressure "
+                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                              "-fieldsplit_0_pc_type lu "
+                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                              "-momentum_source_petscspace_degree 5 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 5"},
+            .createMethod =
+                [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields);
+                },
+            .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y, 1.0, 1.0",
+            .pExact = "3/2 *x^2 + 3/2*y^2 -1, 0.0",
+            .TExact = "t + 1/2*x^2 +1/2*y^2, 1.0",
+            .vSource = "-(1+3*x + 3*y^2 * (t+2*x^3 - 3*x^2*y) + 3* x^2 *(t + x^3 + y^3) - (12*x -6*x + 6*y)),-(1-(12*x-6*y) + 3*y - 3*x^2 * (t +2*x^3 - 3*x^2*y) + (6*x^2 - 6*x*y)*(t+x^3+y^3))",
+            .wSource = "-(-2 + 1 + y*(t+2*x^3-3*x^2*y) + x*(t+x^3+y^3))",
+            .qSource = "0.0"}),
+    [](const testing::TestParamInfo<FEFlowDynamicSourceMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
 
 //
 TEST(QuickPar, QuckParser) {

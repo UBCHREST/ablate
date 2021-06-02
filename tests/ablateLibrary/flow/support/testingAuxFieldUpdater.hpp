@@ -3,6 +3,7 @@
 #include <petsc.h>
 #include <vector>
 #include "petscTestingFunction.hpp"
+#include "flow/flow.hpp"
 
 namespace tests::ablateCore::support {
 
@@ -18,7 +19,8 @@ class TestingAuxFieldUpdater {
         funcs.push_back(PetscTestingFunction::ApplySolution);
         ctxs.push_back(&field);
     }
-    static PetscErrorCode UpdateSourceTerms(TS ts, void *ctx);
+
+    PetscErrorCode UpdateSourceTerms(TS ts, ablate::flow::Flow& flow);
 };
 }  // namespace tests::ablateCore::support
 

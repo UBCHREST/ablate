@@ -4,6 +4,7 @@ We solve the Low Mach flow problem in a rectangular\n\
 domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
+#include <flow/incompressibleFlow.hpp>
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "flow/lowMachFlow.hpp"
@@ -54,7 +55,7 @@ static IntegrandTestFunction f0_q_original;
 
 struct FEFlowMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
-    std::string type;
+    std::function<std::shared_ptr<ablate::flow::Flow>(std::shared_ptr<ablate::mesh::Mesh>, std::shared_ptr<ablate::parameters::Parameters>)> createMethod;
     ExactFunction uExact;
     ExactFunction pExact;
     ExactFunction TExact;
@@ -82,7 +83,7 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     CHKERRQ(ierr);
 
     // Get the flowData
-    ablate::flow::Flow* flow;
+    ablate::flow::Flow *flow;
     ierr = DMGetApplicationContext(dm, &flow);
     CHKERRQ(ierr);
 
@@ -202,8 +203,8 @@ static PetscErrorCode lowMach_quadratic_T_t(PetscInt Dim, PetscReal time, const 
 
 static void SourceFunction(f0_lowMach_quadratic_q) {
     f0_q_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal Pth = constants[6];//PTH
+    const PetscReal S = constants[0];    // STROUHAL
+    const PetscReal Pth = constants[6];  // PTH
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
@@ -214,11 +215,11 @@ static void SourceFunction(f0_lowMach_quadratic_q) {
 static void SourceFunction(f0_lowMach_quadratic_v) {
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal Pth = constants[6];//PTH
-    const PetscReal mu = constants[7];//MU
-    const PetscReal R = constants[1];//REYNOLDS
-    const PetscReal F = constants[2];//FROUDE
+    const PetscReal S = constants[0];    // STROUHAL
+    const PetscReal Pth = constants[6];  // PTH
+    const PetscReal mu = constants[7];   // MU
+    const PetscReal R = constants[1];    // REYNOLDS
+    const PetscReal F = constants[2];    // FROUDE
 
     const PetscReal x = X[0];
     const PetscReal y = X[1];
@@ -233,10 +234,10 @@ static void SourceFunction(f0_lowMach_quadratic_v) {
 static void SourceFunction(f0_lowMach_quadratic_w) {
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal Pth = constants[6];//PTH
-    const PetscReal Cp = constants[9];//CP
-    const PetscReal H = constants[4];//HEATRELEASE
+    const PetscReal S = constants[0];    // STROUHAL
+    const PetscReal Pth = constants[6];  // PTH
+    const PetscReal Cp = constants[9];   // CP
+    const PetscReal H = constants[4];    // HEATRELEASE
 
     const PetscReal x = X[0];
     const PetscReal y = X[1];
@@ -284,8 +285,8 @@ static PetscErrorCode lowMach_cubic_T_t(PetscInt Dim, PetscReal time, const Pets
 
 static void SourceFunction(f0_lowMach_cubic_q) {
     f0_q_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal Pth = constants[6];//PTH
+    const PetscReal S = constants[0];    // STROUHAL
+    const PetscReal Pth = constants[6];  // PTH
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
@@ -296,11 +297,11 @@ static void SourceFunction(f0_lowMach_cubic_q) {
 static void SourceFunction(f0_lowMach_cubic_v) {
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal Pth = constants[6];//PTH
-    const PetscReal mu = constants[7];//MU
-    const PetscReal R = constants[1];//REYNOLDS
-    const PetscReal F = constants[2];//FROUDE
+    const PetscReal S = constants[0];    // STROUHAL
+    const PetscReal Pth = constants[6];  // PTH
+    const PetscReal mu = constants[7];   // MU
+    const PetscReal R = constants[1];    // REYNOLDS
+    const PetscReal F = constants[2];    // FROUDE
 
     const PetscReal x = X[0];
     const PetscReal y = X[1];
@@ -316,12 +317,12 @@ static void SourceFunction(f0_lowMach_cubic_v) {
 static void SourceFunction(f0_lowMach_cubic_w) {
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal Pth = constants[6];//PTH
-    const PetscReal Cp = constants[9];//CP
-    const PetscReal H = constants[4];//HEATRELEASE
-    const PetscReal k = constants[8];//K
-    const PetscReal P = constants[3];//PECLET
+    const PetscReal S = constants[0];    // STROUHAL
+    const PetscReal Pth = constants[6];  // PTH
+    const PetscReal Cp = constants[9];   // CP
+    const PetscReal H = constants[4];    // HEATRELEASE
+    const PetscReal k = constants[8];    // K
+    const PetscReal P = constants[3];    // PECLET
 
     const PetscReal x = X[0];
     const PetscReal y = X[1];
@@ -372,9 +373,9 @@ static PetscErrorCode incompressible_quadratic_T_t(PetscInt Dim, PetscReal time,
 static void SourceFunction(f0_incompressible_quadratic_v) {
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
     const PetscReal rho = 1.0;
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal mu = constants[3];//MU
-    const PetscReal R = constants[1];//REYNOLDS
+    const PetscReal S = constants[0];   // STROUHAL
+    const PetscReal mu = constants[3];  // MU
+    const PetscReal R = constants[1];   // REYNOLDS
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
@@ -387,8 +388,8 @@ static void SourceFunction(f0_incompressible_quadratic_w) {
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
     const PetscReal rho = 1.0;
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal Cp = constants[5];//CP
+    const PetscReal S = constants[0];   // STROUHAL
+    const PetscReal Cp = constants[5];  // CP
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
@@ -439,9 +440,9 @@ static void SourceFunction(f0_incompressible_cubic_v) {
     f0_v_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
     const PetscReal rho = 1.0;
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal mu = constants[3];//MU
-    const PetscReal R = constants[1];//REYNOLDS
+    const PetscReal S = constants[0];   // STROUHAL
+    const PetscReal mu = constants[3];  // MU
+    const PetscReal R = constants[1];   // REYNOLDS
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
@@ -455,10 +456,10 @@ static void SourceFunction(f0_incompressible_cubic_w) {
     f0_w_original(dim, Nf, NfAux, uOff, uOff_x, u, u_t, u_x, aOff, aOff_x, a, a_t, a_x, t, X, numConstants, constants, f0);
 
     const PetscReal rho = 1.0;
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal Cp = constants[5];//CP
-    const PetscReal k = constants[4];//K
-    const PetscReal P = constants[2];//PECLET
+    const PetscReal S = constants[0];   // STROUHAL
+    const PetscReal Cp = constants[5];  // CP
+    const PetscReal k = constants[4];   // K
+    const PetscReal P = constants[2];   // PECLET
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
@@ -518,9 +519,9 @@ static void SourceFunction(f0_incompressible_cubic_trig_v) {
 
     const PetscReal beta = 100.0;
     const PetscReal rho = 1.0;
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal mu = constants[3];//MU
-    const PetscReal R = constants[1];//REYNOLDS
+    const PetscReal S = constants[0];   // STROUHAL
+    const PetscReal mu = constants[3];  // MU
+    const PetscReal R = constants[1];   // REYNOLDS
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
@@ -535,10 +536,10 @@ static void SourceFunction(f0_incompressible_cubic_trig_w) {
 
     const PetscReal beta = 100.0;
     const PetscReal rho = 1.0;
-    const PetscReal S = constants[0];//STROUHAL
-    const PetscReal Cp = constants[5];//CP
-    const PetscReal k = constants[4];//K
-    const PetscReal P = constants[2];//PECLET
+    const PetscReal S = constants[0];   // STROUHAL
+    const PetscReal Cp = constants[5];  // CP
+    const PetscReal k = constants[4];   // K
+    const PetscReal P = constants[2];   // PECLET
     const PetscReal x = X[0];
     const PetscReal y = X[1];
 
@@ -570,7 +571,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
             // Create the flow object
-            auto flowObject = std::make_shared<ablate::flow::LowMachFlow>("testFlow", std::make_shared<ablate::mesh::DMWrapper>(dmCreate), parameters);
+            std::shared_ptr<ablate::flow::Flow> flowObject = testingParam.createMethod(std::make_shared<ablate::mesh::DMWrapper>(dmCreate), parameters);
 
             // Override problem with source terms, boundary, and set the exact solution
             {
@@ -667,8 +668,8 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
             // Cleanup
-//            ierr = DMDestroy(&dmCreate);
-//            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            //            ierr = DMDestroy(&dmCreate);//TODO: restore
+            //            CHKERRABORT(PETSC_COMM_WORLD, ierr);
             ierr = TSDestroy(&ts);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
         }
@@ -691,7 +692,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                                                 "-dmts_check -1 -snes_linesearch_type basic "
                                                                 "-gravityDirection 1"},
-                              .type = "lowMach",
+                              .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::LowMachFlow>("testFlow", mesh, parameters); },
                               .uExact = lowMach_quadratic_u,
                               .pExact = lowMach_quadratic_p,
                               .TExact = lowMach_quadratic_T,
@@ -713,7 +714,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-gravityDirection 1 "
                                                                 "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
                                                                 "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
-                              .type = "lowMach",
+                              .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::LowMachFlow>("testFlow", mesh, parameters); },
                               .uExact = lowMach_quadratic_u,
                               .pExact = lowMach_quadratic_p,
                               .TExact = lowMach_quadratic_T,
@@ -733,7 +734,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_ksp_atol 1e-12 -fieldsplit_pressure_pc_type jacobi "
                                                                 "-dmts_check -1 -snes_linesearch_type basic "
                                                                 "-gravityDirection 1 "},
-                              .type = "lowMach",
+                              .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::LowMachFlow>("testFlow", mesh, parameters); },
                               .uExact = lowMach_cubic_u,
                               .pExact = lowMach_cubic_p,
                               .TExact = lowMach_cubic_T,
@@ -755,7 +756,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-gravityDirection 1 "
                                                                 "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
                                                                 "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
-                              .type = "lowMach",
+                              .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::LowMachFlow>("testFlow", mesh, parameters); },
                               .uExact = lowMach_cubic_u,
                               .pExact = lowMach_cubic_p,
                               .TExact = lowMach_cubic_T,
@@ -775,7 +776,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .type = "incompressible",
+            .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::IncompressibleFlow>("testFlow", mesh, parameters); },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
             .TExact = incompressible_quadratic_T,
@@ -795,7 +796,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .type = "incompressible",
+            .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::IncompressibleFlow>("testFlow", mesh, parameters); },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
             .TExact = incompressible_quadratic_T,
@@ -816,7 +817,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .type = "incompressible",
+            .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::IncompressibleFlow>("testFlow", mesh, parameters); },
             .uExact = incompressible_cubic_trig_u,
             .pExact = incompressible_cubic_trig_p,
             .TExact = incompressible_cubic_trig_T,
@@ -837,7 +838,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .type = "incompressible",
+            .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::IncompressibleFlow>("testFlow", mesh, parameters); },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
             .TExact = incompressible_cubic_T,
@@ -858,7 +859,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .type = "incompressible",
+            .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::IncompressibleFlow>("testFlow", mesh, parameters); },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
             .TExact = incompressible_cubic_T,
@@ -880,7 +881,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
                                               "-strouhal 0.00242007695844728 -reynolds 23126.2780617827  -peclet 16373.1785965753 "
                                               "-mu 1.1 -k 1.2 -cp 1.3 "},
-            .type = "incompressible",
+            .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::IncompressibleFlow>("testFlow", mesh, parameters); },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
             .TExact = incompressible_quadratic_T,
@@ -903,7 +904,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_pressure_ksp_rtol 1e-10  -fieldsplit_pressure_ksp_atol 1E-12 -fieldsplit_pressure_pc_type jacobi "
                                               "-strouhal 0.0024 -reynolds 23126.27 -peclet 16373.178 "
                                               "-mu 1.1 -k 1.2 -cp 1.3 "},
-            .type = "incompressible",
+            .createMethod = [](auto mesh, auto parameters) { return std::make_shared<ablate::flow::IncompressibleFlow>("testFlow", mesh, parameters); },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
             .TExact = incompressible_cubic_T,
@@ -912,4 +913,4 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_v = f0_incompressible_cubic_v,
             .f0_w = f0_incompressible_cubic_w,
             .f0_q = NULL}),
-    [](const testing::TestParamInfo<FEFlowMMSParameters> &info) { return info.param.type + "_" + info.param.mpiTestParameter.getTestName(); });
+    [](const testing::TestParamInfo<FEFlowMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

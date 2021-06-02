@@ -12,7 +12,7 @@ class FlowFieldSolution {
     const std::string fieldName;
 
    public:
-    FlowFieldSolution(std::string fieldName, std::shared_ptr<mathFunctions::MathFunction> solutionField, std::shared_ptr<mathFunctions::MathFunction> timeDerivative);
+    FlowFieldSolution(std::string fieldName, std::shared_ptr<mathFunctions::MathFunction> solutionField, std::shared_ptr<mathFunctions::MathFunction> timeDerivative = {});
 
     const std::string& GetName() const { return fieldName; }
 

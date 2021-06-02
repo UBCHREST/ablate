@@ -23,6 +23,8 @@ class Flow : public solve::Solvable {
 
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);
+   public:
+    static void UpdateAuxFields(TS ts, Flow& flow);
 
    protected:
     const std::string name;
@@ -43,7 +45,7 @@ class Flow : public solve::Solvable {
 
     const std::vector<std::shared_ptr<FlowFieldSolution>> initialization;
     const std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions;
-    const std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields;
+    const std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFieldsUpdaters;
 
     // Register the field
     void RegisterField(FlowFieldDescriptor flowFieldDescription);
@@ -74,11 +76,13 @@ class Flow : public solve::Solvable {
         CompleteProblemSetup(timeStepper);
     }
 
+    Vec GetAuxField() { return auxField; }
+
     Vec GetSolutionVector() override { return flowField; }
 
-    std::optional<int> GetFieldId(const std::string& fieldName);
+    std::optional<int> GetFieldId(const std::string& fieldName) const;
 
-    std::optional<int> GetAuxFieldId(const std::string& fieldName);
+    std::optional<int> GetAuxFieldId(const std::string& fieldName) const;
 };
 }  // namespace ablate::flow
 

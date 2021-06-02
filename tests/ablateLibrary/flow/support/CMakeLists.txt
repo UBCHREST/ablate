@@ -1,4 +1,4 @@
-target_sources(coreTests
+target_sources(libraryTests
         PRIVATE
         petscTestingFunction.cpp
         petscTestingFunction.hpp
