@@ -3,7 +3,8 @@
 
 static std::string getPetscObjectName(DM dm){
     const char* name;
-    PetscObjectGetName((PetscObject)name, &name) >> ablate::checkError;
+    PetscObjectName((PetscObject)dm) >> ablate::checkError;
+    PetscObjectGetName((PetscObject)dm, &name) >> ablate::checkError;
     return std::string(name);
 }
 

@@ -69,4 +69,20 @@ TEST(FactoryParameterTests, ShouldReturnEmptyValueWhenNotThere) {
     ASSERT_FALSE(intValue.has_value());
 }
 
+TEST(FactoryParameterTests, ShouldGetAllKeys) {
+    // arrange
+    std::shared_ptr<ablateTesting::parser::MockFactory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
+    std::unordered_set<std::string> expectedKeys = {"key1", "key2"};
+    EXPECT_CALL(*mockFactory, GetKeys()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedKeys));
+
+    auto factoryParameters = std::make_shared<ablate::parameters::FactoryParameters>(mockFactory);
+
+    // act
+    auto keyValues = factoryParameters->GetKeys();
+
+    // assert
+    ASSERT_EQ(expectedKeys, keyValues);
+}
+
+
 }  // namespace ablateTesting::parameters

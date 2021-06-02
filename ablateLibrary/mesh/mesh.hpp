@@ -12,7 +12,7 @@ class Mesh {
     DM dm;
 
     Mesh(std::string name, std::map<std::string, std::string> arguments);
-    virtual ~Mesh();
+    virtual ~Mesh() = default;
 
    public:
     std::string GetName() const { return name; }

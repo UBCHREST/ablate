@@ -80,6 +80,8 @@ class YamlParser : public Factory {
 
     bool Contains(const std::string& name) const override { return yamlConfiguration[name] != nullptr; };
 
+    std::unordered_set<std::string> GetKeys() const override;
+
     /** get unused values **/
     std::vector<std::string> GetUnusedValues() const;
 };

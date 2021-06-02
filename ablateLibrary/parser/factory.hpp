@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "argumentIdentifier.hpp"
+#include <unordered_set>
 
 namespace ablate::parser {
 
@@ -48,6 +49,8 @@ class Factory {
 
     /* check to see if the child is contained*/
     virtual bool Contains(const std::string& name) const = 0;
+
+    virtual std::unordered_set<std::string> GetKeys() const = 0;
 
     /* produce a shared pointer for the specified interface and type */
     template <typename Interface>

@@ -486,4 +486,29 @@ TEST(YamlParserTests, ShouldGetListOfFactories) {
     ASSERT_EQ(list[1]->GetClassType(), "ablate::info::green");
 }
 
+TEST(YamlParserTests, ShouldGetListOfKeys) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+    yaml << " item2:" << std::endl;
+    yaml << "      child1: 1 " << std::endl;
+    yaml << "      child2: 2" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto keysRoot = yamlParser->GetKeys();
+    auto childKeys = yamlParser->GetFactory("item2")->GetKeys();
+
+    // assert
+    ASSERT_EQ(keysRoot.size(), 2);
+    ASSERT_EQ(keysRoot.count("item1"), 1);
+    ASSERT_EQ(keysRoot.count("item2"), 1);
+
+    ASSERT_EQ(childKeys.size(), 2);
+    ASSERT_EQ(childKeys.count("child1"), 1);
+    ASSERT_EQ(childKeys.count("child2"), 1);
+}
+
 }  // namespace ablateTesting::parser

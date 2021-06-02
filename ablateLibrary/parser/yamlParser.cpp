@@ -95,3 +95,13 @@ std::vector<std::string> ablate::parser::YamlParser::GetUnusedValues() const {
 
     return unused;
 }
+
+std::unordered_set<std::string> ablate::parser::YamlParser::GetKeys() const {
+    std::unordered_set<std::string> keys;
+
+    for (auto childNode : yamlConfiguration) {
+        keys.insert(key_to_string(childNode.first));
+    }
+
+    return keys;
+}

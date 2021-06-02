@@ -25,7 +25,7 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        DMGetField(dm, 1, NULL, &pressure) >> checkError;  // TODO: replace 1 with pressure
+        DMGetField(dm, PRES, NULL, &pressure) >> checkError;
         MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
         PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres) >> checkError;
         MatNullSpaceDestroy(&nullspacePres) >> checkError;
@@ -56,7 +56,7 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
 
     /* Setup constants */;
     PetscReal parameterArray[TOTAL_LOW_MACH_FLOW_PARAMETERS];
-    parameters->Fill(TOTAL_LOW_MACH_FLOW_PARAMETERS, lowMachFlowParametersTypeNames, parameterArray);
+    parameters->Fill(TOTAL_LOW_MACH_FLOW_PARAMETERS, lowMachFlowParametersTypeNames, parameterArray, defaultParameters);
     PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, parameterArray) >> checkError;
 }
 
@@ -99,22 +99,8 @@ static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt n
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode FlowCompleteFlowInitialization_LowMachFlow(DM dm, Vec u) {
-    MatNullSpace nullsp;
-    PetscErrorCode ierr;
-
-    PetscFunctionBegin;
-    ierr = createPressureNullSpace(dm, PRES, PRES, &nullsp);
-    CHKERRQ(ierr);
-    ierr = MatNullSpaceRemove(nullsp, u);
-    CHKERRQ(ierr);
-    ierr = MatNullSpaceDestroy(&nullsp);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-
 /* Make the discrete pressure discretely divergence free */
-static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, const ablate::flow::Flow &) {
+static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::flow::Flow& flow) {
     Vec u;
     PetscErrorCode ierr;
     DM dm;
@@ -124,7 +110,12 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, const ablate::f
     CHKERRQ(ierr);
     ierr = TSGetSolution(ts, &u);
     CHKERRQ(ierr);
-    ierr = FlowCompleteFlowInitialization_LowMachFlow(dm, u);
+    try {
+        flow.CompleteFlowInitialization(dm, u);
+    }catch(std::exception& exp){
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+    }
+
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
@@ -137,6 +128,15 @@ void ablate::flow::LowMachFlow::CompleteProblemSetup(TS ts) {
     TSGetDM(ts, &dm) >> checkError;
     DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace) >> checkError;
     preStepFunctions.push_back(removeDiscretePressureNullspaceOnTs);
+}
+
+void ablate::flow::LowMachFlow::CompleteFlowInitialization(DM dm, Vec u) {
+    MatNullSpace nullsp;
+
+    createPressureNullSpace(dm, PRES, PRES, &nullsp)  >> checkError;
+    MatNullSpaceRemove(nullsp, u)  >> checkError;
+    MatNullSpaceDestroy(&nullsp) >> checkError;
+
 }
 
 // REGISTER(ablate::flow::Flow, ablate::flow::LowMachFlow, "low mach flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),

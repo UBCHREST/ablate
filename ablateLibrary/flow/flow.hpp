@@ -38,8 +38,8 @@ class Flow : public solve::Solvable {
     Vec auxField;
 
     // pre and post step functions for the flow
-    std::vector<std::function<void(TS ts, const Flow&)>> preStepFunctions;
-    std::vector<std::function<void(TS ts, const Flow&)>> postStepFunctions;
+    std::vector<std::function<void(TS ts, Flow&)>> preStepFunctions;
+    std::vector<std::function<void(TS ts, Flow&)>> postStepFunctions;
 
     const std::vector<std::shared_ptr<FlowFieldSolution>> initialization;
     const std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions;
@@ -53,14 +53,22 @@ class Flow : public solve::Solvable {
     // Quick reference to used properties,
     PetscInt dim;
 
+    // Petsc options specific to flow. These may be null by default
+    PetscOptions petscOptions;
+
    public:
     Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
          std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields );
     virtual ~Flow();
 
     virtual void CompleteProblemSetup(TS ts);
+    virtual void CompleteFlowInitialization(DM, Vec) = 0;
 
     const std::string& GetName() const { return name; }
+
+    const DM& GetDM() const { return dm; }
+
+    const DM& GetAuxDM() const { return auxDM; }
 
     void SetupSolve(TS& timeStepper) override{
         CompleteProblemSetup(timeStepper);

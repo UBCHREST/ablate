@@ -12,6 +12,7 @@ class MapParameters : public Parameters {
    public:
     MapParameters(std::map<std::string, std::string> values);
     std::optional<std::string> GetString(std::string paramName) const override;
+    std::unordered_set<std::string> GetKeys() const override;
 };
 }  // namespace ablate::parameters
 

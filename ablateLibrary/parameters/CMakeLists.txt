@@ -7,4 +7,6 @@ target_sources(ablateLibrary
         mapParameters.hpp
         factoryParameters.hpp
         factoryParameters.cpp
+        petscOptionParameters.hpp
+        petscOptionParameters.cpp
         )

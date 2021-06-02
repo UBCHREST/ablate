@@ -8,6 +8,7 @@ namespace ablateTesting::parameters {
 class MockParameters : public ablate::parameters::Parameters {
    public:
     MOCK_METHOD(std::optional<std::string>, GetString, (std::string paramName), (const, override));
+    MOCK_METHOD(std::unordered_set<std::string>, GetKeys, (), (const, override));
 };
 
 }  // namespace ablateTesting::parameters

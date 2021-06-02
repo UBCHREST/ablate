@@ -11,4 +11,9 @@ std::optional<std::string> ablate::parameters::FactoryParameters::GetString(std:
     return std::optional<std::string>();
 }
 
+std::unordered_set<std::string> ablate::parameters::FactoryParameters::GetKeys() const{
+ return factory->GetKeys();
+}
+
+
 REGISTER_FACTORY_CONSTRUCTOR_DEFAULT(ablate::parameters::Parameters, ablate::parameters::FactoryParameters, "Creates a parameter list based upon a factory.  Should be default for factory parsing.");

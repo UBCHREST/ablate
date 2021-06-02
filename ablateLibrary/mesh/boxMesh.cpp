@@ -39,6 +39,11 @@ ablate::mesh::BoxMesh::BoxMesh(std::string name, std::map<std::string, std::stri
         throw std::runtime_error("BoxMesh Error: Rank " + std::to_string(rank) + " distribution resulted in no cells.  Increase the number of cells in each direction.");
     }
 }
+ablate::mesh::BoxMesh::~BoxMesh() {
+    if (dm) {
+        DMDestroy(&dm);
+    }
+}
 
 REGISTER(ablate::mesh::Mesh, ablate::mesh::BoxMesh, "a simple uniform box", ARG(std::string, "name", "the name of the mesh/domain"),
          ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), ARG(std::vector<int>, "faces", "the number of faces in each direction for the mesh"),

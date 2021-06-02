@@ -10,6 +10,7 @@ add_subdirectory(parameters)
 add_subdirectory(parser)
 add_subdirectory(mathFunctions)
 add_subdirectory(environment)
+add_subdirectory(flow)
 
 gtest_discover_tests(libraryTests
         # set a working directory so your project root so that you can find test data via paths relative to the project root
@@ -19,3 +20,11 @@ gtest_discover_tests(libraryTests
 
 # Allow public access to the header files in the directory
 target_include_directories(libraryTests PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+
+add_custom_command(
+        TARGET libraryTests
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/outputs/
+        $<TARGET_FILE_DIR:libraryTests>/outputs
+)

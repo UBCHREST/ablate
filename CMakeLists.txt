@@ -38,14 +38,14 @@ set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
 
 # Setup and configure testing
-#if(BUILD_TESTING)
-#    enable_testing()
-#    include(GoogleTest)
-#    add_subdirectory(tests)
-#
-#    # Include the format command only if we are building tests
-#    include(clangFormatter.cmake)
-#endif()
+if(BUILD_TESTING)
+    enable_testing()
+    include(GoogleTest)
+    add_subdirectory(tests)
+
+    # Include the format command only if we are building tests
+    include(clangFormatter.cmake)
+endif()
 
 # keep a separate main statement
 #add_executable(ablate main.cpp)

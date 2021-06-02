@@ -3,10 +3,10 @@
 #include "../utilities/petscOptions.hpp"
 #include "utilities/mpiError.hpp"
 
-ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> option,
+ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
                          std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions,
                          std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
-    : name(name), dm(nullptr), auxDM(nullptr), flowField(nullptr), auxField(nullptr), initialization(initialization), boundaryConditions(boundaryConditions), auxiliaryFields(auxiliaryFields) {
+    : name(name), dm(nullptr), auxDM(nullptr), flowField(nullptr), auxField(nullptr), petscOptions(nullptr), initialization(initialization), boundaryConditions(boundaryConditions), auxiliaryFields(auxiliaryFields) {
     // Copy the dm and set the value
     dm = mesh->GetDomain();
 
@@ -15,21 +15,30 @@ ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std
 
     // Get the dim and store the flows
     DMGetDimension(dm, &dim) >> checkError;
+
+    // Set the options
+    if(options){
+        PetscOptionsCreate(&petscOptions)  >> checkError;
+        options->Fill(petscOptions);
+    }
 }
 
 ablate::flow::Flow::~Flow() {
     // clean up the petsc objects
+    if (flowField) {
+        VecDestroy(&flowField) >> checkError;
+    }
+    if (auxField) {
+        VecDestroy(&auxField) >> checkError;
+    }
     if (dm) {
         DMDestroy(&dm) >> checkError;
     }
     if (auxDM) {
         DMDestroy(&auxDM) >> checkError;
     }
-    if (flowField) {
-        VecDestroy(&flowField) >> checkError;
-    }
-    if (auxField) {
-        VecDestroy(&flowField) >> checkError;
+    if(petscOptions){
+        PetscOptionsDestroy(&petscOptions) >> checkError;
     }
 }
 
@@ -56,7 +65,7 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription)
                 PetscObjectComm((PetscObject)dm), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
                 checkMpiError;
             PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)petscFE, NULL) >> checkError;  // TODO: update with options
+            PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;  // TODO: update with options
 
             // If this is not the first field, copy the quadrature locations
             if (flowFieldDescriptors.size() > 1) {
@@ -74,7 +83,7 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription)
             PetscFVCreate(PETSC_COMM_WORLD, &fvm) >> checkError;
             PetscObjectSetOptionsPrefix((PetscObject)fvm, flowFieldDescription.fieldPrefix.c_str()) >> checkError;
             PetscObjectSetName((PetscObject)fvm, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)fvm, NULL) >> checkError;  // TODO: update with options
+            PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;  // TODO: update with options
 
             PetscFVSetFromOptions(fvm) >> checkError;
             PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;
@@ -125,7 +134,7 @@ void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescripti
                 PetscObjectComm((PetscObject)dm), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
                 checkError;
             PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)petscFE, NULL) >> checkError;  // TODO: update with options
+            PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;  // TODO: update with options
 
             // If this is not the first field, copy the quadrature locations
             if (!flowFieldDescriptors.empty()) {
@@ -143,7 +152,7 @@ void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescripti
             PetscFVCreate(PETSC_COMM_WORLD, &fvm) >> checkError;
             PetscObjectSetOptionsPrefix((PetscObject)fvm, flowFieldDescription.fieldPrefix.c_str()) >> checkError;
             PetscObjectSetName((PetscObject)fvm, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)fvm, NULL) >> checkError;  // TODO: update with options
+            PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;  // TODO: update with options
 
             PetscFVSetFromOptions(fvm) >> checkError;
             PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;

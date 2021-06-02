@@ -5,9 +5,3 @@ ablate::mesh::Mesh::Mesh(std::string name, std::map<std::string, std::string> ar
     // append any prefix values
     utilities::PetscOptionsUtils::Set(name, arguments);
 }
-
-ablate::mesh::Mesh::~Mesh() {
-    if (dm) {
-        DMDestroy(&dm);
-    }
-}

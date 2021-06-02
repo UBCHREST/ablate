@@ -10,6 +10,7 @@ class BoxMesh : public Mesh {
     BoxMesh(std::string name, std::map<std::string, std::string> arguments, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary,
             bool simplex);
 
+    ~BoxMesh();
    protected:
     inline static std::map<std::string, std::string> Merge(std::map<std::string, std::string> a, std::map<std::string, std::string> b) {
         a.merge(b);
