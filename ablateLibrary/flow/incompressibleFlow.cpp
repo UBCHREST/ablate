@@ -15,9 +15,9 @@ ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shar
 
     FinalizeRegisterFields();
 
-    DM cdm = dm;
+    DM cdm = dm->GetDomain();
     while (cdm) {
-        DMCopyDisc(dm, cdm) >> checkError;
+        DMCopyDisc(dm->GetDomain(), cdm) >> checkError;
         DMGetCoarseDM(cdm, &cdm) >> checkError;
     }
 
@@ -25,7 +25,7 @@ ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shar
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        DMGetField(dm, PRES, NULL, &pressure) >> checkError;
+        DMGetField(dm->GetDomain(), PRES, NULL, &pressure) >> checkError;
         MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
         PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres) >> checkError;
         MatNullSpaceDestroy(&nullspacePres) >> checkError;
@@ -39,7 +39,7 @@ ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shar
     }
 
     PetscDS prob;
-    DMGetDS(dm, &prob) >> checkError;
+    DMGetDS(dm->GetDomain(), &prob) >> checkError;
 
     // V, W, Q Test Function
     PetscDSSetResidual(prob, VTEST, IncompressibleFlow_vIntegrandTestFunction, IncompressibleFlow_vIntegrandTestGradientFunction) >> checkError;

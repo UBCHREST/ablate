@@ -548,7 +548,6 @@ static void SourceFunction(f0_incompressible_cubic_trig_w) {
 
 TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        PetscErrorCode ierr;
         {
             DM dmCreate; /* problem definition */
             TS ts;       /* timestepper */
@@ -585,61 +584,40 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                     PetscDSSetResidual(prob, VTEST, testingParam.f0_v, tempFunctionPointer) >> errorChecker;
                 }
                 if (testingParam.f0_w) {
-                    ierr = PetscDSGetResidual(prob, WTEST, &f0_w_original, &tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                    ierr = PetscDSSetResidual(prob, WTEST, testingParam.f0_w, tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                    PetscDSGetResidual(prob, WTEST, &f0_w_original, &tempFunctionPointer) >> errorChecker;
+                    PetscDSSetResidual(prob, WTEST, testingParam.f0_w, tempFunctionPointer) >> errorChecker;
                 }
                 if (testingParam.f0_q) {
-                    ierr = PetscDSGetResidual(prob, QTEST, &f0_q_original, &tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                    ierr = PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                    PetscDSGetResidual(prob, QTEST, &f0_q_original, &tempFunctionPointer) >> errorChecker;
+                    PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> errorChecker;
                 }
 
                 /* Setup Boundary Conditions */
                 PetscInt id;
                 id = 3;
-                ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL) >> errorChecker;
                 id = 1;
-                ierr =
-                    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL) >> errorChecker;
                 id = 2;
-                ierr =
-                    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL) >> errorChecker;
                 id = 4;
-                ierr =
-                    PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall velocity", "marker", VEL, 0, NULL, (void (*)(void))testingParam.uExact, (void (*)(void))testingParam.u_tExact, 1, &id, NULL) >> errorChecker;
                 id = 3;
-                ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "top wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL) >> errorChecker;
                 id = 1;
-                ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "bottom wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL) >> errorChecker;
                 id = 2;
-                ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "right wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL) >> errorChecker;
                 id = 4;
-                ierr = PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                PetscDSAddBoundary(prob, DM_BC_ESSENTIAL, "left wall temp", "marker", TEMP, 0, NULL, (void (*)(void))testingParam.TExact, (void (*)(void))testingParam.T_tExact, 1, &id, NULL) >> errorChecker;
 
                 // Set the exact solution
-                ierr = PetscDSSetExactSolution(prob, VEL, testingParam.uExact, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                ierr = PetscDSSetExactSolution(prob, PRES, testingParam.pExact, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                ierr = PetscDSSetExactSolution(prob, TEMP, testingParam.TExact, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                ierr = PetscDSSetExactSolutionTimeDerivative(prob, VEL, testingParam.u_tExact, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                ierr = PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, testingParam.T_tExact, NULL);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                PetscDSSetExactSolution(prob, VEL, testingParam.uExact, NULL) >> errorChecker;
+                PetscDSSetExactSolution(prob, PRES, testingParam.pExact, NULL) >> errorChecker;
+                PetscDSSetExactSolution(prob, TEMP, testingParam.TExact, NULL) >> errorChecker;
+                PetscDSSetExactSolutionTimeDerivative(prob, VEL, testingParam.u_tExact, NULL) >> errorChecker;
+                PetscDSSetExactSolutionTimeDerivative(prob, PRES, NULL, NULL) >> errorChecker;
+                PetscDSSetExactSolutionTimeDerivative(prob, TEMP, testingParam.T_tExact, NULL) >> errorChecker;
             }
 
             flowObject->CompleteProblemSetup(ts);
@@ -660,21 +638,17 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> errorChecker;
             TSMonitorSet(ts, MonitorError, NULL, NULL) >> errorChecker;
 
-            ierr = TSSolve(ts, flowObject->GetSolutionVector());
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            // Solve in time
+            TSSolve(ts, flowObject->GetSolutionVector()) >> errorChecker;
 
             // Compare the actual vs expected values
-            ierr = DMTSCheckFromOptions(ts, flowObject->GetSolutionVector());
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> errorChecker;
 
             // Cleanup
-            //            ierr = DMDestroy(&dmCreate);//TODO: restore
-            //            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = TSDestroy(&ts);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            DMDestroy(&dmCreate) >> errorChecker;
+            TSDestroy(&ts) >> errorChecker;
         }
-        ierr = PetscFinalize();
-        exit(ierr);
+        exit(PetscFinalize());
     EndWithMPI
 }
 

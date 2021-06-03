@@ -7,7 +7,7 @@ ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std
                          std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions,
                          std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
     : name(name),
-      dm(nullptr),
+      dm(mesh),
       auxDM(nullptr),
       flowField(nullptr),
       auxField(nullptr),
@@ -15,14 +15,11 @@ ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std
       initialization(initialization),
       boundaryConditions(boundaryConditions),
       auxiliaryFieldsUpdaters(auxiliaryFields) {
-    // Copy the dm and set the value
-    dm = mesh->GetDomain();
-
     // Set the application context with this dm
-    DMSetApplicationContext(dm, this) >> checkError;
+    DMSetApplicationContext(dm->GetDomain(), this) >> checkError;
 
     // Get the dim and store the flows
-    DMGetDimension(dm, &dim) >> checkError;
+    DMGetDimension(dm->GetDomain(), &dim) >> checkError;
 
     // Set the options
     if (options) {
@@ -43,9 +40,6 @@ ablate::flow::Flow::~Flow() {
     }
     if (auxField) {
         VecDestroy(&auxField) >> checkError;
-    }
-    if (dm) {
-        DMDestroy(&dm) >> checkError;
     }
     if (auxDM) {
         DMDestroy(&auxDM) >> checkError;
@@ -82,18 +76,18 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription)
             // determine if it a simplex element and the number of dimensions
             DMPolytopeType ct;
             PetscInt cStart;
-            DMPlexGetHeightStratum(dm, 0, &cStart, NULL) >> checkError;
-            DMPlexGetCellType(dm, cStart, &ct) >> checkError;
+            DMPlexGetHeightStratum(dm->GetDomain(), 0, &cStart, NULL) >> checkError;
+            DMPlexGetCellType(dm->GetDomain(), cStart, &ct) >> checkError;
             PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
             PetscInt simplexGlobal;
 
             // Assume true if any rank says true
-            MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm)) >> checkMpiError;
+            MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm->GetDomain())) >> checkMpiError;
 
             // create a petsc fe
             PetscFE petscFE;
             PetscFECreateDefault(
-                PetscObjectComm((PetscObject)dm), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+                PetscObjectComm((PetscObject)dm->GetDomain()), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
                 checkMpiError;
             PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;  // TODO: update with options
@@ -101,12 +95,12 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription)
             // If this is not the first field, copy the quadrature locations
             if (flowFieldDescriptors.size() > 1) {
                 PetscFE referencePetscFE;
-                DMGetField(dm, 0, NULL, (PetscObject*)&referencePetscFE) >> checkError;
+                DMGetField(dm->GetDomain(), 0, NULL, (PetscObject*)&referencePetscFE) >> checkError;
                 PetscFECopyQuadrature(referencePetscFE, petscFE) >> checkError;
             }
 
             // Store the field and destroy copy
-            DMAddField(dm, NULL, (PetscObject)petscFE) >> checkError;
+            DMAddField(dm->GetDomain(), NULL, (PetscObject)petscFE) >> checkError;
             PetscFEDestroy(&petscFE) >> checkError;
         } break;
         case FieldType::FV: {
@@ -120,7 +114,7 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription)
             PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;
             PetscFVSetSpatialDimension(fvm, dim) >> checkError;
 
-            DMAddField(dm, NULL, (PetscObject)fvm) >> checkError;
+            DMAddField(dm->GetDomain(), NULL, (PetscObject)fvm) >> checkError;
             PetscFVDestroy(&fvm) >> checkError;
         } break;
         default: {
@@ -129,7 +123,7 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription)
     }
 }
 
-void ablate::flow::Flow::FinalizeRegisterFields() { DMCreateDS(dm) >> checkError; }
+void ablate::flow::Flow::FinalizeRegisterFields() { DMCreateDS(dm->GetDomain()) >> checkError; }
 
 void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescription) {
     // store the field
@@ -139,11 +133,11 @@ void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescripti
     if (auxDM == NULL) {
         /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
         DM coordDM;
-        DMGetCoordinateDM(dm, &coordDM) >> checkError;
-        DMClone(dm, &auxDM) >> checkError;
+        DMGetCoordinateDM(dm->GetDomain(), &coordDM) >> checkError;
+        DMClone(dm->GetDomain(), &auxDM) >> checkError;
 
         // this is a hard coded "dmAux" that petsc looks for
-        PetscObjectCompose((PetscObject)dm, "dmAux", (PetscObject)auxDM) >> checkError;
+        PetscObjectCompose((PetscObject)dm->GetDomain(), "dmAux", (PetscObject)auxDM) >> checkError;
         DMSetCoordinateDM(auxDM, coordDM) >> checkError;
     }
 
@@ -152,17 +146,17 @@ void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescripti
             // determine if it a simplex element and the number of dimensions
             DMPolytopeType ct;
             PetscInt cStart;
-            DMPlexGetHeightStratum(dm, 0, &cStart, NULL) >> checkError;
-            DMPlexGetCellType(dm, cStart, &ct) >> checkError;
+            DMPlexGetHeightStratum(dm->GetDomain(), 0, &cStart, NULL) >> checkError;
+            DMPlexGetCellType(dm->GetDomain(), cStart, &ct) >> checkError;
             PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
             PetscInt simplexGlobal;
 
             // Assume true if any rank says true
-            MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm)) >> checkMpiError;
+            MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm->GetDomain())) >> checkMpiError;
             // create a petsc fe
             PetscFE petscFE;
             PetscFECreateDefault(
-                PetscObjectComm((PetscObject)dm), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+                PetscObjectComm((PetscObject)dm->GetDomain()), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
                 checkError;
             PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;  // TODO: update with options
@@ -170,7 +164,7 @@ void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescripti
             // If this is not the first field, copy the quadrature locations
             if (!flowFieldDescriptors.empty()) {
                 PetscFE referencePetscFE;
-                DMGetField(dm, 0, NULL, (PetscObject*)&referencePetscFE) >> checkError;
+                DMGetField(dm->GetDomain(), 0, NULL, (PetscObject*)&referencePetscFE) >> checkError;
                 PetscFECopyQuadrature(referencePetscFE, petscFE) >> checkError;
             }
 
@@ -240,7 +234,7 @@ PetscErrorCode ablate::flow::Flow::TSPostStepFunction(TS ts) {
 void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     // Apply any boundary conditions
     PetscDS prob;
-    DMGetDS(dm, &prob) >> checkError;
+    DMGetDS(dm->GetDomain(), &prob) >> checkError;
 
     // add each boundary condition
     for (auto boundary : boundaryConditions) {
@@ -279,16 +273,16 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     }
 
     // Setup the solve with the ts
-    TSSetDM(ts, dm) >> checkError;
-    DMPlexCreateClosureIndex(dm, NULL) >> checkError;
-    DMCreateGlobalVector(dm, &(flowField)) >> checkError;
+    TSSetDM(ts, dm->GetDomain()) >> checkError;
+    DMPlexCreateClosureIndex(dm->GetDomain(), NULL) >> checkError;
+    DMCreateGlobalVector(dm->GetDomain(), &(flowField)) >> checkError;
 
     if (auxDM) {
         DMCreateDS(auxDM) >> checkError;
         DMCreateLocalVector(auxDM, &(auxField)) >> checkError;
 
         // attach this field as aux vector to the dm
-        PetscObjectCompose((PetscObject)dm, "A", (PetscObject)auxField) >> checkError;
+        PetscObjectCompose((PetscObject)dm->GetDomain(), "A", (PetscObject)auxField) >> checkError;
         PetscObjectSetName((PetscObject)auxField, "auxField") >> checkError;
     }
 
@@ -307,12 +301,12 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     }
 
     if (isFE) {
-        DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL) >> checkError;
-        DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL) >> checkError;
-        DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL) >> checkError;
+        DMTSSetBoundaryLocal(dm->GetDomain(), DMPlexTSComputeBoundary, NULL) >> checkError;
+        DMTSSetIFunctionLocal(dm->GetDomain(), DMPlexTSComputeIFunctionFEM, NULL) >> checkError;
+        DMTSSetIJacobianLocal(dm->GetDomain(), DMPlexTSComputeIJacobianFEM, NULL) >> checkError;
     }
     if (isFV) {
-        DMTSSetRHSFunctionLocal(dm, DMPlexTSComputeRHSFunctionFVM, this) >> checkError;
+        DMTSSetRHSFunctionLocal(dm->GetDomain(), DMPlexTSComputeRHSFunctionFVM, this) >> checkError;
     }
     TSSetPreStep(ts, TSPreStepFunction) >> checkError;
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
@@ -320,7 +314,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     // Initialize the flow field is provided
     {
         PetscInt numberFields;
-        DMGetNumFields(dm, &numberFields) >> checkError;
+        DMGetNumFields(dm->GetDomain(), &numberFields) >> checkError;
 
         // size up the update and context functions
         std::vector<mathFunctions::PetscFunction> fieldFunctions(numberFields, NULL);
@@ -336,7 +330,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
             fieldFunctions[fieldId.value()] = fieldInitialization->GetSolutionField().GetPetscFunction();
         }
 
-        DMProjectFunction(dm, 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, flowField) >> checkError;
+        DMProjectFunction(dm->GetDomain(), 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, flowField) >> checkError;
     }
 
 }

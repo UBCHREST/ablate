@@ -109,164 +109,144 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
 
 TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        DM dmCreate; /* problem definition */
-        TS ts;       /* timestepper */
-
-        PetscReal t;
-        PetscErrorCode ierr;
-
-        // Get the testing param
-        auto testingParam = GetParam();
-
-        // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, help);
-
-        // setup the ts
-        ierr = TSCreate(PETSC_COMM_WORLD, &ts);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = CreateMesh(PETSC_COMM_WORLD, &dmCreate, PETSC_TRUE, 2);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = TSSetDM(ts, dmCreate);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // Setup the flow data
-        // pull the parameters from the petsc options
-        auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
-
-        auto velocityExact = std::make_shared<FlowFieldSolution>("velocity", std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact));
-        auto pressureExact = std::make_shared<FlowFieldSolution>("pressure", std::make_shared<mathFunctions::ParsedFunction>(testingParam.pExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.pDerivativeExact));
-        auto temperatureExact = std::make_shared<FlowFieldSolution>("temperature", std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact));
-
-        // Create the flow object
-        std::shared_ptr<ablate::flow::Flow> flowObject = testingParam.createMethod(
-            "testFlow",
-            std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
-            parameters,
-            nullptr,
-            /* initialization functions */
-            std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
-            /* boundary conditions */
-            std::vector<std::shared_ptr<BoundaryCondition>>{std::make_shared<BoundaryCondition>("velocity",
-                                                                                                "top wall velocity",
-                                                                                                "marker",
-                                                                                                3,
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
-                                                            std::make_shared<BoundaryCondition>("velocity",
-                                                                                                "bottom wall velocity",
-                                                                                                "marker",
-                                                                                                1,
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
-                                                            std::make_shared<BoundaryCondition>("velocity",
-                                                                                                "right wall velocity",
-                                                                                                "marker",
-                                                                                                2,
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
-                                                            std::make_shared<BoundaryCondition>("velocity",
-                                                                                                "left wall velocity",
-                                                                                                "marker",
-                                                                                                4,
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
-                                                            std::make_shared<BoundaryCondition>("temperature",
-                                                                                                "top wall temp",
-                                                                                                "marker",
-                                                                                                3,
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
-                                                            std::make_shared<BoundaryCondition>("temperature",
-                                                                                                "bottom wall temp",
-                                                                                                "marker",
-                                                                                                1,
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
-                                                            std::make_shared<BoundaryCondition>("temperature",
-                                                                                                "right wall temp",
-                                                                                                "marker",
-                                                                                                2,
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
-                                                            std::make_shared<BoundaryCondition>("temperature",
-                                                                                                "left wall temp",
-                                                                                                "marker",
-                                                                                                4,
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
-                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact))},
-            /* aux field updates */
-            std::vector<std::shared_ptr<FlowFieldSolution>>{std::make_shared<FlowFieldSolution>("momentum_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.vSource)),
-                                                            std::make_shared<FlowFieldSolution>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
-                                                            std::make_shared<FlowFieldSolution>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
-
-        // Override problem with source terms, boundary, and set the exact solution
         {
-            PetscDS prob;
-            ierr = DMGetDS(flowObject->GetDM(), &prob);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            DM dmCreate; /* problem definition */
+            TS ts;       /* timestepper */
 
-            // Set the exact solution
-            ierr = PetscDSSetExactSolution(prob, VEL, velocityExact->GetSolutionField().GetPetscFunction(), velocityExact->GetSolutionField().GetContext());
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolution(prob, PRES, pressureExact->GetSolutionField().GetPetscFunction(), pressureExact->GetSolutionField().GetContext());
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolution(prob, TEMP, temperatureExact->GetSolutionField().GetPetscFunction(), temperatureExact->GetSolutionField().GetContext());
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, VEL, velocityExact->GetTimeDerivative().GetPetscFunction(), velocityExact->GetTimeDerivative().GetContext());
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, PRES, pressureExact->GetTimeDerivative().GetPetscFunction(), pressureExact->GetTimeDerivative().GetContext());
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, temperatureExact->GetTimeDerivative().GetPetscFunction(), temperatureExact->GetTimeDerivative().GetContext());
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            PetscReal t;
+
+            // Get the testing param
+            auto testingParam = GetParam();
+
+            // initialize petsc and mpi
+            PetscInitialize(argc, argv, NULL, help) >> errorChecker;
+
+            // setup the ts
+            TSCreate(PETSC_COMM_WORLD, &ts) >> errorChecker;
+            CreateMesh(PETSC_COMM_WORLD, &dmCreate, PETSC_TRUE, 2) >> errorChecker;
+            TSSetDM(ts, dmCreate) >> errorChecker;
+            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> errorChecker;
+
+            // Setup the flow data
+            // pull the parameters from the petsc options
+            auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
+
+            auto velocityExact = std::make_shared<FlowFieldSolution>(
+                "velocity", std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact));
+            auto pressureExact = std::make_shared<FlowFieldSolution>(
+                "pressure", std::make_shared<mathFunctions::ParsedFunction>(testingParam.pExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.pDerivativeExact));
+            auto temperatureExact = std::make_shared<FlowFieldSolution>(
+                "temperature", std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact));
+
+            // Create the flow object
+            std::shared_ptr<ablate::flow::Flow> flowObject = testingParam.createMethod(
+                "testFlow",
+                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
+                parameters,
+                nullptr,
+                /* initialization functions */
+                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
+                /* boundary conditions */
+                std::vector<std::shared_ptr<BoundaryCondition>>{std::make_shared<BoundaryCondition>("velocity",
+                                                                                                    "top wall velocity",
+                                                                                                    "marker",
+                                                                                                    3,
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
+                                                                std::make_shared<BoundaryCondition>("velocity",
+                                                                                                    "bottom wall velocity",
+                                                                                                    "marker",
+                                                                                                    1,
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
+                                                                std::make_shared<BoundaryCondition>("velocity",
+                                                                                                    "right wall velocity",
+                                                                                                    "marker",
+                                                                                                    2,
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
+                                                                std::make_shared<BoundaryCondition>("velocity",
+                                                                                                    "left wall velocity",
+                                                                                                    "marker",
+                                                                                                    4,
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
+                                                                std::make_shared<BoundaryCondition>(
+                                                                    "temperature",
+                                                                    "top wall temp",
+                                                                    "marker",
+                                                                    3,
+                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
+                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
+                                                                std::make_shared<BoundaryCondition>("temperature",
+                                                                                                    "bottom wall temp",
+                                                                                                    "marker",
+                                                                                                    1,
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
+                                                                std::make_shared<BoundaryCondition>("temperature",
+                                                                                                    "right wall temp",
+                                                                                                    "marker",
+                                                                                                    2,
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
+                                                                std::make_shared<BoundaryCondition>("temperature",
+                                                                                                    "left wall temp",
+                                                                                                    "marker",
+                                                                                                    4,
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
+                                                                                                    std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact))},
+                /* aux field updates */
+                std::vector<std::shared_ptr<FlowFieldSolution>>{std::make_shared<FlowFieldSolution>("momentum_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.vSource)),
+                                                                std::make_shared<FlowFieldSolution>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
+                                                                std::make_shared<FlowFieldSolution>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
+
+            // Override problem with source terms, boundary, and set the exact solution
+            {
+                PetscDS prob;
+                DMGetDS(flowObject->GetDM(), &prob) >> errorChecker;
+
+                // Set the exact solution
+                PetscDSSetExactSolution(prob, VEL, velocityExact->GetSolutionField().GetPetscFunction(), velocityExact->GetSolutionField().GetContext()) >> errorChecker;
+                PetscDSSetExactSolution(prob, PRES, pressureExact->GetSolutionField().GetPetscFunction(), pressureExact->GetSolutionField().GetContext()) >> errorChecker;
+                PetscDSSetExactSolution(prob, TEMP, temperatureExact->GetSolutionField().GetPetscFunction(), temperatureExact->GetSolutionField().GetContext()) >> errorChecker;
+                PetscDSSetExactSolutionTimeDerivative(prob, VEL, velocityExact->GetTimeDerivative().GetPetscFunction(), velocityExact->GetTimeDerivative().GetContext()) >> errorChecker;
+                PetscDSSetExactSolutionTimeDerivative(prob, PRES, pressureExact->GetTimeDerivative().GetPetscFunction(), pressureExact->GetTimeDerivative().GetContext()) >> errorChecker;
+                PetscDSSetExactSolutionTimeDerivative(prob, TEMP, temperatureExact->GetTimeDerivative().GetPetscFunction(), temperatureExact->GetTimeDerivative().GetContext()) >> errorChecker;
+            }
+
+            flowObject->CompleteProblemSetup(ts);
+
+            // Name the flow field
+            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> errorChecker;
+            VecSetOptionsPrefix(flowObject->GetSolutionVector(), "num_sol_") >> errorChecker;
+
+            // set the initial time step to 0 for the initial UpdateSourceTerms run
+            TSSetTimeStep(ts, 0.0) >> errorChecker;
+            ablate::flow::Flow::UpdateAuxFields(ts, *flowObject);
+
+            // Setup the TS
+            TSSetFromOptions(ts) >> errorChecker;
+
+            // Set initial conditions from the exact solution
+            TSSetComputeInitialCondition(ts, SetInitialConditions) >> errorChecker;
+            SetInitialConditions(ts, flowObject->GetSolutionVector()) >> errorChecker;
+            TSGetTime(ts, &t) >> errorChecker;
+
+            DMSetOutputSequenceNumber(flowObject->GetDM(), 0, t) >> errorChecker;
+            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> errorChecker;
+            TSMonitorSet(ts, MonitorError, NULL, NULL) >> errorChecker;
+
+            TSSolve(ts, flowObject->GetSolutionVector()) >> errorChecker;
+
+            // Compare the actual vs expected values
+            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> errorChecker;
+
+            // Cleanup
+            DMDestroy(&dmCreate) >> errorChecker;
+            TSDestroy(&ts) >> errorChecker;
         }
-
-        flowObject->CompleteProblemSetup(ts);
-
-        // Name the flow field
-        ierr = PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution");
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = VecSetOptionsPrefix(flowObject->GetSolutionVector(), "num_sol_");
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        ierr = TSSetTimeStep(ts, 0.0);  // set the initial time step to 0 for the initial UpdateSourceTerms run
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ablate::flow::Flow::UpdateAuxFields(ts, *flowObject);
-
-        // Setup the TS
-        ierr = TSSetFromOptions(ts);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // Set initial conditions from the exact solution
-        ierr = TSSetComputeInitialCondition(ts, SetInitialConditions);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr); /* Must come after SetFromOptions() */
-        ierr = SetInitialConditions(ts, flowObject->GetSolutionVector());
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        ierr = TSGetTime(ts, &t);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = DMSetOutputSequenceNumber(flowObject->GetDM(), 0, t);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = DMTSCheckFromOptions(ts, flowObject->GetSolutionVector());
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = TSMonitorSet(ts, MonitorError, NULL, NULL);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        ierr = TSSolve(ts, flowObject->GetSolutionVector());
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // Compare the actual vs expected values
-        ierr = DMTSCheckFromOptions(ts, flowObject->GetSolutionVector());
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // Cleanup
-        ierr = DMDestroy(&dmCreate);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = TSDestroy(&ts);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscFinalize();
-        exit(ierr);
+        exit(PetscFinalize());
     EndWithMPI
 }
 

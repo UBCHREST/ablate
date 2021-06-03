@@ -14,9 +14,9 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
 
     FinalizeRegisterFields();
 
-    DM cdm = dm;
+    DM cdm = dm->GetDomain();
     while (cdm) {
-        DMCopyDisc(dm, cdm) >> checkError;
+        DMCopyDisc(dm->GetDomain(), cdm) >> checkError;
         DMGetCoarseDM(cdm, &cdm) >> checkError;
     }
 
@@ -24,7 +24,7 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        DMGetField(dm, PRES, NULL, &pressure) >> checkError;
+        DMGetField(dm->GetDomain(), PRES, NULL, &pressure) >> checkError;
         MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
         PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres) >> checkError;
         MatNullSpaceDestroy(&nullspacePres) >> checkError;
@@ -38,7 +38,7 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
     }
 
     PetscDS prob;
-    DMGetDS(dm, &prob) >> checkError;
+    DMGetDS(dm->GetDomain(), &prob) >> checkError;
 
     // V, W, Q Test Function
     PetscDSSetResidual(prob, VTEST, LowMachFlow_vIntegrandTestFunction, LowMachFlow_vIntegrandTestGradientFunction) >> checkError;

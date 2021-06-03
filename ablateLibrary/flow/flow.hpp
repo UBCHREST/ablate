@@ -30,7 +30,7 @@ class Flow : public solve::Solvable {
     const std::string name;
 
     // holds non solution vector fields
-    DM dm;
+    std::shared_ptr<mesh::Mesh> dm;
     DM auxDM;
 
     // The solution to the flow
@@ -68,7 +68,7 @@ class Flow : public solve::Solvable {
 
     const std::string& GetName() const { return name; }
 
-    const DM& GetDM() const { return dm; }
+    const DM& GetDM() const { return dm->GetDomain(); }
 
     const DM& GetAuxDM() const { return auxDM; }
 
