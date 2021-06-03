@@ -6,7 +6,14 @@
 ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
                          std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions,
                          std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
-    : name(name), dm(nullptr), auxDM(nullptr), flowField(nullptr), auxField(nullptr), petscOptions(nullptr), initialization(initialization), boundaryConditions(boundaryConditions),
+    : name(name),
+      dm(nullptr),
+      auxDM(nullptr),
+      flowField(nullptr),
+      auxField(nullptr),
+      petscOptions(nullptr),
+      initialization(initialization),
+      boundaryConditions(boundaryConditions),
       auxiliaryFieldsUpdaters(auxiliaryFields) {
     // Copy the dm and set the value
     dm = mesh->GetDomain();
@@ -18,13 +25,13 @@ ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std
     DMGetDimension(dm, &dim) >> checkError;
 
     // Set the options
-    if(options){
-        PetscOptionsCreate(&petscOptions)  >> checkError;
+    if (options) {
+        PetscOptionsCreate(&petscOptions) >> checkError;
         options->Fill(petscOptions);
     }
 
     // Register the aux fields updater if specified
-    if(!auxiliaryFields.empty()){
+    if (!auxiliaryFields.empty()) {
         this->preStepFunctions.push_back(UpdateAuxFields);
     }
 }
@@ -43,7 +50,7 @@ ablate::flow::Flow::~Flow() {
     if (auxDM) {
         DMDestroy(&auxDM) >> checkError;
     }
-    if(petscOptions){
+    if (petscOptions) {
         PetscOptionsDestroy(&petscOptions) >> checkError;
     }
 }
@@ -57,7 +64,7 @@ std::optional<int> ablate::flow::Flow::GetFieldId(const std::string& fieldName) 
     return {};
 }
 
-std::optional<int> ablate::flow::Flow::GetAuxFieldId(const std::string& fieldName) const{
+std::optional<int> ablate::flow::Flow::GetAuxFieldId(const std::string& fieldName) const {
     for (auto f = 0; f < auxFieldDescriptors.size(); f++) {
         if (auxFieldDescriptors[f].fieldName == fieldName) {
             return f;
@@ -231,6 +238,46 @@ PetscErrorCode ablate::flow::Flow::TSPostStepFunction(TS ts) {
 }
 
 void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
+    // Apply any boundary conditions
+    PetscDS prob;
+    DMGetDS(dm, &prob) >> checkError;
+
+    // add each boundary condition
+    for (auto boundary : boundaryConditions) {
+        PetscInt id = boundary->GetLabelId();
+        auto fieldId = GetFieldId(boundary->GetFieldName());
+        if (!fieldId) {
+            throw std::invalid_argument("unknown field for boundary: " + boundary->GetFieldName());
+        }
+
+        // Get the current field type
+        DMBoundaryConditionType boundaryConditionType;
+        switch (flowFieldDescriptors[fieldId.value()].fieldType) {
+            case FieldType::FE:
+                boundaryConditionType = DM_BC_ESSENTIAL;
+                break;
+            case FieldType::FV:
+                boundaryConditionType = DM_BC_NATURAL_RIEMANN;
+                break;
+            default:
+                throw std::invalid_argument("unknown field type");
+        }
+
+        PetscDSAddBoundary(prob,
+                           boundaryConditionType,
+                           boundary->GetBoundaryName().c_str(),
+                           boundary->GetLabelName().c_str(),
+                           fieldId.value(),
+                           0,
+                           NULL,
+                           (void (*)(void))boundary->GetBoundaryFunction(),
+                           (void (*)(void))boundary->GetBoundaryTimeDerivativeFunction(),
+                           1,
+                           &id,
+                           boundary->GetContext()) >>
+                                                   checkError;
+    }
+
     // Setup the solve with the ts
     TSSetDM(ts, dm) >> checkError;
     DMPlexCreateClosureIndex(dm, NULL) >> checkError;
@@ -260,8 +307,8 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     }
 
     if (isFE) {
-        DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL)  >> checkError;
-        DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL)  >> checkError;
+        DMTSSetBoundaryLocal(dm, DMPlexTSComputeBoundary, NULL) >> checkError;
+        DMTSSetIFunctionLocal(dm, DMPlexTSComputeIFunctionFEM, NULL) >> checkError;
         DMTSSetIJacobianLocal(dm, DMPlexTSComputeIJacobianFEM, NULL) >> checkError;
     }
     if (isFV) {
@@ -269,6 +316,29 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     }
     TSSetPreStep(ts, TSPreStepFunction) >> checkError;
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
+
+    // Initialize the flow field is provided
+    {
+        PetscInt numberFields;
+        DMGetNumFields(dm, &numberFields) >> checkError;
+
+        // size up the update and context functions
+        std::vector<mathFunctions::PetscFunction> fieldFunctions(numberFields, NULL);
+        std::vector<void*> fieldContexts(numberFields, NULL);
+
+        for (auto fieldInitialization : initialization) {
+            auto fieldId = GetFieldId(fieldInitialization->GetName());
+            if (!fieldId) {
+                throw std::invalid_argument("unknown field for initialization: " + fieldInitialization->GetName());
+            }
+
+            fieldContexts[fieldId.value()] = fieldInitialization->GetSolutionField().GetContext();
+            fieldFunctions[fieldId.value()] = fieldInitialization->GetSolutionField().GetPetscFunction();
+        }
+
+        DMProjectFunction(dm, 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, flowField) >> checkError;
+    }
+
 }
 
 /**
@@ -299,7 +369,7 @@ void ablate::flow::Flow::UpdateAuxFields(TS ts, ablate::flow::Flow& flow) {
     PetscReal time = 0;
     PetscReal dt = 0;
     TSGetTime(ts, &time) >> checkError;
-    TSGetTimeStep(ts, &dt)  >> checkError;
+    TSGetTimeStep(ts, &dt) >> checkError;
 
     // Update the source terms
     DMProjectFunctionLocal(flow.auxDM, time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, flow.auxField) >> checkError;

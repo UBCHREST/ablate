@@ -10,7 +10,6 @@ static char help[] =
 #include "flow/lowMachFlow.hpp"
 #include "gtest/gtest.h"
 #include "mesh.h"
-#include "support/testingAuxFieldUpdater.hpp"
 
 // We can define them because they are the same between fe flows
 #define VTEST 0
@@ -21,7 +20,6 @@ static char help[] =
 #define PRES 1
 #define TEMP 2
 
-using namespace tests::ablateCore::support;
 using namespace ablate;
 using namespace ablate::flow;
 
@@ -32,8 +30,11 @@ struct FEFlowDynamicSourceMMSParameters {
                                                       std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)>
         createMethod;
     std::string uExact;
+    std::string uDerivativeExact;
     std::string pExact;
+    std::string pDerivativeExact;
     std::string TExact;
+    std::string TDerivativeExact;
     std::string vSource;
     std::string wSource;
     std::string qSource;
@@ -134,21 +135,71 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
         // pull the parameters from the petsc options
         auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
+        auto velocityExact = std::make_shared<FlowFieldSolution>("velocity", std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact));
+        auto pressureExact = std::make_shared<FlowFieldSolution>("pressure", std::make_shared<mathFunctions::ParsedFunction>(testingParam.pExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.pDerivativeExact));
+        auto temperatureExact = std::make_shared<FlowFieldSolution>("temperature", std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact));
+
         // Create the flow object
         std::shared_ptr<ablate::flow::Flow> flowObject = testingParam.createMethod(
             "testFlow",
             std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
             parameters,
             nullptr,
-            std::vector<std::shared_ptr<FlowFieldSolution>>{},
-            std::vector<std::shared_ptr<BoundaryCondition>>{},
+            /* initialization functions */
+            std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
+            /* boundary conditions */
+            std::vector<std::shared_ptr<BoundaryCondition>>{std::make_shared<BoundaryCondition>("velocity",
+                                                                                                "top wall velocity",
+                                                                                                "marker",
+                                                                                                3,
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
+                                                            std::make_shared<BoundaryCondition>("velocity",
+                                                                                                "bottom wall velocity",
+                                                                                                "marker",
+                                                                                                1,
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
+                                                            std::make_shared<BoundaryCondition>("velocity",
+                                                                                                "right wall velocity",
+                                                                                                "marker",
+                                                                                                2,
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
+                                                            std::make_shared<BoundaryCondition>("velocity",
+                                                                                                "left wall velocity",
+                                                                                                "marker",
+                                                                                                4,
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
+                                                            std::make_shared<BoundaryCondition>("temperature",
+                                                                                                "top wall temp",
+                                                                                                "marker",
+                                                                                                3,
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
+                                                            std::make_shared<BoundaryCondition>("temperature",
+                                                                                                "bottom wall temp",
+                                                                                                "marker",
+                                                                                                1,
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
+                                                            std::make_shared<BoundaryCondition>("temperature",
+                                                                                                "right wall temp",
+                                                                                                "marker",
+                                                                                                2,
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
+                                                            std::make_shared<BoundaryCondition>("temperature",
+                                                                                                "left wall temp",
+                                                                                                "marker",
+                                                                                                4,
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
+                                                                                                std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact))},
+            /* aux field updates */
             std::vector<std::shared_ptr<FlowFieldSolution>>{std::make_shared<FlowFieldSolution>("momentum_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.vSource)),
                                                             std::make_shared<FlowFieldSolution>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
                                                             std::make_shared<FlowFieldSolution>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
-
-        PetscTestingFunction uExact(testingParam.uExact);
-        PetscTestingFunction pExact(testingParam.pExact);
-        PetscTestingFunction TExact(testingParam.TExact);
 
         // Override problem with source terms, boundary, and set the exact solution
         {
@@ -156,133 +207,18 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             ierr = DMGetDS(flowObject->GetDM(), &prob);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-            /* Setup Boundary Conditions */
-            PetscInt id;
-            id = 3;
-            ierr = PetscDSAddBoundary(prob,
-                                      DM_BC_ESSENTIAL,
-                                      "top wall velocity",
-                                      "marker",
-                                      VEL,
-                                      0,
-                                      NULL,
-                                      (void (*)(void))PetscTestingFunction::ApplySolution,
-                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
-                                      1,
-                                      &id,
-                                      &uExact);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            id = 1;
-            ierr = PetscDSAddBoundary(prob,
-                                      DM_BC_ESSENTIAL,
-                                      "bottom wall velocity",
-                                      "marker",
-                                      VEL,
-                                      0,
-                                      NULL,
-                                      (void (*)(void))PetscTestingFunction::ApplySolution,
-                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
-                                      1,
-                                      &id,
-                                      &uExact);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            id = 2;
-            ierr = PetscDSAddBoundary(prob,
-                                      DM_BC_ESSENTIAL,
-                                      "right wall velocity",
-                                      "marker",
-                                      VEL,
-                                      0,
-                                      NULL,
-                                      (void (*)(void))PetscTestingFunction::ApplySolution,
-                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
-                                      1,
-                                      &id,
-                                      &uExact);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            id = 4;
-            ierr = PetscDSAddBoundary(prob,
-                                      DM_BC_ESSENTIAL,
-                                      "left wall velocity",
-                                      "marker",
-                                      VEL,
-                                      0,
-                                      NULL,
-                                      (void (*)(void))PetscTestingFunction::ApplySolution,
-                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
-                                      1,
-                                      &id,
-                                      &uExact);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            id = 3;
-            ierr = PetscDSAddBoundary(prob,
-                                      DM_BC_ESSENTIAL,
-                                      "top wall temp",
-                                      "marker",
-                                      TEMP,
-                                      0,
-                                      NULL,
-                                      (void (*)(void))PetscTestingFunction::ApplySolution,
-                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
-                                      1,
-                                      &id,
-                                      &TExact);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            id = 1;
-            ierr = PetscDSAddBoundary(prob,
-                                      DM_BC_ESSENTIAL,
-                                      "bottom wall temp",
-                                      "marker",
-                                      TEMP,
-                                      0,
-                                      NULL,
-                                      (void (*)(void))PetscTestingFunction::ApplySolution,
-                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
-                                      1,
-                                      &id,
-                                      &TExact);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            id = 2;
-            ierr = PetscDSAddBoundary(prob,
-                                      DM_BC_ESSENTIAL,
-                                      "right wall temp",
-                                      "marker",
-                                      TEMP,
-                                      0,
-                                      NULL,
-                                      (void (*)(void))PetscTestingFunction::ApplySolution,
-                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
-                                      1,
-                                      &id,
-                                      &TExact);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            id = 4;
-            ierr = PetscDSAddBoundary(prob,
-                                      DM_BC_ESSENTIAL,
-                                      "left wall temp",
-                                      "marker",
-                                      TEMP,
-                                      0,
-                                      NULL,
-                                      (void (*)(void))PetscTestingFunction::ApplySolution,
-                                      (void (*)(void))PetscTestingFunction::ApplySolutionTimeDerivative,
-                                      1,
-                                      &id,
-                                      &TExact);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
             // Set the exact solution
-            ierr = PetscDSSetExactSolution(prob, VEL, PetscTestingFunction::ApplySolution, &uExact);
+            ierr = PetscDSSetExactSolution(prob, VEL, velocityExact->GetSolutionField().GetPetscFunction(), velocityExact->GetSolutionField().GetContext());
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolution(prob, PRES, PetscTestingFunction::ApplySolution, &pExact);
+            ierr = PetscDSSetExactSolution(prob, PRES, pressureExact->GetSolutionField().GetPetscFunction(), pressureExact->GetSolutionField().GetContext());
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolution(prob, TEMP, PetscTestingFunction::ApplySolution, &TExact);
+            ierr = PetscDSSetExactSolution(prob, TEMP, temperatureExact->GetSolutionField().GetPetscFunction(), temperatureExact->GetSolutionField().GetContext());
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, VEL, PetscTestingFunction::ApplySolutionTimeDerivative, &uExact);
+            ierr = PetscDSSetExactSolutionTimeDerivative(prob, VEL, velocityExact->GetTimeDerivative().GetPetscFunction(), velocityExact->GetTimeDerivative().GetContext());
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, PRES, PetscTestingFunction::ApplySolutionTimeDerivative, &pExact);
+            ierr = PetscDSSetExactSolutionTimeDerivative(prob, PRES, pressureExact->GetTimeDerivative().GetPetscFunction(), pressureExact->GetTimeDerivative().GetContext());
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, PetscTestingFunction::ApplySolutionTimeDerivative, &TExact);
+            ierr = PetscDSSetExactSolutionTimeDerivative(prob, TEMP, temperatureExact->GetTimeDerivative().GetPetscFunction(), temperatureExact->GetTimeDerivative().GetContext());
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
         }
 
@@ -293,24 +229,6 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = VecSetOptionsPrefix(flowObject->GetSolutionVector(), "num_sol_");
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // update the source terms before each time step
-        //        PetscTestingFunction vSource(testingParam.vSource);
-        //        PetscTestingFunction qSource(testingParam.qSource);
-        //        PetscTestingFunction wSource(testingParam.wSource);
-        //        TestingAuxFieldUpdater updater;
-        //        updater.AddField(vSource);
-        //        updater.AddField(qSource);
-        //        updater.AddField(wSource);
-        //
-        //        flowObject->RegisterPreStepFunction([&updater](auto ts, auto &flow) { updater.UpdateSourceTerms(ts, flow); });
-
-        //        ierr = TSSetTimeStep(ts, 0.0);  // set the initial time step to 0 for the initial UpdateSourceTerms run
-        //        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        //        flowObject->R
-        //        ierr = FlowRegisterPreStep(flowData, TestingAuxFieldUpdater::UpdateSourceTerms, &updater);
-        //        TestingAuxFieldUpdater::UpdateSourceTerms(ts, &updater);
-        //        CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         ierr = TSSetTimeStep(ts, 0.0);  // set the initial time step to 0 for the initial UpdateSourceTerms run
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
@@ -370,9 +288,12 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .createMethod = [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions,
                                auto auxiliaryFields) { return std::make_shared<ablate::flow::LowMachFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields); },
-            .uExact = "t + x^2 + y^2, t + 2*x^2 + 2*x*y, 1.0, 1.0",
-            .pExact = "x + y -1, 0.0",
-            .TExact = "t + x +y +1, 1.0",
+            .uExact = "t + x^2 + y^2, t + 2*x^2 + 2*x*y",
+            .uDerivativeExact = "1.0, 1.0",
+            .pExact = "x + y -1",
+            .pDerivativeExact = "0.0",
+            .TExact = "t + x +y +1",
+            .TDerivativeExact = "1.0",
             .vSource = "-(1-16/3+1/(1+t+x+y) + 2*y*(t+2*x^2+2*x*y)/(1+t+x+y) + 2*x*(t+x^2+y^2)/(1+t+x+y)), -(1 - 4 + 1/(1+t+x+y) + 1/(1+t+x+y) + 2*x*(t+2*x^2+2*x*y)/(1+t+x+y) + "
                        "(4*x+2*y)*(t+x^2+y^2)/(1+t+x+y))",
             .wSource = "-((1 + 2*t + 3*x^2 + 2*x*y + y^2)/(1+t+x+y))",
@@ -392,9 +313,12 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .createMethod = [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions,
                                auto auxiliaryFields) { return std::make_shared<ablate::flow::LowMachFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields); },
-            .uExact = "t + x^3 + y^3, t + 2*x^3 + 3*x^2*y, 1.0, 1.0",
-            .pExact = "3/2*x^2 + 3/2*y^2 -1.125, 0.0",
-            .TExact = "t + .5*x^2 +.5*y^2 +1, 1.0",
+            .uExact = "t + x^3 + y^3, t + 2*x^3 + 3*x^2*y",
+            .uDerivativeExact = "1.0, 1.0",
+            .pExact = "3/2*x^2 + 3/2*y^2 -1.125",
+            .pDerivativeExact = "0.0",
+            .TExact = "t + .5*x^2 +.5*y^2 +1",
+            .TDerivativeExact = "1.0",
             .vSource = "-(3*x + 1/(1 + t + x^2/2 + y^2/2) + (3 * y^2*(t + 2*x^3 + 3*x^2*y))/(1 + t + x^2/2 + y^2/2) + (3*x^2*(t + x^3 + y^3))/(1 + t + x^2/2 + y^2/2) - (4*x + 1*(6*x + 6*y))), -(3*y "
                        "- ((12*x + 6*y)) + 1/((1 + t + x^2/2 + y^2/2)) + 1/(1 + t + x^2/2 + y^2/2) + (3 * x^2*(t + 2*x^3 + 3*x^2*y))/(1 + t + x^2/2 + y^2/2) + ((6*x^2 + 6*x*y)*(t + x^3 + y^3))/(1 + "
                        "t + x^2/2 + y^2/2))",
@@ -417,9 +341,12 @@ INSTANTIATE_TEST_SUITE_P(
                 [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields);
                 },
-            .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
-            .pExact = "x + y -1, 0.0",
-            .TExact = "t + x +y, 1.0",
+            .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
+            .uDerivativeExact = "1.0, 1.0",
+            .pExact = "x + y -1",
+            .pDerivativeExact = "0.0",
+            .TExact = "t + x +y",
+            .TDerivativeExact = "1.0",
             .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
             .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
             .qSource = ".0"},
@@ -439,9 +366,12 @@ INSTANTIATE_TEST_SUITE_P(
                 [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields);
                 },
-            .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y, 1.0, 1.0",
-            .pExact = "x + y -1, 0.0",
-            .TExact = "t + x +y, 1.0",
+            .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
+            .uDerivativeExact = "1.0, 1.0",
+            .pExact = "x + y -1",
+            .pDerivativeExact = "0.0",
+            .TExact = "t + x +y",
+            .TDerivativeExact = "1.0",
             .vSource = "-(1-4+1+2*y*(t+2*x^2-2*x*y)+2*x*(t+x^2+y^2)), -(1-4+1-2*x*(t+2*x^2-2*x*y)+(4*x-2*y)*(t+x^2+y^2))",
             .wSource = "-(1+2*t+3*x^2-2*x*y+y^2)",
             .qSource = ".0"},
@@ -462,21 +392,13 @@ INSTANTIATE_TEST_SUITE_P(
                 [](auto name, auto mesh, auto parameters, auto options, auto initialization, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields);
                 },
-            .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y, 1.0, 1.0",
-            .pExact = "3/2 *x^2 + 3/2*y^2 -1, 0.0",
-            .TExact = "t + 1/2*x^2 +1/2*y^2, 1.0",
+            .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y",
+            .uDerivativeExact = "1.0, 1.0",
+            .pExact = "3/2 *x^2 + 3/2*y^2 -1",
+            .pDerivativeExact = "0.0",
+            .TExact = "t + 1/2*x^2 +1/2*y^2",
+            .TDerivativeExact = "1.0",
             .vSource = "-(1+3*x + 3*y^2 * (t+2*x^3 - 3*x^2*y) + 3* x^2 *(t + x^3 + y^3) - (12*x -6*x + 6*y)),-(1-(12*x-6*y) + 3*y - 3*x^2 * (t +2*x^3 - 3*x^2*y) + (6*x^2 - 6*x*y)*(t+x^3+y^3))",
             .wSource = "-(-2 + 1 + y*(t+2*x^3-3*x^2*y) + x*(t+x^3+y^3))",
             .qSource = "0.0"}),
     [](const testing::TestParamInfo<FEFlowDynamicSourceMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
-
-//
-TEST(QuickPar, QuckParser) {
-    try {
-        PetscTestingFunction uExact(
-            "3*y - ((12*x + 6*y)) + 1/((1 + t + x^2/2 + y^2/2)) + 1/(1 + t + x^2/2 + y^2/2) + (3 * x^2*(t + 2*x^3 + 3*x^2*y))/(1 + t + x^2/2 + y^2/2) + ((6*x^2 + 6*x*y)*(t + x^3 + y^3))/(1 + t + "
-            "x^2/2 + y^2/2)");
-    } catch (std::exception e) {
-        std::cout << e.what() << std::endl;
-    }
-}
