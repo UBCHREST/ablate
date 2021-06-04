@@ -125,6 +125,9 @@ PetscErrorCode FluxDifferencerGet(const char* name, FluxDifferencerFunction* fun
 
 PetscErrorCode FluxDifferencerListGet(PetscFunctionList* list){
     PetscFunctionBeginUser;
+    if (!fluxDifferenceInitialized) {
+        PetscErrorCode ierr = FluxDifferencerInitialize();CHKERRQ(ierr);
+    }
     *list = fluxDifferencerList;
     PetscFunctionReturn(0);
 }

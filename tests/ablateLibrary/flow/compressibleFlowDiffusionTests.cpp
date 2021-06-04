@@ -3,10 +3,14 @@ static char help[] = "1D conduction and diffusion cases compared to exact soluti
 #include <compressibleFlow.h>
 #include <petsc.h>
 #include <cmath>
+#include <memory>
+#include <mesh/dmWrapper.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "flow/compressibleFlow.hpp"
 #include "gtest/gtest.h"
+#include "parameters/mapParameters.hpp"
 
 typedef struct {
     PetscInt dim;
@@ -103,11 +107,11 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
     PetscFunctionReturn(0);
 }
 
-static void ComputeErrorNorms(TS ts, FlowData flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf, InputParameters *parameters,
+static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::flow::CompressibleFlow> flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf, InputParameters *parameters,
                               PetscTestErrorChecker &errorChecker) {
     // Compute the error
     PetscDS ds;
-    DMGetDS(flowData->dm, &ds) >> errorChecker;
+    DMGetDS(flowData->GetDM(), &ds) >> errorChecker;
 
     // Get the current time
     PetscReal time;
@@ -120,7 +124,7 @@ static void ComputeErrorNorms(TS ts, FlowData flowData, std::vector<PetscReal> &
 
     // get the fvm and the number of fields
     PetscFV fvm;
-    DMGetField(flowData->dm, 0, NULL, (PetscObject *)&fvm) >> errorChecker;
+    DMGetField(flowData->GetDM(), 0, NULL, (PetscObject *)&fvm) >> errorChecker;
     PetscInt components;
     PetscFVGetNumComponents(fvm, &components) >> errorChecker;
 
@@ -130,12 +134,12 @@ static void ComputeErrorNorms(TS ts, FlowData flowData, std::vector<PetscReal> &
 
     // Create an vector to hold the exact solution
     Vec exactVec;
-    VecDuplicate(flowData->flowField, &exactVec) >> errorChecker;
-    DMProjectFunction(flowData->dm, time, exactFuncs, exactCtxs, INSERT_ALL_VALUES, exactVec) >> errorChecker;
+    VecDuplicate(flowData->GetSolutionVector(), &exactVec) >> errorChecker;
+    DMProjectFunction(flowData->GetDM(), time, exactFuncs, exactCtxs, INSERT_ALL_VALUES, exactVec) >> errorChecker;
     PetscObjectSetName((PetscObject)exactVec, "exact") >> errorChecker;
 
     // Compute the error
-    VecAXPY(exactVec, -1.0, flowData->flowField) >> errorChecker;
+    VecAXPY(exactVec, -1.0, flowData->GetSolutionVector()) >> errorChecker;
     VecSetBlockSize(exactVec, components);
     PetscInt size;
     VecGetSize(exactVec, &size) >> errorChecker;
@@ -172,7 +176,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
         for (PetscInt l = 0; l < GetParam().levels; l++) {
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d\n", l);
 
-            DM dm; /* problem definition */
+            DM dmCreate; /* problem definition */
             TS ts; /* timestepper */
 
             // Create a ts
@@ -189,45 +193,18 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscInt nx1D = initialNx * PetscPowRealInt(2, l);
             PetscInt nx[] = {nx1D, nx1D};
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
-            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dm) >> errorChecker;
+            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> errorChecker;
 
             // Setup the flow data
-            FlowData flowData; /* store some of the flow data*/
-            FlowCreate(&flowData) >> errorChecker;
-            FlowSetType(flowData, "compressible") >> errorChecker;
+            auto eos = std::make_shared<ablate::eos::EOS>("perfectGas", std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}});
 
-            PetscOptions flowOptions;
-            PetscOptionsCreate(&flowOptions) >> errorChecker;
-            PetscOptionsSetValue(flowOptions, "-cfl", "0.5")  >> errorChecker;;
-            PetscOptionsSetValue(flowOptions, "-mu", "0.0")  >> errorChecker;;
-            PetscOptionsSetValue(flowOptions, "-k", std::to_string(parameters.k).c_str())  >> errorChecker;;
-            FlowSetOptions(flowData, flowOptions) >> errorChecker;
+            auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}, {"mu", "0.0"}, {"k", std::to_string(parameters.k)}});
 
-            FlowSetFromOptions(flowData)  >> errorChecker;
-
-            // Setup
-            FlowSetupDiscretization(flowData, &dm);
-
-            // set up the finite volume fluxes
-            FlowStartProblemSetup(flowData) >> errorChecker;
-
-            // set a simple perfect gas eos for testing
-            EOSData eos;
-            EOSCreate(&eos);
-            EOSSetType(eos, "perfectGas");
-
-            PetscOptions eosOptions;
-            PetscOptionsCreate(&eosOptions) >> errorChecker;
-            PetscOptionsSetValue(eosOptions, "-gamma", std::to_string(parameters.gamma).c_str()) >> errorChecker;
-            PetscOptionsSetValue(eosOptions, "-Rgas", std::to_string(parameters.Rgas).c_str()) >> errorChecker;
-            EOSSetOptions(eos, eosOptions) >> errorChecker;
-
-            EOSSetFromOptions(eos);
-            CompressibleFlow_SetEOS(flowData, eos);
+            auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow", std::make_shared<ablate::mesh::DMWrapper>(dmCreate), eos, flowParameters);
 
             // Add in any boundary conditions
             PetscDS prob;
-            ierr = DMGetDS(flowData->dm, &prob);
+            ierr = DMGetDS(flowObject->GetDM(), &prob);
             CHKERRABORT(PETSC_COMM_WORLD, ierr);
             const PetscInt idsLeft[] = {2, 4};
             PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "wall left", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler, NULL, 2, idsLeft, &parameters) >> errorChecker;
@@ -235,11 +212,10 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             const PetscInt idsTop[] = {1, 3};
             PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "top/bottom", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Mirror, NULL, 2, idsTop, &parameters) >> errorChecker;
 
-            // Complete the problem setup
-            FlowCompleteProblemSetup(flowData, ts) >> errorChecker;
+            flowObject->CompleteProblemSetup(ts);
 
             // Name the flow field
-            PetscObjectSetName(((PetscObject)flowData->flowField), "Numerical Solution") >> errorChecker;
+            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> errorChecker;
 
             // Setup the TS
             TSSetFromOptions(ts) >> errorChecker;
@@ -247,20 +223,20 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             // set the initial conditions
             PetscErrorCode (*func[2])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) = {EulerExact};
             void *ctxs[1] = {&parameters};
-            DMProjectFunction(flowData->dm, 0.0, func, ctxs, INSERT_ALL_VALUES, flowData->flowField) >> errorChecker;
+            DMProjectFunction(flowObject->GetDM(), 0.0, func, ctxs, INSERT_ALL_VALUES, flowObject->GetSolutionVector()) >> errorChecker;
 
             // for the mms, add the exact solution
             PetscDSSetExactSolution(prob, 0, EulerExact, &parameters) >> errorChecker;
 
             // advance to the end time
-            TSSolve(ts, flowData->flowField) >> errorChecker;
+            TSSolve(ts, flowObject->GetSolutionVector()) >> errorChecker;
 
             // Get the L2 and LInf norms
             std::vector<PetscReal> l2Norm;
             std::vector<PetscReal> lInfNorm;
 
             // Compute the error
-            ComputeErrorNorms(ts, flowData, l2Norm, lInfNorm, &parameters, errorChecker);
+            ComputeErrorNorms(ts, flowObject, l2Norm, lInfNorm, &parameters, errorChecker);
 
             // print the results to help with debug
             auto l2String = PrintVector(l2Norm, "%2.3g");
@@ -275,10 +251,6 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                 l2History[b].push_back(PetscLog10Real(l2Norm[b]));
                 lInfHistory[b].push_back(PetscLog10Real(lInfNorm[b]));
             }
-            PetscOptionsDestroy(&flowOptions) >> errorChecker;
-            PetscOptionsDestroy(&eosOptions) >> errorChecker;
-            EOSDestroy(&eos) >> errorChecker;
-            FlowDestroy(&flowData) >> errorChecker;
             TSDestroy(&ts) >> errorChecker;
         }
 

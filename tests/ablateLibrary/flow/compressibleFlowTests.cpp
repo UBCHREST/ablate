@@ -18,28 +18,22 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     // arrange
     const auto& params = GetParam();
 
-    FlowData flowData;
-    PetscErrorCode ierr = FlowCreate(&flowData);
-    ASSERT_EQ(0, ierr);
-
     FlowData_CompressibleFlow eulerFlowData;
     PetscNew(&eulerFlowData);
     eulerFlowData->cfl = NAN;
 
-    ierr = FluxDifferencerGet(params.fluxDifferencer.c_str(), &(eulerFlowData->fluxDifferencer));
-    ASSERT_EQ(0, ierr);
-    flowData->data = eulerFlowData;
+    FluxDifferencerGet(params.fluxDifferencer.c_str(), &(eulerFlowData->fluxDifferencer)) >> errorChecker;
 
     // set a perfect gas for testing
     EOSData eos;
     EOSCreate(&eos);
     EOSSetType(eos, "perfectGas");
     EOSSetFromOptions(eos);
-    CompressibleFlow_SetEOS(flowData, eos);
+    eulerFlowData->eos = eos;
 
     // act
     std::vector<PetscReal> computedFlux(params.expectedFlux.size());
-    CompressibleFlowComputeEulerFlux(params.area.size(), 1, NULL, &params.area[0], &params.xLeft[0], &params.xRight[0], 0, NULL, &computedFlux[0], flowData);
+    CompressibleFlowComputeEulerFlux(params.area.size(), 1, NULL, &params.area[0], &params.xLeft[0], &params.xRight[0], 0, NULL, &computedFlux[0], eulerFlowData);
 
     // assert
     for (auto i = 0; i < params.expectedFlux.size(); i++) {
@@ -47,10 +41,7 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     }
 
     // cleanup
-    ierr = EOSDestroy(&eos);
-    ASSERT_EQ(0, ierr);
-    ierr = FlowDestroy(&flowData);
-    ASSERT_EQ(0, ierr);
+    EOSDestroy(&eos) >> errorChecker;
 }
 
 INSTANTIATE_TEST_SUITE_P(

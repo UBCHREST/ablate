@@ -2,8 +2,6 @@
 # Include code
 target_sources(ablateCore
         PUBLIC
-        flow.h
-        flow.c
         incompressibleFlow.c
         incompressibleFlow.h
         lowMachFlow.c
@@ -14,7 +12,8 @@ target_sources(ablateCore
         fluxDifferencer.c
         fvSupport.h
         fvSupport.c
-
+        flow.c
+        flow.h
         )
 
 # Allow public access to the header files in the directory

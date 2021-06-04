@@ -7,17 +7,29 @@
 #include "flow.hpp"
 #include "mesh/mesh.hpp"
 #include "parameters/parameters.hpp"
+#include "fluxDifferencer.h"
+#include "compressibleFlow.h"
 
 namespace ablate::flow {
 class CompressibleFlow : public Flow {
    private:
     std::shared_ptr<eos::EOS> eos;
 
-   public:
-    CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::map<std::string, std::string> arguments, std::shared_ptr<parameters::Parameters> parameters,
-                     std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::shared_ptr<eos::EOS> eos);
+    FlowData_CompressibleFlow compressibleFlowData;
 
-    void SetupSolve(TS& timeStepper) override;
+    // functions to update each aux field
+    FVAuxFieldUpdateFunction auxFieldUpdateFunctions[TOTAL_COMPRESSIBLE_AUX_COMPONENTS];
+
+    // static function to update the flowfield
+    static void ComputeTimeStep(TS, Flow&);
+
+   public:
+    CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,  std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
+                     std::vector<std::shared_ptr<FlowFieldSolution>> initialization = {}, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions = {});
+
+    void CompleteProblemSetup(TS ts) override;
+    void CompleteFlowInitialization(DM, Vec) override;
+    static PetscErrorCode CompressibleFlowRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void *ctx);
 };
 }  // namespace ablate::flow
 

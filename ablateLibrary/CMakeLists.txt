@@ -59,7 +59,7 @@ add_subdirectory(parser)
 add_subdirectory(mathFunctions)
 #add_subdirectory(particles)
 #add_subdirectory(monitors)
-#add_subdirectory(eos)
+add_subdirectory(eos)
 add_subdirectory(environment)
 
 # Add link to required libraries to the ablate library

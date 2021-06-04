@@ -1,10 +1,13 @@
 static char help[] = "Compressible ShockTube 1D Tests";
 
 #include <petsc.h>
+#include <mesh/dmWrapper.hpp>
 #include "MpiTestFixture.hpp"
 #include "compressibleFlow.h"
+#include "flow/compressibleFlow.hpp"
 #include "gtest/gtest.h"
 #include "mesh.h"
+#include "parameters/mapParameters.hpp"
 
 typedef struct {
     PetscReal gamma;
@@ -134,10 +137,11 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
 
 TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
     StartWithMPI
+        {
         PetscErrorCode ierr;
 
-        DM dm; /* problem definition */
-        TS ts; /* timestepper */
+        DM dmCreate; /* problem definition */
+        TS ts;       /* timestepper */
 
         // Get the testing param
         auto &testingParam = GetParam();
@@ -161,47 +165,19 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         PetscReal end[] = {testingParam.initialConditions.length, 1};
         PetscInt nx[] = {testingParam.nx, 1};
         DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
-        ierr = DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 2, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dm);
+        ierr = DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 2, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Setup the flow data
-        FlowData flowData; /* store some of the flow data*/
-        FlowCreate(&flowData) >> errorChecker;
-        FlowSetType(flowData, "compressible") >> errorChecker;
+        auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}, {"mu", "0.0"}, {"k", "0.0"}});
 
-        PetscOptions flowOptions;
-        PetscOptionsCreate(&flowOptions) >> errorChecker;
-        PetscOptionsSetValue(flowOptions, "-cfl", std::to_string(testingParam.cfl).c_str())  >> errorChecker;;
-        PetscOptionsSetValue(flowOptions, "-mu", "0.0")  >> errorChecker;
-        PetscOptionsSetValue(flowOptions, "-k", "0.0")  >> errorChecker;;
-        FlowSetOptions(flowData, flowOptions) >> errorChecker;
+        // Define the eos
+        auto eos = std::make_shared<ablate::eos::EOS>("perfectGas", std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}});
 
-        FlowSetFromOptions(flowData)  >> errorChecker;
-
-
-        // Setup
-        ierr = FlowSetupDiscretization(flowData, &dm);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // set up the finite volume fluxes
-        ierr = FlowStartProblemSetup(flowData);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // set a simple perfect gas eos for testing
-        EOSData eos;
-        EOSCreate(&eos);
-        EOSSetType(eos, "perfectGas");
-
-        PetscOptions eosOptions;
-        PetscOptionsCreate(&eosOptions) >> errorChecker;
-        PetscOptionsSetValue(eosOptions, "-gamma", std::to_string(testingParam.initialConditions.gamma).c_str()) >> errorChecker;
-
-        EOSSetFromOptions(eos);
-        CompressibleFlow_SetEOS(flowData, eos);
-
+        auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow", std::make_shared<ablate::mesh::DMWrapper>(dmCreate), eos, parameters);
         // Add in any boundary conditions
         PetscDS prob;
-        ierr = DMGetDS(flowData->dm, &prob);
+        ierr = DMGetDS(flowObject->GetDM(), &prob);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
         const PetscInt idsLeft[] = {4};
         ierr = PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "wall left", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler, NULL, 1, idsLeft, (void *)&testingParam.initialConditions);
@@ -216,11 +192,10 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Complete the problem setup
-        ierr = FlowCompleteProblemSetup(flowData, ts);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+        flowObject->CompleteProblemSetup(ts);
 
         // Name the flow field
-        ierr = PetscObjectSetName(((PetscObject)flowData->flowField), "Numerical Solution");
+        ierr = PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution");
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Setup the TS
@@ -232,15 +207,15 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         // set the initial conditions
         PetscErrorCode (*func[1])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) = {SetInitialCondition};
         void *ctxs[1] = {(void *)&testingParam.initialConditions};
-        ierr = DMProjectFunction(flowData->dm, 0.0, func, ctxs, INSERT_ALL_VALUES, flowData->flowField);
+        ierr = DMProjectFunction(flowObject->GetDM(), 0.0, func, ctxs, INSERT_ALL_VALUES, flowObject->GetSolutionVector());
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
-        ierr = TSSolve(ts, flowData->flowField);
+        ierr = TSSolve(ts, flowObject->GetSolutionVector());
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // extract the results
         std::map<std::string, std::vector<PetscReal>> results;
-        ierr = Extract1DPrimitives(flowData->dm, flowData->flowField, results);
+        ierr = Extract1DPrimitives(flowObject->GetDM(), flowObject->GetSolutionVector(), results);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
         // Compare the expected values
@@ -256,17 +231,10 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
         }
 
         // Cleanup
-        ierr = PetscOptionsDestroy(&eosOptions);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = EOSDestroy(&eos);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = FlowDestroy(&flowData);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
         ierr = TSDestroy(&ts);
         CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = PetscFinalize();
-
-        exit(ierr);
+}
+        exit(PetscFinalize());
     EndWithMPI
 }
 
