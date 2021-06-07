@@ -492,17 +492,7 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
             // link the flow to the particles
             particles->InitializeFlow(flowObject);
 
-
-            //        // Setup particle position integrator
-            //        TS particleTs;
-            //        ierr = TSCreate(PETSC_COMM_WORLD, &particleTs);
-            //        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            //        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            //
-            //        ierr = ParticleTracerSetupIntegrator(particles, particleTs, flowData);
-            //        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-            // setup the initial conditions for error computing
+            // setup the initial conditions for error computing, this is only used for tests
             TSSetComputeInitialCondition(particles->GetTS(), setParticleExactSolution) >> errorChecker;
 
             // setup the flow monitor to also check particles

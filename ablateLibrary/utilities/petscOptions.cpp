@@ -21,3 +21,19 @@ void ablate::utilities::PetscOptionsUtils::Set(PetscOptions petscOptions, const 
         PetscOptionsSetValue(petscOptions, optionName.c_str(), optionPair.second.empty() ? NULL : optionPair.second.c_str()) >> checkError;
     }
 }
+
+void ablate::utilities::PetscOptionsDestroyAndCheck(std::string name, PetscOptions* options) {
+    PetscInt nopt;
+    PetscOptionsAllUsed(*options, &nopt) >> ablate::checkError;
+    if (nopt) {
+        PetscPrintf(PETSC_COMM_WORLD, "WARNING! There are options in %s you set that were not used!\n", name.c_str()) >> ablate::checkError;
+        PetscPrintf(PETSC_COMM_WORLD, "WARNING! could be spelling mistake, etc!\n") >> ablate::checkError;
+        if (nopt == 1) {
+            PetscPrintf(PETSC_COMM_WORLD, "There is one unused database option. It is:\n") >> ablate::checkError;
+        } else {
+            PetscPrintf(PETSC_COMM_WORLD, "There are %D unused database options. They are:\n", nopt) >> ablate::checkError;
+        }
+    }
+    PetscOptionsLeft(*options) >> ablate::checkError;
+    PetscOptionsDestroy(options) >> ablate::checkError;
+}

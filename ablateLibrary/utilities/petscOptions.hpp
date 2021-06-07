@@ -11,6 +11,9 @@ class PetscOptionsUtils {
     static void Set(const std::map<std::string, std::string>& options);
     static void Set(PetscOptions petscOptions, const std::map<std::string, std::string>& options);
 };
+
+void PetscOptionsDestroyAndCheck(std::string name, PetscOptions *options);
+
 }  // namespace ablate::utilities
 
 #endif  // ABLATELIBRARY_PETSCOPTIONS_HPP

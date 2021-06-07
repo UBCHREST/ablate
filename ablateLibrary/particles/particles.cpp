@@ -93,7 +93,7 @@ ablate::particles::Particles::~Particles() {
         VecDestroy(&flowInitial) >> checkError;
     }
     if (petscOptions) {
-        PetscOptionsDestroy(&petscOptions) >> checkError;
+        ablate::utilities::PetscOptionsDestroyAndCheck(name, &petscOptions);
     }
 }
 
