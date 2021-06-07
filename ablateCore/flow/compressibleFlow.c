@@ -1,9 +1,6 @@
 #include "compressibleFlow.h"
 #include "fvSupport.h"
 
-static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
-static const char *compressibleAuxComponentNames[TOTAL_COMPRESSIBLE_AUX_COMPONENTS + 1] = {"T", "vel", "unknown"};
-
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
     for (PetscInt d=0; d< dim; d++) {
