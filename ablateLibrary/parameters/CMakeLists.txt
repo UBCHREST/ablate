@@ -9,4 +9,6 @@ target_sources(ablateLibrary
         factoryParameters.cpp
         petscOptionParameters.hpp
         petscOptionParameters.cpp
+        petscPrefixOptions.hpp
+        petscPrefixOptions.cpp
         )

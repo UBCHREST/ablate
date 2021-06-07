@@ -63,10 +63,8 @@ void ablate::particles::Particles::InitializeFlow(std::shared_ptr<flow::Flow> fl
 
     // Setup particle position integrator
     TSCreate(PetscObjectComm((PetscObject)flow->GetDM()), &particleTs) >> checkError;
-//    PetscObjectSetOptions((PetscObject)particleTs, petscOptions) >> checkError;
+    PetscObjectSetOptions((PetscObject)particleTs, petscOptions) >> checkError;
     TSSetApplicationContext(particleTs, this) >> checkError;
-
-    PetscObjectSetOptionsPrefix((PetscObject)particleTs, "particle_") >> checkError; //TODO: remove
 
     // Link thw dm
     TSSetDM(particleTs, dm);

@@ -6,8 +6,8 @@
 
 namespace ablate::parameters {
 class MapParameters : public Parameters {
-   private:
-    const std::map<std::string, std::string> values;
+   protected:
+    std::map<std::string, std::string> values;
 
    public:
     MapParameters(std::map<std::string, std::string> values);

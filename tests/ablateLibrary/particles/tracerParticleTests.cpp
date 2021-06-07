@@ -1,6 +1,7 @@
 #include <petsc.h>
 #include <flow/incompressibleFlow.hpp>
 #include <memory>
+#include <parameters/petscPrefixOptions.hpp>
 #include <particles/initializers/boxInitializer.hpp>
 #include "MpiTestFixture.hpp"
 #include "gtest/gtest.h"
@@ -483,15 +484,13 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
             DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> errorChecker;
 
             // Create the particle domain
+            // pass all options with the particles prefix to the particle object
+            auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
             auto initializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.25, 0.25}, std::vector<double>{.75, .75}, 5);
-            auto particles = std::make_shared<ablate::particles::Tracer>("particles", 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact), nullptr);
+            auto particles = std::make_shared<ablate::particles::Tracer>("particle", 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact), particleOptions);
 
             // link the flow to the particles
             particles->InitializeFlow(flowObject);
-
-            //        // name the particle domain
-            ierr = PetscObjectSetOptionsPrefix((PetscObject)(particles->GetDM()), "particles_");
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
 
             //        // Setup particle position integrator

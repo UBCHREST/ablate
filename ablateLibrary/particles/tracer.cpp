@@ -15,14 +15,10 @@ void ablate::particles::Tracer::InitializeFlow(std::shared_ptr<flow::Flow> flow)
     // Call the base to initialize the flow
     Particles::InitializeFlow(flow);
 
-    // call tracer specific setup
-
     TSSetRHSFunction(particleTs, NULL, freeStreaming, this) >> checkError;
 
     // Set the start time for TSSolve
     TSSetTime(particleTs, timeInitial) >> checkError;
-    PetscObjectSetOptionsPrefix((PetscObject)particleTs, "particle_")>> checkError;
-
 
     // link the solution with the flowTS
     flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow&){

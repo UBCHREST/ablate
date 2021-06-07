@@ -6,12 +6,12 @@
 namespace ablate::parameters {
 
 class PetscOptionParameters :public Parameters {
-   private:
-    const PetscOptions petscOptions;
+   protected:
+    PetscOptions petscOptions;
 
    public:
     PetscOptionParameters(PetscOptions petscOptions = nullptr);
-    ~PetscOptionParameters() = default;
+    virtual ~PetscOptionParameters() = default;
 
     std::optional<std::string> GetString(std::string paramName) const override;
     std::unordered_set<std::string> GetKeys() const override;
