@@ -4,8 +4,13 @@
 
 namespace ablate::particles::initializers {
 class BoxInitializer : public Initializer {
+   private:
+    const std::vector<double> lowerBound;
+    const std::vector<double> upperBound;
+    const int particlesPerDim;
+
    public:
-    explicit BoxInitializer(std::map<std::string, std::string> arguments);
+    explicit BoxInitializer(std::vector<double> lowerBound = {0, 0, 0}, std::vector<double> upperBound = {1.0, 1.0, 1.0}, int particlesPerDim = 1);
     ~BoxInitializer() = default;
 
     void Initialize(ablate::flow::Flow& flow, DM particleDM) override;

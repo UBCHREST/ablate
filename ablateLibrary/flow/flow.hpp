@@ -66,6 +66,22 @@ class Flow : public solve::Solvable {
     virtual void CompleteProblemSetup(TS ts);
     virtual void CompleteFlowInitialization(DM, Vec) = 0;
 
+    /**
+     * Adds function to be called before each flow step
+     * @param preStep
+     */
+    void RegisterPreStep(std::function<void(TS ts, Flow&)> preStep){
+        this->preStepFunctions.push_back(preStep);
+    }
+
+    /**
+ * Adds function to be called before each flow step
+ * @param preStep
+ */
+    void RegisterPostStep(std::function<void(TS ts, Flow&)> postStep){
+        this->postStepFunctions.push_back(postStep);
+    }
+
     const std::string& GetName() const { return name; }
 
     const DM& GetDM() const { return dm->GetDomain(); }

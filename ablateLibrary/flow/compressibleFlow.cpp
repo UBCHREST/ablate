@@ -95,8 +95,6 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
 
     const char *prefix;
     DMGetOptionsPrefix(dm, &prefix) >> checkError;
-
-    // get the
     PetscFunctionList fluxDifferencerList;
     FluxDifferencerListGet(&fluxDifferencerList) >> checkError;
 
@@ -112,9 +110,6 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
     compressibleFlowData->automaticTimeStepCalculator = PETSC_TRUE;
     PetscOptionsGetBool(NULL, NULL,"-automaticTimeStepCalculator", &(compressibleFlowData->automaticTimeStepCalculator), NULL);
-
-
-
 }
 
 void ablate::flow::CompressibleFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow){

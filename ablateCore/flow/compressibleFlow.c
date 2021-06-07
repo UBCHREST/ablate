@@ -45,7 +45,7 @@ PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locX
 
     // Get the cell start and end for the fv cells
     PetscInt cellStart, cellEnd;
-    ierr = DMPlexGetHeightStratum(dm, EULER, &cellStart, &cellEnd);CHKERRQ(ierr);
+    ierr = DMPlexGetHeightStratum(dm, 0, &cellStart, &cellEnd);CHKERRQ(ierr);
 
     // extract the low flow and aux fields
     const PetscScalar      *locFlowFieldArray;

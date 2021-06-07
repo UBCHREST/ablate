@@ -9,14 +9,14 @@
 
 namespace ablate::mathFunctions {
 
-std::shared_ptr<MathFunction> Create(std::string func) { return std::make_shared<ParsedFunction>(func); }
+inline std::shared_ptr<MathFunction> Create(std::string func) { return std::make_shared<ParsedFunction>(func); }
 
-std::shared_ptr<MathFunction> Create(char* func) { return std::make_shared<ParsedFunction>(func); }
+inline std::shared_ptr<MathFunction> Create(char* func) { return std::make_shared<ParsedFunction>(func); }
 
-std::shared_ptr<MathFunction> Create(const char* func) { return std::make_shared<ParsedFunction>(func); }
+inline std::shared_ptr<MathFunction> Create(const char* func) { return std::make_shared<ParsedFunction>(func); }
 
 template <typename F>
-std::shared_ptr<MathFunction> Create(F func) {
+inline std::shared_ptr<MathFunction> Create(F func) {
     if constexpr (std::is_convertible<F, PetscFunction>::value) {
         return std::make_shared<FunctionPointer>(func);
     }

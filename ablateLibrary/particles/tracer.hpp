@@ -5,11 +5,17 @@
 namespace ablate::particles {
 class Tracer : public Particles {
    public:
-    Tracer(std::string name, int ndims, std::map<std::string, std::string> arguments, std::shared_ptr<particles::initializers::Initializer> initializer,
-           std::shared_ptr<mathFunctions::MathFunction> exactSolution);
+    Tracer(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution = {},
+           std::shared_ptr<parameters::Parameters> options = {});
     ~Tracer() override;
 
-    void InitializeFlow(std::shared_ptr<flow::Flow> flow, std::shared_ptr<solve::TimeStepper> flowTimeStepper) override;
+    void InitializeFlow(std::shared_ptr<flow::Flow> flow) override;
+
+    inline static const char ParticleTracerVelocity[] = "ParticleTracerVelocity";
+
+   private:
+    static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void* ctx);
+    void advectParticles(TS flowTS);
 };
 }  // namespace ablate::particles
 

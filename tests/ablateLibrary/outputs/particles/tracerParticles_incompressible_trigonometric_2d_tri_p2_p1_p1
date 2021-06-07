@@ -1,0 +1,10 @@
+L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-14 <1E-14 <1E-14
+L_2 Residual: (.*)<expects> <1E-14
+Taylor approximation converging at order (.*)<expects> =2.0
+L_2 convergence rate: (.*)<expects> =1.0
+L_2 convergence rate: (.*)<expects> =1.0
+L_2 convergence rate: (.*)<expects> =1.0
+L_2 convergence rate: (.*)<expects> =1.0
+L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-14 <1E-14 <1E-14
+L_2 Residual: (.*)<expects> <1E-14
+Taylor approximation converging at order (.*)<expects> =2.0
