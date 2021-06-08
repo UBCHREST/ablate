@@ -17,6 +17,16 @@ class Parameters {
         std::istringstream ss(inputString);
         ss >> outputValue;
     }
+
+    template <typename T>
+    static void toValue(const std::string& inputString, std::vector<T>& outputValue) {
+        std::istringstream ss(inputString);
+        T tempValue;
+        while(ss >> tempValue){
+            outputValue.push_back(tempValue);
+        }
+    }
+
     // value specific cases
     static void toValue(const std::string& inputString, bool& outputValue);
 

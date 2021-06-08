@@ -1,3 +1,4 @@
+
 #ifndef ABLATELIBRARY_TRACER_HPP
 #define ABLATELIBRARY_TRACER_HPP
 #include "particles.hpp"
@@ -10,8 +11,6 @@ class Tracer : public Particles {
     ~Tracer() override;
 
     void InitializeFlow(std::shared_ptr<flow::Flow> flow) override;
-
-    inline static const char ParticleTracerVelocity[] = "ParticleTracerVelocity";
 
    private:
     static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void* ctx);

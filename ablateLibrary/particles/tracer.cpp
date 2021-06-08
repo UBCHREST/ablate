@@ -6,7 +6,7 @@
 ablate::particles::Tracer::Tracer(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution,
                                   std::shared_ptr<parameters::Parameters> options)
     : Particles(name, ndims, initializer, exactSolution, options) {
-    RegisterField(ParticleFieldDescriptor{.fieldName = ParticleTracerVelocity, .components = ndims, .type = PETSC_REAL});
+    RegisterField(ParticleFieldDescriptor{.fieldName = ParticleVelocity, .components = ndims, .type = PETSC_REAL});
 }
 
 ablate::particles::Tracer::~Tracer() {}
@@ -24,9 +24,6 @@ void ablate::particles::Tracer::InitializeFlow(std::shared_ptr<flow::Flow> flow)
     flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow&){
         this->advectParticles(flowTs);
     });
-
-    // Set up the TS
-    TSViewFromOptions(particleTs,NULL, "-ts_view") >> checkError;
 }
 
 /* x_t = v
@@ -51,7 +48,7 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
     PetscFunctionBeginUser;
     ierr = TSGetDM(ts, &sdm);CHKERRQ(ierr);
     ierr = DMSwarmGetCellDM(sdm, &dm);CHKERRQ(ierr);
-    ierr = DMSwarmCreateGlobalVectorFromField(sdm, ParticleTracerVelocity, &pvel);CHKERRQ(ierr);
+    ierr = DMSwarmCreateGlobalVectorFromField(sdm, ParticleVelocity, &pvel);CHKERRQ(ierr);
     ierr = DMSwarmGetLocalSize(sdm, &Np);CHKERRQ(ierr);
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
@@ -89,7 +86,7 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
     ierr = PetscArraycpy(f, v, Np * dim);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(pvel, &v);CHKERRQ(ierr);
     ierr = VecRestoreArray(F, &f);CHKERRQ(ierr);
-    ierr = DMSwarmDestroyGlobalVectorFromField(sdm, ParticleTracerVelocity, &pvel);CHKERRQ(ierr);
+    ierr = DMSwarmDestroyGlobalVectorFromField(sdm, ParticleVelocity, &pvel);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -97,18 +94,12 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
 void ablate::particles::Tracer::advectParticles(TS flowTS) {
     Vec particlePosition;
     PetscReal time;
-    PetscInt numberLocal; // current number of local particles
-    PetscInt numberGlobal; // current number of local particles
 
     // if the dm has changed size (new particles, particles moved between ranks, particles deleted) reset the ts
     if (dmChanged){
         TSReset(particleTs) >> checkError;
         dmChanged = PETSC_FALSE;
     }
-
-    // Get the current size
-    DMSwarmGetLocalSize(dm,&numberLocal) >> checkError;
-    DMSwarmGetSize(dm,&numberGlobal) >> checkError;
 
     // Get the position vector
     DMSwarmCreateGlobalVectorFromField(dm,DMSwarmPICField_coor, &particlePosition) >> checkError;
@@ -138,23 +129,7 @@ void ablate::particles::Tracer::advectParticles(TS flowTS) {
     DMSwarmDestroyGlobalVectorFromField(dm,DMSwarmPICField_coor, &particlePosition) >> checkError;
 
     // Migrate any particles that have moved
-    DMSwarmMigrate(dm, PETSC_TRUE) >> checkError;
-
-    // get the new sizes
-    PetscInt newNumberLocal;
-    PetscInt newNumberGlobal;
-
-    // Get the updated size
-    DMSwarmGetLocalSize(dm,&newNumberLocal) >> checkError;
-    DMSwarmGetSize(dm,&newNumberGlobal) >> checkError;
-
-    // Check to see if any of the ranks changed size after migration
-    PetscInt dmChanged = newNumberGlobal != numberGlobal ||  newNumberLocal != numberLocal;
-    MPI_Comm comm;
-    PetscObjectGetComm((PetscObject)particleTs, &comm) >> checkError;
-    PetscInt dmChangedAll;
-    MPIU_Allreduce(&dmChanged,&dmChangedAll,1,MPIU_INT, MPIU_MAX, comm);
-    this->dmChanged = dmChangedAll == PETSC_TRUE;
+    Particles::SwarmMigrate();
 }
 
 // REGISTER(ablate::particles::Particles, ablate::particles::Tracer, "massless particles that advect with the flow", ARG(std::string, "name", "the name of the particle group"),

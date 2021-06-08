@@ -199,3 +199,32 @@ PetscErrorCode ablate::particles::Particles::ComputeParticleError(TS particleTS,
     DMRestoreGlobalVector(particles->dm, &exactLocationVec) >> checkError;
     PetscFunctionReturn(0);
 }
+
+void ablate::particles::Particles::SwarmMigrate() {
+    // current number of local/global particles
+    PetscInt numberLocal;
+    PetscInt numberGlobal;
+
+    // Get the current size
+    DMSwarmGetLocalSize(dm,&numberLocal) >> checkError;
+    DMSwarmGetSize(dm,&numberGlobal) >> checkError;
+
+    // Migrate any particles that have moved
+    DMSwarmMigrate(dm, PETSC_TRUE) >> checkError;
+
+    // get the new sizes
+    PetscInt newNumberLocal;
+    PetscInt newNumberGlobal;
+
+    // Get the updated size
+    DMSwarmGetLocalSize(dm,&newNumberLocal) >> checkError;
+    DMSwarmGetSize(dm,&newNumberGlobal) >> checkError;
+
+    // Check to see if any of the ranks changed size after migration
+    PetscInt dmChanged = newNumberGlobal != numberGlobal ||  newNumberLocal != numberLocal;
+    MPI_Comm comm;
+    PetscObjectGetComm((PetscObject)particleTs, &comm) >> checkError;
+    PetscInt dmChangedAll;
+    MPIU_Allreduce(&dmChanged,&dmChangedAll,1,MPIU_INT, MPIU_MAX, comm);
+    this->dmChanged = dmChangedAll == PETSC_TRUE;
+}

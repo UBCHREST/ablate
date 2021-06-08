@@ -511,4 +511,28 @@ TEST(YamlParserTests, ShouldGetListOfKeys) {
     ASSERT_EQ(childKeys.count("child2"), 1);
 }
 
+TEST(YamlParserTests, ShouldGetListAsString) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+    yaml << " item2:" << std::endl;
+    yaml << "   - 1.1  " << std::endl;
+    yaml << "   - 2 " << std::endl;
+    yaml << "   - 3.3 " << std::endl;
+    yaml << " item3: [4.4, 5, 6.6]" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto list1 = yamlParser->Get(ArgumentIdentifier<std::string>{"item2"});
+    auto list2 = yamlParser->Get(ArgumentIdentifier<std::string>{"item3"});
+
+    // assert
+    std::string expectedValues1 = "1.1 2 3.3 ";
+    ASSERT_EQ(list1, expectedValues1);
+    std::string expectedValues2 = "4.4 5 6.6 ";
+    ASSERT_EQ(list2, expectedValues2);
+}
+
 }  // namespace ablateTesting::parser

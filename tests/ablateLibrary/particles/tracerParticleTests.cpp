@@ -9,7 +9,6 @@
 #include "incompressibleFlow.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "mesh/boxMesh.hpp"
-#include "mesh/dmWrapper.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "particles/tracer.hpp"
 
@@ -218,40 +217,6 @@ static void SourceFunction(f0_linear_w) {
     const PetscReal Cp = constants[CP];
 
     f0[0] -= Cp * rho * (1 + S + X[0]);
-}
-
-static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
-    DM dm;
-    PetscReal t;
-    PetscErrorCode ierr;
-
-    PetscFunctionBegin;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = TSGetTime(ts, &t);
-    CHKERRQ(ierr);
-
-    // Get the flowData
-    ablate::flow::Flow *flow;
-    ierr = DMGetApplicationContext(dm, &flow);
-    CHKERRQ(ierr);
-
-    // This function Tags the u vector as the exact solution.  We need to copy the values to prevent this.
-    Vec e;
-    ierr = VecDuplicate(u, &e);
-    CHKERRQ(ierr);
-    ierr = DMComputeExactSolution(dm, t, e, NULL);
-    CHKERRQ(ierr);
-    ierr = VecCopy(e, u);
-    CHKERRQ(ierr);
-    ierr = VecDestroy(&e);
-    CHKERRQ(ierr);
-
-    // get the flow to apply the completeFlowInitialization method
-    flow->CompleteFlowInitialization(dm, u);
-    CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
 }
 
 static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {

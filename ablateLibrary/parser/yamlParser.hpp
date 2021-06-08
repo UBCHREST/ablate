@@ -55,7 +55,27 @@ class YamlParser : public Factory {
     const std::string& GetClassType() const override { return type; }
 
     /* return a string*/
-    std::string Get(const ArgumentIdentifier<std::string>& identifier) const override { return GetValueFromYaml<std::string>(identifier); }
+    std::string Get(const ArgumentIdentifier<std::string>& identifier) const override {
+        auto parameter = yamlConfiguration[identifier.inputName];
+        if (!parameter) {
+            if (identifier.optional) {
+                return {};
+            } else {
+                throw std::invalid_argument("unable to " + identifier.inputName + " in " + nodePath);
+            }
+        }
+        MarkUsage(identifier.inputName);
+        if(parameter.IsSequence()){
+            // Merge the results into a single space seperated string
+            std::stringstream ss;
+            for(const auto& v : parameter){
+                ss << v.template as<std::string>() << " ";
+            }
+            return ss.str();
+        }else{
+            return parameter.template as<std::string>();
+        }
+    }
 
     std::vector<std::string> Get(const ArgumentIdentifier<std::vector<std::string>>& identifier) const override { return GetValueFromYaml<std::vector<std::string>>(identifier); }
 

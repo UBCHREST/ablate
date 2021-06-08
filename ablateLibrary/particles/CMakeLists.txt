@@ -6,6 +6,8 @@ target_sources(ablateLibrary
         particleFieldDescriptor.cpp
         tracer.hpp
         tracer.cpp
+        inertial.hpp
+        inertial.cpp
         )
 
 add_subdirectory(initializers)

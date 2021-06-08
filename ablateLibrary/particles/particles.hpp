@@ -11,7 +11,7 @@
 namespace ablate::particles {
 
 class Particles {
-   protected:
+   public:
     // particle domain
     DM dm;
     const PetscInt ndims;
@@ -40,6 +40,7 @@ class Particles {
 
     // store a boolean to state if a dmChanged (number of particles local/global changed)
     bool dmChanged;
+    void SwarmMigrate();
 
    private:
     inline static const char ParticleInitialLocation[] = "InitialLocation";
@@ -58,7 +59,12 @@ class Particles {
 
     virtual void InitializeFlow(std::shared_ptr<flow::Flow> flow);
 
-    const std::shared_ptr<mathFunctions::MathFunction> exactSolution = nullptr;
+    std::shared_ptr<mathFunctions::MathFunction> exactSolution = nullptr;// TODO: make private const
+
+    /** common field names for particles **/
+    inline static const char ParticleVelocity[] = "ParticleVelocity";
+    inline static const char ParticleDiameter[] = "ParticleDiameter";
+    inline static const char ParticleDensity[] = "ParticleDensity";
 };
 }  // namespace ablate::particles
 #endif  // ABLATELIBRARY_PARTICLES_HPP
