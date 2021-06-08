@@ -3,7 +3,7 @@ static char help[] = "1D conduction and diffusion cases compared to exact soluti
 #include <compressibleFlow.h>
 #include <petsc.h>
 #include <cmath>
-#include <flow/boundaryConditions/ghost.hpp>
+#include "flow/boundaryConditions/ghost.hpp"
 #include <memory>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
@@ -165,7 +165,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
         PetscErrorCode ierr;
 
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> errorChecker;
+        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
 
         InputParameters parameters = GetParam().parameters;
         parameters.dim = 2;
@@ -184,11 +184,11 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             TS ts; /* timestepper */
 
             // Create a ts
-            TSCreate(PETSC_COMM_WORLD, &ts) >> errorChecker;
-            TSSetProblemType(ts, TS_NONLINEAR) >> errorChecker;
-            TSSetType(ts, TSEULER) >> errorChecker;
-            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> errorChecker;
-            TSSetFromOptions(ts) >> errorChecker;
+            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
+            TSSetProblemType(ts, TS_NONLINEAR) >> testErrorChecker;
+            TSSetType(ts, TSEULER) >> testErrorChecker;
+            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
+            TSSetFromOptions(ts) >> testErrorChecker;
 
             // Create a mesh
             // hard code the problem setup
@@ -197,7 +197,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscInt nx1D = initialNx * PetscPowRealInt(2, l);
             PetscInt nx[] = {nx1D, nx1D};
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
-            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> errorChecker;
+            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // Setup the flow data
             auto eos = std::make_shared<ablate::eos::EOS>("perfectGas", std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}});
@@ -228,40 +228,30 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                boundaryConditions/*boundary conditions*/,
                                                                                std::vector<std::shared_ptr<flow::FlowFieldSolution>>{exactSolution}/*exactSolution*/);
 
-            // Add in any boundary conditions
-//            PetscDS prob;
-//            ierr = DMGetDS(flowObject->GetDM(), &prob);
-//            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-//            const PetscInt idsLeft[] = {2, 4};
-//            PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "wall left", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler, NULL, 2, idsLeft, &parameters) >> errorChecker;
-//
-//            const PetscInt idsTop[] = {1, 3};
-//            PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "top/bottom", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Mirror, NULL, 2, idsTop, &parameters) >> errorChecker;
-
             flowObject->CompleteProblemSetup(ts);
 
             // Name the flow field
-            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> errorChecker;
+            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
 
             // Setup the TS
-            TSSetFromOptions(ts) >> errorChecker;
+            TSSetFromOptions(ts) >> testErrorChecker;
 
             // advance to the end time
-            TSSolve(ts, flowObject->GetSolutionVector()) >> errorChecker;
+            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
             // Get the L2 and LInf norms
             std::vector<PetscReal> l2Norm;
             std::vector<PetscReal> lInfNorm;
 
             // Compute the error
-            ComputeErrorNorms(ts, flowObject, l2Norm, lInfNorm, &parameters, errorChecker);
+            ComputeErrorNorms(ts, flowObject, l2Norm, lInfNorm, &parameters, testErrorChecker);
 
             // print the results to help with debug
             auto l2String = PrintVector(l2Norm, "%2.3g");
-            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 Error: %s\n", l2String.c_str()) >> errorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 Error: %s\n", l2String.c_str()) >> testErrorChecker;
 
             auto lInfString = PrintVector(lInfNorm, "%2.3g");
-            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 L_Inf: %s\n", lInfString.c_str()) >> errorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 L_Inf: %s\n", lInfString.c_str()) >> testErrorChecker;
 
             // Store the residual into history
             hHistory.push_back(PetscLog10Real(parameters.L / nx1D));
@@ -269,20 +259,20 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                 l2History[b].push_back(PetscLog10Real(l2Norm[b]));
                 lInfHistory[b].push_back(PetscLog10Real(lInfNorm[b]));
             }
-            TSDestroy(&ts) >> errorChecker;
+            TSDestroy(&ts) >> testErrorChecker;
         }
 
         // Fit each component and output
         for (auto b = 0; b < blockSize; b++) {
             PetscReal l2Slope;
             PetscReal l2Intercept;
-            PetscLinearRegression(hHistory.size(), &hHistory[0], &l2History[b][0], &l2Slope, &l2Intercept) >> errorChecker;
+            PetscLinearRegression(hHistory.size(), &hHistory[0], &l2History[b][0], &l2Slope, &l2Intercept) >> testErrorChecker;
 
             PetscReal lInfSlope;
             PetscReal lInfIntercept;
-            PetscLinearRegression(hHistory.size(), &hHistory[0], &lInfHistory[b][0], &lInfSlope, &lInfIntercept) >> errorChecker;
+            PetscLinearRegression(hHistory.size(), &hHistory[0], &lInfHistory[b][0], &lInfSlope, &lInfIntercept) >> testErrorChecker;
 
-            PetscPrintf(PETSC_COMM_WORLD, "Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> errorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> testErrorChecker;
 
             if (std::isnan(GetParam().expectedL2Convergence[b])) {
                 ASSERT_TRUE(std::isnan(l2Slope)) << "incorrect L2 convergence order for component[" << b << "]";

@@ -465,24 +465,24 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
                 }
 
                 // Set the exact solution
-                PetscDSSetExactSolution(prob, VEL, velocityExact->GetSolutionField().GetPetscFunction(), velocityExact->GetSolutionField().GetContext()) >> errorChecker;
-                PetscDSSetExactSolution(prob, PRES, pressureExact->GetSolutionField().GetPetscFunction(), pressureExact->GetSolutionField().GetContext()) >> errorChecker;
-                PetscDSSetExactSolution(prob, TEMP, temperatureExact->GetSolutionField().GetPetscFunction(), temperatureExact->GetSolutionField().GetContext()) >> errorChecker;
-                PetscDSSetExactSolutionTimeDerivative(prob, VEL, velocityExact->GetTimeDerivative().GetPetscFunction(), velocityExact->GetTimeDerivative().GetContext()) >> errorChecker;
-                PetscDSSetExactSolutionTimeDerivative(prob, PRES, pressureExact->GetTimeDerivative().GetPetscFunction(), pressureExact->GetTimeDerivative().GetContext()) >> errorChecker;
-                PetscDSSetExactSolutionTimeDerivative(prob, TEMP, temperatureExact->GetTimeDerivative().GetPetscFunction(), temperatureExact->GetTimeDerivative().GetContext()) >> errorChecker;
+                PetscDSSetExactSolution(prob, VEL, velocityExact->GetSolutionField().GetPetscFunction(), velocityExact->GetSolutionField().GetContext()) >> testErrorChecker;
+                PetscDSSetExactSolution(prob, PRES, pressureExact->GetSolutionField().GetPetscFunction(), pressureExact->GetSolutionField().GetContext()) >> testErrorChecker;
+                PetscDSSetExactSolution(prob, TEMP, temperatureExact->GetSolutionField().GetPetscFunction(), temperatureExact->GetSolutionField().GetContext()) >> testErrorChecker;
+                PetscDSSetExactSolutionTimeDerivative(prob, VEL, velocityExact->GetTimeDerivative().GetPetscFunction(), velocityExact->GetTimeDerivative().GetContext()) >> testErrorChecker;
+                PetscDSSetExactSolutionTimeDerivative(prob, PRES, pressureExact->GetTimeDerivative().GetPetscFunction(), pressureExact->GetTimeDerivative().GetContext()) >> testErrorChecker;
+                PetscDSSetExactSolutionTimeDerivative(prob, TEMP, temperatureExact->GetTimeDerivative().GetPetscFunction(), temperatureExact->GetTimeDerivative().GetContext()) >> testErrorChecker;
             }
             flowObject->CompleteProblemSetup(ts);
 
             // Name the flow field
-            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> errorChecker;
-            VecSetOptionsPrefix(flowObject->GetSolutionVector(), "num_sol_") >> errorChecker;
+            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
+            VecSetOptionsPrefix(flowObject->GetSolutionVector(), "num_sol_") >> testErrorChecker;
 
-            TSSetComputeInitialCondition(ts, SetInitialConditions) >> errorChecker;
-            TSSetComputeInitialCondition(ts, SetInitialConditions) >> errorChecker;
-            TSGetTime(ts, &t) >> errorChecker;
-            DMSetOutputSequenceNumber(dm, 0, t) >> errorChecker;
-            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> errorChecker;
+            TSSetComputeInitialCondition(ts, SetInitialConditions) >> testErrorChecker;
+            TSSetComputeInitialCondition(ts, SetInitialConditions) >> testErrorChecker;
+            TSGetTime(ts, &t) >> testErrorChecker;
+            DMSetOutputSequenceNumber(dm, 0, t) >> testErrorChecker;
+            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
             // Create the particle domain
             // pass all options with the particles prefix to the particle object
@@ -494,21 +494,21 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
             particles->InitializeFlow(flowObject);
 
             // setup the initial conditions for error computing, this is only used for tests
-            TSSetComputeInitialCondition(particles->GetTS(), setParticleExactSolution) >> errorChecker;
+            TSSetComputeInitialCondition(particles->GetTS(), setParticleExactSolution) >> testErrorChecker;
 
             // setup the flow monitor to also check particles
-            TSMonitorSet(ts, MonitorFlowAndParticleError, particles.get(), NULL) >> errorChecker;
-            TSSetFromOptions(ts) >> errorChecker;
+            TSMonitorSet(ts, MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
+            TSSetFromOptions(ts) >> testErrorChecker;
 
             // Solve the one way coupled system
-            TSSolve(ts, flowObject->GetSolutionVector()) >> errorChecker;
+            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
             // Compare the actual vs expected values
-            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> errorChecker;
+            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
             // Cleanup
-            DMDestroy(&dm) >> errorChecker;
-            TSDestroy(&ts) >> errorChecker;
+            DMDestroy(&dm) >> testErrorChecker;
+            TSDestroy(&ts) >> testErrorChecker;
         }
         exit(PetscFinalize());
     EndWithMPI

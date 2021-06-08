@@ -20,7 +20,10 @@ class Ghost : public BoundaryCondition {
     PetscInt fieldSize;
 
    public:
-    Ghost(std::string fieldName, std::string boundaryName, std::string labelName, std::vector<int> labelId, UpdateFunction updateFunction, void* updateContext);
+    Ghost(std::string fieldName, std::string boundaryName, std::string labelName, std::vector<int> labelIds, UpdateFunction updateFunction, void* updateContext);
+
+    Ghost(std::string fieldName, std::string boundaryName, std::string labelName, int labelId, UpdateFunction updateFunction, void* updateContext);
+
     virtual ~Ghost() override = default;
 
     void SetupBoundary(PetscDS problem, PetscInt field) override;

@@ -9,11 +9,15 @@ static char help[] = "MMS from Verification of a Compressible CFD Code using the
 #include "flow/compressibleFlow.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
+#include "flow/boundaryConditions/ghost.hpp"
+#include "mathFunctions/functionFactory.hpp"
 
 #define Pi PETSC_PI
 #define Sin PetscSinReal
 #define Cos PetscCosReal
 #define Power PetscPowReal
+
+using namespace ablate;
 
 typedef struct {
     PetscReal phiO;
@@ -614,7 +618,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
         PetscErrorCode ierr;
 
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> errorChecker;
+        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
 
         Constants constants = GetParam().constants;
         PetscInt blockSize = 2 + constants.dim;
@@ -633,10 +637,10 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             TS ts; /* timestepper */
 
             // Create a ts
-            TSCreate(PETSC_COMM_WORLD, &ts) >> errorChecker;
-            TSSetProblemType(ts, TS_NONLINEAR) >> errorChecker;
-            TSSetType(ts, TSEULER) >> errorChecker;
-            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> errorChecker;
+            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
+            TSSetProblemType(ts, TS_NONLINEAR) >> testErrorChecker;
+            TSSetType(ts, TSEULER) >> testErrorChecker;
+            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Create a mesh
             // hard code the problem setup
@@ -645,49 +649,50 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             PetscInt nx1D = initialNx * PetscPowRealInt(2, l);
             PetscInt nx[] = {nx1D, nx1D, nx1D};
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
-            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, constants.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> errorChecker;
+            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, constants.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}, {"mu", std::to_string(constants.mu)}, {"k", std::to_string(constants.k)}});
 
             auto eos = std::make_shared<ablate::eos::EOS>("perfectGas", std::map<std::string, std::string>{{"gamma", std::to_string(constants.gamma)}, {"Rgas", std::to_string(constants.R)}});
 
-            auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow", std::make_shared<ablate::mesh::DMWrapper>(dmCreate), eos, parameters);
+            auto exactSolution = std::make_shared<flow::FlowFieldSolution>("euler", mathFunctions::Create(EulerExact, &constants));
+
+            auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
+                std::make_shared<flow::boundaryConditions::Ghost>("euler",
+                                                                  "walls",
+                                                                  "Face Sets",
+                                                                  std::vector<int>{1, 2, 3, 4},
+                                                                  PhysicsBoundary_Euler, &constants),
+            };
+
+            auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
+                                                                               std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
+                                                                                   eos,
+                                                                               parameters,
+                                                                               nullptr/*options*/,
+                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{exactSolution}/*initialization*/,
+                                                                               boundaryConditions/*boundary conditions*/,
+                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{exactSolution}/*exactSolution*/);
 
             // Combine the flow data
             ProblemSetup problemSetup;
             problemSetup.flowData = flowObject;
             problemSetup.constants = constants;
 
-            // Add in any boundary conditions
-            PetscDS prob;
-            ierr = DMGetDS(flowObject->GetDM(), &prob);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            const PetscInt idsLeft[] = {1, 2, 3, 4};
-            PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "wall left", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler, NULL, 4, idsLeft, &constants) >> errorChecker;
-
             // Complete the problem setup
             flowObject->CompleteProblemSetup(ts);
 
             // Override the flow calc for now
-            DMTSSetRHSFunctionLocal(flowObject->GetDM(), ComputeRHSWithSourceTerms, &problemSetup) >> errorChecker;
+            DMTSSetRHSFunctionLocal(flowObject->GetDM(), ComputeRHSWithSourceTerms, &problemSetup) >> testErrorChecker;
 
             // Name the flow field
-            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> errorChecker;
+            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
 
             // Setup the TS
-            TSSetFromOptions(ts) >> errorChecker;
-
-            // set the initial conditions
-            PetscErrorCode (*func[2])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) = {EulerExact};
-            void *ctxs[1] = {&constants};
-            DMProjectFunction(flowObject->GetDM(), 0.0, func, ctxs, INSERT_ALL_VALUES, flowObject->GetSolutionVector()) >> errorChecker;
-
-            // for the mms, add the exact solution
-            PetscDSSetExactSolution(prob, 0, EulerExact, &constants) >> errorChecker;
-
+            TSSetFromOptions(ts) >> testErrorChecker;
             TSSetMaxSteps(ts, 1);
-            TSSolve(ts, flowObject->GetSolutionVector()) >> errorChecker;
+            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
             // Check the current residual
             std::vector<PetscReal> l2Residual(blockSize);
@@ -697,11 +702,11 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             PetscReal resStart[3] = {constants.L / 3.0, constants.L / 3.0, constants.L / 3.0};
             PetscReal resEnd[3] = {2.0 * constants.L / 3.0, 2.0 * constants.L / 3.0, 2.0 * constants.L / 3.0};
 
-            ComputeRHS(ts, flowObject->GetDM(), 0.0, flowObject->GetSolutionVector(), blockSize, &l2Residual[0], &infResidual[0], resStart, resEnd) >> errorChecker;
+            ComputeRHS(ts, flowObject->GetDM(), 0.0, flowObject->GetSolutionVector(), blockSize, &l2Residual[0], &infResidual[0], resStart, resEnd) >> testErrorChecker;
             auto l2String = PrintVector(l2Residual, "%2.3g");
-            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 Residual: %s\n", l2String.c_str()) >> errorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 Residual: %s\n", l2String.c_str()) >> testErrorChecker;
             auto lInfString = PrintVector(infResidual, "%2.3g");
-            PetscPrintf(PETSC_COMM_WORLD, "\tL_Inf Residual: %s\n", lInfString.c_str()) >> errorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "\tL_Inf Residual: %s\n", lInfString.c_str()) >> testErrorChecker;
 
             // Store the residual into history
             hHistory.push_back(PetscLog10Real(constants.L / nx1D));
@@ -709,20 +714,20 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                 l2History[b].push_back(PetscLog10Real(l2Residual[b]));
                 lInfHistory[b].push_back(PetscLog10Real(infResidual[b]));
             }
-            TSDestroy(&ts) >> errorChecker;
+            TSDestroy(&ts) >> testErrorChecker;
         }
 
         // Fit each component and output
         for (auto b = 0; b < blockSize; b++) {
             PetscReal l2Slope;
             PetscReal l2Intercept;
-            PetscLinearRegression(hHistory.size(), &hHistory[0], &l2History[b][0], &l2Slope, &l2Intercept) >> errorChecker;
+            PetscLinearRegression(hHistory.size(), &hHistory[0], &l2History[b][0], &l2Slope, &l2Intercept) >> testErrorChecker;
 
             PetscReal lInfSlope;
             PetscReal lInfIntercept;
-            PetscLinearRegression(hHistory.size(), &hHistory[0], &lInfHistory[b][0], &lInfSlope, &lInfIntercept) >> errorChecker;
+            PetscLinearRegression(hHistory.size(), &hHistory[0], &lInfHistory[b][0], &lInfSlope, &lInfIntercept) >> testErrorChecker;
 
-            PetscPrintf(PETSC_COMM_WORLD, "RHS Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> errorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "RHS Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> testErrorChecker;
 
             ASSERT_NEAR(l2Slope, GetParam().expectedL2Convergence[b], 0.2) << "incorrect L2 convergence order for component[" << b << "]";
             ASSERT_NEAR(lInfSlope, GetParam().expectedLInfConvergence[b], 0.2) << "incorrect LInf convergence order for component[" << b << "]";

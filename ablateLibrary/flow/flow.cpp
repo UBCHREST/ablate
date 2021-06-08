@@ -289,7 +289,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
 
     // Initialize the flow field if provided
-    {
+    if(!initialization.empty()){
         PetscInt numberFields;
         DMGetNumFields(dm->GetDomain(), &numberFields) >> checkError;
 
@@ -308,6 +308,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
         }
 
         DMProjectFunction(dm->GetDomain(), 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, flowField) >> checkError;
+        this->CompleteFlowInitialization(dm->GetDomain(), flowField);
     }
 
     // if an exact solution has been provided register it

@@ -1,13 +1,22 @@
 static char help[] = "Compressible ShockTube 1D Tests";
 
+#include <compressibleFlow.h>
 #include <petsc.h>
+#include <cmath>
+#include <memory>
 #include <mesh/dmWrapper.hpp>
+#include <vector>
 #include "MpiTestFixture.hpp"
+#include "PetscTestErrorChecker.hpp"
 #include "compressibleFlow.h"
+#include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
 #include "gtest/gtest.h"
+#include "mathFunctions/functionFactory.hpp"
 #include "mesh.h"
 #include "parameters/mapParameters.hpp"
+
+using namespace ablate;
 
 typedef struct {
     PetscReal gamma;
@@ -138,102 +147,78 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
 TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
     StartWithMPI
         {
-        PetscErrorCode ierr;
+            DM dmCreate; /* problem definition */
+            TS ts;       /* timestepper */
 
-        DM dmCreate; /* problem definition */
-        TS ts;       /* timestepper */
+            // Get the testing param
+            auto &testingParam = GetParam();
 
-        // Get the testing param
-        auto &testingParam = GetParam();
+            // initialize petsc and mpi
+            PetscInitialize(argc, argv, NULL, help) >> testErrorChecker;
 
-        // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, help);
+            // Create a ts
+            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
+            TSSetProblemType(ts, TS_NONLINEAR) >> testErrorChecker;
+            TSSetType(ts, TSEULER) >> testErrorChecker;
+            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
-        // Create a ts
-        ierr = TSCreate(PETSC_COMM_WORLD, &ts);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = TSSetProblemType(ts, TS_NONLINEAR);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = TSSetType(ts, TSEULER);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            // Create a mesh
+            // hard code the problem setup to act like a oneD problem
+            PetscReal start[] = {0.0, 0.0};
+            PetscReal end[] = {testingParam.initialConditions.length, 1};
+            PetscInt nx[] = {testingParam.nx, 1};
+            DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
+            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 2, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
-        // Create a mesh
-        // hard code the problem setup to act like a oneD problem
-        PetscReal start[] = {0.0, 0.0};
-        PetscReal end[] = {testingParam.initialConditions.length, 1};
-        PetscInt nx[] = {testingParam.nx, 1};
-        DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
-        ierr = DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 2, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            // Setup the flow data
+            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}, {"mu", "0.0"}, {"k", "0.0"}});
 
-        // Setup the flow data
-        auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}, {"mu", "0.0"}, {"k", "0.0"}});
+            auto eos = std::make_shared<ablate::eos::EOS>("perfectGas", std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}});
 
-        // Define the eos
-        auto eos = std::make_shared<ablate::eos::EOS>("perfectGas", std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}});
+            auto initialCondition = std::make_shared<flow::FlowFieldSolution>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
 
-        auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow", std::make_shared<ablate::mesh::DMWrapper>(dmCreate), eos, parameters);
-        // Add in any boundary conditions
-        PetscDS prob;
-        ierr = DMGetDS(flowObject->GetDM(), &prob);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        const PetscInt idsLeft[] = {4};
-        ierr = PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "wall left", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler, NULL, 1, idsLeft, (void *)&testingParam.initialConditions);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        const PetscInt idsRight[] = {2};
-        ierr =
-            PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "wall right", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler, NULL, 1, idsRight, (void *)&testingParam.initialConditions);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        const PetscInt mirror[] = {1, 3};
-        ierr = PetscDSAddBoundary(
-            prob, DM_BC_NATURAL_RIEMANN, "mirrorWall", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler_Mirror, NULL, 2, mirror, (void *)&testingParam.initialConditions);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "wall left", "Face Sets", 4, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "right left", "Face Sets", 2, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "mirrorWall", "Face Sets", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
 
-        // Complete the problem setup
-        flowObject->CompleteProblemSetup(ts);
+            auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
+                                                                               std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
+                                                                               eos,
+                                                                               parameters,
+                                                                               nullptr /*options*/,
+                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{initialCondition} /*initialization*/,
+                                                                               boundaryConditions /*boundary conditions*/,
+                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{} /*exactSolution*/);
 
-        // Name the flow field
-        ierr = PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution");
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            // Complete the problem setup
+            flowObject->CompleteProblemSetup(ts);
 
-        // Setup the TS
-        ierr = TSSetFromOptions(ts);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = TSSetMaxTime(ts, testingParam.maxTime);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            // Setup the TS
+            TSSetFromOptions(ts) >> testErrorChecker;
+            TSSetMaxTime(ts, testingParam.maxTime) >> testErrorChecker;
 
-        // set the initial conditions
-        PetscErrorCode (*func[1])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) = {SetInitialCondition};
-        void *ctxs[1] = {(void *)&testingParam.initialConditions};
-        ierr = DMProjectFunction(flowObject->GetDM(), 0.0, func, ctxs, INSERT_ALL_VALUES, flowObject->GetSolutionVector());
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
-        ierr = TSSolve(ts, flowObject->GetSolutionVector());
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            // extract the results
+            std::map<std::string, std::vector<PetscReal>> results;
+            Extract1DPrimitives(flowObject->GetDM(), flowObject->GetSolutionVector(), results) >> testErrorChecker;
 
-        // extract the results
-        std::map<std::string, std::vector<PetscReal>> results;
-        ierr = Extract1DPrimitives(flowObject->GetDM(), flowObject->GetSolutionVector(), results);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            // Compare the expected values
+            for (const auto &expectedResults : testingParam.expectedValues) {
+                // get the computed value
+                const auto &computedResults = results[expectedResults.first];
 
-        // Compare the expected values
-        for (const auto &expectedResults : testingParam.expectedValues) {
-            // get the computed value
-            const auto &computedResults = results[expectedResults.first];
-
-            ASSERT_EQ(expectedResults.second.size(), computedResults.size())
-                << "expected/computed result vectors for " << expectedResults.first << "  are of different lengths " << expectedResults.second.size() << "/" << computedResults.size();
-            for (auto i = 0; i < computedResults.size(); i++) {
-                ASSERT_NEAR(expectedResults.second[i], computedResults[i], 1E-6) << " in " << expectedResults.first << " at [" << i << "]";
+                ASSERT_EQ(expectedResults.second.size(), computedResults.size())
+                    << "expected/computed result vectors for " << expectedResults.first << "  are of different lengths " << expectedResults.second.size() << "/" << computedResults.size();
+                for (auto i = 0; i < computedResults.size(); i++) {
+                    ASSERT_NEAR(expectedResults.second[i], computedResults[i], 1E-6) << " in " << expectedResults.first << " at [" << i << "]";
+                }
             }
-        }
 
-        // Cleanup
-        ierr = TSDestroy(&ts);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-}
+            // Cleanup
+            TSDestroy(&ts) >> testErrorChecker;
+        }
         exit(PetscFinalize());
     EndWithMPI
 }
