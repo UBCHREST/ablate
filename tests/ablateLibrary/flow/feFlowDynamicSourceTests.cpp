@@ -10,6 +10,7 @@ static char help[] =
 #include "flow/lowMachFlow.hpp"
 #include "gtest/gtest.h"
 #include "mesh.h"
+#include "flow/boundaryConditions/essential.hpp"
 
 // We can define them because they are the same between fe flows
 #define VTEST 0
@@ -27,7 +28,7 @@ struct FEFlowDynamicSourceMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     std::function<std::shared_ptr<ablate::flow::Flow>(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
                                                       std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
-                                                      std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)>
+                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)>
         createMethod;
     std::string uExact;
     std::string uDerivativeExact;
@@ -147,50 +148,50 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                 /* initialization functions */
                 std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
-                std::vector<std::shared_ptr<BoundaryCondition>>{std::make_shared<BoundaryCondition>("velocity",
+                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("velocity",
                                                                                                     "top wall velocity",
                                                                                                     "marker",
                                                                                                     3,
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
-                                                                std::make_shared<BoundaryCondition>("velocity",
+                                                                std::make_shared<boundaryConditions::Essential>("velocity",
                                                                                                     "bottom wall velocity",
                                                                                                     "marker",
                                                                                                     1,
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
-                                                                std::make_shared<BoundaryCondition>("velocity",
+                                                                std::make_shared<boundaryConditions::Essential>("velocity",
                                                                                                     "right wall velocity",
                                                                                                     "marker",
                                                                                                     2,
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
-                                                                std::make_shared<BoundaryCondition>("velocity",
+                                                                std::make_shared<boundaryConditions::Essential>("velocity",
                                                                                                     "left wall velocity",
                                                                                                     "marker",
                                                                                                     4,
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact),
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact)),
-                                                                std::make_shared<BoundaryCondition>(
+                                                                std::make_shared<boundaryConditions::Essential>(
                                                                     "temperature",
                                                                     "top wall temp",
                                                                     "marker",
                                                                     3,
                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
-                                                                std::make_shared<BoundaryCondition>("temperature",
+                                                                std::make_shared<boundaryConditions::Essential>("temperature",
                                                                                                     "bottom wall temp",
                                                                                                     "marker",
                                                                                                     1,
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
-                                                                std::make_shared<BoundaryCondition>("temperature",
+                                                                std::make_shared<boundaryConditions::Essential>("temperature",
                                                                                                     "right wall temp",
                                                                                                     "marker",
                                                                                                     2,
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
                                                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact)),
-                                                                std::make_shared<BoundaryCondition>("temperature",
+                                                                std::make_shared<boundaryConditions::Essential>("temperature",
                                                                                                     "left wall temp",
                                                                                                     "marker",
                                                                                                     4,

@@ -4,9 +4,9 @@
 #include "utilities/petscError.hpp"
 
 ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
-                                       std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions,
-                                       std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
-    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields) {
+                                       std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                       std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<FlowFieldSolution>> exactSolutions)
+    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolutions) {
     // Register each field, this order must match the order in LowMachFlowFields enum
     RegisterField({.fieldName = "velocity", .fieldPrefix = "vel_", .components = dim, .fieldType = FieldType::FE});
     RegisterField({.fieldName = "pressure", .fieldPrefix = "pres_", .components = 1, .fieldType = FieldType::FE});

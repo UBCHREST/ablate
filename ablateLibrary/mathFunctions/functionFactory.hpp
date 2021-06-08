@@ -22,5 +22,10 @@ inline std::shared_ptr<MathFunction> Create(F func) {
     }
     return std::make_shared<FunctionWrapper>(func);
 }
+
+template <typename F>
+inline std::shared_ptr<MathFunction> Create(F func, void* context) {
+    return std::make_shared<FunctionPointer>(func, context);
+}
 }  // namespace ablate::mathFunctions
 #endif  // ABLATELIBRARY_FUNCTIONFACTORY_HPP

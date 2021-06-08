@@ -6,7 +6,7 @@
 #include <optional>
 #include <parameters/parameters.hpp>
 #include <string>
-#include "boundaryCondition.hpp"
+#include "flow/boundaryConditions/boundaryCondition.hpp"
 #include "flowFieldDescriptor.hpp"
 #include "flowFieldSolution.hpp"
 #include "mesh/mesh.hpp"
@@ -44,8 +44,9 @@ class Flow : public solve::Solvable {
     std::vector<std::function<void(TS ts, Flow&)>> postStepFunctions;
 
     const std::vector<std::shared_ptr<FlowFieldSolution>> initialization;
-    const std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions;
+    const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFieldsUpdaters;
+    const std::vector<std::shared_ptr<FlowFieldSolution>> exactSolutions;
 
     // Register the field
     void RegisterField(FlowFieldDescriptor flowFieldDescription);
@@ -60,7 +61,7 @@ class Flow : public solve::Solvable {
 
    public:
     Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<FlowFieldSolution>> initialization,
-         std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields );
+         std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<FlowFieldSolution>> exactSolution);
     virtual ~Flow();
 
     virtual void CompleteProblemSetup(TS ts);

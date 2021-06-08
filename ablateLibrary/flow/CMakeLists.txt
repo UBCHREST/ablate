@@ -9,8 +9,8 @@ target_sources(ablateLibrary
         incompressibleFlow.cpp
         flowFieldSolution.cpp
         flowFieldSolution.hpp
-        boundaryCondition.cpp
-        boundaryCondition.hpp
         compressibleFlow.cpp
         compressibleFlow.hpp
         )
+
+add_subdirectory(boundaryConditions)

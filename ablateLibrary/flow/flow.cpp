@@ -4,8 +4,8 @@
 #include "utilities/mpiError.hpp"
 
 ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
-                         std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions,
-                         std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)
+                         std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                         std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<FlowFieldSolution>> exactSolution)
     : name(name),
       dm(mesh),
       auxDM(nullptr),
@@ -14,7 +14,9 @@ ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std
       petscOptions(nullptr),
       initialization(initialization),
       boundaryConditions(boundaryConditions),
-      auxiliaryFieldsUpdaters(auxiliaryFields) {
+      auxiliaryFieldsUpdaters(auxiliaryFields),
+      exactSolutions(exactSolution)
+{
     // Set the application context with this dm
     DMSetApplicationContext(dm->GetDomain(), this) >> checkError;
 
@@ -238,38 +240,13 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
 
     // add each boundary condition
     for (auto boundary : boundaryConditions) {
-        PetscInt id = boundary->GetLabelId();
         auto fieldId = GetFieldId(boundary->GetFieldName());
         if (!fieldId) {
             throw std::invalid_argument("unknown field for boundary: " + boundary->GetFieldName());
         }
 
-        // Get the current field type
-        DMBoundaryConditionType boundaryConditionType;
-        switch (flowFieldDescriptors[fieldId.value()].fieldType) {
-            case FieldType::FE:
-                boundaryConditionType = DM_BC_ESSENTIAL;
-                break;
-            case FieldType::FV:
-                boundaryConditionType = DM_BC_NATURAL_RIEMANN;
-                break;
-            default:
-                throw std::invalid_argument("unknown field type");
-        }
-
-        PetscDSAddBoundary(prob,
-                           boundaryConditionType,
-                           boundary->GetBoundaryName().c_str(),
-                           boundary->GetLabelName().c_str(),
-                           fieldId.value(),
-                           0,
-                           NULL,
-                           (void (*)(void))boundary->GetBoundaryFunction(),
-                           (void (*)(void))boundary->GetBoundaryTimeDerivativeFunction(),
-                           1,
-                           &id,
-                           boundary->GetContext()) >>
-                                                   checkError;
+        // Setup the boundary condition
+        boundary->SetupBoundary(prob, fieldId.value());
     }
 
     // Setup the solve with the ts
@@ -311,7 +288,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     TSSetPreStep(ts, TSPreStepFunction) >> checkError;
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
 
-    // Initialize the flow field is provided
+    // Initialize the flow field if provided
     {
         PetscInt numberFields;
         DMGetNumFields(dm->GetDomain(), &numberFields) >> checkError;
@@ -333,6 +310,21 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
         DMProjectFunction(dm->GetDomain(), 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, flowField) >> checkError;
     }
 
+    // if an exact solution has been provided register it
+    for (const auto& exactSolution : exactSolutions) {
+        auto fieldId = GetFieldId(exactSolution->GetName());
+        if (!fieldId) {
+            throw std::invalid_argument("unknown field for exact solution: " + exactSolution->GetName());
+        }
+
+        // Get the current field type
+        if (exactSolution->HasSolutionField()) {
+            PetscDSSetExactSolution(prob, fieldId.value(), exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
+        }
+        if (exactSolution->HasTimeDerivative()) {
+            PetscDSSetExactSolutionTimeDerivative(prob, fieldId.value(), exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >> checkError;
+        }
+    }
 }
 
 /**

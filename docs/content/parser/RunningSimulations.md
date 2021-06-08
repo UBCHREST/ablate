@@ -50,7 +50,7 @@ particles:
         particle_upper: 0.75,0.75,.75
         Npb: 30
         convest_num_refine: 1
-    exactSolution:
+    exactSolutions:
       formula: "t + x + y"
 
 ```

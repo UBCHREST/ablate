@@ -25,7 +25,7 @@ class CompressibleFlow : public Flow {
 
    public:
     CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,  std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
-                     std::vector<std::shared_ptr<FlowFieldSolution>> initialization = {}, std::vector<std::shared_ptr<BoundaryCondition>> boundaryConditions = {});
+                     std::vector<std::shared_ptr<FlowFieldSolution>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {}, std::vector<std::shared_ptr<FlowFieldSolution>> exactSolutions = {});
 
     void CompleteProblemSetup(TS ts) override;
     void CompleteFlowInitialization(DM, Vec) override;

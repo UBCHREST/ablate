@@ -3,6 +3,7 @@ static char help[] = "1D conduction and diffusion cases compared to exact soluti
 #include <compressibleFlow.h>
 #include <petsc.h>
 #include <cmath>
+#include <flow/boundaryConditions/ghost.hpp>
 #include <memory>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
@@ -10,6 +11,7 @@ static char help[] = "1D conduction and diffusion cases compared to exact soluti
 #include "PetscTestErrorChecker.hpp"
 #include "flow/compressibleFlow.hpp"
 #include "gtest/gtest.h"
+#include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
 
 typedef struct {
@@ -31,6 +33,8 @@ struct CompressibleFlowDiffusionTestParameters {
     std::vector<PetscReal> expectedL2Convergence;
     std::vector<PetscReal> expectedLInfConvergence;
 };
+
+using namespace ablate;
 
 class CompressibleFlowDiffusionTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<CompressibleFlowDiffusionTestParameters> {
    public:
@@ -200,17 +204,39 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}, {"mu", "0.0"}, {"k", std::to_string(parameters.k)}});
 
-            auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow", std::make_shared<ablate::mesh::DMWrapper>(dmCreate), eos, flowParameters);
+            auto exactSolution = std::make_shared<flow::FlowFieldSolution>("euler", mathFunctions::Create(EulerExact, &parameters));
+
+            auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
+                std::make_shared<flow::boundaryConditions::Ghost>("euler",
+                                                    "wall left/right",
+                                                    "Face Sets",
+                                                    std::vector<int>{2, 4},
+                                                          PhysicsBoundary_Euler, &parameters),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler",
+                                                          "top/bottom",
+                                                          "Face Sets",
+                                                          std::vector<int>{1, 3},
+                                                          PhysicsBoundary_Mirror, &parameters),
+            };
+
+            auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
+                                                                               std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
+                                                                                   eos,
+                                                                               flowParameters,
+                                                                               nullptr/*options*/,
+                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{exactSolution}/*initialization*/,
+                                                                               boundaryConditions/*boundary conditions*/,
+                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{exactSolution}/*exactSolution*/);
 
             // Add in any boundary conditions
-            PetscDS prob;
-            ierr = DMGetDS(flowObject->GetDM(), &prob);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            const PetscInt idsLeft[] = {2, 4};
-            PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "wall left", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler, NULL, 2, idsLeft, &parameters) >> errorChecker;
-
-            const PetscInt idsTop[] = {1, 3};
-            PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "top/bottom", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Mirror, NULL, 2, idsTop, &parameters) >> errorChecker;
+//            PetscDS prob;
+//            ierr = DMGetDS(flowObject->GetDM(), &prob);
+//            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+//            const PetscInt idsLeft[] = {2, 4};
+//            PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "wall left", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Euler, NULL, 2, idsLeft, &parameters) >> errorChecker;
+//
+//            const PetscInt idsTop[] = {1, 3};
+//            PetscDSAddBoundary(prob, DM_BC_NATURAL_RIEMANN, "top/bottom", "Face Sets", 0, 0, NULL, (void (*)(void))PhysicsBoundary_Mirror, NULL, 2, idsTop, &parameters) >> errorChecker;
 
             flowObject->CompleteProblemSetup(ts);
 
@@ -219,14 +245,6 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             // Setup the TS
             TSSetFromOptions(ts) >> errorChecker;
-
-            // set the initial conditions
-            PetscErrorCode (*func[2])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx) = {EulerExact};
-            void *ctxs[1] = {&parameters};
-            DMProjectFunction(flowObject->GetDM(), 0.0, func, ctxs, INSERT_ALL_VALUES, flowObject->GetSolutionVector()) >> errorChecker;
-
-            // for the mms, add the exact solution
-            PetscDSSetExactSolution(prob, 0, EulerExact, &parameters) >> errorChecker;
 
             // advance to the end time
             TSSolve(ts, flowObject->GetSolutionVector()) >> errorChecker;
