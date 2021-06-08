@@ -47,7 +47,7 @@ ablate::flow::Flow::~Flow() {
         DMDestroy(&auxDM) >> checkError;
     }
     if (petscOptions) {
-        PetscOptionsDestroy(&petscOptions) >> checkError;
+        ablate::utilities::PetscOptionsDestroyAndCheck(name, &petscOptions);
     }
 }
 

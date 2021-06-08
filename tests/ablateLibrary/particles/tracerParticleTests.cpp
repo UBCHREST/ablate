@@ -47,7 +47,7 @@ static IntegrandTestFunction f0_w_original;
 static IntegrandTestFunction f0_q_original;
 static PetscReal omega;
 
-struct ParticleMMSParameters {
+struct TracerParticleMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     ExactFunction uExact;
     ExactFunction pExact;
@@ -62,7 +62,7 @@ struct ParticleMMSParameters {
     PetscReal omega;
 };
 
-class ParticleMMS : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<ParticleMMSParameters> {
+class TracerParticleMMSTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<TracerParticleMMSParameters> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
@@ -376,31 +376,24 @@ static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
     PetscFunctionReturn(0);
 }
 
-TEST_P(ParticleMMS, ParticleFlowMMSTests) {
+TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
     StartWithMPI
         {
             DM dm; /* problem definition */
             TS ts; /* timestepper */
-
-            PetscReal t;
-            PetscErrorCode ierr;
 
             // Get the testing param
             auto testingParam = GetParam();
             omega = testingParam.omega;
 
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL);
+            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // setup the ts
-            ierr = TSCreate(PETSC_COMM_WORLD, &ts);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = CreateMesh(PETSC_COMM_WORLD, &dm, PETSC_TRUE, 2);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = TSSetDM(ts, dm);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
+            CreateMesh(PETSC_COMM_WORLD, &dm, PETSC_TRUE, 2) >> testErrorChecker;
+            TSSetDM(ts, dm) >> testErrorChecker;
+            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Setup the flow data
             // pull the parameters from the petsc options
@@ -435,53 +428,36 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
                     std::make_shared<boundaryConditions::Essential>(
                         "temperature", "right wall temp", "marker", 2, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact)),
                     std::make_shared<boundaryConditions::Essential>(
-                        "temperature", "left wall temp", "marker", 4, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact))});
+                        "temperature", "left wall temp", "marker", 4, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact))},
+               /* aux updates*/
+                std::vector<std::shared_ptr<FlowFieldSolution>>{},
+                /* exact solutions*/
+                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact}
+                );
 
             // Override problem with source terms, boundary, and set the exact solution
             {
                 PetscDS prob;
-                ierr = DMGetDS(dm, &prob);
-                CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                DMGetDS(dm, &prob) >> testErrorChecker;
 
                 // V, W Test Function
                 IntegrandTestFunction tempFunctionPointer;
                 if (testingParam.f0_v) {
-                    ierr = PetscDSGetResidual(prob, VTEST, &f0_v_original, &tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                    ierr = PetscDSSetResidual(prob, VTEST, testingParam.f0_v, tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                    PetscDSGetResidual(prob, VTEST, &f0_v_original, &tempFunctionPointer) >> testErrorChecker;
+                    PetscDSSetResidual(prob, VTEST, testingParam.f0_v, tempFunctionPointer) >> testErrorChecker;
                 }
                 if (testingParam.f0_w) {
-                    ierr = PetscDSGetResidual(prob, WTEST, &f0_w_original, &tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                    ierr = PetscDSSetResidual(prob, WTEST, testingParam.f0_w, tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                    PetscDSGetResidual(prob, WTEST, &f0_w_original, &tempFunctionPointer) >> testErrorChecker;
+                    PetscDSSetResidual(prob, WTEST, testingParam.f0_w, tempFunctionPointer) >> testErrorChecker;
                 }
                 if (testingParam.f0_q) {
-                    ierr = PetscDSGetResidual(prob, QTEST, &f0_q_original, &tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
-                    ierr = PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer);
-                    CHKERRABORT(PETSC_COMM_WORLD, ierr);
+                    PetscDSGetResidual(prob, QTEST, &f0_q_original, &tempFunctionPointer) >> testErrorChecker;
+                    PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> testErrorChecker;
                 }
-
-                // Set the exact solution
-                PetscDSSetExactSolution(prob, VEL, velocityExact->GetSolutionField().GetPetscFunction(), velocityExact->GetSolutionField().GetContext()) >> testErrorChecker;
-                PetscDSSetExactSolution(prob, PRES, pressureExact->GetSolutionField().GetPetscFunction(), pressureExact->GetSolutionField().GetContext()) >> testErrorChecker;
-                PetscDSSetExactSolution(prob, TEMP, temperatureExact->GetSolutionField().GetPetscFunction(), temperatureExact->GetSolutionField().GetContext()) >> testErrorChecker;
-                PetscDSSetExactSolutionTimeDerivative(prob, VEL, velocityExact->GetTimeDerivative().GetPetscFunction(), velocityExact->GetTimeDerivative().GetContext()) >> testErrorChecker;
-                PetscDSSetExactSolutionTimeDerivative(prob, PRES, pressureExact->GetTimeDerivative().GetPetscFunction(), pressureExact->GetTimeDerivative().GetContext()) >> testErrorChecker;
-                PetscDSSetExactSolutionTimeDerivative(prob, TEMP, temperatureExact->GetTimeDerivative().GetPetscFunction(), temperatureExact->GetTimeDerivative().GetContext()) >> testErrorChecker;
             }
             flowObject->CompleteProblemSetup(ts);
 
-            // Name the flow field
-            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
-            VecSetOptionsPrefix(flowObject->GetSolutionVector(), "num_sol_") >> testErrorChecker;
-
-            TSSetComputeInitialCondition(ts, SetInitialConditions) >> testErrorChecker;
-            TSSetComputeInitialCondition(ts, SetInitialConditions) >> testErrorChecker;
-            TSGetTime(ts, &t) >> testErrorChecker;
-            DMSetOutputSequenceNumber(dm, 0, t) >> testErrorChecker;
+            // Check the convergence
             DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
             // Create the particle domain
@@ -514,8 +490,8 @@ TEST_P(ParticleMMS, ParticleFlowMMSTests) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, ParticleMMS,
-                         testing::Values((ParticleMMSParameters){.mpiTestParameter = {.testName = "particle in incompressible 2d trigonometric trigonometric tri_p2_p1_p1",
+INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, TracerParticleMMSTestFixture,
+                         testing::Values((TracerParticleMMSParameters){.mpiTestParameter = {.testName = "particle in incompressible 2d trigonometric trigonometric tri_p2_p1_p1",
                                                                                       .nproc = 1,
                                                                                       .expectedOutputFile = "outputs/particles/tracerParticles_incompressible_trigonometric_2d_tri_p2_p1_p1",
                                                                                       .arguments = "-dm_plex_separate_marker -dm_refine 2 -vel_petscspace_degree 2 -pres_petscspace_degree 1 "
@@ -536,7 +512,7 @@ INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, ParticleMMS,
                                                                  .f0_v = f0_trig_trig_v,
                                                                  .f0_w = f0_trig_trig_w,
                                                                  .omega = 0.5},
-                                         (ParticleMMSParameters){.mpiTestParameter = {.testName = "particle deletion with simple fluid tri_p2_p1_p1",
+                                         (TracerParticleMMSParameters){.mpiTestParameter = {.testName = "particle deletion with simple fluid tri_p2_p1_p1",
                                                                                       .nproc = 1,
                                                                                       .expectedOutputFile = "outputs/particles/tracerParticles_deletion_with_simple_fluid_tri_p2_p1_p1",
                                                                                       .arguments = "-dm_plex_separate_marker -dm_refine 2 "
@@ -555,4 +531,4 @@ INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, ParticleMMS,
                                                                  .particleExact = linear_x,
                                                                  .f0_v = f0_linear_v,
                                                                  .f0_w = f0_linear_w}),
-                         [](const testing::TestParamInfo<ParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+                         [](const testing::TestParamInfo<TracerParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

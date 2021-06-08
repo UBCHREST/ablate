@@ -12,8 +12,6 @@ target_sources(ablateCore
         fluxDifferencer.c
         fvSupport.h
         fvSupport.c
-        flow.c
-        flow.h
         )
 
 # Allow public access to the header files in the directory
