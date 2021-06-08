@@ -3,6 +3,7 @@ static char help[] =
 
 #include <petsc.h>
 #include <mathFunctions/parsedFunction.hpp>
+#include <mesh/boxMesh.hpp>
 #include <mesh/dmWrapper.hpp>
 #include <parameters/petscOptionParameters.hpp>
 #include "MpiTestFixture.hpp"
@@ -10,7 +11,6 @@ static char help[] =
 #include "flow/incompressibleFlow.hpp"
 #include "flow/lowMachFlow.hpp"
 #include "gtest/gtest.h"
-#include "mesh.h"
 
 // We can define them because they are the same between fe flows
 #define VTEST 0
@@ -112,7 +112,6 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
 TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
         {
-            DM dmCreate; /* problem definition */
             TS ts;       /* timestepper */
 
             PetscReal t;
@@ -125,8 +124,11 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            CreateMesh(PETSC_COMM_WORLD, &dmCreate, PETSC_TRUE, 2) >> testErrorChecker;
-            TSSetDM(ts, dmCreate) >> testErrorChecker;
+
+            // Create a simple test mesh
+            auto mesh = std::make_shared<mesh::BoxMesh>("mesh", std::vector<int>{2,2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+
+            TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Setup the flow data
@@ -143,7 +145,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             // Create the flow object
             std::shared_ptr<ablate::flow::Flow> flowObject = testingParam.createMethod(
                 "testFlow",
-                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
+                mesh,
                 parameters,
                 nullptr,
                 /* initialization functions */
@@ -234,7 +236,6 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
             // Cleanup
-            DMDestroy(&dmCreate) >> testErrorChecker;
             TSDestroy(&ts) >> testErrorChecker;
         }
         exit(PetscFinalize());

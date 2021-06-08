@@ -4,14 +4,14 @@
 #include <parameters/petscPrefixOptions.hpp>
 #include <particles/initializers/boxInitializer.hpp>
 #include "MpiTestFixture.hpp"
+#include "flow/boundaryConditions/essential.hpp"
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "mesh.h"
+#include "mesh/boxMesh.hpp"
 #include "mesh/dmWrapper.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "particles/tracer.hpp"
-#include "flow/boundaryConditions/essential.hpp"
 
 using namespace ablate::flow;
 
@@ -379,7 +379,6 @@ static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
 TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
     StartWithMPI
         {
-            DM dm; /* problem definition */
             TS ts; /* timestepper */
 
             // Get the testing param
@@ -391,8 +390,8 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            CreateMesh(PETSC_COMM_WORLD, &dm, PETSC_TRUE, 2) >> testErrorChecker;
-            TSSetDM(ts, dm) >> testErrorChecker;
+            auto mesh = std::make_shared<ablate::mesh::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Setup the flow data
@@ -406,7 +405,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
 
             auto flowObject = std::make_shared<ablate::flow::IncompressibleFlow>(
                 "testFlow",
-                std::make_shared<ablate::mesh::DMWrapper>(dm),
+                mesh,
                 parameters,
                 nullptr,
                 /* initialization functions */
@@ -429,16 +428,15 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                         "temperature", "right wall temp", "marker", 2, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact)),
                     std::make_shared<boundaryConditions::Essential>(
                         "temperature", "left wall temp", "marker", 4, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact))},
-               /* aux updates*/
+                /* aux updates*/
                 std::vector<std::shared_ptr<FlowFieldSolution>>{},
                 /* exact solutions*/
-                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact}
-                );
+                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact});
 
             // Override problem with source terms, boundary, and set the exact solution
             {
                 PetscDS prob;
-                DMGetDS(dm, &prob) >> testErrorChecker;
+                DMGetDS(mesh->GetDomain(), &prob) >> testErrorChecker;
 
                 // V, W Test Function
                 IntegrandTestFunction tempFunctionPointer;
@@ -483,52 +481,52 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
             // Cleanup
-            DMDestroy(&dm) >> testErrorChecker;
             TSDestroy(&ts) >> testErrorChecker;
         }
         exit(PetscFinalize());
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(ParticleMMSTests, TracerParticleMMSTestFixture,
-                         testing::Values((TracerParticleMMSParameters){.mpiTestParameter = {.testName = "particle in incompressible 2d trigonometric trigonometric tri_p2_p1_p1",
-                                                                                      .nproc = 1,
-                                                                                      .expectedOutputFile = "outputs/particles/tracerParticles_incompressible_trigonometric_2d_tri_p2_p1_p1",
-                                                                                      .arguments = "-dm_plex_separate_marker -dm_refine 2 -vel_petscspace_degree 2 -pres_petscspace_degree 1 "
-                                                                                                   "-temp_petscspace_degree 1 -dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ts_monitor_cancel "
-                                                                                                   "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
-                                                                                                   "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 "
-                                                                                                   "-pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full -fieldsplit_0_pc_type lu "
-                                                                                                   "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                                                                                   "-particle_ts_dt 0.05 -particle_ts_convergence_estimate -convest_num_refine 1 "
-                                                                                                   "-particle_ts_monitor_cancel"},
-                                                                 .uExact = trig_trig_u,
-                                                                 .pExact = trig_trig_p,
-                                                                 .TExact = trig_trig_T,
-                                                                 .uDerivativeExact = trig_trig_u_t,
-                                                                 .pDerivativeExact = trig_trig_p_t,
-                                                                 .TDerivativeExact = trig_trig_T_t,
-                                                                 .particleExact = trig_trig_x,
-                                                                 .f0_v = f0_trig_trig_v,
-                                                                 .f0_w = f0_trig_trig_w,
-                                                                 .omega = 0.5},
-                                         (TracerParticleMMSParameters){.mpiTestParameter = {.testName = "particle deletion with simple fluid tri_p2_p1_p1",
-                                                                                      .nproc = 1,
-                                                                                      .expectedOutputFile = "outputs/particles/tracerParticles_deletion_with_simple_fluid_tri_p2_p1_p1",
-                                                                                      .arguments = "-dm_plex_separate_marker -dm_refine 2 "
-                                                                                                   "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                                                                                   "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
-                                                                                                   "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
-                                                                                                   "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                                                   "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
-                                                                                                   "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
-                                                                 .uExact = linear_u,
-                                                                 .pExact = linear_p,
-                                                                 .TExact = linear_T,
-                                                                 .uDerivativeExact = linear_u_t,
-                                                                 .pDerivativeExact = linear_p_t,
-                                                                 .TDerivativeExact = linear_T_t,
-                                                                 .particleExact = linear_x,
-                                                                 .f0_v = f0_linear_v,
-                                                                 .f0_w = f0_linear_w}),
-                         [](const testing::TestParamInfo<TracerParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+INSTANTIATE_TEST_SUITE_P(
+    ParticleMMSTests, TracerParticleMMSTestFixture,
+    testing::Values((TracerParticleMMSParameters){.mpiTestParameter = {.testName = "particle in incompressible 2d trigonometric trigonometric tri_p2_p1_p1",
+                                                                       .nproc = 1,
+                                                                       .expectedOutputFile = "outputs/particles/tracerParticles_incompressible_trigonometric_2d_tri_p2_p1_p1",
+                                                                       .arguments = "-dm_plex_separate_marker -dm_refine 2 -vel_petscspace_degree 2 -pres_petscspace_degree 1 "
+                                                                                    "-temp_petscspace_degree 1 -dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ts_monitor_cancel "
+                                                                                    "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_error_if_not_converged "
+                                                                                    "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 "
+                                                                                    "-pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full -fieldsplit_0_pc_type lu "
+                                                                                    "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                                                    "-particle_ts_dt 0.05 -particle_ts_convergence_estimate -convest_num_refine 1 "
+                                                                                    "-particle_ts_monitor_cancel"},
+                                                  .uExact = trig_trig_u,
+                                                  .pExact = trig_trig_p,
+                                                  .TExact = trig_trig_T,
+                                                  .uDerivativeExact = trig_trig_u_t,
+                                                  .pDerivativeExact = trig_trig_p_t,
+                                                  .TDerivativeExact = trig_trig_T_t,
+                                                  .particleExact = trig_trig_x,
+                                                  .f0_v = f0_trig_trig_v,
+                                                  .f0_w = f0_trig_trig_w,
+                                                  .omega = 0.5},
+                    (TracerParticleMMSParameters){.mpiTestParameter = {.testName = "particle deletion with simple fluid tri_p2_p1_p1",
+                                                                       .nproc = 1,
+                                                                       .expectedOutputFile = "outputs/particles/tracerParticles_deletion_with_simple_fluid_tri_p2_p1_p1",
+                                                                       .arguments = "-dm_plex_separate_marker -dm_refine 2 "
+                                                                                    "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                                                    "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                    "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 "
+                                                                                    "-pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                                                    "-fieldsplit_0_pc_type lu -fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi "
+                                                                                    "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
+                                                  .uExact = linear_u,
+                                                  .pExact = linear_p,
+                                                  .TExact = linear_T,
+                                                  .uDerivativeExact = linear_u_t,
+                                                  .pDerivativeExact = linear_p_t,
+                                                  .TDerivativeExact = linear_T_t,
+                                                  .particleExact = linear_x,
+                                                  .f0_v = f0_linear_v,
+                                                  .f0_w = f0_linear_w}),
+    [](const testing::TestParamInfo<TracerParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

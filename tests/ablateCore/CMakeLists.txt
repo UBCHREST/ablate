@@ -6,7 +6,6 @@ target_sources(coreTests
         feFlowDynamicSourceTests.cpp
         feFlowFunctionSourceTests.cpp
         feFlowDynamicSourceTests.cpp
-        particleTests.cpp
         inertialParticleTests.cpp
         fluxDifferencerTests.cpp
         compressibleFlowTests.cpp

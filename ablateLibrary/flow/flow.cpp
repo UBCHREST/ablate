@@ -1,6 +1,6 @@
 #include "flow.hpp"
-#include "../utilities/petscError.hpp"
-#include "../utilities/petscOptions.hpp"
+#include "utilities/petscError.hpp"
+#include "utilities/petscOptions.hpp"
 #include "utilities/mpiError.hpp"
 
 ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,

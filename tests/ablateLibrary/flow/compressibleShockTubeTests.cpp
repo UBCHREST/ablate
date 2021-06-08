@@ -13,7 +13,6 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include "flow/compressibleFlow.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "mesh.h"
 #include "parameters/mapParameters.hpp"
 
 using namespace ablate;

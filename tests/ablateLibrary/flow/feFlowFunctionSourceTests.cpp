@@ -9,6 +9,7 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include <flow/boundaryConditions/essential.hpp>
 #include <flow/incompressibleFlow.hpp>
 #include <memory>
+#include <mesh/boxMesh.hpp>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
@@ -18,7 +19,6 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include "flow/lowMachFlow.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "mesh.h"
 #include "mesh/dmWrapper.hpp"
 #include "parameters/mapParameters.hpp"
 #include "parameters/petscOptionParameters.hpp"
@@ -565,7 +565,6 @@ static void SourceFunction(f0_incompressible_cubic_trig_w) {
 TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
         {
-            DM dmCreate; /* problem definition */
             TS ts;       /* timestepper */
 
             PetscReal t;
@@ -578,8 +577,8 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            CreateMesh(PETSC_COMM_WORLD, &dmCreate, PETSC_TRUE, 2) >> testErrorChecker;
-            TSSetDM(ts, dmCreate) >> testErrorChecker;
+            auto mesh = std::make_shared<mesh::BoxMesh>("mesh", std::vector<int>{2,2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // pull the parameters from the petsc options
@@ -590,29 +589,22 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             auto temperatureExact = std::make_shared<flow::FlowFieldSolution>("temperature", mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact));
 
             // Create the flow object
-            std::shared_ptr<ablate::flow::Flow> flowObject = testingParam.createMethod("testFlow",
-                                                                                       std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
-                                                                                       parameters,
-                                                                                       nullptr,
-                                                                                       /* initialization functions */
-                                                                                       std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
-                                                                                       /* boundary conditions */
-                                                                                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
-                                                                                           std::make_shared<boundaryConditions::Essential>("velocity",
-                                                                                                                                           "velocity wall",
-                                                                                                                                           "marker",
-                                                                                                                                           std::vector<int>{3, 1, 2, 4},
-                                                                                                                                           mathFunctions::Create(testingParam.uExact),
-                                                                                                                                           mathFunctions::Create(testingParam.u_tExact)),
-                                                                                           std::make_shared<boundaryConditions::Essential>("temperature",
-                                                                                                                                           "temp wall",
-                                                                                                                                           "marker",
-                                                                                                                                           std::vector<int>{3, 1, 2, 4},
-                                                                                                                                           mathFunctions::Create(testingParam.TExact),
-                                                                                                                                           mathFunctions::Create(testingParam.T_tExact)),
-                                                                                       },
-                                                                                       /* aux field updates */
-                                                                                       std::vector<std::shared_ptr<FlowFieldSolution>>{});
+            std::shared_ptr<ablate::flow::Flow> flowObject = testingParam.createMethod(
+                "testFlow",
+                mesh,
+                parameters,
+                nullptr,
+                /* initialization functions */
+                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
+                /* boundary conditions */
+                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
+                    std::make_shared<boundaryConditions::Essential>(
+                        "velocity", "velocity wall", "marker", std::vector<int>{3, 1, 2, 4}, mathFunctions::Create(testingParam.uExact), mathFunctions::Create(testingParam.u_tExact)),
+                    std::make_shared<boundaryConditions::Essential>(
+                        "temperature", "temp wall", "marker", std::vector<int>{3, 1, 2, 4}, mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact)),
+                },
+                /* aux field updates */
+                std::vector<std::shared_ptr<FlowFieldSolution>>{});
 
             // Override problem with source terms, boundary, and set the exact solution
             {
@@ -655,7 +647,6 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
 
             // Cleanup
-            DMDestroy(&dmCreate) >> testErrorChecker;
             TSDestroy(&ts) >> testErrorChecker;
         }
         exit(PetscFinalize());
