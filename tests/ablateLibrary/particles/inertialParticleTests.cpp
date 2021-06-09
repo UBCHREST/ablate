@@ -308,6 +308,7 @@ static PetscErrorCode computeParticleError(TS particleTS, Vec u, Vec e) {
     ierr = DMRestoreGlobalVector(sdm, &exactPositionVec);
     CHKERRQ(ierr);
 
+
     PetscFunctionReturn(0);
 }
 
@@ -488,6 +489,9 @@ TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
         // link the flow to the particles
         particles->InitializeFlow(flowObject);
 
+
+            ParticleInertialInitialize(*particles, pVel, dp, rhoP, rhoF, muF, grav)  >> testErrorChecker;
+
         // setup the initial conditions for error computing
         particles->exactSolution = ablate::mathFunctions::Create(testingParam.particleExact);
         TSSetComputeExactError(particles->GetTS(), computeParticleError) >> testErrorChecker;  // TODO merge into particle class
@@ -597,7 +601,6 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                                                                                            "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
                                                                                                            "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
                                                                                                            " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                                                           "-particle_layout_type box -particle_lower 0.92,0.3 -particle_upper 0.98,0.6 -Npb 10 "
                                                                                                            "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
                                                                          .uExact = quiescent_u,
                                                                          .pExact = quiescent_p,
