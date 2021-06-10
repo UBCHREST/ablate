@@ -2,8 +2,8 @@
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
-ablate::particles::Particles::Particles(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options)
-    : name(name), ndims(ndims), timeInitial(0.0), timeFinal(0.0), dmChanged(false), initializer(initializer), exactSolution(exactSolution), petscOptions(NULL){
+ablate::particles::Particles::Particles(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization,  std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options)
+    : name(name), ndims(ndims), timeInitial(0.0), timeFinal(0.0), dmChanged(false), initializer(initializer), exactSolution(exactSolution), petscOptions(NULL), fieldInitialization(fieldInitialization){
 
     // create and associate the dm
     DMCreate(PETSC_COMM_WORLD, &dm) >> checkError;
@@ -79,6 +79,11 @@ void ablate::particles::Particles::InitializeFlow(std::shared_ptr<flow::Flow> fl
     if(exactSolution){
         StoreInitialParticleLocations();
         TSSetComputeExactError(particleTs, ComputeParticleError) >> checkError;
+    }
+
+    // project the initialization field onto each local particle
+    for(auto& field : fieldInitialization ){
+        this->ProjectFunction(field->GetName(),field->GetSolutionField());
     }
 }
 
@@ -227,4 +232,47 @@ void ablate::particles::Particles::SwarmMigrate() {
     PetscInt dmChangedAll;
     MPIU_Allreduce(&dmChanged,&dmChangedAll,1,MPIU_INT, MPIU_MAX, comm);
     this->dmChanged = dmChangedAll == PETSC_TRUE;
+}
+
+/**
+ * Support function to project the math function onto a particle field
+ * @param field
+ * @param mathFunction
+ */
+void ablate::particles::Particles::ProjectFunction(const std::string& field, ablate::mathFunctions::MathFunction& mathFunction) {
+    // Get the local number of particles
+    PetscInt np;
+    DMSwarmGetLocalSize(dm, &np) >> checkError;
+
+    // Get the raw access to position and update field
+    PetscInt dim;
+    PetscReal *positionData;
+    DMSwarmGetField(dm, DMSwarmPICField_coor, &dim, NULL, (void **)&positionData) >> checkError;
+
+    PetscInt fieldComponents;
+    PetscDataType fieldType;
+    PetscReal *fieldData;
+    DMSwarmGetField(dm, field.c_str(), &fieldComponents, &fieldType, (void **)&fieldData) >> checkError;
+
+    if(fieldType != PETSC_REAL){
+        throw std::invalid_argument("ProjectFunction only supports PETSC_REAL");
+    }
+
+    // extract the petsc function for fast update
+    void *functionContext = mathFunction.GetContext();
+    ablate::mathFunctions::PetscFunction functionPointer = mathFunction.GetPetscFunction();
+
+    // Iterate over each local particle
+    for (PetscInt p = 0; p < np; ++p) {
+        // compute the position offset
+        const PetscInt positionOffset = p * dim;
+
+        // Compute the field offset
+        const PetscInt fieldOffset = p * fieldComponents;
+
+        // Call the update function
+        functionPointer(dim, 0.0, positionData + positionOffset, fieldComponents, fieldData + fieldOffset, functionContext) >> checkError;
+    }
+    DMSwarmRestoreField(dm, DMSwarmPICField_coor, NULL, NULL, (void **)&positionData);
+    DMSwarmRestoreField(dm, field.c_str(), NULL, NULL, (void **)&fieldData);
 }

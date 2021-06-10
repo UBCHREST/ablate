@@ -656,7 +656,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 
             auto eos = std::make_shared<ablate::eos::EOS>("perfectGas", std::map<std::string, std::string>{{"gamma", std::to_string(constants.gamma)}, {"Rgas", std::to_string(constants.R)}});
 
-            auto exactSolution = std::make_shared<flow::FlowFieldSolution>("euler", mathFunctions::Create(EulerExact, &constants));
+            auto exactSolution = std::make_shared<mathFunctions::FieldSolution>("euler", mathFunctions::Create(EulerExact, &constants));
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<flow::boundaryConditions::Ghost>("euler",
@@ -671,9 +671,9 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                                                                                    eos,
                                                                                parameters,
                                                                                nullptr/*options*/,
-                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{exactSolution}/*initialization*/,
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution}/*initialization*/,
                                                                                boundaryConditions/*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{exactSolution}/*exactSolution*/);
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution}/*exactSolution*/);
 
             // Combine the flow data
             ProblemSetup problemSetup;

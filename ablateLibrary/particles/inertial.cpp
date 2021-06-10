@@ -4,8 +4,8 @@
 enum InertialParticleFields { Position, Velocity, TotalParticleField };
 
 ablate::particles::Inertial::Inertial(std::string name, int ndims, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<particles::initializers::Initializer> initializer,
-                                      std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options)
-    : Particles(name, ndims, initializer, exactSolution, options) {
+                                      std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options)
+    : Particles(name, ndims, initializer, fieldInitialization, exactSolution, options) {
     RegisterField(ParticleFieldDescriptor{.fieldName = FluidVelocity, .components = ndims, .type = PETSC_REAL});
     RegisterField(ParticleFieldDescriptor{.fieldName = ParticleVelocity, .components = ndims, .type = PETSC_REAL});
     RegisterField(ParticleFieldDescriptor{.fieldName = ParticleKinematics, .components = TotalParticleField * ndims, .type = PETSC_REAL});

@@ -7,8 +7,6 @@ target_sources(ablateLibrary
         lowMachFlow.cpp
         incompressibleFlow.hpp
         incompressibleFlow.cpp
-        flowFieldSolution.cpp
-        flowFieldSolution.hpp
         compressibleFlow.cpp
         compressibleFlow.hpp
         )

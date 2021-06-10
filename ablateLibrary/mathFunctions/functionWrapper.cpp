@@ -1,8 +1,5 @@
 #include "functionWrapper.hpp"
 #include <array>
-#include <iostream>
-#include <type_traits>
-#include "utilities/demangler.hpp"
 
 ablate::mathFunctions::FunctionWrapper::FunctionWrapper(ablate::mathFunctions::FunctionWrapper::Function function) : function(function) {}
 

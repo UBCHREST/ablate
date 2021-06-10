@@ -5,7 +5,7 @@
 
 ablate::particles::Tracer::Tracer(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution,
                                   std::shared_ptr<parameters::Parameters> options)
-    : Particles(name, ndims, initializer, exactSolution, options) {
+    : Particles(name, ndims, initializer, {}, exactSolution, options) {
     RegisterField(ParticleFieldDescriptor{.fieldName = ParticleVelocity, .components = ndims, .type = PETSC_REAL});
 }
 

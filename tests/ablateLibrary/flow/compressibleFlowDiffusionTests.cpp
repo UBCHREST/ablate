@@ -204,7 +204,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}, {"mu", "0.0"}, {"k", std::to_string(parameters.k)}});
 
-            auto exactSolution = std::make_shared<flow::FlowFieldSolution>("euler", mathFunctions::Create(EulerExact, &parameters));
+            auto exactSolution = std::make_shared<mathFunctions::FieldSolution>("euler", mathFunctions::Create(EulerExact, &parameters));
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<flow::boundaryConditions::Ghost>("euler",
@@ -224,9 +224,9 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                    eos,
                                                                                flowParameters,
                                                                                nullptr/*options*/,
-                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{exactSolution}/*initialization*/,
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution}/*initialization*/,
                                                                                boundaryConditions/*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<flow::FlowFieldSolution>>{exactSolution}/*exactSolution*/);
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution}/*exactSolution*/);
 
             flowObject->CompleteProblemSetup(ts);
 

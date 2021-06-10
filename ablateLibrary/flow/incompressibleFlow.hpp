@@ -11,8 +11,8 @@ namespace ablate::flow {
 class IncompressibleFlow : public Flow {
    public:
     IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
-                       std::vector<std::shared_ptr<FlowFieldSolution>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
-                       std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields = {},std::vector<std::shared_ptr<FlowFieldSolution>> exactSolutions = {});
+                       std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
+                       std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields = {},std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions = {});
 
     void CompleteProblemSetup(TS ts) override;
     void CompleteFlowInitialization(DM, Vec) override;

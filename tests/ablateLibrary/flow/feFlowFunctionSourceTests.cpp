@@ -68,9 +68,9 @@ static IntegrandTestFunction f0_q_original;
 struct FEFlowMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     std::function<std::shared_ptr<ablate::flow::Flow>(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
-                                                      std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<FlowFieldSolution>> initializationAndExact,
+                                                      std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initializationAndExact,
                                                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                      std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)>
+                                                      std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields)>
         createMethod;
     ExactFunction uExact;
     ExactFunction pExact;
@@ -584,9 +584,9 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             // pull the parameters from the petsc options
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
-            auto velocityExact = std::make_shared<flow::FlowFieldSolution>("velocity", mathFunctions::Create(testingParam.uExact), mathFunctions::Create(testingParam.u_tExact));
-            auto pressureExact = std::make_shared<flow::FlowFieldSolution>("pressure", mathFunctions::Create(testingParam.pExact));
-            auto temperatureExact = std::make_shared<flow::FlowFieldSolution>("temperature", mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact));
+            auto velocityExact = std::make_shared<mathFunctions::FieldSolution>("velocity", mathFunctions::Create(testingParam.uExact), mathFunctions::Create(testingParam.u_tExact));
+            auto pressureExact = std::make_shared<mathFunctions::FieldSolution>("pressure", mathFunctions::Create(testingParam.pExact));
+            auto temperatureExact = std::make_shared<mathFunctions::FieldSolution>("temperature", mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact));
 
             // Create the flow object
             std::shared_ptr<ablate::flow::Flow> flowObject = testingParam.createMethod(
@@ -595,7 +595,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                 parameters,
                 nullptr,
                 /* initialization functions */
-                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
+                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
                     std::make_shared<boundaryConditions::Essential>(
@@ -604,7 +604,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                         "temperature", "temp wall", "marker", std::vector<int>{3, 1, 2, 4}, mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact)),
                 },
                 /* aux field updates */
-                std::vector<std::shared_ptr<FlowFieldSolution>>{});
+                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{});
 
             // Override problem with source terms, boundary, and set the exact solution
             {

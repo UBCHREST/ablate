@@ -27,9 +27,9 @@ using namespace ablate::flow;
 struct FEFlowDynamicSourceMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     std::function<std::shared_ptr<ablate::flow::Flow>(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
-                                                      std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<FlowFieldSolution>> initializationAndExact,
+                                                      std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initializationAndExact,
                                                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                      std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields)>
+                                                      std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields)>
         createMethod;
     std::string uExact;
     std::string uDerivativeExact;
@@ -135,11 +135,11 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             // pull the parameters from the petsc options
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
-            auto velocityExact = std::make_shared<FlowFieldSolution>(
+            auto velocityExact = std::make_shared<mathFunctions::FieldSolution>(
                 "velocity", std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact));
-            auto pressureExact = std::make_shared<FlowFieldSolution>(
+            auto pressureExact = std::make_shared<mathFunctions::FieldSolution>(
                 "pressure", std::make_shared<mathFunctions::ParsedFunction>(testingParam.pExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.pDerivativeExact));
-            auto temperatureExact = std::make_shared<FlowFieldSolution>(
+            auto temperatureExact = std::make_shared<mathFunctions::FieldSolution>(
                 "temperature", std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact));
 
             // Create the flow object
@@ -149,7 +149,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                 parameters,
                 nullptr,
                 /* initialization functions */
-                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
+                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
                     std::make_shared<boundaryConditions::Essential>("velocity",
@@ -203,9 +203,9 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact),
                                                                     std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact))},
                 /* aux field updates */
-                std::vector<std::shared_ptr<FlowFieldSolution>>{std::make_shared<FlowFieldSolution>("momentum_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.vSource)),
-                                                                std::make_shared<FlowFieldSolution>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
-                                                                std::make_shared<FlowFieldSolution>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
+                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{std::make_shared<mathFunctions::FieldSolution>("momentum_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.vSource)),
+                                                                std::make_shared<mathFunctions::FieldSolution>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
+                                                                std::make_shared<mathFunctions::FieldSolution>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
 
 
             flowObject->CompleteProblemSetup(ts);

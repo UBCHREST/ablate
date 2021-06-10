@@ -4,6 +4,7 @@
 #include <memory>
 #include "flow/flow.hpp"
 #include "mathFunctions/mathFunction.hpp"
+#include "mathFunctions/fieldSolution.hpp"
 #include "particles/initializers/initializer.hpp"
 #include "solve/timeStepper.hpp"
 #include "particles/particleFieldDescriptor.hpp"
@@ -33,7 +34,6 @@ class Particles {
     std::vector<particles::ParticleFieldDescriptor> particleFieldDescriptors;
 
     void RegisterField(ParticleFieldDescriptor fieldDescriptor);
-    std::shared_ptr<particles::initializers::Initializer> initializer = nullptr;
 
     // Petsc options specific to these particles. These may be null by default
     PetscOptions petscOptions;
@@ -42,13 +42,18 @@ class Particles {
     bool dmChanged;
     void SwarmMigrate();
 
+
+    // Store the particle location and field initialization
+    std::shared_ptr<particles::initializers::Initializer> initializer = nullptr;
+    const std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization;
+
    private:
     inline static const char ParticleInitialLocation[] = "InitialLocation";
     void StoreInitialParticleLocations();
     static PetscErrorCode ComputeParticleError(TS particleTS, Vec u, Vec e);
 
    public:
-    explicit Particles(std::string name,  int ndims, std::shared_ptr<particles::initializers::Initializer> initializer,std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options);
+    explicit Particles(std::string name,  int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options);
     virtual ~Particles();
 
     const std::string& GetName() const { return name; }
@@ -60,6 +65,8 @@ class Particles {
     virtual void InitializeFlow(std::shared_ptr<flow::Flow> flow);
 
     std::shared_ptr<mathFunctions::MathFunction> exactSolution = nullptr;// TODO: make private const
+
+    void ProjectFunction(const std::string& field, ablate::mathFunctions::MathFunction& mathFunction);
 
     /** common field names for particles **/
     inline static const char ParticleVelocity[] = "ParticleVelocity";

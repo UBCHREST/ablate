@@ -30,7 +30,7 @@ static PetscErrorCode UpdateAuxVelocityField(FlowData_CompressibleFlow flowData,
 }
 
 ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
-                                                 std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<FlowFieldSolution>> exactSolutions)
+                                                 std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions)
     : Flow(name, mesh, parameters, options, initialization, boundaryConditions, {}, exactSolutions), eos(eosIn) {
     // Create a compressibleFlowData
     PetscNew(&compressibleFlowData);

@@ -5,8 +5,8 @@
 #include "utilities/petscError.hpp"
 
 ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
-                                                     std::vector<std::shared_ptr<FlowFieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                     std::vector<std::shared_ptr<FlowFieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<FlowFieldSolution>> exactSolutions)
+                                                     std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                     std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions)
     : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolutions) {
     // Register each field, this order must match the order in LowMachFlowFields enum
     RegisterField({.fieldName = "velocity", .fieldPrefix = "vel_", .components = dim, .fieldType = FieldType::FE});

@@ -33,7 +33,7 @@ class Inertial : public Particles {
     void advectParticles(TS flowTS);
 
    public:
-    Inertial(std::string name, int ndims, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<particles::initializers::Initializer> initializer,
+    Inertial(std::string name, int ndims, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization,
              std::shared_ptr<mathFunctions::MathFunction> exactSolution = {}, std::shared_ptr<parameters::Parameters> options = {});
     ~Inertial() override;
 

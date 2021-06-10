@@ -8,4 +8,8 @@ target_sources(ablateLibrary
         functionPointer.cpp
         mathFunction.hpp
         functionFactory.hpp
+        fieldSolution.cpp
+        fieldSolution.hpp
+        constantValue.hpp
+        constantValue.cpp
         )

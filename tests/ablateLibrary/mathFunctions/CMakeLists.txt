@@ -4,4 +4,5 @@ target_sources(libraryTests
         functionWrapperTests.cpp
         functionPointerTests.cpp
         functionFactoryTests.cpp
+        constantValueTests.cpp
         )

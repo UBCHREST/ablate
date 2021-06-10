@@ -12,6 +12,7 @@
 #include "parameters/petscOptionParameters.hpp"
 #include "particles/tracer.hpp"
 
+using namespace ablate;
 using namespace ablate::flow;
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
@@ -363,10 +364,10 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             // pull the parameters from the petsc options
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
-            auto velocityExact = std::make_shared<FlowFieldSolution>("velocity", ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact));
-            auto pressureExact = std::make_shared<FlowFieldSolution>("pressure", ablate::mathFunctions::Create(testingParam.pExact), ablate::mathFunctions::Create(testingParam.pDerivativeExact));
+            auto velocityExact = std::make_shared<mathFunctions::FieldSolution>("velocity", ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact));
+            auto pressureExact = std::make_shared<mathFunctions::FieldSolution>("pressure", ablate::mathFunctions::Create(testingParam.pExact), ablate::mathFunctions::Create(testingParam.pDerivativeExact));
             auto temperatureExact =
-                std::make_shared<FlowFieldSolution>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
+                std::make_shared<mathFunctions::FieldSolution>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
 
             auto flowObject = std::make_shared<ablate::flow::IncompressibleFlow>(
                 "testFlow",
@@ -374,7 +375,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                 parameters,
                 nullptr,
                 /* initialization functions */
-                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
+                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
                     std::make_shared<boundaryConditions::Essential>(
@@ -394,9 +395,9 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                     std::make_shared<boundaryConditions::Essential>(
                         "temperature", "left wall temp", "marker", 4, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact))},
                 /* aux updates*/
-                std::vector<std::shared_ptr<FlowFieldSolution>>{},
+                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{},
                 /* exact solutions*/
-                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact});
+                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{velocityExact, pressureExact, temperatureExact});
 
             // Override problem with source terms, boundary, and set the exact solution
             {
