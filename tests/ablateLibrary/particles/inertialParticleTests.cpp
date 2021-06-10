@@ -45,14 +45,17 @@ typedef void (*IntegrandTestFunction)(PetscInt dim, PetscInt Nf, PetscInt NfAux,
 static IntegrandTestFunction f0_v_original;
 static IntegrandTestFunction f0_w_original;
 static IntegrandTestFunction f0_q_original;
-static PetscInt totalFields = 2;
-static PetscInt dim;
-static PetscReal pVel;
-static PetscReal dp;
-static PetscReal rhoP;
-static PetscReal rhoF;
-static PetscReal muF;
-static PetscReal grav;
+const static PetscInt totalFields = 2;
+
+struct ExactSolutionParameters {
+    PetscInt dim;
+    PetscReal pVel;
+    PetscReal dp;
+    PetscReal rhoP;
+    PetscReal rhoF;
+    PetscReal muF;
+    PetscReal grav;
+};
 
 struct InertialParticleMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -65,11 +68,7 @@ struct InertialParticleMMSParameters {
     IntegrandTestFunction f0_v;
     IntegrandTestFunction f0_w;
     IntegrandTestFunction f0_q;
-    PetscInt dim;
-    PetscReal pVel;  // particle initial velocity
-    PetscReal dp;
-    PetscReal rhoP;
-    std::map<std::string, std::string> parameters;
+    ExactSolutionParameters parameters;
     std::shared_ptr<ablate::particles::initializers::Initializer> particleInitializer;
 };
 
@@ -81,8 +80,11 @@ class InertialParticleMMS : public testingResources::MpiTestFixture, public ::te
 static PetscErrorCode settling(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *x, void *ctx) {
     const PetscReal x0 = X[0];
     const PetscReal y0 = X[1];
-    PetscReal tauP = rhoP * dp * dp / (18.0 * muF);     // particle relaxation time
-    PetscReal uSt = tauP * grav * (1.0 - rhoF / rhoP);  // particle terminal (settling) velocity
+
+    ExactSolutionParameters *parameters = (ExactSolutionParameters *)ctx;
+
+    PetscReal tauP = parameters->rhoP * parameters->dp * parameters->dp / (18.0 * parameters->muF);  // particle relaxation time
+    PetscReal uSt = tauP * parameters->grav * (1.0 - parameters->rhoF / parameters->rhoP);           // particle terminal (settling) velocity
     x[0] = uSt * (time + tauP * PetscExpReal(-time / tauP) - tauP) + x0;
     x[1] = y0;
     x[2] = uSt * (1.0 - PetscExpReal(-time / tauP));
@@ -308,7 +310,6 @@ static PetscErrorCode computeParticleError(TS particleTS, Vec u, Vec e) {
     ierr = DMRestoreGlobalVector(sdm, &exactPositionVec);
     CHKERRQ(ierr);
 
-
     PetscFunctionReturn(0);
 }
 
@@ -373,12 +374,15 @@ static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
     PetscFunctionReturn(0);
 }
 
+
+
 static PetscErrorCode ParticleInertialInitialize(ablate::particles::Particles &particles, PetscReal partVel, PetscReal partDiam, PetscReal partDens, PetscReal fluidDens, PetscReal fluidVisc,
                                                  PetscReal gravity) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
     Vec vel, diam, dens;
     DM particleDm = particles.dm;
+
 
     ierr = DMSwarmCreateGlobalVectorFromField(particleDm, ablate::particles::Inertial::ParticleVelocity, &vel);
     CHKERRQ(ierr);
@@ -406,141 +410,145 @@ static PetscErrorCode ParticleInertialInitialize(ablate::particles::Particles &p
 TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
     StartWithMPI
         {
-        TS ts; /* timestepper */
+            TS ts; /* timestepper */
 
-        PetscReal t;
+            PetscReal t;
 
-        // Get the testing param
-        auto testingParam = GetParam();
-        pVel = testingParam.pVel;  // particle initial velocity
-        dp = testingParam.dp;
-        rhoP = testingParam.rhoP;
-        rhoF = 1.0;//testingParam.rhoF;//TODO remove hard coded valuse
-        muF = 1.0;//testingParam.muF;
-        grav = 1.0;//testingParam.grav;
-        PetscInt dimen = testingParam.dim;
+            // Get the testing param
+            auto testingParam = GetParam();
+            PetscInt dimen = testingParam.parameters.dim;
 
-        // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            // initialize petsc and mpi
+            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
-        // setup the ts
-        TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-        auto mesh = std::make_shared<ablate::mesh::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            // setup the ts
+            TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
+            auto mesh = std::make_shared<ablate::mesh::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
 
-        TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
-        TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
+            TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
+            TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
-        // Setup the flow data
-        auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
+            // Setup the flow data
+            auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
-        auto velocityExact = std::make_shared<FlowFieldSolution>("velocity", ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.u_tExact));
-        auto pressureExact = std::make_shared<FlowFieldSolution>("pressure", ablate::mathFunctions::Create(testingParam.pExact));
-        auto temperatureExact = std::make_shared<FlowFieldSolution>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.T_tExact));
+            auto velocityExact = std::make_shared<FlowFieldSolution>("velocity", ablate::mathFunctions::Create(testingParam.uExact,&testingParam.parameters), ablate::mathFunctions::Create(testingParam.u_tExact,&testingParam.parameters));
+            auto pressureExact = std::make_shared<FlowFieldSolution>("pressure", ablate::mathFunctions::Create(testingParam.pExact,&testingParam.parameters));
+            auto temperatureExact = std::make_shared<FlowFieldSolution>("temperature", ablate::mathFunctions::Create(testingParam.TExact,&testingParam.parameters), ablate::mathFunctions::Create(testingParam.T_tExact,&testingParam.parameters));
 
-        auto flowObject = std::make_shared<ablate::flow::IncompressibleFlow>(
-            "testFlow",
-            mesh,
-            parameters,
-            nullptr,
-            /* initialization functions */
-            std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
-            /* boundary conditions */
-            std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
-                std::make_shared<boundaryConditions::Essential>(
-                    "velocity", "wall velocity", "marker", std::vector<int>{3, 1, 2, 4}, ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.u_tExact)),
-                std::make_shared<boundaryConditions::Essential>(
-                    "temperature", "wall temp", "marker", std::vector<int>{3, 1, 2, 4}, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.T_tExact))},
-            /* aux updates*/
-            std::vector<std::shared_ptr<FlowFieldSolution>>{},
-            /* exact solutions*/
-            std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact});
+            auto flowObject = std::make_shared<ablate::flow::IncompressibleFlow>(
+                "testFlow",
+                mesh,
+                parameters,
+                nullptr,
+                /* initialization functions */
+                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact},
+                /* boundary conditions */
+                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
+                    std::make_shared<boundaryConditions::Essential>(
+                        "velocity", "wall velocity", "marker", std::vector<int>{3, 1, 2, 4}, ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.u_tExact)),
+                    std::make_shared<boundaryConditions::Essential>(
+                        "temperature", "wall temp", "marker", std::vector<int>{3, 1, 2, 4}, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.T_tExact))},
+                /* aux updates*/
+                std::vector<std::shared_ptr<FlowFieldSolution>>{},
+                /* exact solutions*/
+                std::vector<std::shared_ptr<FlowFieldSolution>>{velocityExact, pressureExact, temperatureExact});
 
-        // Override problem with source terms, boundary, and set the exact solution
-        {
-            PetscDS prob;
-            DMGetDS(flowObject->GetDM(), &prob) >> testErrorChecker;
+            // Override problem with source terms, boundary, and set the exact solution
+            {
+                PetscDS prob;
+                DMGetDS(flowObject->GetDM(), &prob) >> testErrorChecker;
 
-            // V, W Test Function
-            IntegrandTestFunction tempFunctionPointer;
-            if (testingParam.f0_v) {
-                PetscDSGetResidual(prob, VTEST, &f0_v_original, &tempFunctionPointer) >> testErrorChecker;
-                PetscDSSetResidual(prob, VTEST, testingParam.f0_v, tempFunctionPointer) >> testErrorChecker;
+                // V, W Test Function
+                IntegrandTestFunction tempFunctionPointer;
+                if (testingParam.f0_v) {
+                    PetscDSGetResidual(prob, VTEST, &f0_v_original, &tempFunctionPointer) >> testErrorChecker;
+                    PetscDSSetResidual(prob, VTEST, testingParam.f0_v, tempFunctionPointer) >> testErrorChecker;
+                }
+                if (testingParam.f0_w) {
+                    PetscDSGetResidual(prob, WTEST, &f0_w_original, &tempFunctionPointer) >> testErrorChecker;
+                    PetscDSSetResidual(prob, WTEST, testingParam.f0_w, tempFunctionPointer) >> testErrorChecker;
+                }
+                if (testingParam.f0_q) {
+                    PetscDSGetResidual(prob, QTEST, &f0_q_original, &tempFunctionPointer) >> testErrorChecker;
+                    PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> testErrorChecker;
+                }
             }
-            if (testingParam.f0_w) {
-                PetscDSGetResidual(prob, WTEST, &f0_w_original, &tempFunctionPointer) >> testErrorChecker;
-                PetscDSSetResidual(prob, WTEST, testingParam.f0_w, tempFunctionPointer) >> testErrorChecker;
+            flowObject->CompleteProblemSetup(ts);
+
+            // Check the convergence
+            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+
+            auto particleParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"fluidDensity", std::to_string(testingParam.parameters.rhoF)},
+                                                                                                                             {"fluidViscosity", std::to_string(testingParam.parameters.muF)},
+                                                                                                                             {"gravityField", std::to_string(testingParam.parameters.grav) + " 0 0"}
+
+            });
+            auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
+            auto particles = std::make_shared<ablate::particles::Inertial>("particle", 2, particleParameters, GetParam().particleInitializer, nullptr, particleOptions);
+
+            particles->RegisterField(ablate::particles::ParticleFieldDescriptor{.fieldName = "InitialSolution", .components = totalFields * dimen, .type = PETSC_REAL});
+
+            // link the flow to the particles
+            particles->InitializeFlow(flowObject);
+
+            ParticleInertialInitialize(*particles,
+                                       testingParam.parameters.pVel,
+                                       testingParam.parameters.dp,
+                                       testingParam.parameters.rhoP,
+                                       testingParam.parameters.rhoF,
+                                       testingParam.parameters.muF,
+                                       testingParam.parameters.grav) >>
+                testErrorChecker;
+
+            // setup the initial conditions for error computing
+            particles->exactSolution = ablate::mathFunctions::Create(testingParam.particleExact, &testingParam.parameters);
+            TSSetComputeExactError(particles->GetTS(), computeParticleError) >> testErrorChecker;  // TODO merge into particle class
+            TSSetComputeInitialCondition(particles->GetTS(), setParticleExactSolution) >> testErrorChecker;
+
+            // copy over the initial location
+            PetscReal *coord, *partVel;
+            PetscReal *initialSolution;
+            PetscInt numberParticles;
+            PetscErrorCode ierr = DMSwarmGetLocalSize(particles->dm, &numberParticles);
+            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            ierr = DMSwarmGetField(particles->dm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);
+            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            ierr = DMSwarmGetField(particles->dm, ablate::particles::Inertial::ParticleVelocity, NULL, NULL, (void **)&partVel);
+            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
+            ierr = DMSwarmGetField(particles->dm, "InitialSolution", NULL, NULL, (void **)&initialSolution);
+            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
+            // filling initialSolution with particles initial position and velocity
+            PetscInt d, p;
+            for (p = 0; p < numberParticles; ++p) {
+                for (d = 0; d < dimen; d++) {
+                    initialSolution[p * totalFields * dimen + d] = coord[p * dimen + d];
+                    initialSolution[p * totalFields * dimen + dimen + d] = partVel[p * dimen + d];
+                }
             }
-            if (testingParam.f0_q) {
-                PetscDSGetResidual(prob, QTEST, &f0_q_original, &tempFunctionPointer) >> testErrorChecker;
-                PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> testErrorChecker;
-            }
+
+            ierr = DMSwarmRestoreField(particles->dm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);
+            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            ierr = DMSwarmRestoreField(particles->dm, ablate::particles::Inertial::ParticleVelocity, NULL, NULL, (void **)&partVel);
+            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+            ierr = DMSwarmRestoreField(particles->dm, "InitialSolution", NULL, NULL, (void **)&initialSolution);
+            CHKERRABORT(PETSC_COMM_WORLD, ierr);
+
+            // setup the flow monitor to also check particles
+            TSMonitorSet(ts, MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
+            TSSetFromOptions(ts) >> testErrorChecker;
+
+            // Solve the one way coupled system
+            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+
+            // Compare the actual vs expected values
+            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+
+            // Cleanup
+            TSDestroy(&ts) >> testErrorChecker;
         }
-        flowObject->CompleteProblemSetup(ts);
-
-        // Check the convergence
-        DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
-
-        auto particleParameters = std::make_shared<ablate::parameters::MapParameters>(testingParam.parameters);
-        auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
-        auto particles = std::make_shared<ablate::particles::Inertial>("particle", 2, particleParameters, GetParam().particleInitializer, nullptr, particleOptions);
-
-        particles->RegisterField(ablate::particles::ParticleFieldDescriptor{.fieldName = "InitialSolution", .components = totalFields * dimen, .type = PETSC_REAL});
-
-        // link the flow to the particles
-        particles->InitializeFlow(flowObject);
-
-
-            ParticleInertialInitialize(*particles, pVel, dp, rhoP, rhoF, muF, grav)  >> testErrorChecker;
-
-        // setup the initial conditions for error computing
-        particles->exactSolution = ablate::mathFunctions::Create(testingParam.particleExact);
-        TSSetComputeExactError(particles->GetTS(), computeParticleError) >> testErrorChecker;  // TODO merge into particle class
-        TSSetComputeInitialCondition(particles->GetTS(), setParticleExactSolution) >> testErrorChecker;
-
-        // copy over the initial location
-        PetscReal *coord, *partVel;
-        PetscReal *initialSolution;
-        PetscInt numberParticles;
-        PetscErrorCode ierr = DMSwarmGetLocalSize(particles->dm, &numberParticles);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = DMSwarmGetField(particles->dm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = DMSwarmGetField(particles->dm, ablate::particles::Inertial::ParticleVelocity, NULL, NULL, (void **)&partVel);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        ierr = DMSwarmGetField(particles->dm, "InitialSolution", NULL, NULL, (void **)&initialSolution);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // filling initialSolution with particles initial position and velocity
-        PetscInt d, p;
-        for (p = 0; p < numberParticles; ++p) {
-            for (d = 0; d < dimen; d++) {
-                initialSolution[p * totalFields * dimen + d] = coord[p * dimen + d];
-                initialSolution[p * totalFields * dimen + dimen + d] = partVel[p * dimen + d];
-            }
-        }
-
-        ierr = DMSwarmRestoreField(particles->dm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = DMSwarmRestoreField(particles->dm, ablate::particles::Inertial::ParticleVelocity, NULL, NULL, (void **)&partVel);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-        ierr = DMSwarmRestoreField(particles->dm, "InitialSolution", NULL, NULL, (void **)&initialSolution);
-        CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-        // setup the flow monitor to also check particles
-        TSMonitorSet(ts, MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
-        TSSetFromOptions(ts) >> testErrorChecker;
-
-        // Solve the one way coupled system
-        TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
-
-        // Compare the actual vs expected values
-        DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
-
-        // Cleanup
-        TSDestroy(&ts) >> testErrorChecker;
-    }
-    exit(PetscFinalize());
+        exit(PetscFinalize());
     EndWithMPI
 }
 
@@ -562,11 +570,7 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                                                          .particleExact = settling,
                                                                          .f0_v = f0_quiescent_v,
                                                                          .f0_w = f0_quiescent_w,
-                                                                         .dim = 2,
-                                                                         .pVel = 0.0,
-                                                                         .dp = 0.22,
-                                                                         .rhoP = 90.0,
-                                                                         .parameters = {{"fluidDensity", "1.0"}, {"fluidViscosity", "1.0"}, {"gravityField", "1.0 0 0"}},
+                                                                         .parameters = {.dim = 2, .pVel = 0.0, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                                                          .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.5, 0.5},
                                                                                                                                                                   std::vector<double>{.5, .5}, 1)},
                                          (InertialParticleMMSParameters){
@@ -587,11 +591,7 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                              .particleExact = settling,
                                              .f0_v = f0_quiescent_v,
                                              .f0_w = f0_quiescent_w,
-                                             .dim = 2,
-                                             .pVel = 0.0,
-                                             .dp = 0.22,
-                                             .rhoP = 90.0,
-                                             .parameters = {{"fluidDensity", "1.0"}, {"fluidViscosity", "1.0"}, {"gravityField", "1.0 0 0"}},
+                                             .parameters = {.dim = 2, .pVel = 0.0, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                              .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.2, 0.3}, std::vector<double>{.4, .6}, 10)},
                                          (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "deletion inertial particles settling in quiescent fluid",
                                                                                               .nproc = 1,
@@ -610,11 +610,7 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                                                          .particleExact = settling,
                                                                          .f0_v = f0_quiescent_v,
                                                                          .f0_w = f0_quiescent_w,
-                                                                         .dim = 2,
-                                                                         .pVel = 0.0,
-                                                                         .dp = 0.22,
-                                                                         .rhoP = 90.0,
-                                                                         .parameters = {{"fluidDensity", "1.0"}, {"fluidViscosity", "1.0"}, {"gravityField", "1.0 0 0"}},
+                                                                         .parameters = {.dim = 2, .pVel = 0.0, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                                                          .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.92, 0.3},
                                                                                                                                                                   std::vector<double>{.98, .6}, 10)}),
                          [](const testing::TestParamInfo<InertialParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

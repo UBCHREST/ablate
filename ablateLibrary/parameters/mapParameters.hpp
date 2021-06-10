@@ -3,7 +3,8 @@
 
 #include <map>
 #include "parameters.hpp"
-
+#include <memory>
+#include <iostream>
 namespace ablate::parameters {
 class MapParameters : public Parameters {
    protected:
