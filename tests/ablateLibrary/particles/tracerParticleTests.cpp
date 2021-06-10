@@ -329,7 +329,7 @@ static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
         PetscInt d;
 
         for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p * dim + d]);
-        ierr = particles->exactSolution->GetPetscFunction()(dim, time, x0, 1, x, particles->exactSolution->GetContext());
+        ierr = particles->exactSolution->GetPetscFunction()(dim, time, x0, dim, x, particles->exactSolution->GetContext());
         CHKERRQ(ierr);
         for (d = 0; d < dim; ++d) {
             xp[p * dim + d] = x[d];

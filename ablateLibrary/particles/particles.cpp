@@ -154,6 +154,7 @@ void ablate::particles::Particles::StoreInitialParticleLocations(){
 
 PetscErrorCode ablate::particles::Particles::ComputeParticleError(TS particleTS, Vec u, Vec errorVec) {
     PetscFunctionBeginUser;
+
     // get a pointer to this particle class
     ablate::particles::Particles* particles;
     TSGetApplicationContext(particleTS, (void **)&particles) >> checkError;
@@ -163,7 +164,13 @@ PetscErrorCode ablate::particles::Particles::ComputeParticleError(TS particleTS,
     TSGetTime(particleTS, &time) >> checkError;
     time += particles->timeInitial;
 
-    // Create a vector of the currentExactLocations
+    // Create a vector of the current solution
+    Vec exactSolutionVec;
+    VecDuplicate(u, &exactSolutionVec)>>checkError;
+    PetscScalar *exactSolutionArray;
+    VecGetArrayWrite(exactSolutionVec, &exactSolutionArray) >> checkError;
+
+    // Also store the exact location separately
     DMSwarmVectorDefineField(particles->dm, ParticleInitialLocation) >> checkError;
     Vec exactLocationVec;
     DMGetGlobalVector(particles->dm, &exactLocationVec);
@@ -175,26 +182,35 @@ PetscErrorCode ablate::particles::Particles::ComputeParticleError(TS particleTS,
     DMSwarmGetLocalSize(particles->dm, &np) >> checkError;
     const PetscInt dim = particles->ndims;
 
+    // Calculate the size of solution field
+    PetscInt solutionFieldSize =0;
+    for(const auto& field : particles->particleSolutionDescriptors){
+        solutionFieldSize += field.components;
+    }
+
     // get the initial location array
     const PetscScalar *initialParticleLocationArray;
     DMSwarmGetField(particles->dm, ParticleInitialLocation, NULL, NULL, (void **)&initialParticleLocationArray) >> checkError;
 
-    // for each local particle
+    // extract the petsc function for fast update
+    void *functionContext = particles->exactSolution->GetContext();
+    ablate::mathFunctions::PetscFunction functionPointer = particles->exactSolution->GetPetscFunction();
+
+    // for each local particle, get the exact location and other variables
     for (PetscInt p = 0; p < np; ++p) {
-        PetscScalar x[3];
-        PetscReal x0[3];
-        PetscInt d;
+        // compute the array offset
+        const PetscInt initialPositionOffset = p * dim;
+        const PetscInt fieldOffset = p * solutionFieldSize;
 
-        for (d = 0; d < dim; ++d) {
-            x0[d] = PetscRealPart(initialParticleLocationArray[p * dim + d]);
-        }
+        // Call the update function
+        functionPointer(dim, time, initialParticleLocationArray + initialPositionOffset,solutionFieldSize, exactSolutionArray + fieldOffset, functionContext) >> checkError;
 
-        particles->exactSolution->GetPetscFunction()(dim, time, x0, 1, x, particles->exactSolution->GetContext()) >> checkError;
-
-        for (d = 0; d < dim; ++d) {
-            exactLocationArray[p * dim + d] = x[d];
+        // copy over the first dim to the exact solution array
+        for (PetscInt d = 0; d < dim; ++d) {
+            exactLocationArray[initialPositionOffset +  d] = exactSolutionArray[fieldOffset + d];
         }
     }
+    VecRestoreArrayWrite(exactSolutionVec, &exactSolutionArray) >> checkError;
     VecRestoreArrayWrite(exactLocationVec, &exactLocationArray) >> checkError;
 
     // Get all points still in this mesh
@@ -206,14 +222,13 @@ PetscErrorCode ablate::particles::Particles::ComputeParticleError(TS particleTS,
     PetscSFGetGraph(cellSF, NULL, NULL, NULL, &cells) >> checkError;
 
     // compute the difference between exact and u
-    VecWAXPY(errorVec, -1, exactLocationVec, u);
+    VecWAXPY(errorVec, -1, exactSolutionVec, u);
 
     // zero out the error if any particle moves outside of the domain
     for (PetscInt p = 0; p < np; ++p) {
-        PetscInt d;
         if (cells[p].index == DMLOCATEPOINT_POINT_NOT_FOUND) {
-            for (d = 0; d < dim; ++d) {
-                VecSetValue(errorVec, p * dim + d, 0.0, INSERT_VALUES) >> checkError;
+            for (PetscInt c = 0; c < solutionFieldSize; ++c) {
+                VecSetValue(errorVec, p * solutionFieldSize + c, 0.0, INSERT_VALUES) >> checkError;
             }
         }
     }
@@ -225,7 +240,9 @@ PetscErrorCode ablate::particles::Particles::ComputeParticleError(TS particleTS,
 
     // cleanup
     DMSwarmRestoreField(particles->dm, ParticleInitialLocation, NULL, NULL, (void **)&initialParticleLocationArray) >> checkError;
+    VecDestroy(&exactSolutionVec) >> checkError;
     DMRestoreGlobalVector(particles->dm, &exactLocationVec) >> checkError;
+
     PetscFunctionReturn(0);
 }
 
@@ -301,99 +318,92 @@ void ablate::particles::Particles::ProjectFunction(const std::string& field, abl
     DMSwarmRestoreField(dm, field.c_str(), NULL, NULL, (void **)&fieldData);
 }
 
-Vec ablate::particles::Particles::GetPackedSolutionVector(){
+Vec ablate::particles::Particles::GetPackedSolutionVector() {
     const PetscInt nf = particleSolutionDescriptors.size();
 
-    // If there is only one field, don't bother to map
-    if(nf == 1){
-        Vec positionVector;
-        DMSwarmCreateGlobalVectorFromField(dm,DMSwarmPICField_coor, &positionVector) >> checkError;
-        return positionVector;
-    }
+    // If there is more than one field, pack up the data
+    if (nf > 1) {
+        // Get the local number of particles
+        PetscInt np;
+        DMSwarmGetLocalSize(dm, &np) >> checkError;
 
-    // Get the local number of particles
-    PetscInt np;
-    DMSwarmGetLocalSize(dm, &np) >> checkError;
+        // Get a vector of pointers to the solution fields
+        std::vector<PetscReal *> fieldDatas(nf);
+        std::vector<PetscInt> fieldSizes(nf);
 
-    // Get a vector of pointers to the solution fields
-    std::vector<PetscReal *> fieldDatas(nf);
-    std::vector<PetscInt> fieldSizes(nf);
+        // get raw access to each array
+        for (auto f = 0; f < nf; f++) {
+            DMSwarmGetField(dm, particleSolutionDescriptors[f].fieldName.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
+        }
 
-    // get raw access to each array
-    for(auto f = 0; f < nf; f++){
-        DMSwarmGetField(dm, particleSolutionDescriptors[f].fieldName.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
-    }
+        // and raw access to the combined array
+        PetscInt solutionComponents;
+        PetscReal *solutionFieldData;
+        DMSwarmGetField(dm, PackedSolution, &solutionComponents, NULL, (void **)&solutionFieldData) >> checkError;
 
-    // and raw access to the combined array
-    PetscInt solutionComponents;
-    PetscReal *solutionFieldData;
-    DMSwarmGetField(dm, PackedSolution, &solutionComponents, NULL, (void **)&solutionFieldData) >> checkError;
-
-    for(PetscInt p =0; p < np; ++p){
-        PetscInt offset = 0;
-        // March over each field
-        for(PetscInt f =0; f < nf; ++f){
-            for(PetscInt c =0; c < fieldSizes[f]; c++){
-                solutionFieldData[p*solutionComponents + offset++ ] = fieldDatas[f][p * fieldSizes[f] + c];
+        for (PetscInt p = 0; p < np; ++p) {
+            PetscInt offset = 0;
+            // March over each field
+            for (PetscInt f = 0; f < nf; ++f) {
+                for (PetscInt c = 0; c < fieldSizes[f]; c++) {
+                    solutionFieldData[p * solutionComponents + offset++] = fieldDatas[f][p * fieldSizes[f] + c];
+                }
             }
         }
-    }
 
-    // return raw access
-    for(auto f = 0; f < nf; f++){
-        DMSwarmRestoreField(dm, particleSolutionDescriptors[f].fieldName.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
+        // return raw access
+        for (auto f = 0; f < nf; f++) {
+            DMSwarmRestoreField(dm, particleSolutionDescriptors[f].fieldName.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
+        }
+        DMSwarmRestoreField(dm, PackedSolution, NULL, NULL, (void **)&solutionFieldData) >> checkError;
     }
-    DMSwarmRestoreField(dm, PackedSolution, NULL, NULL, (void **)&solutionFieldData) >> checkError;
 
     // get the updated values as a vec
     Vec packedVector;
-    DMSwarmCreateGlobalVectorFromField(dm,PackedSolution, &packedVector) >> checkError;
+    DMSwarmCreateGlobalVectorFromField(dm,GetSolutionVectorName(), &packedVector) >> checkError;
     return packedVector;
 }
 
 void ablate::particles::Particles::RestorePackedSolutionVector(Vec solutionVector){
     const PetscInt nf = particleSolutionDescriptors.size();
 
-    if(nf== 1){
-        DMSwarmDestroyGlobalVectorFromField(dm,DMSwarmPICField_coor, &solutionVector) >> checkError;
-        return;
-    }else{
-        DMSwarmDestroyGlobalVectorFromField(dm,PackedSolution, &solutionVector) >> checkError;
-    }
+    DMSwarmDestroyGlobalVectorFromField(dm,GetSolutionVectorName(), &solutionVector) >> checkError;
+    // If there is more than one field, unpack the data
+    if(nf > 1) {
+        // Get the local number of particle
+        PetscInt np;
+        DMSwarmGetLocalSize(dm, &np) >> checkError;
 
-    // Get the local number of particle
-    PetscInt np;
-    DMSwarmGetLocalSize(dm, &np) >> checkError;
+        // Get a vector of pointers to the solution fields
+        std::vector<PetscReal *> fieldDatas(nf);
+        std::vector<PetscInt> fieldSizes(nf);
 
-    // Get a vector of pointers to the solution fields
-    std::vector<PetscReal *> fieldDatas(nf);
-    std::vector<PetscInt> fieldSizes(nf);
+        // get raw access to each array
+        for (auto f = 0; f < nf; f++) {
+            DMSwarmGetField(dm, particleSolutionDescriptors[f].fieldName.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
+        }
 
-    // get raw access to each array
-    for(auto f = 0; f < nf; f++){
-        DMSwarmGetField(dm, particleSolutionDescriptors[f].fieldName.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
-    }
+        // and raw access to the combined array
+        PetscInt solutionComponents;
+        PetscReal *solutionFieldData;
+        DMSwarmGetField(dm, PackedSolution, &solutionComponents, NULL, (void **)&solutionFieldData) >> checkError;
 
-    // and raw access to the combined array
-    PetscInt solutionComponents;
-    PetscReal *solutionFieldData;
-    DMSwarmGetField(dm, PackedSolution, &solutionComponents, NULL, (void **)&solutionFieldData) >> checkError;
-
-    for(PetscInt p =0; p < np; ++p){
-        PetscInt offset = 0;
-        // March over each field
-        for(PetscInt f =0; f < nf; ++f){
-            for(PetscInt c =0; c < fieldSizes[f]; c++){
-                fieldDatas[f][p * fieldSizes[f] + c] = solutionFieldData[p*solutionComponents + offset++ ];
+        for (PetscInt p = 0; p < np; ++p) {
+            PetscInt offset = 0;
+            // March over each field
+            for (PetscInt f = 0; f < nf; ++f) {
+                for (PetscInt c = 0; c < fieldSizes[f]; c++) {
+                    fieldDatas[f][p * fieldSizes[f] + c] = solutionFieldData[p * solutionComponents + offset++];
+                }
             }
         }
-    }
 
-    // return raw access
-    for(auto f = 0; f < nf; f++){
-        DMSwarmRestoreField(dm, particleSolutionDescriptors[f].fieldName.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
+        // return raw access
+        for (auto f = 0; f < nf; f++) {
+            DMSwarmRestoreField(dm, particleSolutionDescriptors[f].fieldName.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
+        }
+        DMSwarmRestoreField(dm, PackedSolution, NULL, NULL, (void **)&solutionFieldData) >> checkError;
     }
-    DMSwarmRestoreField(dm, PackedSolution, NULL, NULL, (void **)&solutionFieldData) >> checkError;
 }
 
 void ablate::particles::Particles::AdvectParticles(TS flowTS){
@@ -435,3 +445,4 @@ void ablate::particles::Particles::AdvectParticles(TS flowTS){
     // Migrate any particles that have moved
     SwarmMigrate();
 }
+

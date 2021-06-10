@@ -190,131 +190,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
 }
 
 /**
- * Computes the particle error at the specified time step.
- * @param ts
- * @param u
- * @param e
- * @return
- */
-static PetscErrorCode computeParticleError(TS particleTS, Vec u, Vec e) {
-    DM sdm;
-    const PetscScalar *xp0;
-    Vec exactSolutionVec, exactPositionVec;
-    PetscScalar *exactSolution, *exactPosition;
-    PetscReal time;
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-    ablate::particles::Inertial *tracerParticles;
-
-    ierr = TSGetApplicationContext(particleTS, (void **)&tracerParticles);
-    CHKERRQ(ierr);
-    // get the abs time for the particle evaluation, this is the ts relative time plus the time at the start of the particle ts solve
-    ierr = TSGetTime(particleTS, &time);
-    CHKERRQ(ierr);
-    time += tracerParticles->timeInitial;
-
-    // extract needed objects
-    CHKERRQ(ierr);
-    ierr = TSGetDM(particleTS, &sdm);
-    CHKERRQ(ierr);
-
-    // create a vector to hold the exact solution
-    ierr = DMSwarmVectorDefineField(sdm, "InitialSolution");
-    CHKERRQ(ierr);
-    ierr = DMGetGlobalVector(sdm, &exactSolutionVec);
-    CHKERRQ(ierr);
-
-    // create a vector to hold the exact position
-    ierr = DMSwarmVectorDefineField(sdm, DMSwarmPICField_coor);
-    CHKERRQ(ierr);
-    ierr = DMGetGlobalVector(sdm, &exactPositionVec);
-    CHKERRQ(ierr);
-
-    // use the initial solution to compute the exact
-    ierr = DMSwarmGetField(tracerParticles->dm, "InitialSolution", NULL, NULL, (void **)&xp0);
-    CHKERRQ(ierr);
-
-    // get two vectors for position and solution
-    ierr = VecGetArrayWrite(exactSolutionVec, &exactSolution);
-    CHKERRQ(ierr);
-    ierr = VecGetArrayWrite(exactPositionVec, &exactPosition);
-    CHKERRQ(ierr);
-
-    // exact the exact solution from the initial location
-    PetscInt dim;
-    ierr = DMGetDimension(sdm, &dim);
-    CHKERRQ(ierr);
-    PetscInt Np;
-    ierr = DMSwarmGetLocalSize(sdm, &Np);
-    CHKERRQ(ierr);
-    for (PetscInt p = 0; p < Np; ++p) {
-        PetscScalar x[4];                        // includes both position and velocity in 2D
-        PetscReal x0[4] = {0.0, 0.0, 0.0, 0.0};  // includes both initial position and velocity in 2D
-        PetscInt d;
-
-        for (d = 0; d < totalFields * dim; ++d) {
-            x0[d] = PetscRealPart(xp0[p * totalFields * dim + d]);
-        }
-        ierr = tracerParticles->exactSolution->GetPetscFunction()(dim, time, x0, 1, x, tracerParticles->exactSolution->GetContext());
-        CHKERRQ(ierr);
-        for (d = 0; d < totalFields * dim; ++d) {
-            exactSolution[p * totalFields * dim + d] = x[d];  // exactSolution including velocity and position
-            if (d < 2) {
-                exactPosition[p * dim + d] = x[d];  // stores the position only and hard coded for 2D cases
-            }
-        }
-    }
-    ierr = VecRestoreArrayWrite(exactSolutionVec, &exactSolution);
-    CHKERRQ(ierr);
-    ierr = VecRestoreArrayWrite(exactPositionVec, &exactPosition);
-    CHKERRQ(ierr);
-
-    // compute the difference between exact and u
-    ierr = VecWAXPY(e, -1, exactSolutionVec, u);
-    CHKERRQ(ierr);
-
-    // Get all points still in this mesh
-    DM flowDM;
-    ierr = VecGetDM(tracerParticles->flowFinal, &flowDM);
-    CHKERRQ(ierr);
-    PetscSF cellSF = NULL;
-    ierr = DMLocatePoints(flowDM, exactPositionVec, DM_POINTLOCATION_NONE, &cellSF);
-    CHKERRQ(ierr);
-    const PetscSFNode *cells;
-    ierr = PetscSFGetGraph(cellSF, NULL, NULL, NULL, &cells);
-    CHKERRQ(ierr);
-
-    // zero out the error if any particle moves outside of the domain
-    for (PetscInt p = 0; p < Np; ++p) {
-        PetscInt d;
-        if (cells[p].index == DMLOCATEPOINT_POINT_NOT_FOUND) {
-            for (d = 0; d < totalFields * dim; ++d) {
-                ierr = VecSetValue(e, p * totalFields * dim + d, 0.0, INSERT_VALUES);
-                CHKERRQ(ierr);
-            }
-        }
-    }
-
-    ierr = VecAssemblyBegin(e);
-    CHKERRQ(ierr);
-    ierr = VecAssemblyEnd(e);
-    CHKERRQ(ierr);
-
-    // restore all of the vecs/fields
-    ierr = PetscSFDestroy(&cellSF);
-    CHKERRQ(ierr);
-    ierr = DMSwarmRestoreField(tracerParticles->dm, "InitialSolution", NULL, NULL, (void **)&xp0);
-    CHKERRQ(ierr);
-    ierr = DMRestoreGlobalVector(sdm, &exactSolutionVec);
-    CHKERRQ(ierr);
-    ierr = DMRestoreGlobalVector(sdm, &exactPositionVec);
-    CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-/**
  * Sets the u vector to the x location at the initial time in the TS
  * @param particleTS
  * @param u
@@ -352,7 +227,7 @@ static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
     CHKERRQ(ierr);
     ierr = DMSwarmGetLocalSize(sdm, &Np);
     CHKERRQ(ierr);
-    ierr = DMSwarmGetField(particles->dm, "InitialSolution", NULL, NULL, (void **)&xp0);
+    ierr = DMSwarmGetField(particles->dm, "InitialLocation", NULL, NULL, (void **)&xp0);
     CHKERRQ(ierr);
     ierr = VecGetArrayWrite(u, &xp);
     CHKERRQ(ierr);
@@ -361,14 +236,14 @@ static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
         PetscReal x0[4];   // includes initial position and velocity in 2D
         PetscInt d;
 
-        for (d = 0; d < totalFields * dim; ++d) x0[d] = PetscRealPart(xp0[p * totalFields * dim + d]);
-        ierr = particles->exactSolution->GetPetscFunction()(dim, time, x0, 1, x, particles->exactSolution->GetContext());
+        for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p * dim + d]);
+        ierr = particles->exactSolution->GetPetscFunction()(dim, time, x0, 4, x, particles->exactSolution->GetContext());
         CHKERRQ(ierr);
         for (d = 0; d < totalFields * dim; ++d) {
             xp[p * totalFields * dim + d] = x[d];
         }
     }
-    ierr = DMSwarmRestoreField(particles->dm, "InitialSolution", NULL, NULL, (void **)&xp0);
+    ierr = DMSwarmRestoreField(particles->dm, "InitialLocation", NULL, NULL, (void **)&xp0);
     CHKERRQ(ierr);
     ierr = VecRestoreArrayWrite(u, &xp);
     CHKERRQ(ierr);
@@ -379,9 +254,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
     StartWithMPI
         {
             TS ts; /* timestepper */
-
             PetscReal t;
-
             // Get the testing param
             auto testingParam = GetParam();
             PetscInt dimen = testingParam.parameters.dim;
@@ -450,9 +323,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
             auto particleParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"fluidDensity", std::to_string(testingParam.parameters.rhoF)},
                                                                                                                              {"fluidViscosity", std::to_string(testingParam.parameters.muF)},
-                                                                                                                             {"gravityField", std::to_string(testingParam.parameters.grav) + " 0 0"}
-
-            });
+                                                                                                                             {"gravityField", std::to_string(testingParam.parameters.grav) + " 0 0"}});
 
             // convert the constant values to fieldInitializations
             auto fieldInitialization = std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{
@@ -464,48 +335,16 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             // Use the petsc options that start with -particle_
             auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
 
-            // Create an inertial particle object
-            auto particles = std::make_shared<ablate::particles::Inertial>("particle", 2, particleParameters, GetParam().particleInitializer, fieldInitialization, nullptr, particleOptions);
+            // store the exact solution
+            auto exactSolutionFunction = ablate::mathFunctions::Create(testingParam.particleExact, &testingParam.parameters);
 
-            particles->RegisterField(ablate::particles::ParticleFieldDescriptor{.fieldName = "InitialSolution", .components = totalFields * dimen, .type = PETSC_REAL});
+            // Create an inertial particle object
+            auto particles = std::make_shared<ablate::particles::Inertial>("particle", 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction, particleOptions);
 
             // link the flow to the particles
             particles->InitializeFlow(flowObject);
 
-            // setup the initial conditions for error computing
-            particles->exactSolution = ablate::mathFunctions::Create(testingParam.particleExact, &testingParam.parameters);
-            TSSetComputeExactError(particles->GetTS(), computeParticleError) >> testErrorChecker;  // TODO merge into particle class
             TSSetComputeInitialCondition(particles->GetTS(), setParticleExactSolution) >> testErrorChecker;
-
-            // copy over the initial location
-            PetscReal *coord, *partVel;
-            PetscReal *initialSolution;
-            PetscInt numberParticles;
-            PetscErrorCode ierr = DMSwarmGetLocalSize(particles->dm, &numberParticles);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = DMSwarmGetField(particles->dm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = DMSwarmGetField(particles->dm, ablate::particles::Inertial::ParticleVelocity, NULL, NULL, (void **)&partVel);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-            ierr = DMSwarmGetField(particles->dm, "InitialSolution", NULL, NULL, (void **)&initialSolution);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-
-            // filling initialSolution with particles initial position and velocity
-            PetscInt d, p;
-            for (p = 0; p < numberParticles; ++p) {
-                for (d = 0; d < dimen; d++) {
-                    initialSolution[p * totalFields * dimen + d] = coord[p * dimen + d];
-                    initialSolution[p * totalFields * dimen + dimen + d] = partVel[p * dimen + d];
-                }
-            }
-
-            ierr = DMSwarmRestoreField(particles->dm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = DMSwarmRestoreField(particles->dm, ablate::particles::Inertial::ParticleVelocity, NULL, NULL, (void **)&partVel);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
-            ierr = DMSwarmRestoreField(particles->dm, "InitialSolution", NULL, NULL, (void **)&initialSolution);
-            CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
             // setup the flow monitor to also check particles
             TSMonitorSet(ts, MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
@@ -526,25 +365,25 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
 INSTANTIATE_TEST_SUITE_P(InertialParticleTests, InertialParticleExactTestFixture,
                          testing::Values((InertialParticleExactParameters){.mpiTestParameter = {.testName = "single inertial particle settling in quiescent fluid",
-                                                                                              .nproc = 1,
-                                                                                              .expectedOutputFile = "outputs/particles/inertialParticle_settling_in_quiescent_fluid_single",
-                                                                                              .arguments = "-dm_plex_separate_marker -dm_refine 2 "
-                                                                                                           "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                                                                                           "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
-                                                                                                           "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
-                                                                                                           " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                                                           "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
-                                                                         .uExact = quiescent_u,
-                                                                         .pExact = quiescent_p,
-                                                                         .TExact = quiescent_T,
-                                                                         .u_tExact = quiescent_u_t,
-                                                                         .T_tExact = quiescent_T_t,
-                                                                         .particleExact = settling,
-                                                                         .f0_v = f0_quiescent_v,
-                                                                         .f0_w = f0_quiescent_w,
-                                                                         .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
-                                                                         .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.5, 0.5},
-                                                                                                                                                                  std::vector<double>{.5, .5}, 1)},
+                                                                                                .nproc = 1,
+                                                                                                .expectedOutputFile = "outputs/particles/inertialParticle_settling_in_quiescent_fluid_single",
+                                                                                                .arguments = "-dm_plex_separate_marker -dm_refine 2 "
+                                                                                                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                                                                             "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                                             "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
+                                                                                                             " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                                                                             "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
+                                                                           .uExact = quiescent_u,
+                                                                           .pExact = quiescent_p,
+                                                                           .TExact = quiescent_T,
+                                                                           .u_tExact = quiescent_u_t,
+                                                                           .T_tExact = quiescent_T_t,
+                                                                           .particleExact = settling,
+                                                                           .f0_v = f0_quiescent_v,
+                                                                           .f0_w = f0_quiescent_w,
+                                                                           .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
+                                                                           .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.5, 0.5},
+                                                                                                                                                                    std::vector<double>{.5, .5}, 1)},
                                          (InertialParticleExactParameters){
                                              .mpiTestParameter = {.testName = "multi inertial particle settling in quiescent fluid",
                                                                   .nproc = 1,
@@ -566,23 +405,23 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleTests, InertialParticleExactTestFixture
                                              .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                              .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.2, 0.3}, std::vector<double>{.4, .6}, 10)},
                                          (InertialParticleExactParameters){.mpiTestParameter = {.testName = "deletion inertial particles settling in quiescent fluid",
-                                                                                              .nproc = 1,
-                                                                                              .expectedOutputFile = "outputs/particles/inertialParticles_settling_in_quiescent_fluid_deletion",
-                                                                                              .arguments = "-dm_plex_separate_marker -dm_refine 2 "
-                                                                                                           "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                                                                                           "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
-                                                                                                           "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
-                                                                                                           " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                                                                                           "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
-                                                                         .uExact = quiescent_u,
-                                                                         .pExact = quiescent_p,
-                                                                         .TExact = quiescent_T,
-                                                                         .u_tExact = quiescent_u_t,
-                                                                         .T_tExact = quiescent_T_t,
-                                                                         .particleExact = settling,
-                                                                         .f0_v = f0_quiescent_v,
-                                                                         .f0_w = f0_quiescent_w,
-                                                                         .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
-                                                                         .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.92, 0.3},
-                                                                                                                                                                  std::vector<double>{.98, .6}, 10)}),
+                                                                                                .nproc = 1,
+                                                                                                .expectedOutputFile = "outputs/particles/inertialParticles_settling_in_quiescent_fluid_deletion",
+                                                                                                .arguments = "-dm_plex_separate_marker -dm_refine 2 "
+                                                                                                             "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
+                                                                                                             "-dmts_check .001 -ts_max_steps 7 -ts_dt 0.06 -ksp_type fgmres -ksp_gmres_restart 10 "
+                                                                                                             "-ksp_rtol 1.0e-9 -ksp_error_if_not_converged -pc_type fieldsplit  "
+                                                                                                             " -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
+                                                                                                             "-particle_ts_dt 0.03 -particle_ts_convergence_estimate -convest_num_refine 1 "},
+                                                                           .uExact = quiescent_u,
+                                                                           .pExact = quiescent_p,
+                                                                           .TExact = quiescent_T,
+                                                                           .u_tExact = quiescent_u_t,
+                                                                           .T_tExact = quiescent_T_t,
+                                                                           .particleExact = settling,
+                                                                           .f0_v = f0_quiescent_v,
+                                                                           .f0_w = f0_quiescent_w,
+                                                                           .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
+                                                                           .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.92, 0.3},
+                                                                                                                                                                    std::vector<double>{.98, .6}, 10)}),
                          [](const testing::TestParamInfo<InertialParticleExactParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

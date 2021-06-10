@@ -68,9 +68,22 @@ class Particles {
     void RestorePackedSolutionVector(Vec);
 
     /**
+     * Gets and packs the solution vector
+     * @return
+     */
+    void UnpackSolutionVector(Vec, std::vector<Vec>);
+
+    /**
      * Function to be be called after each flow time step
      */
     void AdvectParticles(TS flowTS);
+
+    /**
+     * Get the name of the solution vector
+     */
+    inline const char* GetSolutionVectorName(){
+        return particleSolutionDescriptors.size() == 1 ? DMSwarmPICField_coor : PackedSolution;
+    }
 
    private:
     inline static const char PackedSolution[] = "PackedSolution";

@@ -34,42 +34,6 @@ void ablate::particles::Inertial::InitializeFlow(std::shared_ptr<flow::Flow> flo
     flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow &) { this->AdvectParticles(flowTs); });
 }
 
-PetscErrorCode ablate::particles::Inertial::PackKinematics(TS ts, Vec position, Vec velocity, Vec kinematics) {
-    const PetscScalar *pos, *vel;
-    PetscScalar *kin;
-    PetscInt Np, p, dim, n;
-    PetscErrorCode ierr;
-    DM dm;
-
-    PetscFunctionBeginUser;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDimension(dm, &dim);
-    CHKERRQ(ierr);
-    ierr = VecGetArray(kinematics, &kin);
-    CHKERRQ(ierr);
-    ierr = VecGetArrayRead(position, &pos);
-    CHKERRQ(ierr);
-    ierr = VecGetArrayRead(velocity, &vel);
-    CHKERRQ(ierr);
-    ierr = VecGetLocalSize(position, &Np);
-    CHKERRQ(ierr);
-
-    Np /= dim;
-    for (p = 0; p < Np; ++p) {
-        for (n = 0; n < dim; n++) {
-            kin[p * TotalParticleField * dim + n] = pos[p * dim + n];
-            kin[p * TotalParticleField * dim + dim + n] = vel[p * dim + n];
-        }
-    }
-    ierr = VecRestoreArray(kinematics, &kin);
-    CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(position, &pos);
-    CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(velocity, &vel);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
 PetscErrorCode ablate::particles::Inertial::UnpackKinematics(TS ts, Vec kinematics, Vec position, Vec velocity) {
     PetscScalar *pos, *vel;
     const PetscScalar *kin;
