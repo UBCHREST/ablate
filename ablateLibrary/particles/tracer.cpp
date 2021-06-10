@@ -22,7 +22,7 @@ void ablate::particles::Tracer::InitializeFlow(std::shared_ptr<flow::Flow> flow)
 
     // link the solution with the flowTS
     flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow&){
-        this->advectParticles(flowTs);
+        this->AdvectParticles(flowTs);
     });
 }
 
@@ -89,47 +89,6 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm, ParticleVelocity, &pvel);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-}
-
-void ablate::particles::Tracer::advectParticles(TS flowTS) {
-    Vec particlePosition;
-    PetscReal time;
-
-    // if the dm has changed size (new particles, particles moved between ranks, particles deleted) reset the ts
-    if (dmChanged){
-        TSReset(particleTs) >> checkError;
-        dmChanged = PETSC_FALSE;
-    }
-
-    // Get the position vector
-    DMSwarmCreateGlobalVectorFromField(dm,DMSwarmPICField_coor, &particlePosition) >> checkError;
-
-    // get the particle time step
-    PetscReal dtInitial;
-    TSGetTimeStep(particleTs, &dtInitial) >> checkError;
-
-    // Set the max end time based upon the flow end time
-    TSGetTime(flowTS, &time) >> checkError;
-    TSSetMaxTime(particleTs, time) >> checkError;
-    timeFinal = time;
-
-    // take the needed timesteps to get to the flow time
-    TSSolve(particleTs, particlePosition) >> checkError;
-    VecCopy(flowFinal, flowInitial) >> checkError;
-    timeInitial = timeFinal;
-
-    // get the updated time step, and reset if it has gone down
-    PetscReal dtUpdated;
-    TSGetTimeStep(particleTs, &dtUpdated) >> checkError;
-    if (dtUpdated < dtInitial){
-        TSSetTimeStep(particleTs, dtInitial) >> checkError;
-    }
-
-    // Return the coord vector
-    DMSwarmDestroyGlobalVectorFromField(dm,DMSwarmPICField_coor, &particlePosition) >> checkError;
-
-    // Migrate any particles that have moved
-    Particles::SwarmMigrate();
 }
 
 // REGISTER(ablate::particles::Particles, ablate::particles::Tracer, "massless particles that advect with the flow", ARG(std::string, "name", "the name of the particle group"),

@@ -12,11 +12,13 @@ ablate::particles::Particles::Particles(std::string name, int ndims, std::shared
     DMSwarmSetType(dm, DMSWARM_PIC) >> checkError;
 
     // Record the default fields
-    particleFieldDescriptors.push_back(particles::ParticleFieldDescriptor{
+    auto positionDescriptor = particles::ParticleFieldDescriptor{
         .fieldName = DMSwarmPICField_coor,
         .components = ndims,
         .type = PETSC_DOUBLE
-    });
+    };
+    particleFieldDescriptors.push_back(positionDescriptor);
+    particleSolutionDescriptors.push_back(positionDescriptor);
     particleFieldDescriptors.push_back(particles::ParticleFieldDescriptor{
         .fieldName = DMSwarmField_pid,
         .components = 1,
@@ -25,6 +27,7 @@ ablate::particles::Particles::Particles(std::string name, int ndims, std::shared
 
     // if the exact solution was provided, register the initial particle location in the field
     if(exactSolution){
+        // Compute the size of the exact solution (each component added up)
         RegisterField(ParticleFieldDescriptor{
             .fieldName = ParticleInitialLocation,
             .components = ndims,
@@ -40,6 +43,22 @@ ablate::particles::Particles::Particles(std::string name, int ndims, std::shared
 }
 
 void ablate::particles::Particles::InitializeFlow(std::shared_ptr<flow::Flow> flow) {
+    // if more than one solution field is provided, create a new field to hold them packed together
+    if(particleSolutionDescriptors.size() > 1){
+        auto packedSolutionComponentSize =0;
+
+        for(const auto& solution : particleSolutionDescriptors){
+            packedSolutionComponentSize+= solution.components;
+        }
+
+        // Compute the size of the exact solution (each component added up)
+        RegisterField(ParticleFieldDescriptor{
+            .fieldName = PackedSolution,
+            .components = packedSolutionComponentSize,
+            .type = PETSC_REAL,
+        });
+    }
+
     // before setting up the flow finalize the fields
     DMSwarmFinalizeFieldRegister(dm) >> checkError;
 
@@ -102,9 +121,14 @@ ablate::particles::Particles::~Particles() {
     }
 }
 
+void ablate::particles::Particles::RegisterSolutionField(ParticleFieldDescriptor fieldDescriptor) {
+    RegisterField(fieldDescriptor);
+    particleSolutionDescriptors.push_back(fieldDescriptor);
+}
+
 void ablate::particles::Particles::RegisterField(ParticleFieldDescriptor fieldDescriptor) {
 
-    // add the value to the field
+     // add the value to the field
      DMSwarmRegisterPetscDatatypeField(dm, fieldDescriptor.fieldName.c_str(), fieldDescriptor.components, fieldDescriptor.type) >> checkError;
 
      // store the field
@@ -275,4 +299,139 @@ void ablate::particles::Particles::ProjectFunction(const std::string& field, abl
     }
     DMSwarmRestoreField(dm, DMSwarmPICField_coor, NULL, NULL, (void **)&positionData);
     DMSwarmRestoreField(dm, field.c_str(), NULL, NULL, (void **)&fieldData);
+}
+
+Vec ablate::particles::Particles::GetPackedSolutionVector(){
+    const PetscInt nf = particleSolutionDescriptors.size();
+
+    // If there is only one field, don't bother to map
+    if(nf == 1){
+        Vec positionVector;
+        DMSwarmCreateGlobalVectorFromField(dm,DMSwarmPICField_coor, &positionVector) >> checkError;
+        return positionVector;
+    }
+
+    // Get the local number of particles
+    PetscInt np;
+    DMSwarmGetLocalSize(dm, &np) >> checkError;
+
+    // Get a vector of pointers to the solution fields
+    std::vector<PetscReal *> fieldDatas(nf);
+    std::vector<PetscInt> fieldSizes(nf);
+
+    // get raw access to each array
+    for(auto f = 0; f < nf; f++){
+        DMSwarmGetField(dm, particleSolutionDescriptors[f].fieldName.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
+    }
+
+    // and raw access to the combined array
+    PetscInt solutionComponents;
+    PetscReal *solutionFieldData;
+    DMSwarmGetField(dm, PackedSolution, &solutionComponents, NULL, (void **)&solutionFieldData) >> checkError;
+
+    for(PetscInt p =0; p < np; ++p){
+        PetscInt offset = 0;
+        // March over each field
+        for(PetscInt f =0; f < nf; ++f){
+            for(PetscInt c =0; c < fieldSizes[f]; c++){
+                solutionFieldData[p*solutionComponents + offset++ ] = fieldDatas[f][p * fieldSizes[f] + c];
+            }
+        }
+    }
+
+    // return raw access
+    for(auto f = 0; f < nf; f++){
+        DMSwarmRestoreField(dm, particleSolutionDescriptors[f].fieldName.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
+    }
+    DMSwarmRestoreField(dm, PackedSolution, NULL, NULL, (void **)&solutionFieldData) >> checkError;
+
+    // get the updated values as a vec
+    Vec packedVector;
+    DMSwarmCreateGlobalVectorFromField(dm,PackedSolution, &packedVector) >> checkError;
+    return packedVector;
+}
+
+void ablate::particles::Particles::RestorePackedSolutionVector(Vec solutionVector){
+    const PetscInt nf = particleSolutionDescriptors.size();
+
+    if(nf== 1){
+        DMSwarmDestroyGlobalVectorFromField(dm,DMSwarmPICField_coor, &solutionVector) >> checkError;
+        return;
+    }else{
+        DMSwarmDestroyGlobalVectorFromField(dm,PackedSolution, &solutionVector) >> checkError;
+    }
+
+    // Get the local number of particle
+    PetscInt np;
+    DMSwarmGetLocalSize(dm, &np) >> checkError;
+
+    // Get a vector of pointers to the solution fields
+    std::vector<PetscReal *> fieldDatas(nf);
+    std::vector<PetscInt> fieldSizes(nf);
+
+    // get raw access to each array
+    for(auto f = 0; f < nf; f++){
+        DMSwarmGetField(dm, particleSolutionDescriptors[f].fieldName.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
+    }
+
+    // and raw access to the combined array
+    PetscInt solutionComponents;
+    PetscReal *solutionFieldData;
+    DMSwarmGetField(dm, PackedSolution, &solutionComponents, NULL, (void **)&solutionFieldData) >> checkError;
+
+    for(PetscInt p =0; p < np; ++p){
+        PetscInt offset = 0;
+        // March over each field
+        for(PetscInt f =0; f < nf; ++f){
+            for(PetscInt c =0; c < fieldSizes[f]; c++){
+                fieldDatas[f][p * fieldSizes[f] + c] = solutionFieldData[p*solutionComponents + offset++ ];
+            }
+        }
+    }
+
+    // return raw access
+    for(auto f = 0; f < nf; f++){
+        DMSwarmRestoreField(dm, particleSolutionDescriptors[f].fieldName.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
+    }
+    DMSwarmRestoreField(dm, PackedSolution, NULL, NULL, (void **)&solutionFieldData) >> checkError;
+}
+
+void ablate::particles::Particles::AdvectParticles(TS flowTS){
+    PetscReal time;
+
+    // if the dm has changed size (new particles, particles moved between ranks, particles deleted) reset the ts
+    if (dmChanged){
+        TSReset(particleTs) >> checkError;
+        dmChanged = PETSC_FALSE;
+    }
+
+    // Get the position, velocity and Kinematics vector
+    Vec solutionVector = GetPackedSolutionVector();
+
+    // get the particle time step
+    PetscReal dtInitial;
+    TSGetTimeStep(particleTs, &dtInitial) >> checkError;
+
+    // Set the max end time based upon the flow end time
+    TSGetTime(flowTS, &time) >> checkError;
+    TSSetMaxTime(particleTs, time) >> checkError;
+    timeFinal = time;
+
+    // take the needed timesteps to get to the flow time
+    TSSolve(particleTs, solutionVector) >> checkError;
+
+    VecCopy(flowFinal, flowInitial) >> checkError;
+    timeInitial = timeFinal;
+
+    // get the updated time step, and reset if it has gone down
+    PetscReal dtUpdated;
+    TSGetTimeStep(particleTs, &dtUpdated) >> checkError;
+    if (dtUpdated < dtInitial) {
+        TSSetTimeStep(particleTs, dtInitial) >> checkError;
+    }
+
+    RestorePackedSolutionVector(solutionVector);
+
+    // Migrate any particles that have moved
+    SwarmMigrate();
 }

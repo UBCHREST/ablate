@@ -454,7 +454,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    ParticleMMSTests, TracerParticleMMSTestFixture,
+    TracerParticleTests, TracerParticleMMSTestFixture,
     testing::Values((TracerParticleMMSParameters){.mpiTestParameter = {.testName = "particle in incompressible 2d trigonometric trigonometric tri_p2_p1_p1",
                                                                        .nproc = 1,
                                                                        .expectedOutputFile = "outputs/particles/tracerParticles_incompressible_trigonometric_2d_tri_p2_p1_p1",

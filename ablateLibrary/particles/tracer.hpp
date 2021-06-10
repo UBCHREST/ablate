@@ -14,7 +14,6 @@ class Tracer : public Particles {
 
    private:
     static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void* ctx);
-    void advectParticles(TS flowTS);
 };
 }  // namespace ablate::particles
 

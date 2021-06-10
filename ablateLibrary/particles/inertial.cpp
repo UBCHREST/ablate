@@ -4,11 +4,11 @@
 enum InertialParticleFields { Position, Velocity, TotalParticleField };
 
 ablate::particles::Inertial::Inertial(std::string name, int ndims, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<particles::initializers::Initializer> initializer,
-                                      std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options)
+                                      std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution,
+                                      std::shared_ptr<parameters::Parameters> options)
     : Particles(name, ndims, initializer, fieldInitialization, exactSolution, options) {
+    RegisterSolutionField(ParticleFieldDescriptor{.fieldName = ParticleVelocity, .components = ndims, .type = PETSC_REAL});
     RegisterField(ParticleFieldDescriptor{.fieldName = FluidVelocity, .components = ndims, .type = PETSC_REAL});
-    RegisterField(ParticleFieldDescriptor{.fieldName = ParticleVelocity, .components = ndims, .type = PETSC_REAL});
-    RegisterField(ParticleFieldDescriptor{.fieldName = ParticleKinematics, .components = TotalParticleField * ndims, .type = PETSC_REAL});
     RegisterField(ParticleFieldDescriptor{.fieldName = ParticleDiameter, .components = 1, .type = PETSC_REAL});
     RegisterField(ParticleFieldDescriptor{.fieldName = ParticleDensity, .components = 1, .type = PETSC_REAL});
 
@@ -16,7 +16,7 @@ ablate::particles::Inertial::Inertial(std::string name, int ndims, std::shared_p
     fluidDensity = parameters->GetExpect<PetscReal>("fluidDensity");
     fluidViscosity = parameters->GetExpect<PetscReal>("fluidViscosity");
     auto gravityVector = parameters->GetExpect<std::vector<PetscReal>>("gravityField");
-    for(auto i = 0; i < PetscMin(gravityVector.size(), 3); i++){
+    for (auto i = 0; i < PetscMin(gravityVector.size(), 3); i++) {
         gravityField[i] = gravityVector[i];
     }
 }
@@ -31,9 +31,7 @@ void ablate::particles::Inertial::InitializeFlow(std::shared_ptr<flow::Flow> flo
     TSSetTime(particleTs, timeInitial) >> checkError;
 
     // link the solution with the flowTS
-    flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow&){
-      this->advectParticles(flowTs);
-    });
+    flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow &) { this->AdvectParticles(flowTs); });
 }
 
 PetscErrorCode ablate::particles::Inertial::PackKinematics(TS ts, Vec position, Vec velocity, Vec kinematics) {
@@ -108,10 +106,11 @@ PetscErrorCode ablate::particles::Inertial::UnpackKinematics(TS ts, Vec kinemati
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
+
 PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
     PetscFunctionBeginUser;
 
-    ablate::particles::Inertial* particles = (ablate::particles::Inertial*)ctx;
+    ablate::particles::Inertial *particles = (ablate::particles::Inertial *)ctx;
 
     Vec u = particles->flowFinal;
     DM sdm, dm, vdm;
@@ -232,6 +231,7 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
         if (Rep < 0.1) {
             corFactor = 1.0;  // returns Stokes drag for low speed particles
         }
+        // Note: this function assumed that the solution vector order is correct
         tauP = partDens[p] * PetscSqr(partDiam[p]) / (18.0 * muF);  // particle relaxation time
         for (n = 0; n < dim; n++) {
             f[p * TotalParticleField * dim + n] = partVel[p * dim + n];
@@ -259,63 +259,4 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
     ierr = DMSwarmDestroyGlobalVectorFromField(sdm, ParticleDensity, &particleDensity);
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
-}
-void ablate::particles::Inertial::advectParticles(TS flowTS) {
-
-    Vec particlePosition, particleVelocity, particleKinematics;
-    PetscReal time;
-
-    // if the dm has changed size (new particles, particles moved between ranks, particles deleted) reset the ts
-    if (dmChanged){
-        TSReset(particleTs) >> checkError;
-        dmChanged = PETSC_FALSE;
-    }
-
-    // Get the position, velocity and Kinematics vector
-    DMSwarmCreateGlobalVectorFromField(dm, DMSwarmPICField_coor, &particlePosition) >> checkError;
-    DMSwarmCreateGlobalVectorFromField(dm, ParticleVelocity, &particleVelocity) >> checkError;
-    DMSwarmCreateGlobalVectorFromField(dm, ParticleKinematics, &particleKinematics) >> checkError;
-
-    // combine the position and velocity vectors in kinematics as a unit vector to solve by TSSolve
-    PackKinematics(particleTs, particlePosition, particleVelocity, particleKinematics) >> checkError;
-
-    // get the particle time step
-    PetscReal dtInitial;
-    TSGetTimeStep(particleTs, &dtInitial) >> checkError;
-
-    // Set the max end time based upon the flow end time
-    TSGetTime(flowTS, &time) >> checkError;
-    TSSetMaxTime(particleTs, time) >> checkError;
-    timeFinal = time;
-
-    DMSwarmDestroyGlobalVectorFromField(dm, DMSwarmPICField_coor, &particlePosition) >> checkError;
-    DMSwarmDestroyGlobalVectorFromField(dm, ParticleVelocity, &particleVelocity) >> checkError;
-
-    // take the needed timesteps to get to the flow time
-    TSSolve(particleTs, particleKinematics) >> checkError;
-
-    VecCopy(flowFinal, flowInitial) >> checkError;
-    timeInitial = timeFinal;
-
-    // get the updated time step, and reset if it has gone down
-    PetscReal dtUpdated;
-    TSGetTimeStep(particleTs, &dtUpdated) >> checkError;
-    if (dtUpdated < dtInitial) {
-        TSSetTimeStep(particleTs, dtInitial) >> checkError;
-    }
-
-    // get position and velocity vectors
-    DMSwarmCreateGlobalVectorFromField(dm, DMSwarmPICField_coor, &particlePosition) >> checkError;
-    DMSwarmCreateGlobalVectorFromField(dm, ParticleVelocity, &particleVelocity) >> checkError;
-
-    // unpack kinematics to get particle position and velocity separately
-    UnpackKinematics(particleTs, particleKinematics, particlePosition, particleVelocity) >> checkError;
-
-    // Return position, velocity and kinematics vectors
-    DMSwarmDestroyGlobalVectorFromField(dm, ParticleKinematics, &particleKinematics) >> checkError;
-    DMSwarmDestroyGlobalVectorFromField(dm, DMSwarmPICField_coor, &particlePosition) >> checkError;
-    DMSwarmDestroyGlobalVectorFromField(dm, ParticleVelocity, &particleVelocity) >> checkError;
-
-    // Migrate any particles that have moved
-    Particles::SwarmMigrate();
 }

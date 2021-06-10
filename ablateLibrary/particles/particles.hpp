@@ -32,8 +32,19 @@ class Particles {
 
     // all fields stored in the particle domain
     std::vector<particles::ParticleFieldDescriptor> particleFieldDescriptors;
+    std::vector<particles::ParticleFieldDescriptor> particleSolutionDescriptors;
 
+    /**
+     * The register fields adds the field to the swarm
+     * @param fieldDescriptor
+     */
     void RegisterField(ParticleFieldDescriptor fieldDescriptor);
+
+    /**
+     * The register solution fields adds the field to the swarm and includes the value in the pack/unpack solution
+     * @param fieldDescriptor
+     */
+    void RegisterSolutionField(ParticleFieldDescriptor fieldDescriptor);
 
     // Petsc options specific to these particles. These may be null by default
     PetscOptions petscOptions;
@@ -42,13 +53,29 @@ class Particles {
     bool dmChanged;
     void SwarmMigrate();
 
-
     // Store the particle location and field initialization
     std::shared_ptr<particles::initializers::Initializer> initializer = nullptr;
     const std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization;
 
+    /**
+     * Gets and packs the solution vector
+     * @return
+     */
+    Vec GetPackedSolutionVector();
+    /**
+     * Unpacks and returns the solution vector
+     */
+    void RestorePackedSolutionVector(Vec);
+
+    /**
+     * Function to be be called after each flow time step
+     */
+    void AdvectParticles(TS flowTS);
+
    private:
+    inline static const char PackedSolution[] = "PackedSolution";
     inline static const char ParticleInitialLocation[] = "InitialLocation";
+
     void StoreInitialParticleLocations();
     static PetscErrorCode ComputeParticleError(TS particleTS, Vec u, Vec e);
 

@@ -58,7 +58,7 @@ struct ExactSolutionParameters {
     PetscReal grav;
 };
 
-struct InertialParticleMMSParameters {
+struct InertialParticleExactParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     ExactFunction uExact;
     ExactFunction pExact;
@@ -73,7 +73,7 @@ struct InertialParticleMMSParameters {
     std::shared_ptr<ablate::particles::initializers::Initializer> particleInitializer;
 };
 
-class InertialParticleMMS : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<InertialParticleMMSParameters> {
+class InertialParticleExactTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<InertialParticleExactParameters> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
@@ -375,55 +375,7 @@ static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode ParticleProjectFunction(ablate::particles::Particles &particles, const char field[], std::shared_ptr<ablate::mathFunctions::MathFunction> mathFunction) {
-    PetscErrorCode ierr;
-
-    // Get the local number of particles
-    PetscInt np;
-    ierr = DMSwarmGetLocalSize(particles.dm, &np);
-    CHKERRQ(ierr);
-
-    // Get the raw access to position and update field
-    PetscInt dim;
-    PetscReal *positionData;
-    ierr = DMSwarmGetField(particles.dm, DMSwarmPICField_coor, &dim, NULL, (void **)&positionData);
-    CHKERRQ(ierr);
-
-    PetscInt fieldComponents;
-    PetscDataType fieldType;
-    PetscReal *fieldData;
-    ierr = DMSwarmGetField(particles.dm, field, &fieldComponents, NULL, (void **)&fieldData);
-    CHKERRQ(ierr);
-    // TODO: add exception checking for field type
-
-    // extract the petsc function for fast update
-    void *functionContext = mathFunction->GetContext();
-    ablate::mathFunctions::PetscFunction functionPointer = mathFunction->GetPetscFunction();
-
-    // Iterate over each local particle
-    for (PetscInt p = 0; p < np; ++p) {
-        // compute the position offset
-        const PetscInt positionOffset = p * dim;
-
-        // Compute the field offset
-        const PetscInt fieldOffset = p * fieldComponents;
-
-        // Call the update function
-        ierr = functionPointer(dim, 0.0, positionData + positionOffset, fieldComponents, fieldData + fieldOffset, functionContext);
-        CHKERRQ(ierr);
-    }
-
-    // Restore the arrays
-    ierr = DMSwarmRestoreField(particles.dm, DMSwarmPICField_coor, NULL, NULL, (void **)&positionData);
-    ;
-    CHKERRQ(ierr);
-    ierr = DMSwarmRestoreField(particles.dm, field, NULL, NULL, (void **)&fieldData);
-    ;
-    CHKERRQ(ierr);
-    return 0;
-}
-
-TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
+TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
     StartWithMPI
         {
             TS ts; /* timestepper */
@@ -572,8 +524,8 @@ TEST_P(InertialParticleMMS, ParticleFlowMMSTests) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
-                         testing::Values((InertialParticleMMSParameters){.mpiTestParameter = {.testName = "single inertial particle settling in quiescent fluid",
+INSTANTIATE_TEST_SUITE_P(InertialParticleTests, InertialParticleExactTestFixture,
+                         testing::Values((InertialParticleExactParameters){.mpiTestParameter = {.testName = "single inertial particle settling in quiescent fluid",
                                                                                               .nproc = 1,
                                                                                               .expectedOutputFile = "outputs/particles/inertialParticle_settling_in_quiescent_fluid_single",
                                                                                               .arguments = "-dm_plex_separate_marker -dm_refine 2 "
@@ -593,7 +545,7 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                                                          .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                                                          .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.5, 0.5},
                                                                                                                                                                   std::vector<double>{.5, .5}, 1)},
-                                         (InertialParticleMMSParameters){
+                                         (InertialParticleExactParameters){
                                              .mpiTestParameter = {.testName = "multi inertial particle settling in quiescent fluid",
                                                                   .nproc = 1,
                                                                   .expectedOutputFile = "outputs/particles/inertialParticle_settling_in_quiescent_fluid_multi",
@@ -613,7 +565,7 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                              .f0_w = f0_quiescent_w,
                                              .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                              .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.2, 0.3}, std::vector<double>{.4, .6}, 10)},
-                                         (InertialParticleMMSParameters){.mpiTestParameter = {.testName = "deletion inertial particles settling in quiescent fluid",
+                                         (InertialParticleExactParameters){.mpiTestParameter = {.testName = "deletion inertial particles settling in quiescent fluid",
                                                                                               .nproc = 1,
                                                                                               .expectedOutputFile = "outputs/particles/inertialParticles_settling_in_quiescent_fluid_deletion",
                                                                                               .arguments = "-dm_plex_separate_marker -dm_refine 2 "
@@ -633,4 +585,4 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleMMSTests, InertialParticleMMS,
                                                                          .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
                                                                          .particleInitializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.92, 0.3},
                                                                                                                                                                   std::vector<double>{.98, .6}, 10)}),
-                         [](const testing::TestParamInfo<InertialParticleMMSParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+                         [](const testing::TestParamInfo<InertialParticleExactParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
