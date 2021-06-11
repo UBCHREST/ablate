@@ -2,7 +2,6 @@
 #define compressibleFlow_h
 #include <petsc.h>
 #include "fluxDifferencer.h"
-#include "eos.h"
 
 typedef enum {RHO, RHOE, RHOU, RHOV, RHOW, TOTAL_COMPRESSIBLE_FLOW_COMPONENTS} CompressibleFlowComponents;
 typedef enum {T, VEL, TOTAL_COMPRESSIBLE_AUX_COMPONENTS} CompressibleAuxComponents;
@@ -18,8 +17,14 @@ struct _FlowData_CompressibleFlow{
     /* store method used for flux differencer */
     FluxDifferencerFunction fluxDifferencer;
 
+    // EOS function calls
+    PetscErrorCode (*decodeStateFunction)(const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a,
+        PetscReal* p, void* ctx);
+    void* decodeStateFunctionContext;
+    PetscErrorCode (*computeTemperatureFunction)(const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, PetscReal* T, void* ctx);
+    void* computeTemperatureContext;
+
     PetscBool automaticTimeStepCalculator;
-    EOSData eos;
 } ;
 
 typedef struct _FlowData_CompressibleFlow* FlowData_CompressibleFlow;

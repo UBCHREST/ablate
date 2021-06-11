@@ -5,6 +5,8 @@
 #include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
 #include "flow/fluxDifferencer/fluxDifferencer.hpp"
 #include "gtest/gtest.h"
+#include "eos/perfectGas.hpp"
+#include "parameters/mapParameters.hpp"
 
 struct CompressibleFlowFluxTestParameters {
     std::shared_ptr<ablate::flow::fluxDifferencer::FluxDifferencer> fluxDifferencer;
@@ -27,11 +29,9 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     eulerFlowData->fluxDifferencer = params.fluxDifferencer->GetFluxDifferencerFunction();
 
     // set a perfect gas for testing
-    EOSData eos;
-    EOSCreate(&eos);
-    EOSSetType(eos, "perfectGas");
-    EOSSetFromOptions(eos);
-    eulerFlowData->eos = eos;
+    auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>());
+    eulerFlowData->decodeStateFunction = eos->GetDecodeStateFunction();
+    eulerFlowData->decodeStateFunctionContext = eos->GetDecodeStateContext();
 
     // act
     std::vector<PetscReal> computedFlux(params.expectedFlux.size());
@@ -43,7 +43,6 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     }
 
     // cleanup
-    EOSDestroy(&eos) >> errorChecker;
     PetscFree(eulerFlowData);
 }
 

@@ -14,6 +14,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
+#include "eos/perfectGas.hpp"
 
 using namespace ablate;
 
@@ -172,7 +173,8 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}, {"mu", "0.0"}, {"k", "0.0"}});
 
-            auto eos = std::make_shared<ablate::eos::EOS>("perfectGas", std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}});
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}}));
+
 
             auto initialCondition = std::make_shared<mathFunctions::FieldSolution>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
 

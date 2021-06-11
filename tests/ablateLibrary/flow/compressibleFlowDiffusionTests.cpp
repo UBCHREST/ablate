@@ -14,6 +14,7 @@ static char help[] = "1D conduction and diffusion cases compared to exact soluti
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
 #include "flow/fluxDifferencer/offFluxDifferencer.hpp"
+#include "eos/perfectGas.hpp"
 
 typedef struct {
     PetscInt dim;
@@ -201,7 +202,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // Setup the flow data
-            auto eos = std::make_shared<ablate::eos::EOS>("perfectGas", std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}});
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
 
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}, {"mu", "0.0"}, {"k", std::to_string(parameters.k)}});
 

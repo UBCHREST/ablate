@@ -1,5 +1,6 @@
 target_sources(ablateLibrary
         PUBLIC
         eos.hpp
-        eos.cpp
+        perfectGas.hpp
+        perfectGas.cpp
         )

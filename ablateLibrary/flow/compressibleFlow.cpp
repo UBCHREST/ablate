@@ -14,7 +14,7 @@ static PetscErrorCode UpdateAuxTemperatureField(FlowData_CompressibleFlow flowPa
     PetscReal density = conservedValues[RHO];
     PetscReal totalEnergy = conservedValues[RHOE]/density;
 
-    PetscErrorCode ierr = EOSTemperature(flowParameters->eos, NULL, dim, density, totalEnergy, conservedValues + RHOU, &auxField[T]);CHKERRQ(ierr);
+    PetscErrorCode ierr = flowParameters->computeTemperatureFunction(NULL, dim, density, totalEnergy, conservedValues + RHOU, &auxField[T], flowParameters->computeTemperatureContext);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -92,10 +92,15 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // extract the difference function from fluxDifferencer object
     compressibleFlowData->fluxDifferencer = fluxDifferencer->GetFluxDifferencerFunction();
 
+    // set the decode state function
+    compressibleFlowData->decodeStateFunction = eos->GetDecodeStateFunction();
+    compressibleFlowData->decodeStateFunctionContext = eos->GetDecodeStateContext();
+    compressibleFlowData->computeTemperatureFunction = eos->GetComputeTemperatureFunction();
+    compressibleFlowData->computeTemperatureContext = eos->GetComputeTemperatureContext();
+
     // Set the update fields
     auxFieldUpdateFunctions[T] = UpdateAuxTemperatureField;
     auxFieldUpdateFunctions[VEL] = UpdateAuxVelocityField;
-    compressibleFlowData->eos = eos->GetEOSData();
 
     // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
     compressibleFlowData->automaticTimeStepCalculator = PETSC_TRUE;
@@ -150,7 +155,7 @@ void ablate::flow::CompressibleFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& 
             PetscReal ie;
             PetscReal a;
             PetscReal p;
-            EOSDecodeState(flowParameters->eos, NULL, dim, rho, xc[RHOE]/rho, vel, &ie, &a, &p) >> checkError;
+            flowParameters->decodeStateFunction(NULL, dim, rho, xc[RHOE]/rho, vel, &ie, &a, &p, flowParameters->decodeStateFunctionContext) >> checkError;
 
             PetscReal u = xc[RHOU] / rho;
             PetscReal dt = flowParameters->cfl * dx / (a + PetscAbsReal(u));
@@ -197,11 +202,6 @@ PetscErrorCode ablate::flow::CompressibleFlow::CompressibleFlowRHSFunctionLocal(
 
 void ablate::flow::CompressibleFlow::CompleteProblemSetup(TS ts) {
     Flow::CompleteProblemSetup(ts);
-
-    // make sure that the eos has been set
-    if (!((FlowData_CompressibleFlow)compressibleFlowData)->eos){
-        throw std::runtime_error("The EOS has not been set for the flow");
-    }
 
     if (compressibleFlowData->automaticTimeStepCalculator){
         preStepFunctions.push_back(ComputeTimeStep);

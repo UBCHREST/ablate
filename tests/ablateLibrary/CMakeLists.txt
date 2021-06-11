@@ -12,6 +12,7 @@ add_subdirectory(mathFunctions)
 add_subdirectory(environment)
 add_subdirectory(flow)
 add_subdirectory(particles)
+add_subdirectory(eos)
 
 gtest_discover_tests(libraryTests
         # set a working directory so your project root so that you can find test data via paths relative to the project root

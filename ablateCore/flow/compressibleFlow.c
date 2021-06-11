@@ -278,7 +278,7 @@ static PetscErrorCode FVFlowFillGradientBoundary(DM dm, PetscFV auxFvm, Vec loca
  * Function to get the density, velocity, and energy from the conserved variables
  * @return
  */
-static void DecodeEulerState(EOSData eos, PetscInt dim, const PetscReal* conservedValues,  const PetscReal *normal, PetscReal* density,
+static void DecodeEulerState(FlowData_CompressibleFlow flowData, PetscInt dim, const PetscReal* conservedValues,  const PetscReal *normal, PetscReal* density,
                                   PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p){
     // decode
     *density = conservedValues[RHO];
@@ -292,7 +292,7 @@ static void DecodeEulerState(EOSData eos, PetscInt dim, const PetscReal* conserv
     }
 
     // decode the state in the eos
-    EOSDecodeState(eos, NULL, dim, *density, totalEnergy, velocity, internalEnergy, a, p);
+    flowData->decodeStateFunction(NULL, dim, *density, totalEnergy, velocity, internalEnergy, a, p, flowData->decodeStateFunctionContext);
     *M = (*normalVelocity)/(*a);
 }
 
@@ -336,7 +336,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     PetscReal aL;
     PetscReal ML;
     PetscReal pL;
-    DecodeEulerState(flowParameters->eos, dim, xL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+    DecodeEulerState(flowParameters, dim, xL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 
     PetscReal densityR;
     PetscReal normalVelocityR;
@@ -345,7 +345,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     PetscReal aR;
     PetscReal MR;
     PetscReal pR;
-    DecodeEulerState(flowParameters->eos, dim, xR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    DecodeEulerState(flowParameters, dim, xR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
     PetscReal sPm;
     PetscReal sPp;
