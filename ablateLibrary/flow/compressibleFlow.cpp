@@ -3,6 +3,7 @@
 #include "compressibleFlow.h"
 #include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
+#include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
 
 static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
 static const char *compressibleAuxComponentNames[TOTAL_COMPRESSIBLE_AUX_COMPONENTS + 1] = {"T", "vel", "unknown"};
@@ -29,9 +30,9 @@ static PetscErrorCode UpdateAuxVelocityField(FlowData_CompressibleFlow flowData,
     PetscFunctionReturn(0);
 }
 
-ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
+ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<fluxDifferencer::FluxDifferencer> fluxDifferencerIn, std::shared_ptr<parameters::Parameters> options,
                                                  std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions)
-    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, {}, exactSolutions), eos(eosIn) {
+    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, {}, exactSolutions), eos(eosIn), fluxDifferencer(fluxDifferencerIn == nullptr? std::make_shared<fluxDifferencer::AusmFluxDifferencer>(): fluxDifferencerIn) {
     // Create a compressibleFlowData
     PetscNew(&compressibleFlowData);
 
@@ -83,33 +84,26 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     PetscDSSetContext(prob, 0, compressibleFlowData) >> checkError;
     PetscDSSetFromOptions(prob) >> checkError;
 
-    // Set the parameters
+    // Store the required data for the low level c functions
     compressibleFlowData->cfl = parameters->Get<PetscReal>("cfl", 0.5);
     compressibleFlowData->mu = parameters->Get<PetscReal>("mu", 0.0);
     compressibleFlowData->k = parameters->Get<PetscReal>("k", 0.0);
+
+    // extract the difference function from fluxDifferencer object
+    compressibleFlowData->fluxDifferencer = fluxDifferencer->GetFluxDifferencerFunction();
 
     // Set the update fields
     auxFieldUpdateFunctions[T] = UpdateAuxTemperatureField;
     auxFieldUpdateFunctions[VEL] = UpdateAuxVelocityField;
     compressibleFlowData->eos = eos->GetEOSData();
 
-    const char *prefix;
-    DMGetOptionsPrefix(dm, &prefix) >> checkError;
-    PetscFunctionList fluxDifferencerList;
-    FluxDifferencerListGet(&fluxDifferencerList) >> checkError;
-
-    const char ** typeList;
-    PetscInt numberTypes;
-    PetscFunctionListGet(fluxDifferencerList,&typeList, &numberTypes) >> checkError;
-
-    PetscInt value = 0;
-    PetscBool set;
-    PetscOptionsGetEList(NULL, NULL, "-flux_diff", typeList, numberTypes,&value,&set) >> checkError;
-    FluxDifferencerGet(typeList[value], &(compressibleFlowData->fluxDifferencer)) >> checkError;
-
     // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
     compressibleFlowData->automaticTimeStepCalculator = PETSC_TRUE;
     PetscOptionsGetBool(NULL, NULL,"-automaticTimeStepCalculator", &(compressibleFlowData->automaticTimeStepCalculator), NULL);
+}
+
+ablate::flow::CompressibleFlow::~CompressibleFlow() {
+    PetscFree(compressibleFlowData);
 }
 
 void ablate::flow::CompressibleFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow){

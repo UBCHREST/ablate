@@ -4,16 +4,17 @@
 #include <petsc.h>
 #include <eos/eos.hpp>
 #include <string>
+#include "compressibleFlow.h"
 #include "flow.hpp"
+#include "flow/fluxDifferencer/fluxDifferencer.hpp"
 #include "mesh/mesh.hpp"
 #include "parameters/parameters.hpp"
-#include "fluxDifferencer.h"
-#include "compressibleFlow.h"
 
 namespace ablate::flow {
 class CompressibleFlow : public Flow {
    private:
     std::shared_ptr<eos::EOS> eos;
+    std::shared_ptr<fluxDifferencer::FluxDifferencer> fluxDifferencer;
 
     FlowData_CompressibleFlow compressibleFlowData;
 
@@ -23,9 +24,11 @@ class CompressibleFlow : public Flow {
     // static function to update the flowfield
     static void ComputeTimeStep(TS, Flow&);
 
+
    public:
-    CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,  std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
+    CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,  std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<fluxDifferencer::FluxDifferencer> = {}, std::shared_ptr<parameters::Parameters> options = {},
                      std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {}, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions = {});
+    ~CompressibleFlow() override;
 
     void CompleteProblemSetup(TS ts) override;
     void CompleteFlowInitialization(DM, Vec) override;

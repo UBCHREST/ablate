@@ -8,10 +8,16 @@ typedef enum {RHO, RHOE, RHOU, RHOV, RHOW, TOTAL_COMPRESSIBLE_FLOW_COMPONENTS} C
 typedef enum {T, VEL, TOTAL_COMPRESSIBLE_AUX_COMPONENTS} CompressibleAuxComponents;
 
 struct _FlowData_CompressibleFlow{
+    /* Courant–Friedrichs–Lewy */
     PetscReal cfl;
-    PetscReal k;/*thermal conductivity*/
-    PetscReal mu;/*dynamic viscosity*/
+    /* thermal conductivity*/
+    PetscReal k;
+    /* dynamic viscosity*/
+    PetscReal mu;
+
+    /* store method used for flux differencer */
     FluxDifferencerFunction fluxDifferencer;
+
     PetscBool automaticTimeStepCalculator;
     EOSData eos;
 } ;

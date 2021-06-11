@@ -13,6 +13,7 @@ static char help[] = "1D conduction and diffusion cases compared to exact soluti
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
+#include "flow/fluxDifferencer/offFluxDifferencer.hpp"
 
 typedef struct {
     PetscInt dim;
@@ -223,6 +224,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
                                                                                    eos,
                                                                                flowParameters,
+                                                                               std::make_shared<flow::fluxDifferencer::OffFluxDifferencer>(),
                                                                                nullptr/*options*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution}/*initialization*/,
                                                                                boundaryConditions/*boundary conditions*/,

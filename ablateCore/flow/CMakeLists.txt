@@ -8,8 +8,6 @@ target_sources(ablateCore
         lowMachFlow.h
         compressibleFlow.c
         compressibleFlow.h
-        fluxDifferencer.h
-        fluxDifferencer.c
         fvSupport.h
         fvSupport.c
         )

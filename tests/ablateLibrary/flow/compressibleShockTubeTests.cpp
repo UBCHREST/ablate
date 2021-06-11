@@ -185,6 +185,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                parameters,
+                                                                               nullptr /*defaults to ausm*/,
                                                                                nullptr /*options*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{initialCondition} /*initialization*/,
                                                                                boundaryConditions /*boundary conditions*/,

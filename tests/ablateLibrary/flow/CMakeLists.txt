@@ -3,7 +3,9 @@ target_sources(libraryTests
         feFlowFunctionSourceTests.cpp
         feFlowDynamicSourceTests.cpp
         compressibleShockTubeTests.cpp
-        compressibleFlowTests.cpp
+        compressibleFlowFluxTests.cpp
         compressibleFlowDiffusionTests.cpp
         compressibleFlowMmsSourceTests.cpp
         )
+
+add_subdirectory(fluxDifferencer)
