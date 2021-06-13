@@ -2,10 +2,10 @@
 #include <petsc.h>
 #include <PetscTestFixture.hpp>
 #include <vector>
+#include "eos/perfectGas.hpp"
 #include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
 #include "flow/fluxDifferencer/fluxDifferencer.hpp"
 #include "gtest/gtest.h"
-#include "eos/perfectGas.hpp"
 #include "parameters/mapParameters.hpp"
 
 struct CompressibleFlowFluxTestParameters {

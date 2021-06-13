@@ -2,8 +2,8 @@
 #define ABLATELIBRARY_BOUNDARYCONDITION_HPP
 #include <memory>
 #include <string>
-#include "mathFunctions/mathFunction.hpp"
 #include "flow/flowFieldDescriptor.hpp"
+#include "mathFunctions/mathFunction.hpp"
 
 namespace ablate::flow::boundaryConditions {
 class BoundaryCondition {
@@ -12,9 +12,7 @@ class BoundaryCondition {
     const std::string fieldName;
 
    protected:
-    BoundaryCondition(const std::string boundaryName, const std::string fieldName):
-        boundaryName(boundaryName), fieldName(fieldName){
-    }
+    BoundaryCondition(const std::string boundaryName, const std::string fieldName) : boundaryName(boundaryName), fieldName(fieldName) {}
 
    public:
     const std::string& GetBoundaryName() const { return boundaryName; }
@@ -23,5 +21,5 @@ class BoundaryCondition {
     virtual ~BoundaryCondition() = default;
     virtual void SetupBoundary(PetscDS problem, PetscInt fieldId) = 0;
 };
-}  // namespace ablate::flow
+}  // namespace ablate::flow::boundaryConditions
 #endif  // ABLATELIBRARY_BOUNDARYCONDITION_HPP

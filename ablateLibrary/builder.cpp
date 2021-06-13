@@ -36,8 +36,7 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
             particle->InitializeFlow(flow);
 
             // Get any particle monitors
-            auto particleMonitors =
-                particleFactorySequence[particleIndex]->GetByName<std::vector<monitors::Monitor>>("monitors", std::vector<std::shared_ptr<monitors::Monitor>>());
+            auto particleMonitors = particleFactorySequence[particleIndex]->GetByName<std::vector<monitors::Monitor>>("monitors", std::vector<std::shared_ptr<monitors::Monitor>>());
             for (auto particleMonitor : particleMonitors) {
                 particleMonitor->Register(particle);
                 timeStepper->AddMonitor(particleMonitor);

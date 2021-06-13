@@ -65,14 +65,14 @@ class YamlParser : public Factory {
             }
         }
         MarkUsage(identifier.inputName);
-        if(parameter.IsSequence()){
+        if (parameter.IsSequence()) {
             // Merge the results into a single space seperated string
             std::stringstream ss;
-            for(const auto& v : parameter){
+            for (const auto& v : parameter) {
                 ss << v.template as<std::string>() << " ";
             }
             return ss.str();
-        }else{
+        } else {
             return parameter.template as<std::string>();
         }
     }

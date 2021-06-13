@@ -9,6 +9,6 @@ struct ParticleFieldDescriptor {
     const PetscInt components;
     const PetscDataType type;
 };
-}
+}  // namespace ablate::particles
 
 #endif  // ABLATELIBRARY_PARTICLEFIELDDESCRIPTOR_HPP

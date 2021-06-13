@@ -90,7 +90,7 @@ void testingResources::MpiTestFixture::CompareOutputFiles() {
         return;
     }
     // load in the actual and expected results files
-    if(!std::filesystem::exists(mpiTestParameter.expectedOutputFile)){
+    if (!std::filesystem::exists(mpiTestParameter.expectedOutputFile)) {
         FAIL() << "The expected output file " << mpiTestParameter.expectedOutputFile << " cannot be found";
     }
 

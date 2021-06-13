@@ -3,9 +3,11 @@
 #include "incompressibleFlow.h"
 #include "utilities/petscError.hpp"
 
-ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
-                                                     std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                     std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions)
+ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
+                                                     std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization,
+                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                     std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields,
+                                                     std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions)
     : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolutions) {
     // Register each field, this order must match the order in LowMachFlowFields enum
     RegisterField({.fieldName = "velocity", .fieldPrefix = "vel_", .components = dim, .fieldType = FieldType::FE});
@@ -97,7 +99,7 @@ static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt n
 }
 
 /* Make the discrete pressure discretely divergence free */
-static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::flow::Flow& flow) {
+static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::flow::Flow &flow) {
     Vec u;
     PetscErrorCode ierr;
     DM dm;
@@ -109,7 +111,7 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::flow::F
     CHKERRQ(ierr);
     try {
         flow.CompleteFlowInitialization(dm, u);
-    }catch(std::exception& exp){
+    } catch (std::exception &exp) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
     }
 
@@ -129,19 +131,14 @@ void ablate::flow::IncompressibleFlow::CompleteProblemSetup(TS ts) {
 void ablate::flow::IncompressibleFlow::CompleteFlowInitialization(DM dm, Vec u) {
     MatNullSpace nullsp;
 
-    createPressureNullSpace(dm, PRES, PRES, &nullsp)  >> checkError;
-    MatNullSpaceRemove(nullsp, u)  >> checkError;
+    createPressureNullSpace(dm, PRES, PRES, &nullsp) >> checkError;
+    MatNullSpaceRemove(nullsp, u) >> checkError;
     MatNullSpaceDestroy(&nullsp) >> checkError;
-
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow,
-         "incompressible FE flow",
-         ARG(std::string, "name", "the name of the flow field"),
-         ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
-         ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
-         OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
+REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible FE flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
+         ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(std::vector<mathFunctions::FieldSolution>, "initialization", "the solution used to initialize the flow field"),
          ARG(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          OPT(std::vector<mathFunctions::FieldSolution>, "auxFields", "enables and sets the update functions for the auxFields"),

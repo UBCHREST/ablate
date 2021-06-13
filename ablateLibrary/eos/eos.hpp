@@ -12,8 +12,9 @@ using computeTemperatureFunction = PetscErrorCode (*)(const PetscReal* yi, Petsc
 class EOS {
    protected:
     const std::string type;
+
    public:
-    EOS(std::string typeIn): type(typeIn){};
+    EOS(std::string typeIn) : type(typeIn){};
     virtual ~EOS() = default;
 
     // Print the details of this eos

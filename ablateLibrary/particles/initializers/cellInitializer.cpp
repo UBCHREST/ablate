@@ -2,8 +2,7 @@
 #include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::particles::initializers::CellInitializer::CellInitializer(int particlesPerCellPerDim)
-    : particlesPerCell(particlesPerCellPerDim) {}
+ablate::particles::initializers::CellInitializer::CellInitializer(int particlesPerCellPerDim) : particlesPerCell(particlesPerCellPerDim) {}
 
 void ablate::particles::initializers::CellInitializer::Initialize(ablate::flow::Flow &flow, DM particleDm) {
     PetscInt particlesPerCell = (PetscInt)this->particlesPerCell;
@@ -26,5 +25,5 @@ void ablate::particles::initializers::CellInitializer::Initialize(ablate::flow::
     DMSwarmSetPointCoordinatesRandom(particleDm, particlesPerCell) >> checkError;
 }
 
-// REGISTER(ablate::particles::initializers::Initializer, ablate::particles::initializers::CellInitializer, "simple cell initializer that puts particles in every element",
-//          ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"));
+REGISTER(ablate::particles::initializers::Initializer, ablate::particles::initializers::CellInitializer, "simple cell initializer that puts particles in every element",
+         ARG(int, "particlesPerCellPerDim", "particles per cell per dimension"));

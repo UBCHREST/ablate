@@ -6,6 +6,7 @@ namespace ablate::particles::initializers {
 class CellInitializer : public Initializer {
    private:
     const int particlesPerCell;
+
    public:
     explicit CellInitializer(int particlesPerCellPerDim = 1);
     ~CellInitializer() override = default;

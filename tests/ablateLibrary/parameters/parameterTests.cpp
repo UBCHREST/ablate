@@ -550,7 +550,8 @@ TEST_P(ParameterTestFixtureDoubleVector, GetShouldReturnDefaultValue) {
     EXPECT_EQ(actualValue, std::vector<double>{102.2});
 }
 
-INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureDoubleVector, ::testing::Values(std::make_tuple("22.3", std::vector<double>{22.3}), std::make_tuple("1E-3 2.3 ", std::vector<double>{1.0E-3, 2.3}), std::make_tuple("", std::vector<double>{})));
-
+INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureDoubleVector,
+                         ::testing::Values(std::make_tuple("22.3", std::vector<double>{22.3}), std::make_tuple("1E-3 2.3 ", std::vector<double>{1.0E-3, 2.3}),
+                                           std::make_tuple("", std::vector<double>{})));
 
 }  // namespace ablateTesting::parameters

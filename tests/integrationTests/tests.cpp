@@ -1,6 +1,5 @@
 static char help[] = "Integration Level Testing";
 
-#include <petsc.h>
 #include <filesystem>
 #include "MpiTestFixture.hpp"
 #include "MpiTestParamFixture.hpp"

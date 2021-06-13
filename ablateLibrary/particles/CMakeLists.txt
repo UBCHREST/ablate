@@ -3,7 +3,6 @@ target_sources(ablateLibrary
         particles.hpp
         particles.cpp
         particleFieldDescriptor.hpp
-        particleFieldDescriptor.cpp
         tracer.hpp
         tracer.cpp
         inertial.hpp

@@ -22,9 +22,7 @@ class Hdf5Monitor : public Monitor {
     ~Hdf5Monitor() override;
 
     void Register(std::shared_ptr<Monitorable>) override;
-    PetscMonitorFunction GetPetscFunction() override{
-        return OutputHdf5;
-    }
+    PetscMonitorFunction GetPetscFunction() override { return OutputHdf5; }
 };
 }  // namespace ablate::monitors
 

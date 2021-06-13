@@ -64,7 +64,6 @@ TEST(ConstantValueTests, ShouldProvideAndFunctionWithPetscFunction) {
     // arrange
     auto function = ablate::mathFunctions::ConstantValue(std::vector<double>{10, 6.0});
 
-
     auto context = function.GetContext();
     auto functionPointer = function.GetPetscFunction();
 

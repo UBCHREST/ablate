@@ -303,8 +303,10 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             // pull the parameters from the petsc options
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
-            auto velocityExact = std::make_shared<mathFunctions::FieldSolution>("velocity", ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact));
-            auto pressureExact = std::make_shared<mathFunctions::FieldSolution>("pressure", ablate::mathFunctions::Create(testingParam.pExact), ablate::mathFunctions::Create(testingParam.pDerivativeExact));
+            auto velocityExact =
+                std::make_shared<mathFunctions::FieldSolution>("velocity", ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact));
+            auto pressureExact =
+                std::make_shared<mathFunctions::FieldSolution>("pressure", ablate::mathFunctions::Create(testingParam.pExact), ablate::mathFunctions::Create(testingParam.pDerivativeExact));
             auto temperatureExact =
                 std::make_shared<mathFunctions::FieldSolution>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
 

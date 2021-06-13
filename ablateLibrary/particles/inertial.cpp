@@ -225,15 +225,9 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
     PetscFunctionReturn(0);
 }
 
-
 #include "parser/registrar.hpp"
-REGISTER(ablate::particles::Particles,
-         ablate::particles::Inertial,
-         "particles (with mass) that advect with the flow",
-         ARG(std::string, "name", "the name of the particle group"),
-         ARG(int, "ndims", "the number of dimensions for the particle"),
-         ARG(parameters::Parameters, "parameters", "fluid parameters for the particles (fluidDensity, fluidViscosity, gravityField)"),
+REGISTER(ablate::particles::Particles, ablate::particles::Inertial, "particles (with mass) that advect with the flow", ARG(std::string, "name", "the name of the particle group"),
+         ARG(int, "ndims", "the number of dimensions for the particle"), ARG(parameters::Parameters, "parameters", "fluid parameters for the particles (fluidDensity, fluidViscosity, gravityField)"),
          ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
          ARG(std::vector<mathFunctions::FieldSolution>, "fieldInitialization", "the initial particle fields setup methods"),
-         OPT(mathFunctions::MathFunction, "exactSolution", "the particle location/velocity exact solution"),
-         ARG(parameters::Parameters, "options", "options to be passed to petsc"));
+         OPT(mathFunctions::MathFunction, "exactSolution", "the particle location/velocity exact solution"), ARG(parameters::Parameters, "options", "options to be passed to petsc"));

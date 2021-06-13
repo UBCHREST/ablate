@@ -371,7 +371,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
 /*
  * Compute the rhs source terms for diffusion processes
  */
-PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxVec, Vec globFVec, FlowData_CompressibleFlow flowParameters ) {
+PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxVec, Vec globFVec, FlowData_CompressibleFlow flowParameters) {
     PetscFunctionBeginUser;
     // Call the flux calculation
     PetscErrorCode ierr;

@@ -1,7 +1,7 @@
 #include "flow.hpp"
+#include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
-#include "utilities/mpiError.hpp"
 
 ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
                          std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
@@ -15,8 +15,7 @@ ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std
       initialization(initialization),
       boundaryConditions(boundaryConditions),
       auxiliaryFieldsUpdaters(auxiliaryFields),
-      exactSolutions(exactSolution)
-{
+      exactSolutions(exactSolution) {
     // Set the application context with this dm
     DMSetApplicationContext(dm->GetDomain(), this) >> checkError;
 
@@ -88,8 +87,13 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription)
 
             // create a petsc fe
             PetscFE petscFE;
-            PetscFECreateDefault(
-                PetscObjectComm((PetscObject)dm->GetDomain()), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+            PetscFECreateDefault(PetscObjectComm((PetscObject)dm->GetDomain()),
+                                 dim,
+                                 flowFieldDescription.components,
+                                 simplexGlobal ? PETSC_TRUE : PETSC_FALSE,
+                                 flowFieldDescription.fieldPrefix.c_str(),
+                                 PETSC_DEFAULT,
+                                 &petscFE) >>
                 checkMpiError;
             PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;
@@ -157,8 +161,13 @@ void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescripti
             MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm->GetDomain())) >> checkMpiError;
             // create a petsc fe
             PetscFE petscFE;
-            PetscFECreateDefault(
-                PetscObjectComm((PetscObject)dm->GetDomain()), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+            PetscFECreateDefault(PetscObjectComm((PetscObject)dm->GetDomain()),
+                                 dim,
+                                 flowFieldDescription.components,
+                                 simplexGlobal ? PETSC_TRUE : PETSC_FALSE,
+                                 flowFieldDescription.fieldPrefix.c_str(),
+                                 PETSC_DEFAULT,
+                                 &petscFE) >>
                 checkError;
             PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;  // TODO: update with options
@@ -290,7 +299,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
 
     // Initialize the flow field if provided
-    if(!initialization.empty()){
+    if (!initialization.empty()) {
         PetscInt numberFields;
         DMGetNumFields(dm->GetDomain(), &numberFields) >> checkError;
 
@@ -365,7 +374,7 @@ void ablate::flow::Flow::UpdateAuxFields(TS ts, ablate::flow::Flow& flow) {
 
 void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const {
     // If this is the first output, save the mesh
-    if(steps == 0){
+    if (steps == 0) {
         // Print the initial mesh
         DMView(GetDM(), viewer) >> checkError;
 
@@ -377,7 +386,7 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
     // Always save the main flowField
     VecView(flowField, viewer) >> checkError;
 
-    //If there is aux data output
+    // If there is aux data output
     if (auxField) {
         // copy over the sequence data from the main dm
         PetscReal dmTime;
@@ -389,7 +398,7 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
         DMGetGlobalVector(auxDM, &auxGlobalField) >> checkError;
 
         // copy over the name of the auxFieldVector
-        const char *name;
+        const char* name;
         PetscObjectGetName((PetscObject)auxField, &name) >> checkError;
         PetscObjectSetName((PetscObject)auxGlobalField, name) >> checkError;
         DMLocalToGlobal(auxDM, auxField, INSERT_VALUES, auxGlobalField) >> checkError;

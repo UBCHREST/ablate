@@ -11,5 +11,5 @@ class TimeStepMonitor : public Monitor {
     void Register(std::shared_ptr<Monitorable>) override {}
     PetscMonitorFunction GetPetscFunction() override { return MonitorTimeStep; }
 };
-}
+}  // namespace ablate::monitors
 #endif  // ABLATELIBRARY_TIMESTEPMONITOR_HPP

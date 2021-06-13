@@ -2,11 +2,11 @@
 #define ABLATELIBRARY_FUNCTIONFACTORY_HPP
 #include <memory>
 #include <type_traits>
+#include "constantValue.hpp"
 #include "functionPointer.hpp"
 #include "functionWrapper.hpp"
 #include "mathFunction.hpp"
 #include "parsedFunction.hpp"
-#include "constantValue.hpp"
 
 namespace ablate::mathFunctions {
 

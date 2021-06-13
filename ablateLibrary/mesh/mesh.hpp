@@ -11,7 +11,7 @@ class Mesh {
     std::string name;
     DM dm;
 
-    Mesh(std::string name): name(name){};
+    Mesh(std::string name) : name(name){};
     virtual ~Mesh() = default;
 
    public:

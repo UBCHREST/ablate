@@ -1,8 +1,6 @@
 #include "petscOptionParameters.hpp"
 #include "utilities/petscError.hpp"
-ablate::parameters::PetscOptionParameters::PetscOptionParameters(PetscOptions petscOptionsIn): petscOptions(petscOptionsIn) {
-
-}
+ablate::parameters::PetscOptionParameters::PetscOptionParameters(PetscOptions petscOptionsIn) : petscOptions(petscOptionsIn) {}
 
 std::optional<std::string> ablate::parameters::PetscOptionParameters::GetString(std::string paramName) const {
     // Get the option from the petsc options database
@@ -14,9 +12,9 @@ std::optional<std::string> ablate::parameters::PetscOptionParameters::GetString(
 
     PetscOptionsGetString(petscOptions, NULL, paramNamePetsc.c_str(), result, PETSC_MAX_OPTION_NAME, &found) >> checkError;
 
-    if(found){
+    if (found) {
         return std::string(result);
-    }else{
+    } else {
         return {};
     }
 }
@@ -30,4 +28,3 @@ std::unordered_set<std::string> ablate::parameters::PetscOptionParameters::GetKe
 
     return keys;
 }
-

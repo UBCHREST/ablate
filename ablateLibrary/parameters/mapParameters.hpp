@@ -1,10 +1,10 @@
 #ifndef ABLATELIBRARY_MAPPARAMETERS_HPP
 #define ABLATELIBRARY_MAPPARAMETERS_HPP
 
-#include <map>
-#include "parameters.hpp"
-#include <memory>
 #include <iostream>
+#include <map>
+#include <memory>
+#include "parameters.hpp"
 namespace ablate::parameters {
 class MapParameters : public Parameters {
    protected:

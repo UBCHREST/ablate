@@ -11,7 +11,7 @@ class Initializer {
 
    public:
     Initializer() = default;
-    virtual ~Initializer() =default;
+    virtual ~Initializer() = default;
 
     virtual void Initialize(ablate::flow::Flow& flow, DM particleDM) = 0;
 };

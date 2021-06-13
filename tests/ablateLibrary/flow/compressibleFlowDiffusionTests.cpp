@@ -3,18 +3,18 @@ static char help[] = "1D conduction and diffusion cases compared to exact soluti
 #include <compressibleFlow.h>
 #include <petsc.h>
 #include <cmath>
-#include "flow/boundaryConditions/ghost.hpp"
 #include <memory>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "eos/perfectGas.hpp"
+#include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
+#include "flow/fluxDifferencer/offFluxDifferencer.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
-#include "flow/fluxDifferencer/offFluxDifferencer.hpp"
-#include "eos/perfectGas.hpp"
 
 typedef struct {
     PetscInt dim;
@@ -113,8 +113,8 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
     PetscFunctionReturn(0);
 }
 
-static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::flow::CompressibleFlow> flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf, InputParameters *parameters,
-                              PetscTestErrorChecker &errorChecker) {
+static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::flow::CompressibleFlow> flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf,
+                              InputParameters *parameters, PetscTestErrorChecker &errorChecker) {
     // Compute the error
     PetscDS ds;
     DMGetDS(flowData->GetDM(), &ds) >> errorChecker;
@@ -183,7 +183,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d\n", l);
 
             DM dmCreate; /* problem definition */
-            TS ts; /* timestepper */
+            TS ts;       /* timestepper */
 
             // Create a ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
@@ -202,34 +202,27 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // Setup the flow data
-            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(
+                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
 
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}, {"mu", "0.0"}, {"k", std::to_string(parameters.k)}});
 
             auto exactSolution = std::make_shared<mathFunctions::FieldSolution>("euler", mathFunctions::Create(EulerExact, &parameters));
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<flow::boundaryConditions::Ghost>("euler",
-                                                    "wall left/right",
-                                                    "Face Sets",
-                                                    std::vector<int>{2, 4},
-                                                          PhysicsBoundary_Euler, &parameters),
-                std::make_shared<flow::boundaryConditions::Ghost>("euler",
-                                                          "top/bottom",
-                                                          "Face Sets",
-                                                          std::vector<int>{1, 3},
-                                                          PhysicsBoundary_Mirror, &parameters),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "wall left/right", "Face Sets", std::vector<int>{2, 4}, PhysicsBoundary_Euler, &parameters),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "top/bottom", "Face Sets", std::vector<int>{1, 3}, PhysicsBoundary_Mirror, &parameters),
             };
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
-                                                                                   eos,
+                                                                               eos,
                                                                                flowParameters,
                                                                                std::make_shared<flow::fluxDifferencer::OffFluxDifferencer>(),
-                                                                               nullptr/*options*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution}/*initialization*/,
-                                                                               boundaryConditions/*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution}/*exactSolution*/);
+                                                                               nullptr /*options*/,
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution} /*initialization*/,
+                                                                               boundaryConditions /*boundary conditions*/,
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution} /*exactSolution*/);
 
             flowObject->CompleteProblemSetup(ts);
 

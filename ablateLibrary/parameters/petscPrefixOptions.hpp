@@ -12,6 +12,6 @@ class PetscPrefixOptions : public MapParameters {
     explicit PetscPrefixOptions(std::string prefix);
     ~PetscPrefixOptions() = default;
 };
-}
+}  // namespace ablate::parameters
 
 #endif  // ABLATELIBRARY_PETSCPREFIXOPTIONS_HPP

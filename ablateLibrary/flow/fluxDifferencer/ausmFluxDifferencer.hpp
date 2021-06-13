@@ -12,13 +12,10 @@ namespace ablate::flow::fluxDifferencer {
  */
 class AusmFluxDifferencer : public fluxDifferencer::FluxDifferencer {
    private:
-    static void AusmFluxDifferencerFunction(PetscReal Mm, PetscReal* sPm, PetscReal* sMm,
-        PetscReal Mp, PetscReal* sPp, PetscReal *sMp);
-   public:
-    FluxDifferencerFunction GetFluxDifferencerFunction() override{
-        return AusmFluxDifferencerFunction;
-    }
+    static void AusmFluxDifferencerFunction(PetscReal Mm, PetscReal* sPm, PetscReal* sMm, PetscReal Mp, PetscReal* sPp, PetscReal* sMp);
 
+   public:
+    FluxDifferencerFunction GetFluxDifferencerFunction() override { return AusmFluxDifferencerFunction; }
 };
-}
+}  // namespace ablate::flow::fluxDifferencer
 #endif  // ABLATELIBRARY_AUSMFLUXDIFFERENCER_HPP

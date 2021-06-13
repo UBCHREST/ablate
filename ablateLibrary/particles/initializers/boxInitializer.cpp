@@ -93,6 +93,5 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::flow::F
 #include "parser/registrar.hpp"
 
 REGISTER(ablate::particles::initializers::Initializer, ablate::particles::initializers::BoxInitializer, "simple box initializer that puts particles in a defined box",
-          ARG(std::vector<double>, "lower", "the lower bound of the box"),
-         ARG(std::vector<double>, "upper", "the upper bound of the box"),
+         ARG(std::vector<double>, "lower", "the lower bound of the box"), ARG(std::vector<double>, "upper", "the upper bound of the box"),
          ARG(int, "particlesPerDim", "the particles per box dimension"));

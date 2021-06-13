@@ -3,12 +3,12 @@
 
 #include <memory>
 #include <string>
-#include "mathFunctions/mathFunction.hpp"
 #include "boundaryCondition.hpp"
+#include "mathFunctions/mathFunction.hpp"
 
 namespace ablate::flow::boundaryConditions {
 
-class Essential: public BoundaryCondition {
+class Essential : public BoundaryCondition {
    private:
     const std::string labelName;
     const std::vector<int> labelIds;
@@ -27,10 +27,10 @@ class Essential: public BoundaryCondition {
 
    public:
     Essential(std::string fieldName, std::string boundaryName, std::string labelName, int labelId, std::shared_ptr<mathFunctions::MathFunction> boundaryValue,
-    std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue = nullptr);
+              std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue = nullptr);
 
     Essential(std::string fieldName, std::string boundaryName, std::string labelName, std::vector<int> labelId, std::shared_ptr<mathFunctions::MathFunction> boundaryValue,
-    std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue = nullptr);
+              std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue = nullptr);
 
     const std::string& GetLabelName() const { return labelName; }
 
@@ -39,5 +39,5 @@ class Essential: public BoundaryCondition {
     void SetupBoundary(PetscDS problem, PetscInt field) override;
 };
 
-}
+}  // namespace ablate::flow::boundaryConditions
 #endif  // ABLATELIBRARY_ESSENTIAL_HPP

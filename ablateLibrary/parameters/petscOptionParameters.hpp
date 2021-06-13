@@ -1,11 +1,11 @@
 #ifndef ABLATELIBRARY_PETSCOPTIONPARAMETERS_HPP
 #define ABLATELIBRARY_PETSCOPTIONPARAMETERS_HPP
-#include "parameters.hpp"
 #include <petsc.h>
+#include "parameters.hpp"
 
 namespace ablate::parameters {
 
-class PetscOptionParameters :public Parameters {
+class PetscOptionParameters : public Parameters {
    protected:
     PetscOptions petscOptions;
 
@@ -17,6 +17,6 @@ class PetscOptionParameters :public Parameters {
     std::unordered_set<std::string> GetKeys() const override;
 };
 
-}
+}  // namespace ablate::parameters
 
 #endif  // ABLATELIBRARY_PETSCOPTIONPARAMETERS_HPP

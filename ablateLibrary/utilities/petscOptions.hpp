@@ -12,7 +12,7 @@ class PetscOptionsUtils {
     static void Set(PetscOptions petscOptions, const std::map<std::string, std::string>& options);
 };
 
-void PetscOptionsDestroyAndCheck(std::string name, PetscOptions *options);
+void PetscOptionsDestroyAndCheck(std::string name, PetscOptions* options);
 
 }  // namespace ablate::utilities
 

@@ -10,9 +10,10 @@ class BoxMesh : public Mesh {
    private:
     // Petsc options specific to the mesh. These may be null by default
     PetscOptions petscOptions;
+
    public:
-    BoxMesh(std::string name, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary = {},
-            bool simplex = true, std::shared_ptr<parameters::Parameters> options = {});
+    BoxMesh(std::string name, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary = {}, bool simplex = true,
+            std::shared_ptr<parameters::Parameters> options = {});
 
     ~BoxMesh();
 };

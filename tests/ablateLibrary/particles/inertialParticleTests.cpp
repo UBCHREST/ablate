@@ -189,7 +189,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     PetscFunctionReturn(0);
 }
 
-
 TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
     StartWithMPI
         {
@@ -279,7 +278,8 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             auto exactSolutionFunction = ablate::mathFunctions::Create(testingParam.particleExact, &testingParam.parameters);
 
             // Create an inertial particle object
-            auto particles = std::make_shared<ablate::particles::Inertial>("particle", 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction, particleOptions);
+            auto particles =
+                std::make_shared<ablate::particles::Inertial>("particle", 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction, particleOptions);
 
             // link the flow to the particles
             particles->InitializeFlow(flowObject);

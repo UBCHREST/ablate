@@ -120,11 +120,6 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::particles::Particles,
-         ablate::particles::Tracer,
-         "massless particles that advect with the flow",
-         ARG(std::string, "name", "the name of the particle group"),
-         ARG(int, "ndims", "the number of dimensions for the particle"),
-         ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
-         OPT(mathFunctions::MathFunction, "exactSolution", "the particle location exact solution"),
-         ARG(parameters::Parameters, "options", "options to be passed to petsc"));
+REGISTER(ablate::particles::Particles, ablate::particles::Tracer, "massless particles that advect with the flow", ARG(std::string, "name", "the name of the particle group"),
+         ARG(int, "ndims", "the number of dimensions for the particle"), ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
+         OPT(mathFunctions::MathFunction, "exactSolution", "the particle location exact solution"), ARG(parameters::Parameters, "options", "options to be passed to petsc"));

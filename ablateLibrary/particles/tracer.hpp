@@ -1,4 +1,3 @@
-
 #ifndef ABLATELIBRARY_TRACER_HPP
 #define ABLATELIBRARY_TRACER_HPP
 #include "particles.hpp"

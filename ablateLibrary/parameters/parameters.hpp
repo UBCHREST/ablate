@@ -22,7 +22,7 @@ class Parameters {
     static void toValue(const std::string& inputString, std::vector<T>& outputValue) {
         std::istringstream ss(inputString);
         T tempValue;
-        while(ss >> tempValue){
+        while (ss >> tempValue) {
             outputValue.push_back(tempValue);
         }
     }
@@ -94,9 +94,9 @@ class Parameters {
             auto stringName = std::string(valueNames[n]);
 
             // Set the value
-            if(defaultValues.count(stringName)){
+            if (defaultValues.count(stringName)) {
                 constantArray[n] = Get<T>(stringName, defaultValues[stringName]);
-            }else{
+            } else {
                 // no default value
                 constantArray[n] = GetExpect<T>(stringName);
             }

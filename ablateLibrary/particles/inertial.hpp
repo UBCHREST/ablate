@@ -31,8 +31,9 @@ class Inertial : public Particles {
     static PetscErrorCode RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx);
 
    public:
-    Inertial(std::string name, int ndims, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization,
-             std::shared_ptr<mathFunctions::MathFunction> exactSolution = {}, std::shared_ptr<parameters::Parameters> options = {});
+    Inertial(std::string name, int ndims, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<particles::initializers::Initializer> initializer,
+             std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution = {},
+             std::shared_ptr<parameters::Parameters> options = {});
     ~Inertial() override;
 
     void InitializeFlow(std::shared_ptr<flow::Flow> flow) override;

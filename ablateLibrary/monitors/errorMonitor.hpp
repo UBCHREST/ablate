@@ -11,8 +11,6 @@ class ErrorMonitor : public Monitor {
     void Register(std::shared_ptr<Monitorable>) override {}
     PetscMonitorFunction GetPetscFunction() override { return MonitorError; }
 };
-}
-
-
+}  // namespace ablate::monitors
 
 #endif  // ABLATELIBRARY_ERRORMONITOR_HPP

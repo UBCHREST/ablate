@@ -13,6 +13,6 @@ class OffFluxDifferencer : public fluxDifferencer::FluxDifferencer {
    public:
     FluxDifferencerFunction GetFluxDifferencerFunction() override { return OffDifferencerFunction; }
 };
-}
+}  // namespace ablate::flow::fluxDifferencer
 
 #endif  // ABLATELIBRARY_OFFFLUXDIFFERENCER_HPP
