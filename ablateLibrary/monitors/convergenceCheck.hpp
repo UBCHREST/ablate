@@ -1,6 +1,6 @@
 #ifndef ABLATELIBRARY_CONVERGENCECHECK_HPP
 #define ABLATELIBRARY_CONVERGENCECHECK_HPP
-#include "flowMonitor.hpp"
+#include "monitors/flow/flowMonitor.hpp"
 
 namespace ablate::monitors::flow {
 class ConvergenceCheck : public FlowMonitor {

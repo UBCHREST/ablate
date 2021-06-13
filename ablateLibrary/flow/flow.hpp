@@ -3,17 +3,18 @@
 
 #include <petsc.h>
 #include <memory>
+#include <monitors/viewable.hpp>
 #include <optional>
 #include <parameters/parameters.hpp>
 #include <string>
-#include "mathFunctions/fieldSolution.hpp"
 #include "flow/boundaryConditions/boundaryCondition.hpp"
 #include "flowFieldDescriptor.hpp"
+#include "mathFunctions/fieldSolution.hpp"
 #include "mesh/mesh.hpp"
 #include "solve/solvable.hpp"
 namespace ablate::flow {
 
-class Flow : public solve::Solvable {
+class Flow : public solve::Solvable, public monitors::Viewable {
    private:
     // descriptions to the fields on the dm
     std::vector<FlowFieldDescriptor> flowFieldDescriptors;
@@ -68,6 +69,18 @@ class Flow : public solve::Solvable {
     virtual void CompleteFlowInitialization(DM, Vec) = 0;
 
     /**
+     * provide interface for all flow output
+     * @param viewer
+     * @param steps
+     * @param time
+     * @param u
+     */
+    virtual void View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const override{
+
+    }
+
+
+    /**
      * Adds function to be called before each flow step
      * @param preStep
      */
@@ -83,7 +96,7 @@ class Flow : public solve::Solvable {
         this->postStepFunctions.push_back(postStep);
     }
 
-    const std::string& GetName() const { return name; }
+    const std::string& GetName() const override{ return name; }
 
     const DM& GetDM() const { return dm->GetDomain(); }
 

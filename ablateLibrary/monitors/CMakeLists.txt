@@ -1,9 +1,7 @@
 target_sources(ablateLibrary
         PUBLIC
+        viewable.hpp
         monitor.hpp
-        hdf5Output.hpp
-        hdf5Output.cpp
+        hdf5Monitor.hpp
+        hdf5Monitor.cpp
         )
-
-add_subdirectory(flow)
-add_subdirectory(particles)
