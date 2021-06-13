@@ -1,6 +1,7 @@
 #include "particles.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
+#include <petscviewerhdf5.h>
 
 ablate::particles::Particles::Particles(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization,  std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options)
     : name(name), ndims(ndims), timeInitial(0.0), timeFinal(0.0), dmChanged(false), initializer(initializer), exactSolution(exactSolution), petscOptions(NULL), fieldInitialization(fieldInitialization){
@@ -150,6 +151,59 @@ void ablate::particles::Particles::StoreInitialParticleLocations(){
     }
     DMSwarmRestoreField(dm, DMSwarmPICField_coor, NULL, NULL, (void **)&coord) >> checkError;
     DMSwarmRestoreField(dm, ParticleInitialLocation, NULL, NULL, (void **)&initialLocation) >> checkError;
+}
+
+
+PetscErrorCode ablate::particles::Particles::ComputeParticleExactSolution(TS particleTS, Vec exactSolution) {
+    PetscFunctionBeginUser;
+
+    // get a pointer to this particle class
+    ablate::particles::Particles* particles;
+    TSGetApplicationContext(particleTS, (void **)&particles) >> checkError;
+
+    // get the abs time for the particle evaluation, this is the ts relative time plus the time at the start of the particle ts solve
+    PetscReal time;
+    TSGetTime(particleTS, &time) >> checkError;
+    time += particles->timeInitial;
+
+    // Create a vector of the current solution
+    PetscScalar *exactSolutionArray;
+    VecGetArrayWrite(exactSolution, &exactSolutionArray) >> checkError;
+
+    // exact the exact solution from the initial location
+    PetscInt np;
+    DMSwarmGetLocalSize(particles->dm, &np) >> checkError;
+    const PetscInt dim = particles->ndims;
+
+    // Calculate the size of solution field
+    PetscInt solutionFieldSize =0;
+    for(const auto& field : particles->particleSolutionDescriptors){
+        solutionFieldSize += field.components;
+    }
+
+    // get the initial location array
+    const PetscScalar *initialParticleLocationArray;
+    DMSwarmGetField(particles->dm, ParticleInitialLocation, NULL, NULL, (void **)&initialParticleLocationArray) >> checkError;
+
+    // extract the petsc function for fast update
+    void *functionContext = particles->exactSolution->GetContext();
+    ablate::mathFunctions::PetscFunction functionPointer = particles->exactSolution->GetPetscFunction();
+
+    // for each local particle, get the exact location and other variables
+    for (PetscInt p = 0; p < np; ++p) {
+        // compute the array offset
+        const PetscInt initialPositionOffset = p * dim;
+        const PetscInt fieldOffset = p * solutionFieldSize;
+
+        // Call the update function
+        functionPointer(dim, time, initialParticleLocationArray + initialPositionOffset,solutionFieldSize, exactSolutionArray + fieldOffset, functionContext) >> checkError;
+    }
+    VecRestoreArrayWrite(exactSolution, &exactSolutionArray) >> checkError;
+
+    // cleanup
+    DMSwarmRestoreField(particles->dm, ParticleInitialLocation, NULL, NULL, (void **)&initialParticleLocationArray) >> checkError;
+
+    PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::particles::Particles::ComputeParticleError(TS particleTS, Vec u, Vec errorVec) {
@@ -446,3 +500,59 @@ void ablate::particles::Particles::AdvectParticles(TS flowTS){
     SwarmMigrate();
 }
 
+static PetscErrorCode DMSequenceViewTimeHDF5(DM dm, PetscViewer viewer)
+{
+    Vec            stamp;
+    PetscMPIInt    rank;
+    PetscErrorCode ierr;
+
+    PetscFunctionBegin;
+
+    // get the seqnum and value from the dm
+    PetscInt seqnum;
+    PetscReal value;
+    ierr =  DMGetOutputSequenceNumber(dm, &seqnum, &value);CHKERRMPI(ierr);
+
+    if (seqnum < 0){
+        PetscFunctionReturn(0);
+    }
+    ierr = MPI_Comm_rank(PetscObjectComm((PetscObject) viewer), &rank);CHKERRMPI(ierr);
+    ierr = VecCreateMPI(PetscObjectComm((PetscObject) viewer), rank ? 0 : 1, 1, &stamp);CHKERRQ(ierr);
+    ierr = VecSetBlockSize(stamp, 1);CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject) stamp, "time");CHKERRQ(ierr);
+    if (!rank) {
+        ierr = VecSetValue(stamp, 0, value, INSERT_VALUES);CHKERRQ(ierr);
+    }
+    ierr = VecAssemblyBegin(stamp);CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(stamp);CHKERRQ(ierr);
+    ierr = PetscViewerHDF5PushGroup(viewer, "/");CHKERRQ(ierr);
+    ierr = PetscViewerHDF5SetTimestep(viewer, seqnum);CHKERRQ(ierr);
+    ierr = VecView(stamp, viewer);CHKERRQ(ierr);
+    ierr = PetscViewerHDF5PopGroup(viewer);CHKERRQ(ierr);
+    ierr = VecDestroy(&stamp);CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+void ablate::particles::Particles::View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const {
+    DMSetOutputSequenceNumber(GetDM(), steps, time) >> checkError;
+
+    PetscFunctionBegin;
+    Vec            particleVector;
+
+    for (auto const& field : particleFieldDescriptors){
+        if (field.type == PETSC_DOUBLE) {
+            DMSwarmCreateGlobalVectorFromField(GetDM(), field.fieldName.c_str(), &particleVector) >> checkError;
+            PetscObjectSetName((PetscObject)particleVector, field.fieldName.c_str()) >> checkError;
+            VecView(particleVector, viewer) >> checkError;
+            DMSwarmDestroyGlobalVectorFromField(GetDM(), field.fieldName.c_str(), &particleVector) >> checkError;
+        }
+    }
+
+    // if this is an hdf5Viewer
+    PetscBool ishdf5;
+    PetscObjectTypeCompare((PetscObject) viewer, PETSCVIEWERHDF5,  &ishdf5) >> checkError;
+    if (ishdf5){
+        DMSequenceViewTimeHDF5(GetDM(), viewer)  >> checkError;
+    }
+
+}

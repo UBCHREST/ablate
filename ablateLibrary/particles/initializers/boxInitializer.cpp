@@ -1,5 +1,4 @@
 #include "boxInitializer.hpp"
-#include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
 
 ablate::particles::initializers::BoxInitializer::BoxInitializer(std::vector<double> lowerBound, std::vector<double> upperBound, int particlesPerDim)
@@ -48,8 +47,8 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::flow::F
 
     DMSwarmSetLocalSizes(particleDm, Np, 0) >> checkError;
     DMSetFromOptions(particleDm) >> checkError;
+    DMSwarmGetField(particleDm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords) >> checkError;
     if (rank == 0) {
-        DMSwarmGetField(particleDm, DMSwarmPICField_coor, NULL, NULL, (void **)&coords) >> checkError;
         switch (dim) {
             case 2:
                 x[0] = partLower[0];
@@ -91,5 +90,9 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::flow::F
     DMSwarmMigrate(particleDm, PETSC_TRUE) >> checkError;
 }
 
-// REGISTER(ablate::particles::initializers::Initializer, ablate::particles::initializers::BoxInitializer, "simple box initializer that puts particles in a defined box",
-//          ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"));
+#include "parser/registrar.hpp"
+
+REGISTER(ablate::particles::initializers::Initializer, ablate::particles::initializers::BoxInitializer, "simple box initializer that puts particles in a defined box",
+          ARG(std::vector<double>, "lower", "the lower bound of the box"),
+         ARG(std::vector<double>, "upper", "the upper bound of the box"),
+         ARG(int, "particlesPerDim", "the particles per box dimension"));

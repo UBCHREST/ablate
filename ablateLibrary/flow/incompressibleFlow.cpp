@@ -1,7 +1,6 @@
 #include "incompressibleFlow.hpp"
 #include <stdexcept>
 #include "incompressibleFlow.h"
-#include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
 
 ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
@@ -136,8 +135,14 @@ void ablate::flow::IncompressibleFlow::CompleteFlowInitialization(DM dm, Vec u) 
 
 }
 
-//REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
-//         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), ARG(ablate::parameters::Parameters, "parameters", "incompressible flow parameters"),
-//         ARG(std::vector<flow::FlowFieldSolution>, "initialization", "the exact solution used to initialize the flow field"),
-//         ARG(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-//         OPT(std::vector<flow::FlowFieldSolution>, "auxFields", "enables and sets the update functions for the auxFields"));
+#include "parser/registrar.hpp"
+REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow,
+         "incompressible FE flow",
+         ARG(std::string, "name", "the name of the flow field"),
+         ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
+         ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
+         OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
+         ARG(std::vector<mathFunctions::FieldSolution>, "initialization", "the solution used to initialize the flow field"),
+         ARG(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+         OPT(std::vector<mathFunctions::FieldSolution>, "auxFields", "enables and sets the update functions for the auxFields"),
+         OPT(std::vector<mathFunctions::FieldSolution>, "exactSolution", "optional exact solutions that can be used for error calculations"));

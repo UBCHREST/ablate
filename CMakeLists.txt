@@ -48,5 +48,5 @@ if(BUILD_TESTING)
 endif()
 
 # keep a separate main statement
-#add_executable(ablate main.cpp)
-#target_link_libraries(ablate PRIVATE ablateLibrary)
+add_executable(ablate main.cpp)
+target_link_libraries(ablate PRIVATE ablateLibrary)

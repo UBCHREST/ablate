@@ -1,11 +1,10 @@
 #include "builder.hpp"
-//#include "flow/flow.hpp"
-//#include "monitors/flow/flowMonitor.hpp"
-//#include "monitors/particles/particleMonitor.hpp"
-//#include "particles/particles.hpp"
+#include "flow/flow.hpp"
+#include "monitors/monitor.hpp"
+#include "particles/particles.hpp"
 #include "solve/timeStepper.hpp"
 #include "utilities/petscOptions.hpp"
-//#include "version.h"
+#include "version.h"
 
 void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     // get the global arguments
@@ -20,7 +19,7 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     flow->SetupSolve(timeStepper->GetTS());
 
     // get the monitors from the flow factory
-    auto flowMonitors = parser->GetFactory("flow")->GetByName<std::vector<monitors::flow::FlowMonitor>>("monitors", std::vector<std::shared_ptr<monitors::flow::FlowMonitor>>());
+    auto flowMonitors = parser->GetFactory("flow")->GetByName<std::vector<monitors::Monitor>>("monitors", std::vector<std::shared_ptr<monitors::Monitor>>());
     for (auto flowMonitor : flowMonitors) {
         flowMonitor->Register(flow);
         timeStepper->AddMonitor(flowMonitor);
@@ -34,11 +33,11 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
         // initialize the flow for each
         for (auto particleIndex = 0; particleIndex < particleList.size(); particleIndex++) {
             auto particle = particleList[particleIndex];
-            particle->InitializeFlow(flow, timeStepper);
+            particle->InitializeFlow(flow);
 
             // Get any particle monitors
             auto particleMonitors =
-                particleFactorySequence[particleIndex]->GetByName<std::vector<monitors::particles::ParticleMonitor>>("monitors", std::vector<std::shared_ptr<monitors::particles::ParticleMonitor>>());
+                particleFactorySequence[particleIndex]->GetByName<std::vector<monitors::Monitor>>("monitors", std::vector<std::shared_ptr<monitors::Monitor>>());
             for (auto particleMonitor : particleMonitors) {
                 particleMonitor->Register(particle);
                 timeStepper->AddMonitor(particleMonitor);
@@ -54,5 +53,5 @@ void ablate::Builder::PrintVersion(std::ostream& stream) {
     stream << "ABLATE: " << std::endl;
     stream << '\t' << "Documentation: https://ubchrest.github.io/ablate/" << std::endl;
     stream << '\t' << "Source: https://github.com/UBCHREST/ablate" << std::endl;
-//    stream << '\t' << "Version: " << ABLATECORE_VERSION << std::endl;
+    stream << '\t' << "Version: " << ABLATECORE_VERSION << std::endl;
 }

@@ -1,6 +1,13 @@
 ---
+# Example setup for incompressible flow
+environment:
+  title: incompessibleFlow
+  tagDirectory: false
 arguments:
   dm_plex_separate_marker: ""
+  vel_petscspace_degree: 2
+  pres_petscspace_degree: 1
+  temp_petscspace_degree: 1
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -26,25 +33,16 @@ flow: !ablate::flow::IncompressibleFlow
     faces: [ 2, 2 ]
     lower: [ 0, 0]
     upper: [1, 1]
-    arguments:
+    options:
       dm_refine: 2
-      vel_petscspace_degree: 2
-      pres_petscspace_degree: 1
-      temp_petscspace_degree: 1
-  arguments: { }
+  options: {}
   parameters:
     strouhal: 1.0
     reynolds: 1.0
-    froude: 1.0
     peclet: 1.0
-    heatRelease: 1.0
-    gamma: 1.0
-    pth: 1.0
     mu: 1.0
     k: 1.0
     cp: 1.0
-    beta: 1.0
-    gravityDirection: 1
   initialization:
     - fieldName: "velocity"
       solutionField:
@@ -61,68 +59,41 @@ flow: !ablate::flow::IncompressibleFlow
         formula: "t + x + y"
       timeDerivative:
         formula: "1.0"
+  exactSolution:
+    - fieldName: "velocity"
+      solutionField:
+        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
+      timeDerivative:
+        formula: "1.0, 1.0"
+    - fieldName: "pressure"
+      solutionField:
+        formula: "x + y - 1"
+      timeDerivative:
+        formula: "0.0"
+    - fieldName: "temperature"
+      solutionField:
+        formula: "t + x + y"
+      timeDerivative:
+        formula: "1.0"      
   boundaryConditions:
-    - fieldName: velocity
-      boundaryName: "top wall velocity"
+    - !ablate::flow::boundaryConditions::Essential
+      fieldName: velocity
+      boundaryName: "wall velocity"
       labelName: marker
-      labelId: 3
+      labelIds: [3, 1, 2, 4]
       boundaryValue:
         formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
       timeDerivativeValue:
         formula: "1.0, 1.0"
-    - fieldName: velocity
-      boundaryName: "bottom wall velocity"
+    - !ablate::flow::boundaryConditions::Essential
+      fieldName: temperature
+      boundaryName: "wall temp"
       labelName: marker
-      labelId: 1
-      boundaryValue:
-        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
-      timeDerivativeValue:
-        formula: "1.0, 1.0"
-    - fieldName: velocity
-      boundaryName: "right wall velocity"
-      labelName: marker
-      labelId: 2
-      boundaryValue:
-        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
-      timeDerivativeValue:
-        formula: "1.0, 1.0"
-    - fieldName: velocity
-      boundaryName: "left wall velocity"
-      labelName: marker
-      labelId: 4
-      boundaryValue:
-        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
-      timeDerivativeValue:
-        formula: "1.0, 1.0"
-    - fieldName: temperature
-      boundaryName: "top wall temp"
-      labelName: marker
-      labelId: 3
+      labelIds: [3, 1, 2, 4]
       boundaryValue:
         formula: "t + x + y"
       timeDerivativeValue:
         formula: "1.0"
-    - fieldName: temperature
-      boundaryName: "bottom wall temp"
-      labelName: marker
-      labelId: 1
-      boundaryValue:
-        formula: "t + x + y"
-      timeDerivativeValue:
-        formula: "1.0"
-    - fieldName: temperature
-      boundaryName: "right wall temp"
-      labelName: marker
-      labelId: 2
-      boundaryValue:
-        formula: "t + x + y"
-      timeDerivativeValue:
-        formula: "1.0"
-    - fieldName: temperature
-      boundaryName: "right wall temp"
-      labelName: marker
-      labelId: 4
-      boundaryValue:
-        formula: "t + x + y"
-      timeDerivativeValue:
-        formula: "1.0"
+  monitors:
+    - !ablate::monitors::ErrorMonitor
+    

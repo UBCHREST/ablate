@@ -5,7 +5,7 @@
 #include "monitor.hpp"
 #include "viewable.hpp"
 namespace ablate::monitors {
-class Hdf5Monitor : Monitor {
+class Hdf5Monitor : public Monitor {
    protected:
     PetscViewer petscViewer = nullptr;
     std::filesystem::path outputFilePath;
@@ -15,11 +15,13 @@ class Hdf5Monitor : Monitor {
 
     static PetscErrorCode OutputHdf5(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx);
 
-   public:
-    Hdf5Monitor() = default;
-    virtual ~Hdf5Monitor();
+    const int interval;
 
-    void Register(std::shared_ptr<void>) override;
+   public:
+    Hdf5Monitor(int interval);
+    ~Hdf5Monitor() override;
+
+    void Register(std::shared_ptr<Monitorable>) override;
     PetscMonitorFunction GetPetscFunction() override{
         return OutputHdf5;
     }

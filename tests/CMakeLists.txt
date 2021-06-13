@@ -10,5 +10,5 @@ FetchContent_MakeAvailable(googletest)
 # Add each testing library
 add_subdirectory(testingResources)
 add_subdirectory(ablateLibrary)
-#add_subdirectory(integrationTests)
+add_subdirectory(integrationTests)
 

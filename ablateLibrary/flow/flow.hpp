@@ -24,6 +24,7 @@ class Flow : public solve::Solvable, public monitors::Viewable {
 
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);
+
    public:
     static void UpdateAuxFields(TS ts, Flow& flow);
 
@@ -61,8 +62,9 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     PetscOptions petscOptions;
 
    public:
-    Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization,
-         std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution);
+    Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
+         std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+         std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution);
     virtual ~Flow();
 
     virtual void CompleteProblemSetup(TS ts);
@@ -75,36 +77,27 @@ class Flow : public solve::Solvable, public monitors::Viewable {
      * @param time
      * @param u
      */
-    virtual void View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const override{
-
-    }
-
+    void View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const override;
 
     /**
      * Adds function to be called before each flow step
      * @param preStep
      */
-    void RegisterPreStep(std::function<void(TS ts, Flow&)> preStep){
-        this->preStepFunctions.push_back(preStep);
-    }
+    void RegisterPreStep(std::function<void(TS ts, Flow&)> preStep) { this->preStepFunctions.push_back(preStep); }
 
     /**
- * Adds function to be called before each flow step
- * @param preStep
- */
-    void RegisterPostStep(std::function<void(TS ts, Flow&)> postStep){
-        this->postStepFunctions.push_back(postStep);
-    }
+     * Adds function to be called before each flow step
+     * @param preStep
+     */
+    void RegisterPostStep(std::function<void(TS ts, Flow&)> postStep) { this->postStepFunctions.push_back(postStep); }
 
-    const std::string& GetName() const override{ return name; }
+    const std::string& GetName() const override { return name; }
 
     const DM& GetDM() const { return dm->GetDomain(); }
 
     const DM& GetAuxDM() const { return auxDM; }
 
-    void SetupSolve(TS& timeStepper) override{
-        CompleteProblemSetup(timeStepper);
-    }
+    void SetupSolve(TS& timeStepper) override { CompleteProblemSetup(timeStepper); }
 
     Vec GetAuxField() { return auxField; }
 

@@ -5,3 +5,6 @@ void ablate::flow::fluxDifferencer::OffFluxDifferencer::OffDifferencerFunction(P
     *sMm = 0.0;
     *sMp = 0.0;
 }
+
+#include "parser/registrar.hpp"
+REGISTER_WITHOUT_ARGUMENTS(ablate::flow::fluxDifferencer::FluxDifferencer, ablate::flow::fluxDifferencer::OffFluxDifferencer, "Turns of convective flux through the face.");

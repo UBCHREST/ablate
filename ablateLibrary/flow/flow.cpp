@@ -92,7 +92,7 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription)
                 PetscObjectComm((PetscObject)dm->GetDomain()), dim, flowFieldDescription.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, flowFieldDescription.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
                 checkMpiError;
             PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;  // TODO: update with options
+            PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;
 
             // If this is not the first field, copy the quadrature locations
             if (flowFieldDescriptors.size() > 1) {
@@ -110,7 +110,7 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription)
             PetscFVCreate(PETSC_COMM_WORLD, &fvm) >> checkError;
             PetscObjectSetOptionsPrefix((PetscObject)fvm, flowFieldDescription.fieldPrefix.c_str()) >> checkError;
             PetscObjectSetName((PetscObject)fvm, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;  // TODO: update with options
+            PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;
 
             PetscFVSetFromOptions(fvm) >> checkError;
             PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;
@@ -253,6 +253,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     TSSetDM(ts, dm->GetDomain()) >> checkError;
     DMPlexCreateClosureIndex(dm->GetDomain(), NULL) >> checkError;
     DMCreateGlobalVector(dm->GetDomain(), &(flowField)) >> checkError;
+    PetscObjectSetName((PetscObject)flowField, "flowField") >> checkError;
 
     if (auxDM) {
         DMCreateDS(auxDM) >> checkError;
@@ -360,4 +361,39 @@ void ablate::flow::Flow::UpdateAuxFields(TS ts, ablate::flow::Flow& flow) {
 
     // Update the source terms
     DMProjectFunctionLocal(flow.auxDM, time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, flow.auxField) >> checkError;
+}
+
+void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const {
+    // If this is the first output, save the mesh
+    if(steps == 0){
+        // Print the initial mesh
+        DMView(GetDM(), viewer) >> checkError;
+
+        if (auxDM) {
+            DMSetOutputSequenceNumber(auxDM, steps, time) >> checkError;
+        }
+    }
+
+    // Always save the main flowField
+    VecView(flowField, viewer) >> checkError;
+
+    //If there is aux data output
+    if (auxField) {
+        // copy over the sequence data from the main dm
+        PetscReal dmTime;
+        PetscInt dmSequence;
+        DMGetOutputSequenceNumber(GetDM(), &dmSequence, &dmTime) >> checkError;
+        DMSetOutputSequenceNumber(auxDM, dmSequence, dmTime) >> checkError;
+
+        Vec auxGlobalField;
+        DMGetGlobalVector(auxDM, &auxGlobalField) >> checkError;
+
+        // copy over the name of the auxFieldVector
+        const char *name;
+        PetscObjectGetName((PetscObject)auxField, &name) >> checkError;
+        PetscObjectSetName((PetscObject)auxGlobalField, name) >> checkError;
+        DMLocalToGlobal(auxDM, auxField, INSERT_VALUES, auxGlobalField) >> checkError;
+        VecView(auxGlobalField, viewer) >> checkError;
+        DMRestoreGlobalVector(auxDM, &auxGlobalField) >> checkError;
+    }
 }

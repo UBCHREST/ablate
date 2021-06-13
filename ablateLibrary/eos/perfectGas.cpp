@@ -48,3 +48,6 @@ PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeTemperature(const Petsc
     (*T) = internalEnergy / cv;
     PetscFunctionReturn(0);
 }
+
+#include "parser/registrar.hpp"
+REGISTER(ablate::eos::EOS, ablate::eos::PerfectGas, "perfect gas eos", ARG(ablate::parameters::Parameters, "parameters", "parameters for the perfect gas eos"));

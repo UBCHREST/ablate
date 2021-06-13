@@ -28,3 +28,6 @@ void ablate::flow::fluxDifferencer::AusmFluxDifferencer::AusmFluxDifferencerFunc
         *sMp = m;//Zero out the right contribution
     }
 }
+
+#include "parser/registrar.hpp"
+REGISTER_WITHOUT_ARGUMENTS(ablate::flow::fluxDifferencer::FluxDifferencer, ablate::flow::fluxDifferencer::AusmFluxDifferencer, "AUSM Flux Spliting: \"A New Flux Splitting Scheme\" Liou and Steffen, pg 26, Eqn (6), 1993");

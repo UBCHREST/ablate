@@ -8,11 +8,12 @@
 #include "particles/initializers/initializer.hpp"
 #include "solve/timeStepper.hpp"
 #include "particles/particleFieldDescriptor.hpp"
+#include "monitors/viewable.hpp"
 
 namespace ablate::particles {
 
-class Particles {
-   public:
+class Particles : public monitors::Viewable{
+   protected:
     // particle domain
     DM dm;
     const PetscInt ndims;
@@ -33,6 +34,9 @@ class Particles {
     // all fields stored in the particle domain
     std::vector<particles::ParticleFieldDescriptor> particleFieldDescriptors;
     std::vector<particles::ParticleFieldDescriptor> particleSolutionDescriptors;
+
+    // store the exact solution if provided
+    const std::shared_ptr<mathFunctions::MathFunction> exactSolution;
 
     /**
      * The register fields adds the field to the swarm
@@ -96,7 +100,7 @@ class Particles {
     explicit Particles(std::string name,  int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options);
     virtual ~Particles();
 
-    const std::string& GetName() const { return name; }
+    const std::string& GetName() const override{ return name; }
     const DM& GetDM() const { return dm; }
     PetscReal GetInitialTime() const { return timeInitial; }
     PetscReal GetFinalTime() const { return timeFinal; }
@@ -104,14 +108,25 @@ class Particles {
 
     virtual void InitializeFlow(std::shared_ptr<flow::Flow> flow);
 
-    std::shared_ptr<mathFunctions::MathFunction> exactSolution = nullptr;// TODO: make private const
-
     void ProjectFunction(const std::string& field, ablate::mathFunctions::MathFunction& mathFunction);
+
+    /**
+     * shared function to view all particles;
+     * @param viewer
+     * @param steps
+     * @param time
+     * @param u
+     */
+    void View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const override;
 
     /** common field names for particles **/
     inline static const char ParticleVelocity[] = "ParticleVelocity";
     inline static const char ParticleDiameter[] = "ParticleDiameter";
     inline static const char ParticleDensity[] = "ParticleDensity";
+
+    // Helper function useful for tests
+    static     PetscErrorCode ComputeParticleExactSolution(TS particleTS, Vec);
+
 };
 }  // namespace ablate::particles
 #endif  // ABLATELIBRARY_PARTICLES_HPP

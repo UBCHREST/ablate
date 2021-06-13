@@ -189,66 +189,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     PetscFunctionReturn(0);
 }
 
-/**
- * Sets the u vector to the x location at the initial time in the TS
- * @param particleTS
- * @param u
- * @return
- */
-static PetscErrorCode setParticleExactSolution(TS particleTS, Vec u) {
-    DM dm;
-    PetscFunctionBegin;
-    ablate::particles::Particles *particles;
-    PetscErrorCode ierr = TSGetApplicationContext(particleTS, &particles);
-    CHKERRQ(ierr);
-    ierr = TSGetDM(particleTS, &dm);
-    CHKERRQ(ierr);
-
-    DM sdm;
-    const PetscScalar *xp0;
-    PetscScalar *xp;
-    PetscInt dim, Np, p;
-    MPI_Comm comm;
-
-    PetscFunctionBeginUser;
-    ierr = TSGetApplicationContext(particleTS, (void **)&particles);
-    CHKERRQ(ierr);
-    // get the abs time for the particle evaluation, this is the ts relative time plus the time at the start of the particle ts solve
-    PetscReal time;
-    ierr = TSGetTime(particleTS, &time);
-    CHKERRQ(ierr);
-    time += particles->timeInitial;
-
-    ierr = PetscObjectGetComm((PetscObject)particleTS, &comm);
-    CHKERRQ(ierr);
-    ierr = TSGetDM(particleTS, &sdm);
-    CHKERRQ(ierr);
-    ierr = DMGetDimension(sdm, &dim);
-    CHKERRQ(ierr);
-    ierr = DMSwarmGetLocalSize(sdm, &Np);
-    CHKERRQ(ierr);
-    ierr = DMSwarmGetField(particles->dm, "InitialLocation", NULL, NULL, (void **)&xp0);
-    CHKERRQ(ierr);
-    ierr = VecGetArrayWrite(u, &xp);
-    CHKERRQ(ierr);
-    for (p = 0; p < Np; ++p) {
-        PetscScalar x[4];  // includes position and velocity in 2D
-        PetscReal x0[4];   // includes initial position and velocity in 2D
-        PetscInt d;
-
-        for (d = 0; d < dim; ++d) x0[d] = PetscRealPart(xp0[p * dim + d]);
-        ierr = particles->exactSolution->GetPetscFunction()(dim, time, x0, 4, x, particles->exactSolution->GetContext());
-        CHKERRQ(ierr);
-        for (d = 0; d < totalFields * dim; ++d) {
-            xp[p * totalFields * dim + d] = x[d];
-        }
-    }
-    ierr = DMSwarmRestoreField(particles->dm, "InitialLocation", NULL, NULL, (void **)&xp0);
-    CHKERRQ(ierr);
-    ierr = VecRestoreArrayWrite(u, &xp);
-    CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
 
 TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
     StartWithMPI
@@ -344,7 +284,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             // link the flow to the particles
             particles->InitializeFlow(flowObject);
 
-            TSSetComputeInitialCondition(particles->GetTS(), setParticleExactSolution) >> testErrorChecker;
+            TSSetComputeInitialCondition(particles->GetTS(), ablate::particles::Particles::ComputeParticleExactSolution) >> testErrorChecker;
 
             // setup the flow monitor to also check particles
             TSMonitorSet(ts, MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;

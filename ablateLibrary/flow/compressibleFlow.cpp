@@ -1,7 +1,6 @@
 #include "compressibleFlow.hpp"
 #include <utilities/mpiError.hpp>
 #include "compressibleFlow.h"
-#include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
 #include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
 
@@ -247,7 +246,16 @@ void ablate::flow::CompressibleFlow::CompleteProblemSetup(TS ts) {
 }
 void ablate::flow::CompressibleFlow::CompleteFlowInitialization(DM, Vec) {}
 
-//REGISTER(ablate::flow::Flow, ablate::flow::CompressibleFlow, "compressible finite volume flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
-//         ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), ARG(ablate::parameters::Parameters, "parameters", "compressible flow parameters"),
-//         ARG(std::vector<flow::FlowFieldSolution>, "initialization", "the exact solution used to initialize the flow field"),
-//         OPT(std::vector<flow::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"), ARG(eos::EOS, "eos", "the equation of state for the compressible flow"));
+#include "parser/registrar.hpp"
+REGISTER(ablate::flow::Flow,
+         ablate::flow::CompressibleFlow,
+         "compressible finite volume flow",
+         ARG(std::string, "name", "the name of the flow field"),
+         ARG(ablate::mesh::Mesh, "mesh", "the  mesh and discretization"),
+         ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
+         ARG(ablate::parameters::Parameters, "parameters", "the compressible flow parameters cfl, gamma, etc."),
+         OPT(ablate::flow::fluxDifferencer::FluxDifferencer, "fluxDifferencer", "the flux differencer (defaults to AUSM)"),
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSc"),
+         OPT(std::vector<mathFunctions::FieldSolution>, "initialization", "the flow field initialization"),
+         OPT(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+         OPT(std::vector<mathFunctions::FieldSolution>, "exactSolution", "optional exact solutions that can be used for error calculations"));
