@@ -4,8 +4,11 @@
 
 namespace ablate::particles::initializers {
 class CellInitializer : public Initializer {
+   private:
+    const int particlesPerCell;
+
    public:
-    explicit CellInitializer(std::map<std::string, std::string> arguments);
+    explicit CellInitializer(int particlesPerCellPerDim = 1);
     ~CellInitializer() override = default;
 
     void Initialize(ablate::flow::Flow& flow, DM particleDM) override;

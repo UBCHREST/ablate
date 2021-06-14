@@ -17,6 +17,8 @@ class FactoryParameters : public Parameters {
     explicit FactoryParameters(std::shared_ptr<ablate::parser::Factory> factory);
 
     std::optional<std::string> GetString(std::string paramName) const override;
+
+    virtual std::unordered_set<std::string> GetKeys() const override;
 };
 }  // namespace ablate::parameters
 

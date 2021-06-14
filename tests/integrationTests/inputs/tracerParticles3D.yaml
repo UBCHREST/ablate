@@ -1,7 +1,10 @@
 ---
 environment:
   title: Tracer Particles with incompressible Flow 3D
-arguments: {}
+arguments:
+  vel_petscspace_degree: 2
+  pres_petscspace_degree: 1
+  temp_petscspace_degree: 1
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -27,12 +30,9 @@ flow: !ablate::flow::IncompressibleFlow
     faces: [ 2, 2, 2 ]
     lower: [ 0, 0, 0]
     upper: [1, 1, 1]
-    arguments:
+    options:
       dm_refine: 1
-      vel_petscspace_degree: 2
-      pres_petscspace_degree: 1
-      temp_petscspace_degree: 1
-  arguments: {}
+  options: {}
   parameters:
     strouhal: 1.0
     reynolds: 1.0
@@ -57,36 +57,41 @@ flow: !ablate::flow::IncompressibleFlow
       timeDerivative:
         formula: "1.0"
   boundaryConditions:
-    - fieldName: velocity
-      boundaryName: "wall velocity"
+    - !ablate::flow::boundaryConditions::Essential
+      fieldName: velocity
+      boundaryName: "velocity"
       labelName: marker
-      labelId: 1
+      labelIds: [1]
       boundaryValue:
         formula: "t + x^2 + y^2 + z^2, t + 2*x^2 - 2*x*y + z, t"
       timeDerivativeValue:
         formula: "1.0, 1.0, 1.0"
-    - fieldName: temperature
-      boundaryName: "top wall temp"
+    - !ablate::flow::boundaryConditions::Essential
+      fieldName: temperature
+      boundaryName: "wall temp"
       labelName: marker
-      labelId: 1
+      labelIds: [1]
       boundaryValue:
         formula: "t + x + y"
       timeDerivativeValue:
         formula: "1.0"
   monitors:
-    - !ablate::monitors::flow::Hdf5OutputFlow
+    - !ablate::monitors::Hdf5Monitor
+      interval: 0
+    - !ablate::monitors::TimeStepMonitor
+
 particles:
   - !ablate::particles::Tracer
     name: particles
     ndims: 3
-    arguments:
+    options:
       ts_dt: 0.005
     initializer: !ablate::particles::initializers::BoxInitializer
-      arguments:
-        particle_lower: 0.25,0.25,.25
-        particle_upper: 0.75,0.75,.75
-        Npb: 10
+      lower: [0.25,0.25,.25]
+      upper: [0.75,0.75,.75]
+      particlesPerDim: 10
     exactSolution:
       formula: "t + x + y"
     monitors:
-      - !ablate::monitors::particles::Hdf5OutputParticle
+      - !ablate::monitors::Hdf5Monitor
+        interval: 0

@@ -457,4 +457,101 @@ TEST(ParameterTestFill, ShouldThrowExceptionForMissingIntValues) {
     // assert
     EXPECT_THROW(mockParameters.Fill(4, names, &values[0]), ParameterException);
 }
+
+// double vector
+class ParameterTestFixtureDoubleVector : public testing::TestWithParam<std::tuple<std::string, std::vector<double>>> {};
+
+TEST_P(ParameterTestFixtureDoubleVector, GetShouldReturnValue) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedString));
+
+    // act
+    auto actualValue = mockParameters.Get<std::vector<double>>(key);
+
+    // assert
+    EXPECT_TRUE(actualValue.has_value());
+    EXPECT_EQ(actualValue.value(), expectedValue);
+}
+
+TEST_P(ParameterTestFixtureDoubleVector, GetShouldReturnEmptyOptional) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1));
+
+    // act
+    auto actualValue = mockParameters.Get<std::vector<double>>(key);
+
+    // assert
+    EXPECT_FALSE(actualValue.has_value());
+}
+
+TEST_P(ParameterTestFixtureDoubleVector, GetExpectShouldReturnValue) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedString));
+
+    // act
+    auto actualValue = mockParameters.Get<std::vector<double>>(key);
+
+    // assert
+    EXPECT_EQ(actualValue, expectedValue);
+}
+
+TEST_P(ParameterTestFixtureDoubleVector, GetShouldThrowExceptionWhenNotFound) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1));
+
+    // act
+    // assert
+    EXPECT_THROW(mockParameters.GetExpect<std::vector<double>>(key), ParameterException);
+}
+
+TEST_P(ParameterTestFixtureDoubleVector, GetExpectShouldReturnValueEvenWithDefault) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedString));
+
+    // act
+    auto actualValue = mockParameters.Get<std::vector<double>>(key, {102.2});
+
+    // assert
+    EXPECT_EQ(actualValue, expectedValue);
+}
+
+TEST_P(ParameterTestFixtureDoubleVector, GetShouldReturnDefaultValue) {
+    // arrange
+    const auto [expectedString, _] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1));
+
+    // act
+    auto actualValue = mockParameters.Get<std::vector<double>>(key, {102.2});
+
+    // assert
+    EXPECT_EQ(actualValue, std::vector<double>{102.2});
+}
+
+INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureDoubleVector,
+                         ::testing::Values(std::make_tuple("22.3", std::vector<double>{22.3}), std::make_tuple("1E-3 2.3 ", std::vector<double>{1.0E-3, 2.3}),
+                                           std::make_tuple("", std::vector<double>{})));
+
 }  // namespace ablateTesting::parameters

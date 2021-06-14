@@ -2,16 +2,12 @@
 # Include code
 target_sources(ablateCore
         PUBLIC
-        flow.h
-        flow.c
         incompressibleFlow.c
         incompressibleFlow.h
         lowMachFlow.c
         lowMachFlow.h
         compressibleFlow.c
         compressibleFlow.h
-        fluxDifferencer.h
-        fluxDifferencer.c
         fvSupport.h
         fvSupport.c
         )

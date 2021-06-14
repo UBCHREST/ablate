@@ -89,7 +89,11 @@ void testingResources::MpiTestFixture::CompareOutputFiles() {
     if (mpiTestParameter.expectedOutputFile.empty()) {
         return;
     }
-    // load in the actual and expected result files
+    // load in the actual and expected results files
+    if (!std::filesystem::exists(mpiTestParameter.expectedOutputFile)) {
+        FAIL() << "The expected output file " << mpiTestParameter.expectedOutputFile << " cannot be found";
+    }
+
     std::ifstream expectedStream(mpiTestParameter.expectedOutputFile);
     std::ifstream actualStream(OutputFile());
 

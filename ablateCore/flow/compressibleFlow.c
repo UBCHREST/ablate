@@ -1,10 +1,6 @@
 #include "compressibleFlow.h"
 #include "fvSupport.h"
 
-static const char *compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
-static const char *compressibleAuxComponentNames[TOTAL_COMPRESSIBLE_AUX_COMPONENTS + 1] = {"T", "vel", "unknown"};
-const char *compressibleFlowParametersTypeNames[TOTAL_COMPRESSIBLE_FLOW_PARAMETERS + 1] = {"cfl", "k", "mu", "unknown"};
-
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
     PetscReal mag = 0.0;
     for (PetscInt d=0; d< dim; d++) {
@@ -32,7 +28,7 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal* in){
  * @param updateFunction
  * @return
  */
-static PetscErrorCode FVFlowUpdateAuxFieldsFV(FlowData flowData, PetscReal time, Vec locXVec, FVAuxFieldUpdateFunction* updateFunctions) {
+PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction* updateFunctions, FlowData_CompressibleFlow data) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
@@ -40,7 +36,7 @@ static PetscErrorCode FVFlowUpdateAuxFieldsFV(FlowData flowData, PetscReal time,
     Vec cellGeomVec;
     DM dmCell;
     const PetscScalar *cellGeomArray;
-    ierr = DMPlexGetGeometryFVM(flowData->dm, NULL, &cellGeomVec, NULL);CHKERRQ(ierr);
+    ierr = DMPlexGetGeometryFVM(dm, NULL, &cellGeomVec, NULL);CHKERRQ(ierr);
     ierr = VecGetDM(cellGeomVec, &dmCell);CHKERRQ(ierr);
     ierr = VecGetArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
 
@@ -49,18 +45,18 @@ static PetscErrorCode FVFlowUpdateAuxFieldsFV(FlowData flowData, PetscReal time,
 
     // Get the cell start and end for the fv cells
     PetscInt cellStart, cellEnd;
-    ierr = DMPlexGetHeightStratum(flowData->dm, EULER, &cellStart, &cellEnd);CHKERRQ(ierr);
+    ierr = DMPlexGetHeightStratum(dm, 0, &cellStart, &cellEnd);CHKERRQ(ierr);
 
     // extract the low flow and aux fields
     const PetscScalar      *locFlowFieldArray;
     ierr = VecGetArrayRead(locXVec, &locFlowFieldArray);CHKERRQ(ierr);
 
     PetscScalar     *localAuxFlowFieldArray;
-    ierr = VecGetArray(flowData->auxField, &localAuxFlowFieldArray);CHKERRQ(ierr);
+    ierr = VecGetArray(locAuxField, &localAuxFlowFieldArray);CHKERRQ(ierr);
 
     // Get the cell dim
     PetscInt dim;
-    ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
     // March over each cell volume
     for (PetscInt c = cellStart; c < cellEnd; ++c) {
@@ -69,21 +65,21 @@ static PetscErrorCode FVFlowUpdateAuxFieldsFV(FlowData flowData, PetscReal time,
         PetscReal           *auxValues;
 
         ierr = DMPlexPointLocalRead(dmCell, c, cellGeomArray, &cellGeom);CHKERRQ(ierr);
-        ierr = DMPlexPointLocalFieldRead(flowData->dm, c, EULER, locFlowFieldArray, &fieldValues);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalFieldRead(dm, c, EULER, locFlowFieldArray, &fieldValues);CHKERRQ(ierr);
 
-        for (PetscInt auxFieldIndex = 0; auxFieldIndex < flowData->numberAuxFields; auxFieldIndex ++){
-            ierr = DMPlexPointLocalFieldRef(flowData->auxDm, c, auxFieldIndex, localAuxFlowFieldArray, &auxValues);CHKERRQ(ierr);
+        for (PetscInt auxFieldIndex = 0; auxFieldIndex < numberUpdateFunctions; auxFieldIndex ++){
+            ierr = DMPlexPointLocalFieldRef(auxDM, c, auxFieldIndex, localAuxFlowFieldArray, &auxValues);CHKERRQ(ierr);
 
             // If an update function was passed
             if (updateFunctions[auxFieldIndex]){
-                updateFunctions[auxFieldIndex](flowData, time, dim, cellGeom, fieldValues, auxValues);
+                updateFunctions[auxFieldIndex](data, time, dim, cellGeom, fieldValues, auxValues);
             }
         }
     }
 
     ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(locXVec, &locFlowFieldArray);CHKERRQ(ierr);
-    ierr = VecRestoreArray(flowData->auxField, &localAuxFlowFieldArray);CHKERRQ(ierr);
+    ierr = VecRestoreArray(locAuxField, &localAuxFlowFieldArray);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -282,7 +278,7 @@ static PetscErrorCode FVFlowFillGradientBoundary(DM dm, PetscFV auxFvm, Vec loca
  * Function to get the density, velocity, and energy from the conserved variables
  * @return
  */
-static void DecodeEulerState(EOSData eos, PetscInt dim, const PetscReal* conservedValues,  const PetscReal *normal, PetscReal* density,
+static void DecodeEulerState(FlowData_CompressibleFlow flowData, PetscInt dim, const PetscReal* conservedValues,  const PetscReal *normal, PetscReal* density,
                                   PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p){
     // decode
     *density = conservedValues[RHO];
@@ -296,7 +292,7 @@ static void DecodeEulerState(EOSData eos, PetscInt dim, const PetscReal* conserv
     }
 
     // decode the state in the eos
-    EOSDecodeState(eos, NULL, dim, *density, totalEnergy, velocity, internalEnergy, a, p);
+    flowData->decodeStateFunction(NULL, dim, *density, totalEnergy, velocity, internalEnergy, a, p, flowData->decodeStateFunctionContext);
     *M = (*normalVelocity)/(*a);
 }
 
@@ -325,8 +321,7 @@ PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, c
 }
 
 void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
-    FlowData flowData = (FlowData)ctx;
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
 
     // Compute the norm
     PetscReal norm[3];
@@ -341,7 +336,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     PetscReal aL;
     PetscReal ML;
     PetscReal pL;
-    DecodeEulerState(flowParameters->eos, dim, xL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+    DecodeEulerState(flowParameters, dim, xL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 
     PetscReal densityR;
     PetscReal normalVelocityR;
@@ -350,7 +345,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     PetscReal aR;
     PetscReal MR;
     PetscReal pR;
-    DecodeEulerState(flowParameters->eos, dim, xR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    DecodeEulerState(flowParameters, dim, xR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
     PetscReal sPm;
     PetscReal sPp;
@@ -376,7 +371,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
 /*
  * Compute the rhs source terms for diffusion processes
  */
-static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, FlowData flowData) {
+PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxVec, Vec globFVec, FlowData_CompressibleFlow flowParameters) {
     PetscFunctionBeginUser;
     // Call the flux calculation
     PetscErrorCode ierr;
@@ -385,12 +380,12 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     PetscFV auxFvm[TOTAL_COMPRESSIBLE_AUX_COMPONENTS];
     DM auxFieldGradDM[TOTAL_COMPRESSIBLE_AUX_COMPONENTS]; /* dm holding the grad information */
     for (PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++){
-        ierr = DMGetField(flowData->auxDm, af, NULL, (PetscObject*)&auxFvm[af]);CHKERRQ(ierr);
+        ierr = DMGetField(auxDM, af, NULL, (PetscObject*)&auxFvm[af]);CHKERRQ(ierr);
 
         // Get the needed auxDm
-        ierr = DMPlexGetDataFVM_MulfiField(flowData->auxDm, auxFvm[af], NULL, NULL, &auxFieldGradDM[af]);CHKERRQ(ierr);
+        ierr = DMPlexGetDataFVM_MulfiField(auxDM, auxFvm[af], NULL, NULL, &auxFieldGradDM[af]);CHKERRQ(ierr);
         if (!auxFieldGradDM[af]){
-            SETERRQ(PetscObjectComm((PetscObject)flowData->auxDm), PETSC_ERR_ARG_WRONGSTATE, "The FVM method for aux variables must support computing gradients.");
+            SETERRQ(PetscObjectComm((PetscObject)auxDM), PETSC_ERR_ARG_WRONGSTATE, "The FVM method for aux variables must support computing gradients.");
         }
     }
 
@@ -400,14 +395,14 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
 
     // Get the locXArray
     const PetscScalar *locAuxArray;
-    ierr = VecGetArrayRead(flowData->auxField, &locAuxArray);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(locAuxVec, &locAuxArray);CHKERRQ(ierr);
 
     // Get the fvm face and cell geometry
     Vec cellGeomVec = NULL;/* vector of structs related to cell geometry*/
     Vec faceGeomVec = NULL;/* vector of structs related to face geometry*/
 
     // extract the fvm data
-    ierr = DMPlexGetGeometryFVM(flowData->dm, &faceGeomVec, &cellGeomVec, NULL);CHKERRQ(ierr);
+    ierr = DMPlexGetGeometryFVM(dm, &faceGeomVec, &cellGeomVec, NULL);CHKERRQ(ierr);
 
     // get the dm for each geom type
     DM dmFaceGeom, dmCellGeom;
@@ -443,7 +438,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
         ierr = DMCreateGlobalVector(auxFieldGradDM[af], &gradAuxGlobalVec[af]);CHKERRQ(ierr);
 
         // compute the global grad values
-        ierr = DMPlexReconstructGradientsFVM_MulfiField(flowData->auxDm, auxFvm[af], flowData->auxField, gradAuxGlobalVec[af]);CHKERRQ(ierr);
+        ierr = DMPlexReconstructGradientsFVM_MulfiField(auxDM, auxFvm[af], locAuxVec, gradAuxGlobalVec[af]);CHKERRQ(ierr);
 
         // Map to a local grad vector
         ierr = DMCreateLocalVector(auxFieldGradDM[af], &gradAuxLocalVec[af]);CHKERRQ(ierr);
@@ -455,14 +450,11 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
         ierr = DMGlobalToLocalEnd(auxFieldGradDM[af], gradAuxGlobalVec[af], INSERT_VALUES, gradAuxLocalVec[af]);CHKERRQ(ierr);
 
         // fill the boundary conditions
-        ierr = FVFlowFillGradientBoundary(flowData->auxDm, auxFvm[af], flowData->auxField, gradAuxLocalVec[af]);CHKERRQ(ierr);
+        ierr = FVFlowFillGradientBoundary(auxDM, auxFvm[af], locAuxVec, gradAuxLocalVec[af]);CHKERRQ(ierr);
 
         // access the local vector
         ierr = VecGetArrayRead(gradAuxLocalVec[af], &localGradArray[af]);CHKERRQ(ierr);
     }
-
-    // Get the flow parameters
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
 
     // march over each face
     for (PetscInt face = faceStart; face < faceEnd; ++face) {
@@ -500,8 +492,8 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
 
         // extract the field values
         PetscScalar *auxL, *auxR;
-        ierr = DMPlexPointLocalFieldRead(flowData->auxDm, faceCells[0], euler, locAuxArray, &auxL);CHKERRQ(ierr);
-        ierr = DMPlexPointLocalFieldRead(flowData->auxDm, faceCells[1], euler, locAuxArray, &auxR);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalFieldRead(auxDM, faceCells[0], euler, locAuxArray, &auxL);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalFieldRead(auxDM, faceCells[1], euler, locAuxArray, &auxR);CHKERRQ(ierr);
 
         // Add to the source terms of f
         PetscScalar    *fL = NULL, *fR = NULL;
@@ -564,7 +556,7 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
     ierr = DMRestoreLocalVector(dm, &locFVec);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(flowData->auxField, &locAuxArray);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(locAuxVec, &locAuxArray);CHKERRQ(ierr);
 
     for (PetscInt af =0; af < TOTAL_COMPRESSIBLE_AUX_COMPONENTS; af++) {
         // restore the arrays
@@ -575,276 +567,5 @@ static PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, Pet
         ierr = VecDestroy(&gradAuxLocalVec[af]);CHKERRQ(ierr);
     }
 
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode CompressibleFlowRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void *ctx) {
-    PetscFunctionBeginUser;
-    PetscErrorCode ierr;
-
-    FlowData flowData = (FlowData)ctx;
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
-
-    // compute the euler flux across each face (note CompressibleFlowComputeEulerFlux has already been registered)
-    ierr = DMPlexTSComputeRHSFunctionFVM(dm, time, locXVec, globFVec, ctx);CHKERRQ(ierr);
-
-    // if there are any coefficients for diffusion, compute diffusion
-    if (flowParameters->k || flowParameters->mu){
-        // update any aux fields
-        ierr = FVFlowUpdateAuxFieldsFV(flowData, time, locXVec, flowParameters->auxFieldUpdateFunctions);CHKERRQ(ierr);
-
-        // compute the RHS sources
-        ierr = CompressibleFlowDiffusionSourceRHSFunctionLocal(dm, time, locXVec, globFVec, ctx);CHKERRQ(ierr);
-    }
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode CompressibleFlow_SetupDiscretization(FlowData flowData, DM* dm) {
-    PetscInt dim;
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-    ierr = DMSetFromOptions(*dm);CHKERRQ(ierr);
-    const PetscInt ghostCellDepth = 1;
-    {// Make sure that the flow is setup distributed
-        DM dmDist;
-        ierr = DMSetBasicAdjacency(*dm, PETSC_TRUE, PETSC_FALSE);CHKERRQ(ierr);
-        ierr = DMPlexDistribute(*dm, ghostCellDepth, NULL, &dmDist);CHKERRQ(ierr);
-        if (dmDist) {
-            ierr = DMDestroy(dm);CHKERRQ(ierr);
-            *dm   = dmDist;
-        }
-    }
-
-    // create any ghost cells that are needed
-    {
-        DM gdm;
-        ierr = DMPlexConstructGhostCells(*dm, NULL, NULL, &gdm);CHKERRQ(ierr);
-        ierr = DMDestroy(dm);CHKERRQ(ierr);
-        *dm   = gdm;
-    }
-
-    //Store the field data
-    flowData->dm = *dm;
-    ierr = DMSetApplicationContext(flowData->dm, flowData);CHKERRQ(ierr);
-
-    // Determine the number of dimensions
-    ierr = DMGetDimension(flowData->dm, &dim);CHKERRQ(ierr);
-
-    // Register a single field
-    PetscInt numberComponents = 2+dim;
-    ierr = FlowRegisterField(flowData, "euler", "euler", numberComponents, FV);CHKERRQ(ierr);
-
-    // Name each of the components, this is used by some of the output fields
-    PetscFV fvm;
-    ierr = DMGetField(flowData->dm,0, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
-    for (PetscInt c =0; c <numberComponents; c++){
-        ierr = PetscFVSetComponentName(fvm, c, compressibleFlowComponentNames[c]);CHKERRQ(ierr);
-    }
-
-    // Create the discrete systems for the DM based upon the fields added to the DM
-    ierr = FlowFinalizeRegisterFields(flowData);CHKERRQ(ierr);
-
-    // Register the aux fields, note the order should match the enum
-    ierr = FlowRegisterAuxField(flowData, compressibleAuxComponentNames[T], compressibleAuxComponentNames[T], 1, FV);CHKERRQ(ierr);
-    ierr = FlowRegisterAuxField(flowData, compressibleAuxComponentNames[VEL], compressibleAuxComponentNames[VEL], dim, FV);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode UpdateAuxTemperatureField(FlowData flowData, PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField){
-    PetscFunctionBeginUser;
-    PetscReal density = conservedValues[RHO];
-    PetscReal totalEnergy = conservedValues[RHOE]/density;
-
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
-    PetscErrorCode ierr = EOSTemperature(flowParameters->eos, NULL, dim, density, totalEnergy, conservedValues + RHOU, &auxField[T]);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode UpdateAuxVelocityField(FlowData flowData, PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField){
-    PetscFunctionBeginUser;
-    PetscReal density = conservedValues[RHO];
-
-    for (PetscInt d =0; d < dim; d++){
-        auxField[d] = conservedValues[RHOU + d] / density;
-    }
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode CompressibleFlow_StartProblemSetup(FlowData flowData, PetscInt num, PetscScalar values[]) {
-    PetscErrorCode ierr;
-
-    PetscFunctionBeginUser;
-    PetscDS prob;
-    ierr = DMGetDS(flowData->dm, &prob);CHKERRQ(ierr);
-
-    // Set the flux calculator solver for each component
-    ierr = PetscDSSetRiemannSolver(prob, 0, CompressibleFlowComputeEulerFlux);CHKERRQ(ierr);
-    ierr = PetscDSSetContext(prob, 0, flowData);CHKERRQ(ierr);
-    ierr = PetscDSSetFromOptions(prob);CHKERRQ(ierr);
-
-    // Create the euler data
-    EulerFlowData *data;
-    PetscNew(&data);
-    flowData->data =data;
-
-    data->cfl = values[CFL];
-    data->k = num > K ? values[K] : 0.0;
-    data->mu = num > MU ? values[MU] : 0.0;
-
-    // Set the update fields
-    data->auxFieldUpdateFunctions[T] = UpdateAuxTemperatureField;
-    data->auxFieldUpdateFunctions[VEL] = UpdateAuxVelocityField;
-    data-> eos = NULL;
-
-    const char *prefix;
-    ierr = DMGetOptionsPrefix(flowData->dm, &prefix);CHKERRQ(ierr);
-
-    ierr = PetscOptionsBegin(PetscObjectComm((PetscObject)flowData->dm),prefix,"Compressible Flow Options",NULL);CHKERRQ(ierr);
-
-    // setup the flux differencer
-    PetscFunctionList fluxDifferencerList;
-    ierr = FluxDifferencerListGet(&fluxDifferencerList);CHKERRQ(ierr);
-    char fluxDiffValue[128] = "ausm";
-    ierr = PetscOptionsFList("-flux_diff","Flux differencer","",fluxDifferencerList,fluxDiffValue,fluxDiffValue,sizeof fluxDiffValue,NULL);CHKERRQ(ierr);
-    ierr = FluxDifferencerGet(fluxDiffValue, &(data->fluxDifferencer));CHKERRQ(ierr);
-
-    // allow the user to disable the autm
-    data->automaticTimeStepCalculator = PETSC_TRUE;
-    ierr = PetscOptionsBool("-automaticTimeStepCalculator", "determines if a time step is calculated", NULL, data->automaticTimeStepCalculator, &data->automaticTimeStepCalculator, NULL);CHKERRQ(ierr);
-
-    ierr = PetscOptionsEnd();CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode ComputeTimeStep(TS ts, void* context){
-    PetscFunctionBeginUser;
-    // Get the dm and current solution vector
-    DM dm;
-    PetscErrorCode ierr = TSGetDM(ts, &dm);CHKERRQ(ierr);
-    Vec v;
-    TSGetSolution(ts, &v);
-
-    // Get the flow param
-    FlowData flowData;
-    ierr = DMGetApplicationContext(dm, &flowData);CHKERRQ(ierr);
-    EulerFlowData * flowParameters = (EulerFlowData *)flowData->data;
-
-    // Get the fv geom
-    PetscReal minCellRadius;
-    ierr = DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius);CHKERRQ(ierr);
-    PetscInt cStart, cEnd;
-    ierr = DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd);CHKERRQ(ierr);
-    const PetscScalar      *x;
-    ierr = VecGetArrayRead(v, &x);CHKERRQ(ierr);
-
-    //Get the dim from the dm
-    PetscInt dim;
-    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
-
-    // assume the smallest cell is the limiting factor for now
-    const PetscReal dx = 2.0 *minCellRadius;
-
-    // March over each cell
-    PetscReal dtMin = 1000.0;
-    for (PetscInt c = cStart; c < cEnd; ++c) {
-        const PetscReal           *xc;
-        ierr = DMPlexPointGlobalFieldRead(dm, c, 0, x, &xc);CHKERRQ(ierr);
-
-        if (xc) {  // must be real cell and not ghost
-            PetscReal rho = xc[RHO];
-            PetscReal vel[3];
-            for (PetscInt i =0; i < dim; i++){
-                vel[i] = xc[RHOU + i] / rho;
-            }
-
-            // Get the speed of sound from the eos
-            PetscReal ie;
-            PetscReal a;
-            PetscReal p;
-            ierr = EOSDecodeState(flowParameters->eos, NULL, dim, rho, xc[RHOE]/rho, vel, &ie, &a, &p);CHKERRQ(ierr);
-
-            PetscReal u = xc[RHOU] / rho;
-            PetscReal dt = flowParameters->cfl * dx / (a + PetscAbsReal(u));
-            dtMin = PetscMin(dtMin, dt);
-        }
-    }
-    PetscInt rank;
-    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
-
-    PetscReal dtMinGlobal;
-    ierr = MPI_Allreduce(&dtMin, &dtMinGlobal, 1,MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts));
-
-    ierr = TSSetTimeStep(ts, dtMinGlobal);CHKERRQ(ierr);
-
-    if (PetscIsNanReal(dtMinGlobal)){
-        SETERRQ(PetscObjectComm((PetscObject)ts), PETSC_ERR_FP, "Invalid timestep selected for flow");
-    }
-
-    ierr = VecRestoreArrayRead(v, &x);CHKERRQ(ierr);
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode CompressibleFlow_CompleteProblemSetup(FlowData flowData, TS ts) {
-    PetscErrorCode ierr;
-    PetscFunctionBeginUser;
-    // make sure that the eos has been set
-    if (!((EulerFlowData*)flowData->data)->eos){
-        SETERRQ(PetscObjectComm((PetscObject)flowData->dm),PETSC_ERR_ARG_WRONGSTATE, "The EOS has not been set for the flow");
-    }
-
-    ierr = FlowCompleteProblemSetup(flowData, ts);CHKERRQ(ierr);
-    EulerFlowData * compressibleFlowData = (EulerFlowData *)flowData->data;
-    if (compressibleFlowData->automaticTimeStepCalculator){
-        ierr = FlowRegisterPreStep(flowData, ComputeTimeStep, flowData);CHKERRQ(ierr);
-    }
-
-    // Override the DMTSSetRHSFunctionLocal in DMPlexTSComputeRHSFunctionFVM with a function that includes euler and diffusion source terms
-    ierr = DMTSSetRHSFunctionLocal(flowData->dm, CompressibleFlowRHSFunctionLocal, flowData);CHKERRQ(ierr);
-
-    // copy over any boundary information from the dm, to the aux dm and set the sideset
-    if (flowData->auxDm) {
-        PetscDS flowProblem;
-        ierr = DMGetDS(flowData->dm, &flowProblem);CHKERRQ(ierr);
-        PetscDS auxProblem;
-        ierr = DMGetDS(flowData->auxDm, &auxProblem);CHKERRQ(ierr);
-
-        // Get the number of boundary conditions and other info
-        PetscInt numberBC;
-        ierr = PetscDSGetNumBoundary(flowProblem, &numberBC);CHKERRQ(ierr);
-        PetscInt numberAuxFields;
-        ierr = PetscDSGetNumFields(auxProblem, &numberAuxFields);CHKERRQ(ierr);
-
-        for (PetscInt bc =0; bc < numberBC; bc++){
-            DMBoundaryConditionType type;
-            const char* name;
-            const char* labelName;
-            PetscInt field;
-            PetscInt numberIds;
-            const PetscInt* ids;
-
-            // Get the boundary
-            ierr = PetscDSGetBoundary(flowProblem, bc, &type, &name, &labelName, &field, NULL, NULL, NULL, NULL, &numberIds, &ids, NULL);CHKERRQ(ierr);
-
-            // If this is for euler and DM_BC_NATURAL_RIEMANN add it to the aux
-            if (type == DM_BC_NATURAL_RIEMANN && field == 0){
-                for (PetscInt af =0; af < numberAuxFields; af++) {
-                    ierr = PetscDSAddBoundary(auxProblem, type, name, labelName, af, 0, NULL, NULL, NULL, numberIds, ids, NULL);CHKERRQ(ierr);
-                }
-            }
-        }
-    }
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode CompressibleFlow_SetEOS(FlowData flowData, EOSData eosData) {
-    PetscFunctionBeginUser;
-    ((EulerFlowData*)flowData->data)->eos = eosData;
     PetscFunctionReturn(0);
 }

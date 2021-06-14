@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-
 #include "MpiTestEventListener.hpp"
 #include "MpiTestFixture.hpp"
 

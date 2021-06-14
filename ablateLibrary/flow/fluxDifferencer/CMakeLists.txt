@@ -1,0 +1,10 @@
+target_sources(ablateLibrary
+        PUBLIC
+        fluxDifferencer.hpp
+        ausmFluxDifferencer.hpp
+        ausmFluxDifferencer.cpp
+        averageFluxDifferencer.hpp
+        averageFluxDifferencer.cpp
+        offFluxDifferencer.hpp
+        offFluxDifferencer.cpp
+        )

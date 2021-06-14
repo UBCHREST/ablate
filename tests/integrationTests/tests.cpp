@@ -1,6 +1,5 @@
 static char help[] = "Integration Level Testing";
 
-#include <petsc.h>
 #include <filesystem>
 #include "MpiTestFixture.hpp"
 #include "MpiTestParamFixture.hpp"
@@ -22,8 +21,8 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
         if (!PETSC_USE_LOG) {
             FAIL() << "Integration testing requires PETSC_LOG";
         }
-        PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> errorChecker;
-        PetscInitialize(argc, argv, NULL, help) >> errorChecker;
+        PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> testErrorChecker;
+        PetscInitialize(argc, argv, NULL, help) >> testErrorChecker;
         {
             int rank;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -63,7 +62,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
                 }
             }
         }
-        PetscFinalize() >> errorChecker;
+        PetscFinalize() >> testErrorChecker;
         exit(0);
     EndWithMPI
 }

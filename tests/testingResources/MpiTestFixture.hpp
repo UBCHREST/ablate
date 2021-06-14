@@ -38,7 +38,7 @@ class MpiTestFixture : public ::testing::Test {
     static const std::string InTestRunFlag;
     static const std::string Test_Mpi_Command_Name;
     static const std::string Keep_Output_File;
-    PetscTestErrorChecker errorChecker;
+    PetscTestErrorChecker testErrorChecker;
 
     void SetUp() override;
 

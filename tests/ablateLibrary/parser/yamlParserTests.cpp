@@ -486,4 +486,53 @@ TEST(YamlParserTests, ShouldGetListOfFactories) {
     ASSERT_EQ(list[1]->GetClassType(), "ablate::info::green");
 }
 
+TEST(YamlParserTests, ShouldGetListOfKeys) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+    yaml << " item2:" << std::endl;
+    yaml << "      child1: 1 " << std::endl;
+    yaml << "      child2: 2" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto keysRoot = yamlParser->GetKeys();
+    auto childKeys = yamlParser->GetFactory("item2")->GetKeys();
+
+    // assert
+    ASSERT_EQ(keysRoot.size(), 2);
+    ASSERT_EQ(keysRoot.count("item1"), 1);
+    ASSERT_EQ(keysRoot.count("item2"), 1);
+
+    ASSERT_EQ(childKeys.size(), 2);
+    ASSERT_EQ(childKeys.count("child1"), 1);
+    ASSERT_EQ(childKeys.count("child2"), 1);
+}
+
+TEST(YamlParserTests, ShouldGetListAsString) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+    yaml << " item2:" << std::endl;
+    yaml << "   - 1.1  " << std::endl;
+    yaml << "   - 2 " << std::endl;
+    yaml << "   - 3.3 " << std::endl;
+    yaml << " item3: [4.4, 5, 6.6]" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto list1 = yamlParser->Get(ArgumentIdentifier<std::string>{"item2"});
+    auto list2 = yamlParser->Get(ArgumentIdentifier<std::string>{"item3"});
+
+    // assert
+    std::string expectedValues1 = "1.1 2 3.3 ";
+    ASSERT_EQ(list1, expectedValues1);
+    std::string expectedValues2 = "4.4 5 6.6 ";
+    ASSERT_EQ(list2, expectedValues2);
+}
+
 }  // namespace ablateTesting::parser

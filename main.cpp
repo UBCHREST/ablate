@@ -1,4 +1,3 @@
-#include <unistd.h>
 #include <iostream>
 #include <memory>
 #include "builder.hpp"
@@ -6,7 +5,6 @@
 #include "parser/listing.h"
 #include "parser/yamlParser.hpp"
 #include "utilities/petscError.hpp"
-#include "utilities/petscOptions.hpp"
 
 using namespace ablate;
 

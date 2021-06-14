@@ -7,10 +7,10 @@
 namespace ablate::particles::initializers {
 class Initializer {
    protected:
-    std::map<std::string, std::string> arguments;
+    PetscOptions petscOptions;
 
    public:
-    Initializer(std::map<std::string, std::string> arguments);
+    Initializer() = default;
     virtual ~Initializer() = default;
 
     virtual void Initialize(ablate::flow::Flow& flow, DM particleDM) = 0;

@@ -1,6 +1,8 @@
 #ifndef ABLATELIBRARY_MONITOR_HPP
 #define ABLATELIBRARY_MONITOR_HPP
 #include <petsc.h>
+#include <memory>
+#include "monitorable.hpp"
 
 namespace ablate::monitors {
 
@@ -10,7 +12,7 @@ class Monitor {
    public:
     virtual ~Monitor() = default;
     virtual void* GetContext() { return this; }
-
+    virtual void Register(std::shared_ptr<Monitorable>) = 0;
     virtual PetscMonitorFunction GetPetscFunction() = 0;
 };
 
