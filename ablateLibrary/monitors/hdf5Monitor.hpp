@@ -18,7 +18,7 @@ class Hdf5Monitor : public Monitor {
     const int interval;
 
    public:
-    Hdf5Monitor(int interval);
+    Hdf5Monitor(int interval = {});
     ~Hdf5Monitor() override;
 
     void Register(std::shared_ptr<Monitorable>) override;
