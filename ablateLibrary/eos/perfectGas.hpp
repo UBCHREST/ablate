@@ -1,5 +1,6 @@
 #ifndef ABLATELIBRARY_PERFECTGAS_HPP
 #define ABLATELIBRARY_PERFECTGAS_HPP
+#include <memory>
 #include "eos.hpp"
 #include "parameters/parameters.hpp"
 namespace ablate::eos {

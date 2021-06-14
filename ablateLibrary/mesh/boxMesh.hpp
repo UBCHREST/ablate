@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_BOXMESH_HPP
 #define ABLATELIBRARY_BOXMESH_HPP
 
+#include <memory>
 #include <parameters/parameters.hpp>
 #include <vector>
 #include "mesh.hpp"

@@ -2,16 +2,19 @@
 #define ABLATELIBRARY_FLOW_HPP
 
 #include <petsc.h>
+#include <functional>
 #include <memory>
 #include <monitors/viewable.hpp>
 #include <optional>
 #include <parameters/parameters.hpp>
 #include <string>
+#include <vector>
 #include "flow/boundaryConditions/boundaryCondition.hpp"
 #include "flowFieldDescriptor.hpp"
 #include "mathFunctions/fieldSolution.hpp"
 #include "mesh/mesh.hpp"
 #include "solve/solvable.hpp"
+
 namespace ablate::flow {
 
 class Flow : public solve::Solvable, public monitors::Viewable {

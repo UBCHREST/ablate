@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
+#include <vector>
 #include "parameterException.hpp"
 
 namespace ablate::parameters {
