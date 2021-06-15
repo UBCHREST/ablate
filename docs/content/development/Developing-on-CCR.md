@@ -34,7 +34,7 @@ If a newer version of PETSc is required than those pre-built on CCR you will be 
  	    --download-ml --download-mumps --download-netcdf --download-p4est \
  	    --download-parmetis --download-pnetcdf --download-scalapack \
  	    --download-slepc --download-suitesparse --download-superlu_dist \
- 	    --download-triangle --with-zlib --with-libpng
+ 	    --download-triangle --with-zlib --with-libpng --download-tchem
    
       #  --with-debugging=0 can be added to build PETSc in release
    

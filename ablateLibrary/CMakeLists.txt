@@ -61,6 +61,7 @@ add_subdirectory(particles)
 add_subdirectory(monitors)
 add_subdirectory(eos)
 add_subdirectory(environment)
+add_subdirectory(species)
 
 # Add link to required libraries to the ablate library
 target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser petscXdmfGeneratorLibrary)
