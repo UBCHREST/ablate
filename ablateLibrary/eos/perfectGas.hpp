@@ -7,6 +7,8 @@ namespace ablate::eos {
 
 class PerfectGas : public EOS {
    private:
+    // the perfect gas does not allow species
+    const std::vector<std::string> species = {};
     struct Parameters {
         PetscReal gamma;
         PetscReal rGas;
@@ -24,6 +26,10 @@ class PerfectGas : public EOS {
     void* GetDecodeStateContext() override { return &parameters; }
     computeTemperatureFunction GetComputeTemperatureFunction() override { return PerfectGasComputeTemperature; }
     void* GetComputeTemperatureContext() override { return &parameters; }
+
+    const std::vector<std::string>& GetSpecies() const override{
+        return species;
+    }
 };
 
 }  // namespace ablate::eos
