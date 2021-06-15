@@ -26,4 +26,5 @@ ablate::mesh::DMPlex::~DMPlex() {
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::mesh::Mesh, ablate::mesh::DMPlex, "DMPlex that can be set using PETSc options", ARG(std::string, "name", "the mesh dm name"), OPT(ablate::parameters::Parameters, "options", "options used to setup the DMPlex"));
+REGISTER(ablate::mesh::Mesh, ablate::mesh::DMPlex, "DMPlex that can be set using PETSc options", ARG(std::string, "name", "the mesh dm name"),
+         OPT(ablate::parameters::Parameters, "options", "options used to setup the DMPlex"));
