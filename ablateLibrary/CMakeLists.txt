@@ -33,7 +33,7 @@ set(DISABLE_PETSCXDMFGENERATOR_TESTS ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
         petscXdmfGenerator
         GIT_REPOSITORY https://github.com/UBCHREST/petscXdmfGenerator.git
-        GIT_TAG v0.0.5
+        GIT_TAG v0.0.6
 )
 FetchContent_MakeAvailable(petscXdmfGenerator)
 
