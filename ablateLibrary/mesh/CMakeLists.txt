@@ -5,4 +5,6 @@ target_sources(ablateLibrary
         boxMesh.cpp
         dmWrapper.hpp
         dmWrapper.cpp
+        dmPlex.hpp
+        dmPlex.cpp
         )
