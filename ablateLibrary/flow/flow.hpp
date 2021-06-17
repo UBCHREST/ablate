@@ -28,8 +28,11 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);
 
-   public:
-    static void UpdateAuxFields(TS ts, Flow& flow);
+    /**
+     * Private method to add both flow and aux fields, depending upon what is passed in
+     * @param flowFieldDescription
+     */
+    void RegisterField(FlowFieldDescriptor flowFieldDescription, DM dm);
 
    protected:
     const std::string name;
@@ -72,6 +75,11 @@ class Flow : public solve::Solvable, public monitors::Viewable {
 
     virtual void CompleteProblemSetup(TS ts);
     virtual void CompleteFlowInitialization(DM, Vec) = 0;
+
+    /**
+     * function to update the aux fields.
+     */
+    static void UpdateAuxFields(TS ts, Flow& flow);
 
     /**
      * provide interface for all flow output

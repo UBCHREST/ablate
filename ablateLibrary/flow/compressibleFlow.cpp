@@ -70,14 +70,9 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     PetscInt numberComponents = 2 + dim;
     RegisterField({.fieldName = "euler", .fieldPrefix = "euler", .components = numberComponents, .fieldType = FieldType::FV});
 
-    // Name each of the components, this is used by some of the output fields
-    PetscFV fvm;
-    DMGetField(dm, 0, NULL, (PetscObject*)&fvm) >> checkError;
-    for (PetscInt c = 0; c < numberComponents; c++) {
-        PetscFVSetComponentName(fvm, c, compressibleFlowComponentNames[c]) >> checkError;
-    }
     FinalizeRegisterFields();
 
+    // register the required auxFields
     RegisterAuxField({.fieldName = compressibleAuxComponentNames[T], .fieldPrefix = compressibleAuxComponentNames[T], .components = 1, .fieldType = FieldType::FV});
     RegisterAuxField({.fieldName = compressibleAuxComponentNames[VEL], .fieldPrefix = compressibleAuxComponentNames[VEL], .components = dim, .fieldType = FieldType::FV});
 
@@ -85,9 +80,19 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     PetscDS prob;
     DMGetDS(dm, &prob) >> checkError;
 
+    // Set up each field
+    PetscInt eulerField = 0;
+    PetscDSSetContext(prob, eulerField, compressibleFlowData) >> checkError;
+    diffusionCalculationFunctions.push_back(CompressibleFlowEulerDiffusion);
+    PetscDSSetRiemannSolver(prob, eulerField, CompressibleFlowComputeEulerFlux) >> checkError;
+
+    // if there are species
+    if(!eos->GetSpecies().empty()){
+        PetscInt massFracField = 1;
+        PetscDSSetContext(prob, massFracField, compressibleFlowData) >> checkError;
+    }
+
     // Set the flux calculator solver for each component
-    PetscDSSetRiemannSolver(prob, 0, CompressibleFlowComputeEulerFlux) >> checkError;
-    PetscDSSetContext(prob, 0, compressibleFlowData) >> checkError;
     PetscDSSetFromOptions(prob) >> checkError;
 
     // Store the required data for the low level c functions
@@ -198,7 +203,7 @@ PetscErrorCode ablate::flow::CompressibleFlow::CompressibleFlowRHSFunctionLocal(
         CHKERRQ(ierr);
 
         // compute the RHS sources
-        ierr = CompressibleFlowDiffusionSourceRHSFunctionLocal(dm, flow->auxDM, time, locXVec, flow->auxField, globFVec, flow->compressibleFlowData);
+        ierr = CompressibleFlowDiffusionSourceRHSFunctionLocal(dm, flow->auxDM, time, locXVec, flow->auxField, globFVec, flow->compressibleFlowData, &flow->diffusionCalculationFunctions[0]);
         CHKERRQ(ierr);
     }
 

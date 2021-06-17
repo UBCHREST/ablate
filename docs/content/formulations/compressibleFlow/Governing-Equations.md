@@ -22,7 +22,7 @@ $$\begin{eqnarray}
 Within ABLATE the energy conservation equation is often stored after continuity to simplify indexing but presented in the traditional order in the documentation. The convective fluxes are
 
 $$\begin{eqnarray}
-\vector{F_c} = \begin{bmatrix} \rho u_n \\ \rho u u_n + n_x p \\ \rho v u_n + n_y p \\ rho w u_n + n_z p \\ \rho H u_n \end{bmatrix}
+\vector{F_c} = \begin{bmatrix} \rho u_n \\ \rho u u_n + n_x p \\ \rho v u_n + n_y p \\ \rho w u_n + n_z p \\ \rho H u_n \end{bmatrix}
 \end{eqnarray}$$
 
 where $$\vector{n}$$ is the normal, $$u_n$$ is the normal velocity, and $$H = e + p/\rho + \|\vector{u}\|^2/2$$.  These terms define the Euler equations and can be recovered in ABLATE by setting diffusion coefficients to zero.  The viscous fluxes are defined as:

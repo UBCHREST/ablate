@@ -21,6 +21,9 @@ class CompressibleFlow : public Flow {
     // functions to update each aux field
     FVAuxFieldUpdateFunction auxFieldUpdateFunctions[TOTAL_COMPRESSIBLE_AUX_COMPONENTS];
 
+    // hold functions needed to update diffusion terms
+    std::vector<FVDiffusionFunction> diffusionCalculationFunctions;
+
     // static function to update the flowfield
     static void ComputeTimeStep(TS, Flow &);
 
