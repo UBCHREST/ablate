@@ -70,6 +70,7 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // Register a single field
     PetscInt numberComponents = 2 + dim;
     RegisterField({.fieldName = "euler", .fieldPrefix = "euler", .components = numberComponents, .fieldType = FieldType::FV});
+//    RegisterField({.fieldName = "yi", .fieldPrefix = "yi", .components = 2, .fieldType = FieldType::FV});
 
     FinalizeRegisterFields();
 
@@ -85,13 +86,24 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     PetscInt eulerField = 0;
     PetscDSSetContext(prob, eulerField, compressibleFlowData) >> checkError;
     diffusionCalculationFunctions.push_back(CompressibleFlowEulerDiffusion);
-    PetscDSSetRiemannSolver(prob, eulerField, CompressibleFlowComputeEulerFlux) >> checkError;
+
+    rhsFunctionDescriptions.push_back(FVMRHSFunctionDescription{
+        .function = CompressibleFlowComputeEulerFlux,
+        .context = compressibleFlowData,
+        .field = 0,
+        .inputFields = {0, 0, 0, 0},
+        .numberInputFields = 1,
+        .auxFields = {0, 0, 0, 0},
+        .numberAuxFields = 0
+    });
+
+//    PetscDSSetRiemannSolver(prob, eulerField, CompressibleFlowComputeEulerFlux) >> checkError;
 
     // if there are species
-    if(!eos->GetSpecies().empty()){
-        PetscInt massFracField = 1;
-        PetscDSSetContext(prob, massFracField, compressibleFlowData) >> checkError;
-    }
+//    if(!eos->GetSpecies().empty()){
+//        PetscInt massFracField = 1;
+//        PetscDSSetContext(prob, massFracField, compressibleFlowData) >> checkError;
+//    }
 
     // Set the flux calculator solver for each component
     PetscDSSetFromOptions(prob) >> checkError;
@@ -194,7 +206,7 @@ PetscErrorCode ablate::flow::CompressibleFlow::CompressibleFlowRHSFunctionLocal(
     ablate::flow::CompressibleFlow* flow = (ablate::flow::CompressibleFlow*)ctx;
 
     // compute the euler flux across each face (note CompressibleFlowComputeEulerFlux has already been registered)
-    ierr = ABLATE_DMPlexTSComputeRHSFunctionFVM(dm, time, locXVec, globFVec, &flow->compressibleFlowData);
+    ierr = ABLATE_DMPlexTSComputeRHSFunctionFVM(&flow->rhsFunctionDescriptions[0], flow->rhsFunctionDescriptions.size(), dm, time, locXVec, globFVec, &flow->compressibleFlowData);
     CHKERRQ(ierr);
 
     // if there are any coefficients for diffusion, compute diffusion

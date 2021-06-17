@@ -1,6 +1,7 @@
 #include "fvSupport.h"
 #include <inttypes.h>
 #include <petsc/private/dmpleximpl.h>
+#include <petsc/private/petscfvimpl.h> /*I "petscfv.h" I*/
 
 /**
  * Internal petsc function that is required.  The exported function DMPlexReconstructGradients does not allow using any fvm or grad when nFields > 0
@@ -122,7 +123,7 @@ PetscErrorCode DMPlexGetDataFVM_MulfiField(DM dm, PetscFV fv, Vec *cellgeom, Vec
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(DM dm, PetscReal time, Vec locX, Vec F, void *user)
+PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM dm, PetscReal time, Vec locX, Vec F, void *user)
 {
     Vec            locF;
     IS             cellIS;
@@ -139,7 +140,7 @@ PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(DM dm, PetscReal time, Vec l
     }
     ierr = DMGetLocalVector(plex, &locF);CHKERRQ(ierr);
     ierr = VecZeroEntries(locF);CHKERRQ(ierr);
-    ierr = ABLATE_DMPlexComputeResidual_Internal(plex, cellIS, time, locX, NULL, time, locF, user);CHKERRQ(ierr);
+    ierr = ABLATE_DMPlexComputeResidual_Internal(functionDescription, numberFunctionDescription, plex, cellIS, time, locX, NULL, time, locF, user);CHKERRQ(ierr);
     ierr = DMLocalToGlobalBegin(plex, locF, ADD_VALUES, F);CHKERRQ(ierr);
     ierr = DMLocalToGlobalEnd(plex, locF, ADD_VALUES, F);CHKERRQ(ierr);
     ierr = DMRestoreLocalVector(plex, &locF);CHKERRQ(ierr);
@@ -293,7 +294,69 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
 }
 
 
-PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(DM dm, IS cellIS, PetscReal time, Vec locX, Vec locX_t, PetscReal t, Vec locF, void *user)
+/*
+ * Private function to compute the rhs based upon a FVMRHSFunctionDescription.
+ *
+ * Not it is assumed that the fvm object's field is the same one as in functionDescription
+  neighborVol[f*2+0] contains the left  geom
+  neighborVol[f*2+1] contains the right geom
+*/
+static PetscErrorCode ABLATE_PetscFVIntegrateRHSFunction(FVMRHSFunctionDescription functionDescription[], PetscFV fvm, PetscDS prob, PetscInt numberFaces, PetscFVFaceGeom *fgeom, PetscReal *neighborVol,
+                                                         PetscScalar uL[], PetscScalar uR[], PetscScalar fluxL[], PetscScalar fluxR[])
+{
+    void              *rctx;
+    PetscScalar       *flux = fvm->fluxWork;
+    PetscErrorCode     ierr;
+
+    PetscFunctionBegin;
+
+    // Get the total number of components (in all fields)
+    PetscInt nCompTot;
+    ierr = PetscDSGetTotalComponents(prob, &nCompTot);CHKERRQ(ierr);
+    PetscInt totalDim;//This is usually the same?
+    ierr = PetscDSGetTotalDimension(prob, &totalDim);CHKERRQ(ierr);
+
+    // create the required offset arrays
+    PetscInt *uOff;
+    PetscCalloc1(functionDescription->numberInputFields, &uOff);
+
+    // Get the full set of offsets from the ds
+    PetscInt * uOffTotal;
+    ierr = PetscDSGetComponentOffsets(prob, &uOffTotal);CHKERRQ(ierr);
+    for(PetscInt f =0; f < functionDescription->numberInputFields; f++){
+        uOff[f] = uOffTotal[functionDescription->inputFields[f]];
+    }
+
+    // get the flux offset from the field
+    PetscInt fluxOffset;
+    ierr = PetscDSGetFieldOffset(prob, functionDescription->field, &fluxOffset);CHKERRQ(ierr);
+
+    PetscInt dim;
+    ierr = PetscFVGetSpatialDimension(fvm, &dim);CHKERRQ(ierr);
+    PetscInt fluxDim;
+    ierr = PetscFVGetNumComponents(fvm, &fluxDim);CHKERRQ(ierr);
+    // for each face, compute and copy
+    for (PetscInt f = 0; f < numberFaces; ++f) {
+//        ( PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
+//        const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
+//        const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
+//        PetscScalar* flux, void* ctx);
+        ierr = functionDescription->function(dim, &fgeom[f], NULL, NULL,
+                              uOff, &uL[f*nCompTot], &uR[f*nCompTot], NULL, NULL,
+                              NULL, NULL, NULL, NULL, NULL,
+                              flux, functionDescription->context);CHKERRQ(ierr);
+//        (*riemann)(dim, pdim, fgeom[f].centroid, fgeom[f].normal, &uL[f*nCompTot], &uR[f*Nc], numConstants, constants, flux, rctx);
+        for (PetscInt d = 0; d < fluxDim; ++d) {
+            fluxL[f*totalDim+fluxOffset+d] = flux[d] / neighborVol[f*2+0];
+            fluxR[f*totalDim+fluxOffset+d] = flux[d] / neighborVol[f*2+1];
+        }
+    }
+
+    PetscFree(uOff);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM dm, IS cellIS, PetscReal time, Vec locX, Vec locX_t, PetscReal t, Vec locF, void *user)
 {
     DM_Plex         *mesh       = (DM_Plex *) dm->data;
     const char      *name       = "Residual";
@@ -350,7 +413,7 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(DM dm, IS cellIS, PetscReal
     ierr = PetscCalloc1(Nf, &dmGrads);CHKERRQ(ierr);
     ierr = PetscCalloc1(Nf, &locGrads);CHKERRQ(ierr);
 
-    // for each field compute the gradient in the localGrads fector
+    // for each field compute the gradient in the localGrads vector
     for(f = 0; f < Nf; f++){
         PetscFV fvm;
         ierr = DMGetField(dm, f, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
@@ -392,17 +455,19 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(DM dm, IS cellIS, PetscReal
         PetscInt         cS = cStart+chunk*cellChunkSize, cE = PetscMin(cS+cellChunkSize, cEnd), numCells = cE - cS, c;
         PetscInt         fS = fStart+chunk*faceChunkSize, fE = PetscMin(fS+faceChunkSize, fEnd), numFaces = 0, face;
 
-        /* Extract field coefficients */
-        ierr = ABLATE_DMPlexGetFaceFields(dm, fS, fE, locX, faceGeometryFVM, cellGeometryFVM, locGrads, &numFaces, &uL, &uR);CHKERRQ(ierr);
+        /* Size up the flux arrays */
         ierr = DMPlexGetFaceGeometry(dm, fS, fE, faceGeometryFVM, cellGeometryFVM, &numFaces, &fgeom, &vol);CHKERRQ(ierr);
         ierr = DMGetWorkArray(dm, numFaces*totDim, MPIU_SCALAR, &fluxL);CHKERRQ(ierr);
         ierr = DMGetWorkArray(dm, numFaces*totDim, MPIU_SCALAR, &fluxR);CHKERRQ(ierr);
         ierr = PetscArrayzero(fluxL, numFaces*totDim);CHKERRQ(ierr);
         ierr = PetscArrayzero(fluxR, numFaces*totDim);CHKERRQ(ierr);
 
-        /* TODO We will interlace both our field coefficients (u, u_t, uL, uR, etc.) and our output (elemVec, fL, fR). I think this works */
-        /* Loop over fields */
-        for (f = 0; f < Nf; ++f) {
+        // extract all of the field locations
+        ierr = ABLATE_DMPlexGetFaceFields(dm, fS, fE, locX, faceGeometryFVM, cellGeometryFVM, locGrads, &numFaces, &uL, &uR);CHKERRQ(ierr);
+
+
+        /* Loop over each rhs function */
+        for (f = 0; f < numberFunctionDescription; ++f) {
             PetscObject  obj;
             PetscClassId id;
             PetscBool    fimp;
@@ -418,7 +483,7 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(DM dm, IS cellIS, PetscReal
             Ne = numFaces;
             /* Riemann solve over faces (need fields at face centroids) */
             /*   We need to evaluate FE fields at those coordinates */
-            ierr = PetscFVIntegrateRHSFunction(fv, ds, f, Ne, fgeom, vol, uL, uR, fluxL, fluxR);CHKERRQ(ierr);
+            ierr = ABLATE_PetscFVIntegrateRHSFunction(&functionDescription[f], fv, ds, Ne, fgeom, vol, uL, uR, fluxL, fluxR);CHKERRQ(ierr);
         }
         /* Loop over domain and add each face flux back to the cell center*/
         {

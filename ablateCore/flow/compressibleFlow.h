@@ -36,8 +36,14 @@ typedef PetscErrorCode (*FVDiffusionFunction)(FlowData_CompressibleFlow flowData
 
 PETSC_EXTERN PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction* updateFunctions, FlowData_CompressibleFlow data);
 PETSC_EXTERN PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxVec, Vec globFVec, FlowData_CompressibleFlow flowParameters, FVDiffusionFunction*);
-PETSC_EXTERN void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx);
+
 PETSC_EXTERN PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVelL, const PetscReal * gradVelR, PetscReal* tau);
+
+// PreBuilt Flux functions
+PETSC_EXTERN PetscErrorCode CompressibleFlowComputeEulerFlux( PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
+                                                    const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
+                                                    const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
+                                                    PetscScalar* flux, void* ctx);
 
 PETSC_EXTERN PetscErrorCode CompressibleFlowEulerDiffusion(FlowData_CompressibleFlow flowParameters, PetscReal time, PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
                                               const PetscScalar* fieldL, const PetscScalar* fieldR,const PetscScalar* auxL, const PetscScalar* auxR,

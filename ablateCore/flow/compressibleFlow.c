@@ -320,13 +320,17 @@ PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, c
     PetscFunctionReturn(0);
 }
 
-void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx) {
+PetscErrorCode CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
+        const PetscInt uOff[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
+        const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
+        PetscScalar* flux, void* ctx){
     FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
+    PetscFunctionBeginUser;
 
     // Compute the norm
     PetscReal norm[3];
-    NormVector(dim, area, norm);
-    const PetscReal areaMag = MagVector(dim, area);
+    NormVector(dim, fg->normal, norm);
+    const PetscReal areaMag = MagVector(dim, fg->normal);
 
     // Decode the left and right states
     PetscReal densityL;
@@ -336,7 +340,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     PetscReal aL;
     PetscReal ML;
     PetscReal pL;
-    DecodeEulerState(flowParameters, dim, xL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+    DecodeEulerState(flowParameters, dim, uL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 
     PetscReal densityR;
     PetscReal normalVelocityR;
@@ -345,7 +349,7 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     PetscReal aR;
     PetscReal MR;
     PetscReal pR;
-    DecodeEulerState(flowParameters, dim, xR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    DecodeEulerState(flowParameters, dim, uR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
     PetscReal sPm;
     PetscReal sPp;
@@ -364,8 +368,10 @@ void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal
     flux[RHOE] = (sMm * densityR * aR * HR + sMp * densityL * aL * HL) * areaMag;
 
     for (PetscInt n =0; n < dim; n++) {
-        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR*sPm + pL*sPp) * area[n];
+        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR*sPm + pL*sPp) * fg->normal[n];
     }
+
+    PetscFunctionReturn(0);
 }
 
 /*

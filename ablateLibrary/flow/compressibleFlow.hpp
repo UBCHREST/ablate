@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_COMPRESSIBLEFLOW_H
 #define ABLATELIBRARY_COMPRESSIBLEFLOW_H
 
+#include <fvSupport.h>
 #include <petsc.h>
 #include <eos/eos.hpp>
 #include <string>
@@ -23,6 +24,9 @@ class CompressibleFlow : public Flow {
 
     // hold functions needed to update diffusion terms
     std::vector<FVDiffusionFunction> diffusionCalculationFunctions;
+
+    // hold the update functions for source
+    std::vector<FVMRHSFunctionDescription> rhsFunctionDescriptions;
 
     // static function to update the flowfield
     static void ComputeTimeStep(TS, Flow &);
