@@ -3,6 +3,7 @@
 #include "compressibleFlow.h"
 #include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
 #include "utilities/petscError.hpp"
+#include "fvSupport.h"
 
 static const char* compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
 static const char* compressibleAuxComponentNames[TOTAL_COMPRESSIBLE_AUX_COMPONENTS + 1] = {"T", "vel", "unknown"};
@@ -193,7 +194,7 @@ PetscErrorCode ablate::flow::CompressibleFlow::CompressibleFlowRHSFunctionLocal(
     ablate::flow::CompressibleFlow* flow = (ablate::flow::CompressibleFlow*)ctx;
 
     // compute the euler flux across each face (note CompressibleFlowComputeEulerFlux has already been registered)
-    ierr = DMPlexTSComputeRHSFunctionFVM(dm, time, locXVec, globFVec, &flow->compressibleFlowData);
+    ierr = ABLATE_DMPlexTSComputeRHSFunctionFVM(dm, time, locXVec, globFVec, &flow->compressibleFlowData);
     CHKERRQ(ierr);
 
     // if there are any coefficients for diffusion, compute diffusion

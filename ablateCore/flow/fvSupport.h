@@ -28,7 +28,6 @@ PETSC_EXTERN PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(DM dm, PetscRea
  */
 PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(DM, IS, PetscReal, Vec, Vec, PetscReal, Vec, void *);
 
-
 PETSC_EXTERN PetscErrorCode DMPlexReconstructGradientsFVM_MulfiField(DM dm, PetscFV fvm,  Vec locX, Vec grad);
 PETSC_EXTERN PetscErrorCode DMPlexGetDataFVM_MulfiField(DM dm, PetscFV fv, Vec *cellgeom, Vec *facegeom, DM *gradDM);
 
