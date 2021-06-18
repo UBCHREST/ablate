@@ -9,6 +9,8 @@ typedef PetscErrorCode (*FVMRHSFunction)(PetscInt dim, const PetscFVFaceGeom *fg
                                          const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[],
                                          const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void *ctx);
 
+typedef PetscErrorCode (*FVAuxFieldUpdateFunction)(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
+
 /**
  * struct to describe how to compute RHS finite volume source terms
  */
@@ -42,8 +44,7 @@ typedef struct FVMRHSFunctionDescription FVMRHSFunctionDescription;
 
 .seealso: DMPlexComputeJacobianActionFEM()
 **/
-PETSC_EXTERN PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM dm, PetscReal time, Vec locX, Vec F,
-                                                                 void *user);
+PETSC_EXTERN PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM dm, PetscReal time, Vec locX, Vec F);
 
 /**
  * Populate the boundary with gradient information
@@ -63,7 +64,7 @@ PETSC_EXTERN PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(FVMRHSFunctionD
  * DM dm, PetscReal time, Vec locX, Vec locX_t, PetscReal t, Vec locF, void *user
  * @return
  */
-PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM, IS, PetscReal, Vec, Vec, PetscReal, Vec, void *);
+PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM, IS, PetscReal, Vec, Vec, PetscReal, Vec);
 
 /**
  * reproduces the petsc call with grad fixes for multiple fields
@@ -84,5 +85,19 @@ PETSC_EXTERN PetscErrorCode DMPlexReconstructGradientsFVM_MulfiField(DM dm, Pets
  * @return
  */
 PETSC_EXTERN PetscErrorCode DMPlexGetDataFVM_MulfiField(DM dm, PetscFV fv, Vec *cellgeom, Vec *facegeom, DM *gradDM);
+
+/**
+ * Function to update all cells.  This should be merged into other update calls
+ * @param dm
+ * @param auxDM
+ * @param time
+ * @param locXVec
+ * @param locAuxField
+ * @param numberUpdateFunctions
+ * @param updateFunctions
+ * @param ctx
+ * @return
+ */
+PETSC_EXTERN PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction* updateFunctions, void** ctx);
 
 #endif

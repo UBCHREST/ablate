@@ -123,7 +123,7 @@ PetscErrorCode DMPlexGetDataFVM_MulfiField(DM dm, PetscFV fv, Vec *cellgeom, Vec
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM dm, PetscReal time, Vec locX, Vec F, void *user)
+PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM dm, PetscReal time, Vec locX, Vec F)
 {
     Vec            locF;
     IS             cellIS;
@@ -140,7 +140,7 @@ PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(FVMRHSFunctionDescription fu
     }
     ierr = DMGetLocalVector(plex, &locF);CHKERRQ(ierr);
     ierr = VecZeroEntries(locF);CHKERRQ(ierr);
-    ierr = ABLATE_DMPlexComputeResidual_Internal(functionDescription, numberFunctionDescription, plex, cellIS, time, locX, NULL, time, locF, user);CHKERRQ(ierr);
+    ierr = ABLATE_DMPlexComputeResidual_Internal(functionDescription, numberFunctionDescription, plex, cellIS, time, locX, NULL, time, locF);CHKERRQ(ierr);
     ierr = DMLocalToGlobalBegin(plex, locF, ADD_VALUES, F);CHKERRQ(ierr);
     ierr = DMLocalToGlobalEnd(plex, locF, ADD_VALUES, F);CHKERRQ(ierr);
     ierr = DMRestoreLocalVector(plex, &locF);CHKERRQ(ierr);
@@ -607,7 +607,7 @@ static PetscErrorCode ABLATE_FillGradientBoundary(DM dm, PetscFV auxFvm, Vec loc
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription functionDescriptions[], PetscInt numberFunctionDescriptions, DM dm, IS cellIS, PetscReal time, Vec locX, Vec locX_t, PetscReal t, Vec locF, void *user)
+PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription functionDescriptions[], PetscInt numberFunctionDescriptions, DM dm, IS cellIS, PetscReal time, Vec locX, Vec locX_t, PetscReal t, Vec locF)
 {
     DM_Plex         *mesh       = (DM_Plex *) dm->data;
     const char      *name       = "Residual";
@@ -884,5 +884,70 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
 
     PetscFree(dmGrads);
     PetscFree(locGrads);
+    PetscFunctionReturn(0);
+}
+
+
+/**
+ * Helper function to march over each cell and update the aux Fields
+ * @param flow
+ * @param time
+ * @param locXVec
+ * @param updateFunction
+ * @return
+ */
+PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction* updateFunctions, void** data) {
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+
+    // Extract the cell geometry, and the dm that holds the information
+    Vec cellGeomVec;
+    DM dmCell;
+    const PetscScalar *cellGeomArray;
+    ierr = DMPlexGetGeometryFVM(dm, NULL, &cellGeomVec, NULL);CHKERRQ(ierr);
+    ierr = VecGetDM(cellGeomVec, &dmCell);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
+
+    // Assume that the euler field is always zero
+    PetscInt EULER = 0;
+
+    // Get the cell start and end for the fv cells
+    PetscInt cellStart, cellEnd;
+    ierr = DMPlexGetHeightStratum(dm, 0, &cellStart, &cellEnd);CHKERRQ(ierr);
+
+    // extract the low flow and aux fields
+    const PetscScalar      *locFlowFieldArray;
+    ierr = VecGetArrayRead(locXVec, &locFlowFieldArray);CHKERRQ(ierr);
+
+    PetscScalar     *localAuxFlowFieldArray;
+    ierr = VecGetArray(locAuxField, &localAuxFlowFieldArray);CHKERRQ(ierr);
+
+    // Get the cell dim
+    PetscInt dim;
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+
+    // March over each cell volume
+    for (PetscInt c = cellStart; c < cellEnd; ++c) {
+        PetscFVCellGeom       *cellGeom;
+        const PetscReal           *fieldValues;
+        PetscReal           *auxValues;
+
+        ierr = DMPlexPointLocalRead(dmCell, c, cellGeomArray, &cellGeom);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalFieldRead(dm, c, EULER, locFlowFieldArray, &fieldValues);CHKERRQ(ierr);
+
+        for (PetscInt auxFieldIndex = 0; auxFieldIndex < numberUpdateFunctions; auxFieldIndex ++){
+            ierr = DMPlexPointLocalFieldRef(auxDM, c, auxFieldIndex, localAuxFlowFieldArray, &auxValues);CHKERRQ(ierr);
+
+            // If an update function was passed
+            if (updateFunctions[auxFieldIndex]){
+                updateFunctions[auxFieldIndex](time, dim, cellGeom, fieldValues, auxValues, data[auxFieldIndex]);
+            }
+        }
+    }
+
+    ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(locXVec, &locFlowFieldArray);CHKERRQ(ierr);
+    ierr = VecRestoreArray(locAuxField, &localAuxFlowFieldArray);CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }

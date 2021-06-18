@@ -28,10 +28,6 @@ struct _FlowData_CompressibleFlow{
 
 typedef struct _FlowData_CompressibleFlow* FlowData_CompressibleFlow;
 
-typedef PetscErrorCode (*FVAuxFieldUpdateFunction)(FlowData_CompressibleFlow flowData, PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField);
-
-PETSC_EXTERN PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction* updateFunctions, FlowData_CompressibleFlow data);
-
 PETSC_EXTERN PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVelL, const PetscReal * gradVelR, PetscReal* tau);
 
 // PreBuilt Flux functions
