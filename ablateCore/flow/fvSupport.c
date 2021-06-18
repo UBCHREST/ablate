@@ -399,11 +399,7 @@ static PetscErrorCode ABLATE_PetscFVIntegrateRHSFunction(FVMRHSFunctionDescripti
     ierr = PetscFVGetNumComponents(fvm, &fluxDim);CHKERRQ(ierr);
     // for each face, compute and copy
     for (PetscInt f = 0; f < numberFaces; ++f) {
-//        ( PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
-//        const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
-//        const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
-//        PetscScalar* flux, void* ctx);
-        ierr = functionDescription->function(dim, &fgeom[f], NULL, NULL,
+        ierr = functionDescription->function(dim, &fgeom[f],
                               uOff, uOff_x, &uL[f*nCompTot], &uR[f*nCompTot], &gradL[f*nCompTot*dim], &gradR[f*nCompTot*dim],
                               aOff, aOff_x, &auxL[f*nAuxCompTot], &auxR[f*nAuxCompTot], &gradAuxL[f*nAuxCompTot*dim], &gradAuxR[f*nAuxCompTot*dim],
                               flux, functionDescription->context);CHKERRQ(ierr);

@@ -75,7 +75,6 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // Register a single field
     PetscInt numberComponents = 2 + dim;
     RegisterField({.fieldName = "euler", .fieldPrefix = "euler", .components = numberComponents, .fieldType = FieldType::FV});
-//    RegisterField({.fieldName = "yi", .fieldPrefix = "yi", .components = 2, .fieldType = FieldType::FV});
 
     FinalizeRegisterFields();
 
@@ -113,14 +112,6 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
                                                                     .auxFields = {0, 1, 0, 0},
                                                                     .numberAuxFields = 2});
     }
-
-//    PetscDSSetRiemannSolver(prob, eulerField, CompressibleFlowComputeEulerFlux) >> checkError;
-
-    // if there are species
-//    if(!eos->GetSpecies().empty()){
-//        PetscInt massFracField = 1;
-//        PetscDSSetContext(prob, massFracField, compressibleFlowData) >> checkError;
-//    }
 
     // Set the flux calculator solver for each component
     PetscDSSetFromOptions(prob) >> checkError;

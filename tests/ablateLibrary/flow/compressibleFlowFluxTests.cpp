@@ -44,7 +44,7 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
             const PetscInt uOff[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
             const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
             PetscScalar* flux, void* ctx)*/
-    CompressibleFlowComputeEulerFlux(params.area.size(), &faceGeom, NULL, NULL,
+    CompressibleFlowComputeEulerFlux(params.area.size(), &faceGeom,
                                      uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL,
                                      NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], eulerFlowData);
 
