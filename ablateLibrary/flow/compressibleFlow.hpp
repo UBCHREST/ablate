@@ -23,7 +23,7 @@ class CompressibleFlow : public Flow {
     FVAuxFieldUpdateFunction auxFieldUpdateFunctions[TOTAL_COMPRESSIBLE_AUX_COMPONENTS];
 
     // hold functions needed to update diffusion terms
-    std::vector<FVDiffusionFunction> diffusionCalculationFunctions;
+//    std::vector<FVDiffusionFunction> diffusionCalculationFunctions;
 
     // hold the update functions for source
     std::vector<FVMRHSFunctionDescription> rhsFunctionDescriptions;

@@ -167,7 +167,8 @@ PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(FVMRHSFunctionDescription fu
 + Nface - The number of faces with field values
 . uL - The field values at the left side of the face
 - uR - The field values at the right side of the face
-
+- gradL - The grad field values at the left side fo the face
+- gradR - The graad field values on the right side of the face
   Level: developer
 
 .seealso: DMPlexGetCellFields()
@@ -214,6 +215,8 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
     ierr = VecGetArrayRead(cellGeometry, &cellgeom);CHKERRQ(ierr);
     ierr = DMGetWorkArray(dm, numFaces*Nc, MPIU_SCALAR, uL);CHKERRQ(ierr);
     ierr = DMGetWorkArray(dm, numFaces*Nc, MPIU_SCALAR, uR);CHKERRQ(ierr);
+
+    // todo add work arrays for the gradL and gradR: should be size numFaces*Nc*dim
 
     if (locGrads) {
         ierr = PetscCalloc1(Nf, &lgrads);;CHKERRQ(ierr);
@@ -264,11 +267,16 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
                 ierr = DMPlexPointLocalRead(dmGrads[f], cells[1], lgrads[f], &gR);CHKERRQ(ierr);
                 DMPlex_WaxpyD_Internal(dim, -1, cgL->centroid, fg->centroid, dxL);
                 DMPlex_WaxpyD_Internal(dim, -1, cgR->centroid, fg->centroid, dxR);
+                // Project the cell centered value onto the face
                 for (c = 0; c < numComp; ++c) {
                     uLl[iface*Nc+off+c] = xL[c] + DMPlex_DotD_Internal(dim, &gL[c*dim], dxL);
                     uRl[iface*Nc+off+c] = xR[c] + DMPlex_DotD_Internal(dim, &gR[c*dim], dxR);
                 }
+
+                // TODO: copy the gradient into the grad vector
+
             } else {
+                // Just copy the cell centered value on to the face
                 for (c = 0; c < numComp; ++c) {
                     uLl[iface*Nc+off+c] = xL[c];
                     uRl[iface*Nc+off+c] = xR[c];
@@ -356,12 +364,203 @@ static PetscErrorCode ABLATE_PetscFVIntegrateRHSFunction(FVMRHSFunctionDescripti
     PetscFunctionReturn(0);
 }
 
+/**
+ * Hard coded function to compute the boundary cell gradient.  This should be relaxed to a boundary condition
+ * @param dim
+ * @param dof
+ * @param faceGeom
+ * @param cellGeom
+ * @param cellGeomG
+ * @param a_xI
+ * @param a_xGradI
+ * @param a_xG
+ * @param a_xGradG
+ * @param ctx
+ * @return
+ */
+static PetscErrorCode ComputeBoundaryCellGradient(PetscInt dim, PetscInt dof, const PetscFVFaceGeom *faceGeom, const PetscFVCellGeom *cellGeom, const PetscFVCellGeom *cellGeomG, const PetscScalar *a_xI, const PetscScalar *a_xGradI, const PetscScalar *a_xG,  PetscScalar *a_xGradG, void *ctx){
+    PetscFunctionBeginUser;
+
+    for (PetscInt pd = 0; pd < dof; ++pd) {
+        PetscReal dPhidS = a_xG[pd] - a_xI[pd];
+
+        // over each direction
+        for (PetscInt dir = 0; dir < dim; dir++) {
+            PetscReal dx = (cellGeomG->centroid[dir] - faceGeom->centroid[dir]);
+
+            // If there is a contribution in this direction
+            if (PetscAbs(dx) > 1E-8) {
+                a_xGradG[pd*dim + dir] = dPhidS / (dx);
+            } else {
+                a_xGradG[pd*dim + dir] = 0.0;
+            }
+        }
+    }
+    PetscFunctionReturn(0);
+}
+
+
+/**
+ * this function updates the boundaries with the gradient computed from the boundary cell value
+ * @param dm
+ * @param auxFvm
+ * @param gradLocalVec
+ * @return
+ */
+static PetscErrorCode ABLATE_FillGradientBoundary(DM dm, PetscFV auxFvm, Vec localXVec, Vec gradLocalVec){
+    PetscFunctionBeginUser;
+    PetscErrorCode ierr;
+
+    // Get the dmGrad
+    DM dmGrad;
+    ierr = VecGetDM(gradLocalVec, &dmGrad);CHKERRQ(ierr);
+
+    // get the problem
+    PetscDS prob;
+    PetscInt nFields;
+    ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
+
+    PetscInt field;
+    ierr = PetscDSGetFieldIndex(prob, (PetscObject) auxFvm, &field);CHKERRQ(ierr);
+    PetscInt dof;
+    ierr = PetscDSGetFieldSize(prob, field, &dof);CHKERRQ(ierr);
+
+    // Obtaining local cell ownership
+    PetscInt faceStart, faceEnd;
+    ierr = DMPlexGetHeightStratum(dm, 1, &faceStart, &faceEnd);CHKERRQ(ierr);
+
+    // Get the fvm face and cell geometry
+    Vec cellGeomVec = NULL;/* vector of structs related to cell geometry*/
+    Vec faceGeomVec = NULL;/* vector of structs related to face geometry*/
+    ierr = DMPlexGetGeometryFVM(dm, &faceGeomVec, &cellGeomVec, NULL);CHKERRQ(ierr);
+
+    // get the dm for each geom type
+    DM dmFaceGeom, dmCellGeom;
+    ierr = VecGetDM(faceGeomVec, &dmFaceGeom);CHKERRQ(ierr);
+    ierr = VecGetDM(cellGeomVec, &dmCellGeom);CHKERRQ(ierr);
+
+    // extract the gradLocalVec
+    PetscScalar * gradLocalArray;
+    ierr = VecGetArray(gradLocalVec, &gradLocalArray);CHKERRQ(ierr);
+
+    const PetscScalar* localArray;
+    ierr = VecGetArrayRead(localXVec, &localArray);CHKERRQ(ierr);
+
+    // get the dim
+    PetscInt dim;
+    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+
+    // extract the arrays for the face and cell geom, along with their dm
+    const PetscScalar *cellGeomArray;
+    ierr = VecGetArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
+
+    const PetscScalar *faceGeomArray;
+    ierr = VecGetArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
+
+    // march over each boundary for this problem
+    PetscInt numBd;
+    ierr = PetscDSGetNumBoundary(prob, &numBd);CHKERRQ(ierr);
+    for (PetscInt b = 0; b < numBd; ++b) {
+        // extract the boundary information
+        PetscInt                numids;
+        const PetscInt         *ids;
+        const char *                 labelName;
+        PetscInt boundaryField;
+        ierr = DMGetBoundary(dm, b, NULL, NULL, &labelName, &boundaryField, NULL, NULL, NULL, NULL, &numids, &ids, NULL);CHKERRQ(ierr);
+
+        if (boundaryField != field){
+            continue;
+        }
+
+        // use the correct label for this boundary field
+        DMLabel label;
+        ierr = DMGetLabel(dm, labelName, &label);CHKERRQ(ierr);
+
+        // get the correct boundary/ghost pattern
+        PetscSF            sf;
+        PetscInt        nleaves;
+        const PetscInt    *leaves;
+        ierr = DMGetPointSF(dm, &sf);CHKERRQ(ierr);
+        ierr = PetscSFGetGraph(sf, NULL, &nleaves, &leaves, NULL);CHKERRQ(ierr);
+        nleaves = PetscMax(0, nleaves);
+
+        // march over each id on this process
+        for (PetscInt i = 0; i < numids; ++i) {
+            IS              faceIS;
+            const PetscInt *faces;
+            PetscInt        numFaces, f;
+
+            ierr = DMLabelGetStratumIS(label, ids[i], &faceIS);CHKERRQ(ierr);
+            if (!faceIS) continue; /* No points with that id on this process */
+            ierr = ISGetLocalSize(faceIS, &numFaces);CHKERRQ(ierr);
+            ierr = ISGetIndices(faceIS, &faces);CHKERRQ(ierr);
+
+            // march over each face in this boundary
+            for (f = 0; f < numFaces; ++f) {
+                const PetscInt* cells;
+                PetscFVFaceGeom        *fg;
+
+                if ((faces[f] < faceStart) || (faces[f] >= faceEnd)){
+                    continue; /* Refinement adds non-faces to labels */
+                }
+                PetscInt loc;
+                ierr = PetscFindInt(faces[f], nleaves, (PetscInt *) leaves, &loc);CHKERRQ(ierr);
+                if (loc >= 0){
+                    continue;
+                }
+
+                PetscBool boundary;
+                ierr = DMIsBoundaryPoint(dm, faces[f], &boundary);CHKERRQ(ierr);
+
+                // get the ghost and interior nodes
+                ierr = DMPlexGetSupport(dm, faces[f], &cells);CHKERRQ(ierr);
+                const PetscInt cellI = cells[0];
+                const PetscInt cellG = cells[1];
+
+                // get the face geom
+                const PetscFVFaceGeom  *faceGeom;
+                ierr  = DMPlexPointLocalRead(dmFaceGeom, faces[f], faceGeomArray, &faceGeom);CHKERRQ(ierr);
+
+                // get the cell centroid information
+                const PetscFVCellGeom       *cellGeom;
+                const PetscFVCellGeom       *cellGeomGhost;
+                ierr  = DMPlexPointLocalRead(dmCellGeom, cellI, cellGeomArray, &cellGeom);CHKERRQ(ierr);
+                ierr  = DMPlexPointLocalRead(dmCellGeom, cellG, cellGeomArray, &cellGeomGhost);CHKERRQ(ierr);
+
+                // Read the local point
+                PetscScalar* boundaryGradCellValues;
+                ierr  = DMPlexPointLocalRef(dmGrad, cellG, gradLocalArray, &boundaryGradCellValues);CHKERRQ(ierr);
+
+                const PetscScalar*  cellGradValues;
+                ierr  = DMPlexPointLocalRead(dmGrad, cellI, gradLocalArray, &cellGradValues);CHKERRQ(ierr);
+
+                const PetscScalar* boundaryCellValues;
+                ierr  = DMPlexPointLocalFieldRead(dm, cellG, field, localArray, &boundaryCellValues);CHKERRQ(ierr);
+                const PetscScalar* cellValues;
+                ierr  = DMPlexPointLocalFieldRead(dm, cellI, field, localArray, &cellValues);CHKERRQ(ierr);
+
+                // compute the gradient for the boundary node and pass in
+                ierr = ComputeBoundaryCellGradient(dim, dof, faceGeom, cellGeom, cellGeomGhost, cellValues, cellGradValues, boundaryCellValues, boundaryGradCellValues, NULL);CHKERRQ(ierr);
+            }
+            ierr = ISRestoreIndices(faceIS, &faces);CHKERRQ(ierr);
+            ierr = ISDestroy(&faceIS);CHKERRQ(ierr);
+        }
+    }
+
+    ierr = VecRestoreArrayRead(localXVec, &localArray);CHKERRQ(ierr);
+    ierr = VecRestoreArray(gradLocalVec, &gradLocalArray);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
+    ierr = VecRestoreArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM dm, IS cellIS, PetscReal time, Vec locX, Vec locX_t, PetscReal t, Vec locF, void *user)
 {
     DM_Plex         *mesh       = (DM_Plex *) dm->data;
     const char      *name       = "Residual";
     DM               dmAux      = NULL;
-    DM               *dmGrads     = NULL;
+    DM               *dmGrads, *dmAuxGrads    = NULL;
     DMLabel          ghostLabel = NULL;
     PetscDS          ds         = NULL;
     PetscDS          dsAux      = NULL;
@@ -370,13 +569,13 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
     PetscFVCellGeom *cgeomFVM   = NULL;
     PetscFVFaceGeom *fgeomFVM   = NULL;
     DMField          coordField = NULL;
-    Vec *locGrads =NULL;  // each field will have a separate local gradient vector
+    Vec *locGrads, *locAuxGrads =NULL;  // each field will have a separate local gradient vector
     Vec              locA, cellGeometryFVM = NULL, faceGeometryFVM = NULL;
     PetscScalar     *u = NULL, *u_t, *a, *uL, *uR;
     IS               chunkIS;
     const PetscInt  *cells;
     PetscInt         cStart, cEnd, numCells;
-    PetscInt         Nf, f, totDim, totDimAux, numChunks, cellChunkSize, faceChunkSize, chunk, fStart, fEnd;
+    PetscInt nf, naf, f, totDim, totDimAux, numChunks, cellChunkSize, faceChunkSize, chunk, fStart, fEnd;
     PetscInt         maxDegree = PETSC_MAX_INT;
     PetscQuadrature  affineQuad = NULL, *quads = NULL;
     PetscFEGeom     *affineGeom = NULL, **geoms = NULL;
@@ -390,7 +589,7 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
     ierr = DMGetLocalSection(dm, &section);CHKERRQ(ierr);
     ierr = DMGetLabel(dm, "ghost", &ghostLabel);CHKERRQ(ierr);
     ierr = DMGetCellDS(dm, cells ? cells[cStart] : cStart, &ds);CHKERRQ(ierr);
-    ierr = PetscDSGetNumFields(ds, &Nf);CHKERRQ(ierr);
+    ierr = PetscDSGetNumFields(ds, &nf);CHKERRQ(ierr);
     ierr = PetscDSGetTotalDimension(ds, &totDim);CHKERRQ(ierr);
 
     // Check to see if the dm has an auxVec/auxDM associated with it.  If it does, extract it
@@ -401,6 +600,7 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
         ierr = DMGetEnclosurePoint(dmAux, dm, DM_ENC_UNKNOWN, cStart, &subcell);CHKERRQ(ierr);
         ierr = DMGetCellDS(dmAux, subcell, &dsAux);CHKERRQ(ierr);
         ierr = PetscDSGetTotalDimension(dsAux, &totDimAux);CHKERRQ(ierr);
+        ierr = PetscDSGetNumFields(dsAux, &naf);CHKERRQ(ierr);
     }
     /* 2: Get geometric data */
     // We can use a single call for the geometry data because it does not depend on the fv object
@@ -410,11 +610,11 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
     /* Reconstruct and limit cell gradients */
 
     // Get the dm grad for each field
-    ierr = PetscCalloc1(Nf, &dmGrads);CHKERRQ(ierr);
-    ierr = PetscCalloc1(Nf, &locGrads);CHKERRQ(ierr);
+    ierr = PetscCalloc1(nf, &dmGrads);CHKERRQ(ierr);
+    ierr = PetscCalloc1(nf, &locGrads);CHKERRQ(ierr);
 
     // for each field compute the gradient in the localGrads vector
-    for(f = 0; f < Nf; f++){
+    for(f = 0; f < nf; f++){
         PetscFV fvm;
         ierr = DMGetField(dm, f, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
 
@@ -441,6 +641,40 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
     /* Handle non-essential (e.g. outflow) boundary values */
     // TODO: this will need to be updated to add each gradient field for each vector
     ierr = DMPlexInsertBoundaryValues(dm, PETSC_FALSE, locX, time, faceGeometryFVM, cellGeometryFVM, NULL);CHKERRQ(ierr);
+
+    // repeat the setup for the aux variables
+    ierr = PetscCalloc1(naf, &dmAuxGrads);CHKERRQ(ierr);
+    ierr = PetscCalloc1(naf, &locAuxGrads);CHKERRQ(ierr);
+
+    // for each field compute the gradient in the localGrads vector
+    for(f = 0; f < naf; f++){
+        PetscFV fvm;
+        ierr = DMGetField(dmAux, f, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
+
+        // Get the needed auxDm
+        //ierr = DMPlexGetGradientDM(dm, fvm, &dmGrad);CHKERRQ(ierr);
+        // this call replaces DMPlexGetGradientDM.  DMPlexGetGradientDM only grabs the first created dm, while this creates one (correct size) for each field
+        ierr = DMPlexGetDataFVM_MulfiField(dmAux, fvm, NULL, NULL, &locAuxGrads[f]);CHKERRQ(ierr);
+
+        // if there is a dm grad for this field (does not have to be)
+        if (dmAuxGrads[f]) {
+            Vec grad;
+            ierr = DMPlexGetHeightStratum(dmAux, 1, &fStart, &fEnd);CHKERRQ(ierr);
+            ierr = DMGetGlobalVector(dmAuxGrads[f], &grad);CHKERRQ(ierr);
+            // this function looks like it only compute the gradient for the field specified in fvm
+            ierr = DMPlexReconstructGradients_Internal(dmAux, fvm, fStart, fEnd, faceGeometryFVM, cellGeometryFVM, locA, grad);CHKERRQ(ierr);
+            /* Communicate gradient values */
+            ierr = DMGetLocalVector(dmAuxGrads[f], &locAuxGrads[f]);CHKERRQ(ierr);
+            ierr = DMGlobalToLocalBegin(dmAuxGrads[f], grad, INSERT_VALUES, locAuxGrads[f]);CHKERRQ(ierr);
+            ierr = DMGlobalToLocalEnd(dmAuxGrads[f], grad, INSERT_VALUES, locAuxGrads[f]);CHKERRQ(ierr);
+
+            // fill the boundary conditions
+            /* this is a similar call to DMPlexInsertBoundaryValues, but for gradients */
+            ierr = ABLATE_FillGradientBoundary(dmAux, fvm, locA, locAuxGrads[f]);CHKERRQ(ierr);
+
+            ierr = DMRestoreGlobalVector(dmAuxGrads[f], &grad);CHKERRQ(ierr);
+        }
+    }
 
     /* Loop over chunks */
     numCells      = cEnd - cStart;
@@ -491,7 +725,7 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
             PetscInt     iface;
 
             ierr = VecGetArray(locF, &fa);CHKERRQ(ierr);
-            for (f = 0; f < Nf; ++f) {
+            for (f = 0; f < nf; ++f) {
                 PetscFV      fv;
                 PetscObject  obj;
                 PetscClassId id;
@@ -533,7 +767,7 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
 
             ierr = VecGetArray(locF, &fa);CHKERRQ(ierr);
             ierr = VecGetArray(locX_t, &x_t);CHKERRQ(ierr);
-            for (f = 0; f < Nf; ++f) {
+            for (f = 0; f < nf; ++f) {
                 PetscFV      fv;
                 PetscObject  obj;
                 PetscClassId id;
@@ -568,10 +802,18 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
         ierr = DMRestoreWorkArray(dm, numFaces*totDim, MPIU_SCALAR, &fluxL);CHKERRQ(ierr);
         ierr = DMRestoreWorkArray(dm, numFaces*totDim, MPIU_SCALAR, &fluxR);CHKERRQ(ierr);
 
-        for(f = 0; f < Nf; f++){
+        // clean up the field grads
+        for(f = 0; f < nf; f++){
             // if there is a grad dm for this field (does not have to be), restore
             if (dmGrads[f]) {
                 ierr = DMRestoreLocalVector(dmGrads[f], &locGrads[f]);CHKERRQ(ierr);
+            }
+        }
+        // clean up the aux field grads
+        for(f = 0; f < naf; f++){
+            // if there is a grad dm for this field (does not have to be), restore
+            if (dmAuxGrads[f]) {
+                ierr = DMRestoreLocalVector(dmAuxGrads[f], &locAuxGrads[f]);CHKERRQ(ierr);
             }
         }
 

@@ -84,195 +84,6 @@ PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locX
     PetscFunctionReturn(0);
 }
 
-/**
- * Hard coded function to compute the boundary cell gradient.  This should be relaxed to a boundary condition
- * @param dim
- * @param dof
- * @param faceGeom
- * @param cellGeom
- * @param cellGeomG
- * @param a_xI
- * @param a_xGradI
- * @param a_xG
- * @param a_xGradG
- * @param ctx
- * @return
- */
-static PetscErrorCode ComputeBoundaryCellGradient(PetscInt dim, PetscInt dof, const PetscFVFaceGeom *faceGeom, const PetscFVCellGeom *cellGeom, const PetscFVCellGeom *cellGeomG, const PetscScalar *a_xI, const PetscScalar *a_xGradI, const PetscScalar *a_xG,  PetscScalar *a_xGradG, void *ctx){
-    PetscFunctionBeginUser;
-
-    for (PetscInt pd = 0; pd < dof; ++pd) {
-        PetscReal dPhidS = a_xG[pd] - a_xI[pd];
-
-        // over each direction
-        for (PetscInt dir = 0; dir < dim; dir++) {
-            PetscReal dx = (cellGeomG->centroid[dir] - faceGeom->centroid[dir]);
-
-            // If there is a contribution in this direction
-            if (PetscAbs(dx) > 1E-8) {
-                a_xGradG[pd*dim + dir] = dPhidS / (dx);
-            } else {
-                a_xGradG[pd*dim + dir] = 0.0;
-            }
-        }
-    }
-    PetscFunctionReturn(0);
-}
-
-/**
- * this function updates the boundaries with the gradient computed from the boundary cell value
- * @param dm
- * @param auxFvm
- * @param gradLocalVec
- * @return
- */
-static PetscErrorCode FVFlowFillGradientBoundary(DM dm, PetscFV auxFvm, Vec localXVec, Vec gradLocalVec){
-    PetscFunctionBeginUser;
-    PetscErrorCode ierr;
-
-    // Get the dmGrad
-    DM dmGrad;
-    ierr = VecGetDM(gradLocalVec, &dmGrad);CHKERRQ(ierr);
-
-    // get the problem
-    PetscDS prob;
-    PetscInt nFields;
-    ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
-
-    PetscInt field;
-    ierr = PetscDSGetFieldIndex(prob, (PetscObject) auxFvm, &field);CHKERRQ(ierr);
-    PetscInt dof;
-    ierr = PetscDSGetFieldSize(prob, field, &dof);CHKERRQ(ierr);
-
-    // Obtaining local cell ownership
-    PetscInt faceStart, faceEnd;
-    ierr = DMPlexGetHeightStratum(dm, 1, &faceStart, &faceEnd);CHKERRQ(ierr);
-
-    // Get the fvm face and cell geometry
-    Vec cellGeomVec = NULL;/* vector of structs related to cell geometry*/
-    Vec faceGeomVec = NULL;/* vector of structs related to face geometry*/
-    ierr = DMPlexGetGeometryFVM(dm, &faceGeomVec, &cellGeomVec, NULL);CHKERRQ(ierr);
-
-    // get the dm for each geom type
-    DM dmFaceGeom, dmCellGeom;
-    ierr = VecGetDM(faceGeomVec, &dmFaceGeom);CHKERRQ(ierr);
-    ierr = VecGetDM(cellGeomVec, &dmCellGeom);CHKERRQ(ierr);
-
-    // extract the gradLocalVec
-    PetscScalar * gradLocalArray;
-    ierr = VecGetArray(gradLocalVec, &gradLocalArray);CHKERRQ(ierr);
-
-    const PetscScalar* localArray;
-    ierr = VecGetArrayRead(localXVec, &localArray);CHKERRQ(ierr);
-
-    // get the dim
-    PetscInt dim;
-    ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
-
-    // extract the arrays for the face and cell geom, along with their dm
-    const PetscScalar *cellGeomArray;
-    ierr = VecGetArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
-
-    const PetscScalar *faceGeomArray;
-    ierr = VecGetArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
-
-    // march over each boundary for this problem
-    PetscInt numBd;
-    ierr = PetscDSGetNumBoundary(prob, &numBd);CHKERRQ(ierr);
-    for (PetscInt b = 0; b < numBd; ++b) {
-        // extract the boundary information
-        PetscInt                numids;
-        const PetscInt         *ids;
-        const char *                 labelName;
-        PetscInt boundaryField;
-        ierr = DMGetBoundary(dm, b, NULL, NULL, &labelName, &boundaryField, NULL, NULL, NULL, NULL, &numids, &ids, NULL);CHKERRQ(ierr);
-
-        if (boundaryField != field){
-            continue;
-        }
-
-        // use the correct label for this boundary field
-        DMLabel label;
-        ierr = DMGetLabel(dm, labelName, &label);CHKERRQ(ierr);
-
-        // get the correct boundary/ghost pattern
-        PetscSF            sf;
-        PetscInt        nleaves;
-        const PetscInt    *leaves;
-        ierr = DMGetPointSF(dm, &sf);CHKERRQ(ierr);
-        ierr = PetscSFGetGraph(sf, NULL, &nleaves, &leaves, NULL);CHKERRQ(ierr);
-        nleaves = PetscMax(0, nleaves);
-
-        // march over each id on this process
-        for (PetscInt i = 0; i < numids; ++i) {
-            IS              faceIS;
-            const PetscInt *faces;
-            PetscInt        numFaces, f;
-
-            ierr = DMLabelGetStratumIS(label, ids[i], &faceIS);CHKERRQ(ierr);
-            if (!faceIS) continue; /* No points with that id on this process */
-            ierr = ISGetLocalSize(faceIS, &numFaces);CHKERRQ(ierr);
-            ierr = ISGetIndices(faceIS, &faces);CHKERRQ(ierr);
-
-            // march over each face in this boundary
-            for (f = 0; f < numFaces; ++f) {
-                const PetscInt* cells;
-                PetscFVFaceGeom        *fg;
-
-                if ((faces[f] < faceStart) || (faces[f] >= faceEnd)){
-                    continue; /* Refinement adds non-faces to labels */
-                }
-                PetscInt loc;
-                ierr = PetscFindInt(faces[f], nleaves, (PetscInt *) leaves, &loc);CHKERRQ(ierr);
-                if (loc >= 0){
-                    continue;
-                }
-
-                PetscBool boundary;
-                ierr = DMIsBoundaryPoint(dm, faces[f], &boundary);CHKERRQ(ierr);
-
-                // get the ghost and interior nodes
-                ierr = DMPlexGetSupport(dm, faces[f], &cells);CHKERRQ(ierr);
-                const PetscInt cellI = cells[0];
-                const PetscInt cellG = cells[1];
-
-                // get the face geom
-                const PetscFVFaceGeom  *faceGeom;
-                ierr  = DMPlexPointLocalRead(dmFaceGeom, faces[f], faceGeomArray, &faceGeom);CHKERRQ(ierr);
-
-                // get the cell centroid information
-                const PetscFVCellGeom       *cellGeom;
-                const PetscFVCellGeom       *cellGeomGhost;
-                ierr  = DMPlexPointLocalRead(dmCellGeom, cellI, cellGeomArray, &cellGeom);CHKERRQ(ierr);
-                ierr  = DMPlexPointLocalRead(dmCellGeom, cellG, cellGeomArray, &cellGeomGhost);CHKERRQ(ierr);
-
-                // Read the local point
-                PetscScalar* boundaryGradCellValues;
-                ierr  = DMPlexPointLocalRef(dmGrad, cellG, gradLocalArray, &boundaryGradCellValues);CHKERRQ(ierr);
-
-                const PetscScalar*  cellGradValues;
-                ierr  = DMPlexPointLocalRead(dmGrad, cellI, gradLocalArray, &cellGradValues);CHKERRQ(ierr);
-
-                const PetscScalar* boundaryCellValues;
-                ierr  = DMPlexPointLocalFieldRead(dm, cellG, field, localArray, &boundaryCellValues);CHKERRQ(ierr);
-                const PetscScalar* cellValues;
-                ierr  = DMPlexPointLocalFieldRead(dm, cellI, field, localArray, &cellValues);CHKERRQ(ierr);
-
-                // compute the gradient for the boundary node and pass in
-                ierr = ComputeBoundaryCellGradient(dim, dof, faceGeom, cellGeom, cellGeomGhost, cellValues, cellGradValues, boundaryCellValues, boundaryGradCellValues, NULL);CHKERRQ(ierr);
-            }
-            ierr = ISRestoreIndices(faceIS, &faces);CHKERRQ(ierr);
-            ierr = ISDestroy(&faceIS);CHKERRQ(ierr);
-        }
-    }
-
-    ierr = VecRestoreArrayRead(localXVec, &localArray);CHKERRQ(ierr);
-    ierr = VecRestoreArray(gradLocalVec, &gradLocalArray);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(faceGeomVec, &faceGeomArray);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
 
 /**
  * Function to get the density, velocity, and energy from the conserved variables
@@ -317,60 +128,6 @@ PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, c
             }
         }
     }
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
-        const PetscInt uOff[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
-        const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
-        PetscScalar* flux, void* ctx){
-    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
-    PetscFunctionBeginUser;
-
-    // Compute the norm
-    PetscReal norm[3];
-    NormVector(dim, fg->normal, norm);
-    const PetscReal areaMag = MagVector(dim, fg->normal);
-
-    // Decode the left and right states
-    PetscReal densityL;
-    PetscReal normalVelocityL;
-    PetscReal velocityL[3];
-    PetscReal internalEnergyL;
-    PetscReal aL;
-    PetscReal ML;
-    PetscReal pL;
-    DecodeEulerState(flowParameters, dim, uL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
-
-    PetscReal densityR;
-    PetscReal normalVelocityR;
-    PetscReal velocityR[3];
-    PetscReal internalEnergyR;
-    PetscReal aR;
-    PetscReal MR;
-    PetscReal pR;
-    DecodeEulerState(flowParameters, dim, uR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
-
-    PetscReal sPm;
-    PetscReal sPp;
-    PetscReal sMm;
-    PetscReal sMp;
-
-    flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
-
-    flux[RHO] = (sMm* densityR * aR + sMp* densityL * aL) * areaMag;
-
-    PetscReal velMagR = MagVector(dim, velocityR);
-    PetscReal HR = internalEnergyR + velMagR*velMagR/2.0 + pR/densityR;
-    PetscReal velMagL = MagVector(dim, velocityL);
-    PetscReal HL = internalEnergyL + velMagL*velMagL/2.0 + pL/densityL;
-
-    flux[RHOE] = (sMm * densityR * aR * HR + sMp * densityL * aL * HL) * areaMag;
-
-    for (PetscInt n =0; n < dim; n++) {
-        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR*sPm + pL*sPp) * fg->normal[n];
-    }
-
     PetscFunctionReturn(0);
 }
 
@@ -554,15 +311,73 @@ PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, DM auxDM, 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode CompressibleFlowEulerDiffusion(FlowData_CompressibleFlow flowParameters, PetscReal time, PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
-const PetscScalar* fieldL, const PetscScalar* fieldR,const PetscScalar* auxL, const PetscScalar* auxR,
-const PetscScalar** gradAuxL, const PetscScalar** gradAuxR, PetscScalar* fL, PetscScalar* fR){
+
+PetscErrorCode CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
+                                                  const PetscInt uOff[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
+                                                  const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
+                                                  PetscScalar* flux, void* ctx){
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
+    PetscFunctionBeginUser;
+
+    // Compute the norm
+    PetscReal norm[3];
+    NormVector(dim, fg->normal, norm);
+    const PetscReal areaMag = MagVector(dim, fg->normal);
+
+    // Decode the left and right states
+    PetscReal densityL;
+    PetscReal normalVelocityL;
+    PetscReal velocityL[3];
+    PetscReal internalEnergyL;
+    PetscReal aL;
+    PetscReal ML;
+    PetscReal pL;
+    DecodeEulerState(flowParameters, dim, uL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+
+    PetscReal densityR;
+    PetscReal normalVelocityR;
+    PetscReal velocityR[3];
+    PetscReal internalEnergyR;
+    PetscReal aR;
+    PetscReal MR;
+    PetscReal pR;
+    DecodeEulerState(flowParameters, dim, uR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+
+    PetscReal sPm;
+    PetscReal sPp;
+    PetscReal sMm;
+    PetscReal sMp;
+
+    flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
+
+    flux[RHO] = (sMm* densityR * aR + sMp* densityL * aL) * areaMag;
+
+    PetscReal velMagR = MagVector(dim, velocityR);
+    PetscReal HR = internalEnergyR + velMagR*velMagR/2.0 + pR/densityR;
+    PetscReal velMagL = MagVector(dim, velocityL);
+    PetscReal HL = internalEnergyL + velMagL*velMagL/2.0 + pL/densityL;
+
+    flux[RHOE] = (sMm * densityR * aR * HR + sMp * densityL * aL * HL) * areaMag;
+
+    for (PetscInt n =0; n < dim; n++) {
+        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR*sPm + pL*sPp) * fg->normal[n];
+    }
+
+    PetscFunctionReturn(0);
+}
+
+
+PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
+                                              const PetscInt uOff[], const PetscScalar* fieldL, const PetscScalar* fieldR, const PetscScalar* gradL[], const PetscScalar* gradR[],
+                                              const PetscInt aOff[], const PetscScalar* auxL, const PetscScalar* auxR, const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
+                                              PetscScalar* flux, void* ctx){
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
-    ierr = CompressibleFlowComputeStressTensor(dim, flowParameters->mu, gradAuxL[VEL], gradAuxR[VEL], tau);
+    ierr = CompressibleFlowComputeStressTensor(dim, flowParameters->mu, gradAuxL[aOff[VEL]], gradAuxR[aOff[VEL]], tau);
     CHKERRQ(ierr);
 
     // for each velocity component
@@ -575,12 +390,7 @@ const PetscScalar** gradAuxL, const PetscScalar** gradAuxR, PetscScalar* fL, Pet
         }
 
         // add in the contribution
-        if (fL) {
-            fL[RHOU + c] -= viscousFlux / cgL->volume;
-        }
-        if (fR) {
-            fR[RHOU + c] += viscousFlux / cgR->volume;
-        }
+        flux[RHOU + c] += viscousFlux;
     }
 
     // energy equation
@@ -588,21 +398,16 @@ const PetscScalar** gradAuxL, const PetscScalar** gradAuxR, PetscScalar* fL, Pet
         PetscReal heatFlux = 0.0;
         // add in the contributions for this viscous terms
         for (PetscInt c = 0; c < dim; ++c) {
-            heatFlux += 0.5 * (auxL[VEL + c] + auxR[VEL + c]) * tau[d * dim + c];
+            heatFlux += 0.5 * (auxL[aOff[VEL] + c] + auxR[aOff[VEL] + c]) * tau[d * dim + c];
         }
 
         // heat conduction (-k dT/dx - k dT/dy - k dT/dz) . n A
-        heatFlux += +flowParameters->k * 0.5 * (gradAuxL[T][d] + gradAuxR[T][d]);
+        heatFlux += +flowParameters->k * 0.5 * (gradAuxL[aOff[T]][d] + gradAuxR[aOff[T]][d]);
 
         // Multiply by the area normal
         heatFlux *= -fg->normal[d];
 
-        if (fL) {
-            fL[RHOE] -= heatFlux / cgL->volume;
-        }
-        if (fR) {
-            fR[RHOE] += heatFlux / cgR->volume;
-        }
+        flux[RHOE] += heatFlux;
     }
     PetscFunctionReturn(0);
 }

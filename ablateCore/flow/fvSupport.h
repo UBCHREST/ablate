@@ -24,7 +24,7 @@ struct FVMRHSFunctionDescription{
 
 typedef struct FVMRHSFunctionDescription FVMRHSFunctionDescription;
 
-/*@
+/**
   DMPlexTSComputeRHSFunctionFVM - Form the local forcing F from the local input X using pointwise functions specified by the user
 
   Input Parameters:
@@ -39,8 +39,21 @@ typedef struct FVMRHSFunctionDescription FVMRHSFunctionDescription;
   Level: developer
 
 .seealso: DMPlexComputeJacobianActionFEM()
-@*/
+**/
 PETSC_EXTERN PetscErrorCode ABLATE_DMPlexTSComputeRHSFunctionFVM(FVMRHSFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM dm, PetscReal time, Vec locX, Vec F, void *user);
+
+/**
+ * Populate the boundary with gradient information
+ * @param dm
+ * @param auxDM
+ * @param time
+ * @param locXVec
+ * @param locAuxField
+ * @param numberUpdateFunctions
+ * @param updateFunctions
+ * @param data
+ * @return
+ */
 
 /**
  * Takes all local vector

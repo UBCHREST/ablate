@@ -85,7 +85,7 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // Set up each field
     PetscInt eulerField = 0;
     PetscDSSetContext(prob, eulerField, compressibleFlowData) >> checkError;
-    diffusionCalculationFunctions.push_back(CompressibleFlowEulerDiffusion);
+//    diffusionCalculationFunctions.push_back(CompressibleFlowEulerDiffusion);
 
     rhsFunctionDescriptions.push_back(FVMRHSFunctionDescription{
         .function = CompressibleFlowComputeEulerFlux,
@@ -95,6 +95,17 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
         .numberInputFields = 1,
         .auxFields = {0, 0, 0, 0},
         .numberAuxFields = 0
+    });
+
+
+    rhsFunctionDescriptions.push_back(FVMRHSFunctionDescription{
+        .function = CompressibleFlowEulerDiffusion,
+        .context = compressibleFlowData,
+        .field = 0,
+        .inputFields = {0, 0, 0, 0},
+        .numberInputFields = 1,
+        .auxFields = {0, 1, 0, 0},
+        .numberAuxFields = 2
     });
 
 //    PetscDSSetRiemannSolver(prob, eulerField, CompressibleFlowComputeEulerFlux) >> checkError;
@@ -205,20 +216,26 @@ PetscErrorCode ablate::flow::CompressibleFlow::CompressibleFlowRHSFunctionLocal(
 
     ablate::flow::CompressibleFlow* flow = (ablate::flow::CompressibleFlow*)ctx;
 
-    // compute the euler flux across each face (note CompressibleFlowComputeEulerFlux has already been registered)
-    ierr = ABLATE_DMPlexTSComputeRHSFunctionFVM(&flow->rhsFunctionDescriptions[0], flow->rhsFunctionDescriptions.size(), dm, time, locXVec, globFVec, &flow->compressibleFlowData);
-    CHKERRQ(ierr);
-
-    // if there are any coefficients for diffusion, compute diffusion
     if (flow->compressibleFlowData->k || flow->compressibleFlowData->mu) {
         // update any aux fields
         ierr = FVFlowUpdateAuxFieldsFV(flow->dm->GetDomain(), flow->auxDM, time, locXVec, flow->auxField, TOTAL_COMPRESSIBLE_AUX_COMPONENTS, flow->auxFieldUpdateFunctions, flow->compressibleFlowData);
         CHKERRQ(ierr);
-
-        // compute the RHS sources
-        ierr = CompressibleFlowDiffusionSourceRHSFunctionLocal(dm, flow->auxDM, time, locXVec, flow->auxField, globFVec, flow->compressibleFlowData, &flow->diffusionCalculationFunctions[0]);
-        CHKERRQ(ierr);
     }
+
+    // compute the euler flux across each face (note CompressibleFlowComputeEulerFlux has already been registered)
+    ierr = ABLATE_DMPlexTSComputeRHSFunctionFVM(&flow->rhsFunctionDescriptions[0], flow->rhsFunctionDescriptions.size(), dm, time, locXVec, globFVec, &flow->compressibleFlowData);
+    CHKERRQ(ierr);
+//
+//    // if there are any coefficients for diffusion, compute diffusion
+//    if (flow->compressibleFlowData->k || flow->compressibleFlowData->mu) {
+//        // update any aux fields
+//        ierr = FVFlowUpdateAuxFieldsFV(flow->dm->GetDomain(), flow->auxDM, time, locXVec, flow->auxField, TOTAL_COMPRESSIBLE_AUX_COMPONENTS, flow->auxFieldUpdateFunctions, flow->compressibleFlowData);
+//        CHKERRQ(ierr);
+//
+//        // compute the RHS sources
+//        ierr = CompressibleFlowDiffusionSourceRHSFunctionLocal(dm, flow->auxDM, time, locXVec, flow->auxField, globFVec, flow->compressibleFlowData, &flow->diffusionCalculationFunctions[0]);
+//        CHKERRQ(ierr);
+//    }
 
     PetscFunctionReturn(0);
 }
