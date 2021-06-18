@@ -6,8 +6,8 @@
 #define MAX_FVM_RHS_FUNCTION_FIELDS 4
 
 typedef PetscErrorCode (*FVMRHSFunction)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
-                                          const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
-                                          const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
+                                          const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[],
+                                          const PetscInt aOff[], const PetscInt aOff_x[],  const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[],
                                               PetscScalar flux[], void* ctx);
 
 struct FVMRHSFunctionDescription{
