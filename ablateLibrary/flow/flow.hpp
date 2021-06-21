@@ -18,7 +18,7 @@
 namespace ablate::flow {
 
 class Flow : public solve::Solvable, public monitors::Viewable {
-   private:
+   protected:
     // descriptions to the fields on the dm
     std::vector<FlowFieldDescriptor> flowFieldDescriptors;
 

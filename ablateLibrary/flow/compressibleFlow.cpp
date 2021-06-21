@@ -89,28 +89,14 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // Set up each field
     PetscInt eulerField = 0;
     PetscDSSetContext(prob, eulerField, compressibleFlowData) >> checkError;
-//    diffusionCalculationFunctions.push_back(CompressibleFlowEulerDiffusion);
 
-    rhsFunctionDescriptions.push_back(FVMRHSFunctionDescription{
-        .function = CompressibleFlowComputeEulerFlux,
-        .context = compressibleFlowData,
-        .field = 0,
-        .inputFields = {0, 0, 0, 0},
-        .numberInputFields = 1,
-        .auxFields = {0, 0, 0, 0},
-        .numberAuxFields = 0
-    });
+    // register the flow fields source terms
+    RegisterRHSFunction(CompressibleFlowComputeEulerFlux, compressibleFlowData, "euler", {"euler"}, {});
 
-    // add in diffusion if
+    // add in diffusion if needed
     //    // if there are any coefficients for diffusion, compute diffusion
     if (compressibleFlowData->k || compressibleFlowData->mu) {
-        rhsFunctionDescriptions.push_back(FVMRHSFunctionDescription{.function = CompressibleFlowEulerDiffusion,
-                                                                    .context = compressibleFlowData,
-                                                                    .field = 0,
-                                                                    .inputFields = {0, 0, 0, 0},
-                                                                    .numberInputFields = 1,
-                                                                    .auxFields = {0, 1, 0, 0},
-                                                                    .numberAuxFields = 2});
+        RegisterRHSFunction(CompressibleFlowEulerDiffusion, compressibleFlowData, "euler", {"euler"}, {"T", "vel"});
     }
 
     // Set the flux calculator solver for each component
@@ -126,14 +112,8 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     compressibleFlowData->computeTemperatureContext = eos->GetComputeTemperatureContext();
 
     // Set the update fields
-//    auxFieldUpdateFunctions[T] = UpdateAuxTemperatureField;
-    auxFieldUpdateFunctions.push_back(UpdateAuxTemperatureField);
-    auxFieldUpdateContexts.push_back(compressibleFlowData);
-//    auxFieldUpdateFunctions[VEL] = UpdateAuxVelocityField;
-    auxFieldUpdateFunctions.push_back(UpdateAuxVelocityField);
-    auxFieldUpdateContexts.push_back(compressibleFlowData);
-
-
+    RegisterAuxFieldUpdate(UpdateAuxTemperatureField, compressibleFlowData, "T");
+    RegisterAuxFieldUpdate(UpdateAuxVelocityField, compressibleFlowData, "vel");
 
     // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
     compressibleFlowData->automaticTimeStepCalculator = PETSC_TRUE;

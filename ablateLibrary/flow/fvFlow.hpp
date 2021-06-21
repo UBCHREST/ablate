@@ -3,12 +3,13 @@
 
 #include "flow.hpp"
 #include <fvSupport.h>
-
+#include <string>
+#include <vector>
 
 namespace ablate::flow {
 
 class FVFlow : public Flow {
-   protected: // move this to private
+   private: // move this to private
     // hold the update functions for source
     std::vector<FVMRHSFunctionDescription> rhsFunctionDescriptions;
 
@@ -26,6 +27,26 @@ class FVFlow : public Flow {
     void CompleteProblemSetup(TS ts) override;
 
     static PetscErrorCode FVRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void *ctx);
+
+    /**
+     * Register a FVM rhs source function
+     * @param function
+     * @param context
+     * @param field
+     * @param inputFields
+     * @param auxFields
+     */
+    void RegisterRHSFunction(FVMRHSFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields);
+
+    /**
+     * Register a auxFieldUpdate
+     * @param function
+     * @param context
+     * @param field
+     * @param inputFields
+     * @param auxFields
+     */
+    void RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField);
 };
 
 }
