@@ -73,7 +73,9 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // Register a single field
     PetscInt numberComponents = 2 + dim;
     RegisterField({.fieldName = "euler", .fieldPrefix = "euler", .components = numberComponents, .fieldType = FieldType::FV});
-
+    if(!eos->GetSpecies().empty()) {
+        RegisterField({.fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eos->GetSpecies().size(), .componentNames = eos->GetSpecies(), .fieldType = FieldType::FV});
+    }
     FinalizeRegisterFields();
 
     // register the required auxFields
@@ -90,9 +92,11 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
 
     // register the flow fields source terms
     RegisterRHSFunction(CompressibleFlowComputeEulerFlux, compressibleFlowData, "euler", {"euler"}, {});
+    if(!eos->GetSpecies().empty()) {
+        RegisterRHSFunction(CompressibleFlowSpeciesAdvectionFlux, compressibleFlowData, "yi", {"euler", "yi"}, {});
+    }
 
-    // add in diffusion if needed
-    //    // if there are any coefficients for diffusion, compute diffusion
+    // if there are any coefficients for diffusion, compute diffusion
     if (compressibleFlowData->k || compressibleFlowData->mu) {
         RegisterRHSFunction(CompressibleFlowEulerDiffusion, compressibleFlowData, "euler", {"euler"}, {"T", "vel"});
     }
@@ -108,6 +112,7 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     compressibleFlowData->decodeStateFunctionContext = eos->GetDecodeStateContext();
     compressibleFlowData->computeTemperatureFunction = eos->GetComputeTemperatureFunction();
     compressibleFlowData->computeTemperatureContext = eos->GetComputeTemperatureContext();
+    compressibleFlowData->numberSpecies = eos->GetSpecies().size();
 
     // Set the update fields
     RegisterAuxFieldUpdate(UpdateAuxTemperatureField, compressibleFlowData, "T");

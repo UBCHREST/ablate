@@ -13,6 +13,8 @@ struct _FlowData_CompressibleFlow{
     PetscReal k;
     /* dynamic viscosity*/
     PetscReal mu;
+    /* number of gas species */
+    PetscInt numberSpecies;
 
     /* store method used for flux differencer */
     FluxDifferencerFunction fluxDifferencer;
@@ -55,5 +57,17 @@ PETSC_EXTERN PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const P
                                                            const PetscInt uOff[], const PetscInt uOff_x[],  const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[],
                                                            const PetscInt aOff[], const PetscInt aOff_x[],  const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[],
                                                            PetscScalar* fL, void* ctx);
+
+/**
+ * This Computes the diffusion flux for each species (Yi)
+ * u = {"euler", "Yi"}
+ * ctx = FlowData_CompressibleFlow
+ * @return
+ */
+PETSC_EXTERN PetscErrorCode CompressibleFlowSpeciesAdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg,
+                                                           const PetscInt uOff[], const PetscInt uOff_x[],  const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[],
+                                                           const PetscInt aOff[], const PetscInt aOff_x[],  const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[],
+                                                           PetscScalar* fL, void* ctx);
+
 
 #endif

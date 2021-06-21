@@ -7,6 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct EOSTestCreateAndViewParameters {
     std::map<std::string, std::string> options;
+    std::vector<std::string> species = {};
     std::string expectedView;
 };
 
@@ -15,7 +16,7 @@ class PerfectGasTestCreateAndViewFixture : public testingResources::PetscTestFix
 TEST_P(PerfectGasTestCreateAndViewFixture, ShouldCreateAndView) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters, GetParam().species);
 
     std::stringstream outputStream;
 
@@ -29,7 +30,10 @@ TEST_P(PerfectGasTestCreateAndViewFixture, ShouldCreateAndView) {
 
 INSTANTIATE_TEST_SUITE_P(EOSTests, PerfectGasTestCreateAndViewFixture,
                          testing::Values((EOSTestCreateAndViewParameters){.options = {}, .expectedView = "EOS: perfectGas\n\tgamma: 1.4\n\tRgas: 287\n"},
-                                         (EOSTestCreateAndViewParameters){.options = {{"gamma", "3.2"}, {"Rgas", "100.2"}}, .expectedView = "EOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\n"}),
+                                         (EOSTestCreateAndViewParameters){.options = {{"gamma", "3.2"}, {"Rgas", "100.2"}}, .expectedView = "EOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\n"},
+                                         (EOSTestCreateAndViewParameters){.options = {{"gamma", "3.2"}, {"Rgas", "100.2"}},
+                                                                          .species = {"O2", "N2"},
+                                                                          .expectedView = "EOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\n\tspecies: O2, N2\n"}),
                          [](const testing::TestParamInfo<EOSTestCreateAndViewParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +96,7 @@ INSTANTIATE_TEST_SUITE_P(EOSTests, PerfectGasTestDecodeStateFixture,
                          [](const testing::TestParamInfo<EOSTestDecodeStateParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// EOS decode state tests
+/// EOS get temperature tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct EOSTestTemperatureParameters {
     std::map<std::string, std::string> options;
@@ -136,7 +140,10 @@ INSTANTIATE_TEST_SUITE_P(EOSTests, PerfectGasTestTemperatureFixture,
                                              .options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .yiIn = {}, .densityIn = .9, .totalEnergyIn = 1.56E5, .massFluxIn = {0.0}, .expectedTemperature = 39000}),
                          [](const testing::TestParamInfo<EOSTestTemperatureParameters>& info) { return std::to_string(info.index); });
 
-TEST(EOSTests, PerfectGasShouldReportNoSpecies) {
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// EOS get species tests
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TEST(EOSTests, PerfectGasShouldReportNoSpeciesByDefault) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>();
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
@@ -146,4 +153,18 @@ TEST(EOSTests, PerfectGasShouldReportNoSpecies) {
 
     // assert
     ASSERT_EQ(0, species.size());
+}
+
+TEST(EOSTests, PerfectGasShouldReportSpeciesWhenProvided) {
+    // arrange
+    auto parameters = std::make_shared<ablate::parameters::MapParameters>();
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters, std::vector<std::string>{"N2", "H2"});
+
+    // act
+    auto species = eos->GetSpecies();
+
+    // assert
+    ASSERT_EQ(2, species.size());
+    ASSERT_EQ("N2", species[0]);
+    ASSERT_EQ("H2", species[1]);
 }

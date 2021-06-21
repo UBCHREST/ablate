@@ -1,6 +1,5 @@
 static char help[] = "MMS from Verification of a Compressible CFD Code using the Method of Manufactured Solutions, Christopher J. Roy,† Thomas M. Smith, and Curtis C. Ober";
 
-#include <compressibleFlow.h>
 #include <petsc.h>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
