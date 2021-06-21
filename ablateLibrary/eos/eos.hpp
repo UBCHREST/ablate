@@ -2,8 +2,8 @@
 #define ABLATELIBRARY_EOS_HPP
 #include <petsc.h>
 #include <iostream>
-#include <vector>
 #include <string>
+#include <vector>
 
 namespace ablate::eos {
 

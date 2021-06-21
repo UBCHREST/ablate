@@ -2,14 +2,13 @@
 #include <utilities/mpiError.hpp>
 #include "compressibleFlow.h"
 #include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
-#include "utilities/petscError.hpp"
 #include "fvSupport.h"
+#include "utilities/petscError.hpp"
 
 static const char* compressibleFlowComponentNames[TOTAL_COMPRESSIBLE_FLOW_COMPONENTS + 1] = {"rho", "rhoE", "rhoU", "rhoV", "rhoW", "unknown"};
 static const char* compressibleAuxComponentNames[TOTAL_COMPRESSIBLE_AUX_COMPONENTS + 1] = {"T", "vel", "unknown"};
 
-static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues,
-                                                PetscScalar* auxField, void* ctx) {
+static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[RHO];
     PetscReal totalEnergy = conservedValues[RHOE] / density;
@@ -20,8 +19,7 @@ static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, co
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues,
-                                             PetscScalar* auxField, void* ctx) {
+static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[RHO];
 
@@ -194,7 +192,6 @@ void ablate::flow::CompressibleFlow::CompleteProblemSetup(TS ts) {
     if (compressibleFlowData->automaticTimeStepCalculator) {
         preStepFunctions.push_back(ComputeTimeStep);
     }
-
 }
 void ablate::flow::CompressibleFlow::CompleteFlowInitialization(DM, Vec) {}
 

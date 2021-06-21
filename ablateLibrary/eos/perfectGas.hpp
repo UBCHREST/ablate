@@ -27,9 +27,7 @@ class PerfectGas : public EOS {
     computeTemperatureFunction GetComputeTemperatureFunction() override { return PerfectGasComputeTemperature; }
     void* GetComputeTemperatureContext() override { return &parameters; }
 
-    const std::vector<std::string>& GetSpecies() const override{
-        return species;
-    }
+    const std::vector<std::string>& GetSpecies() const override { return species; }
 };
 
 }  // namespace ablate::eos

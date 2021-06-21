@@ -69,7 +69,6 @@ std::optional<int> ablate::flow::Flow::GetAuxFieldId(const std::string& fieldNam
 }
 
 void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription, DM dmAdd) {
-
     switch (flowFieldDescription.fieldType) {
         case FieldType::FE: {
             // determine if it a simplex element and the number of dimensions
@@ -91,7 +90,7 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription,
                                  flowFieldDescription.fieldPrefix.c_str(),
                                  PETSC_DEFAULT,
                                  &petscFE) >>
-                                           checkError;
+                checkError;
             PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;
 

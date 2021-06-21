@@ -5,7 +5,7 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
                              std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution)
     : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolution) {}
 
-PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void *ctx) {
+PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
@@ -13,11 +13,14 @@ PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, V
 
     /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
     Vec facegeom, cellgeom;
-    ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, NULL);CHKERRQ(ierr);
-    ierr = DMPlexInsertBoundaryValues(dm, PETSC_FALSE, locXVec, time, facegeom, cellgeom, NULL);CHKERRQ(ierr);
+    ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, NULL);
+    CHKERRQ(ierr);
+    ierr = DMPlexInsertBoundaryValues(dm, PETSC_FALSE, locXVec, time, facegeom, cellgeom, NULL);
+    CHKERRQ(ierr);
 
     // update any aux fields, including ghost cells
-    ierr = FVFlowUpdateAuxFieldsFV(flow->dm->GetDomain(), flow->auxDM, time, locXVec, flow->auxField, flow->auxFieldUpdateFunctions.size(), &flow->auxFieldUpdateFunctions[0], &flow->auxFieldUpdateContexts[0]);
+    ierr = FVFlowUpdateAuxFieldsFV(
+        flow->dm->GetDomain(), flow->auxDM, time, locXVec, flow->auxField, flow->auxFieldUpdateFunctions.size(), &flow->auxFieldUpdateFunctions[0], &flow->auxFieldUpdateContexts[0]);
     CHKERRQ(ierr);
 
     // compute the euler flux across each face (note CompressibleFlowComputeEulerFlux has already been registered)
@@ -28,7 +31,6 @@ PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, V
 }
 void ablate::flow::FVFlow::CompleteProblemSetup(TS ts) {
     Flow::CompleteProblemSetup(ts);
-
 
     // Override the DMTSSetRHSFunctionLocal in DMPlexTSComputeRHSFunctionFVM with a function that includes euler and diffusion source terms
     DMTSSetRHSFunctionLocal(dm->GetDomain(), FVRHSFunctionLocal, this) >> checkError;
@@ -65,46 +67,42 @@ void ablate::flow::FVFlow::CompleteProblemSetup(TS ts) {
             }
         }
     }
-
 }
 void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields) {
     // map the field, inputFields, and auxFields to locations
     auto fieldId = this->GetFieldId(field);
-    if(!fieldId){
+    if (!fieldId) {
         throw std::invalid_argument("Cannot locate flow field " + field);
     }
 
     // Create the FVMRHS Function
-    FVMRHSFunctionDescription functionDescription{
-        .function = function,
-        .context = context,
-        .field = fieldId.value(),
-        .inputFields = {-1, -1, -1, -1},/**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
-        .numberInputFields = (PetscInt)inputFields.size(),
-        .auxFields = {-1, -1, -1, -1}, /**default to empty**/
-        .numberAuxFields = (PetscInt)auxFields.size()
-    };
+    FVMRHSFunctionDescription functionDescription{.function = function,
+                                                  .context = context,
+                                                  .field = fieldId.value(),
+                                                  .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
+                                                  .numberInputFields = (PetscInt)inputFields.size(),
+                                                  .auxFields = {-1, -1, -1, -1}, /**default to empty**/
+                                                  .numberAuxFields = (PetscInt)auxFields.size()};
 
-    if(inputFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || auxFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS){
+    if (inputFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || auxFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS) {
         std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");
     }
 
-    for(int i =0; i < inputFields.size(); i++){
+    for (int i = 0; i < inputFields.size(); i++) {
         auto fieldId = this->GetFieldId(inputFields[i]);
-        if(!fieldId){
+        if (!fieldId) {
             throw std::invalid_argument("Cannot locate flow field " + inputFields[i]);
         }
         functionDescription.inputFields[i] = fieldId.value();
     }
 
-    for(int i =0; i < auxFields.size(); i++){
+    for (int i = 0; i < auxFields.size(); i++) {
         auto fieldId = this->GetAuxFieldId(auxFields[i]);
-        if(!fieldId){
+        if (!fieldId) {
             throw std::invalid_argument("Cannot locate flow field " + auxFields[i]);
         }
         functionDescription.auxFields[i] = fieldId.value();
     }
-
 
     rhsFunctionDescriptions.push_back(functionDescription);
 }
@@ -113,7 +111,7 @@ void ablate::flow::FVFlow::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction funct
     // find the field location
     auto auxFieldLocation = this->GetAuxFieldId(auxField);
 
-    if(!auxFieldLocation){
+    if (!auxFieldLocation) {
         throw std::invalid_argument("Cannot locate aux flow field " + auxField);
     }
 
@@ -122,5 +120,5 @@ void ablate::flow::FVFlow::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction funct
     auxFieldUpdateContexts.resize(this->auxFieldDescriptors.size());
 
     auxFieldUpdateFunctions[auxFieldLocation.value()] = function;
-    auxFieldUpdateContexts[auxFieldLocation.value()]  = context;
+    auxFieldUpdateContexts[auxFieldLocation.value()] = context;
 }

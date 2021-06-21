@@ -217,10 +217,10 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
     ierr = DMGetWorkArray(dm, numFaces*Nc, MPIU_SCALAR, uR);CHKERRQ(ierr);
 
     if (locGrads) {
-        ierr = PetscCalloc1(Nf, &lgrads);;CHKERRQ(ierr);
-        ierr = PetscCalloc1(Nf, &dmGrads);;CHKERRQ(ierr);
+        ierr = PetscCalloc1(Nf, &lgrads);CHKERRQ(ierr);
+        ierr = PetscCalloc1(Nf, &dmGrads);CHKERRQ(ierr);
         for (f = 0; f < Nf; ++f) {
-            if(locGrads[f]) {
+            if (locGrads[f]) {
                 ierr = VecGetArrayRead(locGrads[f], &lgrads[f]);CHKERRQ(ierr);
                 ierr = VecGetDM(locGrads[f], &dmGrads[f]);CHKERRQ(ierr);
             }
@@ -267,7 +267,7 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
             ierr = PetscFVGetNumComponents(fv, &numComp);CHKERRQ(ierr);
             ierr = DMPlexPointLocalFieldRead(dm, cells[0], f, x, &xL);CHKERRQ(ierr);
             ierr = DMPlexPointLocalFieldRead(dm, cells[1], f, x, &xR);CHKERRQ(ierr);
-            if(dmGrads[f]){
+            if (dmGrads[f]){
                 PetscReal dxL[3], dxR[3];
 
                 ierr = DMPlexPointLocalRead(dmGrads[f], cells[0], lgrads[f], &gL);CHKERRQ(ierr);
@@ -280,7 +280,7 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
                     uRl[iface*Nc+offsets[f]+c] = xR[c] + DMPlex_DotD_Internal(dim, &gR[c*dim], dxR);
 
                     // copy the gradient into the grad vector
-                    for(PetscInt d =0; d < dim; d++) {
+                    for (PetscInt d =0; d < dim; d++) {
                         gradLl[iface * Nc * dim + dirOffsets[f] + c*dim + d] = gL[c*dim + d];
                         gradRl[iface * Nc * dim + dirOffsets[f] + c*dim + d] = gR[c*dim + d];
                     }
@@ -292,7 +292,7 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
                     uRl[iface*Nc+offsets[f]+c] = xR[c];
 
                     // fill the grad with NAN to prevent use
-                    for(PetscInt d =0; d < dim; d++) {
+                    for (PetscInt d =0; d < dim; d++) {
                         gradLl[iface * Nc * dim + dirOffsets[f] + c*dim + d] = NAN;
                         gradRl[iface * Nc * dim + dirOffsets[f] + c*dim + d] = NAN;
                     }
@@ -307,11 +307,11 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
     ierr = VecRestoreArrayRead(cellGeometry, &cellgeom);CHKERRQ(ierr);
     if (locGrads) {
             for (f = 0; f < Nf; ++f) {
-                if(locGrads[f]) {
+                if (locGrads[f]) {
                     ierr = VecRestoreArrayRead(locGrads[f], &lgrads[f]);CHKERRQ(ierr);
                 }
             }
-        ierr = PetscFree(lgrads);;CHKERRQ(ierr);
+        ierr = PetscFree(lgrads);CHKERRQ(ierr);
     }
     ierr = PetscFree(isFE);CHKERRQ(ierr);
     PetscFunctionReturn(0);
@@ -322,10 +322,10 @@ static PetscErrorCode ABLATE_DMPlexRestoreFaceFields(DM dm, PetscInt fStart, Pet
 
   DMRestoreWorkArray(dm, 0, MPIU_SCALAR, uL);
   DMRestoreWorkArray(dm, 0, MPIU_SCALAR, uR);
-  if(*gradL){
+  if (*gradL){
       DMRestoreWorkArray(dm, 0, MPIU_SCALAR, gradL);
   }
-  if(*gradR){
+  if (*gradR){
       DMRestoreWorkArray(dm, 0, MPIU_SCALAR, gradR);
   }
 
@@ -372,18 +372,16 @@ static PetscErrorCode ABLATE_PetscFVIntegrateRHSFunction(FVMRHSFunctionDescripti
     PetscInt * uGradOffTotal;
     ierr = PetscDSGetComponentOffsets(prob, &uOffTotal);CHKERRQ(ierr);
     ierr = PetscDSGetComponentDerivativeOffsets(prob, &uGradOffTotal);CHKERRQ(ierr);
-    for(PetscInt f =0; f < functionDescription->numberInputFields; f++){
+    for (PetscInt f =0; f < functionDescription->numberInputFields; f++){
         uOff[f] = uOffTotal[functionDescription->inputFields[f]];
         uOff_x[f] = uGradOffTotal[functionDescription->inputFields[f]];
     }
 
-    if(auxProb) {
+    if (auxProb) {
         PetscInt *auxOffTotal;
         PetscInt *auxGradOffTotal;
-        ierr = PetscDSGetComponentOffsets(auxProb, &auxOffTotal);
-        CHKERRQ(ierr);
-        ierr = PetscDSGetComponentDerivativeOffsets(auxProb, &auxGradOffTotal);
-        CHKERRQ(ierr);
+        ierr = PetscDSGetComponentOffsets(auxProb, &auxOffTotal);CHKERRQ(ierr);
+        ierr = PetscDSGetComponentDerivativeOffsets(auxProb, &auxGradOffTotal);CHKERRQ(ierr);
         for (PetscInt f = 0; f < functionDescription->numberAuxFields; f++) {
             aOff[f] = auxOffTotal[functionDescription->auxFields[f]];
             aOff_x[f] = auxGradOffTotal[functionDescription->auxFields[f]];
@@ -668,7 +666,7 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
     ierr = PetscCalloc1(nf, &locGrads);CHKERRQ(ierr);
 
     // for each field compute the gradient in the localGrads vector
-    for(PetscInt f = 0; f < nf; f++){
+    for (PetscInt f = 0; f < nf; f++){
         PetscFV fvm;
         ierr = DMGetField(dm, f, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
 
@@ -692,16 +690,12 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
         }
     }
 
-    /* Handle non-essential (e.g. outflow) boundary values */
-    // TODO: this will need to be updated to add each gradient field for each vector
-//    ierr = DMPlexInsertBoundaryValues(dm, PETSC_FALSE, locX, time, faceGeometryFVM, cellGeometryFVM, NULL);CHKERRQ(ierr);
-
     // repeat the setup for the aux variables
     ierr = PetscCalloc1(naf, &dmAuxGrads);CHKERRQ(ierr);
     ierr = PetscCalloc1(naf, &locAuxGrads);CHKERRQ(ierr);
 
     // for each field compute the gradient in the localGrads vector
-    for(PetscInt f = 0; f < naf; f++){
+    for (PetscInt f = 0; f < naf; f++){
         PetscFV fvm;
         ierr = DMGetField(dmAux, f, NULL, (PetscObject*)&fvm);CHKERRQ(ierr);
 
@@ -863,21 +857,19 @@ PetscErrorCode ABLATE_DMPlexComputeResidual_Internal(FVMRHSFunctionDescription f
         ierr = DMRestoreWorkArray(dm, numFaces*totDim, MPIU_SCALAR, &fluxR);CHKERRQ(ierr);
 
         // clean up the field grads
-        for(PetscInt f = 0; f < nf; f++){
+        for (PetscInt f = 0; f < nf; f++){
             // if there is a grad dm for this field (does not have to be), restore
             if (dmGrads[f]) {
                 ierr = DMRestoreLocalVector(dmGrads[f], &locGrads[f]);CHKERRQ(ierr);
             }
         }
         // clean up the aux field grads
-        for(PetscInt f = 0; f < naf; f++){
+        for (PetscInt f = 0; f < naf; f++){
             // if there is a grad dm for this field (does not have to be), restore
             if (dmAuxGrads[f]) {
                 ierr = DMRestoreLocalVector(dmAuxGrads[f], &locAuxGrads[f]);CHKERRQ(ierr);
             }
         }
-
-
     }
     ierr = ISRestorePointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
 

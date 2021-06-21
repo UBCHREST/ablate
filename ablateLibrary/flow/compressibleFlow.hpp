@@ -2,11 +2,11 @@
 #define ABLATELIBRARY_COMPRESSIBLEFLOW_H
 
 #include <petsc.h>
-#include <eos/eos.hpp>
 #include <string>
 #include "compressibleFlow.h"
-#include "fvFlow.hpp"
+#include "eos/eos.hpp"
 #include "flow/fluxDifferencer/fluxDifferencer.hpp"
+#include "fvFlow.hpp"
 #include "mesh/mesh.hpp"
 #include "parameters/parameters.hpp"
 

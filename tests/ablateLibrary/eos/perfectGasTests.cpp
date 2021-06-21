@@ -136,7 +136,7 @@ INSTANTIATE_TEST_SUITE_P(EOSTests, PerfectGasTestTemperatureFixture,
                                              .options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .yiIn = {}, .densityIn = .9, .totalEnergyIn = 1.56E5, .massFluxIn = {0.0}, .expectedTemperature = 39000}),
                          [](const testing::TestParamInfo<EOSTestTemperatureParameters>& info) { return std::to_string(info.index); });
 
-TEST(EOSTests, PerfectGasShouldReportNoSpecies){
+TEST(EOSTests, PerfectGasShouldReportNoSpecies) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>();
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);

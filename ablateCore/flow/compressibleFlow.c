@@ -132,8 +132,7 @@ PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeo
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
-    ierr = CompressibleFlowComputeStressTensor(dim, flowParameters->mu, gradAuxL + aOff_x[VEL], gradAuxR + aOff_x[VEL], tau);
-    CHKERRQ(ierr);
+    ierr = CompressibleFlowComputeStressTensor(dim, flowParameters->mu, gradAuxL + aOff_x[VEL], gradAuxR + aOff_x[VEL], tau);CHKERRQ(ierr);
 
     // for each velocity component
     for (PetscInt c = 0; c < dim; ++c) {
