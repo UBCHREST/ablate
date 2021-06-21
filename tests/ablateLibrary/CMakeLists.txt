@@ -32,11 +32,3 @@ add_custom_command(
         ${CMAKE_CURRENT_SOURCE_DIR}/outputs/
         $<TARGET_FILE_DIR:libraryTests>/outputs
 )
-
-add_custom_command(
-        TARGET libraryTests
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/inputs/
-        $<TARGET_FILE_DIR:libraryTests>/inputs
-)
