@@ -210,7 +210,8 @@ PetscErrorCode CompressibleFlowSpeciesAdvectionFlux ( PetscInt dim, const PetscF
 
     // march over each gas species
     for (PetscInt sp = 0; sp < flowParameters->numberSpecies; sp++){
-        flux[sp] = (sMm * densityR * aR * uR[uOff[YI_FIELD]+ sp] + sMp * densityL * aL * uL[uOff[YI_FIELD] + sp]) * areaMag;
+        // Note: there is no density in the flux because uR and UL are density*yi
+        flux[sp] = (sMm  * aR * uR[uOff[YI_FIELD]+ sp] + sMp  * aL * uL[uOff[YI_FIELD] + sp]) * areaMag;
     }
 
     PetscFunctionReturn(0);

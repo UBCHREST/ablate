@@ -199,6 +199,27 @@ PetscErrorCode ablate::flow::Flow::TSPostStepFunction(TS ts) {
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode ablate::flow::Flow::TSPostEvaluateFunction(TS ts) {
+    PetscFunctionBeginUser;
+    DM dm;
+    PetscErrorCode ierr = TSGetDM(ts, &dm);
+    CHKERRQ(ierr);
+    ablate::flow::Flow* flowObject;
+    ierr = DMGetApplicationContext(dm, &flowObject);
+    CHKERRQ(ierr);
+
+    for (const auto& function : flowObject->postEvaluateFunctions) {
+        try {
+            function(ts, *flowObject);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
+
 void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     // Apply any boundary conditions
     PetscDS prob;
@@ -254,6 +275,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     }
     TSSetPreStep(ts, TSPreStepFunction) >> checkError;
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
+    TSSetPostEvaluate(ts, TSPostEvaluateFunction) >> checkError;
 
     // Initialize the flow field if provided
     if (!initialization.empty()) {
@@ -362,4 +384,30 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
         VecView(auxGlobalField, viewer) >> checkError;
         DMRestoreGlobalVector(auxDM, &auxGlobalField) >> checkError;
     }
+
+    if(!exactSolutions.empty()){
+        Vec exactVec;
+        DMGetGlobalVector(dm->GetDomain(), &exactVec) >> checkError;
+
+        // Get the number of fields
+        PetscDS ds;
+        DMGetDS(dm->GetDomain(), &ds) >> checkError;
+        PetscInt numberOfFields;
+        PetscDSGetNumFields(ds, &numberOfFields) >> checkError;
+        std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields);
+        std::vector<void*> exactCtxs(numberOfFields);
+        for (auto f = 0; f < numberOfFields; ++f) {
+            PetscDSGetExactSolution(ds, f, &exactFuncs[f], &exactCtxs[f]) >> checkError;
+            if (!exactFuncs[f]) {
+                throw std::invalid_argument("The exact solution has not set");
+            }
+        }
+
+        DMProjectFunction(dm->GetDomain(), time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> checkError;
+
+        PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
+        VecView(exactVec, viewer) >> checkError;
+        DMRestoreGlobalVector(dm->GetDomain(), &exactVec) >> checkError;
+    }
+
 }

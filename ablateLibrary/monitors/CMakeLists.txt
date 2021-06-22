@@ -4,8 +4,10 @@ target_sources(ablateLibrary
         monitor.hpp
         hdf5Monitor.hpp
         hdf5Monitor.cpp
-        errorMonitor.hpp
-        errorMonitor.cpp
+        fieldErrorMonitor.hpp
+        fieldErrorMonitor.cpp
+        solutionErrorMonitor.hpp
+        solutionErrorMonitor.cpp
         timeStepMonitor.hpp
         timeStepMonitor.cpp
         )

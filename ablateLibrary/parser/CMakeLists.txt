@@ -3,6 +3,7 @@ target_sources(ablateLibrary
         registrar.hpp
         factory.hpp
         argumentIdentifier.hpp
+        enumWrapper.hpp
         listing.cpp
         listing.h
         yamlParser.cpp

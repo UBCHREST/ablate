@@ -122,4 +122,35 @@ TEST(FactoryTests, GetByNameShouldReturnDefaultValueWithEmptyList) {
     ASSERT_EQ(0, result.size());
 }
 
+enum class TestEnum{VECTOR, COMPONENT};
+
+std::istream & operator >> (std::istream& is, TestEnum& v){
+    std::string enumString;
+    is >> enumString;
+
+    if(enumString == "vector"){
+        v = TestEnum::VECTOR;
+    }else if(enumString == "component"){
+        v = TestEnum::COMPONENT;
+    }else{
+        throw std::invalid_argument("Unknown Scope type " + enumString);
+    }
+    return is;
+}
+
+TEST(FactoryTests, ShouldReturnEnumFromString) {
+    // arrange
+
+    ablate::parser::Registrar<FactoryMockClass1>::Register<FactoryMockClass1>(true, "FactoryMockClass1", "this is a simple mock class");
+    auto mockFactory = std::make_shared<MockFactory>();
+    EXPECT_CALL(*mockFactory, Get(ArgumentIdentifier<std::string>{.inputName = "input123"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("component"));
+
+    // act
+    auto argument = ArgumentIdentifier<EnumWrapper<TestEnum>>{.inputName = "input123", .optional = false};
+    auto result = std::dynamic_pointer_cast<Factory>(mockFactory)->Get(argument);
+
+    // assert
+    ASSERT_EQ(result, TestEnum::COMPONENT);
+}
+
 }  // namespace ablateTesting::parser

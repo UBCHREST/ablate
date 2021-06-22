@@ -60,7 +60,7 @@ PETSC_EXTERN PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const P
 
 /**
  * This Computes the diffusion flux for each species (Yi)
- * u = {"euler", "Yi"}
+ * u = {"euler", "densityYi"}
  * ctx = FlowData_CompressibleFlow
  * @return
  */

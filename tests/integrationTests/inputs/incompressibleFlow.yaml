@@ -95,5 +95,5 @@ flow: !ablate::flow::IncompressibleFlow
       timeDerivativeValue:
         formula: "1.0"
   monitors:
-    - !ablate::monitors::ErrorMonitor
+    - !ablate::monitors::FieldErrorMonitor
     

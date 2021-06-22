@@ -98,7 +98,7 @@ flow: !ablate::flow::IncompressibleFlow
   monitors:
     - !ablate::monitors::Hdf5Monitor
       interval: 0
-    - !ablate::monitors::ErrorMonitor
+    - !ablate::monitors::FieldErrorMonitor
 
 particles:
   - !ablate::particles::Tracer

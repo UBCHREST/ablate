@@ -51,7 +51,7 @@ docker run --rm testing_image
 
 ```
 
-For output file comparisons you can specify that numbers are '<', '>', or '=' to a an expected value.  For example: 
+For output file comparisons you can specify that numbers are '<', '>', or '=' to an expected value.  For example: 
 
 ```
 L_2 Error: [(.*), (.*), (.*)]<expects> <1E-13 <1E-13 <1E-13
