@@ -81,3 +81,23 @@ const char *ablate::eos::TChem::periodicTable = "102 10\n"
     "D          E\n"
     "  2.01410    5.45E-4  \n"
     "";
+PetscErrorCode ablate::eos::TChem::DensityGasDecodeState(const PetscReal *yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, PetscReal *internalEnergy,
+                                                         PetscReal *a, PetscReal *p, void *ctx) {
+    PetscFunctionBeginUser;
+
+    // Get the velocity in this direction to compute the internal energy
+    PetscReal ke = 0.0;
+    for (PetscInt d = 0; d < dim; d++) {
+        ke += PetscSqr(velocity[d]);
+    }
+    ke *= 0.5;
+    (*internalEnergy) = (totalEnergy)-ke;
+
+    // compute the temperature
+
+
+
+//    *p = (parameters->gamma - 1.0) * density * (*internalEnergy);
+//    *a = PetscSqrtReal(parameters->gamma * (*p) / density);
+    PetscFunctionReturn(0);
+}

@@ -24,6 +24,8 @@ class TChem : public EOS {
     static const char* periodicTable;
     inline static const char* periodicTableFileName = "periodictable.dat";
 
+    static PetscErrorCode DensityGasDecodeState(const PetscReal yi[], PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a,
+                                                PetscReal* p, void* ctx);
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile );
     ~TChem() override;
@@ -35,8 +37,8 @@ class TChem : public EOS {
     const std::vector<std::string>& GetSpecies() const override;
 
     // EOS functions
-    decodeStateFunction GetDecodeStateFunction() override { return nullptr; }
-    void* GetDecodeStateContext() override { return nullptr; }
+    decodeStateFunction GetDecodeStateFunction() override { return DensityGasDecodeState; }
+    void* GetDecodeStateContext() override { return this; }
     computeTemperatureFunction GetComputeTemperatureFunction() override { return nullptr; }
     void* GetComputeTemperatureContext() override { return nullptr; }
 
