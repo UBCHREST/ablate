@@ -152,7 +152,7 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xyz[], PetscInt Nf, PetscScalar *u, void *ctx) {
+static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx) {
     PetscFunctionBeginUser;
 
     Constants *constants = (Constants *)ctx;
@@ -202,18 +202,18 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
     PetscReal aPY = constants->p.aPhiY;
     PetscReal aPZ = constants->p.aPhiZ;
 
-    PetscReal x = xyz[0];
-    PetscReal y = xyz[1];
-    PetscReal z = dim > 2 ? xyz[2] : 0.0;
+    PetscReal x = cg->centroid[0];
+    PetscReal y = cg->centroid[1];
+    PetscReal z = dim > 2 ? cg->centroid[2] : 0.0;
 
-    u[RHO] = (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
+    f[RHO] = (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
              (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / L +
              (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) / L +
              (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) / L -
              (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L -
              (aWZ * Pi * wZ * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) / L;
 
-    u[RHOE] = -((aWY * mu * Pi * wY * Cos((aWY * Pi * y) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L) -
+    f[RHOE] = -((aWY * mu * Pi * wY * Cos((aWY * Pi * y) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L) -
               (aVZ * mu * Pi * vZ * Cos((aVZ * Pi * z) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L +
               (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / Power(L, 2) +
               (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / Power(L, 2) -
@@ -353,7 +353,7 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
                     (2 * aWZ * Pi * wZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) * Sin((aWZ * Pi * z) / L)) / L) /
                        2.);
 
-    u[RHOU + 0] = (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L)) / Power(L, 2) + (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L)) / Power(L, 2) -
+    f[RHOU + 0] = (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L)) / Power(L, 2) + (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L)) / Power(L, 2) -
                   (aPX * Pi * pX * Sin((aPX * Pi * x) / L)) / L + (4 * Power(aUX, 2) * mu * Power(Pi, 2) * uX * Sin((aUX * Pi * x) / L)) / (3. * Power(L, 2)) +
                   (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2)) / L +
                   (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
@@ -378,7 +378,7 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
                    (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
                       L;
 
-    u[RHOU + 1] = (Power(aVX, 2) * mu * Power(Pi, 2) * vX * Cos((aVX * Pi * x) / L)) / Power(L, 2) + (aPY * Pi * pY * Cos((aPY * Pi * y) / L)) / L +
+    f[RHOU + 1] = (Power(aVX, 2) * mu * Power(Pi, 2) * vX * Cos((aVX * Pi * x) / L)) / Power(L, 2) + (aPY * Pi * pY * Cos((aPY * Pi * y) / L)) / L +
                   (4 * Power(aVY, 2) * mu * Power(Pi, 2) * vY * Sin((aVY * Pi * y) / L)) / (3. * Power(L, 2)) -
                   (aVX * Pi * vX * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aVX * Pi * x) / L) *
                    (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
@@ -405,7 +405,7 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
                       L;
 
     if (dim > 2) {
-        u[RHOU + 2] = (4 * Power(aWZ, 2) * mu * Power(Pi, 2) * wZ * Cos((aWZ * Pi * z) / L)) / (3. * Power(L, 2)) + (Power(aWX, 2) * mu * Power(Pi, 2) * wX * Sin((aWX * Pi * x) / L)) / Power(L, 2) +
+        f[RHOU + 2] = (4 * Power(aWZ, 2) * mu * Power(Pi, 2) * wZ * Cos((aWZ * Pi * z) / L)) / (3. * Power(L, 2)) + (Power(aWX, 2) * mu * Power(Pi, 2) * wX * Sin((aWX * Pi * x) / L)) / Power(L, 2) +
                       (Power(aWY, 2) * mu * Power(Pi, 2) * wY * Sin((aWY * Pi * y) / L)) / Power(L, 2) +
                       (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
                        (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
@@ -431,89 +431,6 @@ static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xy
                        (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
                           L;
     }
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode ComputeRHSWithSourceTerms(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void *ctx) {
-    PetscFunctionBeginUser;
-    PetscErrorCode ierr;
-    ProblemSetup *setup = (ProblemSetup *)ctx;
-
-    // Call the flux calculation
-    ierr = ablate::flow::FVFlow::FVRHSFunctionLocal(dm, time, locXVec, globFVec, setup->flowData.get());
-    CHKERRQ(ierr);
-
-    // Convert the dm to a plex
-    DM plex;
-    DMConvert(dm, DMPLEX, &plex);
-
-    // Extract the cell geometry, and the dm that holds the information
-    Vec cellgeom;
-    DM dmCell;
-    const PetscScalar *cgeom;
-    ierr = DMPlexGetGeometryFVM(plex, NULL, &cellgeom, NULL);
-    CHKERRQ(ierr);
-    ierr = VecGetDM(cellgeom, &dmCell);
-    CHKERRQ(ierr);
-    ierr = VecGetArrayRead(cellgeom, &cgeom);
-    CHKERRQ(ierr);
-
-    // Get the cell start and end for the fv cells
-    PetscInt cStart, cEnd;
-    ierr = DMPlexGetSimplexOrBoxCells(dmCell, 0, &cStart, &cEnd);
-    CHKERRQ(ierr);
-
-    // create a local f vector
-    Vec locFVec;
-    PetscScalar *locFArray;
-    ierr = DMGetLocalVector(dm, &locFVec);
-    CHKERRQ(ierr);
-    ierr = VecZeroEntries(locFVec);
-    CHKERRQ(ierr);
-    ierr = VecGetArray(locFVec, &locFArray);
-    CHKERRQ(ierr);
-
-    // get the current values
-    const PetscScalar *locXArray;
-    ierr = VecGetArrayRead(locXVec, &locXArray);
-    CHKERRQ(ierr);
-
-    PetscInt rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-    // March over each cell volume
-    for (PetscInt c = cStart; c < cEnd; ++c) {
-        PetscFVCellGeom *cg;
-        const PetscReal *xc;
-        PetscReal *fc;
-
-        ierr = DMPlexPointLocalRead(dmCell, c, cgeom, &cg);
-        CHKERRQ(ierr);
-        ierr = DMPlexPointLocalFieldRead(plex, c, 0, locXArray, &xc);
-        CHKERRQ(ierr);
-        ierr = DMPlexPointGlobalFieldRef(plex, c, 0, locFArray, &fc);
-        CHKERRQ(ierr);
-
-        if (fc) {  // must be real cell and not ghost
-            SourceMMS(setup->constants.dim, time, cg->centroid, 0, fc + RHO, &setup->constants);
-        }
-    }
-
-    // restore the cell geometry
-    ierr = VecRestoreArrayRead(cellgeom, &cgeom);
-    CHKERRQ(ierr);
-    ierr = VecRestoreArrayRead(locXVec, &locXArray);
-    CHKERRQ(ierr);
-    ierr = VecRestoreArray(locFVec, &locFArray);
-    CHKERRQ(ierr);
-
-    ierr = DMLocalToGlobalBegin(dm, locFVec, ADD_VALUES, globFVec);
-    CHKERRQ(ierr);
-    ierr = DMLocalToGlobalEnd(dm, locFVec, ADD_VALUES, globFVec);
-    CHKERRQ(ierr);
-    ierr = DMRestoreLocalVector(dm, &locFVec);
-    CHKERRQ(ierr);
-
     PetscFunctionReturn(0);
 }
 
@@ -684,8 +601,11 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             // Complete the problem setup
             flowObject->CompleteProblemSetup(ts);
 
-            // Override the flow calc for now
-            DMTSSetRHSFunctionLocal(flowObject->GetDM(), ComputeRHSWithSourceTerms, &problemSetup) >> testErrorChecker;
+            // Add a point wise function that adds fluxes to euler.  It requires no input fields
+
+            flowObject->RegisterRHSFunction(SourceMMS,  &problemSetup, "euler", {}, {});
+
+//            DMTSSetRHSFunctionLocal(flowObject->GetDM(), ComputeRHSWithSourceTerms, &problemSetup) >> testErrorChecker;
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
