@@ -112,8 +112,8 @@ INSTANTIATE_TEST_SUITE_P(EOSTests, TChemGetSpeciesFixture,
                                                                          .totalEnergyIn = 1E5,
                                                                          .velocityIn = {10, -20, 30},
                                                                          .expectedInternalEnergy = 99300,
-                                                                         .expectedSpeedOfSound = 235.8134856,
-                                                                         .expectedPressure = 47664}),
+                                                                         .expectedSpeedOfSound = 464.3326095106185,
+                                                                         .expectedPressure = 197709.15581272854}),
                           [](const testing::TestParamInfo<EOSTestDecodeStateParameters>& info) { return std::to_string(info.index); });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
