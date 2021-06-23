@@ -2,6 +2,26 @@
 #include "eos/tChem.hpp"
 #include "gtest/gtest.h"
 
+
+/*
+ * Helper function to fill mass fraction
+ */
+static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn){
+     std::vector<PetscReal> yi(species.size(), 0.0);
+
+     for(const auto& value: yiIn){
+         // Get the index
+         auto it = std::find(species.begin(), species.end(), value.first);
+         if(it != species.end()){
+             auto index = std::distance(species.begin(), it);
+
+             yi[index] = value.second;
+         }
+     }
+     return yi;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS create and view tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -67,97 +87,98 @@ INSTANTIATE_TEST_SUITE_P(EOSTests, TChemGetSpeciesFixture,
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// EOS decode state tests
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
- struct EOSTestDecodeStateParameters {
-     std::filesystem::path mechFile;
-     std::filesystem::path thermoFile;
-     std::vector<PetscReal> densityYiIn;
-     PetscReal densityIn;
-     PetscReal totalEnergyIn;
-     std::vector<PetscReal> velocityIn;
-     PetscReal expectedInternalEnergy;
-     PetscReal expectedSpeedOfSound;
-     PetscReal expectedPressure;
- };
+struct TChemDecodeStateParameters {
+    std::filesystem::path mechFile;
+    std::filesystem::path thermoFile;
+    std::vector<PetscReal> densityYiIn;
+    PetscReal densityIn;
+    PetscReal totalEnergyIn;
+    std::vector<PetscReal> velocityIn;
+    PetscReal expectedInternalEnergy;
+    PetscReal expectedSpeedOfSound;
+    PetscReal expectedPressure;
+};
 
- class TChemTestDecodeStateFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<EOSTestDecodeStateParameters> {};
+class TChemTestDecodeStateFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemDecodeStateParameters> {};
 
- TEST_P(TChemTestDecodeStateFixture, ShouldDecodeState) {
-     // arrange
-     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+TEST_P(TChemTestDecodeStateFixture, ShouldDecodeState) {
+    // arrange
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
 
-     // get the test params
-     const auto& params = GetParam();
+    // get the test params
+    const auto& params = GetParam();
 
-     // Prepare outputs
-     PetscReal internalEnergy;
-     PetscReal speedOfSound;
-     PetscReal pressure;
+    // Prepare outputs
+    PetscReal internalEnergy;
+    PetscReal speedOfSound;
+    PetscReal pressure;
 
-     // act
-     PetscErrorCode ierr = eos->GetDecodeStateFunction()(
-         &params.densityYiIn[0], params.velocityIn.size(), params.densityIn, params.totalEnergyIn, &params.velocityIn[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
+    // act
+    PetscErrorCode ierr = eos->GetDecodeStateFunction()(
+        &params.densityYiIn[0], params.velocityIn.size(), params.densityIn, params.totalEnergyIn, &params.velocityIn[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
 
-     // assert
-     ASSERT_EQ(ierr, 0);
-     ASSERT_NEAR(internalEnergy, params.expectedInternalEnergy, 1E-6);
-     ASSERT_NEAR(speedOfSound, params.expectedSpeedOfSound, 1E-6);
-     ASSERT_NEAR(pressure, params.expectedPressure, 1E-6);
- }
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(internalEnergy, params.expectedInternalEnergy, 1E-6);
+    ASSERT_NEAR(speedOfSound, params.expectedSpeedOfSound, 1E-6);
+    ASSERT_NEAR(pressure, params.expectedPressure, 1E-6);
+}
 
- INSTANTIATE_TEST_SUITE_P(EOSTests, TChemTestDecodeStateFixture,
-                          testing::Values((EOSTestDecodeStateParameters){.mechFile = "inputs/eos/grimech30.dat",
-                                                                         .thermoFile = "inputs/eos/thermo30.dat",
-                                                                         .densityYiIn = {},
-                                                                         .densityIn = 1.2,
-                                                                         .totalEnergyIn = 1E5,
-                                                                         .velocityIn = {10, -20, 30},
-                                                                         .expectedInternalEnergy = 99300,
-                                                                         .expectedSpeedOfSound = 464.3326095106185,
-                                                                         .expectedPressure = 197709.15581272854}),
-                          [](const testing::TestParamInfo<EOSTestDecodeStateParameters>& info) { return std::to_string(info.index); });
+INSTANTIATE_TEST_SUITE_P(EOSTests, TChemTestDecodeStateFixture,
+                         testing::Values((TChemDecodeStateParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                      .thermoFile = "inputs/eos/thermo30.dat",
+                                                                      .densityYiIn = {23., 323},
+                                                                      .densityIn = 1.2,
+                                                                      .totalEnergyIn = 1E5,
+                                                                      .velocityIn = {10, -20, 30},
+                                                                      .expectedInternalEnergy = 99300,
+                                                                      .expectedSpeedOfSound = 464.3326095106185,
+                                                                      .expectedPressure = 197709.15581272854}),
+                         [](const testing::TestParamInfo<TChemDecodeStateParameters>& info) { return std::to_string(info.index); });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// EOS decode state tests
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// struct EOSTestTemperatureParameters {
-//     std::map<std::string, std::string> options;
-//     std::vector<PetscReal> yiIn;
-//     PetscReal densityIn;
-//     PetscReal totalEnergyIn;
-//     std::vector<PetscReal> massFluxIn;
-//     PetscReal expectedTemperature;
-// };
-//
-// class PerfectGasTestTemperatureFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<EOSTestTemperatureParameters> {};
-//
-// TEST_P(PerfectGasTestTemperatureFixture, ShouldComputeTemperature) {
-//     // arrange
-//     auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
-//     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
-//
-//     // get the test params
-//     const auto& params = GetParam();
-//
-//     // Prepare outputs
-//     PetscReal temperature;
-//
-//     // act
-//     PetscErrorCode ierr = eos->GetComputeTemperatureFunction()(
-//         &params.yiIn[0], params.massFluxIn.size(), params.densityIn, params.totalEnergyIn, &params.massFluxIn[0], &temperature, eos->GetComputeTemperatureContext());
-//
-//     // assert
-//     ASSERT_EQ(ierr, 0);
-//     ASSERT_NEAR(temperature, params.expectedTemperature, 1E-6);
-// }
-//
-// INSTANTIATE_TEST_SUITE_P(EOSTests, PerfectGasTestTemperatureFixture,
-//                          testing::Values((EOSTestTemperatureParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
-//                                                                         .yiIn = {},
-//                                                                         .densityIn = 1.2,
-//                                                                         .totalEnergyIn = 1.50E+05,
-//                                                                         .massFluxIn = {1.2 * 10, -1.2 * 20, 1.2 * 30},
-//                                                                         .expectedTemperature = 208.0836237},
-//                                          (EOSTestTemperatureParameters){
-//                                              .options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .yiIn = {}, .densityIn = .9, .totalEnergyIn = 1.56E5, .massFluxIn = {0.0}, .expectedTemperature =
-//                                              39000}),
-//                          [](const testing::TestParamInfo<EOSTestTemperatureParameters>& info) { return std::to_string(info.index); });
+struct TChemTemperatureParameters {
+    std::filesystem::path mechFile;
+    std::filesystem::path thermoFile;
+    std::map<std::string, PetscReal> yiIn;
+    PetscReal densityIn;
+    PetscReal totalEnergyIn;
+    std::vector<PetscReal> massFluxIn;
+    PetscReal expectedTemperature;
+};
+
+class TChemTestTemperatureFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemTemperatureParameters> {};
+
+TEST_P(TChemTestTemperatureFixture, ShouldComputeTemperature) {
+    // arrange
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // get the mass fraction as an array
+    auto yi = GetMassFraction(eos->GetSpecies(), params.yiIn);
+
+    // Prepare outputs
+    PetscReal temperature;
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeTemperatureFunction()(
+        &yi[0], params.massFluxIn.size(), params.densityIn, params.totalEnergyIn, &params.massFluxIn[0], &temperature, eos->GetComputeTemperatureContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(temperature, params.expectedTemperature, 1E-2);
+}
+
+INSTANTIATE_TEST_SUITE_P(EOSTests, TChemTestTemperatureFixture,
+                         testing::Values((TChemTemperatureParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                      .thermoFile = "inputs/eos/thermo30.dat",
+                                                                      .yiIn = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
+                                                                      .densityIn = 1.2,
+                                                                      .totalEnergyIn = 1.E+05,
+                                                                      .massFluxIn = {1.2 * 10, -1.2 * 20, 1.2 * 30},
+                                                                      .expectedTemperature = 499.25}),
+                         [](const testing::TestParamInfo<TChemTemperatureParameters>& info) { return std::to_string(info.index); });

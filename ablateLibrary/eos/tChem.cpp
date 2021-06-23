@@ -1,6 +1,5 @@
 #include "tChem.hpp"
 
-#include <petscts.h>
 #include <iostream>
 #include <fstream>
 
@@ -42,6 +41,9 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
         auto offset = LENGTHOFSPECNAME * s;
         species.push_back(&allSpeciesNames[offset]);
     }
+
+    // size the working vector
+    workingVector.resize(numberSpecies + 1);
 }
 
 ablate::eos::TChem::~TChem() {
@@ -81,7 +83,91 @@ const char *ablate::eos::TChem::periodicTable = "102 10\n"
     "D          E\n"
     "  2.01410    5.45E-4  \n"
     "";
-PetscErrorCode ablate::eos::TChem::DensityGasDecodeState(const PetscReal *yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, PetscReal *internalEnergy,
+
+/**
+ * helper function to compute internal energy
+ * @param yi
+ * @param T
+ * @return
+ */
+double ablate::eos::TChem::InternalEnergy(int nspec, const PetscReal *yi, double T, double* workArray, double mwMix){
+    // Update the work array
+    workArray[0] = T;
+    for(auto i =0; i < nspec; i++){
+        workArray[i+1] = yi[i];
+    }
+
+    // get the required values
+    double totalEnthalpy;
+    int err = TC_getMs2HmixMs(workArray,nspec + 1, &totalEnthalpy);
+
+    // compute the heat of formation
+    workArray[0] = TREF;
+    double enthalpyOfFormation;
+    err = TC_getMs2HmixMs(workArray,nspec + 1, &enthalpyOfFormation);
+
+    double e = (totalEnthalpy - enthalpyOfFormation) - T * 1000*RUNIV/mwMix;
+    return e;
+}
+
+PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(const PetscReal *yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, PetscReal *T, void *ctx) {
+    PetscFunctionBeginUser;
+    TChem* tChem = (TChem*)ctx;
+
+    // Compute the internal energy from total ener
+    // Get the velocity in this direction
+    PetscReal speedSquare = 0.0;
+    for (PetscInt d = 0; d < dim; d++) {
+        speedSquare += PetscSqr(massFlux[d] / density);
+    }
+
+    // assumed eos
+    PetscReal internalEnergyRef = (totalEnergy)-0.5 * speedSquare;
+
+    // This is an iterative process to go compute temperature from density
+    double t2 = 300.0;
+
+    // precompute some values
+    double mwMix;
+    int err = TC_getMs2Wmix((double*)yi, tChem->numberSpecies, &mwMix);CHKERRQ(err);
+
+    // precompute some values
+    double* workingArray = &tChem->workingVector[0];
+
+    // set some constants
+    const auto EPS_T_RHO_E = 1E-8;
+    const auto ITERMAX_T = 100;
+
+    // compute the first error
+    double e2 = InternalEnergy(tChem->numberSpecies, yi,  t2, workingArray, mwMix);
+    double f2 = internalEnergyRef - e2;
+    if (PetscAbs(f2) > EPS_T_RHO_E){
+        double t0 = t2;
+        double f0 = f2;
+        double t1 = t0 + 1;
+        double e1 = InternalEnergy(tChem->numberSpecies, yi,  t1, workingArray, mwMix);
+        double f1 = internalEnergyRef - e1;
+
+        for(int it =0; it < ITERMAX_T; it++){
+            t2 = t1-f1*(t1-t0)/(f1-f0+1E-30);
+            t2 = PetscMax(1.0, t2);
+            e2 = InternalEnergy(tChem->numberSpecies, yi,  t2, workingArray, mwMix);
+            f2 = internalEnergyRef -e2;
+            if(PetscAbs(f2) <= EPS_T_RHO_E){
+                *T = t2;
+                return 0;
+            }
+            t0 = t1;
+            t1 = t2;
+            f0 = f1;
+            f1 = f2;
+        }
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Unable to converge to T in TChemComputeTemperature" );
+    }
+
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(const PetscReal *yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, PetscReal *internalEnergy,
                                                          PetscReal *a, PetscReal *p, void *ctx) {
     PetscFunctionBeginUser;
 
@@ -94,7 +180,7 @@ PetscErrorCode ablate::eos::TChem::DensityGasDecodeState(const PetscReal *yi, Pe
     (*internalEnergy) = (totalEnergy)-ke;
 
     // compute the temperature
-
+    TC_getTmixMs(NULL, 2, nullptr);
 
 
 //    *p = (parameters->gamma - 1.0) * density * (*internalEnergy);

@@ -20,12 +20,20 @@ class TChem : public EOS {
     std::vector<std::string> species;
     int numberSpecies;
 
+    // store a tcWorkingVector
+    std::vector<double> workingVector;
+
     // write/reproduce the periodic table
     static const char* periodicTable;
     inline static const char* periodicTableFileName = "periodictable.dat";
 
-    static PetscErrorCode DensityGasDecodeState(const PetscReal yi[], PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a,
+    static PetscErrorCode TChemGasDecodeState(const PetscReal yi[], PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a,
                                                 PetscReal* p, void* ctx);
+    static PetscErrorCode TChemComputeTemperature(const PetscReal yi[], PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, PetscReal* T, void* ctx);
+
+    inline const static double TREF = 298.15;
+    static double InternalEnergy(int nspec, const PetscReal *yi, double T, double* workArray, double mwMix);
+
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile );
     ~TChem() override;
@@ -37,10 +45,10 @@ class TChem : public EOS {
     const std::vector<std::string>& GetSpecies() const override;
 
     // EOS functions
-    decodeStateFunction GetDecodeStateFunction() override { return DensityGasDecodeState; }
+    decodeStateFunction GetDecodeStateFunction() override { return TChemGasDecodeState; }
     void* GetDecodeStateContext() override { return this; }
-    computeTemperatureFunction GetComputeTemperatureFunction() override { return nullptr; }
-    void* GetComputeTemperatureContext() override { return nullptr; }
+    computeTemperatureFunction GetComputeTemperatureFunction() override { return TChemComputeTemperature; }
+    void* GetComputeTemperatureContext() override { return this; }
 
 };
 
