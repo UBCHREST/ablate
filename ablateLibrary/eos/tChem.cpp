@@ -17,6 +17,7 @@
 #error TChem is required.  Reconfigure PETSc using --download-tchem.
 #endif
 
+
 ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::path thermoFileIn) : EOS("TChemV1"), errorChecker("Error in TChem library, return code "), mechFile(mechFileIn), thermoFile(thermoFileIn) {
     // TChem requires a periodic file in the working directory.  To simplify setup, we will just write it every time we are run
     int rank;
@@ -90,7 +91,7 @@ const char *ablate::eos::TChem::periodicTable = "102 10\n"
  * @param T
  * @return
  */
-double ablate::eos::TChem::InternalEnergy(int nspec, const PetscReal *yi, double T, double* workArray, double mwMix){
+int ablate::eos::TChem::InternalEnergy(int nspec, const PetscReal *yi, double T, double* workArray, double mwMix, double& internalEnergy ){
     // Update the work array
     workArray[0] = T;
     for(auto i =0; i < nspec; i++){
@@ -100,14 +101,68 @@ double ablate::eos::TChem::InternalEnergy(int nspec, const PetscReal *yi, double
     // get the required values
     double totalEnthalpy;
     int err = TC_getMs2HmixMs(workArray,nspec + 1, &totalEnthalpy);
+    if(err != 0){
+        return err;
+    }
 
     // compute the heat of formation
     workArray[0] = TREF;
     double enthalpyOfFormation;
     err = TC_getMs2HmixMs(workArray,nspec + 1, &enthalpyOfFormation);
 
-    double e = (totalEnthalpy - enthalpyOfFormation) - T * 1000*RUNIV/mwMix;
-    return e;
+    internalEnergy = (totalEnthalpy - enthalpyOfFormation) - T * 1000.0*RUNIV/mwMix;
+    return err;
+}
+
+PetscErrorCode ablate::eos::TChem::ComputeTemperature(TChem* tChem, const PetscReal *yi, PetscReal internalEnergyRef, double &T ){
+    PetscFunctionBeginUser;
+
+    // This is an iterative process to go compute temperature from density
+    double t2 = 300.0;
+
+    // precompute some values
+    double mwMix;
+    int err = TC_getMs2Wmix((double*)yi, tChem->numberSpecies, &mwMix);CHECKTCHEM(err);
+
+    // precompute some values
+    double* workingArray = &tChem->workingVector[0];
+
+    // set some constants
+    const auto EPS_T_RHO_E = 1E-8;
+    const auto ITERMAX_T = 100;
+
+    // compute the first error
+    double e2;
+    err = InternalEnergy(tChem->numberSpecies, yi,  t2, workingArray, mwMix, e2);
+    CHECKTCHEM(err);
+    double f2 = internalEnergyRef - e2;
+    if (PetscAbs(f2) > EPS_T_RHO_E){
+        double t0 = t2;
+        double f0 = f2;
+        double t1 = t0 + 1;
+        double e1;
+        err = InternalEnergy(tChem->numberSpecies, yi,  t1, workingArray, mwMix, e1);
+        CHECKTCHEM(err);
+        double f1 = internalEnergyRef - e1;
+
+        for(int it =0; it < ITERMAX_T; it++){
+            t2 = t1-f1*(t1-t0)/(f1-f0+1E-30);
+            t2 = PetscMax(1.0, t2);
+            err = InternalEnergy(tChem->numberSpecies, yi,  t2, workingArray, mwMix, e2);
+            CHECKTCHEM(err);
+            f2 = internalEnergyRef -e2;
+            if(PetscAbs(f2) <= EPS_T_RHO_E){
+                T = t2;
+                return 0;
+            }
+            t0 = t1;
+            t1 = t2;
+            f0 = f1;
+            f1 = f2;
+        }
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Unable to converge to T in TChemComputeTemperature" );
+    }
+    PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(const PetscReal *yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, PetscReal *T, void *ctx) {
@@ -124,52 +179,15 @@ PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(const PetscReal *yi, 
     // assumed eos
     PetscReal internalEnergyRef = (totalEnergy)-0.5 * speedSquare;
 
-    // This is an iterative process to go compute temperature from density
-    double t2 = 300.0;
-
-    // precompute some values
-    double mwMix;
-    int err = TC_getMs2Wmix((double*)yi, tChem->numberSpecies, &mwMix);CHKERRQ(err);
-
-    // precompute some values
-    double* workingArray = &tChem->workingVector[0];
-
-    // set some constants
-    const auto EPS_T_RHO_E = 1E-8;
-    const auto ITERMAX_T = 100;
-
-    // compute the first error
-    double e2 = InternalEnergy(tChem->numberSpecies, yi,  t2, workingArray, mwMix);
-    double f2 = internalEnergyRef - e2;
-    if (PetscAbs(f2) > EPS_T_RHO_E){
-        double t0 = t2;
-        double f0 = f2;
-        double t1 = t0 + 1;
-        double e1 = InternalEnergy(tChem->numberSpecies, yi,  t1, workingArray, mwMix);
-        double f1 = internalEnergyRef - e1;
-
-        for(int it =0; it < ITERMAX_T; it++){
-            t2 = t1-f1*(t1-t0)/(f1-f0+1E-30);
-            t2 = PetscMax(1.0, t2);
-            e2 = InternalEnergy(tChem->numberSpecies, yi,  t2, workingArray, mwMix);
-            f2 = internalEnergyRef -e2;
-            if(PetscAbs(f2) <= EPS_T_RHO_E){
-                *T = t2;
-                return 0;
-            }
-            t0 = t1;
-            t1 = t2;
-            f0 = f1;
-            f1 = f2;
-        }
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Unable to converge to T in TChemComputeTemperature" );
-    }
+    // compute the temperature
+    PetscErrorCode ierr = ComputeTemperature(tChem, yi, internalEnergyRef, *T);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(const PetscReal *yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, PetscReal *internalEnergy,
                                                          PetscReal *a, PetscReal *p, void *ctx) {
     PetscFunctionBeginUser;
+    TChem* tChem = (TChem*)ctx;
 
     // Get the velocity in this direction to compute the internal energy
     PetscReal ke = 0.0;
@@ -180,10 +198,27 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(const PetscReal *yi, Pets
     (*internalEnergy) = (totalEnergy)-ke;
 
     // compute the temperature
-    TC_getTmixMs(NULL, 2, nullptr);
+    double temperature;
+    PetscErrorCode ierr = ComputeTemperature(tChem, yi, *internalEnergy, temperature);CHKERRQ(ierr);
 
+    // compute r
+    double mwMix;
+    int err = TC_getMs2Wmix((double*)yi, tChem->numberSpecies, &mwMix);CHECKTCHEM(err);
+    double R = 1000.0*RUNIV/mwMix;
 
-//    *p = (parameters->gamma - 1.0) * density * (*internalEnergy);
-//    *a = PetscSqrtReal(parameters->gamma * (*p) / density);
+    // compute pressure p = rho*R*T
+    * p = density * temperature * R;
+
+    // lastly compute the speed of sound
+    double cp;
+    tChem->workingVector[0] = temperature;
+    for(auto s =0; s < tChem->numberSpecies; s++){
+        tChem->workingVector[s+1] = yi[s];
+    }
+
+    err = TC_getMs2CpMixMs(&tChem->workingVector[0], tChem->numberSpecies + 1, &cp);CHECKTCHEM(err);
+    double cv = cp-R;
+    double gamma = cp/cv;
+    *a = PetscSqrtReal(gamma*R*temperature);
     PetscFunctionReturn(0);
 }

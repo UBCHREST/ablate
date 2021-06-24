@@ -7,6 +7,8 @@
 
 namespace ablate::eos {
 
+#define CHECKTCHEM(ierr)          if (ierr != 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in TChem Library" );
+
 class TChem : public EOS {
    private:
     // hold an error checker for the tchem outside library
@@ -31,8 +33,10 @@ class TChem : public EOS {
                                                 PetscReal* p, void* ctx);
     static PetscErrorCode TChemComputeTemperature(const PetscReal yi[], PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, PetscReal* T, void* ctx);
 
+    // Private static helper functions
     inline const static double TREF = 298.15;
-    static double InternalEnergy(int nspec, const PetscReal *yi, double T, double* workArray, double mwMix);
+    static int InternalEnergy(int nspec, const PetscReal *yi, double T, double* workArray, double mwMix, double& internalEnergy);
+    static PetscErrorCode ComputeTemperature(TChem* tChem, const PetscReal *yi, PetscReal internalEnergyRef, double &T );
 
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile );
