@@ -20,9 +20,9 @@ struct _FlowData_CompressibleFlow{
     FluxDifferencerFunction fluxDifferencer;
 
     // EOS function calls
-    PetscErrorCode (*decodeStateFunction)(const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx);
+    PetscErrorCode (*decodeStateFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal* densityYi, PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx);
     void* decodeStateFunctionContext;
-    PetscErrorCode (*computeTemperatureFunction)(const PetscReal* yi, PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, PetscReal* T, void* ctx);
+    PetscErrorCode (*computeTemperatureFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal* densityYi, PetscReal* T, void* ctx);
     void* computeTemperatureContext;
 
     PetscBool automaticTimeStepCalculator;
@@ -36,7 +36,7 @@ PETSC_EXTERN PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, Pe
 
 /**
  * This Computes the Flow Euler flow for rho, rhoE, and rhoVel.
- * u = {"euler"}
+ * u = {"euler"} or {"euler", "densityYi"} if species are tracked
  * a = {}
  * ctx = FlowData_CompressibleFlow
  * @return

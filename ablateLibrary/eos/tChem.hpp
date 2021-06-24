@@ -29,14 +29,33 @@ class TChem : public EOS {
     static const char* periodicTable;
     inline static const char* periodicTableFileName = "periodictable.dat";
 
-    static PetscErrorCode TChemGasDecodeState(const PetscReal yi[], PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a,
+    static PetscErrorCode TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[],  PetscReal* internalEnergy, PetscReal* a,
                                                 PetscReal* p, void* ctx);
-    static PetscErrorCode TChemComputeTemperature(const PetscReal yi[], PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, PetscReal* T, void* ctx);
+    static PetscErrorCode TChemComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
 
     // Private static helper functions
     inline const static double TREF = 298.15;
-    static int InternalEnergy(int nspec, const PetscReal *yi, double T, double* workArray, double mwMix, double& internalEnergy);
-    static PetscErrorCode ComputeTemperature(TChem* tChem, const PetscReal *yi, PetscReal internalEnergyRef, double &T );
+    /**
+     * the tempYiWorkingArray array is expected to be filled
+     * @param numSpec
+     * @param tempYiWorkingArray
+     * @param T
+     * @param mwMix
+     * @param internalEnergy
+     * @return
+     */
+    static int InternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double& internalEnergy );
+
+    /**
+     * The tempYiWorkingArray is expected to be filled with correct species yi.  The 0 location is set in this function.
+     * @param numSpec
+     * @param tempYiWorkingArray
+     * @param internalEnergyRef
+     * @param mwMix
+     * @param T
+     * @return
+     */
+    static PetscErrorCode ComputeTemperature(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T );
 
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile );

@@ -5,7 +5,7 @@
 /*
  * Helper function to fill mass fraction
  */
-static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn) {
+static std::vector<PetscReal> GetDensityMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn, double density) {
     std::vector<PetscReal> yi(species.size(), 0.0);
 
     for (const auto& value : yiIn) {
@@ -14,7 +14,7 @@ static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& sp
         if (it != species.end()) {
             auto index = std::distance(species.begin(), it);
 
-            yi[index] = value.second;
+            yi[index] = value.second*density;
         }
     }
     return yi;
@@ -113,7 +113,7 @@ class TChemStateTestFixture : public testingResources::PetscTestFixture, public 
     PetscReal pressure;
 
     // get the mass fraction as an array
-    auto yi = GetMassFraction(eos->GetSpecies(), params.yiIn);
+    auto densityYi = GetDensityMassFraction(eos->GetSpecies(), params.yiIn, params.densityIn);
 
     // convert the massFrac in to velocity
     std::vector<double> velocityIn;
@@ -123,7 +123,7 @@ class TChemStateTestFixture : public testingResources::PetscTestFixture, public 
 
     // act
     PetscErrorCode ierr = eos->GetDecodeStateFunction()(
-        &yi[0], velocityIn.size(), params.densityIn, params.totalEnergyIn, &velocityIn[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
+        velocityIn.size(), params.densityIn, params.totalEnergyIn, &velocityIn[0], &densityYi[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
@@ -140,14 +140,14 @@ TEST_P(TChemStateTestFixture, ShouldComputeTemperature) {
     const auto& params = GetParam();
 
     // get the mass fraction as an array
-    auto yi = GetMassFraction(eos->GetSpecies(), params.yiIn);
+    auto densityYi = GetDensityMassFraction(eos->GetSpecies(), params.yiIn, params.densityIn);
 
     // Prepare outputs
     PetscReal temperature;
 
     // act
     PetscErrorCode ierr =
-        eos->GetComputeTemperatureFunction()(&yi[0], params.massFluxIn.size(), params.densityIn, params.totalEnergyIn, &params.massFluxIn[0], &temperature, eos->GetComputeTemperatureContext());
+        eos->GetComputeTemperatureFunction()(params.massFluxIn.size(), params.densityIn, params.totalEnergyIn, &params.massFluxIn[0], &densityYi[0], &temperature, eos->GetComputeTemperatureContext());
 
     // assert
     ASSERT_EQ(ierr, 0);

@@ -25,7 +25,7 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal* in){
  * Function to get the density, velocity, and energy from the conserved variables
  * @return
  */
-static void DecodeEulerState(FlowData_CompressibleFlow flowData, PetscInt dim, const PetscReal* conservedValues,  const PetscReal *normal, PetscReal* density,
+static void DecodeEulerState(FlowData_CompressibleFlow flowData, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi, const PetscReal *normal, PetscReal* density,
                                   PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p){
     // decode
     *density = conservedValues[RHO];
@@ -39,7 +39,7 @@ static void DecodeEulerState(FlowData_CompressibleFlow flowData, PetscInt dim, c
     }
 
     // decode the state in the eos
-    flowData->decodeStateFunction(NULL, dim, *density, totalEnergy, velocity, internalEnergy, a, p, flowData->decodeStateFunctionContext);
+    flowData->decodeStateFunction(dim, *density, totalEnergy, velocity, densityYi, internalEnergy, a, p, flowData->decodeStateFunctionContext);
     *M = (*normalVelocity)/(*a);
 }
 
@@ -87,7 +87,8 @@ PetscErrorCode CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFac
     PetscReal aL;
     PetscReal ML;
     PetscReal pL;
-    DecodeEulerState(flowParameters, dim, uL + uOff[0], norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+    const PetscReal *densityYiL = flowParameters->numberSpecies > 0? uL + uOff[1] : NULL;
+    DecodeEulerState(flowParameters, dim, uL + uOff[0],densityYiL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 
     PetscReal densityR;
     PetscReal normalVelocityR;
@@ -96,7 +97,8 @@ PetscErrorCode CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFac
     PetscReal aR;
     PetscReal MR;
     PetscReal pR;
-    DecodeEulerState(flowParameters, dim, uR + uOff[0], norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    const PetscReal *densityYiR = flowParameters->numberSpecies > 0? uR + uOff[1] : NULL;
+    DecodeEulerState(flowParameters, dim, uR + uOff[0],densityYiR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
     PetscReal sPm;
     PetscReal sPp;
@@ -190,7 +192,7 @@ PetscErrorCode CompressibleFlowSpeciesAdvectionFlux ( PetscInt dim, const PetscF
     PetscReal aL;
     PetscReal ML;
     PetscReal pL;
-    DecodeEulerState(flowParameters, dim, uL + uOff[EULER_FIELD], norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+    DecodeEulerState(flowParameters, dim, uL + uOff[EULER_FIELD], uL + uOff[YI_FIELD], norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 
     PetscReal densityR;
     PetscReal normalVelocityR;
@@ -199,7 +201,7 @@ PetscErrorCode CompressibleFlowSpeciesAdvectionFlux ( PetscInt dim, const PetscF
     PetscReal aR;
     PetscReal MR;
     PetscReal pR;
-    DecodeEulerState(flowParameters, dim, uR + uOff[EULER_FIELD], norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    DecodeEulerState(flowParameters, dim, uR + uOff[EULER_FIELD],uR + uOff[YI_FIELD], norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
     PetscReal sPm;
     PetscReal sPp;

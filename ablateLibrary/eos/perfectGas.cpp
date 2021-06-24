@@ -19,7 +19,7 @@ void ablate::eos::PerfectGas::View(std::ostream &stream) const {
     }
 }
 
-PetscErrorCode ablate::eos::PerfectGas::PerfectGasDecodeState(const PetscReal yi[], PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, PetscReal *internalEnergy,
+PetscErrorCode ablate::eos::PerfectGas::PerfectGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, const PetscReal densityYi[], PetscReal *internalEnergy,
                                                               PetscReal *a, PetscReal *p, void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
@@ -38,7 +38,7 @@ PetscErrorCode ablate::eos::PerfectGas::PerfectGasDecodeState(const PetscReal yi
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeTemperature(const PetscReal yi[], PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, PetscReal *T, void *ctx) {
+PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, const PetscReal densityYi[],  PetscReal *T, void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
 
