@@ -1006,9 +1006,8 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
     const PetscScalar* locXArray;
     const PetscScalar* locAArray;
     ierr = VecGetArrayRead(locX, &locXArray);CHKERRQ(ierr);
-    if(locA) {
-        ierr = VecGetArrayRead(locA, &locAArray);
-        CHKERRQ(ierr);
+    if (locA) {
+        ierr = VecGetArrayRead(locA, &locAArray);CHKERRQ(ierr);
     }
     // Get write access to the f array
     PetscScalar * fArray;
@@ -1048,7 +1047,7 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
 
         // if there is an aux field, get it
         const PetscScalar *a = NULL;
-        if(locA){
+        if (locA){
             ierr = DMPlexPointLocalRead(dmAux, cell, locAArray, &a);
         }
 
@@ -1056,17 +1055,17 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
         PetscInt * uOffTotal;
         ierr = PetscDSGetComponentOffsets(ds, &uOffTotal);CHKERRQ(ierr);
         PetscInt *auxOffTotal = NULL;
-        if(dsAux) {
+        if (dsAux) {
             ierr = PetscDSGetComponentOffsets(dsAux, &auxOffTotal);CHKERRQ(ierr);
         }
 
         // March over each functionDescriptions
-        for(PetscInt f =0; f < numberFunctionDescription; f++){
+        for (PetscInt f =0; f < numberFunctionDescription; f++){
             // copy over the offsets for each
             for (PetscInt i =0; i < functionDescriptions[f].numberInputFields; i++){
                 uOff[i] = uOffTotal[functionDescriptions[f].inputFields[i]];
             }
-            if(dsAux) {
+            if (dsAux) {
                 for (PetscInt i =0; i < functionDescriptions[f].numberAuxFields; i++){
                     aOff[i] = uOffTotal[functionDescriptions[f].auxFields[i]];
                 }

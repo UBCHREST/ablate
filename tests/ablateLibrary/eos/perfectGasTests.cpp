@@ -67,7 +67,7 @@ TEST_P(PerfectGasTestDecodeStateFixture, ShouldDecodeState) {
 
     // act
     PetscErrorCode ierr = eos->GetDecodeStateFunction()(
-        params.velocityIn.size(), params.densityIn, params.totalEnergyIn, &params.velocityIn[0],&params.densityYiIn[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
+        params.velocityIn.size(), params.densityIn, params.totalEnergyIn, &params.velocityIn[0], &params.densityYiIn[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
@@ -122,23 +122,24 @@ TEST_P(PerfectGasTestTemperatureFixture, ShouldComputeTemperature) {
 
     // act
     PetscErrorCode ierr = eos->GetComputeTemperatureFunction()(
-        params.massFluxIn.size(), params.densityIn, params.totalEnergyIn, &params.massFluxIn[0],&params.densityYiIn[0], &temperature, eos->GetComputeTemperatureContext());
+        params.massFluxIn.size(), params.densityIn, params.totalEnergyIn, &params.massFluxIn[0], &params.densityYiIn[0], &temperature, eos->GetComputeTemperatureContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
     ASSERT_NEAR(temperature, params.expectedTemperature, 1E-6);
 }
 
-INSTANTIATE_TEST_SUITE_P(EOSTests, PerfectGasTestTemperatureFixture,
-                         testing::Values((EOSTestTemperatureParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
-                                                                        .densityYiIn = {},
-                                                                        .densityIn = 1.2,
-                                                                        .totalEnergyIn = 1.50E+05,
-                                                                        .massFluxIn = {1.2 * 10, -1.2 * 20, 1.2 * 30},
-                                                                        .expectedTemperature = 208.0836237},
-                                         (EOSTestTemperatureParameters){
-                                             .options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .densityYiIn = {}, .densityIn = .9, .totalEnergyIn = 1.56E5, .massFluxIn = {0.0}, .expectedTemperature = 39000}),
-                         [](const testing::TestParamInfo<EOSTestTemperatureParameters>& info) { return std::to_string(info.index); });
+INSTANTIATE_TEST_SUITE_P(
+    EOSTests, PerfectGasTestTemperatureFixture,
+    testing::Values((EOSTestTemperatureParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+                                                   .densityYiIn = {},
+                                                   .densityIn = 1.2,
+                                                   .totalEnergyIn = 1.50E+05,
+                                                   .massFluxIn = {1.2 * 10, -1.2 * 20, 1.2 * 30},
+                                                   .expectedTemperature = 208.0836237},
+                    (EOSTestTemperatureParameters){
+                        .options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .densityYiIn = {}, .densityIn = .9, .totalEnergyIn = 1.56E5, .massFluxIn = {0.0}, .expectedTemperature = 39000}),
+    [](const testing::TestParamInfo<EOSTestTemperatureParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS get species tests

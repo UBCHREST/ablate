@@ -38,7 +38,8 @@ PetscErrorCode ablate::eos::PerfectGas::PerfectGasDecodeState(PetscInt dim, Pets
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, const PetscReal densityYi[],  PetscReal *T, void *ctx) {
+PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, const PetscReal densityYi[], PetscReal *T,
+                                                                     void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
 
@@ -57,6 +58,5 @@ PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeTemperature(PetscInt di
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::eos::EOS, ablate::eos::PerfectGas, "perfect gas eos",
-         ARG(ablate::parameters::Parameters, "parameters", "parameters for the perfect gas eos"),
+REGISTER(ablate::eos::EOS, ablate::eos::PerfectGas, "perfect gas eos", ARG(ablate::parameters::Parameters, "parameters", "parameters for the perfect gas eos"),
          OPT(std::vector<std::string>, "species", "species to track.  Note: species mass fractions do not change eos"));

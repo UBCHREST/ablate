@@ -219,7 +219,6 @@ PetscErrorCode ablate::flow::Flow::TSPostEvaluateFunction(TS ts) {
     PetscFunctionReturn(0);
 }
 
-
 void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     // Apply any boundary conditions
     PetscDS prob;
@@ -385,7 +384,7 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
         DMRestoreGlobalVector(auxDM, &auxGlobalField) >> checkError;
     }
 
-    if(!exactSolutions.empty()){
+    if (!exactSolutions.empty()) {
         Vec exactVec;
         DMGetGlobalVector(dm->GetDomain(), &exactVec) >> checkError;
 
@@ -409,5 +408,4 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
         VecView(exactVec, viewer) >> checkError;
         DMRestoreGlobalVector(dm->GetDomain(), &exactVec) >> checkError;
     }
-
 }

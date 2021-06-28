@@ -31,7 +31,6 @@ struct CompressibleFlowAdvectionTestParameters {
     std::vector<PetscReal> expectedLInfConvergence;
 };
 
-
 class CompressibleFlowAdvectionFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<CompressibleFlowAdvectionTestParameters> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
@@ -51,7 +50,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
 
         // March over each level
         for (PetscInt l = 0; l < GetParam().levels; l++) {
-            TS ts;       /* timestepper */
+            TS ts; /* timestepper */
 
             // Create a ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
@@ -65,18 +64,13 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
 
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d (%dx%d)\n", l, nx1D, nx1D);
 
-            auto mesh = std::make_shared<ablate::mesh::BoxMesh>("simpleMesh",
-                                                                std::vector<int>{nx1D, nx1D},
-                                                                std::vector<double>{0.0, 0.0},
-                                                                std::vector<double>{.01, .01},
-                                                                std::vector<std::string>{} /*boundary*/,
-                                                                false /*simplex*/);
+            auto mesh = std::make_shared<ablate::mesh::BoxMesh>(
+                "simpleMesh", std::vector<int>{nx1D, nx1D}, std::vector<double>{0.0, 0.0}, std::vector<double>{.01, .01}, std::vector<std::string>{} /*boundary*/, false /*simplex*/);
             // setup a flow parameters
-            auto parameters =
-                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}, {"mu", "0.0"}, {"k", "0.0"}});
+            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}, {"mu", "0.0"}, {"k", "0.0"}});
 
-            auto eos = std::make_shared<ablate::eos::PerfectGas>(
-                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}), std::vector<std::string>{"O2", "H2O", "N2"});
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}),
+                                                                 std::vector<std::string>{"O2", "H2O", "N2"});
 
             // setup solutions from the exact params
             auto exactEulerSolution = std::make_shared<mathFunctions::FieldSolution>("euler", GetParam().eulerExact);
@@ -84,8 +78,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<flow::boundaryConditions::EssentialGhost>("euler", "walls", "Face Sets", std::vector<int>{1, 2, 3, 4}, GetParam().eulerExact),
-                std::make_shared<flow::boundaryConditions::EssentialGhost>("densityYi", "walls", "Face Sets", std::vector<int>{1, 2, 3, 4}, GetParam().densityYiExact)
-            };
+                std::make_shared<flow::boundaryConditions::EssentialGhost>("densityYi", "walls", "Face Sets", std::vector<int>{1, 2, 3, 4}, GetParam().densityYiExact)};
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
                                                                                mesh,
@@ -113,8 +106,10 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             TSGetTime(ts, &endTime) >> testErrorChecker;
 
             // Get the L2 and LInf norms
-            std::vector<PetscReal> l2Norm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::L2_NORM).ComputeError(ts, endTime, flowObject->GetSolutionVector());
-            std::vector<PetscReal> lInfNorm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::LINF).ComputeError(ts, endTime, flowObject->GetSolutionVector());
+            std::vector<PetscReal> l2Norm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::L2_NORM)
+                                                .ComputeError(ts, endTime, flowObject->GetSolutionVector());
+            std::vector<PetscReal> lInfNorm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::LINF)
+                                                  .ComputeError(ts, endTime, flowObject->GetSolutionVector());
 
             // print the results to help with debug
             auto l2String = PrintVector(l2Norm, "%2.3g");

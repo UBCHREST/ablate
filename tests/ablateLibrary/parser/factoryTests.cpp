@@ -122,17 +122,17 @@ TEST(FactoryTests, GetByNameShouldReturnDefaultValueWithEmptyList) {
     ASSERT_EQ(0, result.size());
 }
 
-enum class TestEnum{VECTOR, COMPONENT};
+enum class TestEnum { VECTOR, COMPONENT };
 
-std::istream & operator >> (std::istream& is, TestEnum& v){
+std::istream& operator>>(std::istream& is, TestEnum& v) {
     std::string enumString;
     is >> enumString;
 
-    if(enumString == "vector"){
+    if (enumString == "vector") {
         v = TestEnum::VECTOR;
-    }else if(enumString == "component"){
+    } else if (enumString == "component") {
         v = TestEnum::COMPONENT;
-    }else{
+    } else {
         throw std::invalid_argument("Unknown Scope type " + enumString);
     }
     return is;

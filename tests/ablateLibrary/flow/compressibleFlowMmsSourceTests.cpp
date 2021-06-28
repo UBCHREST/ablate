@@ -602,10 +602,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             flowObject->CompleteProblemSetup(ts);
 
             // Add a point wise function that adds fluxes to euler.  It requires no input fields
-
-            flowObject->RegisterRHSFunction(SourceMMS,  &problemSetup, "euler", {}, {});
-
-//            DMTSSetRHSFunctionLocal(flowObject->GetDM(), ComputeRHSWithSourceTerms, &problemSetup) >> testErrorChecker;
+            flowObject->RegisterRHSFunction(SourceMMS, &problemSetup, "euler", {}, {});
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;

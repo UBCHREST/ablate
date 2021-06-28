@@ -1,8 +1,9 @@
-#include <utilities/petscError.hpp>
 #include "solutionErrorMonitor.hpp"
+#include <utilities/petscError.hpp>
 #include "mathFunctions/mathFunction.hpp"
 
-ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope errorScope, ablate::monitors::SolutionErrorMonitor::Norm normType) : errorScope(errorScope), normType(normType) {}
+ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope errorScope, ablate::monitors::SolutionErrorMonitor::Norm normType)
+    : errorScope(errorScope), normType(normType) {}
 
 PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;

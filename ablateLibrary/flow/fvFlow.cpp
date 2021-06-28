@@ -24,7 +24,14 @@ PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, V
     CHKERRQ(ierr);
 
     // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
-    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(&flow->rhsFluxFunctionDescriptions[0], flow->rhsFluxFunctionDescriptions.size(), &flow->rhsPointFunctionDescriptions[0], flow->rhsPointFunctionDescriptions.size(), dm, time, locXVec, globFVec);
+    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(&flow->rhsFluxFunctionDescriptions[0],
+                                              flow->rhsFluxFunctionDescriptions.size(),
+                                              &flow->rhsPointFunctionDescriptions[0],
+                                              flow->rhsPointFunctionDescriptions.size(),
+                                              dm,
+                                              time,
+                                              locXVec,
+                                              globFVec);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -77,12 +84,12 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFluxFunction function, void
 
     // Create the FVMRHS Function
     FVMRHSFluxFunctionDescription functionDescription{.function = function,
-                                                  .context = context,
-                                                  .field = fieldId.value(),
-                                                  .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
-                                                  .numberInputFields = (PetscInt)inputFields.size(),
-                                                  .auxFields = {-1, -1, -1, -1}, /**default to empty**/
-                                                  .numberAuxFields = (PetscInt)auxFields.size()};
+                                                      .context = context,
+                                                      .field = fieldId.value(),
+                                                      .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
+                                                      .numberInputFields = (PetscInt)inputFields.size(),
+                                                      .auxFields = {-1, -1, -1, -1}, /**default to empty**/
+                                                      .numberAuxFields = (PetscInt)auxFields.size()};
 
     if (inputFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || auxFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS) {
         std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");
@@ -107,7 +114,6 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFluxFunction function, void
     rhsFluxFunctionDescriptions.push_back(functionDescription);
 }
 
-
 void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields) {
     // map the field, inputFields, and auxFields to locations
     auto fieldId = this->GetFieldId(field);
@@ -117,12 +123,12 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, voi
 
     // Create the FVMRHS Function
     FVMRHSPointFunctionDescription functionDescription{.function = function,
-        .context = context,
-        .field = fieldId.value(),
-        .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
-        .numberInputFields = (PetscInt)inputFields.size(),
-        .auxFields = {-1, -1, -1, -1}, /**default to empty**/
-        .numberAuxFields = (PetscInt)auxFields.size()};
+                                                       .context = context,
+                                                       .field = fieldId.value(),
+                                                       .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
+                                                       .numberInputFields = (PetscInt)inputFields.size(),
+                                                       .auxFields = {-1, -1, -1, -1}, /**default to empty**/
+                                                       .numberAuxFields = (PetscInt)auxFields.size()};
 
     if (inputFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || auxFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS) {
         std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");

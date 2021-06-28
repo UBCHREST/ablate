@@ -14,7 +14,7 @@ static std::vector<PetscReal> GetDensityMassFraction(const std::vector<std::stri
         if (it != species.end()) {
             auto index = std::distance(species.begin(), it);
 
-            yi[index] = value.second*density;
+            yi[index] = value.second * density;
         }
     }
     return yi;
@@ -100,7 +100,7 @@ struct TChemStateParameters {
 
 class TChemStateTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemStateParameters> {};
 
- TEST_P(TChemStateTestFixture, ShouldDecodeState) {
+TEST_P(TChemStateTestFixture, ShouldDecodeState) {
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
 
@@ -117,8 +117,8 @@ class TChemStateTestFixture : public testingResources::PetscTestFixture, public 
 
     // convert the massFrac in to velocity
     std::vector<double> velocityIn;
-    for(const auto& rhoV : params.massFluxIn){
-        velocityIn.push_back(rhoV/params.densityIn);
+    for (const auto& rhoV : params.massFluxIn) {
+        velocityIn.push_back(rhoV / params.densityIn);
     }
 
     // act
@@ -129,7 +129,7 @@ class TChemStateTestFixture : public testingResources::PetscTestFixture, public 
     ASSERT_EQ(ierr, 0);
     ASSERT_NEAR(internalEnergy, params.expectedInternalEnergy, .1);
     ASSERT_NEAR(speedOfSound, params.expectedSpeedOfSound, .1);
-    ASSERT_LT( PetscAbs(pressure- params.expectedPressure)/params.expectedPressure, 1E-5) << "The percent difference in pressure should be less than 1E-5";
+    ASSERT_LT(PetscAbs(pressure - params.expectedPressure) / params.expectedPressure, 1E-5) << "The percent difference in pressure should be less than 1E-5";
 }
 
 TEST_P(TChemStateTestFixture, ShouldComputeTemperature) {
@@ -163,7 +163,7 @@ INSTANTIATE_TEST_SUITE_P(EOSTests, TChemStateTestFixture,
                                                                 .massFluxIn = {1.2 * 10, -1.2 * 20, 1.2 * 30},
                                                                 .expectedTemperature = 499.25,
                                                                 .expectedInternalEnergy = 99300.0,
-                                                                .expectedSpeedOfSound =  464.33,
+                                                                .expectedSpeedOfSound = 464.33,
                                                                 .expectedPressure = 197710.5},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
@@ -176,33 +176,33 @@ INSTANTIATE_TEST_SUITE_P(EOSTests, TChemStateTestFixture,
                                                                 .expectedSpeedOfSound = 560.83,
                                                                 .expectedPressure = 189973.54},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
-                                             .thermoFile = "inputs/eos/thermo30.dat",
-                                             .yiIn = {{"N2", 1.0}},
-                                             .densityIn = 3.3,
-                                             .totalEnergyIn = 1000,
-                                             .massFluxIn = {0.0, 3.3*2, 3.3*4},
-                                             .expectedTemperature = 418.079,
-                                             .expectedInternalEnergy = 990.0,
-                                             .expectedSpeedOfSound =  416.04,
-                                             .expectedPressure = 409488.10},
+                                                                .thermoFile = "inputs/eos/thermo30.dat",
+                                                                .yiIn = {{"N2", 1.0}},
+                                                                .densityIn = 3.3,
+                                                                .totalEnergyIn = 1000,
+                                                                .massFluxIn = {0.0, 3.3 * 2, 3.3 * 4},
+                                                                .expectedTemperature = 418.079,
+                                                                .expectedInternalEnergy = 990.0,
+                                                                .expectedSpeedOfSound = 416.04,
+                                                                .expectedPressure = 409488.10},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
-                                             .thermoFile = "inputs/eos/thermo30.dat",
-                                             .yiIn = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
-                                             .densityIn = 0.01,
-                                             .totalEnergyIn = 1E5,
-                                             .massFluxIn = {.01*-1, .01*-2, .01*-3},
-                                             .expectedTemperature = 437.46,
-                                             .expectedInternalEnergy = 99993.0,
-                                             .expectedSpeedOfSound = 1013.73,
-                                             .expectedPressure = 7411.11},
+                                                                .thermoFile = "inputs/eos/thermo30.dat",
+                                                                .yiIn = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
+                                                                .densityIn = 0.01,
+                                                                .totalEnergyIn = 1E5,
+                                                                .massFluxIn = {.01 * -1, .01 * -2, .01 * -3},
+                                                                .expectedTemperature = 437.46,
+                                                                .expectedInternalEnergy = 99993.0,
+                                                                .expectedSpeedOfSound = 1013.73,
+                                                                .expectedPressure = 7411.11},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
-                                             .thermoFile = "inputs/eos/thermo30.dat",
-                                             .yiIn = {{"H2", .1}, {"H2O", .2}, {"N2", .3},{"CO", .4}},
-                                             .densityIn = 999.9,
-                                             .totalEnergyIn = 1E4,
-                                             .massFluxIn = {999.9*-10, 999.9 * -20, 999.9*-300},
-                                             .expectedTemperature = 394.59,
-                                             .expectedInternalEnergy = -35250.0,
-                                             .expectedSpeedOfSound = 623.9,
-                                             .expectedPressure =281125963.5}),
+                                                                .thermoFile = "inputs/eos/thermo30.dat",
+                                                                .yiIn = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
+                                                                .densityIn = 999.9,
+                                                                .totalEnergyIn = 1E4,
+                                                                .massFluxIn = {999.9 * -10, 999.9 * -20, 999.9 * -300},
+                                                                .expectedTemperature = 394.59,
+                                                                .expectedInternalEnergy = -35250.0,
+                                                                .expectedSpeedOfSound = 623.9,
+                                                                .expectedPressure = 281125963.5}),
                          [](const testing::TestParamInfo<TChemStateParameters>& info) { return std::to_string(info.index); });
