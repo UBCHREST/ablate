@@ -33,9 +33,18 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     eulerFlowData->decodeStateFunction = eos->GetDecodeStateFunction();
     eulerFlowData->decodeStateFunctionContext = eos->GetDecodeStateContext();
 
+    // setup a fake PetscFVFaceGeom
+    PetscFVFaceGeom faceGeom{};
+    std::copy(std::begin(params.area), std::end(params.area), faceGeom.normal);
+
     // act
     std::vector<PetscReal> computedFlux(params.expectedFlux.size());
-    CompressibleFlowComputeEulerFlux(params.area.size(), 1, NULL, &params.area[0], &params.xLeft[0], &params.xRight[0], 0, NULL, &computedFlux[0], eulerFlowData);
+    int uOff[1] = {0};
+    /*CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFaceGeom* fg, const PetscFVCellGeom* cgL, const PetscFVCellGeom* cgR,
+            const PetscInt uOff[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
+            const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
+            PetscScalar* flux, void* ctx)*/
+    CompressibleFlowComputeEulerFlux(params.area.size(), &faceGeom, uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], eulerFlowData);
 
     // assert
     for (auto i = 0; i < params.expectedFlux.size(); i++) {

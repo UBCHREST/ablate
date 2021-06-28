@@ -68,85 +68,7 @@ std::optional<int> ablate::flow::Flow::GetAuxFieldId(const std::string& fieldNam
     return {};
 }
 
-void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription) {
-    // store the field
-    flowFieldDescriptors.push_back(flowFieldDescription);
-
-    switch (flowFieldDescription.fieldType) {
-        case FieldType::FE: {
-            // determine if it a simplex element and the number of dimensions
-            DMPolytopeType ct;
-            PetscInt cStart;
-            DMPlexGetHeightStratum(dm->GetDomain(), 0, &cStart, NULL) >> checkError;
-            DMPlexGetCellType(dm->GetDomain(), cStart, &ct) >> checkError;
-            PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
-            PetscInt simplexGlobal;
-
-            // Assume true if any rank says true
-            MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm->GetDomain())) >> checkMpiError;
-
-            // create a petsc fe
-            PetscFE petscFE;
-            PetscFECreateDefault(PetscObjectComm((PetscObject)dm->GetDomain()),
-                                 dim,
-                                 flowFieldDescription.components,
-                                 simplexGlobal ? PETSC_TRUE : PETSC_FALSE,
-                                 flowFieldDescription.fieldPrefix.c_str(),
-                                 PETSC_DEFAULT,
-                                 &petscFE) >>
-                checkMpiError;
-            PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;
-
-            // If this is not the first field, copy the quadrature locations
-            if (flowFieldDescriptors.size() > 1) {
-                PetscFE referencePetscFE;
-                DMGetField(dm->GetDomain(), 0, NULL, (PetscObject*)&referencePetscFE) >> checkError;
-                PetscFECopyQuadrature(referencePetscFE, petscFE) >> checkError;
-            }
-
-            // Store the field and destroy copy
-            DMAddField(dm->GetDomain(), NULL, (PetscObject)petscFE) >> checkError;
-            PetscFEDestroy(&petscFE) >> checkError;
-        } break;
-        case FieldType::FV: {
-            PetscFV fvm;
-            PetscFVCreate(PETSC_COMM_WORLD, &fvm) >> checkError;
-            PetscObjectSetOptionsPrefix((PetscObject)fvm, flowFieldDescription.fieldPrefix.c_str()) >> checkError;
-            PetscObjectSetName((PetscObject)fvm, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;
-
-            PetscFVSetFromOptions(fvm) >> checkError;
-            PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;
-            PetscFVSetSpatialDimension(fvm, dim) >> checkError;
-
-            DMAddField(dm->GetDomain(), NULL, (PetscObject)fvm) >> checkError;
-            PetscFVDestroy(&fvm) >> checkError;
-        } break;
-        default: {
-            throw std::invalid_argument("Unknown field type for flow");
-        }
-    }
-}
-
-void ablate::flow::Flow::FinalizeRegisterFields() { DMCreateDS(dm->GetDomain()) >> checkError; }
-
-void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescription) {
-    // store the field
-    auxFieldDescriptors.push_back(flowFieldDescription);
-
-    // check to see if need to create an aux dm
-    if (auxDM == NULL) {
-        /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
-        DM coordDM;
-        DMGetCoordinateDM(dm->GetDomain(), &coordDM) >> checkError;
-        DMClone(dm->GetDomain(), &auxDM) >> checkError;
-
-        // this is a hard coded "dmAux" that petsc looks for
-        PetscObjectCompose((PetscObject)dm->GetDomain(), "dmAux", (PetscObject)auxDM) >> checkError;
-        DMSetCoordinateDM(auxDM, coordDM) >> checkError;
-    }
-
+void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription, DM dmAdd) {
     switch (flowFieldDescription.fieldType) {
         case FieldType::FE: {
             // determine if it a simplex element and the number of dimensions
@@ -170,7 +92,7 @@ void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescripti
                                  &petscFE) >>
                 checkError;
             PetscObjectSetName((PetscObject)petscFE, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;  // TODO: update with options
+            PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;
 
             // If this is not the first field, copy the quadrature locations
             if (!flowFieldDescriptors.empty()) {
@@ -180,21 +102,26 @@ void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescripti
             }
 
             // Store the field and destroy copy
-            DMAddField(auxDM, NULL, (PetscObject)petscFE) >> checkError;
+            DMAddField(dmAdd, NULL, (PetscObject)petscFE) >> checkError;
             PetscFEDestroy(&petscFE) >> checkError;
         } break;
         case FieldType::FV: {
             PetscFV fvm;
-            PetscFVCreate(PETSC_COMM_WORLD, &fvm) >> checkError;
+            PetscFVCreate(PetscObjectComm((PetscObject)dm->GetDomain()), &fvm) >> checkError;
             PetscObjectSetOptionsPrefix((PetscObject)fvm, flowFieldDescription.fieldPrefix.c_str()) >> checkError;
             PetscObjectSetName((PetscObject)fvm, flowFieldDescription.fieldName.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;  // TODO: update with options
+            PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;
 
             PetscFVSetFromOptions(fvm) >> checkError;
             PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;
             PetscFVSetSpatialDimension(fvm, dim) >> checkError;
 
-            DMAddField(auxDM, NULL, (PetscObject)fvm) >> checkError;
+            // If there are any names provided, name each component in this field this is used by some of the output fields
+            for (PetscInt c = 0; c < flowFieldDescription.componentNames.size(); c++) {
+                PetscFVSetComponentName(fvm, c, flowFieldDescription.componentNames[c].c_str()) >> checkError;
+            }
+
+            DMAddField(dmAdd, NULL, (PetscObject)fvm) >> checkError;
             PetscFVDestroy(&fvm) >> checkError;
         } break;
         default: {
@@ -202,6 +129,36 @@ void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescripti
         }
     }
 }
+
+void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription) {
+    // Called the shared method to register
+    RegisterField(flowFieldDescription, dm->GetDomain());
+
+    // store the field
+    flowFieldDescriptors.push_back(flowFieldDescription);
+}
+
+void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescription) {
+    // check to see if need to create an aux dm
+    if (auxDM == NULL) {
+        /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
+        DM coordDM;
+        DMGetCoordinateDM(dm->GetDomain(), &coordDM) >> checkError;
+        DMClone(dm->GetDomain(), &auxDM) >> checkError;
+
+        // this is a hard coded "dmAux" that petsc looks for
+        PetscObjectCompose((PetscObject)dm->GetDomain(), "dmAux", (PetscObject)auxDM) >> checkError;
+        DMSetCoordinateDM(auxDM, coordDM) >> checkError;
+    }
+
+    RegisterField(flowFieldDescription, auxDM);
+
+    // store the field
+    auxFieldDescriptors.push_back(flowFieldDescription);
+}
+
+void ablate::flow::Flow::FinalizeRegisterFields() { DMCreateDS(dm->GetDomain()) >> checkError; }
+
 PetscErrorCode ablate::flow::Flow::TSPreStepFunction(TS ts) {
     PetscFunctionBeginUser;
     DM dm;

@@ -28,11 +28,32 @@ struct _FlowData_CompressibleFlow{
 
 typedef struct _FlowData_CompressibleFlow* FlowData_CompressibleFlow;
 
-typedef PetscErrorCode (*FVAuxFieldUpdateFunction)(FlowData_CompressibleFlow flowData, PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField);
-
-PETSC_EXTERN PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction* updateFunctions, FlowData_CompressibleFlow data);
-PETSC_EXTERN PetscErrorCode CompressibleFlowDiffusionSourceRHSFunctionLocal(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxVec, Vec globFVec, FlowData_CompressibleFlow flowParameters);
-PETSC_EXTERN void CompressibleFlowComputeEulerFlux(PetscInt dim, PetscInt Nf, const PetscReal *qp, const PetscReal *area, const PetscReal *xL, const PetscReal *xR, PetscInt numConstants, const PetscScalar constants[], PetscReal *flux, void* ctx);
 PETSC_EXTERN PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVelL, const PetscReal * gradVelR, PetscReal* tau);
+
+// PreBuilt Flux functions
+
+/**
+ * This Computes the Flow Euler flow for rho, rhoE, and rhoVel.
+ * u = {"euler"}
+ * a = {}
+ * ctx = FlowData_CompressibleFlow
+ * @return
+ */
+PETSC_EXTERN PetscErrorCode CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom* fg,
+                                                             const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[],
+                                                             const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[],
+                                                             PetscScalar* flux, void* ctx);
+
+/**
+ * This Computes the diffusion flux for euler rhoE, rhoVel
+ * u = {"euler"}
+ * a = {"temperature", "velocity"}
+ * ctx = FlowData_CompressibleFlow
+ * @return
+ */
+PETSC_EXTERN PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom* fg,
+                                                           const PetscInt uOff[], const PetscInt uOff_x[],  const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[],
+                                                           const PetscInt aOff[], const PetscInt aOff_x[],  const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[],
+                                                           PetscScalar* fL, void* ctx);
 
 #endif

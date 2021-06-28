@@ -441,7 +441,7 @@ static PetscErrorCode ComputeRHSWithSourceTerms(DM dm, PetscReal time, Vec locXV
     ProblemSetup *setup = (ProblemSetup *)ctx;
 
     // Call the flux calculation
-    ierr = ablate::flow::CompressibleFlow::CompressibleFlowRHSFunctionLocal(dm, time, locXVec, globFVec, setup->flowData.get());
+    ierr = ablate::flow::FVFlow::FVRHSFunctionLocal(dm, time, locXVec, globFVec, setup->flowData.get());
     CHKERRQ(ierr);
 
     // Convert the dm to a plex
