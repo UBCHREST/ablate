@@ -24,6 +24,8 @@ struct _FlowData_CompressibleFlow{
     void* decodeStateFunctionContext;
     PetscErrorCode (*computeTemperatureFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal* densityYi, PetscReal* T, void* ctx);
     void* computeTemperatureContext;
+    PetscErrorCode (*computeReactionRateFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx);
+    void* computeReactionRateContext;
 
     PetscBool automaticTimeStepCalculator;
 } ;
@@ -68,6 +70,8 @@ PETSC_EXTERN PetscErrorCode CompressibleFlowSpeciesAdvectionFlux(PetscInt dim, c
                                                            const PetscInt uOff[], const PetscInt uOff_x[],  const PetscScalar fieldL[], const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[],
                                                            const PetscInt aOff[], const PetscInt aOff_x[],  const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[],
                                                            PetscScalar* fL, void* ctx);
+
+PETSC_EXTERN PetscErrorCode CompressibleFlowReactionSource(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx);
 
 
 #endif

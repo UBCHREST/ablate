@@ -7,9 +7,11 @@
 
 namespace ablate::eos {
 
-using decodeStateFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
+using DecodeStateFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
                                                PetscReal* p, void* ctx);
-using computeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
+using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
+
+using ComputeReactionRateFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx);
 
 /**
  * The EOS is a combination of species model and EOS.  This allows the eos to dictate the order/number of species.  This can be relaxed in the future
@@ -26,10 +28,12 @@ class EOS {
     virtual void View(std::ostream& stream) const = 0;
 
     // eos functions are accessed through getting the function directly
-    virtual decodeStateFunction GetDecodeStateFunction() = 0;
+    virtual DecodeStateFunction GetDecodeStateFunction() = 0;
     virtual void* GetDecodeStateContext() = 0;
-    virtual computeTemperatureFunction GetComputeTemperatureFunction() = 0;
+    virtual ComputeTemperatureFunction GetComputeTemperatureFunction() = 0;
     virtual void* GetComputeTemperatureContext() = 0;
+    virtual ComputeReactionRateFunction GetComputeReactionRateFunction() = 0;
+    virtual void* GetComputeReactionRateContext() = 0;
 
     // species model functions
     virtual const std::vector<std::string>& GetSpecies() const = 0;

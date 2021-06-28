@@ -1057,10 +1057,10 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
         // extract the point locations for this cell
         const PetscFVCellGeom *cg;
         const PetscScalar *u;
-        PetscScalar *ff;
+        PetscScalar *rhs;
         ierr = DMPlexPointLocalRead(dmCell, cell, cellGeometryArray, &cg);
         ierr = DMPlexPointLocalRead(dm, cell, locXArray, &u);
-        ierr = DMPlexPointLocalRef(dm, cell, fArray, &ff);
+        ierr = DMPlexPointLocalRef(dm, cell, fArray, &rhs);
 
         // if there is an aux field, get it
         const PetscScalar *a = NULL;
@@ -1091,11 +1091,15 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
             // (PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx)
             ierr = functionDescriptions[f].function(dim, cg, uOff, u, aOff, a, fScratch, functionDescriptions[f].context);
 
-            PetscInt fieldSize, fieldOffset;
-            ierr = PetscDSGetFieldSize(ds, functionDescriptions[f].field, &fieldSize);
-            ierr = PetscDSGetFieldOffset(ds, functionDescriptions[f].field, &fieldOffset);
-            for (PetscInt d = 0; d < fieldSize; ++d) {
-                ff[fieldOffset + d] += fScratch[d];
+            // copy over each result flux field
+            PetscInt r = 0;
+            for(PetscInt ff = 0; ff < functionDescriptions[f].numberFields; ff++){
+                PetscInt fieldSize, fieldOffset;
+                ierr = PetscDSGetFieldSize(ds, functionDescriptions[f].fields[ff], &fieldSize);
+                ierr = PetscDSGetFieldOffset(ds, functionDescriptions[f].fields[ff], &fieldOffset);
+                for (PetscInt d = 0; d < fieldSize; ++d) {
+                    rhs[fieldOffset + d] += fScratch[r++];
+                }
             }
         }
     }
@@ -1112,5 +1116,123 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
     ierr = ISRestorePointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }
+
+PetscErrorCode ABLATE_DMPlexComputeRHSJacobianFVM(FVMRHSPointJacobianDescription *functionDescriptions, PetscInt numberFunctionDescription, DM dm, PetscReal t, Vec u, Mat aMat, Mat pMat) {
+    PetscFunctionBeginUser;
+
+    IS             cellIS;
+    DM             plex;
+    PetscInt       depth;
+    PetscErrorCode ierr;
+
+    PetscFunctionBegin;
+    ierr = DMConvert(dm,DMPLEX, &plex);CHKERRQ(ierr);
+    ierr = DMPlexGetDepth(plex, &depth);CHKERRQ(ierr);
+    ierr = DMGetStratumIS(plex, "dim", depth, &cellIS);CHKERRQ(ierr);
+    if (!cellIS) {
+        ierr = DMGetStratumIS(plex, "depth", depth, &cellIS);CHKERRQ(ierr);
+    }
+    ierr = DMPlexGetDepth(plex, &depth);CHKERRQ(ierr);
+    ierr = DMGetStratumIS(plex, "dim", depth, &cellIS);CHKERRQ(ierr);
+    if (!cellIS) {
+        ierr = DMGetStratumIS(plex, "depth", depth, &cellIS);CHKERRQ(ierr);
+    }
+
+    /* FEM+FVM */
+    PetscInt         cStart, cEnd;
+    const PetscInt  *cells = NULL;
+    ierr = ISGetPointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
+
+    /* 1: Get sizes from dm and dmAux */
+    PetscSection     section    = NULL;
+    DMLabel          ghostLabel = NULL;
+    PetscDS          ds         = NULL;
+    ierr = DMGetLocalSection(dm, &section);CHKERRQ(ierr);
+    ierr = DMGetLabel(dm, "ghost", &ghostLabel);CHKERRQ(ierr);
+    ierr = DMGetCellDS(dm, cells ? cells[cStart] : cStart, &ds);CHKERRQ(ierr);
+
+    // determine the number of fields and the totDim
+    PetscInt nf, totDim;
+    ierr = PetscDSGetNumFields(ds, &nf);CHKERRQ(ierr);
+    ierr = PetscDSGetTotalDimension(ds, &totDim);CHKERRQ(ierr);
+
+    /* 2: Get geometric data */
+    // We can use a single call for the geometry data because it does not depend on the fv object
+    Vec cellGeometryVec;
+    const PetscScalar* cellGeometryArray;
+    DM dmCell;
+    ierr = DMPlexGetGeometryFVM(dm, NULL, &cellGeometryVec, NULL);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(cellGeometryVec, &cellGeometryArray);CHKERRQ(ierr);
+    ierr = VecGetDM(cellGeometryVec, &dmCell);CHKERRQ(ierr);
+
+    /* 3: Get access to the raw u and aux vec */
+    const PetscScalar* globXArray;
+    ierr = VecGetArrayRead(u, &globXArray);CHKERRQ(ierr);
+
+    // size up the off
+    PetscInt *uOff;
+    PetscCalloc1(nf, &uOff);
+
+    // get the full set of offsets from the ds
+    PetscInt * uOffTotal;
+    ierr = PetscDSGetComponentOffsets(ds, &uOffTotal);CHKERRQ(ierr);
+
+    // get a work array
+    PetscScalar jacobianArray
+    ierr = DMGetWorkArray(dm, totDim MPIU_SCALAR, uL);CHKERRQ(ierr);
+
+    // March over each cell
+    for (PetscInt c = cStart; c < cEnd; ++c) {
+        // if there is a cell array, use it, otherwise it is just c
+        const PetscInt cell = cells ? cells[c] : c;
+
+        // make sure that this is not a ghost cell
+        if (ghostLabel) {
+            PetscInt ghostVal;
+
+            ierr = DMLabelGetValue(ghostLabel, cell, &ghostVal);CHKERRQ(ierr);
+            if (ghostVal > 0) continue;
+        }
+
+        // read the global field
+        const PetscScalar *u;
+        ierr = DMPlexPointGlobalRead(dm, cell, globXArray, &u);
+
+        // March over each functionDescriptions
+        for(PetscInt f =0; f < numberFunctionDescription; f++){
+            // copy over the offsets for each
+            for (PetscInt i =0; i < functionDescriptions[f].numberFields; i++){
+                uOff[i] = uOffTotal[functionDescriptions[f].fields[i]];
+            }
+
+            // (PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx)
+            ierr = functionDescriptions[f].function(dim, cg, uOff, u, aOff, a, fScratch, functionDescriptions[f].context);
+
+
+//            DMPlexMatSetClosure(dm, section, globalSection, Jac, cell, &elemMat[(c-cStart)*totDim*totDim], ADD_VALUES);CHKERRQ(ierr);}
+
+            // copy over each result flux field
+            PetscInt r = 0;
+            for(PetscInt ff = 0; ff < functionDescriptions[f].numberFields; ff++){
+                PetscInt fieldSize, fieldOffset;
+                ierr = PetscDSGetFieldSize(ds, functionDescriptions[f].fields[ff], &fieldSize);
+                ierr = PetscDSGetFieldOffset(ds, functionDescriptions[f].fields[ff], &fieldOffset);
+                for (PetscInt d = 0; d < fieldSize; ++d) {
+                    rhs[fieldOffset + d] += fScratch[r++];
+                }
+            }
+        }
+
+
+    }
+
+
+    // cleanup
+    PetscFree(uOff);
+    ierr = VecRestoreArrayRead(u, &globXArray);CHKERRQ(ierr);
+    ierr = ISRestorePointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+

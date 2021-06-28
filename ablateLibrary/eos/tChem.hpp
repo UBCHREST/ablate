@@ -1,14 +1,13 @@
 #ifndef ABLATECLIENTTEMPLATE_TCHEM_HPP
 #define ABLATECLIENTTEMPLATE_TCHEM_HPP
 
-#include <filesystem>
 #include "eos.hpp"
+#include <filesystem>
 #include "utilities/intErrorChecker.hpp"
 
 namespace ablate::eos {
 
-#define CHECKTCHEM(ierr) \
-    if (ierr != 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in TChem Library");
+#define CHECKTCHEM(ierr)          if (ierr != 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in TChem Library" );
 
 class TChem : public EOS {
    private:
@@ -24,15 +23,17 @@ class TChem : public EOS {
     int numberSpecies;
 
     // store a tcWorkingVector
-    std::vector<double> workingVector;
+    std::vector<double> tempYiWorkingVector;
+    std::vector<double> sourceWorkingVector;
 
     // write/reproduce the periodic table
     static const char* periodicTable;
     inline static const char* periodicTableFileName = "periodictable.dat";
 
-    static PetscErrorCode TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
-                                              PetscReal* p, void* ctx);
+    static PetscErrorCode TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[],  PetscReal* internalEnergy, PetscReal* a,
+                                                PetscReal* p, void* ctx);
     static PetscErrorCode TChemComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
+    static PetscErrorCode TChemComputeReactionRate(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx);
 
     // Private static helper functions
     inline const static double TREF = 298.15;
@@ -45,7 +46,7 @@ class TChem : public EOS {
      * @param internalEnergy
      * @return
      */
-    static int InternalEnergy(int numSpec, double* tempYiWorkingArray, double mwMix, double& internalEnergy);
+    static int InternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double& internalEnergy );
 
     /**
      * The tempYiWorkingArray is expected to be filled with correct species yi.  The 0 location is set in this function.
@@ -56,10 +57,10 @@ class TChem : public EOS {
      * @param T
      * @return
      */
-    static PetscErrorCode ComputeTemperature(int numSpec, double* tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double& T);
+    static PetscErrorCode ComputeTemperature(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T );
 
    public:
-    TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);
+    TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile );
     ~TChem() override;
 
     // general functions
@@ -69,11 +70,14 @@ class TChem : public EOS {
     const std::vector<std::string>& GetSpecies() const override;
 
     // EOS functions
-    decodeStateFunction GetDecodeStateFunction() override { return TChemGasDecodeState; }
+    DecodeStateFunction GetDecodeStateFunction() override { return TChemGasDecodeState; }
     void* GetDecodeStateContext() override { return this; }
-    computeTemperatureFunction GetComputeTemperatureFunction() override { return TChemComputeTemperature; }
+    ComputeTemperatureFunction GetComputeTemperatureFunction() override { return TChemComputeTemperature; }
     void* GetComputeTemperatureContext() override { return this; }
+    ComputeReactionRateFunction GetComputeReactionRateFunction() override { return TChemComputeReactionRate; }
+    void* GetComputeReactionRateContext() override { return this; }
+
 };
 
-}  // namespace ablate::eos
+}
 #endif  // ABLATECLIENTTEMPLATE_TCHEM_HPP

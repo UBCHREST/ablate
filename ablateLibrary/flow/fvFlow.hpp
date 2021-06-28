@@ -46,7 +46,7 @@ class FVFlow : public Flow {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields);
+    void RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::vector<std::string> fields, std::vector<std::string> inputFields, std::vector<std::string> auxFields);
 
     /**
      * Register a auxFieldUpdate

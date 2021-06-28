@@ -221,3 +221,19 @@ PetscErrorCode CompressibleFlowSpeciesAdvectionFlux ( PetscInt dim, const PetscF
 
     PetscFunctionReturn(0);
 }
+
+PetscErrorCode CompressibleFlowReactionSource(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx) {
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
+    PetscFunctionBeginUser;
+
+    // set some f to zero
+    f[uOff[0] + RHO] = 0;
+    for(PetscInt d =0; d < dim; d++){
+        f[uOff[0] + RHOU + d] = 0;
+    }
+
+    // (PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx)
+    PetscErrorCode ierr = flowParameters->computeReactionRateFunction(dim, u[uOff[0] + RHO], u[uOff[0] + RHOE]/u[uOff[0] + RHO], u + uOff[0] + RHOU, u + uOff[1], f + RHOE, f + RHOE + dim, flowParameters->computeReactionRateContext);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}

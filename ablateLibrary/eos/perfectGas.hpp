@@ -22,10 +22,12 @@ class PerfectGas : public EOS {
    public:
     explicit PerfectGas(std::shared_ptr<ablate::parameters::Parameters>, std::vector<std::string> species = {});
     void View(std::ostream& stream) const override;
-    decodeStateFunction GetDecodeStateFunction() override { return PerfectGasDecodeState; }
+    DecodeStateFunction GetDecodeStateFunction() override { return PerfectGasDecodeState; }
     void* GetDecodeStateContext() override { return &parameters; }
-    computeTemperatureFunction GetComputeTemperatureFunction() override { return PerfectGasComputeTemperature; }
+    ComputeTemperatureFunction GetComputeTemperatureFunction() override { return PerfectGasComputeTemperature; }
     void* GetComputeTemperatureContext() override { return &parameters; }
+    ComputeReactionRateFunction GetComputeReactionRateFunction() override { return nullptr; }
+    void* GetComputeReactionRateContext() override { return nullptr; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };

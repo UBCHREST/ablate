@@ -37,7 +37,9 @@ struct _FVMRHSPointFunctionDescription {
     FVMRHSPointFunction function;
     void *context;
 
-    PetscInt field;
+    PetscInt fields[MAX_FVM_RHS_FUNCTION_FIELDS];
+    PetscInt numberFields;
+
     PetscInt inputFields[MAX_FVM_RHS_FUNCTION_FIELDS];
     PetscInt numberInputFields;
 
@@ -46,6 +48,19 @@ struct _FVMRHSPointFunctionDescription {
 };
 
 typedef struct _FVMRHSPointFunctionDescription FVMRHSPointFunctionDescription;
+
+/**
+ * struct to describe the point Jacobin functions
+ */
+struct _FVMRHSPointJacobianDescription {
+    FVMRHSPointFunction function;
+    void *context;
+
+    PetscInt fields[MAX_FVM_RHS_FUNCTION_FIELDS];
+    PetscInt numberFields;
+};
+
+typedef struct _FVMRHSPointJacobianDescription FVMRHSPointJacobianDescription;
 
 /**
   DMPlexTSComputeRHSFunctionFVM - Form the local forcing F from the local input X using flux and pointfunctions specified by the user
@@ -101,6 +116,11 @@ PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFlux
 PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDescription *functionDescription, PetscInt numberFunctionDescription, DM, IS, PetscReal, Vec, Vec, PetscReal, Vec);
 
 /**
+   Form the point wise jacobian for the FVM method
+**/
+PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeRHSJacobianFVM(FVMRHSPointJacobianDescription *functionDescription, PetscInt numberFunctionDescription,  DM dm, PetscReal t,Vec u,Mat aMat,Mat pMat);
+
+/**
  * reproduces the petsc call with grad fixes for multiple fields
  * @param dm
  * @param fvm
@@ -133,5 +153,7 @@ PETSC_EXTERN PetscErrorCode DMPlexGetDataFVM_MulfiField(DM dm, PetscFV fv, Vec *
  * @return
  */
 PETSC_EXTERN PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction* updateFunctions, void** ctx);
+
+
 
 #endif

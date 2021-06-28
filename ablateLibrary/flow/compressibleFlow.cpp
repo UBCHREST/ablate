@@ -13,7 +13,7 @@ static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, co
     PetscReal density = conservedValues[RHO];
     PetscReal totalEnergy = conservedValues[RHOE] / density;
     FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
-    PetscErrorCode ierr = flowParameters->computeTemperatureFunction(dim, density, totalEnergy, conservedValues + RHOU, NULL, &auxField[T], flowParameters->computeTemperatureContext);
+    PetscErrorCode ierr = flowParameters->computeTemperatureFunction(dim, density, totalEnergy, conservedValues + RHOU, flowParameters->numberSpecies ? conservedValues + RHOU + dim : NULL, &auxField[T], flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -83,6 +83,15 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     RegisterAuxField({.fieldName = compressibleAuxComponentNames[T], .fieldPrefix = compressibleAuxComponentNames[T], .components = 1, .fieldType = FieldType::FV});
     RegisterAuxField({.fieldName = compressibleAuxComponentNames[VEL], .fieldPrefix = compressibleAuxComponentNames[VEL], .components = dim, .fieldType = FieldType::FV});
 
+    // set the decode state function
+    compressibleFlowData->decodeStateFunction = eos->GetDecodeStateFunction();
+    compressibleFlowData->decodeStateFunctionContext = eos->GetDecodeStateContext();
+    compressibleFlowData->computeTemperatureFunction = eos->GetComputeTemperatureFunction();
+    compressibleFlowData->computeTemperatureContext = eos->GetComputeTemperatureContext();
+    compressibleFlowData->computeReactionRateFunction = eos->GetComputeReactionRateFunction();
+    compressibleFlowData->computeReactionRateContext = eos->GetComputeReactionRateContext();
+    compressibleFlowData->numberSpecies = eos->GetSpecies().size();
+
     // Start problem setup
     PetscDS prob;
     DMGetDS(dm, &prob) >> checkError;
@@ -97,6 +106,7 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     } else {
         RegisterRHSFunction(CompressibleFlowComputeEulerFlux, compressibleFlowData, "euler", {"euler", "densityYi"}, {});
         RegisterRHSFunction(CompressibleFlowSpeciesAdvectionFlux, compressibleFlowData, "densityYi", {"euler", "densityYi"}, {});
+        RegisterRHSFunction(CompressibleFlowReactionSource, compressibleFlowData, {"euler","densityYi"}, {"euler", "densityYi"}, {});
     }
 
     // if there are any coefficients for diffusion, compute diffusion
@@ -110,13 +120,6 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // extract the difference function from fluxDifferencer object
     compressibleFlowData->fluxDifferencer = fluxDifferencer->GetFluxDifferencerFunction();
 
-    // set the decode state function
-    compressibleFlowData->decodeStateFunction = eos->GetDecodeStateFunction();
-    compressibleFlowData->decodeStateFunctionContext = eos->GetDecodeStateContext();
-    compressibleFlowData->computeTemperatureFunction = eos->GetComputeTemperatureFunction();
-    compressibleFlowData->computeTemperatureContext = eos->GetComputeTemperatureContext();
-    compressibleFlowData->numberSpecies = eos->GetSpecies().size();
-
     // Set the update fields
     RegisterAuxFieldUpdate(UpdateAuxTemperatureField, compressibleFlowData, "T");
     RegisterAuxFieldUpdate(UpdateAuxVelocityField, compressibleFlowData, "vel");
@@ -126,40 +129,44 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     PetscOptionsGetBool(NULL, NULL, "-automaticTimeStepCalculator", &(compressibleFlowData->automaticTimeStepCalculator), NULL);
 
     auto numberSpecies = compressibleFlowData->numberSpecies;
-    //    RegisterPostEvaluate([numberSpecies](auto ts, auto& flow){
-    //        Vec solutionVec;
-    //        TSGetSolution(ts, &solutionVec) >> checkError;
-    //        DM dm;
-    //        TSGetDM(ts, &dm) >> checkError;
-    //
-    //        // March over each species to limit the mass fraction between 0 and 1.  Make the last one equal to the first
-    //        PetscScalar* array;
-    //        VecGetArray(solutionVec, &array) >>checkError;
-    //
-    //        // get the field location for yi
-    //        PetscInt yiLoc = flow.GetFieldId("yi").value();
-    //
-    //        PetscInt cStart, cEnd;
-    //        DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd) >>checkError;
-    //
-    //        for(PetscInt c = cStart; c < cEnd; c++){
-    //            PetscReal *yiArray;
-    //            DMPlexPointGlobalFieldRef(dm, c, yiLoc, array, &yiArray) >>checkError;
-    //            if (yiArray) {  // must be real cell and not ghost
-    //                PetscScalar sum = 0.0;
-    //                for(PetscInt sp = 0; sp < numberSpecies -1; sp ++){
-    //                    yiArray[sp] = PetscMax(0.0, PetscMin(1.0, yiArray[sp] ));
-    //                    sum +=yiArray[sp];
-    //                }
-    //                yiArray[ numberSpecies -1] = 1.0 - sum;
-    //            }
-    //
-    //        }
-    //
-    //        VecRestoreArray(solutionVec, &array) >> checkError;
-    //
-    //        return 0;
-    //    });
+    RegisterPostEvaluate([numberSpecies](auto ts, auto& flow){
+        Vec solutionVec;
+        TSGetSolution(ts, &solutionVec) >> checkError;
+        DM dm;
+        TSGetDM(ts, &dm) >> checkError;
+
+        // March over each species to limit the mass fraction between 0 and 1.  Make the last one equal to the first
+        PetscScalar* array;
+        VecGetArray(solutionVec, &array) >>checkError;
+
+        // get the field location for yi
+      PetscInt densityLoc = flow.GetFieldId("euler").value();
+
+      PetscInt yiLoc = flow.GetFieldId("densityYi").value();
+
+        PetscInt cStart, cEnd;
+        DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd) >>checkError;
+
+        for(PetscInt c = cStart; c < cEnd; c++){
+            PetscReal *yiArray;
+            PetscReal *densityArray;
+            DMPlexPointGlobalFieldRef(dm, c, densityLoc, array, &densityArray) >>checkError;
+            DMPlexPointGlobalFieldRef(dm, c, yiLoc, array, &yiArray) >>checkError;
+            if (yiArray) {  // must be real cell and not ghost
+                PetscScalar sum = 0.0;
+                for(PetscInt sp = 0; sp < numberSpecies -1; sp ++){
+                    yiArray[sp] = densityArray[0]*PetscMax(0.0, PetscMin(1.0, yiArray[sp]/densityArray[0] ));
+                    sum +=yiArray[sp];
+                }
+                yiArray[ numberSpecies -1] = densityArray[0] - sum;
+            }
+
+        }
+
+        VecRestoreArray(solutionVec, &array) >> checkError;
+
+        return 0;
+    });
 }
 
 ablate::flow::CompressibleFlow::~CompressibleFlow() { PetscFree(compressibleFlowData); }
@@ -191,11 +198,20 @@ void ablate::flow::CompressibleFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& 
     // assume the smallest cell is the limiting factor for now
     const PetscReal dx = 2.0 * minCellRadius;
 
+    // Get field location for euler and densityYi
+    auto eulerId = flow.GetFieldId("euler").value();
+    auto densityYiId = flow.GetFieldId("densityYi").value_or(-1);
+
     // March over each cell
     PetscReal dtMin = 1000.0;
     for (PetscInt c = cStart; c < cEnd; ++c) {
         const PetscReal* xc;
-        DMPlexPointGlobalFieldRead(dm, c, 0, x, &xc) >> checkError;
+        const PetscReal* densityYi = NULL;
+        DMPlexPointGlobalFieldRead(dm, c, eulerId, x, &xc) >> checkError;
+
+        if(densityYiId >=0){
+            DMPlexPointGlobalFieldRead(dm, c, densityYiId, x, &densityYi) >> checkError;
+        }
 
         if (xc) {  // must be real cell and not ghost
             PetscReal rho = xc[RHO];
@@ -208,11 +224,16 @@ void ablate::flow::CompressibleFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& 
             PetscReal ie;
             PetscReal a;
             PetscReal p;
-            flowParameters->decodeStateFunction(dim, rho, xc[RHOE] / rho, vel, NULL, &ie, &a, &p, flowParameters->decodeStateFunctionContext) >> checkError;
+            flowParameters->decodeStateFunction(dim, rho, xc[RHOE] / rho, vel,densityYi, &ie, &a, &p, flowParameters->decodeStateFunctionContext) >> checkError;
 
             PetscReal u = xc[RHOU] / rho;
             PetscReal dt = flowParameters->cfl * dx / (a + PetscAbsReal(u));
             dtMin = PetscMin(dtMin, dt);
+
+            if(PetscIsNanReal(dt)){
+                throw std::runtime_error("Invalid timestep selected for flow");
+            }
+
         }
     }
     PetscInt rank;
