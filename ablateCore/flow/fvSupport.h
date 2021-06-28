@@ -13,6 +13,9 @@ typedef PetscErrorCode (*FVMRHSPointFunction)(PetscInt dim, const PetscFVCellGeo
 
 typedef PetscErrorCode (*FVAuxFieldUpdateFunction)(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
 
+typedef PetscErrorCode (*FVMRHSPointJacobianFunction)(PetscInt dim, const PetscInt uOff[], const PetscScalar u[], PetscScalar jacobian[], void *ctx);
+
+
 /**
  * struct to describe how to compute RHS finite volume flux source terms
  */
@@ -53,7 +56,7 @@ typedef struct _FVMRHSPointFunctionDescription FVMRHSPointFunctionDescription;
  * struct to describe the point Jacobin functions
  */
 struct _FVMRHSPointJacobianDescription {
-    FVMRHSPointFunction function;
+    FVMRHSPointJacobianFunction function;
     void *context;
 
     PetscInt fields[MAX_FVM_RHS_FUNCTION_FIELDS];

@@ -13,6 +13,9 @@ using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal de
 
 using ComputeReactionRateFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx);
 
+using ComputeReactionRateJacobian = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEulerJacobian,  void* ctx);
+
+
 /**
  * The EOS is a combination of species model and EOS.  This allows the eos to dictate the order/number of species.  This can be relaxed in the future
  */
@@ -34,6 +37,8 @@ class EOS {
     virtual void* GetComputeTemperatureContext() = 0;
     virtual ComputeReactionRateFunction GetComputeReactionRateFunction() = 0;
     virtual void* GetComputeReactionRateContext() = 0;
+    virtual ComputeReactionRateJacobian GetComputeReactionJacobian() = 0;
+    virtual void* GetComputeReactionRateJacobian() = 0;
 
     // species model functions
     virtual const std::vector<std::string>& GetSpecies() const = 0;

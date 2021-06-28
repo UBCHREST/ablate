@@ -26,6 +26,9 @@ struct _FlowData_CompressibleFlow{
     void* computeTemperatureContext;
     PetscErrorCode (*computeReactionRateFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx);
     void* computeReactionRateContext;
+    PetscErrorCode (*computeReactionRateJacobian)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEulerJacobian,  void* ctx);
+    void* computeReactionRateJacobianContext;
+
 
     PetscBool automaticTimeStepCalculator;
 } ;

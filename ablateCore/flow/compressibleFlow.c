@@ -237,3 +237,13 @@ PetscErrorCode CompressibleFlowReactionSource(PetscInt dim, const PetscFVCellGeo
 
     PetscFunctionReturn(0);
 }
+
+PetscErrorCode CompressibleFlowReactionJacobian(PetscInt dim, const PetscInt uOff[], const PetscScalar u[], PetscScalar jacobian[], void *ctx) {
+    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
+    PetscFunctionBeginUser;
+
+    // (PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx)
+    PetscErrorCode ierr = flowParameters->computeReactionRateJacobian(dim, u[uOff[0] + RHO], u[uOff[0] + RHOE]/u[uOff[0] + RHO], u + uOff[0] + RHOU, u + uOff[1], jacobian, flowParameters->computeReactionRateJacobianContext);CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}

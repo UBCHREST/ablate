@@ -1153,9 +1153,10 @@ PetscErrorCode ABLATE_DMPlexComputeRHSJacobianFVM(FVMRHSPointJacobianDescription
     ierr = DMGetCellDS(dm, cells ? cells[cStart] : cStart, &ds);CHKERRQ(ierr);
 
     // determine the number of fields and the totDim
-    PetscInt nf, totDim;
+    PetscInt nf, totDim, *components;
     ierr = PetscDSGetNumFields(ds, &nf);CHKERRQ(ierr);
     ierr = PetscDSGetTotalDimension(ds, &totDim);CHKERRQ(ierr);
+    ierr = PetscDSGetComponents(ds, &components);CHKERRQ(ierr);
 
     /* 2: Get geometric data */
     // We can use a single call for the geometry data because it does not depend on the fv object
@@ -1178,9 +1179,19 @@ PetscErrorCode ABLATE_DMPlexComputeRHSJacobianFVM(FVMRHSPointJacobianDescription
     PetscInt * uOffTotal;
     ierr = PetscDSGetComponentOffsets(ds, &uOffTotal);CHKERRQ(ierr);
 
+    // get the spacial dim
+    PetscInt dim;
+    ierr = PetscDSGetSpatialDimension(ds, &dim);CHKERRQ(ierr);
+
     // get a work array
-    PetscScalar jacobianArray
-    ierr = DMGetWorkArray(dm, totDim MPIU_SCALAR, uL);CHKERRQ(ierr);
+    PetscScalar* jacobianArray;
+    PetscInt  *rows;
+    ierr = PetscMalloc2(totDim*totDim, &jacobianArray,totDim, &rows);CHKERRQ(ierr);
+
+    // prepare the mat
+    ierr = MatZeroEntries(pMat);CHKERRQ(ierr);
+    ierr = MatSetOption(pMat,MAT_ROW_ORIENTED,PETSC_FALSE);CHKERRQ(ierr);
+    ierr = MatSetOption(pMat,MAT_IGNORE_ZERO_ENTRIES,PETSC_TRUE);CHKERRQ(ierr);
 
     // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
@@ -1199,6 +1210,10 @@ PetscErrorCode ABLATE_DMPlexComputeRHSJacobianFVM(FVMRHSPointJacobianDescription
         const PetscScalar *u;
         ierr = DMPlexPointGlobalRead(dm, cell, globXArray, &u);
 
+        // Get the cellOffset
+        PetscInt cellOffset;
+        ierr = DMPlexGetPointLocal(dm, cell, &cellOffset, NULL);CHKERRQ(ierr);
+
         // March over each functionDescriptions
         for(PetscInt f =0; f < numberFunctionDescription; f++){
             // copy over the offsets for each
@@ -1206,29 +1221,27 @@ PetscErrorCode ABLATE_DMPlexComputeRHSJacobianFVM(FVMRHSPointJacobianDescription
                 uOff[i] = uOffTotal[functionDescriptions[f].fields[i]];
             }
 
-            // (PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx)
-            ierr = functionDescriptions[f].function(dim, cg, uOff, u, aOff, a, fScratch, functionDescriptions[f].context);
-
-
-//            DMPlexMatSetClosure(dm, section, globalSection, Jac, cell, &elemMat[(c-cStart)*totDim*totDim], ADD_VALUES);CHKERRQ(ierr);}
-
-            // copy over each result flux field
-            PetscInt r = 0;
-            for(PetscInt ff = 0; ff < functionDescriptions[f].numberFields; ff++){
-                PetscInt fieldSize, fieldOffset;
-                ierr = PetscDSGetFieldSize(ds, functionDescriptions[f].fields[ff], &fieldSize);
-                ierr = PetscDSGetFieldOffset(ds, functionDescriptions[f].fields[ff], &fieldOffset);
-                for (PetscInt d = 0; d < fieldSize; ++d) {
-                    rhs[fieldOffset + d] += fScratch[r++];
+            // Fill the row information
+            PetscInt row = 0;
+            for (PetscInt i =0; i < functionDescriptions[f].numberFields; i++){
+                PetscInt field = functionDescriptions[f].fields[i];
+                for(PetscInt c = 0; c < components[field]; f++){
+                    rows[row++] = uOff[i] + c;
                 }
             }
+
+            // typedef PetscErrorCode (*FVMRHSPointJacobianFunction)(PetscInt dim, const PetscInt uOff[], const PetscScalar u[], PetscScalar jacobian[], void *ctx);
+            ierr = functionDescriptions[f].function(dim, uOff, u, jacobianArray, functionDescriptions[f].context);
+
+            ierr = MatSetValues(pMat,row, rows, row, rows,jacobianArray,INSERT_VALUES);CHKERRQ(ierr);// should be add value
         }
-
-
     }
 
+    ierr = MatAssemblyBegin(pMat,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
+    ierr = MatAssemblyEnd(pMat,MAT_FINAL_ASSEMBLY);CHKERRQ(ierr);
 
     // cleanup
+    PetscFree2(jacobianArray, rows);
     PetscFree(uOff);
     ierr = VecRestoreArrayRead(u, &globXArray);CHKERRQ(ierr);
     ierr = ISRestorePointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);

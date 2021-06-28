@@ -34,6 +34,7 @@ class TChem : public EOS {
                                                 PetscReal* p, void* ctx);
     static PetscErrorCode TChemComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
     static PetscErrorCode TChemComputeReactionRate(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx);
+    static PetscErrorCode TChemComputeReactionJacobian(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *jacobian, void* ctx);
 
     // Private static helper functions
     inline const static double TREF = 298.15;
@@ -76,7 +77,8 @@ class TChem : public EOS {
     void* GetComputeTemperatureContext() override { return this; }
     ComputeReactionRateFunction GetComputeReactionRateFunction() override { return TChemComputeReactionRate; }
     void* GetComputeReactionRateContext() override { return this; }
-
+    ComputeReactionRateJacobian GetComputeReactionJacobian() override { return TChemComputeReactionJacobian; }
+    void* GetComputeReactionRateJacobian() override { return this; }
 };
 
 }
