@@ -103,10 +103,10 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // register the flow fields source terms
     if (eos->GetSpecies().empty()) {
         RegisterRHSFunction(CompressibleFlowComputeEulerFlux, compressibleFlowData, "euler", {"euler"}, {});
-    } else {
-        RegisterRHSFunction(CompressibleFlowComputeEulerFlux, compressibleFlowData, "euler", {"euler", "densityYi"}, {});
-        RegisterRHSFunction(CompressibleFlowSpeciesAdvectionFlux, compressibleFlowData, "densityYi", {"euler", "densityYi"}, {});
-        RegisterRHSFunction(CompressibleFlowReactionSource, compressibleFlowData, {"euler","densityYi"}, {"euler", "densityYi"}, {});
+    }else{
+//        RegisterRHSFunction(CompressibleFlowComputeEulerFlux, compressibleFlowData, "euler", {"euler", "densityYi"}, {});
+//        RegisterRHSFunction(CompressibleFlowSpeciesAdvectionFlux, compressibleFlowData, "densityYi", {"euler", "densityYi"}, {});
+//        RegisterRHSFunction(CompressibleFlowReactionSource, compressibleFlowData, {"euler","densityYi"}, {"euler", "densityYi"}, {});
     }
 
     // if there are any coefficients for diffusion, compute diffusion
@@ -129,44 +129,44 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     PetscOptionsGetBool(NULL, NULL, "-automaticTimeStepCalculator", &(compressibleFlowData->automaticTimeStepCalculator), NULL);
 
     auto numberSpecies = compressibleFlowData->numberSpecies;
-    RegisterPostEvaluate([numberSpecies](auto ts, auto& flow){
-        Vec solutionVec;
-        TSGetSolution(ts, &solutionVec) >> checkError;
-        DM dm;
-        TSGetDM(ts, &dm) >> checkError;
-
-        // March over each species to limit the mass fraction between 0 and 1.  Make the last one equal to the first
-        PetscScalar* array;
-        VecGetArray(solutionVec, &array) >>checkError;
-
-        // get the field location for yi
-      PetscInt densityLoc = flow.GetFieldId("euler").value();
-
-      PetscInt yiLoc = flow.GetFieldId("densityYi").value();
-
-        PetscInt cStart, cEnd;
-        DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd) >>checkError;
-
-        for(PetscInt c = cStart; c < cEnd; c++){
-            PetscReal *yiArray;
-            PetscReal *densityArray;
-            DMPlexPointGlobalFieldRef(dm, c, densityLoc, array, &densityArray) >>checkError;
-            DMPlexPointGlobalFieldRef(dm, c, yiLoc, array, &yiArray) >>checkError;
-            if (yiArray) {  // must be real cell and not ghost
-                PetscScalar sum = 0.0;
-                for(PetscInt sp = 0; sp < numberSpecies -1; sp ++){
-                    yiArray[sp] = densityArray[0]*PetscMax(0.0, PetscMin(1.0, yiArray[sp]/densityArray[0] ));
-                    sum +=yiArray[sp];
-                }
-                yiArray[ numberSpecies -1] = densityArray[0] - sum;
-            }
-
-        }
-
-        VecRestoreArray(solutionVec, &array) >> checkError;
-
-        return 0;
-    });
+//    RegisterPostEvaluate([numberSpecies](auto ts, auto& flow){
+//        Vec solutionVec;
+//        TSGetSolution(ts, &solutionVec) >> checkError;
+//        DM dm;
+//        TSGetDM(ts, &dm) >> checkError;
+//
+//        // March over each species to limit the mass fraction between 0 and 1.  Make the last one equal to the first
+//        PetscScalar* array;
+//        VecGetArray(solutionVec, &array) >>checkError;
+//
+//        // get the field location for yi
+//      PetscInt densityLoc = flow.GetFieldId("euler").value();
+//
+//      PetscInt yiLoc = flow.GetFieldId("densityYi").value();
+//
+//        PetscInt cStart, cEnd;
+//        DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd) >>checkError;
+//
+//        for(PetscInt c = cStart; c < cEnd; c++){
+//            PetscReal *yiArray;
+//            PetscReal *densityArray;
+//            DMPlexPointGlobalFieldRef(dm, c, densityLoc, array, &densityArray) >>checkError;
+//            DMPlexPointGlobalFieldRef(dm, c, yiLoc, array, &yiArray) >>checkError;
+//            if (yiArray) {  // must be real cell and not ghost
+//                PetscScalar sum = 0.0;
+//                for(PetscInt sp = 0; sp < numberSpecies -1; sp ++){
+//                    yiArray[sp] = densityArray[0]*PetscMax(0.0, PetscMin(1.0, yiArray[sp]/densityArray[0] ));
+//                    sum +=yiArray[sp];
+//                }
+//                yiArray[ numberSpecies -1] = densityArray[0] - sum;
+//            }
+//
+//        }
+//
+//        VecRestoreArray(solutionVec, &array) >> checkError;
+//
+//        return 0;
+//    });
 }
 
 ablate::flow::CompressibleFlow::~CompressibleFlow() { PetscFree(compressibleFlowData); }

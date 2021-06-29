@@ -67,7 +67,7 @@ void ablate::eos::TChem::View(std::ostream& stream) const {
  * @param T
  * @return
  */
-int ablate::eos::TChem::InternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double& internalEnergy ){
+int ablate::eos::TChem::ComputeSensibleInternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double& internalEnergy ){
     // get the required values
     double totalEnthalpy;
     int err = TC_getMs2HmixMs(tempYiWorkingArray,numSpec + 1, &totalEnthalpy);
@@ -101,7 +101,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
     // compute the first error
     double e2;
     tempYiWorkingArray[0] = t2;
-    int err = InternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
+    int err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
     CHECKTCHEM(err);
     double f2 = internalEnergyRef - e2;
     if (PetscAbs(f2) > EPS_T_RHO_E){
@@ -110,7 +110,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
         double t1 = t0 + 1;
         double e1;
         tempYiWorkingArray[0] = t1;
-        err = InternalEnergy(numSpec, tempYiWorkingArray,  mwMix, e1);
+        err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray,  mwMix, e1);
         CHECKTCHEM(err);
         double f1 = internalEnergyRef - e1;
 
@@ -118,7 +118,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
             t2 = t1-f1*(t1-t0)/(f1-f0+1E-30);
             t2 = PetscMax(1.0, t2);
             tempYiWorkingArray[0] = t2;
-            err = InternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
+            err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
             CHECKTCHEM(err);
             f2 = internalEnergyRef -e2;
             if(PetscAbs(f2) <= EPS_T_RHO_E){
@@ -250,6 +250,11 @@ PetscErrorCode ablate::eos::TChem::TChemComputeReactionRate(PetscInt dim, PetscR
 
     PetscFunctionReturn(0);
 }
+PetscErrorCode ablate::eos::TChem::TChemComputeReactionJacobian(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, const PetscReal *densityYi, PetscReal *jacobian,
+                                                                void *ctx) {
+    return 0;
+}
+
 
 
 const char *ablate::eos::TChem::periodicTable = "102 10\n"

@@ -9,11 +9,16 @@
 namespace ablate::flow {
 
 class FVFlow : public Flow {
+   public:
+    using RHSArbitraryFunction = PetscErrorCode(*)(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx);
+
    private:  // move this to private
     // hold the update functions for flux and point sources
     std::vector<FVMRHSFluxFunctionDescription> rhsFluxFunctionDescriptions;
     std::vector<FVMRHSPointFunctionDescription> rhsPointFunctionDescriptions;
 
+    // allow the use of any arbitrary rhs functions
+    std::vector<std::pair<RHSArbitraryFunction, void*>> rhsArbitraryFunctions;
     // functions to update each aux field
     std::vector<FVAuxFieldUpdateFunction> auxFieldUpdateFunctions;
     std::vector<void*> auxFieldUpdateContexts;
@@ -47,6 +52,14 @@ class FVFlow : public Flow {
      * @param auxFields
      */
     void RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::vector<std::string> fields, std::vector<std::string> inputFields, std::vector<std::string> auxFields);
+
+    /**
+     * Register an arbitrary function.  The user is responsible for all work
+     * @param function
+     * @param context
+     */
+    void RegisterRHSFunction(RHSArbitraryFunction function, void* context);
+
 
     /**
      * Register a auxFieldUpdate

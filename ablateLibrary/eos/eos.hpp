@@ -7,6 +7,9 @@
 
 namespace ablate::eos {
 
+/**
+ * The internalEnergy computed is without the enthalpy of formation of the species.
+ */
 using DecodeStateFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
                                                PetscReal* p, void* ctx);
 using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);

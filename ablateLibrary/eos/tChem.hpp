@@ -38,16 +38,6 @@ class TChem : public EOS {
 
     // Private static helper functions
     inline const static double TREF = 298.15;
-    /**
-     * the tempYiWorkingArray array is expected to be filled
-     * @param numSpec
-     * @param tempYiWorkingArray
-     * @param T
-     * @param mwMix
-     * @param internalEnergy
-     * @return
-     */
-    static int InternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double& internalEnergy );
 
     /**
      * The tempYiWorkingArray is expected to be filled with correct species yi.  The 0 location is set in this function.
@@ -79,6 +69,17 @@ class TChem : public EOS {
     void* GetComputeReactionRateContext() override { return this; }
     ComputeReactionRateJacobian GetComputeReactionJacobian() override { return TChemComputeReactionJacobian; }
     void* GetComputeReactionRateJacobian() override { return this; }
+
+    /**
+     * the tempYiWorkingArray array is expected to be filled
+     * @param numSpec
+     * @param tempYiWorkingArray
+     * @param T
+     * @param mwMix
+     * @param internalEnergy
+     * @return
+     */
+    static int ComputeSensibleInternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double& internalEnergy );
 };
 
 }

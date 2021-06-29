@@ -27,6 +27,12 @@ PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, V
     ierr = ABLATE_DMPlexComputeRHSFunctionFVM(&flow->rhsFluxFunctionDescriptions[0], flow->rhsFluxFunctionDescriptions.size(), &flow->rhsPointFunctionDescriptions[0], flow->rhsPointFunctionDescriptions.size(), dm, time, locXVec, globFVec);
     CHKERRQ(ierr);
 
+    // iterate over any arbitrary RHS functions
+    for(const auto& rhsFunction: flow->rhsArbitraryFunctions){
+        ierr = rhsFunction.first(dm, time, locXVec, globFVec, rhsFunction.second);
+        CHKERRQ(ierr);
+    }
+
     PetscFunctionReturn(0);
 }
 void ablate::flow::FVFlow::CompleteProblemSetup(TS ts) {
@@ -148,6 +154,10 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, voi
     }
 
     rhsPointFunctionDescriptions.push_back(functionDescription);
+}
+
+void ablate::flow::FVFlow::RegisterRHSFunction(RHSArbitraryFunction function, void* context){
+    rhsArbitraryFunctions.push_back(std::make_pair(function, context));
 }
 
 void ablate::flow::FVFlow::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField) {
