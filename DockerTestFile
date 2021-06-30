@@ -1,4 +1,4 @@
-FROM ghcr.io/ubchrest/petsc-docker/petsc-build:50cd3162
+FROM ghcr.io/ubchrest/petsc-docker/petsc-build:18e93c00
 
 # Setup the petsc env
 ENV PETSC_ARCH=arch-opt

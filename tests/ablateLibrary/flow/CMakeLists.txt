@@ -6,6 +6,7 @@ target_sources(libraryTests
         compressibleFlowFluxTests.cpp
         compressibleFlowDiffusionTests.cpp
         compressibleFlowMmsSourceTests.cpp
+        compressibleFlowAdvectionTests.cpp
         )
 
 add_subdirectory(fluxDifferencer)

@@ -1,7 +1,7 @@
-#include "errorMonitor.hpp"
+#include "fieldErrorMonitor.hpp"
 #include "mathFunctions/mathFunction.hpp"
 
-PetscErrorCode ablate::monitors::ErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
+PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
     DM dm;
     PetscDS ds;
     Vec v;
@@ -49,4 +49,4 @@ PetscErrorCode ablate::monitors::ErrorMonitor::MonitorError(TS ts, PetscInt step
 }
 
 #include "parser/registrar.hpp"
-REGISTER_WITHOUT_ARGUMENTS(ablate::monitors::Monitor, ablate::monitors::ErrorMonitor, "Computes and reports the error every time step");
+REGISTER_WITHOUT_ARGUMENTS(ablate::monitors::Monitor, ablate::monitors::FieldErrorMonitor, "Computes and reports the error every time step");

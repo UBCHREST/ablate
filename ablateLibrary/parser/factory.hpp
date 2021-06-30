@@ -93,6 +93,13 @@ class Factory {
             return defaultValue;
         }
     }
+
+    template <typename ENUM>
+    ENUM Get(const ArgumentIdentifier<EnumWrapper<ENUM>>& identifier) const {
+        auto stringValue = Get(ArgumentIdentifier<std::string>{.inputName = identifier.inputName});
+        return EnumWrapper<ENUM>(stringValue);
+        return {};
+    }
 };
 }  // namespace ablate::parser
 

@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_ARGUMENTIDENTIFIER_HPP
 #include <optional>
 #include <string>
+#include "enumWrapper.hpp"
 
 #define TMP_COMMA ,
 
@@ -10,6 +11,9 @@
 
 #define OPT(interfaceTypeFullName, inputName, description) \
     ablate::parser::ArgumentIdentifier<interfaceTypeFullName> { inputName, description, true }
+
+#define ENUM(interfaceTypeFullName, inputName, description) \
+    ablate::parser::ArgumentIdentifier<ablate::parser::EnumWrapper<interfaceTypeFullName>> { inputName, description, false }
 
 namespace ablate::parser {
 template <typename Interface>

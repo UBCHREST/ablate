@@ -7,7 +7,7 @@ ABLATE is a [UB CHREST](https://www.buffalo.edu/chrest.html) project focused on 
 ## [Documentation](https://ubchrest.github.io/chrest/)
 Current documentation can be found online at [ABLATE Documentation](https://ubchrest.github.io/ablate/) along with a [Getting Started Guide](https://ubchrest.github.io/ablate/content/GettingStarted)
 
-Documentation is built using a series of static html and markdown files in the doc folder. [Jekyll](https://jekyllrb.com) is used to compile the documents into a static site that is published upon commit.  You can test your changed locally following this [GitHub Guide](https://docs.github.com/en/free-pro-team@latest/github/working-with-github-pages/testing-your-github-pages-site-locally-with-jekyll) or with the supplied docker file.  Math/equation is rendered using [MathJax](https://www.mathjax.org) using Latex style equations where $$ is used to define math regions.
+Documentation is built using a series of static html and markdown files in the doc folder. [Jekyll](https://jekyllrb.com) is used to compile the documents into a static site that is published upon commit.  You can test your changed locally following this [GitHub Guide](https://docs.github.com/en/free-pro-team@latest/github/working-with-github-pages/testing-your-github-pages-site-locally-with-jekyll) or with the supplied docker file.  Math and equations are rendered using [MathJax](https://www.mathjax.org) using Latex style equations where $$ is used to define math regions.
 ```markdown
 This line would include $$x=y^2$$ and other text.
 
@@ -51,7 +51,7 @@ docker run --rm testing_image
 
 ```
 
-For output file comparisons you can specify that numbers are '<', '>', or '=' to a an expected value.  For example: 
+For output file comparisons you can specify that numbers are '<', '>', or '=' to an expected value.  For example: 
 
 ```
 L_2 Error: [(.*), (.*), (.*)]<expects> <1E-13 <1E-13 <1E-13

@@ -27,6 +27,7 @@ class Flow : public solve::Solvable, public monitors::Viewable {
 
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);
+    static PetscErrorCode TSPostEvaluateFunction(TS ts);
 
     /**
      * Private method to add both flow and aux fields, depending upon what is passed in
@@ -50,6 +51,7 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     // pre and post step functions for the flow
     std::vector<std::function<void(TS ts, Flow&)>> preStepFunctions;
     std::vector<std::function<void(TS ts, Flow&)>> postStepFunctions;
+    std::vector<std::function<void(TS ts, Flow&)>> postEvaluateFunctions;
 
     const std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
@@ -97,10 +99,16 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     void RegisterPreStep(std::function<void(TS ts, Flow&)> preStep) { this->preStepFunctions.push_back(preStep); }
 
     /**
-     * Adds function to be called before each flow step
+     * Adds function to be called after each flow step
      * @param preStep
      */
     void RegisterPostStep(std::function<void(TS ts, Flow&)> postStep) { this->postStepFunctions.push_back(postStep); }
+
+    /**
+     * Adds function after each evaluated.  This is where the solution can be modified if needed.
+     * @param postStep
+     */
+    void RegisterPostEvaluate(std::function<void(TS ts, Flow&)> postEval) { this->postEvaluateFunctions.push_back(postEval); }
 
     const std::string& GetName() const override { return name; }
 

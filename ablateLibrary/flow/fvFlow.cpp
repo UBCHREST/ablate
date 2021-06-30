@@ -23,8 +23,15 @@ PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, V
         flow->dm->GetDomain(), flow->auxDM, time, locXVec, flow->auxField, flow->auxFieldUpdateFunctions.size(), &flow->auxFieldUpdateFunctions[0], &flow->auxFieldUpdateContexts[0]);
     CHKERRQ(ierr);
 
-    // compute the euler flux across each face (note CompressibleFlowComputeEulerFlux has already been registered)
-    ierr = ABLATE_DMPlexTSComputeRHSFunctionFVM(&flow->rhsFunctionDescriptions[0], flow->rhsFunctionDescriptions.size(), dm, time, locXVec, globFVec);
+    // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
+    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(&flow->rhsFluxFunctionDescriptions[0],
+                                              flow->rhsFluxFunctionDescriptions.size(),
+                                              &flow->rhsPointFunctionDescriptions[0],
+                                              flow->rhsPointFunctionDescriptions.size(),
+                                              dm,
+                                              time,
+                                              locXVec,
+                                              globFVec);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -68,7 +75,7 @@ void ablate::flow::FVFlow::CompleteProblemSetup(TS ts) {
         }
     }
 }
-void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields) {
+void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFluxFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields) {
     // map the field, inputFields, and auxFields to locations
     auto fieldId = this->GetFieldId(field);
     if (!fieldId) {
@@ -76,13 +83,13 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFunction function, void* co
     }
 
     // Create the FVMRHS Function
-    FVMRHSFunctionDescription functionDescription{.function = function,
-                                                  .context = context,
-                                                  .field = fieldId.value(),
-                                                  .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
-                                                  .numberInputFields = (PetscInt)inputFields.size(),
-                                                  .auxFields = {-1, -1, -1, -1}, /**default to empty**/
-                                                  .numberAuxFields = (PetscInt)auxFields.size()};
+    FVMRHSFluxFunctionDescription functionDescription{.function = function,
+                                                      .context = context,
+                                                      .field = fieldId.value(),
+                                                      .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
+                                                      .numberInputFields = (PetscInt)inputFields.size(),
+                                                      .auxFields = {-1, -1, -1, -1}, /**default to empty**/
+                                                      .numberAuxFields = (PetscInt)auxFields.size()};
 
     if (inputFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || auxFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS) {
         std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");
@@ -104,7 +111,46 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFunction function, void* co
         functionDescription.auxFields[i] = fieldId.value();
     }
 
-    rhsFunctionDescriptions.push_back(functionDescription);
+    rhsFluxFunctionDescriptions.push_back(functionDescription);
+}
+
+void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields) {
+    // map the field, inputFields, and auxFields to locations
+    auto fieldId = this->GetFieldId(field);
+    if (!fieldId) {
+        throw std::invalid_argument("Cannot locate flow field " + field);
+    }
+
+    // Create the FVMRHS Function
+    FVMRHSPointFunctionDescription functionDescription{.function = function,
+                                                       .context = context,
+                                                       .field = fieldId.value(),
+                                                       .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
+                                                       .numberInputFields = (PetscInt)inputFields.size(),
+                                                       .auxFields = {-1, -1, -1, -1}, /**default to empty**/
+                                                       .numberAuxFields = (PetscInt)auxFields.size()};
+
+    if (inputFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || auxFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS) {
+        std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");
+    }
+
+    for (int i = 0; i < inputFields.size(); i++) {
+        auto fieldId = this->GetFieldId(inputFields[i]);
+        if (!fieldId) {
+            throw std::invalid_argument("Cannot locate flow field " + inputFields[i]);
+        }
+        functionDescription.inputFields[i] = fieldId.value();
+    }
+
+    for (int i = 0; i < auxFields.size(); i++) {
+        auto fieldId = this->GetAuxFieldId(auxFields[i]);
+        if (!fieldId) {
+            throw std::invalid_argument("Cannot locate flow field " + auxFields[i]);
+        }
+        functionDescription.auxFields[i] = fieldId.value();
+    }
+
+    rhsPointFunctionDescriptions.push_back(functionDescription);
 }
 
 void ablate::flow::FVFlow::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField) {

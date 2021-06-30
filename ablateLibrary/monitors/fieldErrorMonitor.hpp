@@ -1,9 +1,9 @@
-#ifndef ABLATELIBRARY_ERRORMONITOR_HPP
-#define ABLATELIBRARY_ERRORMONITOR_HPP
+#ifndef ABLATELIBRARY_FIELDERRORMONITOR_HPP
+#define ABLATELIBRARY_FIELDERRORMONITOR_HPP
 #include "monitor.hpp"
 namespace ablate::monitors {
 
-class ErrorMonitor : public Monitor {
+class FieldErrorMonitor : public Monitor {
    private:
     static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx);
 
@@ -13,4 +13,4 @@ class ErrorMonitor : public Monitor {
 };
 }  // namespace ablate::monitors
 
-#endif  // ABLATELIBRARY_ERRORMONITOR_HPP
+#endif  // ABLATELIBRARY_FIELDERRORMONITOR_HPP

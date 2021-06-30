@@ -44,7 +44,7 @@ The framework requires that PETSc be configured and built with certain options. 
  	    --download-ml --download-mumps --download-netcdf --download-p4est \
  	    --download-parmetis --download-pnetcdf --download-scalapack \
  	    --download-slepc --download-suitesparse --download-superlu_dist \
- 	    --download-triangle --with-slepc --download-zlib --with-libpng
+ 	    --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem
     ```
 1. Determine the PETSC_DIR and PETSC_ARCH values from the output of the configure command.  Look for output similar to:
     ```bash
