@@ -251,50 +251,35 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
         PetscScalar *gradLl = *gradL, *gradRl = *gradR;
         PetscInt ghost, nsupp, nchild;
 
-        ierr = DMLabelGetValue(ghostLabel, face, &ghost);
-        CHKERRQ(ierr);
-        ierr = DMPlexGetSupportSize(dm, face, &nsupp);
-        CHKERRQ(ierr);
-        ierr = DMPlexGetTreeChildren(dm, face, &nchild, NULL);
-        CHKERRQ(ierr);
+        ierr = DMLabelGetValue(ghostLabel, face, &ghost);CHKERRQ(ierr);
+        ierr = DMPlexGetSupportSize(dm, face, &nsupp);CHKERRQ(ierr);
+        ierr = DMPlexGetTreeChildren(dm, face, &nchild, NULL);CHKERRQ(ierr);
         if (ghost >= 0 || nsupp > 2 || nchild > 0) continue;
-        ierr = DMPlexPointLocalRead(dmFace, face, facegeom, &fg);
-        CHKERRQ(ierr);
-        ierr = DMPlexGetSupport(dm, face, &cells);
-        CHKERRQ(ierr);
-        ierr = DMPlexPointLocalRead(dmCell, cells[0], cellgeom, &cgL);
-        CHKERRQ(ierr);
-        ierr = DMPlexPointLocalRead(dmCell, cells[1], cellgeom, &cgR);
-        CHKERRQ(ierr);
+        ierr = DMPlexPointLocalRead(dmFace, face, facegeom, &fg);CHKERRQ(ierr);
+        ierr = DMPlexGetSupport(dm, face, &cells);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalRead(dmCell, cells[0], cellgeom, &cgL);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalRead(dmCell, cells[1], cellgeom, &cgR);CHKERRQ(ierr);
 
         // Keep track of derivative offset
         PetscInt *offsets;
         PetscInt *dirOffsets;
-        ierr = PetscDSGetComponentOffsets(prob, &offsets);
-        CHKERRQ(ierr);
-        ierr = PetscDSGetComponentDerivativeOffsets(prob, &dirOffsets);
-        CHKERRQ(ierr);
+        ierr = PetscDSGetComponentOffsets(prob, &offsets);CHKERRQ(ierr);
+        ierr = PetscDSGetComponentDerivativeOffsets(prob, &dirOffsets);CHKERRQ(ierr);
 
         // march over each field
         for (f = 0; f < Nf; ++f) {
             PetscFV fv;
             PetscInt numComp, c;
 
-            ierr = PetscDSGetDiscretization(prob, f, (PetscObject *)&fv);
-            CHKERRQ(ierr);
-            ierr = PetscFVGetNumComponents(fv, &numComp);
-            CHKERRQ(ierr);
-            ierr = DMPlexPointLocalFieldRead(dm, cells[0], f, x, &xL);
-            CHKERRQ(ierr);
-            ierr = DMPlexPointLocalFieldRead(dm, cells[1], f, x, &xR);
-            CHKERRQ(ierr);
+            ierr = PetscDSGetDiscretization(prob, f, (PetscObject *)&fv);CHKERRQ(ierr);
+            ierr = PetscFVGetNumComponents(fv, &numComp);CHKERRQ(ierr);
+            ierr = DMPlexPointLocalFieldRead(dm, cells[0], f, x, &xL);CHKERRQ(ierr);
+            ierr = DMPlexPointLocalFieldRead(dm, cells[1], f, x, &xR);CHKERRQ(ierr);
             if (dmGrads[f] && projectField) {
                 PetscReal dxL[3], dxR[3];
 
-                ierr = DMPlexPointLocalRead(dmGrads[f], cells[0], lgrads[f], &gL);
-                CHKERRQ(ierr);
-                ierr = DMPlexPointLocalRead(dmGrads[f], cells[1], lgrads[f], &gR);
-                CHKERRQ(ierr);
+                ierr = DMPlexPointLocalRead(dmGrads[f], cells[0], lgrads[f], &gL);CHKERRQ(ierr);
+                ierr = DMPlexPointLocalRead(dmGrads[f], cells[1], lgrads[f], &gR);CHKERRQ(ierr);
                 DMPlex_WaxpyD_Internal(dim, -1, cgL->centroid, fg->centroid, dxL);
                 DMPlex_WaxpyD_Internal(dim, -1, cgR->centroid, fg->centroid, dxR);
                 // Project the cell centered value onto the face
@@ -311,10 +296,8 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
             } else if (dmGrads[f]) {
                 PetscReal dxL[3], dxR[3];
 
-                ierr = DMPlexPointLocalRead(dmGrads[f], cells[0], lgrads[f], &gL);
-                CHKERRQ(ierr);
-                ierr = DMPlexPointLocalRead(dmGrads[f], cells[1], lgrads[f], &gR);
-                CHKERRQ(ierr);
+                ierr = DMPlexPointLocalRead(dmGrads[f], cells[0], lgrads[f], &gL);CHKERRQ(ierr);
+                ierr = DMPlexPointLocalRead(dmGrads[f], cells[1], lgrads[f], &gR);CHKERRQ(ierr);
                 // Project the cell centered value onto the face
                 for (c = 0; c < numComp; ++c) {
                     uLl[iface * Nc + offsets[f] + c] = xL[c];
