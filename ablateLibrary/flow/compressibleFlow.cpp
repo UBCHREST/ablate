@@ -73,9 +73,9 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     // Register a single field
     PetscInt numberEulerComponents = 2 + dim;
     RegisterField({.fieldName = "euler", .fieldPrefix = "euler", .components = numberEulerComponents, .fieldType = FieldType::FV});
-    if (!eos->GetSpecies().empty()) {
+    if(!eos->GetSpecies().empty()) {
         // Note, we are solving yi*density
-        RegisterField({.fieldName = "densityYi", .fieldPrefix = "densityYi", .components = (PetscInt)eos->GetSpecies().size(), .fieldType = FieldType::FV, .componentNames = eos->GetSpecies()});
+        RegisterField({.fieldName = "densityYi", .fieldPrefix = "densityYi", .components = (PetscInt)eos->GetSpecies().size(), .fieldType = FieldType::FV, .componentNames = eos->GetSpecies(),});
     }
     FinalizeRegisterFields();
 
@@ -101,7 +101,7 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     PetscDSSetContext(prob, eulerField, compressibleFlowData) >> checkError;
 
     // register the flow fields source terms
-    if (eos->GetSpecies().empty()) {
+    if(eos->GetSpecies().empty()) {
         RegisterRHSFunction(CompressibleFlowComputeEulerFlux, compressibleFlowData, "euler", {"euler"}, {});
     }else{
 //        RegisterRHSFunction(CompressibleFlowComputeEulerFlux, compressibleFlowData, "euler", {"euler", "densityYi"}, {});
