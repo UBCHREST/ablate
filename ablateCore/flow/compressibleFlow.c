@@ -165,6 +165,9 @@ PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeo
 
         flux[RHOE] += heatFlux;
     }
+
+    // zero out the density flux
+    flux[RHO] = 0.0;
     PetscFunctionReturn(0);
 }
 
