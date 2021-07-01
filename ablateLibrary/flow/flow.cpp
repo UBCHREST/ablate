@@ -132,13 +132,13 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription,
 
 void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription) {
     // add solution fields/aux fields
-    if(flowFieldDescription.solutionField){
+    if (flowFieldDescription.solutionField) {
         // Called the shared method to register
         RegisterField(flowFieldDescription, dm->GetDomain());
 
         // store the field
         flowFieldDescriptors.push_back(flowFieldDescription);
-    }else{
+    } else {
         // check to see if need to create an aux dm
         if (auxDM == NULL) {
             /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */

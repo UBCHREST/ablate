@@ -44,7 +44,8 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
             const PetscInt uOff[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
             const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
             PetscScalar* flux, void* ctx)*/
-    ablate::flow::processes::EulerAdvection::CompressibleFlowComputeEulerFlux(params.area.size(), &faceGeom, uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], eulerFlowData);
+    ablate::flow::processes::EulerAdvection::CompressibleFlowComputeEulerFlux(
+        params.area.size(), &faceGeom, uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], eulerFlowData);
 
     // assert
     for (auto i = 0; i < params.expectedFlux.size(); i++) {

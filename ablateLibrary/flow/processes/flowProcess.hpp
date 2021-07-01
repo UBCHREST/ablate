@@ -10,6 +10,6 @@ class FlowProcess {
     virtual void Initialize(ablate::flow::FVFlow& flow) = 0;
 };
 
-}  // namespace ablate::flow
+}  // namespace ablate::flow::processes
 
 #endif  // ABLATELIBRARY_FLOWPROCESS_HPP

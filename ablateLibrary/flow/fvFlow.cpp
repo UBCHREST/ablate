@@ -7,7 +7,7 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
                              std::vector<std::shared_ptr<processes::FlowProcess>> flowProcessesIn, std::shared_ptr<parameters::Parameters> options,
                              std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                              std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution)
-    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolution), flowProcesses(flowProcessesIn)  {
+    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolution), flowProcesses(flowProcessesIn) {
     // make sure that the dm works with fv
     const PetscInt ghostCellDepth = 1;
     DM& dm = this->dm->GetDomain();

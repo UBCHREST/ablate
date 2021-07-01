@@ -154,7 +154,8 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowSpeciesA
     PetscFunctionReturn(0);
 }
 
-ablate::flow::processes::EulerAdvection::EulerAdvection(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxDifferencer::FluxDifferencer> fluxDifferencerIn)
+ablate::flow::processes::EulerAdvection::EulerAdvection(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn,
+                                                        std::shared_ptr<fluxDifferencer::FluxDifferencer> fluxDifferencerIn)
     : eos(eosIn), fluxDifferencer(fluxDifferencerIn == nullptr ? std::make_shared<fluxDifferencer::AusmFluxDifferencer>() : fluxDifferencerIn) {
     PetscNew(&eulerAdvectionData);
 
@@ -168,13 +169,11 @@ ablate::flow::processes::EulerAdvection::EulerAdvection(std::shared_ptr<paramete
 
     // extract the difference function from fluxDifferencer object
     eulerAdvectionData->fluxDifferencer = fluxDifferencer->GetFluxDifferencerFunction();
-
 }
 
 ablate::flow::processes::EulerAdvection::~EulerAdvection() { PetscFree(eulerAdvectionData); }
 
 void ablate::flow::processes::EulerAdvection::Initialize(ablate::flow::FVFlow& flow) {
-
     // Register the euler source terms
     if (eos->GetSpecies().empty()) {
         flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, eulerAdvectionData, "euler", {"euler"}, {});

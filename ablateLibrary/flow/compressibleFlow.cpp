@@ -23,7 +23,8 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
                  // create assumed processes for compressible flow
                  std::make_shared<ablate::flow::processes::EulerAdvection>(parameters, eosIn, fluxDifferencerIn),
                  std::make_shared<ablate::flow::processes::EulerDiffusion>(parameters, eosIn),
-             },options, initialization, boundaryConditions, {}, exactSolutions) {}
+             },
+             options, initialization, boundaryConditions, {}, exactSolutions) {}
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::flow::Flow, ablate::flow::CompressibleFlow, "compressible finite volume flow", ARG(std::string, "name", "the name of the flow field"),

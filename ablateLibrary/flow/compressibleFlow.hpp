@@ -17,7 +17,6 @@ class CompressibleFlow : public FVFlow {
                      std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
                      std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions = {});
     ~CompressibleFlow() override = default;
-
 };
 }  // namespace ablate::flow
 
