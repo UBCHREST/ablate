@@ -36,7 +36,19 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
                                                  std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization,
                                                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                  std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions)
-    : FVFlow(name, mesh, parameters, options, initialization, boundaryConditions, {}, exactSolutions),
+    : FVFlow(name, mesh, parameters,
+             {
+                 {.fieldName = "euler", .fieldPrefix = "euler", .components = 2 + mesh->GetDimensions(), .fieldType = FieldType::FV},
+                 {
+                     .fieldName = "densityYi",
+                     .fieldPrefix = "densityYi",
+                     .components = (PetscInt)eosIn->GetSpecies().size(),
+                     .fieldType = FieldType::FV,
+                     .componentNames = eosIn->GetSpecies(),
+                 },
+                 {.solutionField = false, .fieldName = compressibleAuxComponentNames[T], .fieldPrefix = compressibleAuxComponentNames[T], .components = 1, .fieldType = FieldType::FV},
+                 {.solutionField = false, .fieldName = compressibleAuxComponentNames[VEL], .fieldPrefix = compressibleAuxComponentNames[VEL], .components = mesh->GetDimensions(), .fieldType = FieldType::FV}
+             }, options, initialization, boundaryConditions, {}, exactSolutions),
       eos(eosIn),
       fluxDifferencer(fluxDifferencerIn == nullptr ? std::make_shared<fluxDifferencer::AusmFluxDifferencer>() : fluxDifferencerIn) {
     // Create a compressibleFlowData
@@ -47,49 +59,6 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
     compressibleFlowData->mu = parameters->Get<PetscReal>("mu", 0.0);
     compressibleFlowData->k = parameters->Get<PetscReal>("k", 0.0);
 
-    // make sure that the dm works with fv
-    const PetscInt ghostCellDepth = 1;
-    DM& dm = this->dm->GetDomain();
-    {  // Make sure that the flow is setup distributed
-        DM dmDist;
-        DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE) >> checkError;
-        DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist) >> checkError;
-        if (dmDist) {
-            DMDestroy(&dm) >> checkError;
-            dm = dmDist;
-        }
-    }
-
-    // create any ghost cells that are needed
-    {
-        DM gdm;
-        DMPlexConstructGhostCells(dm, NULL, NULL, &gdm) >> checkError;
-        DMDestroy(&dm) >> checkError;
-        dm = gdm;
-    }
-
-    // Copy over the application context if needed
-    DMSetApplicationContext(dm, this) >> checkError;
-
-    // Register a single field
-    PetscInt numberEulerComponents = 2 + dim;
-    RegisterField({.fieldName = "euler", .fieldPrefix = "euler", .components = numberEulerComponents, .fieldType = FieldType::FV});
-    if (!eos->GetSpecies().empty()) {
-        // Note, we are solving yi*density
-        RegisterField({
-            .fieldName = "densityYi",
-            .fieldPrefix = "densityYi",
-            .components = (PetscInt)eos->GetSpecies().size(),
-            .fieldType = FieldType::FV,
-            .componentNames = eos->GetSpecies(),
-        });
-    }
-    FinalizeRegisterFields();
-
-    // register the required auxFields
-    RegisterAuxField({.fieldName = compressibleAuxComponentNames[T], .fieldPrefix = compressibleAuxComponentNames[T], .components = 1, .fieldType = FieldType::FV});
-    RegisterAuxField({.fieldName = compressibleAuxComponentNames[VEL], .fieldPrefix = compressibleAuxComponentNames[VEL], .components = dim, .fieldType = FieldType::FV});
-
     // set the decode state function
     compressibleFlowData->decodeStateFunction = eos->GetDecodeStateFunction();
     compressibleFlowData->decodeStateFunctionContext = eos->GetDecodeStateContext();
@@ -99,7 +68,7 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
 
     // Start problem setup
     PetscDS prob;
-    DMGetDS(dm, &prob) >> checkError;
+    DMGetDS(dm->GetDomain(), &prob) >> checkError;
 
     // Set up each field
     PetscInt eulerField = 0;

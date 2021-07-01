@@ -32,9 +32,9 @@ ablate::flow::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<mesh::M
 
     // Add in any aux fields the
     if (!auxiliaryFields.empty()) {
-        RegisterAuxField({.fieldName = "momentum_source", .fieldPrefix = "momentum_source_", .components = dim, .fieldType = FieldType::FE});
-        RegisterAuxField({.fieldName = "mass_source", .fieldPrefix = "mass_source_", .components = 1, .fieldType = FieldType::FE});
-        RegisterAuxField({.fieldName = "energy_source", .fieldPrefix = "energy_source_", .components = 1, .fieldType = FieldType::FE});
+        RegisterField({.solutionField = false, .fieldName = "momentum_source", .fieldPrefix = "momentum_source_", .components = dim, .fieldType = FieldType::FE});
+        RegisterField({.solutionField = false, .fieldName = "mass_source", .fieldPrefix = "mass_source_", .components = 1, .fieldType = FieldType::FE});
+        RegisterField({.solutionField = false, .fieldName = "energy_source", .fieldPrefix = "energy_source_", .components = 1, .fieldType = FieldType::FE});
     }
 
     PetscDS prob;

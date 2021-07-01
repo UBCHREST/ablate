@@ -24,7 +24,9 @@ class FVFlow : public Flow {
     std::vector<void*> auxFieldUpdateContexts;
 
    public:
-    FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
+    FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
+           std::vector<FlowFieldDescriptor> fieldDescriptors,
+           std::shared_ptr<parameters::Parameters> options,
            std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
            std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution);
     ~FVFlow() override = default;

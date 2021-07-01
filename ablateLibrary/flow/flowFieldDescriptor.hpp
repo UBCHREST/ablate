@@ -9,6 +9,7 @@ namespace ablate::flow {
 enum class FieldType { FE, FV };
 
 struct FlowFieldDescriptor {
+    const bool solutionField = true;
     const std::string fieldName;
     const std::string fieldPrefix;
     const PetscInt components;

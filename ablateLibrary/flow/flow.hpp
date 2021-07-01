@@ -60,7 +60,6 @@ class Flow : public solve::Solvable, public monitors::Viewable {
 
     // Register the field
     void RegisterField(FlowFieldDescriptor flowFieldDescription);
-    void RegisterAuxField(FlowFieldDescriptor flowFieldDescription);
     void FinalizeRegisterFields();
 
     // Quick reference to used properties,

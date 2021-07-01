@@ -1,9 +1,42 @@
 #include "fvFlow.hpp"
 #include <utilities/petscError.hpp>
-ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
+ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FlowFieldDescriptor> fieldDescriptors, std::shared_ptr<parameters::Parameters> options,
                              std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                              std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution)
-    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolution) {}
+    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolution) {
+
+    // make sure that the dm works with fv
+    const PetscInt ghostCellDepth = 1;
+    DM& dm = this->dm->GetDomain();
+    {  // Make sure that the flow is setup distributed
+        DM dmDist;
+        DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE) >> checkError;
+        DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist) >> checkError;
+        if (dmDist) {
+            DMDestroy(&dm) >> checkError;
+            dm = dmDist;
+        }
+    }
+
+    // create any ghost cells that are needed
+    {
+        DM gdm;
+        DMPlexConstructGhostCells(dm, NULL, NULL, &gdm) >> checkError;
+        DMDestroy(&dm) >> checkError;
+        dm = gdm;
+    }
+
+    // Copy over the application context if needed
+    DMSetApplicationContext(dm, this) >> checkError;
+
+    // initialize each field
+    for(const auto& field : fieldDescriptors){
+        if(field.components != 0) {
+            RegisterField(field);
+        }
+    }
+    FinalizeRegisterFields();
+}
 
 PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx) {
     PetscFunctionBeginUser;

@@ -18,6 +18,8 @@ class Mesh {
     std::string GetName() const { return name; }
 
     DM& GetDomain() { return dm; }
+
+    int GetDimensions() const;
 };
 }  // namespace ablate::mesh
 #endif  // ABLATELIBRARY_DOMAIN_H
