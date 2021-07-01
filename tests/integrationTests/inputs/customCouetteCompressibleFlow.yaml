@@ -1,0 +1,99 @@
+---
+# This test shows how to create a compressible flow (Couette) field without using the compressible flow object
+environment:
+  title: compressibleCouette
+  tagDirectory: false
+arguments: 
+  dm_plex_separate_marker: ""
+  petsclimiter_type: none
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_adapt_type: none
+    ts_max_steps: 20
+flow: !ablate::flow::FVFlow
+  name: compressibleFlowField
+  mesh: !ablate::mesh::BoxMesh
+    name: simpleBoxField
+    faces: [ 12, 12 ]
+    lower: [ 0, 0]
+    upper: [1, 1]
+    boundary: ["PERIODIC", "NONE"]
+    simplex: false
+    options:
+      dm_refine: 0
+  options:
+    eulerpetscfv_type: leastsquares
+    Tpetscfv_type: leastsquares
+    velpetscfv_type: leastsquares
+  parameters: {}
+  fields:
+    - fieldName: euler
+      fieldPrefix: euler
+      components: 4
+      fieldType: FV
+    - fieldName: T
+      fieldPrefix: T
+      components: 1
+      fieldType: FV
+      solutionField: false
+    - fieldName: vel
+      fieldPrefix: vel
+      components: 2
+      fieldType: FV
+      solutionField: false
+  processes:
+    - !ablate::flow::processes::EulerAdvection
+      parameters:
+        cfl: 0.5 
+      eos: !ablate::eos::PerfectGas
+        parameters:
+          gamma: 1.4
+          Rgas : 287.0 
+    - !ablate::flow::processes::EulerDiffusion
+      parameters:
+        k: 0.0
+        mu: 1.0 
+      eos: !ablate::eos::PerfectGas
+        parameters:
+          gamma: 1.4
+          Rgas : 287.0 
+
+  initialization:
+    - fieldName: "euler" #for euler all components are in a single field
+      solutionField:
+        formula: >-
+          1.0,
+          215250.0,
+          0.0,
+          0.0
+  exactSolution:
+    - fieldName: "euler" # rho, rho_e = rho*(CvT + u^2/2), rho_u, rho_v
+      solutionField: 
+        formula: >-
+          1.0, 
+          1.0 * (215250.0 + (0.5 * (50 * y)^2)),
+          1.0 * 50 * y, 
+          1.0 * 0.0
+  boundaryConditions:
+    - !ablate::flow::boundaryConditions::EssentialGhost
+      fieldName: euler
+      boundaryName: "walls"
+      labelName: Face Sets
+      labelIds: [1]
+      boundaryValue:
+        formula: "1.0, 215250.0, 0.0, 0.0"
+    - !ablate::flow::boundaryConditions::EssentialGhost
+      fieldName: euler
+      boundaryName: "walls"
+      labelName: Face Sets
+      labelIds: [3]
+      boundaryValue:
+        formula: "1.0, 216500.0, 50.0, 0.0"
+  
+  monitors:
+    - !ablate::monitors::SolutionErrorMonitor
+      scope: component
+      type: l2_norm
+   

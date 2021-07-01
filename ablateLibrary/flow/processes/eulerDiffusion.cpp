@@ -129,3 +129,7 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowComputeS
     }
     PetscFunctionReturn(0);
 }
+
+#include "parser/registrar.hpp"
+REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::EulerDiffusion, "diffusion for the euler field",
+         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));

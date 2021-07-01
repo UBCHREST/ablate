@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_FLOWFIELDDESCRIPTOR_HPP
 
 #include <petsc.h>
+#include <parser/factory.hpp>
 #include <string>
 #include <vector>
 namespace ablate::flow {
@@ -16,5 +17,8 @@ struct FlowFieldDescriptor {
     const enum FieldType fieldType;
     const std::vector<std::string> componentNames;
 };
+
+std::istream& operator>>(std::istream& is, FieldType& v);
+
 }  // namespace ablate::flow
 #endif  // ABLATELIBRARY_FLOWFIELDDESCRIPTOR_HPP

@@ -53,6 +53,21 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
     PetscDSSetFromOptions(prob) >> checkError;
 }
 
+ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldDescriptor>> fieldDescriptors,
+                             std::vector<std::shared_ptr<processes::FlowProcess>> flowProcessesIn, std::shared_ptr<parameters::Parameters> options,
+                             std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                             std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution)
+    : ablate::flow::FVFlow::FVFlow(
+          name, mesh, parameters,
+          [](auto fieldDescriptorsPtrs) {
+              auto vec = std::vector<FlowFieldDescriptor>{};
+              for (auto ptr : fieldDescriptorsPtrs) {
+                  vec.push_back(*ptr);
+              }
+              return vec;
+          }(fieldDescriptors),
+          flowProcessesIn, options, initialization, boundaryConditions, auxiliaryFields, exactSolution) {}
+
 PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
@@ -259,3 +274,12 @@ void ablate::flow::FVFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow) {
     }
 }
 void ablate::flow::FVFlow::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.push_back(std::make_pair(function, ctx)); }
+
+#include "parser/registrar.hpp"
+REGISTER(ablate::flow::Flow, ablate::flow::FVFlow, "finite volume flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the  mesh and discretization"),
+         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by the flow"), ARG(std::vector<ablate::flow::FlowFieldDescriptor>, "fields", "field descriptions"),
+         ARG(std::vector<ablate::flow::processes::FlowProcess>, "processes", "the processes used to describe the flow"),
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"), OPT(std::vector<mathFunctions::FieldSolution>, "initialization", "the flow field initialization"),
+         OPT(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+         OPT(std::vector<mathFunctions::FieldSolution>, "auxiliaryFields", "the aux flow field initialization"),
+         OPT(std::vector<mathFunctions::FieldSolution>, "exactSolution", "optional exact solutions that can be used for error calculations"));

@@ -251,3 +251,8 @@ double ablate::flow::processes::EulerAdvection::ComputeTimeStep(TS ts, ablate::f
     VecRestoreArrayRead(v, &x) >> checkError;
     return dtMin;
 }
+
+#include "parser/registrar.hpp"
+REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::EulerAdvection, "build advection for the euler field and species",
+         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
+         OPT(ablate::flow::fluxDifferencer::FluxDifferencer, "fluxDifferencer", "the flux differencer (defaults to AUSM)"));

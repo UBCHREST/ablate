@@ -73,5 +73,6 @@ INSTANTIATE_TEST_SUITE_P(
                     (MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlow.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/tracerParticles2DHDF5Monitor.yaml", .nproc = 2, .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/tracerParticles3D.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles3D.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/compressibleFlowVortex.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlowVortex.txt", .arguments = ""}),
+                    (MpiTestParameter){.testName = "inputs/compressibleFlowVortex.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlowVortex.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/customCouetteCompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/customCouetteCompressibleFlow.txt", .arguments = ""}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });

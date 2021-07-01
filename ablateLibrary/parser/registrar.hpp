@@ -25,16 +25,16 @@
         ablate::parser::Registrar<interfaceTypeFullName>::RegisterWithFactoryConstructor<classFullName>(false, #classFullName, description); \
     RESOLVE(interfaceTypeFullName, classFullName)
 
-#define REGISTER(interfaceTypeFullName, classFullName, description, ...)                                                            \
-    template <>                                                                                                                     \
-    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                    \
-        ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description, __VA_ARGS__); \
-    RESOLVE(interfaceTypeFullName, classFullName)
-
 #define REGISTER_FACTORY_CONSTRUCTOR_DEFAULT(interfaceTypeFullName, classFullName, description)                                             \
     template <>                                                                                                                             \
     bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                            \
         ablate::parser::Registrar<interfaceTypeFullName>::RegisterWithFactoryConstructor<classFullName>(true, #classFullName, description); \
+    RESOLVE(interfaceTypeFullName, classFullName)
+
+#define REGISTER(interfaceTypeFullName, classFullName, description, ...)                                                            \
+    template <>                                                                                                                     \
+    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                    \
+        ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description, __VA_ARGS__); \
     RESOLVE(interfaceTypeFullName, classFullName)
 
 #define REGISTERDEFAULT(interfaceTypeFullName, classFullName, description, ...)                                                    \
@@ -47,6 +47,18 @@
     template <>                                                                                                        \
     bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                       \
         ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description); \
+    RESOLVE(interfaceTypeFullName, classFullName)
+
+#define REGISTER_FACTORY_FUNCTION(interfaceTypeFullName, classFullName, description, function)                                                      \
+    template <>                                                                                                                                     \
+    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                                    \
+        ablate::parser::Registrar<interfaceTypeFullName>::RegisterWithFactoryFunction<classFullName>(false, #classFullName, description, function); \
+    RESOLVE(interfaceTypeFullName, classFullName)
+
+#define REGISTER_FACTORY_FUNCTION_DEFAULT(interfaceTypeFullName, classFullName, description, function)                                             \
+    template <>                                                                                                                                    \
+    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                                   \
+        ablate::parser::Registrar<interfaceTypeFullName>::RegisterWithFactoryFunction<classFullName>(true, #classFullName, description, function); \
     RESOLVE(interfaceTypeFullName, classFullName)
 
 namespace ablate::parser {
@@ -67,6 +79,28 @@ class Registrar {
         static std::string* defaultClassName = new std::string();
         return *defaultClassName;
     };
+
+    /* Register a class that has factory function */
+    template <typename Class>
+    static bool RegisterWithFactoryFunction(bool defaultConstructor, const std::string&& className, const std::string&& description, TCreateMethod method) {
+        std::map<std::string, TCreateMethod>& methods = GetConstructionMethods();
+        if (auto it = methods.find(className); it == methods.end()) {
+            // Record the entry
+            Listing::Get().RecordListing(Listing::ClassEntry{.interface = typeid(Interface).name(), .className = className, .description = description, .defaultConstructor = defaultConstructor});
+
+            // create method
+            methods[className] = method;
+
+            if (defaultConstructor) {
+                if (GetDefaultClassName().empty()) {
+                    GetDefaultClassName() = className;
+                } else {
+                    throw std::invalid_argument("the default parameter for " + utilities::Demangler::Demangle(typeid(Interface).name()) + " is already set as " + GetDefaultClassName());
+                }
+            }
+        }
+        return false;
+    }
 
     /* Register a class that has a constructor that uses a Factory instance */
     template <typename Class>
@@ -90,7 +124,7 @@ class Registrar {
         return false;
     }
 
-    /* Register a class that has a constructor that uses a Factory instance */
+    /* Register a class that has an empty constructor*/
     template <typename Class>
     static bool Register(bool defaultConstructor, const std::string&& className, const std::string&& description) {
         std::map<std::string, TCreateMethod>& methods = GetConstructionMethods();
