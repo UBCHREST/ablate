@@ -1,13 +1,14 @@
 #ifndef ABLATECLIENTTEMPLATE_TCHEM_HPP
 #define ABLATECLIENTTEMPLATE_TCHEM_HPP
 
-#include "eos.hpp"
 #include <filesystem>
+#include "eos.hpp"
 #include "utilities/intErrorChecker.hpp"
 
 namespace ablate::eos {
 
-#define CHECKTCHEM(ierr)          if (ierr != 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in TChem Library" );
+#define CHECKTCHEM(ierr) \
+    if (ierr != 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in TChem Library");
 
 class TChem : public EOS {
    private:
@@ -30,11 +31,12 @@ class TChem : public EOS {
     static const char* periodicTable;
     inline static const char* periodicTableFileName = "periodictable.dat";
 
-    static PetscErrorCode TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[],  PetscReal* internalEnergy, PetscReal* a,
-                                                PetscReal* p, void* ctx);
+    static PetscErrorCode TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
+                                              PetscReal* p, void* ctx);
     static PetscErrorCode TChemComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
-    static PetscErrorCode TChemComputeReactionRate(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx);
-    static PetscErrorCode TChemComputeReactionJacobian(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *jacobian, void* ctx);
+    static PetscErrorCode TChemComputeReactionRate(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* densityEnergySource,
+                                                   PetscReal* densityYiSource, void* ctx);
+    static PetscErrorCode TChemComputeReactionJacobian(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* jacobian, void* ctx);
 
     // Private static helper functions
     inline const static double TREF = 298.15;
@@ -48,10 +50,10 @@ class TChem : public EOS {
      * @param T
      * @return
      */
-    static PetscErrorCode ComputeTemperature(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T );
+    static PetscErrorCode ComputeTemperature(int numSpec, double* tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double& T);
 
    public:
-    TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile );
+    TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);
     ~TChem() override;
 
     // general functions
@@ -79,8 +81,8 @@ class TChem : public EOS {
      * @param internalEnergy
      * @return
      */
-    static int ComputeSensibleInternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double& internalEnergy );
+    static int ComputeSensibleInternalEnergy(int numSpec, double* tempYiWorkingArray, double mwMix, double& internalEnergy);
 };
 
-}
+}  // namespace ablate::eos
 #endif  // ABLATECLIENTTEMPLATE_TCHEM_HPP

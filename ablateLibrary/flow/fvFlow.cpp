@@ -24,11 +24,18 @@ PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, V
     CHKERRQ(ierr);
 
     // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
-    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(&flow->rhsFluxFunctionDescriptions[0], flow->rhsFluxFunctionDescriptions.size(), &flow->rhsPointFunctionDescriptions[0], flow->rhsPointFunctionDescriptions.size(), dm, time, locXVec, globFVec);
+    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(&flow->rhsFluxFunctionDescriptions[0],
+                                              flow->rhsFluxFunctionDescriptions.size(),
+                                              &flow->rhsPointFunctionDescriptions[0],
+                                              flow->rhsPointFunctionDescriptions.size(),
+                                              dm,
+                                              time,
+                                              locXVec,
+                                              globFVec);
     CHKERRQ(ierr);
 
     // iterate over any arbitrary RHS functions
-    for(const auto& rhsFunction: flow->rhsArbitraryFunctions){
+    for (const auto& rhsFunction : flow->rhsArbitraryFunctions) {
         ierr = rhsFunction.first(dm, time, locXVec, globFVec, rhsFunction.second);
         CHKERRQ(ierr);
     }
@@ -113,17 +120,16 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFluxFunction function, void
     rhsFluxFunctionDescriptions.push_back(functionDescription);
 }
 
-
 void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::vector<std::string> fields, std::vector<std::string> inputFields, std::vector<std::string> auxFields) {
     // Create the FVMRHS Function
     FVMRHSPointFunctionDescription functionDescription{.function = function,
-        .context = context,
-        .fields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
-        .numberFields = (PetscInt)fields.size(),
-        .inputFields = {-1, -1, -1, -1}, /**default to empty.**/
-        .numberInputFields = (PetscInt)inputFields.size(),
-        .auxFields = {-1, -1, -1, -1}, /**default to empty**/
-        .numberAuxFields = (PetscInt)auxFields.size()};
+                                                       .context = context,
+                                                       .fields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
+                                                       .numberFields = (PetscInt)fields.size(),
+                                                       .inputFields = {-1, -1, -1, -1}, /**default to empty.**/
+                                                       .numberInputFields = (PetscInt)inputFields.size(),
+                                                       .auxFields = {-1, -1, -1, -1}, /**default to empty**/
+                                                       .numberAuxFields = (PetscInt)auxFields.size()};
 
     if (fields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || inputFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || auxFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS) {
         std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");
@@ -156,9 +162,7 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, voi
     rhsPointFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::flow::FVFlow::RegisterRHSFunction(RHSArbitraryFunction function, void* context){
-    rhsArbitraryFunctions.push_back(std::make_pair(function, context));
-}
+void ablate::flow::FVFlow::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.push_back(std::make_pair(function, context)); }
 
 void ablate::flow::FVFlow::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField) {
     // find the field location

@@ -10,7 +10,7 @@ namespace ablate::flow {
 
 class FVFlow : public Flow {
    public:
-    using RHSArbitraryFunction = PetscErrorCode(*)(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx);
+    using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx);
 
    private:  // move this to private
     // hold the update functions for flux and point sources
@@ -59,7 +59,6 @@ class FVFlow : public Flow {
      * @param context
      */
     void RegisterRHSFunction(RHSArbitraryFunction function, void* context);
-
 
     /**
      * Register a auxFieldUpdate

@@ -1092,7 +1092,7 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
 
             // copy over each result flux field
             PetscInt r = 0;
-            for(PetscInt ff = 0; ff < functionDescriptions[f].numberFields; ff++){
+            for (PetscInt ff = 0; ff < functionDescriptions[f].numberFields; ff++){
                 PetscInt fieldSize, fieldOffset;
                 ierr = PetscDSGetFieldSize(ds, functionDescriptions[f].fields[ff], &fieldSize);
                 ierr = PetscDSGetFieldOffset(ds, functionDescriptions[f].fields[ff], &fieldOffset);

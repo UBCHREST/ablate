@@ -14,10 +14,11 @@ using DecodeStateFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, 
                                                PetscReal* p, void* ctx);
 using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
 
-using ComputeReactionRateFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx);
+using ComputeReactionRateFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* densityEnergySource,
+                                                       PetscReal* densityYiSource, void* ctx);
 
-using ComputeReactionRateJacobian = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEulerJacobian,  void* ctx);
-
+using ComputeReactionRateJacobian = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* densityEulerJacobian,
+                                                       void* ctx);
 
 /**
  * The EOS is a combination of species model and EOS.  This allows the eos to dictate the order/number of species.  This can be relaxed in the future

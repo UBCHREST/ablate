@@ -1,76 +1,74 @@
 #include "compressibleFlow.h"
 #include "fvSupport.h"
 
-static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out){
+static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out) {
     PetscReal mag = 0.0;
-    for (PetscInt d=0; d< dim; d++) {
-        mag += in[d]*in[d];
+    for (PetscInt d = 0; d < dim; d++) {
+        mag += in[d] * in[d];
     }
     mag = PetscSqrtReal(mag);
-    for (PetscInt d=0; d< dim; d++) {
-        out[d] = in[d]/mag;
+    for (PetscInt d = 0; d < dim; d++) {
+        out[d] = in[d] / mag;
     }
 }
 
-static inline PetscReal MagVector(PetscInt dim, const PetscReal* in){
+static inline PetscReal MagVector(PetscInt dim, const PetscReal* in) {
     PetscReal mag = 0.0;
-    for (PetscInt d=0; d< dim; d++) {
-        mag += in[d]*in[d];
+    for (PetscInt d = 0; d < dim; d++) {
+        mag += in[d] * in[d];
     }
     return PetscSqrtReal(mag);
 }
-
 
 /**
  * Function to get the density, velocity, and energy from the conserved variables
  * @return
  */
-static void DecodeEulerState(FlowData_CompressibleFlow flowData, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi, const PetscReal *normal, PetscReal* density,
-                                  PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p){
+static void DecodeEulerState(FlowData_CompressibleFlow flowData, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi, const PetscReal* normal, PetscReal* density,
+                             PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p) {
     // decode
     *density = conservedValues[RHO];
-    PetscReal totalEnergy = conservedValues[RHOE]/(*density);
+    PetscReal totalEnergy = conservedValues[RHOE] / (*density);
 
     // Get the velocity in this direction
     (*normalVelocity) = 0.0;
-    for (PetscInt d =0; d < dim; d++){
-        velocity[d] = conservedValues[RHOU + d]/(*density);
-        (*normalVelocity) += velocity[d]*normal[d];
+    for (PetscInt d = 0; d < dim; d++) {
+        velocity[d] = conservedValues[RHOU + d] / (*density);
+        (*normalVelocity) += velocity[d] * normal[d];
     }
 
     // decode the state in the eos
     flowData->decodeStateFunction(dim, *density, totalEnergy, velocity, densityYi, internalEnergy, a, p, flowData->decodeStateFunctionContext);
-    *M = (*normalVelocity)/(*a);
+    *M = (*normalVelocity) / (*a);
 }
 
-PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVelL, const PetscReal * gradVelR, PetscReal* tau){
+PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVelL, const PetscReal* gradVelR, PetscReal* tau) {
     PetscFunctionBeginUser;
     // pre compute the div of the velocity field
     PetscReal divVel = 0.0;
-    for (PetscInt c =0; c < dim; ++c){
-        divVel += 0.5*(gradVelL[c*dim + c] + gradVelR[c*dim + c]);
+    for (PetscInt c = 0; c < dim; ++c) {
+        divVel += 0.5 * (gradVelL[c * dim + c] + gradVelR[c * dim + c]);
     }
 
     // March over each velocity component, u, v, w
-    for (PetscInt c =0; c < dim; ++c){
+    for (PetscInt c = 0; c < dim; ++c) {
         // March over each physical coordinate coordinate
-        for (PetscInt d =0; d < dim; ++d) {
+        for (PetscInt d = 0; d < dim; ++d) {
             if (d == c) {
                 // for the xx, yy, zz, components
-                tau[c*dim + d] = 2.0 * mu * (0.5 * (gradVelL[c * dim + d] + gradVelR[c * dim + d]) - divVel / 3.0);
+                tau[c * dim + d] = 2.0 * mu * (0.5 * (gradVelL[c * dim + d] + gradVelR[c * dim + d]) - divVel / 3.0);
             } else {
                 // for xy, xz, etc
-                tau[c*dim + d]  = mu *( 0.5 * (gradVelL[c * dim + d] + gradVelR[c * dim + d]) + 0.5 * (gradVelL[d * dim + c] + gradVelR[d * dim + c]));
+                tau[c * dim + d] = mu * (0.5 * (gradVelL[c * dim + d] + gradVelR[c * dim + d]) + 0.5 * (gradVelL[d * dim + c] + gradVelR[d * dim + c]));
             }
         }
     }
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFaceGeom* fg,
-                                                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar gradL[], const PetscScalar gradR[],
-                                                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[],
-                                                  PetscScalar* flux, void* ctx){
+PetscErrorCode CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar uL[], const PetscScalar uR[],
+                                                const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
+                                                const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* flux, void* ctx) {
     FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
     PetscFunctionBeginUser;
 
@@ -87,8 +85,8 @@ PetscErrorCode CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFac
     PetscReal aL;
     PetscReal ML;
     PetscReal pL;
-    const PetscReal *densityYiL = flowParameters->numberSpecies > 0? uL + uOff[1] : NULL;
-    DecodeEulerState(flowParameters, dim, uL + uOff[0],densityYiL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+    const PetscReal* densityYiL = flowParameters->numberSpecies > 0 ? uL + uOff[1] : NULL;
+    DecodeEulerState(flowParameters, dim, uL + uOff[0], densityYiL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 
     PetscReal densityR;
     PetscReal normalVelocityR;
@@ -97,8 +95,8 @@ PetscErrorCode CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFac
     PetscReal aR;
     PetscReal MR;
     PetscReal pR;
-    const PetscReal *densityYiR = flowParameters->numberSpecies > 0? uR + uOff[1] : NULL;
-    DecodeEulerState(flowParameters, dim, uR + uOff[0],densityYiR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    const PetscReal* densityYiR = flowParameters->numberSpecies > 0 ? uR + uOff[1] : NULL;
+    DecodeEulerState(flowParameters, dim, uR + uOff[0], densityYiR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
     PetscReal sPm;
     PetscReal sPp;
@@ -107,26 +105,25 @@ PetscErrorCode CompressibleFlowComputeEulerFlux ( PetscInt dim, const PetscFVFac
 
     flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
-    flux[RHO] = (sMm* densityR * aR + sMp* densityL * aL) * areaMag;
+    flux[RHO] = (sMm * densityR * aR + sMp * densityL * aL) * areaMag;
 
     PetscReal velMagR = MagVector(dim, velocityR);
-    PetscReal HR = internalEnergyR + velMagR*velMagR/2.0 + pR/densityR;
+    PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
     PetscReal velMagL = MagVector(dim, velocityL);
-    PetscReal HL = internalEnergyL + velMagL*velMagL/2.0 + pL/densityL;
+    PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
 
     flux[RHOE] = (sMm * densityR * aR * HR + sMp * densityL * aL * HL) * areaMag;
 
-    for (PetscInt n =0; n < dim; n++) {
-        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR*sPm + pL*sPp) * fg->normal[n];
+    for (PetscInt n = 0; n < dim; n++) {
+        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR * sPm + pL * sPp) * fg->normal[n];
     }
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom* fg,
-                                              const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar* fieldL, const PetscScalar* fieldR, const PetscScalar gradL[], const PetscScalar gradR[],
-                                              const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar* auxL, const PetscScalar* auxR, const PetscScalar gradAuxL[], const PetscScalar gradAuxR[],
-                                              PetscScalar* flux, void* ctx){
+PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar* fieldL, const PetscScalar* fieldR,
+                                              const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar* auxL, const PetscScalar* auxR,
+                                              const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* flux, void* ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
     FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
@@ -171,11 +168,9 @@ PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeo
     PetscFunctionReturn(0);
 }
 
-
-PetscErrorCode CompressibleFlowSpeciesAdvectionFlux ( PetscInt dim, const PetscFVFaceGeom* fg,
-                                                  const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar gradL[], const PetscScalar gradR[],
-                                                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[],
-                                                  PetscScalar* flux, void* ctx){
+PetscErrorCode CompressibleFlowSpeciesAdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar uL[], const PetscScalar uR[],
+                                                    const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
+                                                    const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* flux, void* ctx) {
     FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
     PetscFunctionBeginUser;
 
@@ -204,7 +199,7 @@ PetscErrorCode CompressibleFlowSpeciesAdvectionFlux ( PetscInt dim, const PetscF
     PetscReal aR;
     PetscReal MR;
     PetscReal pR;
-    DecodeEulerState(flowParameters, dim, uR + uOff[EULER_FIELD],uR + uOff[YI_FIELD], norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    DecodeEulerState(flowParameters, dim, uR + uOff[EULER_FIELD], uR + uOff[YI_FIELD], norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
     PetscReal sPm;
     PetscReal sPp;
@@ -214,36 +209,10 @@ PetscErrorCode CompressibleFlowSpeciesAdvectionFlux ( PetscInt dim, const PetscF
     flowParameters->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
 
     // march over each gas species
-    for (PetscInt sp = 0; sp < flowParameters->numberSpecies; sp++){
+    for (PetscInt sp = 0; sp < flowParameters->numberSpecies; sp++) {
         // Note: there is no density in the flux because uR and UL are density*yi
-        flux[sp] = (sMm  * aR * uR[uOff[YI_FIELD]+ sp] + sMp  * aL * uL[uOff[YI_FIELD] + sp]) * areaMag;
+        flux[sp] = (sMm * aR * uR[uOff[YI_FIELD] + sp] + sMp * aL * uL[uOff[YI_FIELD] + sp]) * areaMag;
     }
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode CompressibleFlowReactionSource(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx) {
-    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
-    PetscFunctionBeginUser;
-
-    // set some f to zero
-    f[uOff[0] + RHO] = 0;
-    for(PetscInt d =0; d < dim; d++){
-        f[uOff[0] + RHOU + d] = 0;
-    }
-
-    // (PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx)
-    PetscErrorCode ierr = flowParameters->computeReactionRateFunction(dim, u[uOff[0] + RHO], u[uOff[0] + RHOE]/u[uOff[0] + RHO], u + uOff[0] + RHOU, u + uOff[1], f + RHOE, f + RHOE + dim, flowParameters->computeReactionRateContext);CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode CompressibleFlowReactionJacobian(PetscInt dim, const PetscInt uOff[], const PetscScalar u[], PetscScalar jacobian[], void *ctx) {
-    FlowData_CompressibleFlow flowParameters = (FlowData_CompressibleFlow)ctx;
-    PetscFunctionBeginUser;
-
-    // (PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal *densityEnergySource, PetscReal* densityYiSource, void* ctx)
-    PetscErrorCode ierr = flowParameters->computeReactionRateJacobian(dim, u[uOff[0] + RHO], u[uOff[0] + RHOE]/u[uOff[0] + RHO], u + uOff[0] + RHOU, u + uOff[1], jacobian, flowParameters->computeReactionRateJacobianContext);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
