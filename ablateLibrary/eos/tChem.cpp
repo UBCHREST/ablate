@@ -212,57 +212,6 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal d
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::TChem::TChemComputeReactionRate(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, const PetscReal *densityYi,
-                                                            PetscReal *densityEnergySource, PetscReal *densityYiSource, void *ctx) {
-    PetscFunctionBeginUser;
-    TChem *tChem = (TChem *)ctx;
-
-    // Get the velocity in this direction to compute the internal energy
-    PetscReal speedSquare = 0.0;
-    for (PetscInt d = 0; d < dim; d++) {
-        speedSquare += PetscSqr(massFlux[d] / density);
-    }
-    PetscReal internalEnergy = (totalEnergy)-0.5 * speedSquare;
-
-    // Fill the working array
-    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
-    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
-        tempYiWorkingArray[sp + 1] = densityYi[sp] / density;
-    }
-
-    // precompute some values
-    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
-    CHECKTCHEM(err);
-
-    // compute the temperature
-    double temperature;
-    PetscErrorCode ierr = ComputeTemperature(tChem->numberSpecies, tempYiWorkingArray, internalEnergy, mwMix, temperature);
-    CHKERRQ(ierr);
-    tempYiWorkingArray[0] = temperature;
-
-    // get the result array
-    double *sourceArray = &tChem->sourceWorkingVector[0];
-    err = TC_getSrc(tempYiWorkingArray, tChem->numberSpecies + 1, sourceArray);
-    CHECKTCHEM(err);
-
-    double cp;
-    err = TC_getMs2CpMixMs(&tChem->tempYiWorkingVector[0], tChem->numberSpecies + 1, &cp);
-    CHECKTCHEM(err);
-
-    // copy over the source
-    *densityEnergySource = sourceArray[0] * cp * density;
-    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
-        densityYiSource[sp] = sourceArray[sp + 1] * density;
-    }
-
-    PetscFunctionReturn(0);
-}
-PetscErrorCode ablate::eos::TChem::TChemComputeReactionJacobian(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, const PetscReal *densityYi, PetscReal *jacobian,
-                                                                void *ctx) {
-    return 0;
-}
-
 const char *ablate::eos::TChem::periodicTable =
     "102 10\n"
     "H          HE         LI         BE         B          C          N          O          F          NE\n"

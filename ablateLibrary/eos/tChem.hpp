@@ -34,9 +34,6 @@ class TChem : public EOS {
     static PetscErrorCode TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
                                               PetscReal* p, void* ctx);
     static PetscErrorCode TChemComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
-    static PetscErrorCode TChemComputeReactionRate(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* densityEnergySource,
-                                                   PetscReal* densityYiSource, void* ctx);
-    static PetscErrorCode TChemComputeReactionJacobian(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* jacobian, void* ctx);
 
     // Private static helper functions
     inline const static double TREF = 298.15;

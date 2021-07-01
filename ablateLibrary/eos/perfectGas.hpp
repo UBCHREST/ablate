@@ -26,10 +26,6 @@ class PerfectGas : public EOS {
     void* GetDecodeStateContext() override { return &parameters; }
     ComputeTemperatureFunction GetComputeTemperatureFunction() override { return PerfectGasComputeTemperature; }
     void* GetComputeTemperatureContext() override { return &parameters; }
-    ComputeReactionRateFunction GetComputeReactionRateFunction() override { return nullptr; }
-    void* GetComputeReactionRateContext() override { return nullptr; }
-    ComputeReactionRateJacobian GetComputeReactionJacobian() override { return nullptr; }
-    void* GetComputeReactionRateJacobian() override { return nullptr; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };

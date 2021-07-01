@@ -9,8 +9,7 @@ typedef PetscErrorCode (*FVMRHSFluxFunction)(PetscInt dim, const PetscFVFaceGeom
                                              const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[],
                                              const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void *ctx);
 
-typedef PetscErrorCode (*FVMRHSPointFunction)(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[],
-                                              void *ctx);
+typedef PetscErrorCode (*FVMRHSPointFunction)(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx);
 
 typedef PetscErrorCode (*FVAuxFieldUpdateFunction)(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx);
 
@@ -67,8 +66,7 @@ typedef struct _FVMRHSPointFunctionDescription FVMRHSPointFunctionDescription;
 .seealso: DMPlexComputeJacobianActionFEM()
 **/
 PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeRHSFunctionFVM(FVMRHSFluxFunctionDescription *fluxFunctionDescriptions, PetscInt numberFluxFunctionDescription,
-                                                               FVMRHSPointFunctionDescription *pointFunctionDescriptions, PetscInt numberPointFunctionDescription, DM dm, PetscReal time, Vec locX,
-                                                               Vec F);
+                                                               FVMRHSPointFunctionDescription *pointFunctionDescriptions, PetscInt numberPointFunctionDescription, DM dm, PetscReal time, Vec locX, Vec F);
 
 /**
  * Populate the boundary with gradient information
@@ -87,8 +85,7 @@ PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeRHSFunctionFVM(FVMRHSFluxFunctio
  * Takes all local vector
  * @return
  */
-PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM, IS, PetscReal, Vec, Vec, PetscReal,
-                                                                      Vec);
+PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescription functionDescription[], PetscInt numberFunctionDescription, DM, IS, PetscReal, Vec, Vec, PetscReal, Vec);
 
 /**
    Form the local forcing F from the local input X using pointwise functions specified by the user
@@ -102,8 +99,7 @@ PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFlux
 . F  - local output vector
 
 **/
-PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDescription *functionDescription, PetscInt numberFunctionDescription, DM, IS, PetscReal, Vec, Vec, PetscReal,
-                                                                       Vec);
+PETSC_EXTERN PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDescription *functionDescription, PetscInt numberFunctionDescription, DM, IS, PetscReal, Vec, Vec, PetscReal, Vec);
 
 /**
  * reproduces the petsc call with grad fixes for multiple fields
@@ -137,7 +133,6 @@ PETSC_EXTERN PetscErrorCode DMPlexGetDataFVM_MulfiField(DM dm, PetscFV fv, Vec *
  * @param ctx
  * @return
  */
-PETSC_EXTERN PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction *updateFunctions,
-                                                    void **ctx);
+PETSC_EXTERN PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction *updateFunctions, void **ctx);
 
 #endif
