@@ -181,7 +181,7 @@ PetscErrorCode ABLATE_DMPlexComputeRHSFunctionFVM(FVMRHSFluxFunctionDescription 
 
 .seealso: DMPlexGetCellFields()
 @*/
-static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscInt fEnd, Vec locX, Vec faceGeometry, Vec cellGeometry, const Vec* locGrads, PetscInt *Nface, PetscScalar **uL, PetscScalar **uR, PetscScalar **gradL, PetscScalar **gradR)
+static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscInt fEnd, Vec locX, Vec faceGeometry, Vec cellGeometry, const Vec* locGrads, PetscInt *Nface, PetscScalar **uL, PetscScalar **uR, PetscScalar **gradL, PetscScalar **gradR, PetscBool projectField)
 {
     DM                 dmFace, dmCell, *dmGrads;
     PetscSection       section;
@@ -243,13 +243,13 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
 
     /* Right now just eat the extra work for FE (could make a cell loop) */
     for (face = fStart, iface = 0; face < fEnd; ++face) {
-        const PetscInt        *cells;
-        PetscFVFaceGeom       *fg;
-        PetscFVCellGeom       *cgL, *cgR;
-        PetscScalar           *xL, *xR, *gL, *gR;
-        PetscScalar           *uLl = *uL, *uRl = *uR;
-        PetscScalar           *gradLl = *gradL, *gradRl = *gradR;
-        PetscInt               ghost, nsupp, nchild;
+        const PetscInt *cells;
+        PetscFVFaceGeom *fg;
+        PetscFVCellGeom *cgL, *cgR;
+        PetscScalar *xL, *xR, *gL, *gR;
+        PetscScalar *uLl = *uL, *uRl = *uR;
+        PetscScalar *gradLl = *gradL, *gradRl = *gradR;
+        PetscInt ghost, nsupp, nchild;
 
         ierr = DMLabelGetValue(ghostLabel, face, &ghost);CHKERRQ(ierr);
         ierr = DMPlexGetSupportSize(dm, face, &nsupp);CHKERRQ(ierr);
@@ -268,14 +268,14 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
 
         // march over each field
         for (f = 0; f < Nf; ++f) {
-            PetscFV  fv;
+            PetscFV fv;
             PetscInt numComp, c;
 
-            ierr = PetscDSGetDiscretization(prob, f, (PetscObject *) &fv);CHKERRQ(ierr);
+            ierr = PetscDSGetDiscretization(prob, f, (PetscObject *)&fv);CHKERRQ(ierr);
             ierr = PetscFVGetNumComponents(fv, &numComp);CHKERRQ(ierr);
             ierr = DMPlexPointLocalFieldRead(dm, cells[0], f, x, &xL);CHKERRQ(ierr);
             ierr = DMPlexPointLocalFieldRead(dm, cells[1], f, x, &xR);CHKERRQ(ierr);
-            if (dmGrads[f]){
+            if (dmGrads[f] && projectField) {
                 PetscReal dxL[3], dxR[3];
 
                 ierr = DMPlexPointLocalRead(dmGrads[f], cells[0], lgrads[f], &gL);CHKERRQ(ierr);
@@ -284,25 +284,42 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
                 DMPlex_WaxpyD_Internal(dim, -1, cgR->centroid, fg->centroid, dxR);
                 // Project the cell centered value onto the face
                 for (c = 0; c < numComp; ++c) {
-                    uLl[iface*Nc+offsets[f]+c] = xL[c] + DMPlex_DotD_Internal(dim, &gL[c*dim], dxL);
-                    uRl[iface*Nc+offsets[f]+c] = xR[c] + DMPlex_DotD_Internal(dim, &gR[c*dim], dxR);
+                    uLl[iface * Nc + offsets[f] + c] = xL[c] + DMPlex_DotD_Internal(dim, &gL[c * dim], dxL);
+                    uRl[iface * Nc + offsets[f] + c] = xR[c] + DMPlex_DotD_Internal(dim, &gR[c * dim], dxR);
 
                     // copy the gradient into the grad vector
-                    for (PetscInt d =0; d < dim; d++) {
-                        gradLl[iface * Nc * dim + dirOffsets[f] + c*dim + d] = gL[c*dim + d];
-                        gradRl[iface * Nc * dim + dirOffsets[f] + c*dim + d] = gR[c*dim + d];
+                    for (PetscInt d = 0; d < dim; d++) {
+                        gradLl[iface * Nc * dim + dirOffsets[f] + c * dim + d] = gL[c * dim + d];
+                        gradRl[iface * Nc * dim + dirOffsets[f] + c * dim + d] = gR[c * dim + d];
                     }
                 }
+            } else if (dmGrads[f]) {
+                PetscReal dxL[3], dxR[3];
+
+                ierr = DMPlexPointLocalRead(dmGrads[f], cells[0], lgrads[f], &gL);CHKERRQ(ierr);
+                ierr = DMPlexPointLocalRead(dmGrads[f], cells[1], lgrads[f], &gR);CHKERRQ(ierr);
+                // Project the cell centered value onto the face
+                for (c = 0; c < numComp; ++c) {
+                    uLl[iface * Nc + offsets[f] + c] = xL[c];
+                    uRl[iface * Nc + offsets[f] + c] = xR[c];
+
+                    // copy the gradient into the grad vector
+                    for (PetscInt d = 0; d < dim; d++) {
+                        gradLl[iface * Nc * dim + dirOffsets[f] + c * dim + d] = gL[c * dim + d];
+                        gradRl[iface * Nc * dim + dirOffsets[f] + c * dim + d] = gR[c * dim + d];
+                    }
+                }
+
             } else {
                 // Just copy the cell centered value on to the face
                 for (c = 0; c < numComp; ++c) {
-                    uLl[iface*Nc+offsets[f]+c] = xL[c];
-                    uRl[iface*Nc+offsets[f]+c] = xR[c];
+                    uLl[iface * Nc + offsets[f] + c] = xL[c];
+                    uRl[iface * Nc + offsets[f] + c] = xR[c];
 
                     // fill the grad with NAN to prevent use
-                    for (PetscInt d =0; d < dim; d++) {
-                        gradLl[iface * Nc * dim + dirOffsets[f] + c*dim + d] = NAN;
-                        gradRl[iface * Nc * dim + dirOffsets[f] + c*dim + d] = NAN;
+                    for (PetscInt d = 0; d < dim; d++) {
+                        gradLl[iface * Nc * dim + dirOffsets[f] + c * dim + d] = NAN;
+                        gradRl[iface * Nc * dim + dirOffsets[f] + c * dim + d] = NAN;
                     }
                 }
             }
@@ -755,8 +772,8 @@ PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescr
         ierr = PetscArrayzero(fluxR, numFaces*totDim);CHKERRQ(ierr);
 
         // extract all of the field locations
-        ierr = ABLATE_DMPlexGetFaceFields(dm, fS, fE, locX, faceGeometryFVM, cellGeometryFVM, locGrads, &numFaces, &uL, &uR, &gradL, &gradR);CHKERRQ(ierr);
-        ierr = ABLATE_DMPlexGetFaceFields(dmAux, fS, fE, locA, faceGeometryFVM, cellGeometryFVM, locAuxGrads, &numFaces, &auxL, &auxR, &gradAuxL, &gradAuxR);CHKERRQ(ierr);
+        ierr = ABLATE_DMPlexGetFaceFields(dm, fS, fE, locX, faceGeometryFVM, cellGeometryFVM, locGrads, &numFaces, &uL, &uR, &gradL, &gradR, PETSC_TRUE);CHKERRQ(ierr);
+        ierr = ABLATE_DMPlexGetFaceFields(dmAux, fS, fE, locA, faceGeometryFVM, cellGeometryFVM, locAuxGrads, &numFaces, &auxL, &auxR, &gradAuxL, &gradAuxR, PETSC_FALSE);CHKERRQ(ierr);// NOTE: aux fields are not projected
 
         /* Loop over each rhs function */
         for (PetscInt d = 0; d < numberFunctionDescriptions; ++d) {
