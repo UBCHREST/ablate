@@ -1,14 +1,13 @@
 static char help[] = "Compressible ShockTube 1D Tests";
 
-#include <compressibleFlow.h>
 #include <petsc.h>
 #include <cmath>
+#include <flow/processes/eulerAdvection.hpp>
 #include <memory>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "compressibleFlow.h"
 #include "eos/perfectGas.hpp"
 #include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
@@ -47,22 +46,22 @@ static PetscErrorCode SetInitialCondition(PetscInt dim, PetscReal time, const Pe
     InitialConditions *initialConditions = (InitialConditions *)ctx;
 
     if (x[0] < initialConditions->length / 2.0) {
-        u[RHO] = initialConditions->rhoL;
-        u[RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
-        u[RHOU + 1] = 0.0;
+        u[ablate::flow::processes::EulerAdvection::RHO] = initialConditions->rhoL;
+        u[ablate::flow::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
+        u[ablate::flow::processes::EulerAdvection::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
-        u[RHOE] = et * initialConditions->rhoL;
+        u[ablate::flow::processes::EulerAdvection::RHOE] = et * initialConditions->rhoL;
 
     } else {
-        u[RHO] = initialConditions->rhoR;
-        u[RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
-        u[RHOU + 1] = 0.0;
+        u[ablate::flow::processes::EulerAdvection::RHO] = initialConditions->rhoR;
+        u[ablate::flow::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
+        u[ablate::flow::processes::EulerAdvection::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
-        u[RHOE] = et * initialConditions->rhoR;
+        u[ablate::flow::processes::EulerAdvection::RHOE] = et * initialConditions->rhoR;
     }
 
     return 0;
@@ -95,11 +94,11 @@ static PetscErrorCode Extract1DPrimitives(DM dm, Vec v, std::map<std::string, st
         CHKERRQ(ierr);
         if (xc) {  // must be real cell and not ghost
             results["x"].push_back(cg->centroid[0]);
-            PetscReal rho = xc[RHO];
+            PetscReal rho = xc[ablate::flow::processes::EulerAdvection::RHO];
             results["rho"].push_back(rho);
-            PetscReal u = xc[RHOU] / rho;
+            PetscReal u = xc[ablate::flow::processes::EulerAdvection::RHOU] / rho;
             results["u"].push_back(u);
-            PetscReal e = (xc[RHOE] / rho) - 0.5 * u * u;
+            PetscReal e = (xc[ablate::flow::processes::EulerAdvection::RHOE] / rho) - 0.5 * u * u;
             results["e"].push_back(e);
         }
     }
@@ -122,23 +121,23 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     InitialConditions *initialConditions = (InitialConditions *)ctx;
 
     if (c[0] < initialConditions->length / 2.0) {
-        a_xG[RHO] = initialConditions->rhoL;
+        a_xG[ablate::flow::processes::EulerAdvection::RHO] = initialConditions->rhoL;
 
-        a_xG[RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
-        a_xG[RHOU + 1] = 0.0;
+        a_xG[ablate::flow::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
+        a_xG[ablate::flow::processes::EulerAdvection::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
-        a_xG[RHOE] = et * initialConditions->rhoL;
+        a_xG[ablate::flow::processes::EulerAdvection::RHOE] = et * initialConditions->rhoL;
     } else {
-        a_xG[RHO] = initialConditions->rhoR;
+        a_xG[ablate::flow::processes::EulerAdvection::RHO] = initialConditions->rhoR;
 
-        a_xG[RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
-        a_xG[RHOU + 1] = 0.0;
+        a_xG[ablate::flow::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
+        a_xG[ablate::flow::processes::EulerAdvection::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
-        a_xG[RHOE] = et * initialConditions->rhoR;
+        a_xG[ablate::flow::processes::EulerAdvection::RHOE] = et * initialConditions->rhoR;
     }
     return 0;
     PetscFunctionReturn(0);

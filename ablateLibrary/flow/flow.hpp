@@ -75,7 +75,7 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     virtual ~Flow();
 
     virtual void CompleteProblemSetup(TS ts);
-    virtual void CompleteFlowInitialization(DM, Vec) = 0;
+    virtual void CompleteFlowInitialization(DM, Vec){};
 
     /**
      * function to update the aux fields.

@@ -1,8 +1,8 @@
 static char help[] = "1D conduction and diffusion cases compared to exact solution";
 
-#include <compressibleFlow.h>
 #include <petsc.h>
 #include <cmath>
+#include <flow/processes/eulerDiffusion.hpp>
 #include <memory>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
@@ -12,6 +12,7 @@ static char help[] = "1D conduction and diffusion cases compared to exact soluti
 #include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
 #include "flow/fluxDifferencer/offFluxDifferencer.hpp"
+#include "flow/processes/eulerAdvection.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
@@ -75,10 +76,10 @@ static PetscErrorCode EulerExact(PetscInt dim, PetscReal time, const PetscReal x
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    node[RHO] = parameters->rho;
-    node[RHOE] = parameters->rho * eT;
-    node[RHOU + 0] = parameters->rho * u;
-    node[RHOU + 1] = parameters->rho * v;
+    node[ablate::flow::processes::EulerAdvection::RHO] = parameters->rho;
+    node[ablate::flow::processes::EulerAdvection::RHOE] = parameters->rho * eT;
+    node[ablate::flow::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
+    node[ablate::flow::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -94,10 +95,10 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    a_xG[RHO] = parameters->rho;
-    a_xG[RHOE] = parameters->rho * eT;
-    a_xG[RHOU + 0] = parameters->rho * u;
-    a_xG[RHOU + 1] = parameters->rho * v;
+    a_xG[ablate::flow::processes::EulerAdvection::RHO] = parameters->rho;
+    a_xG[ablate::flow::processes::EulerAdvection::RHOE] = parameters->rho * eT;
+    a_xG[ablate::flow::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
+    a_xG[ablate::flow::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -107,7 +108,7 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
     InputParameters *constants = (InputParameters *)ctx;
 
     // Offset the calc assuming the cells are square
-    for (PetscInt f = 0; f < RHOU + constants->dim; f++) {
+    for (PetscInt f = 0; f < ablate::flow::processes::EulerAdvection::RHOU + constants->dim; f++) {
         a_xG[f] = a_xI[f];
     }
     PetscFunctionReturn(0);
@@ -327,7 +328,7 @@ TEST_P(StressTensorTestFixture, ShouldComputeTheCorrectStressTensor) {
     const auto &params = GetParam();
 
     // act
-    PetscErrorCode ierr = CompressibleFlowComputeStressTensor(params.dim, params.mu, &params.gradVelL[0], &params.gradVelR[0], computedTau);
+    PetscErrorCode ierr = ablate::flow::processes::EulerDiffusion::CompressibleFlowComputeStressTensor(params.dim, params.mu, &params.gradVelL[0], &params.gradVelR[0], computedTau);
 
     // assert
     ASSERT_EQ(0, ierr);

@@ -1,10 +1,13 @@
 #include "fvFlow.hpp"
+#include <flow/processes/flowProcess.hpp>
+#include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
-ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FlowFieldDescriptor> fieldDescriptors, std::shared_ptr<parameters::Parameters> options,
+
+ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FlowFieldDescriptor> fieldDescriptors,
+                             std::vector<std::shared_ptr<processes::FlowProcess>> flowProcessesIn, std::shared_ptr<parameters::Parameters> options,
                              std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                              std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution)
-    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolution) {
-
+    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolution), flowProcesses(flowProcessesIn)  {
     // make sure that the dm works with fv
     const PetscInt ghostCellDepth = 1;
     DM& dm = this->dm->GetDomain();
@@ -30,12 +33,24 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
     DMSetApplicationContext(dm, this) >> checkError;
 
     // initialize each field
-    for(const auto& field : fieldDescriptors){
-        if(field.components != 0) {
+    for (const auto& field : fieldDescriptors) {
+        if (field.components != 0) {
             RegisterField(field);
         }
     }
     FinalizeRegisterFields();
+
+    // march over process and link to the flow
+    for (const auto process : flowProcesses) {
+        process->Initialize(*this);
+    }
+
+    // Start problem setup
+    PetscDS prob;
+    DMGetDS(dm, &prob) >> checkError;
+
+    // Set the flux calculator solver for each component
+    PetscDSSetFromOptions(prob) >> checkError;
 }
 
 PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx) {
@@ -112,6 +127,10 @@ void ablate::flow::FVFlow::CompleteProblemSetup(TS ts) {
                 }
             }
         }
+    }
+
+    if (!timeStepFunctions.empty()) {
+        preStepFunctions.push_back(ComputeTimeStep);
     }
 }
 void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFluxFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields) {
@@ -212,3 +231,31 @@ void ablate::flow::FVFlow::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction funct
     auxFieldUpdateFunctions[auxFieldLocation.value()] = function;
     auxFieldUpdateContexts[auxFieldLocation.value()] = context;
 }
+
+void ablate::flow::FVFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow) {
+    // Get the dm and current solution vector
+    DM dm;
+    TSGetDM(ts, &dm) >> checkError;
+
+    // Get the flow param
+    ablate::flow::FVFlow& flowFV = dynamic_cast<ablate::flow::FVFlow&>(flow);
+
+    // march over each calculator
+    PetscReal dtMin = 1000.0;
+    for (const auto& dtFunction : flowFV.timeStepFunctions) {
+        dtMin = PetscMin(dtMin, dtFunction.first(ts, flow, dtFunction.second));
+    }
+
+    // take the min across all ranks
+    PetscInt rank;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
+
+    PetscReal dtMinGlobal;
+    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+
+    TSSetTimeStep(ts, dtMinGlobal) >> checkError;
+    if (PetscIsNanReal(dtMinGlobal)) {
+        throw std::runtime_error("Invalid timestep selected for flow");
+    }
+}
+void ablate::flow::FVFlow::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.push_back(std::make_pair(function, ctx)); }

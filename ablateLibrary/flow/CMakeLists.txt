@@ -15,3 +15,4 @@ target_sources(ablateLibrary
 
 add_subdirectory(boundaryConditions)
 add_subdirectory(fluxDifferencer)
+add_subdirectory(processes)

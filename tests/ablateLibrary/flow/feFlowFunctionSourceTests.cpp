@@ -3,7 +3,6 @@ static char help[] =
 We solve the Low Mach flow problem in a rectangular\n\
 domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
-#include <compressibleFlow.h>
 #include <petsc.h>
 #include <cmath>
 #include <flow/boundaryConditions/essential.hpp>

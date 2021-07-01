@@ -6,8 +6,6 @@ target_sources(ablateCore
         incompressibleFlow.h
         lowMachFlow.c
         lowMachFlow.h
-        compressibleFlow.c
-        compressibleFlow.h
         fvSupport.h
         fvSupport.c
         )

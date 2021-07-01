@@ -1,12 +1,10 @@
 static char help[] = "1D advection cases compared to exact solution";
 
-#include <compressibleFlow.h>
 #include <petsc.h>
 #include <cmath>
 #include <flow/boundaryConditions/essentialGhost.hpp>
 #include <memory>
 #include <mesh/boxMesh.hpp>
-#include <mesh/dmWrapper.hpp>
 #include <monitors/solutionErrorMonitor.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
@@ -14,7 +12,6 @@ static char help[] = "1D advection cases compared to exact solution";
 #include "eos/perfectGas.hpp"
 #include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
-#include "flow/fluxDifferencer/offFluxDifferencer.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
