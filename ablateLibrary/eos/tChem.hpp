@@ -64,10 +64,6 @@ class TChem : public EOS {
     void* GetDecodeStateContext() override { return this; }
     ComputeTemperatureFunction GetComputeTemperatureFunction() override { return TChemComputeTemperature; }
     void* GetComputeTemperatureContext() override { return this; }
-    ComputeReactionRateFunction GetComputeReactionRateFunction() override { return TChemComputeReactionRate; }
-    void* GetComputeReactionRateContext() override { return this; }
-    ComputeReactionRateJacobian GetComputeReactionJacobian() override { return TChemComputeReactionJacobian; }
-    void* GetComputeReactionRateJacobian() override { return this; }
 
     /**
      * the tempYiWorkingArray array is expected to be filled
