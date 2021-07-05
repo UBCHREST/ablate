@@ -6,14 +6,14 @@
 ablate::particles::Particles::Particles(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer,
                                         std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution,
                                         std::shared_ptr<parameters::Parameters> options)
-    : name(name),
-      ndims(ndims),
+    : ndims(ndims),
+      name(name),
       timeInitial(0.0),
       timeFinal(0.0),
-      dmChanged(false),
-      initializer(initializer),
       exactSolution(exactSolution),
       petscOptions(NULL),
+      dmChanged(false),
+      initializer(initializer),
       fieldInitialization(fieldInitialization) {
     // create and associate the dm
     DMCreate(PETSC_COMM_WORLD, &dm) >> checkError;
@@ -323,7 +323,7 @@ void ablate::particles::Particles::SwarmMigrate() {
     PetscInt dmChanged = newNumberGlobal != numberGlobal || newNumberLocal != numberLocal;
     MPI_Comm comm;
     PetscObjectGetComm((PetscObject)particleTs, &comm) >> checkError;
-    PetscInt dmChangedAll;
+    PetscInt dmChangedAll = 0;
     MPIU_Allreduce(&dmChanged, &dmChangedAll, 1, MPIU_INT, MPIU_MAX, comm);
     this->dmChanged = dmChangedAll == PETSC_TRUE;
 }

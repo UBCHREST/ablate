@@ -2,8 +2,6 @@
 
 const char *lowMachFlowParametersTypeNames[TOTAL_LOW_MACH_FLOW_PARAMETERS + 1] = {
     "strouhal", "reynolds", "froude", "peclet", "heatRelease", "gamma", "pth", "mu", "k", "cp", "beta", "gravityDirection", "unknown"};
-static const char *lowMachFlowFieldNames[TOTAL_LOW_MACH_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
-static const char *lowMachSourceFieldNames[TOTAL_LOW_MACH_SOURCE_FIELDS + 1] = {"momentum_source", "mass_source", "energy_source", "unknown"};
 
 /* =q \left(-\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right) */
 void LowMachFlow_qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],

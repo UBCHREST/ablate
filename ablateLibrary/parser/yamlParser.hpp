@@ -21,7 +21,6 @@ class YamlParser : public Factory {
      * @param type
      */
     YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type);
-
     inline void MarkUsage(const std::string& key) const { nodeUsages[key]++; }
 
     template <typename T>
@@ -44,6 +43,7 @@ class YamlParser : public Factory {
      * @param yamlString
      */
     explicit YamlParser(std::string yamlString);
+    virtual ~YamlParser() = default;
 
     /***
      * Read in file from system

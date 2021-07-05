@@ -34,6 +34,7 @@ class Listing {
     static Listing& Get();
 
     Listing(Listing& other) = delete;
+    virtual ~Listing() = default;
     void operator=(const Listing&) = delete;
 
     // Provide a way to replace the listing

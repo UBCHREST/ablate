@@ -11,16 +11,20 @@ namespace ablateTesting::parser {
 using namespace ablate::parser;
 
 class MockInterface {
+   public:
+    virtual ~MockInterface() = default;
     virtual void Test(){};
 };
 
 class MockListing : public ablate::parser::Listing {
    public:
+    ~MockListing() override = default;
     MOCK_METHOD(void, RecordListing, (ClassEntry entry));
 };
 
 class MockClass1 : public MockInterface {
    public:
+    ~MockClass1() override = default;
     MockClass1(std::shared_ptr<Factory> factory){};
 };
 
@@ -45,6 +49,7 @@ TEST(RegistrarTests, ShouldRegisterClassAndRecordInLog) {
 
 class MockClass2 : public MockInterface {
    public:
+    ~MockClass2() override = default;
     MockClass2(std::string, int, std::shared_ptr<MockInterface>){};
 };
 
@@ -111,11 +116,14 @@ TEST(RegistrarTests, ShouldRegisterClassWithArgumentIdentifiersAndOptAndRecordIn
 }
 
 class MockInterface4 {
+   public:
+    virtual ~MockInterface4() = default;
     virtual void Test(){};
 };
 
 class MockClass4 : public MockInterface4 {
    public:
+    ~MockClass4() override = default;
     MockClass4(std::string, int, std::shared_ptr<MockInterface4>){};
 };
 
@@ -152,16 +160,20 @@ TEST(RegistrarTests, ShouldRegisterDefaultClassWithArgumentIdentifiersAndRecordI
 }
 
 class MockInterface5 {
+   public:
+    virtual ~MockInterface5() = default;
     virtual void Test(){};
 };
 
 class MockClass5a : public MockInterface5 {
    public:
+    ~MockClass5a() override = default;
     MockClass5a(std::string, int, std::shared_ptr<MockInterface5>){};
 };
 
 class MockClass5b : public MockInterface5 {
    public:
+    ~MockClass5b() override = default;
     MockClass5b(std::string, int, std::shared_ptr<MockInterface5>){};
 };
 
@@ -233,11 +245,14 @@ TEST(RegistrarTests, ShouldCreateDefaultAndUseWhenNotSpecified) {
 }
 
 class NoDefaultInterface {
+   public:
+    virtual ~NoDefaultInterface() = default;
     virtual void Test(){};
 };
 
 class MockClass3 : public NoDefaultInterface {
    public:
+    ~MockClass3() override = default;
     MockClass3(std::shared_ptr<Factory> factory){};
 };
 
@@ -256,11 +271,12 @@ TEST(RegistrarTests, ShouldThrowExceptionWhenNoDefaultIsSpecified) {
 }
 
 class MockClass6 : public MockInterface {
-   private:
+   public:
     const int a;
     const int b;
 
    public:
+    ~MockClass6() override = default;
     MockClass6(int a, int b) : a(a), b(b){};
 };
 

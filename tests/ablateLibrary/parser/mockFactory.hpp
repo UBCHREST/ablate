@@ -14,6 +14,7 @@ MATCHER_P(NameIs, name, "") { return (arg.inputName == name); }
 
 class MockFactory : public ablate::parser::Factory {
    public:
+    virtual ~MockFactory() = default;
     MOCK_METHOD(std::shared_ptr<Factory>, GetFactory, (const std::string& name), (override, const));
     MOCK_METHOD(std::vector<std::shared_ptr<ablate::parser::Factory>>, GetFactorySequence, (const std::string& name), (override, const));
     MOCK_METHOD(const std::string&, GetClassType, (), (override, const));

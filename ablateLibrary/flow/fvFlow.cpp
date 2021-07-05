@@ -41,7 +41,7 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
     FinalizeRegisterFields();
 
     // march over process and link to the flow
-    for (const auto process : flowProcesses) {
+    for (const auto& process : flowProcesses) {
         process->Initialize(*this);
     }
 

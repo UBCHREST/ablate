@@ -11,11 +11,11 @@ ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std
       auxDM(nullptr),
       flowField(nullptr),
       auxField(nullptr),
-      petscOptions(nullptr),
       initialization(initialization),
       boundaryConditions(boundaryConditions),
       auxiliaryFieldsUpdaters(auxiliaryFields),
-      exactSolutions(exactSolution) {
+      exactSolutions(exactSolution),
+      petscOptions(nullptr) {
     // Set the application context with this dm
     DMSetApplicationContext(dm->GetDomain(), this) >> checkError;
 
