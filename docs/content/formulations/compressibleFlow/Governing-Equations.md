@@ -19,7 +19,7 @@ $$\begin{eqnarray}
 \vector{Q_t} = \begin{bmatrix} \rho \\ \rho u \\ \rho v \\ \rho w \\ \rho e_t \end{bmatrix}
 \end{eqnarray}$$
 
-Within ABLATE the energy conservation equation is often stored after continuity to simplify indexing but presented in the traditional order in the documentation. The convective fluxes are
+The transported energy $$e_t$$ is defined as the total energy with only sensible internal enthalpy, $$e_t = KE - pv + \Delta h$$.  The total enthalpy $$h$$ is defined as chemical + sensible, $$h = h_f + \Delta h$$, where $$ \Delta h = h - h(T_{ref})$$.  Within ABLATE the energy conservation equation is often stored after continuity to simplify indexing but presented in the traditional order in the documentation. The convective fluxes are
 
 $$\begin{eqnarray}
 \vector{F_c} = \begin{bmatrix} \rho u_n \\ \rho u u_n + n_x p \\ \rho v u_n + n_y p \\ \rho w u_n + n_z p \\ \rho H u_n \end{bmatrix}

@@ -60,7 +60,6 @@ class Flow : public solve::Solvable, public monitors::Viewable {
 
     // Register the field
     void RegisterField(FlowFieldDescriptor flowFieldDescription);
-    void RegisterAuxField(FlowFieldDescriptor flowFieldDescription);
     void FinalizeRegisterFields();
 
     // Quick reference to used properties,
@@ -76,7 +75,7 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     virtual ~Flow();
 
     virtual void CompleteProblemSetup(TS ts);
-    virtual void CompleteFlowInitialization(DM, Vec) = 0;
+    virtual void CompleteFlowInitialization(DM, Vec){};
 
     /**
      * function to update the aux fields.

@@ -3,6 +3,7 @@ target_sources(ablateLibrary
         flow.hpp
         flow.cpp
         flowFieldDescriptor.hpp
+        flowFieldDescriptor.cpp
         lowMachFlow.hpp
         lowMachFlow.cpp
         incompressibleFlow.hpp
@@ -15,3 +16,4 @@ target_sources(ablateLibrary
 
 add_subdirectory(boundaryConditions)
 add_subdirectory(fluxDifferencer)
+add_subdirectory(processes)

@@ -1,6 +1,6 @@
-#include <compressibleFlow.h>
 #include <petsc.h>
 #include <PetscTestFixture.hpp>
+#include <flow/processes/eulerAdvection.hpp>
 #include <vector>
 #include "eos/perfectGas.hpp"
 #include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
@@ -23,7 +23,7 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     const auto& params = GetParam();
 
     // For this test, manually setup the compressible flow object;
-    FlowData_CompressibleFlow eulerFlowData;
+    ablate::flow::processes::EulerAdvection::EulerAdvectionData eulerFlowData;
     PetscNew(&eulerFlowData);
     eulerFlowData->cfl = NAN;
     eulerFlowData->fluxDifferencer = params.fluxDifferencer->GetFluxDifferencerFunction();
@@ -44,7 +44,8 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
             const PetscInt uOff[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
             const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
             PetscScalar* flux, void* ctx)*/
-    CompressibleFlowComputeEulerFlux(params.area.size(), &faceGeom, uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], eulerFlowData);
+    ablate::flow::processes::EulerAdvection::CompressibleFlowComputeEulerFlux(
+        params.area.size(), &faceGeom, uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], eulerFlowData);
 
     // assert
     for (auto i = 0; i < params.expectedFlux.size(); i++) {

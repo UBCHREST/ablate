@@ -44,7 +44,8 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
     }
 
     // size the working vector
-    workingVector.resize(numberSpecies + 1);
+    tempYiWorkingVector.resize(numberSpecies + 1);
+    sourceWorkingVector.resize(numberSpecies + 1);
 }
 
 ablate::eos::TChem::~TChem() {
@@ -66,7 +67,7 @@ void ablate::eos::TChem::View(std::ostream &stream) const {
  * @param T
  * @return
  */
-int ablate::eos::TChem::InternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
+int ablate::eos::TChem::ComputeSensibleInternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
     // get the required values
     double totalEnthalpy;
     int err = TC_getMs2HmixMs(tempYiWorkingArray, numSpec + 1, &totalEnthalpy);
@@ -100,7 +101,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
     // compute the first error
     double e2;
     tempYiWorkingArray[0] = t2;
-    int err = InternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
+    int err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
     CHECKTCHEM(err);
     double f2 = internalEnergyRef - e2;
     if (PetscAbs(f2) > EPS_T_RHO_E) {
@@ -109,7 +110,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
         double t1 = t0 + 1;
         double e1;
         tempYiWorkingArray[0] = t1;
-        err = InternalEnergy(numSpec, tempYiWorkingArray, mwMix, e1);
+        err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e1);
         CHECKTCHEM(err);
         double f1 = internalEnergyRef - e1;
 
@@ -117,7 +118,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
             t2 = t1 - f1 * (t1 - t0) / (f1 - f0 + 1E-30);
             t2 = PetscMax(1.0, t2);
             tempYiWorkingArray[0] = t2;
-            err = InternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
+            err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
             CHECKTCHEM(err);
             f2 = internalEnergyRef - e2;
             if (PetscAbs(f2) <= EPS_T_RHO_E) {
@@ -129,7 +130,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
             f0 = f1;
             f1 = f2;
         }
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Unable to converge to T in TChemComputeTemperature");
+        T = t2;
     }
     PetscFunctionReturn(0);
 }
@@ -149,7 +150,7 @@ PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(PetscInt dim, PetscRe
     PetscReal internalEnergyRef = (totalEnergy)-0.5 * speedSquare;
 
     // Fill the working array
-    double *tempYiWorkingArray = &tChem->workingVector[0];
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
     for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
         tempYiWorkingArray[sp + 1] = densityYi[sp] / density;
     }
@@ -179,7 +180,7 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal d
     (*internalEnergy) = (totalEnergy)-ke;
 
     // Fill the working array
-    double *tempYiWorkingArray = &tChem->workingVector[0];
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
     for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
         tempYiWorkingArray[sp + 1] = densityYi[sp] / density;
     }
@@ -203,7 +204,7 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal d
     // lastly compute the speed of sound
     double cp;
     tempYiWorkingArray[0] = temperature;
-    err = TC_getMs2CpMixMs(&tChem->workingVector[0], tChem->numberSpecies + 1, &cp);
+    err = TC_getMs2CpMixMs(&tChem->tempYiWorkingVector[0], tChem->numberSpecies + 1, &cp);
     CHECKTCHEM(err);
     double cv = cp - R;
     double gamma = cp / cv;

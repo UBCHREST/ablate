@@ -1,6 +1,7 @@
 static char help[] = "MMS from Verification of a Compressible CFD Code using the Method of Manufactured Solutions, Christopher J. Roy,† Thomas M. Smith, and Curtis C. Ober";
 
 #include <petsc.h>
+#include <flow/processes/eulerAdvection.hpp>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
@@ -115,23 +116,23 @@ static PetscErrorCode EulerExact(PetscInt dim, PetscReal time, const PetscReal x
     PetscReal y = xyz[1];
     PetscReal z = dim > 2 ? xyz[2] : 0.0;
 
-    u[RHO] = rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L);
-    u[RHOE] = (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-              ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
-                   ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-               (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
-                Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
-                Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
-                   2.);
+    u[ablate::flow::processes::EulerAdvection::RHO] = rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L);
+    u[ablate::flow::processes::EulerAdvection::RHOE] = (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+                                                       ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
+                                                            ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+                                                        (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
+                                                         Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
+                                                         Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
+                                                            2.);
 
-    u[RHOU + 0] = (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                  (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L));
-    u[RHOU + 1] = (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                  (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L));
+    u[ablate::flow::processes::EulerAdvection::RHOU + 0] = (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+                                                           (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L));
+    u[ablate::flow::processes::EulerAdvection::RHOU + 1] = (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+                                                           (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L));
 
     if (dim > 2) {
-        u[RHOU + 2] = (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                      (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L));
+        u[ablate::flow::processes::EulerAdvection::RHOU + 2] = (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+                                                               (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L));
     }
 
     PetscFunctionReturn(0);
@@ -206,230 +207,235 @@ static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const P
     PetscReal y = cg->centroid[1];
     PetscReal z = dim > 2 ? cg->centroid[2] : 0.0;
 
-    f[RHO] = (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
-             (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / L +
-             (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) / L +
-             (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) / L -
-             (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L -
-             (aWZ * Pi * wZ * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) / L;
+    f[ablate::flow::processes::EulerAdvection::RHO] =
+        (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
+        (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / L +
+        (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) / L +
+        (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) / L -
+        (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L -
+        (aWZ * Pi * wZ * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) / L;
 
-    f[RHOE] = -((aWY * mu * Pi * wY * Cos((aWY * Pi * y) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L) -
-              (aVZ * mu * Pi * vZ * Cos((aVZ * Pi * z) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L +
-              (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / Power(L, 2) +
-              (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / Power(L, 2) -
-              (aPX * Pi * pX * Sin((aPX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
-              (4 * Power(aUX, 2) * mu * Power(Pi, 2) * uX * Sin((aUX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) /
-                  (3. * Power(L, 2)) +
-              (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) / L +
-              (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) / L +
-              (aVX * mu * Pi * vX * Sin((aVX * Pi * x) / L) * (-((aVX * Pi * vX * Sin((aVX * Pi * x) / L)) / L) - (aUY * Pi * uY * Sin((aUY * Pi * y) / L)) / L)) / L +
-              (aUY * mu * Pi * uY * Sin((aUY * Pi * y) / L) * (-((aVX * Pi * vX * Sin((aVX * Pi * x) / L)) / L) - (aUY * Pi * uY * Sin((aUY * Pi * y) / L)) / L)) / L +
-              (4 * Power(aWZ, 2) * mu * Power(Pi, 2) * wZ * Cos((aWZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
-                  (3. * Power(L, 2)) +
-              (Power(aWX, 2) * mu * Power(Pi, 2) * wX * Sin((aWX * Pi * x) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / Power(L, 2) +
-              (Power(aWY, 2) * mu * Power(Pi, 2) * wY * Sin((aWY * Pi * y) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / Power(L, 2) -
-              (aPZ * Pi * pZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) * Sin((aPZ * Pi * z) / L)) / L -
-              k * ((2 * Power(aRhoX, 2) * Power(Pi, 2) * Power(rhoX, 2) * Power(Cos((aRhoX * Pi * x) / L), 2) *
-                    (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
-                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 3)) +
-                   (2 * aPX * aRhoX * Power(Pi, 2) * pX * rhoX * Cos((aRhoX * Pi * x) / L) * Sin((aPX * Pi * x) / L)) /
-                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
-                   (Power(aRhoX, 2) * Power(Pi, 2) * rhoX * Sin((aRhoX * Pi * x) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
-                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) -
-                   (Power(aPX, 2) * Power(Pi, 2) * pX * Cos((aPX * Pi * x) / L)) /
-                       (Power(L, 2) * R * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)))) -
-              k * ((2 * Power(aRhoZ, 2) * Power(Pi, 2) * Power(rhoZ, 2) * Power(Cos((aRhoZ * Pi * z) / L), 2) *
-                    (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
-                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 3)) +
-                   (2 * aPZ * aRhoZ * Power(Pi, 2) * pZ * rhoZ * Cos((aRhoZ * Pi * z) / L) * Sin((aPZ * Pi * z) / L)) /
-                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
-                   (Power(aRhoZ, 2) * Power(Pi, 2) * rhoZ * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) * Sin((aRhoZ * Pi * z) / L)) /
-                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) -
-                   (Power(aPZ, 2) * Power(Pi, 2) * pZ * Cos((aPZ * Pi * z) / L)) /
-                       (Power(L, 2) * R * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)))) -
-              k * ((2 * Power(aRhoY, 2) * Power(Pi, 2) * Power(rhoY, 2) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) *
-                    Power(Sin((aRhoY * Pi * y) / L), 2)) /
-                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 3)) +
-                   (Power(aRhoY, 2) * Power(Pi, 2) * rhoY * Cos((aRhoY * Pi * y) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
-                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
-                   (2 * aPY * aRhoY * Power(Pi, 2) * pY * rhoY * Cos((aPY * Pi * y) / L) * Sin((aRhoY * Pi * y) / L)) /
-                       (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) -
-                   (Power(aPY, 2) * Power(Pi, 2) * pY * Sin((aPY * Pi * y) / L)) /
-                       (Power(L, 2) * R * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)))) -
-              (aWX * mu * Pi * wX * Cos((aWX * Pi * x) / L) * ((aWX * Pi * wX * Cos((aWX * Pi * x) / L)) / L - (aUZ * Pi * uZ * Sin((aUZ * Pi * z) / L)) / L)) / L +
-              (aUZ * mu * Pi * uZ * Sin((aUZ * Pi * z) / L) * ((aWX * Pi * wX * Cos((aWX * Pi * x) / L)) / L - (aUZ * Pi * uZ * Sin((aUZ * Pi * z) / L)) / L)) / L +
-              (Power(aVX, 2) * mu * Power(Pi, 2) * vX * Cos((aVX * Pi * x) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / Power(L, 2) +
-              (aPY * Pi * pY * Cos((aPY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L +
-              (4 * Power(aVY, 2) * mu * Power(Pi, 2) * vY * Sin((aVY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
-                  (3. * Power(L, 2)) +
-              (Power(aVZ, 2) * mu * Power(Pi, 2) * vZ * Sin((aVZ * Pi * z) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / Power(L, 2) +
-              (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                  (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L)) *
-                  ((aRhoY * Pi * rhoY * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) * Sin((aRhoY * Pi * y) / L)) /
-                       ((-1. + gamma) * L * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
-                   (aPY * Pi * pY * Cos((aPY * Pi * y) / L)) / ((-1. + gamma) * L * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                   ((-2 * aUY * Pi * uY * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aUY * Pi * y) / L)) / L +
-                    (2 * aWY * Pi * wY * Cos((aWY * Pi * y) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / L +
-                    (2 * aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L) /
-                       2.) +
-              (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                  (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                  (-((aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
-                     ((-1. + gamma) * L * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2))) -
-                   (aPX * Pi * pX * Sin((aPX * Pi * x) / L)) / ((-1. + gamma) * L * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                   ((2 * aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
-                    (2 * aWX * Pi * wX * Cos((aWX * Pi * x) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / L -
-                    (2 * aVX * Pi * vX * Sin((aVX * Pi * x) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L) /
-                       2.) +
-              (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-               ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
-                    ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
-                 Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
-                 Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
-                    2.)) /
-                  L +
-              (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-               ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
-                    ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
-                 Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
-                 Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
-                    2.)) /
-                  L +
-              (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-               ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
-                    ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
-                 Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
-                 Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
-                    2.)) /
-                  L +
-              (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-               ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
-                    ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
-                 Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
-                 Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
-                    2.)) /
-                  L -
-              (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L)) *
-               ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
-                    ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
-                 Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
-                 Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
-                    2.)) /
-                  L -
-              (aWZ * Pi * wZ * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) * Sin((aWZ * Pi * z) / L)) / L -
-              (aWZ * Pi * wZ * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-               ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
-                    ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
-                 Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
-                 Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
-                    2.) *
-               Sin((aWZ * Pi * z) / L)) /
-                  L -
-              (2 * aUX * mu * Pi * uX * Cos((aUX * Pi * x) / L) *
-               ((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L +
-                (-((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L) - (aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L + (aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) / 3.)) /
-                  L -
-              (2 * aVY * mu * Pi * vY * Cos((aVY * Pi * y) / L) *
-               ((aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L +
-                (-((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L) - (aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L + (aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) / 3.)) /
-                  L +
-              (2 * aWZ * mu * Pi * wZ * Sin((aWZ * Pi * z) / L) *
-               (-((aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) +
-                (-((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L) - (aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L + (aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) / 3.)) /
-                  L +
-              (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                  (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                  (-((aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
-                     ((-1. + gamma) * L * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2))) -
-                   (aPZ * Pi * pZ * Sin((aPZ * Pi * z) / L)) / ((-1. + gamma) * L * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                   ((-2 * aUZ * Pi * uZ * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aUZ * Pi * z) / L)) / L +
-                    (2 * aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L -
-                    (2 * aWZ * Pi * wZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) * Sin((aWZ * Pi * z) / L)) / L) /
-                       2.);
+    f[ablate::flow::processes::EulerAdvection::RHOE] =
+        -((aWY * mu * Pi * wY * Cos((aWY * Pi * y) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L) -
+        (aVZ * mu * Pi * vZ * Cos((aVZ * Pi * z) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L +
+        (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / Power(L, 2) +
+        (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / Power(L, 2) -
+        (aPX * Pi * pX * Sin((aPX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
+        (4 * Power(aUX, 2) * mu * Power(Pi, 2) * uX * Sin((aUX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) /
+            (3. * Power(L, 2)) +
+        (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) / L +
+        (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) / L +
+        (aVX * mu * Pi * vX * Sin((aVX * Pi * x) / L) * (-((aVX * Pi * vX * Sin((aVX * Pi * x) / L)) / L) - (aUY * Pi * uY * Sin((aUY * Pi * y) / L)) / L)) / L +
+        (aUY * mu * Pi * uY * Sin((aUY * Pi * y) / L) * (-((aVX * Pi * vX * Sin((aVX * Pi * x) / L)) / L) - (aUY * Pi * uY * Sin((aUY * Pi * y) / L)) / L)) / L +
+        (4 * Power(aWZ, 2) * mu * Power(Pi, 2) * wZ * Cos((aWZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
+            (3. * Power(L, 2)) +
+        (Power(aWX, 2) * mu * Power(Pi, 2) * wX * Sin((aWX * Pi * x) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / Power(L, 2) +
+        (Power(aWY, 2) * mu * Power(Pi, 2) * wY * Sin((aWY * Pi * y) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / Power(L, 2) -
+        (aPZ * Pi * pZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) * Sin((aPZ * Pi * z) / L)) / L -
+        k * ((2 * Power(aRhoX, 2) * Power(Pi, 2) * Power(rhoX, 2) * Power(Cos((aRhoX * Pi * x) / L), 2) *
+              (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+                 (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 3)) +
+             (2 * aPX * aRhoX * Power(Pi, 2) * pX * rhoX * Cos((aRhoX * Pi * x) / L) * Sin((aPX * Pi * x) / L)) /
+                 (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
+             (Power(aRhoX, 2) * Power(Pi, 2) * rhoX * Sin((aRhoX * Pi * x) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+                 (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) -
+             (Power(aPX, 2) * Power(Pi, 2) * pX * Cos((aPX * Pi * x) / L)) /
+                 (Power(L, 2) * R * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)))) -
+        k * ((2 * Power(aRhoZ, 2) * Power(Pi, 2) * Power(rhoZ, 2) * Power(Cos((aRhoZ * Pi * z) / L), 2) *
+              (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+                 (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 3)) +
+             (2 * aPZ * aRhoZ * Power(Pi, 2) * pZ * rhoZ * Cos((aRhoZ * Pi * z) / L) * Sin((aPZ * Pi * z) / L)) /
+                 (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
+             (Power(aRhoZ, 2) * Power(Pi, 2) * rhoZ * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) * Sin((aRhoZ * Pi * z) / L)) /
+                 (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) -
+             (Power(aPZ, 2) * Power(Pi, 2) * pZ * Cos((aPZ * Pi * z) / L)) /
+                 (Power(L, 2) * R * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)))) -
+        k * ((2 * Power(aRhoY, 2) * Power(Pi, 2) * Power(rhoY, 2) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) *
+              Power(Sin((aRhoY * Pi * y) / L), 2)) /
+                 (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 3)) +
+             (Power(aRhoY, 2) * Power(Pi, 2) * rhoY * Cos((aRhoY * Pi * y) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+                 (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
+             (2 * aPY * aRhoY * Power(Pi, 2) * pY * rhoY * Cos((aPY * Pi * y) / L) * Sin((aRhoY * Pi * y) / L)) /
+                 (Power(L, 2) * R * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) -
+             (Power(aPY, 2) * Power(Pi, 2) * pY * Sin((aPY * Pi * y) / L)) /
+                 (Power(L, 2) * R * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)))) -
+        (aWX * mu * Pi * wX * Cos((aWX * Pi * x) / L) * ((aWX * Pi * wX * Cos((aWX * Pi * x) / L)) / L - (aUZ * Pi * uZ * Sin((aUZ * Pi * z) / L)) / L)) / L +
+        (aUZ * mu * Pi * uZ * Sin((aUZ * Pi * z) / L) * ((aWX * Pi * wX * Cos((aWX * Pi * x) / L)) / L - (aUZ * Pi * uZ * Sin((aUZ * Pi * z) / L)) / L)) / L +
+        (Power(aVX, 2) * mu * Power(Pi, 2) * vX * Cos((aVX * Pi * x) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / Power(L, 2) +
+        (aPY * Pi * pY * Cos((aPY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L +
+        (4 * Power(aVY, 2) * mu * Power(Pi, 2) * vY * Sin((aVY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+            (3. * Power(L, 2)) +
+        (Power(aVZ, 2) * mu * Power(Pi, 2) * vZ * Sin((aVZ * Pi * z) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / Power(L, 2) +
+        (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+            (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L)) *
+            ((aRhoY * Pi * rhoY * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) * Sin((aRhoY * Pi * y) / L)) /
+                 ((-1. + gamma) * L * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2)) +
+             (aPY * Pi * pY * Cos((aPY * Pi * y) / L)) / ((-1. + gamma) * L * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+             ((-2 * aUY * Pi * uY * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aUY * Pi * y) / L)) / L +
+              (2 * aWY * Pi * wY * Cos((aWY * Pi * y) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / L +
+              (2 * aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L) /
+                 2.) +
+        (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+            (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+            (-((aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+               ((-1. + gamma) * L * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2))) -
+             (aPX * Pi * pX * Sin((aPX * Pi * x) / L)) / ((-1. + gamma) * L * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+             ((2 * aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
+              (2 * aWX * Pi * wX * Cos((aWX * Pi * x) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / L -
+              (2 * aVX * Pi * vX * Sin((aVX * Pi * x) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L) /
+                 2.) +
+        (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+         ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
+              ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+          (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
+           Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
+           Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
+              2.)) /
+            L +
+        (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+         ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
+              ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+          (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
+           Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
+           Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
+              2.)) /
+            L +
+        (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+         ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
+              ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+          (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
+           Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
+           Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
+              2.)) /
+            L +
+        (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+         ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
+              ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+          (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
+           Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
+           Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
+              2.)) /
+            L -
+        (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L)) *
+         ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
+              ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+          (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
+           Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
+           Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
+              2.)) /
+            L -
+        (aWZ * Pi * wZ * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) * Sin((aWZ * Pi * z) / L)) / L -
+        (aWZ * Pi * wZ * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+         ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
+              ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+          (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
+           Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
+           Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
+              2.) *
+         Sin((aWZ * Pi * z) / L)) /
+            L -
+        (2 * aUX * mu * Pi * uX * Cos((aUX * Pi * x) / L) *
+         ((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L +
+          (-((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L) - (aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L + (aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) / 3.)) /
+            L -
+        (2 * aVY * mu * Pi * vY * Cos((aVY * Pi * y) / L) *
+         ((aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L +
+          (-((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L) - (aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L + (aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) / 3.)) /
+            L +
+        (2 * aWZ * mu * Pi * wZ * Sin((aWZ * Pi * z) / L) *
+         (-((aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) +
+          (-((aUX * Pi * uX * Cos((aUX * Pi * x) / L)) / L) - (aVY * Pi * vY * Cos((aVY * Pi * y) / L)) / L + (aWZ * Pi * wZ * Sin((aWZ * Pi * z) / L)) / L) / 3.)) /
+            L +
+        (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+            (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+            (-((aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L))) /
+               ((-1. + gamma) * L * Power(rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L), 2))) -
+             (aPZ * Pi * pZ * Sin((aPZ * Pi * z) / L)) / ((-1. + gamma) * L * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+             ((-2 * aUZ * Pi * uZ * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aUZ * Pi * z) / L)) / L +
+              (2 * aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L -
+              (2 * aWZ * Pi * wZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) * Sin((aWZ * Pi * z) / L)) / L) /
+                 2.);
 
-    f[RHOU + 0] = (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L)) / Power(L, 2) + (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L)) / Power(L, 2) -
-                  (aPX * Pi * pX * Sin((aPX * Pi * x) / L)) / L + (4 * Power(aUX, 2) * mu * Power(Pi, 2) * uX * Sin((aUX * Pi * x) / L)) / (3. * Power(L, 2)) +
-                  (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2)) / L +
-                  (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                   (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
-                      L +
-                  (2 * aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                   (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
-                      L +
-                  (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                   (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
-                      L -
-                  (aUZ * Pi * uZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                   (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aUZ * Pi * z) / L)) /
-                      L -
-                  (aRhoY * Pi * rhoY * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aRhoY * Pi * y) / L) *
-                   (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
-                      L -
-                  (aUY * Pi * uY * Sin((aUY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                   (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
-                      L -
-                  (aWZ * Pi * wZ * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                   (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
-                      L;
+    f[ablate::flow::processes::EulerAdvection::RHOU + 0] =
+        (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L)) / Power(L, 2) + (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L)) / Power(L, 2) -
+        (aPX * Pi * pX * Sin((aPX * Pi * x) / L)) / L + (4 * Power(aUX, 2) * mu * Power(Pi, 2) * uX * Sin((aUX * Pi * x) / L)) / (3. * Power(L, 2)) +
+        (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2)) / L +
+        (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+         (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
+            L +
+        (2 * aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+         (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
+            L +
+        (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+         (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
+            L -
+        (aUZ * Pi * uZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+         (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aUZ * Pi * z) / L)) /
+            L -
+        (aRhoY * Pi * rhoY * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aRhoY * Pi * y) / L) *
+         (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+            L -
+        (aUY * Pi * uY * Sin((aUY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+         (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+            L -
+        (aWZ * Pi * wZ * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+         (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
+            L;
 
-    f[RHOU + 1] = (Power(aVX, 2) * mu * Power(Pi, 2) * vX * Cos((aVX * Pi * x) / L)) / Power(L, 2) + (aPY * Pi * pY * Cos((aPY * Pi * y) / L)) / L +
-                  (4 * Power(aVY, 2) * mu * Power(Pi, 2) * vY * Sin((aVY * Pi * y) / L)) / (3. * Power(L, 2)) -
-                  (aVX * Pi * vX * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aVX * Pi * x) / L) *
-                   (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
-                      L +
-                  (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                   (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
-                      L +
-                  (Power(aVZ, 2) * mu * Power(Pi, 2) * vZ * Sin((aVZ * Pi * z) / L)) / Power(L, 2) +
-                  (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                   (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
-                      L +
-                  (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                   (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
-                      L +
-                  (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                   (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
-                      L +
-                  (2 * aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                   (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
-                      L -
-                  (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) / L -
-                  (aWZ * Pi * wZ * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                   (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
-                      L;
+    f[ablate::flow::processes::EulerAdvection::RHOU + 1] =
+        (Power(aVX, 2) * mu * Power(Pi, 2) * vX * Cos((aVX * Pi * x) / L)) / Power(L, 2) + (aPY * Pi * pY * Cos((aPY * Pi * y) / L)) / L +
+        (4 * Power(aVY, 2) * mu * Power(Pi, 2) * vY * Sin((aVY * Pi * y) / L)) / (3. * Power(L, 2)) -
+        (aVX * Pi * vX * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aVX * Pi * x) / L) *
+         (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
+            L +
+        (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+         (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
+            L +
+        (Power(aVZ, 2) * mu * Power(Pi, 2) * vZ * Sin((aVZ * Pi * z) / L)) / Power(L, 2) +
+        (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+         (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+            L +
+        (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+         (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+            L +
+        (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+         (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+            L +
+        (2 * aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+         (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+            L -
+        (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) / L -
+        (aWZ * Pi * wZ * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+         (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
+            L;
 
     if (dim > 2) {
-        f[RHOU + 2] = (4 * Power(aWZ, 2) * mu * Power(Pi, 2) * wZ * Cos((aWZ * Pi * z) / L)) / (3. * Power(L, 2)) + (Power(aWX, 2) * mu * Power(Pi, 2) * wX * Sin((aWX * Pi * x) / L)) / Power(L, 2) +
-                      (Power(aWY, 2) * mu * Power(Pi, 2) * wY * Sin((aWY * Pi * y) / L)) / Power(L, 2) +
-                      (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                       (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
-                          L +
-                      (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2)) / L -
-                      (aPZ * Pi * pZ * Sin((aPZ * Pi * z) / L)) / L +
-                      (aWX * Pi * wX * Cos((aWX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                       (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
-                          L +
-                      (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                       (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
-                          L +
-                      (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                       (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
-                          L -
-                      (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                       (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
-                          L +
-                      (aWY * Pi * wY * Cos((aWY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                       (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
-                          L -
-                      (2 * aWZ * Pi * wZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                       (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
-                          L;
+        f[ablate::flow::processes::EulerAdvection::RHOU + 2] =
+            (4 * Power(aWZ, 2) * mu * Power(Pi, 2) * wZ * Cos((aWZ * Pi * z) / L)) / (3. * Power(L, 2)) + (Power(aWX, 2) * mu * Power(Pi, 2) * wX * Sin((aWX * Pi * x) / L)) / Power(L, 2) +
+            (Power(aWY, 2) * mu * Power(Pi, 2) * wY * Sin((aWY * Pi * y) / L)) / Power(L, 2) +
+            (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+             (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) /
+                L +
+            (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2)) / L -
+            (aPZ * Pi * pZ * Sin((aPZ * Pi * z) / L)) / L +
+            (aWX * Pi * wX * Cos((aWX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+             (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
+                L +
+            (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+             (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
+                L +
+            (aVY * Pi * vY * Cos((aVY * Pi * y) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+             (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) /
+                L -
+            (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+             (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+                L +
+            (aWY * Pi * wY * Cos((aWY * Pi * y) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+             (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) /
+                L -
+            (2 * aWZ * Pi * wZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+             (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
+                L;
     }
     PetscFunctionReturn(0);
 }
@@ -602,7 +608,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             flowObject->CompleteProblemSetup(ts);
 
             // Add a point wise function that adds fluxes to euler.  It requires no input fields
-            flowObject->RegisterRHSFunction(SourceMMS, &problemSetup, "euler", {}, {});
+            flowObject->RegisterRHSFunction(SourceMMS, &problemSetup, {"euler"}, {}, {});
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;

@@ -131,30 +131,31 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription,
 }
 
 void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription) {
-    // Called the shared method to register
-    RegisterField(flowFieldDescription, dm->GetDomain());
+    // add solution fields/aux fields
+    if (flowFieldDescription.solutionField) {
+        // Called the shared method to register
+        RegisterField(flowFieldDescription, dm->GetDomain());
 
-    // store the field
-    flowFieldDescriptors.push_back(flowFieldDescription);
-}
+        // store the field
+        flowFieldDescriptors.push_back(flowFieldDescription);
+    } else {
+        // check to see if need to create an aux dm
+        if (auxDM == NULL) {
+            /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
+            DM coordDM;
+            DMGetCoordinateDM(dm->GetDomain(), &coordDM) >> checkError;
+            DMClone(dm->GetDomain(), &auxDM) >> checkError;
 
-void ablate::flow::Flow::RegisterAuxField(FlowFieldDescriptor flowFieldDescription) {
-    // check to see if need to create an aux dm
-    if (auxDM == NULL) {
-        /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
-        DM coordDM;
-        DMGetCoordinateDM(dm->GetDomain(), &coordDM) >> checkError;
-        DMClone(dm->GetDomain(), &auxDM) >> checkError;
+            // this is a hard coded "dmAux" that petsc looks for
+            PetscObjectCompose((PetscObject)dm->GetDomain(), "dmAux", (PetscObject)auxDM) >> checkError;
+            DMSetCoordinateDM(auxDM, coordDM) >> checkError;
+        }
 
-        // this is a hard coded "dmAux" that petsc looks for
-        PetscObjectCompose((PetscObject)dm->GetDomain(), "dmAux", (PetscObject)auxDM) >> checkError;
-        DMSetCoordinateDM(auxDM, coordDM) >> checkError;
+        RegisterField(flowFieldDescription, auxDM);
+
+        // store the field
+        auxFieldDescriptors.push_back(flowFieldDescription);
     }
-
-    RegisterField(flowFieldDescription, auxDM);
-
-    // store the field
-    auxFieldDescriptors.push_back(flowFieldDescription);
 }
 
 void ablate::flow::Flow::FinalizeRegisterFields() { DMCreateDS(dm->GetDomain()) >> checkError; }

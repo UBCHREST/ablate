@@ -254,4 +254,38 @@ TEST(RegistrarTests, ShouldThrowExceptionWhenNoDefaultIsSpecified) {
     // assert
     ASSERT_THROW(ResolveAndCreate<NoDefaultInterface>(mockFactory), std::invalid_argument);
 }
+
+class MockClass6 : public MockInterface {
+   private:
+    const int a;
+    const int b;
+
+   public:
+    MockClass6(int a, int b) : a(a), b(b){};
+};
+
+static std::shared_ptr<MockClass6> MakeMockClass6Function(std::shared_ptr<Factory> factory) {
+    auto c = factory->GetByName<int>("c");
+    return std::make_shared<MockClass6>(c * 2, c * 3);
+}
+
+TEST(RegistrarTests, ShouldRegisterFunctionForClassAndRecordInLog) {
+    // arrange
+    auto mockListing = std::make_shared<MockListing>();
+    EXPECT_CALL(*mockListing, RecordListing(Listing::ClassEntry{.interface = typeid(MockInterface).name(), .className = "mockClass6", .description = "this is a simple mock class"}))
+        .Times(::testing::Exactly(1));
+
+    Listing::ReplaceListing(mockListing);
+
+    // act
+    Registrar<MockInterface>::RegisterWithFactoryFunction<MockClass6>(false, "mockClass6", "this is a simple mock class", MakeMockClass6Function);
+
+    // assert
+    auto createMethod = Registrar<MockInterface>::GetCreateMethod("mockClass6");
+    ASSERT_TRUE(createMethod != nullptr);
+
+    // cleanup
+    Listing::ReplaceListing(nullptr);
+}
+
 }  // namespace ablateTesting::parser

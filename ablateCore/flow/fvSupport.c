@@ -344,7 +344,6 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
 
 static PetscErrorCode ABLATE_DMPlexRestoreFaceFields(DM dm, PetscInt fStart, PetscInt fEnd, Vec locX, Vec locX_t, Vec faceGeometry, Vec cellGeometry, Vec locGrad, PetscInt *Nface, PetscScalar **uL, PetscScalar **uR,  PetscScalar **gradL, PetscScalar **gradR)
 {
-
   DMRestoreWorkArray(dm, 0, MPIU_SCALAR, uL);
   DMRestoreWorkArray(dm, 0, MPIU_SCALAR, uR);
   if (*gradL){
@@ -1057,10 +1056,10 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
         // extract the point locations for this cell
         const PetscFVCellGeom *cg;
         const PetscScalar *u;
-        PetscScalar *ff;
+        PetscScalar *rhs;
         ierr = DMPlexPointLocalRead(dmCell, cell, cellGeometryArray, &cg);
         ierr = DMPlexPointLocalRead(dm, cell, locXArray, &u);
-        ierr = DMPlexPointLocalRef(dm, cell, fArray, &ff);
+        ierr = DMPlexPointLocalRef(dm, cell, fArray, &rhs);
 
         // if there is an aux field, get it
         const PetscScalar *a = NULL;
@@ -1091,11 +1090,15 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
             // (PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx)
             ierr = functionDescriptions[f].function(dim, cg, uOff, u, aOff, a, fScratch, functionDescriptions[f].context);
 
-            PetscInt fieldSize, fieldOffset;
-            ierr = PetscDSGetFieldSize(ds, functionDescriptions[f].field, &fieldSize);
-            ierr = PetscDSGetFieldOffset(ds, functionDescriptions[f].field, &fieldOffset);
-            for (PetscInt d = 0; d < fieldSize; ++d) {
-                ff[fieldOffset + d] += fScratch[d];
+            // copy over each result flux field
+            PetscInt r = 0;
+            for (PetscInt ff = 0; ff < functionDescriptions[f].numberFields; ff++){
+                PetscInt fieldSize, fieldOffset;
+                ierr = PetscDSGetFieldSize(ds, functionDescriptions[f].fields[ff], &fieldSize);
+                ierr = PetscDSGetFieldOffset(ds, functionDescriptions[f].fields[ff], &fieldOffset);
+                for (PetscInt d = 0; d < fieldSize; ++d) {
+                    rhs[fieldOffset + d] += fScratch[r++];
+                }
             }
         }
     }
@@ -1112,5 +1115,4 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
     ierr = ISRestorePointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
-
 }

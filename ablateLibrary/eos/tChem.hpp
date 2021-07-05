@@ -24,7 +24,8 @@ class TChem : public EOS {
     int numberSpecies;
 
     // store a tcWorkingVector
-    std::vector<double> workingVector;
+    std::vector<double> tempYiWorkingVector;
+    std::vector<double> sourceWorkingVector;
 
     // write/reproduce the periodic table
     static const char* periodicTable;
@@ -36,16 +37,6 @@ class TChem : public EOS {
 
     // Private static helper functions
     inline const static double TREF = 298.15;
-    /**
-     * the tempYiWorkingArray array is expected to be filled
-     * @param numSpec
-     * @param tempYiWorkingArray
-     * @param T
-     * @param mwMix
-     * @param internalEnergy
-     * @return
-     */
-    static int InternalEnergy(int numSpec, double* tempYiWorkingArray, double mwMix, double& internalEnergy);
 
     /**
      * The tempYiWorkingArray is expected to be filled with correct species yi.  The 0 location is set in this function.
@@ -69,10 +60,21 @@ class TChem : public EOS {
     const std::vector<std::string>& GetSpecies() const override;
 
     // EOS functions
-    decodeStateFunction GetDecodeStateFunction() override { return TChemGasDecodeState; }
+    DecodeStateFunction GetDecodeStateFunction() override { return TChemGasDecodeState; }
     void* GetDecodeStateContext() override { return this; }
-    computeTemperatureFunction GetComputeTemperatureFunction() override { return TChemComputeTemperature; }
+    ComputeTemperatureFunction GetComputeTemperatureFunction() override { return TChemComputeTemperature; }
     void* GetComputeTemperatureContext() override { return this; }
+
+    /**
+     * the tempYiWorkingArray array is expected to be filled
+     * @param numSpec
+     * @param tempYiWorkingArray
+     * @param T
+     * @param mwMix
+     * @param internalEnergy
+     * @return
+     */
+    static int ComputeSensibleInternalEnergy(int numSpec, double* tempYiWorkingArray, double mwMix, double& internalEnergy);
 };
 
 }  // namespace ablate::eos
