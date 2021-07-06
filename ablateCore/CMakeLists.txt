@@ -3,7 +3,6 @@ add_library(ablateCore "")
 
 # Include PETSc and MPI
 target_link_libraries(ablateCore PUBLIC PkgConfig::PETSc)
-target_link_directories(ablateCore PUBLIC ${PETSc_STATIC_LIBRARY_DIRS})
 
 # Allow public access to the header files in the directory
 target_include_directories(ablateCore PUBLIC ${CMAKE_CURRENT_LIST_DIR})
