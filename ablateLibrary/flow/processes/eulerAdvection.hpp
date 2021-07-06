@@ -70,6 +70,24 @@ class EulerAdvection : public FlowProcess {
 
     // static function to compute time step for euler advection
     static double ComputeTimeStep(TS ts, ablate::flow::Flow& flow, void* ctx);
+
+    /**
+     * Private function to decode the euler fields
+     * @param flowData
+     * @param dim
+     * @param conservedValues
+     * @param densityYi
+     * @param normal
+     * @param density
+     * @param normalVelocity
+     * @param velocity
+     * @param internalEnergy
+     * @param a
+     * @param M
+     * @param p
+     */
+    static void DecodeEulerState(ablate::flow::processes::EulerAdvection::EulerAdvectionData flowData, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi,
+                                 const PetscReal* normal, PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p);
 };
 
 }  // namespace ablate::flow::processes

@@ -5,4 +5,6 @@ target_sources(ablateLibrary
         eulerAdvection.cpp
         eulerDiffusion.hpp
         eulerDiffusion.cpp
+        tChemReactions.hpp
+        tChemReactions.cpp
         )

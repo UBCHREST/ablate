@@ -2,8 +2,6 @@
 #include <flow/fluxCalculator/ausm.hpp>
 #include <utilities/petscError.hpp>
 
-typedef enum { RHO, RHOE, RHOU, RHOV, RHOW, TOTAL_COMPRESSIBLE_FLOW_COMPONENTS } CompressibleFlowComponents;
-
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out) {
     PetscReal mag = 0.0;
     for (PetscInt d = 0; d < dim; d++) {
@@ -27,7 +25,7 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal* in) {
  * Function to get the density, velocity, and energy from the conserved variables
  * @return
  */
-static void DecodeEulerState(ablate::flow::processes::EulerAdvection::EulerAdvectionData flowData, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi, const PetscReal* normal,
+void ablate::flow::processes::EulerAdvection::DecodeEulerState(ablate::flow::processes::EulerAdvection::EulerAdvectionData flowData, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi, const PetscReal* normal,
                              PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p) {
     // decode
     *density = conservedValues[RHO];
