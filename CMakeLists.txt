@@ -7,7 +7,7 @@ include(includePETScCompiler.cmake)
 project(ablateLibrary VERSION 0.4.7)
 
 # Load the Required 3rd Party Libaries
-pkg_check_modules(PETSc REQUIRED PETSc)
+pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET PETSc)
 
 # Set the c/c++ Standards
 set(CMAKE_C_STANDARD 99)
