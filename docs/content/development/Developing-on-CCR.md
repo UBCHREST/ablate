@@ -12,6 +12,9 @@ The University at Buffalo Center for Computational Research [(CCR)](http://www.b
 * [CCR OnDemand](https://ondemand.ccr.buffalo.edu) - an integrated, single access point for all of your HPC resources
 * [CCR Coldfront](https://coldfront.ccr.buffalo.edu) - resource allocation management tool built
 
+## Note:
+For the most recent development issues, notes, and workarounds for building PETSc or ABLATE on CCR check the [ABLATE repo wiki](https://github.com/UBCHREST/ablate/wiki).
+
 ## Building PETSc on CCR
 If a newer version of PETSc is required than those pre-built on CCR you will be required to build PETSC.
 
