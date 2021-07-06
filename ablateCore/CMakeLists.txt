@@ -20,4 +20,4 @@ configure_file (
 target_include_directories(ablateCore PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 # Add required warnings for the ablate core
-#ablate_default_target_compile_options(ablateCore)
+ablate_default_target_compile_options_c(ablateCore)

@@ -1,7 +1,7 @@
 
 # Include code
 target_sources(ablateCore
-        PUBLIC
+        PRIVATE
         incompressibleFlow.c
         incompressibleFlow.h
         lowMachFlow.c
