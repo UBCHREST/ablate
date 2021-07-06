@@ -30,7 +30,7 @@ TEST_P(FluxDifferencerTestParametersTestFixture, ShouldComputeCorrectFlux) {
     PetscReal spm, smm, spp, smp;
 
     // act
-    for (auto i = 0; i < params.Mm.size(); i++) {
+    for (std::size_t i = 0; i < params.Mm.size(); i++) {
         function(params.Mm[i], &spm, &smm, params.Mp[i], &spp, &smp);
 
         // assert

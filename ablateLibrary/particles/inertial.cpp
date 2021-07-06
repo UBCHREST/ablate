@@ -16,7 +16,7 @@ ablate::particles::Inertial::Inertial(std::string name, int ndims, std::shared_p
     fluidDensity = parameters->GetExpect<PetscReal>("fluidDensity");
     fluidViscosity = parameters->GetExpect<PetscReal>("fluidViscosity");
     auto gravityVector = parameters->GetExpect<std::vector<PetscReal>>("gravityField");
-    for (auto i = 0; i < PetscMin(gravityVector.size(), 3); i++) {
+    for (std::size_t i = 0; i < PetscMin(gravityVector.size(), 3); i++) {
         gravityField[i] = gravityVector[i];
     }
 }

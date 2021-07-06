@@ -252,7 +252,7 @@ static void SourceFunction(f0_lowMach_quadratic_w) {
     const PetscReal S = constants[0];    // STROUHAL
     const PetscReal Pth = constants[6];  // PTH
     const PetscReal Cp = constants[9];   // CP
-    const PetscReal H = constants[4];    // HEATRELEASE
+    // const PetscReal H = constants[4];    // HEATRELEASE
 
     const PetscReal x = X[0];
     const PetscReal y = X[1];
@@ -335,9 +335,9 @@ static void SourceFunction(f0_lowMach_cubic_w) {
     const PetscReal S = constants[0];    // STROUHAL
     const PetscReal Pth = constants[6];  // PTH
     const PetscReal Cp = constants[9];   // CP
-    const PetscReal H = constants[4];    // HEATRELEASE
-    const PetscReal k = constants[8];    // K
-    const PetscReal P = constants[3];    // PECLET
+    // const PetscReal H = constants[4];    // HEATRELEASE
+    const PetscReal k = constants[8];  // K
+    const PetscReal P = constants[3];  // PECLET
 
     const PetscReal x = X[0];
     const PetscReal y = X[1];

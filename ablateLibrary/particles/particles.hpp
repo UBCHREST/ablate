@@ -103,7 +103,7 @@ class Particles : public monitors::Viewable {
     const DM& GetDM() const { return dm; }
     PetscReal GetInitialTime() const { return timeInitial; }
     PetscReal GetFinalTime() const { return timeFinal; }
-    const TS GetTS() const { return particleTs; }
+    TS GetTS() const { return particleTs; }
 
     virtual void InitializeFlow(std::shared_ptr<flow::Flow> flow);
 

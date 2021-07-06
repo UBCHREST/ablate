@@ -35,6 +35,7 @@ class Listing {
 
     Listing(Listing& other) = delete;
     void operator=(const Listing&) = delete;
+    virtual ~Listing() = default;
 
     // Provide a way to replace the listing
     static void ReplaceListing(std::shared_ptr<Listing>);

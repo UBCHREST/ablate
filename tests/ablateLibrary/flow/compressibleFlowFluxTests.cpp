@@ -48,7 +48,7 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
         params.area.size(), &faceGeom, uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], eulerFlowData);
 
     // assert
-    for (auto i = 0; i < params.expectedFlux.size(); i++) {
+    for (std::size_t i = 0; i < params.expectedFlux.size(); i++) {
         ASSERT_NEAR(computedFlux[i], params.expectedFlux[i], 1E-3);
     }
 

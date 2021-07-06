@@ -12,7 +12,7 @@ void ablate::eos::PerfectGas::View(std::ostream &stream) const {
     stream << "\tRgas: " << parameters.rGas << std::endl;
     if (!species.empty()) {
         stream << "\tspecies: " << species.front();
-        for (auto i = 1; i < species.size(); i++) {
+        for (std::size_t i = 1; i < species.size(); i++) {
             stream << ", " << species[i];
         }
         stream << std::endl;

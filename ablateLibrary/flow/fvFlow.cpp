@@ -41,7 +41,7 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
     FinalizeRegisterFields();
 
     // march over process and link to the flow
-    for (const auto process : flowProcesses) {
+    for (const auto& process : flowProcesses) {
         process->Initialize(*this);
     }
 
@@ -168,20 +168,20 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFluxFunction function, void
         std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");
     }
 
-    for (int i = 0; i < inputFields.size(); i++) {
-        auto fieldId = this->GetFieldId(inputFields[i]);
-        if (!fieldId) {
+    for (std::size_t i = 0; i < inputFields.size(); i++) {
+        auto inputFieldId = this->GetFieldId(inputFields[i]);
+        if (!inputFieldId) {
             throw std::invalid_argument("Cannot locate flow field " + inputFields[i]);
         }
-        functionDescription.inputFields[i] = fieldId.value();
+        functionDescription.inputFields[i] = inputFieldId.value();
     }
 
-    for (int i = 0; i < auxFields.size(); i++) {
-        auto fieldId = this->GetAuxFieldId(auxFields[i]);
-        if (!fieldId) {
+    for (std::size_t i = 0; i < auxFields.size(); i++) {
+        auto auxFieldId = this->GetAuxFieldId(auxFields[i]);
+        if (!auxFieldId) {
             throw std::invalid_argument("Cannot locate flow field " + auxFields[i]);
         }
-        functionDescription.auxFields[i] = fieldId.value();
+        functionDescription.auxFields[i] = auxFieldId.value();
     }
 
     rhsFluxFunctionDescriptions.push_back(functionDescription);
@@ -202,7 +202,7 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, voi
         std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");
     }
 
-    for (int i = 0; i < fields.size(); i++) {
+    for (std::size_t i = 0; i < fields.size(); i++) {
         auto fieldId = this->GetFieldId(fields[i]);
         if (!fieldId) {
             throw std::invalid_argument("Cannot locate flow field " + inputFields[i]);
@@ -210,7 +210,7 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, voi
         functionDescription.fields[i] = fieldId.value();
     }
 
-    for (int i = 0; i < inputFields.size(); i++) {
+    for (std::size_t i = 0; i < inputFields.size(); i++) {
         auto fieldId = this->GetFieldId(inputFields[i]);
         if (!fieldId) {
             throw std::invalid_argument("Cannot locate flow field " + inputFields[i]);
@@ -218,7 +218,7 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, voi
         functionDescription.inputFields[i] = fieldId.value();
     }
 
-    for (int i = 0; i < auxFields.size(); i++) {
+    for (std::size_t i = 0; i < auxFields.size(); i++) {
         auto fieldId = this->GetAuxFieldId(auxFields[i]);
         if (!fieldId) {
             throw std::invalid_argument("Cannot locate flow field " + auxFields[i]);

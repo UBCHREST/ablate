@@ -1,5 +1,3 @@
-static char help[] = "1D conduction and diffusion cases compared to exact solution";
-
 #include <petsc.h>
 #include <cmath>
 #include <flow/processes/eulerDiffusion.hpp>
@@ -154,7 +152,7 @@ static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::flow::CompressibleF
     // Compute the l2 errors
     VecStrideNormAll(exactVec, NORM_2, &residualNorm2[0]) >> errorChecker;
     // normalize by the number of nodes
-    for (auto i = 0; i < residualNorm2.size(); i++) {
+    for (std::size_t i = 0; i < residualNorm2.size(); i++) {
         residualNorm2[i] *= PetscSqrtReal(1.0 / (size / components));
     }
 

@@ -5,7 +5,7 @@
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
-ablate::solve::TimeStepper::TimeStepper(std::string name, std::map<std::string, std::string> arguments) : comm(PETSC_COMM_WORLD), name(name) {
+ablate::solve::TimeStepper::TimeStepper(std::string name, std::map<std::string, std::string> arguments) : name(name) {
     // create an instance of the ts
     TSCreate(PETSC_COMM_WORLD, &ts) >> checkError;
 

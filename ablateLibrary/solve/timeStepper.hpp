@@ -11,7 +11,6 @@ namespace ablate::solve {
 class TimeStepper {
    private:
     TS ts;                                                    /** The PETSC time stepper**/
-    MPI_Comm comm;                                            /** the comm used for this ts and any children**/
     std::string name;                                         /** the name for this time stepper **/
     std::vector<std::shared_ptr<monitors::Monitor>> monitors; /** the monitors **/
 

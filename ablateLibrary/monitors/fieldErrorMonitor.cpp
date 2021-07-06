@@ -4,7 +4,6 @@
 PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
     DM dm;
     PetscDS ds;
-    Vec v;
 
     PetscFunctionBeginUser;
     PetscErrorCode ierr;

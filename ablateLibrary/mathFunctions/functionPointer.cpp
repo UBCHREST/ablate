@@ -1,6 +1,6 @@
 #include "functionPointer.hpp"
 #include <array>
-ablate::mathFunctions::FunctionPointer::FunctionPointer(ablate::mathFunctions::PetscFunction function, void *context) : function(function), context(context) {}
+ablate::mathFunctions::FunctionPointer::FunctionPointer(ablate::mathFunctions::PetscFunction function, void *context) : context(context), function(function) {}
 double ablate::mathFunctions::FunctionPointer::Eval(const double &x, const double &y, const double &z, const double &t) const {
     std::array<double, 3> loc = {x, y, z};
     double result;

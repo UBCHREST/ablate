@@ -4,8 +4,8 @@ PetscErrorCode ablate::mathFunctions::ConstantValue::ConstantValuePetscFunction(
     PetscFunctionBeginUser;
     auto value = (const std::vector<double> *)ctx;
 
-    if (nf == value->size()) {
-        for (auto i = 0; i < value->size(); i++) {
+    if (nf == (PetscInt)value->size()) {
+        for (std::size_t i = 0; i < value->size(); i++) {
             u[i] = (*value)[i];
         }
     } else {
@@ -23,7 +23,7 @@ double ablate::mathFunctions::ConstantValue::Eval(const double &x, const double 
 double ablate::mathFunctions::ConstantValue::Eval(const double *xyz, const int &ndims, const double &t) const { return value[0]; }
 void ablate::mathFunctions::ConstantValue::Eval(const double &x, const double &y, const double &z, const double &t, std::vector<double> &result) const {
     if (result.size() == value.size()) {
-        for (auto i = 0; i < value.size(); i++) {
+        for (std::size_t i = 0; i < value.size(); i++) {
             result[i] = value[i];
         }
     } else {
@@ -32,7 +32,7 @@ void ablate::mathFunctions::ConstantValue::Eval(const double &x, const double &y
 }
 void ablate::mathFunctions::ConstantValue::Eval(const double *xyz, const int &ndims, const double &t, std::vector<double> &result) const {
     if (result.size() == value.size()) {
-        for (auto i = 0; i < value.size(); i++) {
+        for (std::size_t i = 0; i < value.size(); i++) {
             result[i] = value[i];
         }
     } else {
