@@ -23,8 +23,8 @@ ablate::flow::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string nam
               {.solutionField = false, .fieldName = "vel", .fieldPrefix = "vel", .components = mesh->GetDimensions(), .fieldType = FieldType::FV}},
              {
                  // create assumed processes for compressible flow
-//                 std::make_shared<ablate::flow::processes::EulerAdvection>(parameters, eosIn, fluxDifferencerIn),
-//                 std::make_shared<ablate::flow::processes::EulerDiffusion>(parameters, eosIn),
+                 std::make_shared<ablate::flow::processes::EulerAdvection>(parameters, eosIn, fluxDifferencerIn),
+                 std::make_shared<ablate::flow::processes::EulerDiffusion>(parameters, eosIn),
                  std::make_shared<ablate::flow::processes::TChemReactions>(eosIn),
              },
              options, initialization, boundaryConditions, {}, exactSolutions) {}
