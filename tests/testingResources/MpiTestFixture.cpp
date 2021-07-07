@@ -126,7 +126,7 @@ void testingResources::MpiTestFixture::CompareOutputFiles() {
             ASSERT_EQ(expectedValues.size(), matches.size() - 1) << "the number of expected and found values is different on line (" << lineNumber << ") " << expectedLine << " from " << actualLine;
 
             // march over each value
-            for (int v = 0; v < expectedValues.size(); v++) {
+            for (std::size_t v = 0; v < expectedValues.size(); v++) {
                 char compareChar = expectedValues[v][0];
                 double expectedValue = expectedValues[v].size() > 1 ? stod(expectedValues[v].substr(1)) : NAN;
                 std::string actualValueString = matches[v + 1];

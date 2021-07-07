@@ -50,7 +50,7 @@ std::vector<std::shared_ptr<ablate::parser::Factory>> ablate::parser::YamlParser
     std::vector<std::shared_ptr<Factory>> children;
 
     // march over each child
-    for (auto i = 0; i < parameter.size(); i++) {
+    for (std::size_t i = 0; i < parameter.size(); i++) {
         std::string childName = name + "/" + std::to_string(i);
 
         if (childFactories.count(childName) == 0) {

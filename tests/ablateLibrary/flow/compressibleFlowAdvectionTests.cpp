@@ -1,5 +1,3 @@
-static char help[] = "1D advection cases compared to exact solution";
-
 #include <petsc.h>
 #include <cmath>
 #include <flow/boundaryConditions/essentialGhost.hpp>

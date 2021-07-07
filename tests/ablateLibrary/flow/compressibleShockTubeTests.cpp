@@ -109,14 +109,7 @@ static PetscErrorCode Extract1DPrimitives(DM dm, Vec v, std::map<std::string, st
     CHKERRQ(ierr);
     return 0;
 }
-static PetscErrorCode PhysicsBoundary_Euler_Mirror(PetscReal time, const PetscReal *c, const PetscReal *n, const PetscScalar *a_xI, PetscScalar *a_xG, void *ctx) {
-    PetscFunctionBeginUser;
-    for (auto i = 0; i < 4; i++) {
-        a_xG[i] = a_xI[i];
-    }
 
-    PetscFunctionReturn(0);
-}
 static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, const PetscReal *n, const PetscScalar *a_xI, PetscScalar *a_xG, void *ctx) {
     InitialConditions *initialConditions = (InitialConditions *)ctx;
 
@@ -212,7 +205,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
 
                 ASSERT_EQ(expectedResults.second.size(), computedResults.size())
                     << "expected/computed result vectors for " << expectedResults.first << "  are of different lengths " << expectedResults.second.size() << "/" << computedResults.size();
-                for (auto i = 0; i < computedResults.size(); i++) {
+                for (std::size_t i = 0; i < computedResults.size(); i++) {
                     ASSERT_NEAR(expectedResults.second[i], computedResults[i], 1E-6) << " in " << expectedResults.first << " at [" << i << "]";
                 }
             }

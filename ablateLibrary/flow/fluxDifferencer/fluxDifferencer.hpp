@@ -5,6 +5,10 @@
 namespace ablate::flow::fluxDifferencer {
 class FluxDifferencer {
    public:
+    FluxDifferencer() = default;
+    FluxDifferencer(FluxDifferencer const&) = delete;
+    FluxDifferencer& operator=(FluxDifferencer const&) = delete;
+    virtual ~FluxDifferencer() = default;
     virtual FluxDifferencerFunction GetFluxDifferencerFunction() = 0;
 };
 }  // namespace ablate::flow::fluxDifferencer

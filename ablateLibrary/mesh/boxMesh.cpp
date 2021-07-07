@@ -13,13 +13,13 @@ ablate::mesh::BoxMesh::BoxMesh(std::string name, std::vector<int> faces, std::ve
         options->Fill(petscOptions);
     }
 
-    PetscInt dimensions = faces.size();
+    std::size_t dimensions = faces.size();
     if ((dimensions != lower.size()) || (dimensions != upper.size())) {
         throw std::runtime_error("BoxMesh Error: The faces, lower, and upper vectors must all be the same dimension.");
     }
 
     std::vector<DMBoundaryType> boundaryTypes(dimensions, DM_BOUNDARY_NONE);
-    for (auto d = 0; d < PetscMin(dimensions, boundary.size()); d++) {
+    for (std::size_t d = 0; d < PetscMin(dimensions, boundary.size()); d++) {
         PetscBool found;
         PetscEnum index;
         PetscEnumFind(DMBoundaryTypes, boundary[d].c_str(), &index, &found) >> checkError;

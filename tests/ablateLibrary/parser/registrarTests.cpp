@@ -11,7 +11,9 @@ namespace ablateTesting::parser {
 using namespace ablate::parser;
 
 class MockInterface {
+   public:
     virtual void Test(){};
+    virtual ~MockInterface() = default;
 };
 
 class MockListing : public ablate::parser::Listing {
@@ -67,9 +69,9 @@ TEST(RegistrarTests, ShouldRegisterClassWithArgumentIdentifiersAndRecordInLog) {
     ablate::parser::Registrar<MockInterface>::Register<MockClass2>(false,
                                                                    "MockClass2",
                                                                    "this is a simple mock class",
-                                                                   ablate::parser::ArgumentIdentifier<std::string>{"dog", "this is a string"},
-                                                                   ablate::parser::ArgumentIdentifier<int>{"cat", "this is a int"},
-                                                                   ablate::parser::ArgumentIdentifier<MockInterface>{"bird", "this is a shared pointer to an interface"});
+                                                                   ablate::parser::ArgumentIdentifier<std::string>{.inputName = "dog", .description = "this is a string"},
+                                                                   ablate::parser::ArgumentIdentifier<int>{.inputName = "cat", .description = "this is a int"},
+                                                                   ablate::parser::ArgumentIdentifier<MockInterface>{.inputName = "bird", .description = "this is a shared pointer to an interface"});
 
     // assert
     auto createMethod = Registrar<MockInterface>::GetCreateMethod("MockClass2");
@@ -111,6 +113,8 @@ TEST(RegistrarTests, ShouldRegisterClassWithArgumentIdentifiersAndOptAndRecordIn
 }
 
 class MockInterface4 {
+   public:
+    virtual ~MockInterface4() = default;
     virtual void Test(){};
 };
 
@@ -152,6 +156,8 @@ TEST(RegistrarTests, ShouldRegisterDefaultClassWithArgumentIdentifiersAndRecordI
 }
 
 class MockInterface5 {
+   public:
+    virtual ~MockInterface5() = default;
     virtual void Test(){};
 };
 
@@ -233,6 +239,8 @@ TEST(RegistrarTests, ShouldCreateDefaultAndUseWhenNotSpecified) {
 }
 
 class NoDefaultInterface {
+   public:
+    virtual ~NoDefaultInterface() = default;
     virtual void Test(){};
 };
 
@@ -256,11 +264,10 @@ TEST(RegistrarTests, ShouldThrowExceptionWhenNoDefaultIsSpecified) {
 }
 
 class MockClass6 : public MockInterface {
-   private:
+   public:
     const int a;
     const int b;
 
-   public:
     MockClass6(int a, int b) : a(a), b(b){};
 };
 

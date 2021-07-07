@@ -51,7 +51,7 @@ class TChem : public EOS {
 
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);
-    ~TChem() override;
+    ~TChem();
 
     // general functions
     void View(std::ostream& stream) const override;

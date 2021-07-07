@@ -15,6 +15,11 @@ class AusmFluxDifferencer : public fluxDifferencer::FluxDifferencer {
     static void AusmFluxDifferencerFunction(PetscReal Mm, PetscReal* sPm, PetscReal* sMm, PetscReal Mp, PetscReal* sPp, PetscReal* sMp);
 
    public:
+    AusmFluxDifferencer() = default;
+    AusmFluxDifferencer(AusmFluxDifferencer const&) = delete;
+    AusmFluxDifferencer& operator=(AusmFluxDifferencer const&) = delete;
+    ~AusmFluxDifferencer() override = default;
+
     FluxDifferencerFunction GetFluxDifferencerFunction() override { return AusmFluxDifferencerFunction; }
 };
 }  // namespace ablate::flow::fluxDifferencer

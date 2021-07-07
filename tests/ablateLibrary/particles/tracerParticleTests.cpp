@@ -225,7 +225,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     void *ctxs[3];
     DM dm;
     PetscDS ds;
-    Vec v;
     PetscReal ferrors[3];
     PetscInt f;
     PetscErrorCode ierr;

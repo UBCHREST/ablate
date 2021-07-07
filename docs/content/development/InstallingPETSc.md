@@ -5,6 +5,9 @@ parent: Development Guides
 nav_order: 1
 ---
 
+## Note:
+For the most recent development issues, notes, and workarounds for building PETSc for ABLATE check the [ABLATE repo wiki](https://github.com/UBCHREST/ablate/wiki).
+
 ## Install System Specific Prerequisites
 ### macOS
 1. Install [Xcode](https://apps.apple.com/us/app/xcode/id497799835) using the Mac AppStore

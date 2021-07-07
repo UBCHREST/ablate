@@ -86,7 +86,6 @@ static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u
     void *ctxs[3];
     DM dm;
     PetscDS ds;
-    Vec v;
     PetscReal ferrors[3];
     PetscInt f;
     PetscErrorCode ierr;

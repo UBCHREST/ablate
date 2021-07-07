@@ -46,7 +46,6 @@ typedef void (*IntegrandTestFunction)(PetscInt dim, PetscInt Nf, PetscInt NfAux,
 static IntegrandTestFunction f0_v_original;
 static IntegrandTestFunction f0_w_original;
 static IntegrandTestFunction f0_q_original;
-const static PetscInt totalFields = 2;
 
 struct ExactSolutionParameters {
     PetscInt dim;
@@ -135,7 +134,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     void *ctxs[3];
     DM dm;
     PetscDS ds;
-    Vec v;
     PetscReal ferrors[3];
     PetscInt f;
     PetscErrorCode ierr;
@@ -193,10 +191,8 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
     StartWithMPI
         {
             TS ts; /* timestepper */
-            PetscReal t;
             // Get the testing param
             auto testingParam = GetParam();
-            PetscInt dimen = testingParam.parameters.dim;
 
             // initialize petsc and mpi
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;

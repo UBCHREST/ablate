@@ -18,6 +18,8 @@ std::shared_ptr<Interface> ResolveAndCreate(std::shared_ptr<Factory> factory);
 
 class Factory {
    public:
+    virtual ~Factory() = default;
+
     /* return a factory that serves as the root of the requested item */
     virtual std::shared_ptr<Factory> GetFactory(const std::string& name) const = 0;
 

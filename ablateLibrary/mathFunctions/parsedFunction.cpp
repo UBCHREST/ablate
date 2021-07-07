@@ -49,7 +49,7 @@ void ablate::mathFunctions::ParsedFunction::Eval(const double& x, const double& 
     int functionSize = 0;
     auto rawResult = parser.Eval(functionSize);
 
-    if (result.size() < functionSize) {
+    if ((int)result.size() < functionSize) {
         throw std::invalid_argument("The result vector is not sized to hold the function " + parser.GetExpr());
     }
 
@@ -72,7 +72,7 @@ void ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int& n
     int functionSize = 0;
     auto rawResult = parser.Eval(functionSize);
 
-    if (result.size() < functionSize) {
+    if ((int)result.size() < functionSize) {
         throw std::invalid_argument("The result vector is not sized to hold the function " + parser.GetExpr());
     }
 

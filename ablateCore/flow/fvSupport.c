@@ -294,8 +294,6 @@ static PetscErrorCode ABLATE_DMPlexGetFaceFields(DM dm, PetscInt fStart, PetscIn
                     }
                 }
             } else if (dmGrads[f]) {
-                PetscReal dxL[3], dxR[3];
-
                 ierr = DMPlexPointLocalRead(dmGrads[f], cells[0], lgrads[f], &gL);CHKERRQ(ierr);
                 ierr = DMPlexPointLocalRead(dmGrads[f], cells[1], lgrads[f], &gR);CHKERRQ(ierr);
                 // Project the cell centered value onto the face
@@ -370,7 +368,6 @@ static PetscErrorCode ABLATE_PetscFVIntegrateRHSFunction(FVMRHSFluxFunctionDescr
                                                          PetscScalar auxL[], PetscScalar auxR[], PetscScalar gradAuxL[], PetscScalar gradAuxR[],
                                                          PetscScalar fluxL[], PetscScalar fluxR[])
 {
-    void              *rctx;
     PetscScalar       *flux = fvm->fluxWork;
     PetscErrorCode     ierr;
 
@@ -491,7 +488,6 @@ static PetscErrorCode ABLATE_FillGradientBoundary(DM dm, PetscFV auxFvm, Vec loc
 
     // get the problem
     PetscDS prob;
-    PetscInt nFields;
     ierr = DMGetDS(dm, &prob);CHKERRQ(ierr);
 
     PetscInt field;
@@ -572,7 +568,6 @@ static PetscErrorCode ABLATE_FillGradientBoundary(DM dm, PetscFV auxFvm, Vec loc
             // march over each face in this boundary
             for (f = 0; f < numFaces; ++f) {
                 const PetscInt* cells;
-                PetscFVFaceGeom        *fg;
 
                 if ((faces[f] < faceStart) || (faces[f] >= faceEnd)){
                     continue; /* Refinement adds non-faces to labels */
@@ -631,8 +626,6 @@ static PetscErrorCode ABLATE_FillGradientBoundary(DM dm, PetscFV auxFvm, Vec loc
 
 PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescription functionDescriptions[], PetscInt numberFunctionDescriptions, DM dm, IS cellIS, PetscReal time, Vec locX, Vec locX_t, PetscReal t, Vec locF)
 {
-    DM_Plex         *mesh       = (DM_Plex *) dm->data;
-    const char      *name       = "Residual";
     DM               dmAux      = NULL;
     DM               *dmGrads, *dmAuxGrads    = NULL;
     DMLabel          ghostLabel = NULL;
@@ -642,19 +635,13 @@ PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescr
     PetscBool        isImplicit = (locX_t || time == PETSC_MIN_REAL) ? PETSC_TRUE : PETSC_FALSE;
     PetscFVCellGeom *cgeomFVM   = NULL;
     PetscFVFaceGeom *fgeomFVM   = NULL;
-    DMField          coordField = NULL;
     Vec *locGrads, *locAuxGrads =NULL;  // each field will have a separate local gradient vector
     Vec              locA, cellGeometryFVM = NULL, faceGeometryFVM = NULL;
-    PetscScalar     *u = NULL, *u_t, *a;
     PetscScalar     *uL, *uR, *gradL, *gradR;
     PetscScalar     *auxL, *auxR, *gradAuxL, *gradAuxR;
-    IS               chunkIS;
     const PetscInt  *cells;
     PetscInt         cStart, cEnd, numCells;
     PetscInt nf, naf, totDim, totDimAux, numChunks, cellChunkSize, faceChunkSize, chunk, fStart, fEnd;
-    PetscInt         maxDegree = PETSC_MAX_INT;
-    PetscQuadrature  affineQuad = NULL, *quads = NULL;
-    PetscFEGeom     *affineGeom = NULL, **geoms = NULL;
     PetscErrorCode   ierr;
 
     PetscFunctionBeginUser;
@@ -757,10 +744,10 @@ PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescr
     faceChunkSize = (fEnd - fStart)/numChunks;
     numChunks     = PetscMin(1,numCells);
     for (chunk = 0; chunk < numChunks; ++chunk) {
-        PetscScalar     *elemVec, *fluxL, *fluxR;
+        PetscScalar     *fluxL, *fluxR;
         PetscReal       *vol;
         PetscFVFaceGeom *fgeom;
-        PetscInt         cS = cStart+chunk*cellChunkSize, cE = PetscMin(cS+cellChunkSize, cEnd), numCells = cE - cS, c;
+        PetscInt         cS = cStart+chunk*cellChunkSize, cE = PetscMin(cS+cellChunkSize, cEnd), c;
         PetscInt         fS = fStart+chunk*faceChunkSize, fE = PetscMin(fS+faceChunkSize, fEnd), numFaces = 0, face;
 
         /* Size up the flux arrays */
@@ -779,7 +766,7 @@ PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescr
             PetscObject  obj;
             PetscClassId id;
             PetscBool    fimp;
-            PetscInt     numChunks, numBatches, batchSize, numBlocks, blockSize, Ne, Nr, offset;
+            PetscInt     Ne;
 
             PetscInt f = functionDescriptions[d].field;
             ierr = PetscDSGetImplicit(ds, f, &fimp);CHKERRQ(ierr);

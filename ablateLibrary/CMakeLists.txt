@@ -33,7 +33,7 @@ set(DISABLE_PETSCXDMFGENERATOR_TESTS ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
         petscXdmfGenerator
         GIT_REPOSITORY https://github.com/UBCHREST/petscXdmfGenerator.git
-        GIT_TAG v0.0.6
+        GIT_TAG v0.0.8
 )
 FetchContent_MakeAvailable(petscXdmfGenerator)
 
@@ -86,3 +86,6 @@ add_subdirectory(environment)
 
 # Add link to required libraries to the ablate library
 target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser petscXdmfGeneratorLibrary TChem::TChem)
+
+# Add required warnings for the ablate library
+ablate_default_target_compile_options_cxx(ablateLibrary)

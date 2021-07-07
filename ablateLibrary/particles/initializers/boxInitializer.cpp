@@ -15,10 +15,10 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::flow::F
     partLower[0] = partLower[1] = partLower[2] = 0.0;
     partUpper[0] = partUpper[1] = partUpper[2] = 0.0;
 
-    for (auto i = 0; i < PetscMin(3, lowerBound.size()); i++) {
+    for (std::size_t i = 0; i < PetscMin(3, lowerBound.size()); i++) {
         partLower[i] = lowerBound[i];
     }
-    for (auto i = 0; i < PetscMin(3, upperBound.size()); i++) {
+    for (std::size_t i = 0; i < PetscMin(3, upperBound.size()); i++) {
         partUpper[i] = upperBound[i];
     }
 

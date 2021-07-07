@@ -2,13 +2,11 @@
 
 const char *lowMachFlowParametersTypeNames[TOTAL_LOW_MACH_FLOW_PARAMETERS + 1] = {
     "strouhal", "reynolds", "froude", "peclet", "heatRelease", "gamma", "pth", "mu", "k", "cp", "beta", "gravityDirection", "unknown"};
-static const char *lowMachFlowFieldNames[TOTAL_LOW_MACH_FLOW_FIELDS + 1] = {"velocity", "pressure", "temperature", "unknown"};
-static const char *lowMachSourceFieldNames[TOTAL_LOW_MACH_SOURCE_FIELDS + 1] = {"momentum_source", "mass_source", "energy_source", "unknown"};
 
 /* =q \left(-\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t} + \frac{p^{th}}{T} \nabla \cdot \boldsymbol{u} - \frac{p^{th}}{T^2}\boldsymbol{u} \cdot \nabla T \right) */
-void LowMachFlow_qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                                   const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal X[],
-                                   PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
+void LowMachFlow_qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[],
+                                        const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t,
+                                        const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
     PetscInt d;
 
     // -\frac{Sp^{th}}{T^2}\frac{\partial T}{\partial t}
@@ -32,9 +30,9 @@ void LowMachFlow_qIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAu
 
 /* \boldsymbol{v} \cdot \rho S \frac{\partial \boldsymbol{u}}{\partial t} + \boldsymbol{v} \cdot \rho \boldsymbol{u} \cdot \nabla \boldsymbol{u} + \frac{\rho \hat{\boldsymbol{z}}}{F^2} \cdot
  * \boldsymbol{v} */
-void LowMachFlow_vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                                   const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal X[],
-                                   PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
+void LowMachFlow_vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[],
+                                        const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t,
+                                        const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
     PetscInt Nc = dim;
     PetscInt c, d;
 
@@ -57,7 +55,7 @@ void LowMachFlow_vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAu
 
     // Add in any fixed source term
     if (NfAux > 0) {
-        for (d =0; d < dim; ++d){
+        for (d = 0; d < dim; ++d) {
             f0[d] += a[aOff[MOM] + d];
         }
     }
@@ -66,8 +64,8 @@ void LowMachFlow_vIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAu
 /*.5 (\nabla \boldsymbol{v} + \nabla \boldsymbol{v}^T) \cdot 2 \mu/R (.5 (\nabla \boldsymbol{u} + \nabla \boldsymbol{u}^T) - 1/3 (\nabla \cdot \bolsymbol{u})\boldsymbol{I}) - p \nabla \cdot
  * \boldsymbol{v} */
 void LowMachFlow_vIntegrandTestGradientFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[],
-                                           const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
-                                           PetscReal t, const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f1[]) {
+                                                const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                                                PetscReal t, const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f1[]) {
     const PetscInt Nc = dim;
     PetscInt c, d;
 
@@ -107,9 +105,9 @@ void LowMachFlow_vIntegrandTestGradientFunction(PetscInt dim, PetscInt Nf, Petsc
 }
 
 /*w \frac{C_p S p^{th}}{T} \frac{\partial T}{\partial t} + w \frac{C_p p^{th}}{T} \boldsymbol{u} \cdot \nabla T */
-void LowMachFlow_wIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                                   const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, const PetscReal X[],
-                                   PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
+void LowMachFlow_wIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[],
+                                        const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t,
+                                        const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f0[]) {
     // \frac{C_p S p^{th}}{T} \frac{\partial T}{\partial t}
     f0[0] = constants[CP] * constants[STROUHAL] * constants[PTH] / u[uOff[TEMP]] * u_t[uOff[TEMP]];
 
@@ -126,8 +124,8 @@ void LowMachFlow_wIntegrandTestFunction(PetscInt dim, PetscInt Nf, PetscInt NfAu
 
 /*  \nabla w \cdot \frac{k}{P} \nabla T */
 void LowMachFlow_wIntegrandTestGradientFunction(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[],
-                                           const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
-                                           PetscReal t, const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f1[]) {
+                                                const PetscScalar u_x[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[],
+                                                PetscReal t, const PetscReal X[], PetscInt numConstants, const PetscScalar constants[], PetscScalar f1[]) {
     // \nabla w \cdot \frac{k}{P} \nabla T
     for (PetscInt d = 0; d < dim; ++d) {
         f1[d] = constants[K] / constants[PECLET] * u_x[uOff_x[TEMP] + d];
@@ -136,8 +134,8 @@ void LowMachFlow_wIntegrandTestGradientFunction(PetscInt dim, PetscInt Nf, Petsc
 
 /*Jacobians*/
 void LowMachFlow_g0_qu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
     // - \phi_i \psi_{u_c,j} \frac{p^{th}}{T^2} \frac{\partial T}{\partial x_c}
     for (PetscInt d = 0; d < dim; ++d) {
         g0[d] = -constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) * u_x[uOff_x[TEMP] + d];
@@ -145,8 +143,8 @@ void LowMachFlow_g0_qu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g1_qu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[]) {
     PetscInt d;
     // \phi_i \frac{p^{th}}{T} \frac{\partial \psi_{u_c,j}}{\partial x_c}
     for (d = 0; d < dim; ++d) {
@@ -155,8 +153,8 @@ void LowMachFlow_g1_qu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g0_qT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
     // \frac{F_{q,i}}{\partial c_{\frac{\partial T}{\partial t},j}} =  \int \frac{-\phi_i S  p^{th}}{T^2} \psi_j
     g0[0] = -constants[STROUHAL] * constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) * u_tShift;
 
@@ -169,8 +167,8 @@ void LowMachFlow_g0_qT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g1_qT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[]) {
     // -\frac{\phi_i p^{th}}{T^2} \left( \boldsymbol{u}\cdot  \nabla \psi_{T,j}\right)
     for (PetscInt d = 0; d < dim; ++d) {
         g1[d] = -constants[PTH] / (u[uOff[TEMP]] * u[uOff[TEMP]]) * (u[uOff[VEL] + d]);
@@ -178,8 +176,8 @@ void LowMachFlow_g1_qT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g0_vT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
     PetscInt c, d;
     const PetscInt Nc = dim;
 
@@ -200,8 +198,8 @@ void LowMachFlow_g0_vT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g0_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
     PetscInt c, d;
     const PetscInt Nc = dim;
 
@@ -219,8 +217,8 @@ void LowMachFlow_g0_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g1_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[]) {
     PetscInt NcI = dim;
     PetscInt NcJ = dim;
     PetscInt c, d, e;
@@ -238,8 +236,8 @@ void LowMachFlow_g1_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g3_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[]) {
     const PetscInt Nc = dim;
     PetscInt c, d;
 
@@ -256,8 +254,8 @@ void LowMachFlow_g3_vu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g2_vp(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g2[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g2[]) {
     PetscInt d;
     for (d = 0; d < dim; ++d) {
         g2[d * dim + d] = -1.0;
@@ -265,8 +263,8 @@ void LowMachFlow_g2_vp(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g0_wu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
     PetscInt d;
     for (d = 0; d < dim; ++d) {
         g0[d] = constants[CP] * constants[PTH] / u[uOff[TEMP]] * u_x[uOff_x[TEMP] + d];
@@ -274,8 +272,8 @@ void LowMachFlow_g0_wu(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g0_wT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g0[]) {
     //\frac{\partial F_{w,i}}{\partial c_{\frac{\partial T}{\partial t},j}} = \psi_i C_p S p^{th} \frac{1}{T} \psi_{j}
     g0[0] = constants[CP] * constants[STROUHAL] * constants[PTH] / u[uOff[TEMP]] * u_tShift;
 
@@ -289,8 +287,8 @@ void LowMachFlow_g0_wT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g1_wT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g1[]) {
     PetscInt d;
     for (d = 0; d < dim; ++d) {
         g1[d] = constants[CP] * constants[PTH] / u[uOff[TEMP]] * u[uOff[VEL] + d];
@@ -298,8 +296,8 @@ void LowMachFlow_g1_wT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt
 }
 
 void LowMachFlow_g3_wT(PetscInt dim, PetscInt Nf, PetscInt NfAux, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar u[], const PetscScalar u_t[], const PetscScalar u_x[],
-                  const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
-                  PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[]) {
+                       const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar a[], const PetscScalar a_t[], const PetscScalar a_x[], PetscReal t, PetscReal u_tShift, const PetscReal x[],
+                       PetscInt numConstants, const PetscScalar constants[], PetscScalar g3[]) {
     for (PetscInt d = 0; d < dim; ++d) {
         g3[d * dim + d] = constants[K] / constants[PECLET];
     }

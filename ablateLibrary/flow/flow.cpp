@@ -11,11 +11,11 @@ ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std
       auxDM(nullptr),
       flowField(nullptr),
       auxField(nullptr),
-      petscOptions(nullptr),
       initialization(initialization),
       boundaryConditions(boundaryConditions),
       auxiliaryFieldsUpdaters(auxiliaryFields),
-      exactSolutions(exactSolution) {
+      exactSolutions(exactSolution),
+      petscOptions(nullptr) {
     // Set the application context with this dm
     DMSetApplicationContext(dm->GetDomain(), this) >> checkError;
 
@@ -51,7 +51,7 @@ ablate::flow::Flow::~Flow() {
 }
 
 std::optional<int> ablate::flow::Flow::GetFieldId(const std::string& fieldName) const {
-    for (auto f = 0; f < flowFieldDescriptors.size(); f++) {
+    for (std::size_t f = 0; f < flowFieldDescriptors.size(); f++) {
         if (flowFieldDescriptors[f].fieldName == fieldName) {
             return f;
         }
@@ -60,7 +60,7 @@ std::optional<int> ablate::flow::Flow::GetFieldId(const std::string& fieldName) 
 }
 
 std::optional<int> ablate::flow::Flow::GetAuxFieldId(const std::string& fieldName) const {
-    for (auto f = 0; f < auxFieldDescriptors.size(); f++) {
+    for (std::size_t f = 0; f < auxFieldDescriptors.size(); f++) {
         if (auxFieldDescriptors[f].fieldName == fieldName) {
             return f;
         }
@@ -117,7 +117,7 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription,
             PetscFVSetSpatialDimension(fvm, dim) >> checkError;
 
             // If there are any names provided, name each component in this field this is used by some of the output fields
-            for (PetscInt c = 0; c < flowFieldDescription.componentNames.size(); c++) {
+            for (std::size_t c = 0; c < flowFieldDescription.componentNames.size(); c++) {
                 PetscFVSetComponentName(fvm, c, flowFieldDescription.componentNames[c].c_str()) >> checkError;
             }
 

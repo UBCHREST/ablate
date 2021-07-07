@@ -8,11 +8,11 @@
 
 void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     // get the global arguments
-    auto globalArguments = parser->Get(parser::ArgumentIdentifier<std::map<std::string, std::string>>{"arguments"});
+    auto globalArguments = parser->Get(parser::ArgumentIdentifier<std::map<std::string, std::string>>{.inputName = "arguments"});
     utilities::PetscOptionsUtils::Set(globalArguments);
 
     // create a time stepper
-    auto timeStepper = parser->Get(parser::ArgumentIdentifier<solve::TimeStepper>{"timestepper"});
+    auto timeStepper = parser->Get(parser::ArgumentIdentifier<solve::TimeStepper>{.inputName = "timestepper"});
 
     // assume one flow field right now
     auto flow = parser->GetByName<flow::Flow>("flow");
@@ -31,7 +31,7 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
         auto particleFactorySequence = parser->GetFactorySequence("particles");
 
         // initialize the flow for each
-        for (auto particleIndex = 0; particleIndex < particleList.size(); particleIndex++) {
+        for (std::size_t particleIndex = 0; particleIndex < particleList.size(); particleIndex++) {
             auto particle = particleList[particleIndex];
             particle->InitializeFlow(flow);
 
