@@ -53,6 +53,18 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TCh
     TSSetRHSFunction(ts, NULL, SinglePointChemistryRHS, this) >> checkError;
     TSSetRHSJacobian(ts, jacobian, jacobian, SinglePointChemistryJacobian, this) >> checkError;
     TSSetExactFinalTime(ts, TS_EXACTFINALTIME_STEPOVER) >> checkError; /*todo: I don't think this is correct**/
+
+    // set the adapting control
+    TSSetSolution(ts, pointData)>> checkError;
+    PetscReal dt   = 1e-10;                 /* Initial time step */
+    TSSetTimeStep(ts,dt)>> checkError;
+    TSAdapt adapt;
+    TSGetAdapt(ts,&adapt)>> checkError;
+    TSAdaptSetStepLimits(adapt,1e-12,1E-4)>> checkError; /* Also available with -ts_adapt_dt_min/-ts_adapt_dt_max */
+    TSSetMaxSNESFailures(ts,-1)>> checkError;            /* Retry step an unlimited number of times */
+    TSSetFromOptions(ts)>> checkError;
+
+
 }
 ablate::flow::processes::TChemReactions::~TChemReactions() {
     if (fieldDm) {
@@ -72,6 +84,7 @@ ablate::flow::processes::TChemReactions::~TChemReactions() {
     }
     PetscFree3(tchemScratch, jacobianScratch, rows) >> checkError;
 }
+
 void ablate::flow::processes::TChemReactions::Initialize(ablate::flow::FVFlow& flow) {
     // Create a copy of the dm for the solver
     DM coordDM;
@@ -90,11 +103,15 @@ void ablate::flow::processes::TChemReactions::Initialize(ablate::flow::FVFlow& f
     DMAddField(fieldDm, NULL, (PetscObject)fvm) >> checkError;
     PetscFVDestroy(&fvm) >> checkError;
 
-
     // create a vector to hold the source terms
     DMCreateLocalVector(fieldDm, &sourceVec) >> checkError;
 
+    // Before each step, compute the source term over the entire dt
+    auto chemistryPreStep = std::bind(&ablate::flow::processes::TChemReactions::ChemistryFlowPreStep, this, std::placeholders::_1, std::placeholders::_2);
+    flow.RegisterPreStep(chemistryPreStep);
 
+    // Add the rhs point function for the source
+    flow.RegisterRHSFunction(AddChemistrySourceToFlow, this);
 }
 
 PetscErrorCode ablate::flow::processes::TChemReactions::SinglePointChemistryRHS(TS ts, PetscReal t, Vec X, Vec F, void* ptr) {
@@ -163,37 +180,38 @@ PetscErrorCode ablate::flow::processes::TChemReactions::SinglePointChemistryJaco
     }
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS ts, ablate::flow::Flow& flow) {
+
+PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS flowTs, ablate::flow::Flow& flow) {
     // print debug information
     PetscInt stepNumber;
-    TSGetStepNumber(ts, &stepNumber);
+    TSGetStepNumber(flowTs, &stepNumber);
     PetscReal time;
-    TSGetTime(ts, &time);
+    TSGetTime(flowTs, &time);
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
     IS cellIS;
     DM plex;
     PetscInt depth;
-    DMConvert(flow.GetDM(), DMPLEX, &plex) >> checkError;
-    DMPlexGetDepth(plex, &depth) >> checkError;
-    DMGetStratumIS(plex, "dim", depth, &cellIS) >> checkError;
+    DMConvert(flow.GetDM(), DMPLEX, &plex);CHKERRQ(ierr);
+    DMPlexGetDepth(plex, &depth);CHKERRQ(ierr);
+    DMGetStratumIS(plex, "dim", depth, &cellIS);CHKERRQ(ierr);
     if (!cellIS) {
-        DMGetStratumIS(plex, "depth", depth, &cellIS) >> checkError;
+        DMGetStratumIS(plex, "depth", depth, &cellIS);CHKERRQ(ierr);
     }
 
     // Get the sell range
     PetscInt cStart, cEnd;
     const PetscInt* cells = NULL;
-    ISGetPointRange(cellIS, &cStart, &cEnd, &cells) >> checkError;
+    ISGetPointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
 
     // get the dim
     PetscInt dim;
-    DMGetDimension(flow.GetDM(), &dim) >> checkError;
+    DMGetDimension(flow.GetDM(), &dim);CHKERRQ(ierr);
 
     // store the current dt
     PetscReal dt;
-    TSGetTimeStep(ts, &dt) >> checkError;
+    TSGetTimeStep(flowTs, &dt);CHKERRQ(ierr);
 
     // get access to the underlying data for the flow
     PetscInt flowEulerId = flow.GetFieldId("euler").value();
@@ -201,9 +219,9 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
 
     // get the flowSolution from the ts
     Vec globFlowVec;
-    TSGetSolution(ts, &globFlowVec) >> checkError;
+    TSGetSolution(flowTs, &globFlowVec);CHKERRQ(ierr);
     const PetscScalar* flowArray;
-    VecGetArrayRead(globFlowVec, &flowArray) >> checkError;
+    VecGetArrayRead(globFlowVec, &flowArray);CHKERRQ(ierr);
 
     // Get access to the chemistry source.  This is sized for euler + nspec
     PetscScalar* sourceArray;
@@ -245,12 +263,13 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             for (PetscInt s = 0; s < numberSpecies; s++) {
                 pointArray[s + 1] = densityYi[s] / euler[ablate::flow::processes::EulerAdvection::RHO];
             }
-            VecRestoreArray(pointData, &pointArray);
 
             // precompute some values with the point array
             double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
             int err = TC_getMs2Wmix(pointArray + 1, numberSpecies, &mwMix);
             CHECKTCHEM(err);
+            ierr = VecRestoreArray(pointData, &pointArray);
+            CHKERRQ(ierr);
 
             // compute the pressure as this node from T, Yi
             double R = 1000.0 * RUNIV / mwMix;
