@@ -156,7 +156,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::SinglePointChemistryJaco
     CHKERRQ(ierr);
 
     // compute the analytical jacobian assuming constant pressure
-    ierr = TC_getJacTYN(solver->tchemScratch, solver->numberSpecies, solver->tchemScratch, 1);
+    ierr = TC_getJacTYN(solver->tchemScratch, solver->numberSpecies, solver->jacobianScratch, 1);
     CHKERRQ(ierr);
 
     // Load the matrix
@@ -166,7 +166,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::SinglePointChemistryJaco
     CHKERRQ(ierr);
     ierr = MatZeroEntries(pMat);
     CHKERRQ(ierr);
-    ierr = MatSetValues(pMat, nEeq, solver->rows, nEeq, solver->rows, solver->tchemScratch, INSERT_VALUES);
+    ierr = MatSetValues(pMat, nEeq, solver->rows, nEeq, solver->rows, solver->jacobianScratch, INSERT_VALUES);
     CHKERRQ(ierr);
     ierr = MatAssemblyBegin(pMat, MAT_FINAL_ASSEMBLY);
     CHKERRQ(ierr);
