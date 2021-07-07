@@ -102,7 +102,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
     double e2;
     tempYiWorkingArray[0] = t2;
     int err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
-    CHECKTCHEM(err);
+    TCCHKERRQ(err);
     double f2 = internalEnergyRef - e2;
     if (PetscAbs(f2) > EPS_T_RHO_E) {
         double t0 = t2;
@@ -111,7 +111,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
         double e1;
         tempYiWorkingArray[0] = t1;
         err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e1);
-        CHECKTCHEM(err);
+        TCCHKERRQ(err);
         double f1 = internalEnergyRef - e1;
 
         for (int it = 0; it < ITERMAX_T; it++) {
@@ -119,7 +119,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
             t2 = PetscMax(1.0, t2);
             tempYiWorkingArray[0] = t2;
             err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
-            CHECKTCHEM(err);
+            TCCHKERRQ(err);
             f2 = internalEnergyRef - e2;
             if (PetscAbs(f2) <= EPS_T_RHO_E) {
                 T = t2;
@@ -158,7 +158,7 @@ PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(PetscInt dim, PetscRe
     // precompute some values
     double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
     int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
-    CHECKTCHEM(err);
+    TCCHKERRQ(err);
 
     // compute the temperature
     PetscErrorCode ierr = ComputeTemperature(tChem->numberSpecies, tempYiWorkingArray, internalEnergyRef, mwMix, *T);
@@ -188,7 +188,7 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal d
     // precompute some values
     double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
     int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
-    CHECKTCHEM(err);
+    TCCHKERRQ(err);
 
     // compute the temperature
     double temperature;
@@ -205,7 +205,7 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal d
     double cp;
     tempYiWorkingArray[0] = temperature;
     err = TC_getMs2CpMixMs(&tChem->tempYiWorkingVector[0], tChem->numberSpecies + 1, &cp);
-    CHECKTCHEM(err);
+    TCCHKERRQ(err);
     double cv = cp - R;
     double gamma = cp / cv;
     *a = PetscSqrtReal(gamma * R * temperature);

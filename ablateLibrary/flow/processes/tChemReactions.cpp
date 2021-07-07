@@ -15,10 +15,6 @@
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
 #endif
 
-#define TCCHKERRQ(ierr)                                                                                     \
-    do {                                                                                                    \
-        if (ierr) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in TChem library, return code %d", ierr); \
-    } while (0)
 
 ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TChem> eosIn)
     : fieldDm(nullptr),
@@ -52,7 +48,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TCh
     TSARKIMEXSetType(ts, TSARKIMEX4) >> checkError;
     TSSetRHSFunction(ts, NULL, SinglePointChemistryRHS, this) >> checkError;
     TSSetRHSJacobian(ts, jacobian, jacobian, SinglePointChemistryJacobian, this) >> checkError;
-    TSSetExactFinalTime(ts, TS_EXACTFINALTIME_STEPOVER) >> checkError; /*todo: I don't think this is correct**/
+    TSSetExactFinalTime(ts, TS_EXACTFINALTIME_STEPOVER) >> checkError;
 
     // set the adapting control
     TSSetSolution(ts, pointData)>> checkError;
@@ -182,7 +178,6 @@ PetscErrorCode ablate::flow::processes::TChemReactions::SinglePointChemistryJaco
 }
 
 PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS flowTs, ablate::flow::Flow& flow) {
-    // print debug information
     PetscInt stepNumber;
     TSGetStepNumber(flowTs, &stepNumber);
     PetscReal time;
@@ -267,7 +262,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             // precompute some values with the point array
             double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
             int err = TC_getMs2Wmix(pointArray + 1, numberSpecies, &mwMix);
-            CHECKTCHEM(err);
+            TCCHKERRQ(err);
             ierr = VecRestoreArray(pointData, &pointArray);
             CHKERRQ(ierr);
 
@@ -296,7 +291,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
 
             // Use the point array to compute the updatedInternalEnergy
             err = TC_getMs2Wmix(pointArray + 1, numberSpecies, &mwMix);
-            CHECKTCHEM(err);
+            TCCHKERRQ(err);
             PetscReal updatedInternalEnergy;
             ierr = eos::TChem::ComputeSensibleInternalEnergy(numberSpecies, pointArray, mwMix, updatedInternalEnergy);
             CHKERRQ(ierr);
@@ -307,9 +302,6 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
                 ke += PetscSqr(euler[ablate::flow::processes::EulerAdvection::RHOU + d] / euler[ablate::flow::processes::EulerAdvection::RHO]);
             }
             ke *= 0.5;
-
-            // set the source values
-            std::cout << pointArray[0] << " " << euler[ablate::flow::processes::EulerAdvection::RHO] * (updatedInternalEnergy + ke) << std::endl;
 
             // store the computed source terms
             fieldSource[ablate::flow::processes::EulerAdvection::RHO] = 0.0;
