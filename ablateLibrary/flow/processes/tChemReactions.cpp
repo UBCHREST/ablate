@@ -193,25 +193,25 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
     IS cellIS;
     DM plex;
     PetscInt depth;
-    DMConvert(flow.GetDM(), DMPLEX, &plex);CHKERRQ(ierr);
-    DMPlexGetDepth(plex, &depth);CHKERRQ(ierr);
-    DMGetStratumIS(plex, "dim", depth, &cellIS);CHKERRQ(ierr);
+    ierr = DMConvert(flow.GetDM(), DMPLEX, &plex);CHKERRQ(ierr);
+    ierr = DMPlexGetDepth(plex, &depth);CHKERRQ(ierr);
+    ierr = DMGetStratumIS(plex, "dim", depth, &cellIS);CHKERRQ(ierr);
     if (!cellIS) {
-        DMGetStratumIS(plex, "depth", depth, &cellIS);CHKERRQ(ierr);
+        ierr = DMGetStratumIS(plex, "depth", depth, &cellIS);CHKERRQ(ierr);
     }
 
     // Get the sell range
     PetscInt cStart, cEnd;
     const PetscInt* cells = NULL;
-    ISGetPointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
+    ierr = ISGetPointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
 
     // get the dim
     PetscInt dim;
-    DMGetDimension(flow.GetDM(), &dim);CHKERRQ(ierr);
+    ierr = DMGetDimension(flow.GetDM(), &dim);CHKERRQ(ierr);
 
     // store the current dt
     PetscReal dt;
-    TSGetTimeStep(flowTs, &dt);CHKERRQ(ierr);
+    ierr = TSGetTimeStep(flowTs, &dt);CHKERRQ(ierr);
 
     // get access to the underlying data for the flow
     PetscInt flowEulerId = flow.GetFieldId("euler").value();
@@ -219,13 +219,13 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
 
     // get the flowSolution from the ts
     Vec globFlowVec;
-    TSGetSolution(flowTs, &globFlowVec);CHKERRQ(ierr);
+    ierr = TSGetSolution(flowTs, &globFlowVec);CHKERRQ(ierr);
     const PetscScalar* flowArray;
-    VecGetArrayRead(globFlowVec, &flowArray);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(globFlowVec, &flowArray);CHKERRQ(ierr);
 
     // Get access to the chemistry source.  This is sized for euler + nspec
     PetscScalar* sourceArray;
-    VecGetArray(sourceVec, &sourceArray) >> checkError;
+    ierr = VecGetArray(sourceVec, &sourceArray);CHKERRQ(ierr);
 
     // store the eos temperature functions
     eos::ComputeTemperatureFunction temperatureFunction = eos->GetComputeTemperatureFunction();
@@ -239,8 +239,8 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
         // Get the current state variables for this cell
         const PetscScalar* euler;
         const PetscScalar* densityYi;
-        DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowEulerId, flowArray, &euler) >> checkError;
-        DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowDensityYiId, flowArray, &densityYi) >> checkError;
+        ierr = DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowEulerId, flowArray, &euler);CHKERRQ(ierr);
+        ierr = DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowDensityYiId, flowArray, &densityYi);CHKERRQ(ierr);
 
         // If a real cell (not ghost)
         if (euler) {
