@@ -7,4 +7,6 @@ target_sources(ablateLibrary
         averageFluxDifferencer.cpp
         offFluxDifferencer.hpp
         offFluxDifferencer.cpp
+        ausmpUpFluxDifferencer.hpp
+        ausmpUpFluxDifferencer.cpp
         )

@@ -1,9 +1,11 @@
 #include "offFluxDifferencer.hpp"
-void ablate::flow::fluxDifferencer::OffFluxDifferencer::OffDifferencerFunction(PetscReal Mm, PetscReal *sPm, PetscReal *sMm, PetscReal Mp, PetscReal *sPp, PetscReal *sMp) {
-    *sPm = 0.0;
-    *sPp = 0.0;
-    *sMm = 0.0;
-    *sMp = 0.0;
+void ablate::flow::fluxDifferencer::OffFluxDifferencer::OffDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+                                                                               PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
+                                                                               PetscReal * massFlux, PetscReal *p12) {
+    *massFlux = 0.0;
+    if(p12){
+        *p12 =0.0;
+    }
 }
 
 #include "parser/registrar.hpp"

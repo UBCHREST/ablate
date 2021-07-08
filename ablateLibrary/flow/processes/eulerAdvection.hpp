@@ -1,7 +1,6 @@
 #ifndef ABLATELIBRARY_EULERADVECTION_HPP
 #define ABLATELIBRARY_EULERADVECTION_HPP
 
-#include <fluxDifferencer.h>
 #include <petsc.h>
 #include <flow/fluxDifferencer/fluxDifferencer.hpp>
 #include "flowProcess.hpp"
@@ -18,8 +17,9 @@ class EulerAdvection : public FlowProcess {
         PetscReal cfl;
 
         /* store method used for flux differencer */
-        FluxDifferencerFunction fluxDifferencer;
-
+        ablate::flow::fluxDifferencer::FluxDifferencerFunction fluxDifferencer;
+        void* fluxDifferencerCtx;
+        
         // EOS function calls
         PetscErrorCode (*decodeStateFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal* densityYi, PetscReal* internalEnergy, PetscReal* a,
                                               PetscReal* p, void* ctx);

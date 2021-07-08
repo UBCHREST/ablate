@@ -1,4 +1,3 @@
-#include <fluxDifferencer.h>
 #include <petsc.h>
 #include <flow/fluxDifferencer/ausmFluxDifferencer.hpp>
 #include <flow/fluxDifferencer/averageFluxDifferencer.hpp>
@@ -10,13 +9,16 @@
 struct FluxDifferencerTestParameters {
     std::string testName;
     std::shared_ptr<ablate::flow::fluxDifferencer::FluxDifferencer> fluxDifferencer;
-    std::vector<PetscReal> Mm;
-    std::vector<PetscReal> Mp;
+    std::vector<PetscReal> uL;
+    std::vector<PetscReal> aL;
+
     std::vector<PetscReal> expectedSplitPm;
     std::vector<PetscReal> expectedSplitMm;
     std::vector<PetscReal> expectedSplitPp;
     std::vector<PetscReal> expectedSplitMp;
 };
+
+using namespace ablate::flow::fluxDifferencer;
 
 class FluxDifferencerTestParametersTestFixture : public ::testing::TestWithParam<FluxDifferencerTestParameters> {};
 

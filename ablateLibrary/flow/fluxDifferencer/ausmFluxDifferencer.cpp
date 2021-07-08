@@ -1,31 +1,41 @@
 #include "ausmFluxDifferencer.hpp"
-void ablate::flow::fluxDifferencer::AusmFluxDifferencer::AusmFluxDifferencerFunction(PetscReal Mm, PetscReal *sPm, PetscReal *sMm, PetscReal Mp, PetscReal *sPp, PetscReal *sMp) {
+void ablate::flow::fluxDifferencer::AusmFluxDifferencer::AusmFluxDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+                                                                                     PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
+                                                                                     PetscReal * massFlux, PetscReal *p12) {
+
+    PetscReal Mm = uR/aR;
+    PetscReal sMm, sPm;
     if (PetscAbsReal(Mm) <= 1.) {
-        *sMm = -0.25 * PetscSqr(Mm - 1);
-        *sPm = -(*sMm) * (2 + Mm);
+        sMm = -0.25 * PetscSqr(Mm - 1);
+        sPm = -(sMm) * (2 + Mm);
     } else {
-        *sMm = 0.5 * (Mm - PetscAbsReal(Mm));
-        *sPm = (*sMm) / Mm;
+        sMm = 0.5 * (Mm - PetscAbsReal(Mm));
+        sPm = (sMm) / Mm;
     }
+
+    PetscReal Mp = uL/aL;
+    PetscReal sMp, sPp;
     if (PetscAbsReal(Mp) <= 1.) {
-        *sMp = 0.25 * PetscSqr(Mp + 1);
-        *sPp = (*sMp) * (2 - Mp);
+        sMp = 0.25 * PetscSqr(Mp + 1);
+        sPp = (sMp) * (2 - Mp);
     } else {
-        *sMp = 0.5 * (Mp + PetscAbsReal(Mp));
-        *sPp = (*sMp) / Mp;
+        sMp = 0.5 * (Mp + PetscAbsReal(Mp));
+        sPp = (sMp) / Mp;
     }
 
     // compute the combined M
-    PetscReal m = *sMm + *sMp;
+    PetscReal m = sMm + sMp;
 
     if (m < 0) {
         // M- on Right
-        *sMm = m;
-        *sMp = 0.0;  // Zero out the left contribution
+        *massFlux = m*aR*rhoR;
     } else {
         // M+ on Left
-        *sMm = 0.0;
-        *sMp = m;  // Zero out the right contribution
+        *massFlux = m*aL*rhoL;
+    }
+
+    if(p12){
+        *p12 = pR * sPm + pL * sPp;
     }
 }
 

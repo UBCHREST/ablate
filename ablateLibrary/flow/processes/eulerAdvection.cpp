@@ -81,24 +81,31 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowComputeE
     const PetscReal* densityYiR = eulerAdvectionData->numberSpecies > 0 ? fieldR + uOff[YI_FIELD] : NULL;
     DecodeEulerState(eulerAdvectionData, dim, fieldR + uOff[EULER_FIELD], densityYiR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
-    PetscReal sPm;
-    PetscReal sPp;
-    PetscReal sMm;
-    PetscReal sMp;
+    // get the face values
+    PetscReal massFlux;
+    PetscReal p12;
 
-    eulerAdvectionData->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
+    /*void (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+        PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
+        PetscReal * m12, PetscReal *p12);*/
+    eulerAdvectionData->fluxDifferencer(eulerAdvectionData->fluxDifferencerCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, &p12);
 
-    flux[RHO] = (sMm * densityR * aR + sMp * densityL * aL) * areaMag;
-
-    PetscReal velMagR = MagVector(dim, velocityR);
-    PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
-    PetscReal velMagL = MagVector(dim, velocityL);
-    PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
-
-    flux[RHOE] = (sMm * densityR * aR * HR + sMp * densityL * aL * HL) * areaMag;
-
-    for (PetscInt n = 0; n < dim; n++) {
-        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR * sPm + pL * sPp) * fg->normal[n];
+    if(massFlux > 0){
+        flux[RHO] = massFlux * areaMag;
+        PetscReal velMagL = MagVector(dim, velocityL);
+        PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
+        flux[RHOE] = HL * massFlux * areaMag;
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[RHOU + n] = velocityL[n] * massFlux * areaMag + p12 * fg->normal[n];
+        }
+    }else{
+        flux[RHO] = massFlux * areaMag;
+        PetscReal velMagR = MagVector(dim, velocityR);
+        PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
+        flux[RHOE] = HR * massFlux * areaMag;
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[RHOU + n] = velocityR[n] * massFlux * areaMag + p12 * fg->normal[n];
+        }
     }
 
     PetscFunctionReturn(0);
@@ -138,18 +145,27 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowSpeciesA
     PetscReal pR;
     DecodeEulerState(eulerAdvectionData, dim, fieldR + uOff[EULER_FIELD], fieldR + uOff[YI_FIELD], norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
-    PetscReal sPm;
-    PetscReal sPp;
-    PetscReal sMm;
-    PetscReal sMp;
+    // get the face values
+    PetscReal massFlux;
 
-    eulerAdvectionData->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
-
-    // march over each gas species
-    for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
-        // Note: there is no density in the flux because uR and UL are density*yi
-        flux[sp] = (sMm * aR * fieldR[uOff[YI_FIELD] + sp] + sMp * aL * fieldL[uOff[YI_FIELD] + sp]) * areaMag;
+    /*void (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+    PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
+    PetscReal * m12, PetscReal *p12);*/
+    eulerAdvectionData->fluxDifferencer(eulerAdvectionData->fluxDifferencerCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, NULL);
+    if(massFlux > 0){
+        // march over each gas species
+        for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
+            // Note: there is no density in the flux because uR and UL are density*yi
+            flux[sp] = (massFlux * fieldL[uOff[YI_FIELD] + sp]) * areaMag;
+        }
+    }else{
+        // march over each gas species
+        for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
+            // Note: there is no density in the flux because uR and UL are density*yi
+            flux[sp] = (massFlux * fieldR[uOff[YI_FIELD] + sp]) * areaMag;
+        }
     }
+
 
     PetscFunctionReturn(0);
 }
