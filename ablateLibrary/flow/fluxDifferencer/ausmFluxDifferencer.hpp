@@ -12,7 +12,7 @@ namespace ablate::flow::fluxDifferencer {
  */
 class AusmFluxDifferencer : public fluxDifferencer::FluxDifferencer {
    private:
-    static void AusmFluxDifferencerFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+    static Direction AusmFluxDifferencerFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                       PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
                                                       PetscReal * massFlux, PetscReal *p12);
 

@@ -1,5 +1,5 @@
 #include "ausmFluxDifferencer.hpp"
-void ablate::flow::fluxDifferencer::AusmFluxDifferencer::AusmFluxDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmFluxDifferencer::AusmFluxDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                      PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
                                                                                      PetscReal * massFlux, PetscReal *p12) {
 
@@ -26,17 +26,22 @@ void ablate::flow::fluxDifferencer::AusmFluxDifferencer::AusmFluxDifferencerFunc
     // compute the combined M
     PetscReal m = sMm + sMp;
 
+    Direction dir;
     if (m < 0) {
         // M- on Right
         *massFlux = m*aR*rhoR;
+        dir = RIGHT;
     } else {
         // M+ on Left
         *massFlux = m*aL*rhoL;
+        dir = LEFT;
     }
 
     if(p12){
         *p12 = pR * sPm + pL * sPp;
     }
+
+    return dir;
 }
 
 #include "parser/registrar.hpp"

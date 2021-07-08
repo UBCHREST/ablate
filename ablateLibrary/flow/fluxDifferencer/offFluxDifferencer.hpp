@@ -8,7 +8,7 @@ namespace ablate::flow::fluxDifferencer {
  */
 class OffFluxDifferencer : public fluxDifferencer::FluxDifferencer {
    private:
-    static void OffDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+    static Direction OffDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                        PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
                                        PetscReal * massFlux, PetscReal *p12);
 

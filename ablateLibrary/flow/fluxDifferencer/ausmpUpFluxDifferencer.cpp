@@ -3,7 +3,7 @@
 
 
 // A sequel to AUSM, Part II: AUSM+-up for all speeds
-void ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                            PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
                                                                                            PetscReal * massFlux, PetscReal *p12) {
     // Compute teh density at one half
@@ -29,7 +29,14 @@ void ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferenc
     PetscReal m12 = M4Plus(mL) + M4Minus(mL) - Kp / (fa)*PetscMax(1.0 - sigma * mBar2, 0) * (pR - pL) / (rho12 * a12 * a12);
 
     // store the mass flux;
-    *massFlux = a12 * m12 * (m12 > 0 ? rhoL : rhoR);
+    Direction direction;
+    if(m12 > 0){
+        direction = LEFT;
+        *massFlux = a12 * m12*rhoL;
+    }else{
+        direction = RIGHT;
+        *massFlux = a12 * m12 * rhoR;
+    }
 
     // Pressure
     if (p12) {
@@ -38,6 +45,7 @@ void ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferenc
 
         *p12 = p5Plus * pL + p5Minus * pR - Ku * p5Plus * p5Minus + (rhoL + rhoR) * fa * a12 * (uR - uL);
     }
+    return direction;
 }
 
 PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M1Plus(PetscReal m) {
