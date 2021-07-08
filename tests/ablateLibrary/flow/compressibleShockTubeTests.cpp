@@ -2,6 +2,8 @@ static char help[] = "Compressible ShockTube 1D Tests";
 
 #include <petsc.h>
 #include <cmath>
+#include <flow/fluxDifferencer/ausmFluxDifferencer.hpp>
+#include <flow/fluxDifferencer/ausmpUpFluxDifferencer.hpp>
 #include <flow/processes/eulerAdvection.hpp>
 #include <memory>
 #include <mesh/dmWrapper.hpp>
@@ -31,6 +33,7 @@ typedef struct {
 struct CompressibleShockTubeParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     InitialConditions initialConditions;
+    std::shared_ptr<flow::fluxDifferencer::FluxDifferencer> fluxDifferencer;
     PetscInt nx;
     PetscReal maxTime;
     PetscReal cfl;
@@ -179,7 +182,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                parameters,
-                                                                               nullptr /*defaults to ausm*/,
+                                                                               testingParam.fluxDifferencer,
                                                                                nullptr /*options*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{initialCondition} /*initialization*/,
                                                                                boundaryConditions /*boundary conditions*/,
@@ -221,8 +224,9 @@ INSTANTIATE_TEST_SUITE_P(
     CompressibleFlow, CompressibleShockTubeTestFixture,
     testing::Values(
         (CompressibleShockTubeParameters){
-            .mpiTestParameter = {.testName = "case 1 sod problem", .nproc = 1, .arguments = ""},
+            .mpiTestParameter = {.testName = "ausm case 1 sod problem", .nproc = 1, .arguments = ""},
             .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = 0.0, .pL = 1.0, .rhoR = 0.125, .uR = 0.0, .pR = .1},
+            .fluxDifferencer = std::make_shared<flow::fluxDifferencer::AusmFluxDifferencer>(),
             .nx = 100,
             .maxTime = 0.25,
             .cfl = 0.5,
@@ -254,6 +258,7 @@ INSTANTIATE_TEST_SUITE_P(
         (CompressibleShockTubeParameters){
             .mpiTestParameter = {.testName = "case 2 expansion left and expansion right", .nproc = 1, .arguments = ""},
             .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = -2.0, .pL = 0.4, .rhoR = 1.0, .uR = 2.0, .pR = 0.4},
+            .fluxDifferencer = std::make_shared<flow::fluxDifferencer::AusmFluxDifferencer>(),
             .nx = 100,
             .maxTime = 0.15,
             .cfl = 0.5,
@@ -286,6 +291,7 @@ INSTANTIATE_TEST_SUITE_P(
         (CompressibleShockTubeParameters){
             .mpiTestParameter = {.testName = "case 5 shock collision shock left and shock right", .nproc = 1, .arguments = ""},
             .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 5.99924, .uL = 19.5975, .pL = 460.894, .rhoR = 5.99242, .uR = -6.19633, .pR = 46.0950},
+            .fluxDifferencer = std::make_shared<flow::fluxDifferencer::AusmFluxDifferencer>(),
             .nx = 100,
             .maxTime = 0.035,
             .cfl = 0.5,

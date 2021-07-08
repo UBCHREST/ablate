@@ -83,8 +83,8 @@ TEST(YamlParserTests, ShouldReturnCorrectStringForOptionalValue) {
     // act
     auto yamlParser = std::make_shared<YamlParser>(yaml.str());
     // assert
-    ASSERT_EQ("im_a_string", yamlParser->Get(ArgumentIdentifier<std::string>{"item", .optional = true}));
-    ASSERT_EQ(emptyString, yamlParser->Get(ArgumentIdentifier<std::string>{"item 2", .optional = true}));
+    ASSERT_EQ("im_a_string", yamlParser->Get(ArgumentIdentifier<std::string>{.inputName = "item", .optional = true}));
+    ASSERT_EQ(emptyString, yamlParser->Get(ArgumentIdentifier<std::string>{.inputName = "item 2", .optional = true}));
     ASSERT_EQ("", yamlParser->GetClassType());
 }
 
@@ -105,6 +105,25 @@ TEST(YamlParserTests, ShouldParseInts) {
     ASSERT_EQ(1, yamlParser->Get(ArgumentIdentifier<int>{"item 2"}));
     ASSERT_EQ(3, yamlParser->Get(ArgumentIdentifier<int>{"item3"}));
     ASSERT_THROW(yamlParser->Get(ArgumentIdentifier<int>{"item4"}), YAML::BadConversion);
+}
+
+TEST(YamlParserTests, ShouldParseDouble) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: 22.3" << std::endl;
+    yaml << " item 2: 1 " << std::endl;
+    yaml << " item3: \"3.3 \" " << std::endl;
+    yaml << " item4: \"not a double \" " << std::endl;
+
+    // act
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // assert
+    ASSERT_EQ(22.3, yamlParser->Get(ArgumentIdentifier<double>{"item"}));
+    ASSERT_EQ(1, yamlParser->Get(ArgumentIdentifier<double>{"item 2"}));
+    ASSERT_EQ(3.4, yamlParser->Get(ArgumentIdentifier<double>{"item3"}));
+    ASSERT_THROW(yamlParser->Get(ArgumentIdentifier<double>{"item4"}), YAML::BadConversion);
 }
 
 TEST(YamlParserTests, ShouldThrowErrorForMissingInt) {
@@ -131,8 +150,8 @@ TEST(YamlParserTests, ShouldReturnCorrectInForOptionalValue) {
     auto yamlParser = std::make_shared<YamlParser>(yaml.str());
 
     // assert
-    ASSERT_EQ(22, yamlParser->Get(ArgumentIdentifier<int>{"item", .optional = true}));
-    ASSERT_EQ(defaultValue, yamlParser->Get(ArgumentIdentifier<int>{"item 2", .optional = true}));
+    ASSERT_EQ(22, yamlParser->Get(ArgumentIdentifier<int>{.inputName = "item", .optional = true}));
+    ASSERT_EQ(defaultValue, yamlParser->Get(ArgumentIdentifier<int>{.inputName = "item 2", .optional = true}));
 }
 
 TEST(YamlParserTests, ShouldParseBools) {
@@ -182,8 +201,8 @@ TEST(YamlParserTests, ShouldReturnCorrectBoolForOptionalValue) {
     auto yamlParser = std::make_shared<YamlParser>(yaml.str());
 
     // assert
-    ASSERT_EQ(true, yamlParser->Get(ArgumentIdentifier<bool>{"item", .optional = true}));
-    ASSERT_EQ(defaultValue, yamlParser->Get(ArgumentIdentifier<int>{"item 2", .optional = true}));
+    ASSERT_EQ(true, yamlParser->Get(ArgumentIdentifier<bool>{.inputName = "item", .optional = true}));
+    ASSERT_EQ(defaultValue, yamlParser->Get(ArgumentIdentifier<int>{.inputName = "item 2", .optional = true}));
 }
 
 TEST(YamlParserTests, ShouldParseSubFactory) {
@@ -336,7 +355,7 @@ TEST(YamlParserTests, ShouldGetCorrectValueForOptionalListOfStrings) {
     auto yamlParser = std::make_shared<YamlParser>(yaml.str());
 
     // act
-    auto list = yamlParser->Get(ArgumentIdentifier<std::vector<std::string>>{"item2", .optional = true});
+    auto list = yamlParser->Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "item2", .optional = true});
 
     // assert
     std::vector<std::string> expectedValues = {};
@@ -376,7 +395,7 @@ TEST(YamlParserTests, ShouldGetCorrectValueForOptionalListOfInt) {
     auto yamlParser = std::make_shared<YamlParser>(yaml.str());
 
     // act
-    auto list = yamlParser->Get(ArgumentIdentifier<std::vector<int>>{"item2", .optional = true});
+    auto list = yamlParser->Get(ArgumentIdentifier<std::vector<int>>{.inputName = "item2", .optional = true});
 
     // assert
     std::vector<int> expectedValues = {};
@@ -416,7 +435,7 @@ TEST(YamlParserTests, ShouldGetCorrectValueForOptionalListOfDouble) {
     auto yamlParser = std::make_shared<YamlParser>(yaml.str());
 
     // act
-    auto list = yamlParser->Get(ArgumentIdentifier<std::vector<int>>{"item2", .optional = true});
+    auto list = yamlParser->Get(ArgumentIdentifier<std::vector<int>>{.inputName = "item2", .optional = true});
 
     // assert
     std::vector<int> expectedValues = {};
@@ -452,7 +471,7 @@ TEST(YamlParserTests, ShouldGetCorrectValueForOptionalMap) {
     auto yamlParser = std::make_shared<YamlParser>(yaml.str());
 
     // act
-    auto map = yamlParser->Get(ArgumentIdentifier<std::map<std::string, std::string>>{"item2", .optional = true});
+    auto map = yamlParser->Get(ArgumentIdentifier<std::map<std::string, std::string>>{.inputName = "item2", .optional = true});
 
     // assert
     std::map<std::string, std::string> expectedValues = {};

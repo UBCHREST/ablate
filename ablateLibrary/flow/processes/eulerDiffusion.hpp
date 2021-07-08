@@ -16,6 +16,8 @@ class EulerDiffusion : public FlowProcess {
         /* number of gas species */
         PetscInt numberSpecies;
 
+        PetscReal dtStabilityFactor;
+
         // EOS function calls
         PetscErrorCode (*computeTemperatureFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal* densityYi, PetscReal* T, void* ctx);
         void* computeTemperatureContext;
@@ -59,6 +61,9 @@ class EulerDiffusion : public FlowProcess {
     // function to update the aux temperature field
     static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
     static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
+
+    // static function to compute time step for euler diffusion
+    static double ComputeTimeStep(TS ts, Flow& flow, void* ctx);
 };
 
 }  // namespace ablate::flow::processes

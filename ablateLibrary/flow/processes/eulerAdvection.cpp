@@ -198,6 +198,7 @@ ablate::flow::processes::EulerAdvection::EulerAdvection(std::shared_ptr<paramete
 
     // extract the difference function from fluxDifferencer object
     eulerAdvectionData->fluxDifferencer = fluxDifferencer->GetFluxDifferencerFunction();
+    eulerAdvectionData->fluxDifferencerCtx = fluxDifferencer->GetFluxDifferencerContext();
 }
 
 ablate::flow::processes::EulerAdvection::~EulerAdvection() { PetscFree(eulerAdvectionData); }

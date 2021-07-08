@@ -2,8 +2,9 @@
 
 
 
-// A sequel to AUSM, Part II: AUSM+-up for all speeds
-ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencer(double mInf): mInf(mInf) {}
+
+ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencerFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
                                                                                            PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
                                                                                            PetscReal * massFlux, PetscReal *p12) {
     // Compute teh density at one half
@@ -17,7 +18,8 @@ ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpF
     PetscReal mR = uR / a12;
 
     // compute mInf2
-    PetscReal mInf2 = 1E-8;
+    double* mInf = (double*)ctx;
+    PetscReal mInf2 = PetscSqr(*mInf);
 
     // Compute mBar2 (eq 70)
     PetscReal mBar2 = (PetscSqr(uL) + PetscSqr(uR)) / (2.0 * a12 * a12);
@@ -26,7 +28,7 @@ ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpF
     PetscReal fa = mO * (2.0 - mO);
 
     // compute the mach number on the interface
-    PetscReal m12 = M4Plus(mL) + M4Minus(mL) - Kp / (fa)*PetscMax(1.0 - sigma * mBar2, 0) * (pR - pL) / (rho12 * a12 * a12);
+    PetscReal m12 = M4Plus(mL) + M4Minus(mR) - (Kp / fa)*PetscMax(1.0 - (sigma * mBar2), 0) * (pR - pL) / (rho12 * a12 * a12);
 
     // store the mass flux;
     Direction direction;
@@ -40,10 +42,10 @@ ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpF
 
     // Pressure
     if (p12) {
-        double p5Plus = P5Plus(mL);
-        double p5Minus = P5Minus(mR);
+        double p5Plus = P5Plus(mL, fa);
+        double p5Minus = P5Minus(mR, fa);
 
-        *p12 = p5Plus * pL + p5Minus * pR - Ku * p5Plus * p5Minus + (rhoL + rhoR) * fa * a12 * (uR - uL);
+        *p12 = p5Plus * pL + p5Minus * pR - Ku * p5Plus * p5Minus * (rhoL + rhoR) * fa * a12 * (uR - uL);
     }
     return direction;
 }
@@ -76,19 +78,28 @@ PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M4Minus(PetscRe
     }else{
         return M2Minus(m)*(1.0 + 16.0*beta* M2Plus(m));
     }}
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Plus(PetscReal m) {
+PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Plus(PetscReal m, double fa) {
     if (PetscAbs(m) >= 1.0) {
         return (M1Plus(m)/(m + 1E-30));
     }
     else {
+        // compute alpha
+        double alpha = 3.0/16.0 * (-4.0 + 5*fa*fa);
+
         return (M2Plus(m)*((2.0-m) - 16.*alpha*m*M2Minus(m)));
     }
 }
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Minus(PetscReal m) {
+PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Minus(PetscReal m, double fa) {
     if (PetscAbs(m) >= 1.0) {
         return (M1Minus(m)/(m + 1E-30));
     }
     else {
+        double alpha = 3.0/16.0 * (-4.0 + 5*fa*fa);
         return (M2Minus(m)*((-2.0-m) + 16.*alpha*m*M2Plus(m)));
     }
 }
+
+#include "parser/registrar.hpp"
+REGISTER(ablate::flow::fluxDifferencer::FluxDifferencer, ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer,
+         "A sequel to AUSM, Part II: AUSM+-up for all speeds, Meng-Sing Liou, Pages 137-170, 2006",
+         ARG(double, "mInf", "the reference mach number"));

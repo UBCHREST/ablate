@@ -1,4 +1,5 @@
 #include <petsc.h>
+#include <flow/fluxDifferencer/ausmpUpFluxDifferencer.hpp>
 #include <flow/processes/eulerAdvection.hpp>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
@@ -718,6 +719,42 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.4, 1.0}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed ausm", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
                                                         .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+
+                                                        .constants = {.dim = 2,
+                                                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
+                                                                      .u = {.phiO = 800, .phiX = 50, .phiY = -30.0, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
+                                                                      .v = {.phiO = 800, .phiX = -75, .phiY = 40, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
+                                                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
+                                                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
+                                                                      .L = 1.0,
+                                                                      .gamma = 1.4,
+                                                                      .R = 287.0,
+                                                                      .mu = 0.0,
+                                                                      .k = 0.0},
+                                                        .initialNx = 16,
+                                                        .levels = 4,
+                                                        .expectedL2Convergence = {1.0, 1.0, 1.0, 1.0},
+                                                        .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed ausmpup", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
+                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer>(.3),
+
+                                                        .constants = {.dim = 2,
+                                                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
+                                                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
+                                                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
+                                                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
+                                                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
+                                                                      .L = 1.0,
+                                                                      .gamma = 1.4,
+                                                                      .R = 287.0,
+                                                                      .mu = 0.0,
+                                                                      .k = 0.0},
+                                                        .initialNx = 16,
+                                                        .levels = 4,
+                                                        .expectedL2Convergence = {1.0, 1.0, 1.2, 1.0},
+                                                        .expectedLInfConvergence = {1.0, 1.0, 1.2, 1.0}},
+                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed ausmpup", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
+                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer>(.3),
 
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
