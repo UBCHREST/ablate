@@ -88,9 +88,10 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowComputeE
     /*void (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
         PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
         PetscReal * m12, PetscReal *p12);*/
-    fluxDifferencer::Direction direction = eulerAdvectionData->fluxDifferencer(eulerAdvectionData->fluxDifferencerCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, &p12);
+    fluxDifferencer::Direction direction =
+        eulerAdvectionData->fluxDifferencer(eulerAdvectionData->fluxDifferencerCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, &p12);
 
-    if(direction == fluxDifferencer::LEFT){
+    if (direction == fluxDifferencer::LEFT) {
         flux[RHO] = massFlux * areaMag;
         PetscReal velMagL = MagVector(dim, velocityL);
         PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
@@ -98,7 +99,7 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowComputeE
         for (PetscInt n = 0; n < dim; n++) {
             flux[RHOU + n] = velocityL[n] * massFlux * areaMag + p12 * fg->normal[n];
         }
-    }else if (direction == fluxDifferencer::RIGHT){
+    } else if (direction == fluxDifferencer::RIGHT) {
         flux[RHO] = massFlux * areaMag;
         PetscReal velMagR = MagVector(dim, velocityR);
         PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
@@ -106,7 +107,7 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowComputeE
         for (PetscInt n = 0; n < dim; n++) {
             flux[RHOU + n] = velocityR[n] * massFlux * areaMag + p12 * fg->normal[n];
         }
-    }else{
+    } else {
         flux[RHO] = massFlux * areaMag;
 
         PetscReal velMagL = MagVector(dim, velocityL);
@@ -115,9 +116,9 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowComputeE
         PetscReal velMagR = MagVector(dim, velocityR);
         PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
 
-        flux[RHOE] = 0.5*(HL + HR) * massFlux * areaMag;
+        flux[RHOE] = 0.5 * (HL + HR) * massFlux * areaMag;
         for (PetscInt n = 0; n < dim; n++) {
-            flux[RHOU + n] = 0.5*(velocityL[n]+velocityR[n]) * massFlux * areaMag + p12 * fg->normal[n];
+            flux[RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * massFlux * areaMag + p12 * fg->normal[n];
         }
     }
 
@@ -165,20 +166,19 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowSpeciesA
     PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
     PetscReal * m12, PetscReal *p12);*/
 
-    if(eulerAdvectionData->fluxDifferencer(eulerAdvectionData->fluxDifferencerCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, NULL) == fluxDifferencer::LEFT){
+    if (eulerAdvectionData->fluxDifferencer(eulerAdvectionData->fluxDifferencerCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, NULL) == fluxDifferencer::LEFT) {
         // march over each gas species
         for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
             // Note: there is no density in the flux because uR and UL are density*yi
-            flux[sp] = (massFlux * fieldL[uOff[YI_FIELD] + sp]/densityL) * areaMag;
+            flux[sp] = (massFlux * fieldL[uOff[YI_FIELD] + sp] / densityL) * areaMag;
         }
-    }else{
+    } else {
         // march over each gas species
         for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
             // Note: there is no density in the flux because uR and UL are density*yi
-            flux[sp] = (massFlux * fieldR[uOff[YI_FIELD] + sp]/densityR) * areaMag;
+            flux[sp] = (massFlux * fieldR[uOff[YI_FIELD] + sp] / densityR) * areaMag;
         }
     }
-
 
     PetscFunctionReturn(0);
 }

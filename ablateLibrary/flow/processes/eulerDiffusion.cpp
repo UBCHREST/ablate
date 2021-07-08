@@ -67,9 +67,8 @@ void ablate::flow::processes::EulerDiffusion::Initialize(ablate::flow::FVFlow &f
 
     // determine the dim of the problem
     PetscInt dim;
-    DMGetDimension(flow.GetDM(), &dim)>> checkError;
-    eulerDiffusionData->dtStabilityFactor = (1.0/3.0)/dim;
-
+    DMGetDimension(flow.GetDM(), &dim) >> checkError;
+    eulerDiffusionData->dtStabilityFactor = (1.0 / 3.0) / dim;
 }
 PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
                                                                                        const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff,
@@ -144,8 +143,7 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowComputeS
     PetscFunctionReturn(0);
 }
 
-
-double ablate::flow::processes::EulerDiffusion::ComputeTimeStep(TS ts, ablate::flow::Flow& flow, void* ctx) {
+double ablate::flow::processes::EulerDiffusion::ComputeTimeStep(TS ts, ablate::flow::Flow &flow, void *ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
@@ -160,7 +158,7 @@ double ablate::flow::processes::EulerDiffusion::ComputeTimeStep(TS ts, ablate::f
     DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> checkError;
     PetscInt cStart, cEnd;
     DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd) >> checkError;
-    const PetscScalar* x;
+    const PetscScalar *x;
     VecGetArrayRead(v, &x) >> checkError;
 
     // Get the dim from the dm
@@ -176,12 +174,12 @@ double ablate::flow::processes::EulerDiffusion::ComputeTimeStep(TS ts, ablate::f
     // March over each cell
     PetscReal dtMin = 1000.0;
     for (PetscInt c = cStart; c < cEnd; ++c) {
-        const PetscReal* xc;
+        const PetscReal *xc;
         DMPlexPointGlobalFieldRead(dm, c, eulerId, x, &xc) >> checkError;
 
         if (xc) {  // must be real cell and not ghost
             PetscReal rho = xc[EulerAdvection::RHO];
-            PetscReal nu = eulerDiffusionData->mu/rho;
+            PetscReal nu = eulerDiffusionData->mu / rho;
 
             PetscReal dt = eulerDiffusionData->dtStabilityFactor * dx / (nu);
             dtMin = PetscMin(dtMin, dt);

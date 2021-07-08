@@ -1,9 +1,8 @@
 #include "ausmFluxDifferencer.hpp"
-ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmFluxDifferencer::AusmFluxDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                                                                                     PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                                                                                     PetscReal * massFlux, PetscReal *p12) {
-
-    PetscReal Mm = uR/aR;
+ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmFluxDifferencer::AusmFluxDifferencerFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
+                                                                                                                         PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
+                                                                                                                         PetscReal *p12) {
+    PetscReal Mm = uR / aR;
     PetscReal sMm, sPm;
     if (PetscAbsReal(Mm) <= 1.) {
         sMm = -0.25 * PetscSqr(Mm - 1);
@@ -13,7 +12,7 @@ ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmFlux
         sPm = (sMm) / Mm;
     }
 
-    PetscReal Mp = uL/aL;
+    PetscReal Mp = uL / aL;
     PetscReal sMp, sPp;
     if (PetscAbsReal(Mp) <= 1.) {
         sMp = 0.25 * PetscSqr(Mp + 1);
@@ -29,15 +28,15 @@ ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmFlux
     Direction dir;
     if (m < 0) {
         // M- on Right
-        *massFlux = m*aR*rhoR;
+        *massFlux = m * aR * rhoR;
         dir = RIGHT;
     } else {
         // M+ on Left
-        *massFlux = m*aL*rhoL;
+        *massFlux = m * aL * rhoL;
         dir = LEFT;
     }
 
-    if(p12){
+    if (p12) {
         *p12 = pR * sPm + pL * sPp;
     }
 

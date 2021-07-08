@@ -9,9 +9,8 @@ namespace ablate::flow::fluxDifferencer {
  */
 class AverageFluxDifferencer : public fluxDifferencer::FluxDifferencer {
    private:
-    static Direction AvgDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                                       PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                                       PetscReal * massFlux, PetscReal *p12);
+    static Direction AvgDifferencerFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
+                                            PetscReal *p12);
 
    public:
     FluxDifferencerFunction GetFluxDifferencerFunction() override { return AvgDifferencerFunction; }

@@ -19,7 +19,7 @@ class EulerAdvection : public FlowProcess {
         /* store method used for flux differencer */
         ablate::flow::fluxDifferencer::FluxDifferencerFunction fluxDifferencer;
         void* fluxDifferencerCtx;
-        
+
         // EOS function calls
         PetscErrorCode (*decodeStateFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal* densityYi, PetscReal* internalEnergy, PetscReal* a,
                                               PetscReal* p, void* ctx);

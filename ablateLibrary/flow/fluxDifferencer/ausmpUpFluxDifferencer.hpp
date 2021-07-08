@@ -9,9 +9,8 @@ namespace ablate::flow::fluxDifferencer {
  */
 class AusmpUpFluxDifferencer : public fluxDifferencer::FluxDifferencer {
    private:
-    static Direction AusmpUpFluxDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                                               PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                                               PetscReal * massFlux, PetscReal *p12);
+    static Direction AusmpUpFluxDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal* massFlux,
+                                                    PetscReal* p12);
 
     static PetscReal M1Plus(PetscReal m);
     static PetscReal M2Plus(PetscReal m);
@@ -32,9 +31,7 @@ class AusmpUpFluxDifferencer : public fluxDifferencer::FluxDifferencer {
     ~AusmpUpFluxDifferencer() override = default;
 
     FluxDifferencerFunction GetFluxDifferencerFunction() override { return AusmpUpFluxDifferencerFunction; }
-    void* GetFluxDifferencerContext() override{
-        return (void*)&mInf;
-    }
+    void* GetFluxDifferencerContext() override { return (void*)&mInf; }
 
     /**
      * Support calls
@@ -45,9 +42,7 @@ class AusmpUpFluxDifferencer : public fluxDifferencer::FluxDifferencer {
     static PetscReal M4Minus(PetscReal m);
     static PetscReal P5Plus(PetscReal m, double fa);
     static PetscReal P5Minus(PetscReal m, double fa);
-
-
 };
 
-}
+}  // namespace ablate::flow::fluxDifferencer
 #endif  // ABLATELIBRARY_AUSMPUPFLUXDIFFERENCER_HPP

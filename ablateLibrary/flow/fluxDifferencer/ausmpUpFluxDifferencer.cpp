@@ -1,12 +1,10 @@
 #include "ausmpUpFluxDifferencer.hpp"
 
-
-
-ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencer(double mInf): mInf(mInf) {}
+ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencer(double mInf) : mInf(mInf) {}
 
 ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencerFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                                                                                           PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                                                                                           PetscReal * massFlux, PetscReal *p12) {
+                                                                                                                               PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
+                                                                                                                               PetscReal* massFlux, PetscReal* p12) {
     // Compute teh density at one half
     PetscReal rho12 = (0.5) * (rhoL + rhoR);
 
@@ -28,14 +26,14 @@ ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpF
     PetscReal fa = mO * (2.0 - mO);
 
     // compute the mach number on the interface
-    PetscReal m12 = M4Plus(mL) + M4Minus(mR) - (Kp / fa)*PetscMax(1.0 - (sigma * mBar2), 0) * (pR - pL) / (rho12 * a12 * a12);
+    PetscReal m12 = M4Plus(mL) + M4Minus(mR) - (Kp / fa) * PetscMax(1.0 - (sigma * mBar2), 0) * (pR - pL) / (rho12 * a12 * a12);
 
     // store the mass flux;
     Direction direction;
-    if(m12 > 0){
+    if (m12 > 0) {
         direction = LEFT;
-        *massFlux = a12 * m12*rhoL;
-    }else{
+        *massFlux = a12 * m12 * rhoL;
+    } else {
         direction = RIGHT;
         *massFlux = a12 * m12 * rhoR;
     }
@@ -50,56 +48,46 @@ ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpF
     return direction;
 }
 
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M1Plus(PetscReal m) {
-    return 0.5*(m + PetscAbs(m));
-}
+PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M1Plus(PetscReal m) { return 0.5 * (m + PetscAbs(m)); }
 
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M2Plus(PetscReal m) {
-    return 0.25* PetscSqr(m + 1);
-}
+PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M2Plus(PetscReal m) { return 0.25 * PetscSqr(m + 1); }
 
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M1Minus(PetscReal m) {
-    return 0.5*(m - PetscAbs(m));
-}
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M2Minus(PetscReal m) {
-    return -0.25* PetscSqr(m - 1);
-}
+PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M1Minus(PetscReal m) { return 0.5 * (m - PetscAbs(m)); }
+PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M2Minus(PetscReal m) { return -0.25 * PetscSqr(m - 1); }
 
 PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M4Plus(PetscReal m) {
-    if(PetscAbs(m) >= 1.0){
+    if (PetscAbs(m) >= 1.0) {
         return M1Plus(m);
-    }else{
-        return M2Plus(m)*(1.0 - 16.0*beta* M2Minus(m));
+    } else {
+        return M2Plus(m) * (1.0 - 16.0 * beta * M2Minus(m));
     }
 }
 PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M4Minus(PetscReal m) {
-    if(PetscAbs(m) >= 1.0){
+    if (PetscAbs(m) >= 1.0) {
         return M1Minus(m);
-    }else{
-        return M2Minus(m)*(1.0 + 16.0*beta* M2Plus(m));
-    }}
+    } else {
+        return M2Minus(m) * (1.0 + 16.0 * beta * M2Plus(m));
+    }
+}
 PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Plus(PetscReal m, double fa) {
     if (PetscAbs(m) >= 1.0) {
-        return (M1Plus(m)/(m + 1E-30));
-    }
-    else {
+        return (M1Plus(m) / (m + 1E-30));
+    } else {
         // compute alpha
-        double alpha = 3.0/16.0 * (-4.0 + 5*fa*fa);
+        double alpha = 3.0 / 16.0 * (-4.0 + 5 * fa * fa);
 
-        return (M2Plus(m)*((2.0-m) - 16.*alpha*m*M2Minus(m)));
+        return (M2Plus(m) * ((2.0 - m) - 16. * alpha * m * M2Minus(m)));
     }
 }
 PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Minus(PetscReal m, double fa) {
     if (PetscAbs(m) >= 1.0) {
-        return (M1Minus(m)/(m + 1E-30));
-    }
-    else {
-        double alpha = 3.0/16.0 * (-4.0 + 5*fa*fa);
-        return (M2Minus(m)*((-2.0-m) + 16.*alpha*m*M2Plus(m)));
+        return (M1Minus(m) / (m + 1E-30));
+    } else {
+        double alpha = 3.0 / 16.0 * (-4.0 + 5 * fa * fa);
+        return (M2Minus(m) * ((-2.0 - m) + 16. * alpha * m * M2Plus(m)));
     }
 }
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::flow::fluxDifferencer::FluxDifferencer, ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer,
-         "A sequel to AUSM, Part II: AUSM+-up for all speeds, Meng-Sing Liou, Pages 137-170, 2006",
-         ARG(double, "mInf", "the reference mach number"));
+         "A sequel to AUSM, Part II: AUSM+-up for all speeds, Meng-Sing Liou, Pages 137-170, 2006", ARG(double, "mInf", "the reference mach number"));

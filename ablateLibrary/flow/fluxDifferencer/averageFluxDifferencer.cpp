@@ -1,11 +1,10 @@
 #include "averageFluxDifferencer.hpp"
-ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AverageFluxDifferencer::AvgDifferencerFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                                                                                   PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                                                                                   PetscReal * massFlux, PetscReal *p12) {
+ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AverageFluxDifferencer::AvgDifferencerFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
+                                                                                                                       PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
+                                                                                                                       PetscReal *p12) {
+    *massFlux = 0.5 * (uL * rhoL + uR * rhoR);
 
-    *massFlux = 0.5 * (uL*rhoL + uR*rhoR);
-
-    if(p12){
+    if (p12) {
         *p12 = 0.5 * (pL + pR);
     }
     return NA;
