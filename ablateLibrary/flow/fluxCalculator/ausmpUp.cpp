@@ -4,7 +4,7 @@ ablate::flow::fluxCalculator::AusmpUp::AusmpUp(double mInf) : mInf(mInf) {}
 
 ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::AusmpUp::AusmpUpFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
                                                                                                PetscReal rhoR, PetscReal pR, PetscReal* massFlux, PetscReal* p12) {
-    // Compute teh density at one half
+    // Compute the density at the interface
     PetscReal rho12 = (0.5) * (rhoL + rhoR);
 
     // compute the speed of sound at a12
