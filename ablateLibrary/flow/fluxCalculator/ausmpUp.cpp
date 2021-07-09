@@ -1,10 +1,9 @@
-#include "ausmpUpFluxDifferencer.hpp"
+#include "ausmpUp.hpp"
 
-ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencer(double mInf) : mInf(mInf) {}
+ablate::flow::fluxCalculator::AusmpUp::AusmpUp(double mInf) : mInf(mInf) {}
 
-ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::AusmpUpFluxDifferencerFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                                                                                                                               PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                                                                                                                               PetscReal* massFlux, PetscReal* p12) {
+ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::AusmpUp::AusmpUpFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
+                                                                                               PetscReal rhoR, PetscReal pR, PetscReal* massFlux, PetscReal* p12) {
     // Compute teh density at one half
     PetscReal rho12 = (0.5) * (rhoL + rhoR);
 
@@ -48,28 +47,28 @@ ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmpUpF
     return direction;
 }
 
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M1Plus(PetscReal m) { return 0.5 * (m + PetscAbs(m)); }
+PetscReal ablate::flow::fluxCalculator::AusmpUp::M1Plus(PetscReal m) { return 0.5 * (m + PetscAbs(m)); }
 
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M2Plus(PetscReal m) { return 0.25 * PetscSqr(m + 1); }
+PetscReal ablate::flow::fluxCalculator::AusmpUp::M2Plus(PetscReal m) { return 0.25 * PetscSqr(m + 1); }
 
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M1Minus(PetscReal m) { return 0.5 * (m - PetscAbs(m)); }
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M2Minus(PetscReal m) { return -0.25 * PetscSqr(m - 1); }
+PetscReal ablate::flow::fluxCalculator::AusmpUp::M1Minus(PetscReal m) { return 0.5 * (m - PetscAbs(m)); }
+PetscReal ablate::flow::fluxCalculator::AusmpUp::M2Minus(PetscReal m) { return -0.25 * PetscSqr(m - 1); }
 
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M4Plus(PetscReal m) {
+PetscReal ablate::flow::fluxCalculator::AusmpUp::M4Plus(PetscReal m) {
     if (PetscAbs(m) >= 1.0) {
         return M1Plus(m);
     } else {
         return M2Plus(m) * (1.0 - 16.0 * beta * M2Minus(m));
     }
 }
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::M4Minus(PetscReal m) {
+PetscReal ablate::flow::fluxCalculator::AusmpUp::M4Minus(PetscReal m) {
     if (PetscAbs(m) >= 1.0) {
         return M1Minus(m);
     } else {
         return M2Minus(m) * (1.0 + 16.0 * beta * M2Plus(m));
     }
 }
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Plus(PetscReal m, double fa) {
+PetscReal ablate::flow::fluxCalculator::AusmpUp::P5Plus(PetscReal m, double fa) {
     if (PetscAbs(m) >= 1.0) {
         return (M1Plus(m) / (m + 1E-30));
     } else {
@@ -79,7 +78,7 @@ PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Plus(PetscRea
         return (M2Plus(m) * ((2.0 - m) - 16. * alpha * m * M2Minus(m)));
     }
 }
-PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Minus(PetscReal m, double fa) {
+PetscReal ablate::flow::fluxCalculator::AusmpUp::P5Minus(PetscReal m, double fa) {
     if (PetscAbs(m) >= 1.0) {
         return (M1Minus(m) / (m + 1E-30));
     } else {
@@ -89,5 +88,5 @@ PetscReal ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer::P5Minus(PetscRe
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::fluxDifferencer::FluxDifferencer, ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer,
-         "A sequel to AUSM, Part II: AUSM+-up for all speeds, Meng-Sing Liou, Pages 137-170, 2006", ARG(double, "mInf", "the reference mach number"));
+REGISTER(ablate::flow::fluxCalculator::FluxCalculator, ablate::flow::fluxCalculator::AusmpUp, "A sequel to AUSM, Part II: AUSM+-up for all speeds, Meng-Sing Liou, Pages 137-170, 2006",
+         ARG(double, "mInf", "the reference mach number"));

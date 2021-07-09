@@ -3,13 +3,12 @@
 #include <flow/processes/eulerAdvection.hpp>
 #include <vector>
 #include "eos/perfectGas.hpp"
-#include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
-#include "flow/fluxDifferencer/fluxDifferencer.hpp"
+#include "flow/fluxCalculator/ausm.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
 
 struct CompressibleFlowFluxTestParameters {
-    std::shared_ptr<ablate::flow::fluxDifferencer::FluxDifferencer> fluxDifferencer;
+    std::shared_ptr<ablate::flow::fluxCalculator::FluxCalculator> fluxCalculator;
     std::vector<PetscReal> area;
     std::vector<PetscReal> xLeft;
     std::vector<PetscReal> xRight;
@@ -26,7 +25,7 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     ablate::flow::processes::EulerAdvection::EulerAdvectionData eulerFlowData;
     PetscNew(&eulerFlowData);
     eulerFlowData->cfl = NAN;
-    eulerFlowData->fluxDifferencer = params.fluxDifferencer->GetFluxDifferencerFunction();
+    eulerFlowData->fluxCalculatorFunction = params.fluxCalculator->GetFluxCalculatorFunction();
 
     // set a perfect gas for testing
     auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>());
@@ -57,17 +56,17 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
 }
 
 INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowFluxTestFixture,
-                         testing::Values((CompressibleFlowFluxTestParameters){.fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+                         testing::Values((CompressibleFlowFluxTestParameters){.fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
                                                                               .area = {1},
                                                                               .xLeft = {0.400688, 0.929113, 0.371908},
                                                                               .xRight = {0.391646, 0.924943, 0.363631},
                                                                               .expectedFlux = {0.371703, 1.142619, 0.648038}},
-                                         (CompressibleFlowFluxTestParameters){.fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+                                         (CompressibleFlowFluxTestParameters){.fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
                                                                               .area = {1},
                                                                               .xLeft = {5.999240, 2304.275075, 117.570106},
                                                                               .xRight = {5.992420, 230.275501, -37.131012},
                                                                               .expectedFlux = {0.091875, 42.347103, 508.789524}},
-                                         (CompressibleFlowFluxTestParameters){.fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+                                         (CompressibleFlowFluxTestParameters){.fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
                                                                               .area = {1},
                                                                               .xLeft =
                                                                                   {
@@ -77,7 +76,7 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowFluxTestFixture,
                                                                                   },
                                                                               .xRight = {0.893851, 2.501471, 1.714786},
                                                                               .expectedFlux = {1.637664, 5.110295, 3.430243}},
-                                         (CompressibleFlowFluxTestParameters){.fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+                                         (CompressibleFlowFluxTestParameters){.fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
                                                                               .area = {-1.0},
                                                                               .xLeft = {0.893851, 2.501471, 1.714786},
                                                                               .xRight = {0.864333, 2.369795, 1.637664},

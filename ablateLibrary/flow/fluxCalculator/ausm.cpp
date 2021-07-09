@@ -1,7 +1,6 @@
-#include "ausmFluxDifferencer.hpp"
-ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmFluxDifferencer::AusmFluxDifferencerFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
-                                                                                                                         PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
-                                                                                                                         PetscReal *p12) {
+#include "ausm.hpp"
+ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Ausm::AusmFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
+                                                                                         PetscReal rhoR, PetscReal pR, PetscReal *massFlux, PetscReal *p12) {
     PetscReal Mm = uR / aR;
     PetscReal sMm, sPm;
     if (PetscAbsReal(Mm) <= 1.) {
@@ -44,5 +43,5 @@ ablate::flow::fluxDifferencer::Direction ablate::flow::fluxDifferencer::AusmFlux
 }
 
 #include "parser/registrar.hpp"
-REGISTER_WITHOUT_ARGUMENTS(ablate::flow::fluxDifferencer::FluxDifferencer, ablate::flow::fluxDifferencer::AusmFluxDifferencer,
+REGISTER_WITHOUT_ARGUMENTS(ablate::flow::fluxCalculator::FluxCalculator, ablate::flow::fluxCalculator::Ausm,
                            "AUSM Flux Spliting: \"A New Flux Splitting Scheme\" Liou and Steffen, pg 26, Eqn (6), 1993");

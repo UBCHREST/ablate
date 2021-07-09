@@ -1,16 +1,15 @@
 #include <petsc.h>
-#include <flow/fluxDifferencer/ausmFluxDifferencer.hpp>
-#include <flow/fluxDifferencer/averageFluxDifferencer.hpp>
-#include <flow/fluxDifferencer/fluxDifferencer.hpp>
-#include <flow/fluxDifferencer/offFluxDifferencer.hpp>
 #include <vector>
+#include "flow/fluxCalculator/ausm.hpp"
+#include "flow/fluxCalculator/averageFlux.hpp"
+#include "flow/fluxCalculator/offFlux.hpp"
 #include "gtest/gtest.h"
 
-using namespace ablate::flow::fluxDifferencer;
+using namespace ablate::flow::fluxCalculator;
 
-struct FluxDifferencerTestParameters {
+struct FluxCalculatorTestParameters {
     std::string testName;
-    std::shared_ptr<ablate::flow::fluxDifferencer::FluxDifferencer> fluxDifferencer;
+    std::shared_ptr<ablate::flow::fluxCalculator::FluxCalculator> fluxCalculator;
     std::vector<PetscReal> uL;
     std::vector<PetscReal> aL;
     std::vector<PetscReal> rhoL;
@@ -21,17 +20,17 @@ struct FluxDifferencerTestParameters {
     std::vector<PetscReal> pR;
     std::vector<PetscReal> expectedMassFlux;
     std::vector<PetscReal> expectedInterfacePressure;
-    std::vector<ablate::flow::fluxDifferencer::Direction> expectedDirection;
+    std::vector<ablate::flow::fluxCalculator::Direction> expectedDirection;
 };
 
-class FluxDifferencerTestParametersTestFixture : public ::testing::TestWithParam<FluxDifferencerTestParameters> {};
+class FluxCalculatorTestParametersTestFixture : public ::testing::TestWithParam<FluxCalculatorTestParameters> {};
 
-TEST_P(FluxDifferencerTestParametersTestFixture, ShouldComputeCorrectFlux) {
+TEST_P(FluxCalculatorTestParametersTestFixture, ShouldComputeCorrectFlux) {
     // arrange
     const auto& params = GetParam();
 
-    FluxDifferencerFunction function = params.fluxDifferencer->GetFluxDifferencerFunction();
-    void* context = params.fluxDifferencer->GetFluxDifferencerContext();
+    FluxCalculatorFunction function = params.fluxCalculator->GetFluxCalculatorFunction();
+    void* context = params.fluxCalculator->GetFluxCalculatorContext();
 
     PetscReal massFlux;
     PetscReal pressureFace;
@@ -48,11 +47,11 @@ TEST_P(FluxDifferencerTestParametersTestFixture, ShouldComputeCorrectFlux) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    FluxDifferencer, FluxDifferencerTestParametersTestFixture,
+    FluxDifferencer, FluxCalculatorTestParametersTestFixture,
     testing::Values(
-        (FluxDifferencerTestParameters){
-            .testName = "AusmFluxDifferencer",
-            .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+        (FluxCalculatorTestParameters){
+            .testName = "Ausm",
+            .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
             .uL = {-46.801376,  72.26622,    143.493328, -298.81582,  -7.23096,    -18.991384,  197.677272,  139.742053,  -594.589692, -290.53794, 428.43614,   -54.055332,  115.4032,
                    -392.340472, -41.287239,  154.19184,  -107.410149, 605.56822,   237.64508,   -322.95408,  -229.684257, 14.9085,     426.853071, -108.341724, -361.619038, -27.726526,
                    -194.035211, -128.021795, -51.42915,  -2.328389,   -207.126428, -170.092372, -109.112972, -17.289702,  -100.064006, -363.66779, 429.399216,  41.324511,   141.155896,
@@ -114,34 +113,34 @@ INSTANTIATE_TEST_SUITE_P(
                                   RIGHT, LEFT,  LEFT,  RIGHT, RIGHT, LEFT,  LEFT,  LEFT,  RIGHT, RIGHT, LEFT,  RIGHT, LEFT,  LEFT,  LEFT,  RIGHT, LEFT,  RIGHT, LEFT,  RIGHT}
 
         },
-        (FluxDifferencerTestParameters){.testName = "AverageFluxDifferencer",
-                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AverageFluxDifferencer>(),
-                                        .uL = {80, 168.5, -161.4, 76},
-                                        .aL = {80, 337, 269, 190},
-                                        .rhoL = {2, 4, 4, 2},
-                                        .pL = {93644, 39649, 339174, 112878},
-                                        .uR = {32, 31.2, -68, -122},
-                                        .aR = {32, 52, 136, 305},
-                                        .rhoR = {1, 3, 5, 6},
-                                        .pR = {51426, 264102, 254728, 195151},
-                                        .expectedMassFlux = {96, 383.8, -492.8, -290},
-                                        .expectedInterfacePressure = {72535, 151875.5, 296951, 154014.5},
-                                        .expectedDirection = {NA, NA, NA, NA}
+        (FluxCalculatorTestParameters){.testName = "AverageFlux",
+                                       .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AverageFlux>(),
+                                       .uL = {80, 168.5, -161.4, 76},
+                                       .aL = {80, 337, 269, 190},
+                                       .rhoL = {2, 4, 4, 2},
+                                       .pL = {93644, 39649, 339174, 112878},
+                                       .uR = {32, 31.2, -68, -122},
+                                       .aR = {32, 52, 136, 305},
+                                       .rhoR = {1, 3, 5, 6},
+                                       .pR = {51426, 264102, 254728, 195151},
+                                       .expectedMassFlux = {96, 383.8, -492.8, -290},
+                                       .expectedInterfacePressure = {72535, 151875.5, 296951, 154014.5},
+                                       .expectedDirection = {NA, NA, NA, NA}
 
         },
-        (FluxDifferencerTestParameters){.testName = "OffFluxDifferencer",
-                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::OffFluxDifferencer>(),
-                                        .uL = {80, 168.5, -161.4, 76},
-                                        .aL = {80, 337, 269, 190},
-                                        .rhoL = {2, 4, 4, 2},
-                                        .pL = {93644, 39649, 339174, 112878},
-                                        .uR = {32, 31.2, -68, -122},
-                                        .aR = {32, 52, 136, 305},
-                                        .rhoR = {1, 3, 5, 6},
-                                        .pR = {51426, 264102, 254728, 195151},
-                                        .expectedMassFlux = {0.0, 0.0, 0.0, 0.0},
-                                        .expectedInterfacePressure = {0.0, 0.0, 0.0, 0.},
-                                        .expectedDirection = {NA, NA, NA, NA}
+        (FluxCalculatorTestParameters){.testName = "OffFlux",
+                                       .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::OffFlux>(),
+                                       .uL = {80, 168.5, -161.4, 76},
+                                       .aL = {80, 337, 269, 190},
+                                       .rhoL = {2, 4, 4, 2},
+                                       .pL = {93644, 39649, 339174, 112878},
+                                       .uR = {32, 31.2, -68, -122},
+                                       .aR = {32, 52, 136, 305},
+                                       .rhoR = {1, 3, 5, 6},
+                                       .pR = {51426, 264102, 254728, 195151},
+                                       .expectedMassFlux = {0.0, 0.0, 0.0, 0.0},
+                                       .expectedInterfacePressure = {0.0, 0.0, 0.0, 0.},
+                                       .expectedDirection = {NA, NA, NA, NA}
 
         }),
-    [](const testing::TestParamInfo<FluxDifferencerTestParameters>& info) { return info.param.testName; });
+    [](const testing::TestParamInfo<FluxCalculatorTestParameters>& info) { return info.param.testName; });

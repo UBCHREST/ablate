@@ -1,5 +1,4 @@
 #include <petsc.h>
-#include <flow/fluxDifferencer/ausmpUpFluxDifferencer.hpp>
 #include <flow/processes/eulerAdvection.hpp>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
@@ -7,8 +6,9 @@
 #include "eos/perfectGas.hpp"
 #include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
-#include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
-#include "flow/fluxDifferencer/averageFluxDifferencer.hpp"
+#include "flow/fluxCalculator/ausm.hpp"
+#include "flow/fluxCalculator/ausmpUp.hpp"
+#include "flow/fluxCalculator/averageFlux.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
@@ -46,7 +46,7 @@ typedef struct {
 
 struct CompressibleFlowMmsTestParameters {
     testingResources::MpiTestParameter mpiTestParameter;
-    std::shared_ptr<flow::fluxDifferencer::FluxDifferencer> fluxDifferencer;
+    std::shared_ptr<flow::fluxCalculator::FluxCalculator> fluxCalculator;
     Constants constants;
     PetscInt initialNx;
     PetscInt levels;
@@ -592,7 +592,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                parameters,
-                                                                               GetParam().fluxDifferencer,
+                                                                               GetParam().fluxCalculator,
                                                                                nullptr /*options*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution} /*initialization*/,
                                                                                boundaryConditions /*boundary conditions*/,
@@ -665,7 +665,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 INSTANTIATE_TEST_SUITE_P(
     CompressibleFlow, CompressibleFlowMmsTestFixture,
     testing::Values((CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
-                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AverageFluxDifferencer>(),
+                                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AverageFlux>(),
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
                                                                       .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
@@ -682,7 +682,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedL2Convergence = {2, 2, 2, 2},
                                                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed average", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
-                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AverageFluxDifferencer>(),
+                                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -700,7 +700,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedL2Convergence = {2, 2, 2, 2},
                                                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed ausm", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
-                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+                                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
 
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -718,7 +718,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedL2Convergence = {1.0, 1.0, 1.4, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.4, 1.0}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed ausm", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
-                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+                                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
 
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -736,7 +736,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedL2Convergence = {1.0, 1.0, 1.0, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed ausmpup", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
-                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer>(.3),
+                                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AusmpUp>(.3),
 
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -754,7 +754,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedL2Convergence = {1.0, 1.0, 1.2, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.2, 1.0}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "high speed ausmpup", .nproc = 1, .arguments = "-dm_plex_separate_marker "},
-                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmpUpFluxDifferencer>(.3),
+                                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AusmpUp>(.3),
 
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -773,7 +773,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){
                         .mpiTestParameter = {.testName = "low speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker  -eulerpetscfv_type leastsquares"},
-                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
 
                         .constants = {.dim = 2,
                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -792,7 +792,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){
                         .mpiTestParameter = {.testName = "high speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker -eulerpetscfv_type leastsquares"},
-                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AusmFluxDifferencer>(),
+                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
 
                         .constants = {.dim = 2,
                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -812,7 +812,7 @@ INSTANTIATE_TEST_SUITE_P(
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction",
                                                                              .nproc = 1,
                                                                              .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
-                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AverageFluxDifferencer>(),
+                                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -833,7 +833,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .mpiTestParameter = {.testName = "high speed average with conduction",
                                              .nproc = 1,
                                              .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none "},
-                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AverageFluxDifferencer>(),
+                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AverageFlux>(),
 
                         .constants = {.dim = 2,
                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -853,7 +853,7 @@ INSTANTIATE_TEST_SUITE_P(
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction and diffusion",
                                                                              .nproc = 1,
                                                                              .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
-                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AverageFluxDifferencer>(),
+                                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -874,7 +874,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .mpiTestParameter = {.testName = "high speed average with conduction and diffusion",
                                              .nproc = 1,
                                              .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none "},
-                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AverageFluxDifferencer>(),
+                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AverageFlux>(),
 
                         .constants = {.dim = 2,
                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
@@ -894,7 +894,7 @@ INSTANTIATE_TEST_SUITE_P(
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction and diffusion 3D",
                                                                              .nproc = 1,
                                                                              .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
-                                                        .fluxDifferencer = std::make_shared<ablate::flow::fluxDifferencer::AverageFluxDifferencer>(),
+                                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 3,
                                                                       .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = .4},

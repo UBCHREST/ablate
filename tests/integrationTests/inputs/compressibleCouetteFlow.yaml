@@ -75,4 +75,4 @@ flow: !ablate::flow::CompressibleFlow
   eos: !ablate::eos::PerfectGas
     parameters:
       gamma: 1.4
-      Rgas : 287.0 
+      Rgas : 287.0
