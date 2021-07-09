@@ -34,7 +34,7 @@ ablate::flow::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string nam
 REGISTER(ablate::flow::Flow, ablate::flow::ReactingCompressibleFlow, "reacting compressible finite volume flow", ARG(std::string, "name", "the name of the flow field"),
          ARG(ablate::mesh::Mesh, "mesh", "the  mesh and discretization"), ARG(ablate::eos::EOS, "eos", "the TChem v1 equation of state used to describe the flow"),
          ARG(ablate::parameters::Parameters, "parameters", "the compressible flow parameters cfl, gamma, etc."),
-         OPT(ablate::flow::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculators (defaults to AUSM)"),
-         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSc"), OPT(std::vector<mathFunctions::FieldSolution>, "initialization", "the flow field initialization"),
+         OPT(ablate::flow::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (defaults to AUSM)"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSc"),
+         OPT(std::vector<mathFunctions::FieldSolution>, "initialization", "the flow field initialization"),
          OPT(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          OPT(std::vector<mathFunctions::FieldSolution>, "exactSolution", "optional exact solutions that can be used for error calculations"));
