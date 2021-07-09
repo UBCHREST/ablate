@@ -25,8 +25,9 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal* in) {
  * Function to get the density, velocity, and energy from the conserved variables
  * @return
  */
-void ablate::flow::processes::EulerAdvection::DecodeEulerState(ablate::flow::processes::EulerAdvection::EulerAdvectionData flowData, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi, const PetscReal* normal,
-                             PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p) {
+void ablate::flow::processes::EulerAdvection::DecodeEulerState(ablate::flow::processes::EulerAdvection::EulerAdvectionData flowData, PetscInt dim, const PetscReal* conservedValues,
+                                                               const PetscReal* densityYi, const PetscReal* normal, PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity,
+                                                               PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p) {
     // decode
     *density = conservedValues[RHO];
     PetscReal totalEnergy = conservedValues[RHOE] / (*density);

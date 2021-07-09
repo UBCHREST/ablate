@@ -15,7 +15,6 @@
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
 #endif
 
-
 ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TChem> eosIn)
     : fieldDm(nullptr),
       sourceVec(nullptr),
@@ -30,7 +29,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TCh
     // size up the scratch variables
     PetscMalloc3(numberSpecies + 1, &tchemScratch, PetscSqr(numberSpecies + 1), &jacobianScratch, numberSpecies, &rows) >> checkError;
     // The rows will not change, so set them once
-    for (PetscInt i = 0; i < numberSpecies + 1; i++) {
+    for (std::size_t i = 0; i < numberSpecies + 1; i++) {
         rows[i] = i;
     }
 
@@ -51,16 +50,14 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TCh
     TSSetExactFinalTime(ts, TS_EXACTFINALTIME_STEPOVER) >> checkError;
 
     // set the adapting control
-    TSSetSolution(ts, pointData)>> checkError;
-    PetscReal dt   = 1e-10;                 /* Initial time step */
-    TSSetTimeStep(ts,dt)>> checkError;
+    TSSetSolution(ts, pointData) >> checkError;
+    PetscReal dt = 1e-10; /* Initial time step */
+    TSSetTimeStep(ts, dt) >> checkError;
     TSAdapt adapt;
-    TSGetAdapt(ts,&adapt)>> checkError;
-    TSAdaptSetStepLimits(adapt,1e-12,1E-4)>> checkError; /* Also available with -ts_adapt_dt_min/-ts_adapt_dt_max */
-    TSSetMaxSNESFailures(ts,-1)>> checkError;            /* Retry step an unlimited number of times */
-    TSSetFromOptions(ts)>> checkError;
-
-
+    TSGetAdapt(ts, &adapt) >> checkError;
+    TSAdaptSetStepLimits(adapt, 1e-12, 1E-4) >> checkError; /* Also available with -ts_adapt_dt_min/-ts_adapt_dt_max */
+    TSSetMaxSNESFailures(ts, -1) >> checkError;             /* Retry step an unlimited number of times */
+    TSSetFromOptions(ts) >> checkError;
 }
 ablate::flow::processes::TChemReactions::~TChemReactions() {
     if (fieldDm) {
@@ -188,25 +185,32 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
     IS cellIS;
     DM plex;
     PetscInt depth;
-    ierr = DMConvert(flow.GetDM(), DMPLEX, &plex);CHKERRQ(ierr);
-    ierr = DMPlexGetDepth(plex, &depth);CHKERRQ(ierr);
-    ierr = DMGetStratumIS(plex, "dim", depth, &cellIS);CHKERRQ(ierr);
+    ierr = DMConvert(flow.GetDM(), DMPLEX, &plex);
+    CHKERRQ(ierr);
+    ierr = DMPlexGetDepth(plex, &depth);
+    CHKERRQ(ierr);
+    ierr = DMGetStratumIS(plex, "dim", depth, &cellIS);
+    CHKERRQ(ierr);
     if (!cellIS) {
-        ierr = DMGetStratumIS(plex, "depth", depth, &cellIS);CHKERRQ(ierr);
+        ierr = DMGetStratumIS(plex, "depth", depth, &cellIS);
+        CHKERRQ(ierr);
     }
 
     // Get the sell range
     PetscInt cStart, cEnd;
     const PetscInt* cells = NULL;
-    ierr = ISGetPointRange(cellIS, &cStart, &cEnd, &cells);CHKERRQ(ierr);
+    ierr = ISGetPointRange(cellIS, &cStart, &cEnd, &cells);
+    CHKERRQ(ierr);
 
     // get the dim
     PetscInt dim;
-    ierr = DMGetDimension(flow.GetDM(), &dim);CHKERRQ(ierr);
+    ierr = DMGetDimension(flow.GetDM(), &dim);
+    CHKERRQ(ierr);
 
     // store the current dt
     PetscReal dt;
-    ierr = TSGetTimeStep(flowTs, &dt);CHKERRQ(ierr);
+    ierr = TSGetTimeStep(flowTs, &dt);
+    CHKERRQ(ierr);
 
     // get access to the underlying data for the flow
     PetscInt flowEulerId = flow.GetFieldId("euler").value();
@@ -214,13 +218,16 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
 
     // get the flowSolution from the ts
     Vec globFlowVec;
-    ierr = TSGetSolution(flowTs, &globFlowVec);CHKERRQ(ierr);
+    ierr = TSGetSolution(flowTs, &globFlowVec);
+    CHKERRQ(ierr);
     const PetscScalar* flowArray;
-    ierr = VecGetArrayRead(globFlowVec, &flowArray);CHKERRQ(ierr);
+    ierr = VecGetArrayRead(globFlowVec, &flowArray);
+    CHKERRQ(ierr);
 
     // Get access to the chemistry source.  This is sized for euler + nspec
     PetscScalar* sourceArray;
-    ierr = VecGetArray(sourceVec, &sourceArray);CHKERRQ(ierr);
+    ierr = VecGetArray(sourceVec, &sourceArray);
+    CHKERRQ(ierr);
 
     // store the eos temperature functions
     eos::ComputeTemperatureFunction temperatureFunction = eos->GetComputeTemperatureFunction();
@@ -234,8 +241,10 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
         // Get the current state variables for this cell
         const PetscScalar* euler;
         const PetscScalar* densityYi;
-        ierr = DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowEulerId, flowArray, &euler);CHKERRQ(ierr);
-        ierr = DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowDensityYiId, flowArray, &densityYi);CHKERRQ(ierr);
+        ierr = DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowEulerId, flowArray, &euler);
+        CHKERRQ(ierr);
+        ierr = DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowDensityYiId, flowArray, &densityYi);
+        CHKERRQ(ierr);
 
         // If a real cell (not ghost)
         if (euler) {
@@ -255,7 +264,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             ierr = VecGetArray(pointData, &pointArray);
             CHKERRQ(ierr);
             pointArray[0] = temperature;
-            for (PetscInt s = 0; s < numberSpecies; s++) {
+            for (std::size_t s = 0; s < numberSpecies; s++) {
                 pointArray[s + 1] = densityYi[s] / euler[ablate::flow::processes::EulerAdvection::RHO];
             }
 
@@ -310,7 +319,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             for (PetscInt d = 0; d < dim; d++) {
                 fieldSource[ablate::flow::processes::EulerAdvection::RHOU + d] = 0.0;
             }
-            for (PetscInt sp = 0; sp < numberSpecies; sp++) {
+            for (std::size_t sp = 0; sp < numberSpecies; sp++) {
                 // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
                 fieldSource[ablate::flow::processes::EulerAdvection::RHOU + dim + sp] = (euler[ablate::flow::processes::EulerAdvection::RHO] * pointArray[sp + 1] - densityYi[sp]) / dt;
             }
@@ -393,8 +402,8 @@ PetscErrorCode ablate::flow::processes::TChemReactions::AddChemistrySourceToFlow
             CHKERRQ(ierr);
 
             // copy over and add to rhs
-            for (PetscInt c = 0; c < totDim; c++) {
-                rhs[c] += source[c];
+            for (PetscInt d = 0; d < totDim; d++) {
+                rhs[d] += source[d];
             }
             CHKERRQ(ierr);
         }
@@ -410,3 +419,6 @@ PetscErrorCode ablate::flow::processes::TChemReactions::AddChemistrySourceToFlow
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
+
+#include "parser/registrar.hpp"
+REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::TChemReactions, "reactions using the TChem v1 library", OPT(eos::TChem, "eos", "the tChem v1 eos"));
