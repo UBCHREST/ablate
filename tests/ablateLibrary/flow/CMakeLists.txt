@@ -10,4 +10,4 @@ target_sources(libraryTests
         flowFieldDescriptorTests.cpp
         )
 
-add_subdirectory(fluxDifferencer)
+add_subdirectory(fluxCalculator)

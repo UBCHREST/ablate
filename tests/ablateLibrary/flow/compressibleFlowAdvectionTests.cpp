@@ -151,37 +151,29 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    CompressibleFlow, CompressibleFlowAdvectionFixture,
-    testing::Values((CompressibleFlowAdvectionTestParameters){.mpiTestParameter = {.testName = "yi advection",
-                                                                                   .nproc = 1,
-                                                                                   .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                                                "-eulerpetscfv_type upwind -densityYipetscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
-                                                              .initialNx = 5,
-                                                              .levels = 4,
-                                                              .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
-                                                              .densityYiExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*(1-.5*(1 + sin(2*_pi*(x-4*t)/.01))/2)"),
-                                                              .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1, 1},
-                                                              .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1, 1}},
-                    (CompressibleFlowAdvectionTestParameters){.mpiTestParameter = {.testName = "mpi yi advection",
-                        .nproc = 2,
-                        .arguments = "-dm_plex_separate_marker -dm_distribute -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                     "-eulerpetscfv_type upwind -densityYipetscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
-                        .initialNx = 5,
-                        .levels = 4,
-                        .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
-                        .densityYiExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*(1-.5*(1 + sin(2*_pi*(x-4*t)/.01))/2)"),
-                        .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1, 1},
-                        .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1, 1}}/*,
-                    (CompressibleFlowAdvectionTestParameters){.mpiTestParameter = {.testName = "yi advection leastsquares",
-                        .nproc = 1,
-                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none -automaticTimeStepCalculator off "
-                                     "-eulerpetscfv_type upwind -densityYipetscfv_type upwind -ts_max_steps 50 -ts_dt 5.509e-07  "},
-                        .initialNx = 10,
-                        .levels = 2,
-                        .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
-                        .densityYiExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*(1-.5*(1 + sin(2*_pi*(x-4*t)/.01))/2)"),
-                        .expectedL2Convergence = {NAN, NAN, NAN, NAN, .8, .8, .8},
-                        .expectedLInfConvergence = {NAN, NAN, NAN, NAN, .8, .8, .8}}*/),
-    [](const testing::TestParamInfo<CompressibleFlowAdvectionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowAdvectionFixture,
+                         testing::Values(
+                             (CompressibleFlowAdvectionTestParameters){
+                                 .mpiTestParameter = {.testName = "yi advection",
+                                                      .nproc = 1,
+                                                      .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                                   "-eulerpetscfv_type upwind -densityYipetscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
+                                 .initialNx = 5,
+                                 .levels = 4,
+                                 .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
+                                 .densityYiExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*(1-.5*(1 + sin(2*_pi*(x-4*t)/.01))/2)"),
+                                 .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1, 1},
+                                 .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1, 1}},
+                             (CompressibleFlowAdvectionTestParameters){
+                                 .mpiTestParameter = {.testName = "mpi yi advection",
+                                                      .nproc = 2,
+                                                      .arguments = "-dm_plex_separate_marker -dm_distribute -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                                   "-eulerpetscfv_type upwind -densityYipetscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
+                                 .initialNx = 5,
+                                 .levels = 4,
+                                 .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
+                                 .densityYiExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*(1-.5*(1 + sin(2*_pi*(x-4*t)/.01))/2)"),
+                                 .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1, 1},
+                                 .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1, 1}}),
+                         [](const testing::TestParamInfo<CompressibleFlowAdvectionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

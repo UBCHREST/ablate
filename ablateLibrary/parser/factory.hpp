@@ -34,8 +34,11 @@ class Factory {
     /* return an int for the specified identifier*/
     virtual int Get(const ArgumentIdentifier<int>& identifier) const = 0;
 
-    /* return an bool for the specified identifier*/
+    /* return a bool for the specified identifier*/
     virtual bool Get(const ArgumentIdentifier<bool>& identifier) const = 0;
+
+    /* return a double for the specified identifier*/
+    virtual double Get(const ArgumentIdentifier<double>& identifier) const = 0;
 
     /* return a vector of strings */
     virtual std::vector<std::string> Get(const ArgumentIdentifier<std::vector<std::string>>& identifier) const = 0;

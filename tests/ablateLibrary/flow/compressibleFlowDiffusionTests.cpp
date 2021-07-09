@@ -9,7 +9,7 @@
 #include "eos/perfectGas.hpp"
 #include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
-#include "flow/fluxDifferencer/offFluxDifferencer.hpp"
+#include "flow/fluxCalculator/offFlux.hpp"
 #include "flow/processes/eulerAdvection.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -217,7 +217,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                flowParameters,
-                                                                               std::make_shared<flow::fluxDifferencer::OffFluxDifferencer>(),
+                                                                               std::make_shared<flow::fluxCalculator::OffFlux>(),
                                                                                nullptr /*options*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactSolution} /*initialization*/,
                                                                                boundaryConditions /*boundary conditions*/,

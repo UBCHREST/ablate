@@ -1,9 +1,8 @@
 #ifndef ABLATELIBRARY_EULERADVECTION_HPP
 #define ABLATELIBRARY_EULERADVECTION_HPP
 
-#include <fluxDifferencer.h>
 #include <petsc.h>
-#include <flow/fluxDifferencer/fluxDifferencer.hpp>
+#include "flow/fluxCalculator/fluxCalculator.hpp"
 #include "flowProcess.hpp"
 
 namespace ablate::flow::processes {
@@ -17,8 +16,9 @@ class EulerAdvection : public FlowProcess {
         PetscInt numberSpecies;
         PetscReal cfl;
 
-        /* store method used for flux differencer */
-        FluxDifferencerFunction fluxDifferencer;
+        /* store method used for flux calculator */
+        ablate::flow::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
+        void* fluxCalculatorCtx;
 
         // EOS function calls
         PetscErrorCode (*decodeStateFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal* densityYi, PetscReal* internalEnergy, PetscReal* a,
@@ -30,7 +30,7 @@ class EulerAdvection : public FlowProcess {
     /**
      * public constructor for euler advection
      */
-    EulerAdvection(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxDifferencer::FluxDifferencer> fluxDifferencerIn = {});
+    EulerAdvection(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {});
 
     ~EulerAdvection() override;
 
@@ -66,7 +66,7 @@ class EulerAdvection : public FlowProcess {
    private:
     EulerAdvectionData eulerAdvectionData;
     std::shared_ptr<eos::EOS> eos;
-    std::shared_ptr<fluxDifferencer::FluxDifferencer> fluxDifferencer;
+    std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
 
     // static function to compute time step for euler advection
     static double ComputeTimeStep(TS ts, ablate::flow::Flow& flow, void* ctx);

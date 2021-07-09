@@ -1,0 +1,12 @@
+target_sources(ablateLibrary
+        PUBLIC
+        fluxCalculator.hpp
+        ausm.hpp
+        ausm.cpp
+        averageFlux.hpp
+        averageFlux.cpp
+        offFlux.hpp
+        offFlux.cpp
+        ausmpUp.hpp
+        ausmpUp.cpp
+        )

@@ -1,6 +1,6 @@
 #include "eulerAdvection.hpp"
+#include <flow/fluxCalculator/ausm.hpp>
 #include <utilities/petscError.hpp>
-#include "flow/fluxDifferencer/ausmFluxDifferencer.hpp"
 
 typedef enum { RHO, RHOE, RHOU, RHOV, RHOW, TOTAL_COMPRESSIBLE_FLOW_COMPONENTS } CompressibleFlowComponents;
 
@@ -81,24 +81,45 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowComputeE
     const PetscReal* densityYiR = eulerAdvectionData->numberSpecies > 0 ? fieldR + uOff[YI_FIELD] : NULL;
     DecodeEulerState(eulerAdvectionData, dim, fieldR + uOff[EULER_FIELD], densityYiR, norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
-    PetscReal sPm;
-    PetscReal sPp;
-    PetscReal sMm;
-    PetscReal sMp;
+    // get the face values
+    PetscReal massFlux;
+    PetscReal p12;
 
-    eulerAdvectionData->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
+    /*void (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+        PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
+        PetscReal * m12, PetscReal *p12);*/
+    fluxCalculator::Direction direction =
+        eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, &p12);
 
-    flux[RHO] = (sMm * densityR * aR + sMp * densityL * aL) * areaMag;
+    if (direction == fluxCalculator::LEFT) {
+        flux[RHO] = massFlux * areaMag;
+        PetscReal velMagL = MagVector(dim, velocityL);
+        PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
+        flux[RHOE] = HL * massFlux * areaMag;
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[RHOU + n] = velocityL[n] * massFlux * areaMag + p12 * fg->normal[n];
+        }
+    } else if (direction == fluxCalculator::RIGHT) {
+        flux[RHO] = massFlux * areaMag;
+        PetscReal velMagR = MagVector(dim, velocityR);
+        PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
+        flux[RHOE] = HR * massFlux * areaMag;
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[RHOU + n] = velocityR[n] * massFlux * areaMag + p12 * fg->normal[n];
+        }
+    } else {
+        flux[RHO] = massFlux * areaMag;
 
-    PetscReal velMagR = MagVector(dim, velocityR);
-    PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
-    PetscReal velMagL = MagVector(dim, velocityL);
-    PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
+        PetscReal velMagL = MagVector(dim, velocityL);
+        PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
 
-    flux[RHOE] = (sMm * densityR * aR * HR + sMp * densityL * aL * HL) * areaMag;
+        PetscReal velMagR = MagVector(dim, velocityR);
+        PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
 
-    for (PetscInt n = 0; n < dim; n++) {
-        flux[RHOU + n] = (sMm * densityR * aR * velocityR[n] + sMp * densityL * aL * velocityL[n]) * areaMag + (pR * sPm + pL * sPp) * fg->normal[n];
+        flux[RHOE] = 0.5 * (HL + HR) * massFlux * areaMag;
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * massFlux * areaMag + p12 * fg->normal[n];
+        }
     }
 
     PetscFunctionReturn(0);
@@ -138,25 +159,33 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowSpeciesA
     PetscReal pR;
     DecodeEulerState(eulerAdvectionData, dim, fieldR + uOff[EULER_FIELD], fieldR + uOff[YI_FIELD], norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
 
-    PetscReal sPm;
-    PetscReal sPp;
-    PetscReal sMm;
-    PetscReal sMp;
+    // get the face values
+    PetscReal massFlux;
 
-    eulerAdvectionData->fluxDifferencer(MR, &sPm, &sMm, ML, &sPp, &sMp);
+    /*void (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+    PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
+    PetscReal * m12, PetscReal *p12);*/
 
-    // march over each gas species
-    for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
-        // Note: there is no density in the flux because uR and UL are density*yi
-        flux[sp] = (sMm * aR * fieldR[uOff[YI_FIELD] + sp] + sMp * aL * fieldL[uOff[YI_FIELD] + sp]) * areaMag;
+    if (eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, NULL) ==
+        fluxCalculator::LEFT) {
+        // march over each gas species
+        for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
+            // Note: there is no density in the flux because uR and UL are density*yi
+            flux[sp] = (massFlux * fieldL[uOff[YI_FIELD] + sp] / densityL) * areaMag;
+        }
+    } else {
+        // march over each gas species
+        for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
+            // Note: there is no density in the flux because uR and UL are density*yi
+            flux[sp] = (massFlux * fieldR[uOff[YI_FIELD] + sp] / densityR) * areaMag;
+        }
     }
 
     PetscFunctionReturn(0);
 }
 
-ablate::flow::processes::EulerAdvection::EulerAdvection(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn,
-                                                        std::shared_ptr<fluxDifferencer::FluxDifferencer> fluxDifferencerIn)
-    : eos(eosIn), fluxDifferencer(fluxDifferencerIn == nullptr ? std::make_shared<fluxDifferencer::AusmFluxDifferencer>() : fluxDifferencerIn) {
+ablate::flow::processes::EulerAdvection::EulerAdvection(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn)
+    : eos(eosIn), fluxCalculator(fluxCalcIn == nullptr ? std::make_shared<fluxCalculator::Ausm>() : fluxCalcIn) {
     PetscNew(&eulerAdvectionData);
 
     // Store the required data for the low level c functions
@@ -168,7 +197,8 @@ ablate::flow::processes::EulerAdvection::EulerAdvection(std::shared_ptr<paramete
     eulerAdvectionData->numberSpecies = eos->GetSpecies().size();
 
     // extract the difference function from fluxDifferencer object
-    eulerAdvectionData->fluxDifferencer = fluxDifferencer->GetFluxDifferencerFunction();
+    eulerAdvectionData->fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
+    eulerAdvectionData->fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
 }
 
 ablate::flow::processes::EulerAdvection::~EulerAdvection() { PetscFree(eulerAdvectionData); }
@@ -255,4 +285,4 @@ double ablate::flow::processes::EulerAdvection::ComputeTimeStep(TS ts, ablate::f
 #include "parser/registrar.hpp"
 REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::EulerAdvection, "build advection for the euler field and species",
          OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
-         OPT(ablate::flow::fluxDifferencer::FluxDifferencer, "fluxDifferencer", "the flux differencer (defaults to AUSM)"));
+         OPT(ablate::flow::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (defaults to AUSM)"));
