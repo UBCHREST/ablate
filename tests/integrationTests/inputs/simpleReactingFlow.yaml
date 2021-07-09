@@ -1,0 +1,73 @@
+---
+environment:
+  title: simpleReactingFlow
+  tagDirectory: false
+arguments: 
+  dm_plex_separate_marker: ""
+  petsclimiter_type: none
+  automaticTimeStepCalculator: off
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 0.2
+    ts_max_steps: 25
+    ts_dt: 1E-6
+    ts_adapt_type: none
+flow: !ablate::flow::ReactingCompressibleFlow
+  name: vortexFlowField
+  mesh: !ablate::mesh::BoxMesh
+    name: simpleBoxField
+    faces: [ 10, 10 ]
+    lower: [ -0.1, -0.1]
+    upper: [.1, .1]
+    boundary: ["NONE", "NONE"]
+    simplex: false
+    options:
+      dm_refine: 0
+  options:
+    Tpetscfv_type: leastsquares
+    velpetscfv_type: leastsquares
+  parameters:
+    cfl: 0.4
+    k: 0.0
+    mu: 0.0
+  initialization:
+    - fieldName: "euler" #for euler all components are in a single field
+      solutionField:
+        formula: >-
+            1.0,
+            sqrt(x*x+y*y) <.05 ? 1498029.067485712: -58970.06564527616,
+            0.0,
+            0.0
+    - fieldName: "densityYi" #H2,H,O,O2,OH,H2O,HO2,H2O2,C,CH,CH2,CH2(S),CH3,CH4,CO,CO2,HCO,CH2O,CH2OH,CH3O,CH3OH,C2H,C2H2,C2H3,C2H4,C2H5,C2H6,HCCO,CH2CO,HCCOH,N,NH,NH2,NH3,NNH,NO,NO2,N2O,HNO,CN,HCN,H2CN,HCNN,HCNO,HOCN,HNCO,NCO,N2,AR,C3H7,C3H8,CH2CHO,CH3CHO
+      solutionField:
+        formula: 0,0,0,0.2,0,0,0,0,0,0,0,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.6,0,0,0,0,0
+  boundaryConditions:
+    - !ablate::flow::boundaryConditions::EssentialGhost
+      fieldName: euler
+      boundaryName: "walls"
+      labelName: Face Sets
+      labelIds: [1, 2, 3, 4]
+      boundaryValue:
+        formula: >-
+            1.0,
+            sqrt(x*x+y*y) <.05 ? 1498029.067485712: -58970.06564527616,
+            0.0,
+            0.0
+    - !ablate::flow::boundaryConditions::EssentialGhost
+      fieldName: densityYi
+      boundaryName: "walls"
+      labelName: Face Sets
+      labelIds: [1, 2, 3, 4]
+      boundaryValue:
+        formula: 0,0,0,0.2,0,0,0,0,0,0,0,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.6,0,0,0,0,0
+  
+  monitors:
+    - !ablate::monitors::TimeStepMonitor
+    - !ablate::monitors::Hdf5Monitor
+      interval: 0
+
+  eos: !ablate::eos::TChem
+    mechFile: inputs/grimech30.dat
+    thermoFile: inputs/thermo30.dat

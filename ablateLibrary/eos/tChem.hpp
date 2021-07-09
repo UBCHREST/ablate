@@ -7,8 +7,10 @@
 
 namespace ablate::eos {
 
-#define CHECKTCHEM(ierr) \
-    if (ierr != 0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in TChem Library");
+#define TCCHKERRQ(ierr)                                                                                     \
+    do {                                                                                                    \
+        if (ierr) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in TChem library, return code %d", ierr); \
+    } while (0)
 
 class TChem : public EOS {
    private:
