@@ -122,7 +122,7 @@ TEST(YamlParserTests, ShouldParseDouble) {
     // assert
     ASSERT_EQ(22.3, yamlParser->Get(ArgumentIdentifier<double>{"item"}));
     ASSERT_EQ(1, yamlParser->Get(ArgumentIdentifier<double>{"item 2"}));
-    ASSERT_EQ(3.4, yamlParser->Get(ArgumentIdentifier<double>{"item3"}));
+    ASSERT_EQ(3.3, yamlParser->Get(ArgumentIdentifier<double>{"item3"}));
     ASSERT_THROW(yamlParser->Get(ArgumentIdentifier<double>{"item4"}), YAML::BadConversion);
 }
 
