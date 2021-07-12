@@ -173,9 +173,9 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             auto initialCondition = std::make_shared<mathFunctions::FieldSolution>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "wall left", "Face Sets", 4, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "right left", "Face Sets", 2, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "mirrorWall", "Face Sets", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "wall left", 4, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "right left", 2, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "mirrorWall", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),

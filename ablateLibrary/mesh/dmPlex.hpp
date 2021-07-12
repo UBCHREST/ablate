@@ -14,7 +14,7 @@ class DMPlex : public Mesh {
 
    public:
     DMPlex(std::string name = "dmplex", std::shared_ptr<parameters::Parameters> options = {});
-    ~DMPlex();
+    ~DMPlex() override;
 };
 }  // namespace ablate::mesh
 

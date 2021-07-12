@@ -47,7 +47,6 @@ flow: !ablate::flow::ReactingCompressibleFlow
     - !ablate::flow::boundaryConditions::EssentialGhost
       fieldName: euler
       boundaryName: "walls"
-      labelName: Face Sets
       labelIds: [1, 2, 3, 4]
       boundaryValue:
         formula: >-
@@ -58,7 +57,6 @@ flow: !ablate::flow::ReactingCompressibleFlow
     - !ablate::flow::boundaryConditions::EssentialGhost
       fieldName: densityYi
       boundaryName: "walls"
-      labelName: Face Sets
       labelIds: [1, 2, 3, 4]
       boundaryValue:
         formula: 0,0,0,0.2,0,0,0,0,0,0,0,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.6,0,0,0,0,0

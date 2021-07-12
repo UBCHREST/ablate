@@ -8,4 +8,6 @@ target_sources(ablateLibrary
         dmWrapper.cpp
         dmPlex.hpp
         dmPlex.cpp
+        fileMesh.hpp
+        fileMesh.cpp
         )
