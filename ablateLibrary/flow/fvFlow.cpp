@@ -251,6 +251,10 @@ void ablate::flow::FVFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
+    PetscInt timeStep;
+    TSGetStepNumber(ts, &timeStep) >> checkError;
+    PetscReal currentDt;
+    TSGetTimeStep(ts, &currentDt) >> checkError;
 
     // Get the flow param
     ablate::flow::FVFlow& flowFV = dynamic_cast<ablate::flow::FVFlow&>(flow);
@@ -268,9 +272,12 @@ void ablate::flow::FVFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow) {
     PetscReal dtMinGlobal;
     MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
 
-    TSSetTimeStep(ts, dtMinGlobal) >> checkError;
-    if (PetscIsNanReal(dtMinGlobal)) {
-        throw std::runtime_error("Invalid timestep selected for flow");
+    // don't override the first time step if bigger
+    if(timeStep > 0 || dtMinGlobal < currentDt) {
+        TSSetTimeStep(ts, dtMinGlobal) >> checkError;
+        if (PetscIsNanReal(dtMinGlobal)) {
+            throw std::runtime_error("Invalid timestep selected for flow");
+        }
     }
 }
 void ablate::flow::FVFlow::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.push_back(std::make_pair(function, ctx)); }

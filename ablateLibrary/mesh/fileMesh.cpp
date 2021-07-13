@@ -22,3 +22,8 @@ ablate::mesh::FileMesh::~FileMesh() {
         ablate::utilities::PetscOptionsDestroyAndCheck(name, &petscOptions);
     }
 }
+
+#include "parser/registrar.hpp"
+REGISTER(ablate::mesh::Mesh, ablate::mesh::FileMesh, "read a DMPlex from a file", ARG(std::string, "name", "the name of the domain/mesh object"),
+         ARG(std::string, "path", "the path to the mesh file"),
+         OPT(ablate::parameters::Parameters, "options", "any PETSc options"));
