@@ -239,5 +239,5 @@ const char *ablate::eos::TChem::periodicTable =
     "";
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::eos::EOS, ablate::eos::TChem, "TChem ideal gas eos", OPT(std::string, "mechFile", "the mech file (CHEMKIN Format)"),
-         OPT(std::string, "thermoFile", "the thermo file (CHEMKIN Format)"));
+REGISTER(ablate::eos::EOS, ablate::eos::TChem, "TChem ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format)"),
+         ARG(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format)"));

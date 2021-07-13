@@ -11,11 +11,15 @@ PetscErrorCode ablate::flow::boundaryConditions::Essential::BoundaryTimeDerivati
 }
 
 ablate::flow::boundaryConditions::Essential::Essential(std::string fieldName, std::string boundaryName, int labelId, std::shared_ptr<mathFunctions::MathFunction> boundaryValue,
-                                                       std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue,  std::string labelNameIn)
-    : BoundaryCondition(boundaryName, fieldName), labelName(labelNameIn.empty() ? "marker" : labelNameIn), labelIds({labelId}), boundaryValue(boundaryValue), timeDerivativeValue(timeDerivativeValue) {}
+                                                       std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue, std::string labelNameIn)
+    : BoundaryCondition(boundaryName, fieldName),
+      labelName(labelNameIn.empty() ? "marker" : labelNameIn),
+      labelIds({labelId}),
+      boundaryValue(boundaryValue),
+      timeDerivativeValue(timeDerivativeValue) {}
 
-ablate::flow::boundaryConditions::Essential::Essential(std::string fieldName, std::string boundaryName, std::vector<int> labelId,
-                                                       std::shared_ptr<mathFunctions::MathFunction> boundaryValue, std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue,  std::string labelNameIn)
+ablate::flow::boundaryConditions::Essential::Essential(std::string fieldName, std::string boundaryName, std::vector<int> labelId, std::shared_ptr<mathFunctions::MathFunction> boundaryValue,
+                                                       std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue, std::string labelNameIn)
     : BoundaryCondition(boundaryName, fieldName), labelName(labelNameIn.empty() ? "marker" : labelNameIn), labelIds(labelId), boundaryValue(boundaryValue), timeDerivativeValue(timeDerivativeValue) {}
 
 ablate::mathFunctions::PetscFunction ablate::flow::boundaryConditions::Essential::GetBoundaryFunction() { return BoundaryValueFunction; }

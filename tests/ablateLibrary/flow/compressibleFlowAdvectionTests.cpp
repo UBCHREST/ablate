@@ -73,7 +73,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<flow::boundaryConditions::EssentialGhost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, GetParam().eulerExact),
-                std::make_shared<flow::boundaryConditions::EssentialGhost>("densityYi", "walls",  std::vector<int>{1, 2, 3, 4}, GetParam().densityYiExact)};
+                std::make_shared<flow::boundaryConditions::EssentialGhost>("densityYi", "walls", std::vector<int>{1, 2, 3, 4}, GetParam().densityYiExact)};
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
                                                                                mesh,

@@ -331,7 +331,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                     std::make_shared<boundaryConditions::Essential>(
                         "temperature", "bottom wall temp", 1, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact)),
                     std::make_shared<boundaryConditions::Essential>(
-                        "temperature", "right wall temp",  2, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact)),
+                        "temperature", "right wall temp", 2, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact)),
                     std::make_shared<boundaryConditions::Essential>(
                         "temperature", "left wall temp", 4, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact))},
                 /* aux updates*/

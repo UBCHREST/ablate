@@ -1,15 +1,23 @@
 #include "yamlParser.hpp"
+#include <petsc.h>
+#include <environment/runEnvironment.hpp>
+#include <utilities/mpiError.hpp>
+#include <utilities/petscError.hpp>
 
-ablate::parser::YamlParser::YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type) : type(type), nodePath(nodePath), yamlConfiguration(yamlConfiguration) {
+ablate::parser::YamlParser::YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles)
+    : type(type), nodePath(nodePath), yamlConfiguration(yamlConfiguration), relocateRemoteFiles(relocateRemoteFiles) {
     // store each child in the map with zero usages
     for (auto childNode : yamlConfiguration) {
-        nodeUsages[key_to_string(childNode.first)] = 0;
+        nodeUsages[key_to_stsring(childNode.first)] = 0;
     }
 }
 
-ablate::parser::YamlParser::YamlParser(std::string yamlString) : YamlParser(YAML::Load(yamlString), "root", "") {}
+ablate::parser::YamlParser::YamlParser(std::string yamlString, bool relocateRemoteFiles) : YamlParser(YAML::Load(yamlString), "root", "", relocateRemoteFiles) {}
 
-ablate::parser::YamlParser::YamlParser(std::filesystem::path filePath) : YamlParser(YAML::LoadFile(filePath), "root", "") {}
+ablate::parser::YamlParser::YamlParser(std::filesystem::path filePath, bool relocateRemoteFiles) : YamlParser(YAML::LoadFile(filePath), "root", "", relocateRemoteFiles) {
+    // add the file parent to the search directory
+    searchDirectories.push_back(filePath.parent_path());
+}
 
 std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(const std::string& name) const {
     // Check to see if the child factory has already been created
@@ -31,7 +39,7 @@ std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(
 
         // mark usage and store pointer
         MarkUsage(name);
-        childFactories[name] = std::shared_ptr<YamlParser>(new YamlParser(parameter, childPath, tagType));
+        childFactories[name] = std::shared_ptr<YamlParser>(new YamlParser(parameter, childPath, tagType, relocateRemoteFiles));
     }
 
     return childFactories[name];
@@ -67,7 +75,7 @@ std::vector<std::shared_ptr<ablate::parser::Factory>> ablate::parser::YamlParser
             tagType = tagType.size() > 0 ? tagType.substr(1) : tagType;
 
             // mark usage and store pointer
-            childFactories[childName] = std::shared_ptr<YamlParser>(new YamlParser(childParameter, childPath, tagType));
+            childFactories[childName] = std::shared_ptr<YamlParser>(new YamlParser(childParameter, childPath, tagType, relocateRemoteFiles));
         }
 
         children.push_back(childFactories[childName]);
@@ -104,4 +112,59 @@ std::unordered_set<std::string> ablate::parser::YamlParser::GetKeys() const {
     }
 
     return keys;
+}
+
+std::filesystem::path ablate::parser::YamlParser::Get(const ablate::parser::ArgumentIdentifier<std::filesystem::path>& identifier) const {
+    // The yaml parser just refers to the global environment to file the file
+    auto file = Get(ablate::parser::ArgumentIdentifier<std::string>{.inputName = identifier.inputName, .optional = identifier.optional});
+
+    // check to see if the path exists
+    if (std::filesystem::exists(file)) {
+        return file;
+    }
+
+    // check to see if the file specified is really a url
+    for (const auto& prefix : urlPrefixes) {
+        if (file.rfind(prefix, 0) == 0) {
+            char localPath[PETSC_MAX_PATH_LEN];
+            PetscBool found;
+            PetscFileRetrieve(PETSC_COMM_WORLD, file.c_str(), localPath, PETSC_MAX_PATH_LEN, &found) >> checkError;
+            if (!found) {
+                throw std::runtime_error("unable to locate file at" + file);
+            }
+
+            // If we should relocate the file
+            if (relocateRemoteFiles && !environment::RunEnvironment::Get().GetOutputDirectory().empty()) {
+                // Get the current rank
+                PetscMPIInt rank;
+                MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
+
+                // create a new path (this assumes same file system on all machines)
+                auto newPath = ablate::environment::RunEnvironment::Get().GetOutputDirectory() / std::filesystem::path(localPath).filename();
+                if (rank == 0) {
+                    std::filesystem::copy(localPath, newPath);
+
+                    MPI_Barrier(PETSC_COMM_WORLD);
+                }
+                return newPath;
+            } else {
+                return localPath;
+            }
+        }
+    }
+
+    // check for the file in local search directories
+    for (const auto& directory : searchDirectories) {
+        // build a test path
+        auto testPath = directory / file;
+        if (std::filesystem::exists(testPath)) {
+            return testPath;
+        }
+    }
+
+    if (identifier.optional) {
+        return {};
+    } else {
+        throw std::runtime_error("unable to locate file " + file);
+    }
 }

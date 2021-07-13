@@ -273,7 +273,7 @@ void ablate::flow::FVFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow) {
     MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
 
     // don't override the first time step if bigger
-    if(timeStep > 0 || dtMinGlobal < currentDt) {
+    if (timeStep > 0 || dtMinGlobal < currentDt) {
         TSSetTimeStep(ts, dtMinGlobal) >> checkError;
         if (PetscIsNanReal(dtMinGlobal)) {
             throw std::runtime_error("Invalid timestep selected for flow");

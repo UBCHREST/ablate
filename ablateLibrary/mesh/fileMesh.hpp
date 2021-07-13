@@ -2,8 +2,8 @@
 #define ABLATELIBRARY_FILEMESH_HPP
 
 #include <filesystem>
-#include "mesh.hpp"
 #include <parameters/parameters.hpp>
+#include "mesh.hpp"
 
 namespace ablate::mesh {
 
@@ -14,9 +14,8 @@ class FileMesh : public Mesh {
     PetscOptions petscOptions;
 
    public:
-    explicit FileMesh(std::string nameIn, std::filesystem::path path, std::shared_ptr<parameters::Parameters> options = {} );
+    explicit FileMesh(std::string nameIn, std::filesystem::path path, std::shared_ptr<parameters::Parameters> options = {});
     ~FileMesh() override;
-
 };
-};
+};      // namespace ablate::mesh
 #endif  // ABLATELIBRARY_FILEMESH_HPP

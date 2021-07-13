@@ -212,4 +212,12 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirector
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
 }
 
+TEST(RunEnvironmentTest, ShouldProvideDefaultEnvironment) {
+    // arrange
+    // act
+    const auto& runEnvironment = ablate::environment::RunEnvironment::Get();
+
+    // cleanup
+    std::cout << runEnvironment.GetOutputDirectory() << std::endl;
+}
 }  // namespace ablateTesting::monitors
