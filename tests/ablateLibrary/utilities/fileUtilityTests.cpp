@@ -9,7 +9,7 @@
 
 TEST(FileUtilityTets, ShouldLocateFileInSearchPaths) {
     // arrange
-    std::filesystem::path directory = std::filesystem::temp_directory_path()/ "tmpDir";
+    std::filesystem::path directory = std::filesystem::temp_directory_path() / "tmpDir";
     std::filesystem::create_directories(directory);
     std::filesystem::path tmpFile = directory / "tempFile.txt";
     {
