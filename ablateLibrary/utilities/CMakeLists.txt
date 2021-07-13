@@ -7,4 +7,6 @@ target_sources(ablateLibrary
         petscOptions.hpp
         demangler.cpp
         demangler.hpp
+        fileUtility.hpp
+        fileUtility.cpp
         )

@@ -15,9 +15,6 @@ class YamlParser : public Factory {
     mutable std::map<std::string, int> nodeUsages;
     mutable std::map<std::string, std::shared_ptr<YamlParser>> childFactories;
 
-    // include list of prefixes for urls
-    inline static std::vector<std::string> urlPrefixes = {"https://", "http://"};
-
     // store a list of local directories to search for files
     std::vector<std::filesystem::path> searchDirectories;
 

@@ -1,14 +1,13 @@
 #include "yamlParser.hpp"
-#include <petsc.h>
 #include <environment/runEnvironment.hpp>
+#include <utilities/fileUtility.hpp>
 #include <utilities/mpiError.hpp>
-#include <utilities/petscError.hpp>
 
 ablate::parser::YamlParser::YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles)
     : type(type), nodePath(nodePath), yamlConfiguration(yamlConfiguration), relocateRemoteFiles(relocateRemoteFiles) {
     // store each child in the map with zero usages
     for (auto childNode : yamlConfiguration) {
-        nodeUsages[key_to_stsring(childNode.first)] = 0;
+        nodeUsages[YAML::key_to_string(childNode.first)] = 0;
     }
 }
 
@@ -118,53 +117,9 @@ std::filesystem::path ablate::parser::YamlParser::Get(const ablate::parser::Argu
     // The yaml parser just refers to the global environment to file the file
     auto file = Get(ablate::parser::ArgumentIdentifier<std::string>{.inputName = identifier.inputName, .optional = identifier.optional});
 
-    // check to see if the path exists
-    if (std::filesystem::exists(file)) {
-        return file;
-    }
-
-    // check to see if the file specified is really a url
-    for (const auto& prefix : urlPrefixes) {
-        if (file.rfind(prefix, 0) == 0) {
-            char localPath[PETSC_MAX_PATH_LEN];
-            PetscBool found;
-            PetscFileRetrieve(PETSC_COMM_WORLD, file.c_str(), localPath, PETSC_MAX_PATH_LEN, &found) >> checkError;
-            if (!found) {
-                throw std::runtime_error("unable to locate file at" + file);
-            }
-
-            // If we should relocate the file
-            if (relocateRemoteFiles && !environment::RunEnvironment::Get().GetOutputDirectory().empty()) {
-                // Get the current rank
-                PetscMPIInt rank;
-                MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
-
-                // create a new path (this assumes same file system on all machines)
-                auto newPath = ablate::environment::RunEnvironment::Get().GetOutputDirectory() / std::filesystem::path(localPath).filename();
-                if (rank == 0) {
-                    std::filesystem::copy(localPath, newPath);
-
-                    MPI_Barrier(PETSC_COMM_WORLD);
-                }
-                return newPath;
-            } else {
-                return localPath;
-            }
-        }
-    }
-
-    // check for the file in local search directories
-    for (const auto& directory : searchDirectories) {
-        // build a test path
-        auto testPath = directory / file;
-        if (std::filesystem::exists(testPath)) {
-            return testPath;
-        }
-    }
-
-    if (identifier.optional) {
+    if (identifier.optional && file.empty()) {
         return {};
     } else {
-        throw std::runtime_error("unable to locate file " + file);
+        return utilities::FileUtility::LocateFile(file, MPI_COMM_WORLD, searchDirectories, relocateRemoteFiles ? environment::RunEnvironment::Get().GetOutputDirectory() : std::filesystem::path());
     }
 }
