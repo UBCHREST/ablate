@@ -9,7 +9,6 @@ namespace ablate::monitors::logs {
     class StreamLog : public Log {
        private:
         std::ostream& stream;
-        bool output = true;
         std::vector<char> buffer;
 
        public:
