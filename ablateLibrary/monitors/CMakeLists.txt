@@ -11,3 +11,5 @@ target_sources(ablateLibrary
         timeStepMonitor.hpp
         timeStepMonitor.cpp
         )
+
+add_subdirectory(logs)

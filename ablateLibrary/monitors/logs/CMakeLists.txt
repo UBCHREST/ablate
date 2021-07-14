@@ -1,0 +1,10 @@
+target_sources(ablateLibrary
+        PUBLIC
+        log.hpp
+        streamLog.hpp
+        streamLog.cpp
+        fileLog.hpp
+        fileLog.cpp
+        stdOut.hpp
+        stdOut.cpp
+        )
