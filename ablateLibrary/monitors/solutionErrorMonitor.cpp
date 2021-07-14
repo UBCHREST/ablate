@@ -122,6 +122,10 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
         case Norm::LINF:
             petscNormType = NORM_INFINITY;
             break;
+        default:
+            std::stringstream error;
+            error << "Unable to process norm type " << normType;
+            throw std::invalid_argument(error.str());
     }
 
     // compute the norm along the stride
