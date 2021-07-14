@@ -3,6 +3,11 @@
 #include <chrono>
 #include <iostream>
 
+std::unique_ptr<ablate::environment::RunEnvironment> ablate::environment::RunEnvironment::runEnvironment =
+    std::unique_ptr<ablate::environment::RunEnvironment>(new ablate::environment::RunEnvironment());
+
+ablate::environment::RunEnvironment::RunEnvironment() : outputDirectory(""), title("") {}
+
 ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters& parameters, std::filesystem::path inputPath) : title(parameters.GetExpect<std::string>("title")) {
     // check to see if the output directory is set
     auto specifiedOutputDirectory = parameters.Get<std::filesystem::path>("outputDirectory");

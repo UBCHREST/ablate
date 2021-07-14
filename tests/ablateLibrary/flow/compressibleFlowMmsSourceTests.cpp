@@ -585,7 +585,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             auto exactSolution = std::make_shared<mathFunctions::FieldSolution>("euler", mathFunctions::Create(EulerExact, &constants));
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "walls", "Face Sets", std::vector<int>{1, 2, 3, 4}, PhysicsBoundary_Euler, &constants),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, PhysicsBoundary_Euler, &constants),
             };
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",

@@ -11,8 +11,12 @@ class YamlParser : public Factory {
     const std::string type;
     const std::string nodePath;
     const YAML::Node yamlConfiguration;
+    const bool relocateRemoteFiles;
     mutable std::map<std::string, int> nodeUsages;
     mutable std::map<std::string, std::shared_ptr<YamlParser>> childFactories;
+
+    // store a list of local directories to search for files
+    std::vector<std::filesystem::path> searchDirectories;
 
     /***
      * private constructor to create a sub factory
@@ -20,7 +24,7 @@ class YamlParser : public Factory {
      * @param nodePath
      * @param type
      */
-    YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type);
+    YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles);
     inline void MarkUsage(const std::string& key) const { nodeUsages[key]++; }
 
     template <typename T>
@@ -42,14 +46,14 @@ class YamlParser : public Factory {
      * Direct creation using a yaml string
      * @param yamlString
      */
-    explicit YamlParser(std::string yamlString);
+    explicit YamlParser(std::string yamlString, bool relocateRemoteFiles = false);
     ~YamlParser() override = default;
 
     /***
      * Read in file from system
      * @param filePath
      */
-    explicit YamlParser(std::filesystem::path filePath);
+    explicit YamlParser(std::filesystem::path filePath, bool relocateRemoteFiles = true);
 
     /* gets the class type represented by this factory */
     const std::string& GetClassType() const override { return type; }
@@ -93,6 +97,9 @@ class YamlParser : public Factory {
 
     /* return an int for the specified identifier*/
     int Get(const ArgumentIdentifier<int>& identifier) const override { return GetValueFromYaml<int>(identifier); }
+
+    /* return the path to file specified */
+    std::filesystem::path Get(const ArgumentIdentifier<std::filesystem::path>& identifier) const override;
 
     /* return a factory that serves as the root of the requested item */
     std::shared_ptr<Factory> GetFactory(const std::string& name) const override;

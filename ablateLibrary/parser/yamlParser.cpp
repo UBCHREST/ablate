@@ -1,15 +1,22 @@
 #include "yamlParser.hpp"
+#include <environment/runEnvironment.hpp>
+#include <utilities/fileUtility.hpp>
+#include <utilities/mpiError.hpp>
 
-ablate::parser::YamlParser::YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type) : type(type), nodePath(nodePath), yamlConfiguration(yamlConfiguration) {
+ablate::parser::YamlParser::YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles)
+    : type(type), nodePath(nodePath), yamlConfiguration(yamlConfiguration), relocateRemoteFiles(relocateRemoteFiles) {
     // store each child in the map with zero usages
     for (auto childNode : yamlConfiguration) {
-        nodeUsages[key_to_string(childNode.first)] = 0;
+        nodeUsages[YAML::key_to_string(childNode.first)] = 0;
     }
 }
 
-ablate::parser::YamlParser::YamlParser(std::string yamlString) : YamlParser(YAML::Load(yamlString), "root", "") {}
+ablate::parser::YamlParser::YamlParser(std::string yamlString, bool relocateRemoteFiles) : YamlParser(YAML::Load(yamlString), "root", "", relocateRemoteFiles) {}
 
-ablate::parser::YamlParser::YamlParser(std::filesystem::path filePath) : YamlParser(YAML::LoadFile(filePath), "root", "") {}
+ablate::parser::YamlParser::YamlParser(std::filesystem::path filePath, bool relocateRemoteFiles) : YamlParser(YAML::LoadFile(filePath), "root", "", relocateRemoteFiles) {
+    // add the file parent to the search directory
+    searchDirectories.push_back(filePath.parent_path());
+}
 
 std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(const std::string& name) const {
     // Check to see if the child factory has already been created
@@ -31,7 +38,7 @@ std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(
 
         // mark usage and store pointer
         MarkUsage(name);
-        childFactories[name] = std::shared_ptr<YamlParser>(new YamlParser(parameter, childPath, tagType));
+        childFactories[name] = std::shared_ptr<YamlParser>(new YamlParser(parameter, childPath, tagType, relocateRemoteFiles));
     }
 
     return childFactories[name];
@@ -67,7 +74,7 @@ std::vector<std::shared_ptr<ablate::parser::Factory>> ablate::parser::YamlParser
             tagType = tagType.size() > 0 ? tagType.substr(1) : tagType;
 
             // mark usage and store pointer
-            childFactories[childName] = std::shared_ptr<YamlParser>(new YamlParser(childParameter, childPath, tagType));
+            childFactories[childName] = std::shared_ptr<YamlParser>(new YamlParser(childParameter, childPath, tagType, relocateRemoteFiles));
         }
 
         children.push_back(childFactories[childName]);
@@ -104,4 +111,15 @@ std::unordered_set<std::string> ablate::parser::YamlParser::GetKeys() const {
     }
 
     return keys;
+}
+
+std::filesystem::path ablate::parser::YamlParser::Get(const ablate::parser::ArgumentIdentifier<std::filesystem::path>& identifier) const {
+    // The yaml parser just refers to the global environment to file the file
+    auto file = Get(ablate::parser::ArgumentIdentifier<std::string>{.inputName = identifier.inputName, .optional = identifier.optional});
+
+    if (identifier.optional && file.empty()) {
+        return {};
+    } else {
+        return utilities::FileUtility::LocateFile(file, MPI_COMM_WORLD, searchDirectories, relocateRemoteFiles ? environment::RunEnvironment::Get().GetOutputDirectory() : std::filesystem::path());
+    }
 }

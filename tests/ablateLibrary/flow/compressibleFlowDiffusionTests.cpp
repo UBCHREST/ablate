@@ -209,8 +209,8 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             auto exactSolution = std::make_shared<mathFunctions::FieldSolution>("euler", mathFunctions::Create(EulerExact, &parameters));
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "wall left/right", "Face Sets", std::vector<int>{2, 4}, PhysicsBoundary_Euler, &parameters),
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "top/bottom", "Face Sets", std::vector<int>{1, 3}, PhysicsBoundary_Mirror, &parameters),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "wall left/right", std::vector<int>{2, 4}, PhysicsBoundary_Euler, &parameters),
+                std::make_shared<flow::boundaryConditions::Ghost>("euler", "top/bottom", std::vector<int>{1, 3}, PhysicsBoundary_Mirror, &parameters),
             };
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",

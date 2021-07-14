@@ -26,11 +26,11 @@ class Essential : public BoundaryCondition {
     void* GetContext();
 
    public:
-    Essential(std::string fieldName, std::string boundaryName, std::string labelName, int labelId, std::shared_ptr<mathFunctions::MathFunction> boundaryValue,
-              std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue = nullptr);
+    Essential(std::string fieldName, std::string boundaryName, int labelId, std::shared_ptr<mathFunctions::MathFunction> boundaryValue,
+              std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue = nullptr, std::string labelName = {});
 
-    Essential(std::string fieldName, std::string boundaryName, std::string labelName, std::vector<int> labelId, std::shared_ptr<mathFunctions::MathFunction> boundaryValue,
-              std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue = nullptr);
+    Essential(std::string fieldName, std::string boundaryName, std::vector<int> labelId, std::shared_ptr<mathFunctions::MathFunction> boundaryValue,
+              std::shared_ptr<mathFunctions::MathFunction> timeDerivativeValue = nullptr, std::string labelName = {});
 
     const std::string& GetLabelName() const { return labelName; }
 

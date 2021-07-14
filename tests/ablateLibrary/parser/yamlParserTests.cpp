@@ -1,10 +1,14 @@
+#include <PetscTestFixture.hpp>
 #include <fstream>
 #include <memory>
 #include <sstream>
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "parser/yamlParser.hpp"
 
 namespace ablateTesting::parser {
+
+#define REMOTE_URL "https://raw.githubusercontent.com/UBCHREST/ablate/main/tests/ablateLibrary/inputs/eos/thermo30.dat"
 
 using namespace ablate::parser;
 namespace fs = std::filesystem;
@@ -552,6 +556,187 @@ TEST(YamlParserTests, ShouldGetListAsString) {
     ASSERT_EQ(list1, expectedValues1);
     std::string expectedValues2 = "4.4 5 6.6 ";
     ASSERT_EQ(list2, expectedValues2);
+}
+
+TEST(YamlParserTests, ShouldLocateLocalFile) {
+    // arrange
+    fs::path tmpFile = fs::temp_directory_path() / "tempFile.txt";
+    {
+        std::ofstream ofs(tmpFile);
+        ofs << " tempFile" << std::endl;
+        ofs.close();
+    }
+
+    fs::path tempYaml = fs::temp_directory_path();
+    tempYaml /= "tempFile.yaml";
+    {
+        std::ofstream ofs(tempYaml);
+        ofs << "---" << std::endl;
+        ofs << " fileName: " << tmpFile << std::endl;
+        ofs.close();
+    }
+
+    auto yamlParser = std::make_shared<YamlParser>(tempYaml);
+
+    // act
+    auto computedFilePath = yamlParser->Get(ArgumentIdentifier<std::filesystem::path>{"fileName"});
+
+    // assert
+    ASSERT_TRUE(std::filesystem::exists(computedFilePath));
+    ASSERT_EQ(computedFilePath, tmpFile);
+
+    // cleanup
+    fs::remove(tmpFile);
+    fs::remove(tempYaml);
+}
+
+TEST(YamlParserTests, ShouldReturnDefaultValueWhenOptional) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+    yaml << " item2:" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto computedFilePath = yamlParser->Get(ArgumentIdentifier<std::filesystem::path>{.inputName = "fileName", .optional = true});
+
+    // assert
+    ASSERT_EQ(std::string(), computedFilePath);
+}
+
+TEST(YamlParserTests, ShouldThrowErrorWhenNotOptional) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item1: 22" << std::endl;
+    yaml << " item2:" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    // assert
+    ASSERT_ANY_THROW(yamlParser->Get(ArgumentIdentifier<std::filesystem::path>{.inputName = "fileName", .optional = false}));
+}
+
+TEST(YamlParserTests, ShouldLocateFileNextToInputFile) {
+    // arrange
+    fs::path tempYaml = fs::temp_directory_path();
+    tempYaml /= "tempFile.yaml";
+    {
+        std::ofstream ofs(tempYaml);
+        ofs << "---" << std::endl;
+        ofs << " fileName: tempFileNameForTesting.txt" << std::endl;
+        ofs.close();
+    }
+
+    fs::path tmpFile = tempYaml.parent_path() / "tempFileNameForTesting.txt";
+    {
+        std::ofstream ofs(tmpFile);
+        ofs << " tempFile" << std::endl;
+        ofs.close();
+    }
+
+    auto yamlParser = std::make_shared<YamlParser>(tempYaml);
+
+    // act
+    auto computedFilePath = yamlParser->Get(ArgumentIdentifier<std::filesystem::path>{"fileName"});
+
+    // assert
+    ASSERT_TRUE(std::filesystem::exists(computedFilePath));
+    ASSERT_EQ(computedFilePath, tmpFile);
+    ASSERT_EQ(tempYaml.parent_path(), tempYaml.parent_path());
+
+    // cleanup
+    fs::remove(tmpFile);
+    fs::remove(tempYaml);
+}
+
+class YamlParserTestsPetscTestFixture : public testingResources::PetscTestFixture {};
+
+TEST_F(YamlParserTestsPetscTestFixture, ShouldDownloadFile) {
+    // arrange
+    fs::path tempYaml = fs::temp_directory_path();
+    tempYaml /= "tempFile.yaml";
+    {
+        std::ofstream ofs(tempYaml);
+        ofs << "---" << std::endl;
+        ofs << " fileName: " << REMOTE_URL << std::endl;
+        ofs.close();
+    }
+
+    auto yamlParser = std::make_shared<YamlParser>(tempYaml, false);
+
+    // act
+    auto computedFilePath = yamlParser->Get(ArgumentIdentifier<std::filesystem::path>{"fileName"});
+
+    // assert
+    ASSERT_TRUE(std::filesystem::exists(computedFilePath));
+
+    // cleanup
+    fs::remove(computedFilePath);
+    fs::remove(tempYaml);
+}
+
+TEST_F(YamlParserTestsPetscTestFixture, ShouldDownloadAndRelocateFile) {
+    // arrange
+    fs::path outputDir = fs::temp_directory_path() / "outputDirTemp";
+
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << "environment:" << std::endl;
+    yaml << "  outputDirectory: " << outputDir << std::endl;
+    yaml << "  title: test " << std::endl;
+    yaml << "  tagDirectory: false" << std::endl;
+    yaml << "fileName: " << REMOTE_URL << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str(), true);
+
+    // Set the global environment
+    auto params = yamlParser->GetByName<ablate::parameters::Parameters>("environment");
+    ablate::environment::RunEnvironment::Setup(*params);
+
+    // act
+    auto computedFilePath = yamlParser->Get(ArgumentIdentifier<std::filesystem::path>{"fileName"});
+
+    // assert
+    ASSERT_TRUE(std::filesystem::exists(computedFilePath));
+    ASSERT_EQ(outputDir, computedFilePath.parent_path());
+
+    // cleanup
+    fs::remove(computedFilePath);
+    fs::remove_all(outputDir);
+}
+
+TEST_F(YamlParserTestsPetscTestFixture, ShouldNotDownloadAndRelocateFile) {
+    // arrange
+    fs::path outputDir = fs::temp_directory_path() / "outputDirTemp";
+
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << "environment:" << std::endl;
+    yaml << "  outputDirectory: " << outputDir << std::endl;
+    yaml << "  title: test " << std::endl;
+    yaml << "  tagDirectory: false" << std::endl;
+    yaml << "fileName: " << REMOTE_URL << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str(), false);
+
+    // Set the global environment
+    auto params = yamlParser->GetByName<ablate::parameters::Parameters>("environment");
+    ablate::environment::RunEnvironment::Setup(*params);
+
+    // act
+    auto computedFilePath = yamlParser->Get(ArgumentIdentifier<std::filesystem::path>{"fileName"});
+
+    // assert
+    ASSERT_TRUE(std::filesystem::exists(computedFilePath));
+    ASSERT_NE(outputDir, computedFilePath.parent_path());
+
+    // cleanup
+    fs::remove(computedFilePath);
+    fs::remove_all(outputDir);
 }
 
 }  // namespace ablateTesting::parser

@@ -2,13 +2,13 @@
 #include <petsc.h>
 #include <utilities/petscError.hpp>
 
-ablate::flow::boundaryConditions::Ghost::Ghost(std::string fieldName, std::string boundaryName, std::string labelName, std::vector<int> labelIds,
-                                               ablate::flow::boundaryConditions::Ghost::UpdateFunction updateFunction, void *updateContext)
-    : BoundaryCondition(boundaryName, fieldName), labelName(labelName), labelIds(labelIds), updateFunction(updateFunction), updateContext(updateContext) {}
+ablate::flow::boundaryConditions::Ghost::Ghost(std::string fieldName, std::string boundaryName, std::vector<int> labelIds, ablate::flow::boundaryConditions::Ghost::UpdateFunction updateFunction,
+                                               void *updateContext, std::string labelNameIn)
+    : BoundaryCondition(boundaryName, fieldName), labelName(labelNameIn.empty() ? "Face Sets" : labelNameIn), labelIds(labelIds), updateFunction(updateFunction), updateContext(updateContext) {}
 
-ablate::flow::boundaryConditions::Ghost::Ghost(std::string fieldName, std::string boundaryName, std::string labelName, int labelId,
-                                               ablate::flow::boundaryConditions::Ghost::UpdateFunction updateFunction, void *updateContext)
-    : Ghost(fieldName, boundaryName, labelName, std::vector<int>{labelId}, updateFunction, updateContext) {}
+ablate::flow::boundaryConditions::Ghost::Ghost(std::string fieldName, std::string boundaryName, int labelId, ablate::flow::boundaryConditions::Ghost::UpdateFunction updateFunction,
+                                               void *updateContext, std::string labelName)
+    : Ghost(fieldName, boundaryName, std::vector<int>{labelId}, updateFunction, updateContext, labelName) {}
 
 void ablate::flow::boundaryConditions::Ghost::SetupBoundary(PetscDS problem, PetscInt fieldId) {
     PetscDSAddBoundary(

@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_FACTORY_HPP
 #define ABLATELIBRARY_FACTORY_HPP
 
+#include <filesystem>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -51,6 +52,9 @@ class Factory {
 
     /* return a map of strings */
     virtual std::map<std::string, std::string> Get(const ArgumentIdentifier<std::map<std::string, std::string>>& identifier) const = 0;
+
+    /* returns the path to a file as specified byname */
+    virtual std::filesystem::path Get(const ArgumentIdentifier<std::filesystem::path>& identifier) const = 0;
 
     /* check to see if the child is contained*/
     virtual bool Contains(const std::string& name) const = 0;

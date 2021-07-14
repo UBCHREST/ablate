@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <utilities/fileUtility.hpp>
 #include "builder.hpp"
 #include "environment/runEnvironment.hpp"
 #include "parser/listing.h"
@@ -38,7 +39,8 @@ int main(int argc, char **args) {
         throw std::invalid_argument("the --input must be specified");
     }
 
-    std::filesystem::path filePath(filename);
+    // locate or download the file
+    auto filePath = ablate::utilities::FileUtility::LocateFile(filename, PETSC_COMM_WORLD);
     if (!std::filesystem::exists(filePath)) {
         throw std::invalid_argument("unable to locate input file: " + filePath.string());
     }

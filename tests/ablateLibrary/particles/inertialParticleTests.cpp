@@ -223,9 +223,9 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 /* boundary conditions */
                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
                     std::make_shared<boundaryConditions::Essential>(
-                        "velocity", "wall velocity", "marker", std::vector<int>{3, 1, 2, 4}, ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.u_tExact)),
+                        "velocity", "wall velocity", std::vector<int>{3, 1, 2, 4}, ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.u_tExact)),
                     std::make_shared<boundaryConditions::Essential>(
-                        "temperature", "wall temp", "marker", std::vector<int>{3, 1, 2, 4}, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.T_tExact))},
+                        "temperature", "wall temp", std::vector<int>{3, 1, 2, 4}, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.T_tExact))},
                 /* aux updates*/
                 std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{},
                 /* exact solutions*/

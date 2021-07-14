@@ -80,7 +80,6 @@ flow: !ablate::flow::IncompressibleFlow
     - !ablate::flow::boundaryConditions::Essential
       fieldName: velocity
       boundaryName: "wall velocity"
-      labelName: marker
       labelIds: [3, 1, 2, 4]
       boundaryValue:
         formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
@@ -89,7 +88,6 @@ flow: !ablate::flow::IncompressibleFlow
     - !ablate::flow::boundaryConditions::Essential
       fieldName: temperature
       boundaryName: "wall temp"
-      labelName: marker
       labelIds: [3, 1, 2, 4]
       boundaryValue:
         formula: "t + x + y"

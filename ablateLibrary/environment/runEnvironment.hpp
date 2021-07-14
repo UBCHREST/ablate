@@ -9,8 +9,12 @@ class RunEnvironment {
     std::filesystem::path outputDirectory;
     const std::string title;
 
+    // default empty funEnvironment
+    explicit RunEnvironment();
+
    public:
     explicit RunEnvironment(const parameters::Parameters&, std::filesystem::path inputPath = {});
+    ~RunEnvironment() = default;
 
     // force RunEnvironment to be a singleton
     RunEnvironment(RunEnvironment& other) = delete;
@@ -23,7 +27,7 @@ class RunEnvironment {
     inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
 
    private:
-    inline static std::unique_ptr<RunEnvironment> runEnvironment = nullptr;
+    static std::unique_ptr<RunEnvironment> runEnvironment;
 };
 }  // namespace ablate::environment
 
