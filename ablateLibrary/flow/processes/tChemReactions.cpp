@@ -57,7 +57,6 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TCh
     TSGetAdapt(ts, &adapt) >> checkError;
     TSAdaptSetStepLimits(adapt, 1e-12, 1E-4) >> checkError; /* Also available with -ts_adapt_dt_min/-ts_adapt_dt_max */
     TSSetMaxSNESFailures(ts, -1) >> checkError;             /* Retry step an unlimited number of times */
-    TSSetMaxStepRejections(ts, -1) >> checkError;
     TSSetFromOptions(ts) >> checkError;
 }
 ablate::flow::processes::TChemReactions::~TChemReactions() {
@@ -289,7 +288,27 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
 
             // solver for this point
             ierr = TSSolve(ts, pointData);
-            CHKERRQ(ierr);
+
+            if(ierr != 0){
+                std::cout << "Could not solve chemistry ode, setting source terms to zero" << std::endl;
+                // Use the updated values to compute the source terms for euler and species transport
+                PetscScalar* fieldSource;
+                ierr = DMPlexPointLocalRef(fieldDm, cell, sourceArray, &fieldSource);
+                CHKERRQ(ierr);
+
+                fieldSource[ablate::flow::processes::EulerAdvection::RHO] = 0.0;
+                fieldSource[ablate::flow::processes::EulerAdvection::RHOE] = 0.0;
+                for (PetscInt d = 0; d < dim; d++) {
+                    fieldSource[ablate::flow::processes::EulerAdvection::RHOU + d] = 0.0;
+                }
+                for (std::size_t sp = 0; sp < numberSpecies; sp++) {
+                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                    fieldSource[ablate::flow::processes::EulerAdvection::RHOU + dim + sp] = 0.0;
+                }
+
+                continue;
+            }
+
 
             // Use the updated values to compute the source terms for euler and species transport
             PetscScalar* fieldSource;
