@@ -181,8 +181,11 @@ double ablate::flow::processes::EulerDiffusion::ComputeTimeStep(TS ts, ablate::f
             PetscReal rho = xc[EulerAdvection::RHO];
             PetscReal nu = eulerDiffusionData->mu / rho;
 
-            PetscReal dt = eulerDiffusionData->dtStabilityFactor * dx / (nu);
-            dtMin = PetscMin(dtMin, dt);
+            PetscReal alpha = 1.0/.7;
+
+            dtMin = PetscMin(dtMin, (eulerDiffusionData->dtStabilityFactor * dx*dx) / (nu));
+            dtMin = PetscMin(dtMin, (eulerDiffusionData->dtStabilityFactor * dx*dx) / (alpha));
+
         }
     }
     VecRestoreArrayRead(v, &x) >> checkError;
