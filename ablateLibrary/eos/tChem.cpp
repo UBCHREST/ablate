@@ -104,6 +104,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
     int err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
     TCCHKERRQ(err);
     double f2 = internalEnergyRef - e2;
+    T = t2;// set for first guess
     if (PetscAbs(f2) > EPS_T_RHO_E) {
         double t0 = t2;
         double f0 = f2;

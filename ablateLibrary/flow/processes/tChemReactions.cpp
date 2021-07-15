@@ -41,7 +41,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TCh
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               Create timestepping solver context
               - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-    TSCreate(PETSC_COMM_WORLD, &ts) >> checkError;
+    TSCreate(PETSC_COMM_SELF, &ts) >> checkError;
     TSSetType(ts, TSARKIMEX) >> checkError;
     TSARKIMEXSetFullyImplicit(ts, PETSC_TRUE) >> checkError;
     TSARKIMEXSetType(ts, TSARKIMEX4) >> checkError;
