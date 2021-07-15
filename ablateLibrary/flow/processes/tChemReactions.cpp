@@ -57,6 +57,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TCh
     TSGetAdapt(ts, &adapt) >> checkError;
     TSAdaptSetStepLimits(adapt, 1e-12, 1E-4) >> checkError; /* Also available with -ts_adapt_dt_min/-ts_adapt_dt_max */
     TSSetMaxSNESFailures(ts, -1) >> checkError;             /* Retry step an unlimited number of times */
+    TSSetMaxStepRejections(ts, -1) >> checkError;
     TSSetFromOptions(ts) >> checkError;
 }
 ablate::flow::processes::TChemReactions::~TChemReactions() {
