@@ -285,12 +285,24 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             CHKERRQ(ierr);
             ierr = TSSetMaxTime(ts, time + dt);
             CHKERRQ(ierr);
+            ierr = TSSetTimeStep(ts, 1e-10);
+            CHKERRQ(ierr);
+            ierr = TSSetStepNumber(ts, 0);
+            CHKERRQ(ierr);
 
             // solver for this point
             ierr = TSSolve(ts, pointData);
 
             if(ierr != 0){
-                std::cout << "Could not solve chemistry ode, setting source terms to zero" << std::endl;
+                std::string error = "Could not solve chemistry ode, setting source terms to zero (euler, yi): ";
+                for(PetscInt i = 0; i < dim+ 2; i++){
+                    error += std::to_string(euler[i]) + ", ";
+                }
+                for(std::size_t sp =0; sp < numberSpecies; sp++){
+                    error += std::to_string(densityYi[sp]) + ", ";
+                }
+                std::cout << error << std::endl;
+
                 // Use the updated values to compute the source terms for euler and species transport
                 PetscScalar* fieldSource;
                 ierr = DMPlexPointLocalRef(fieldDm, cell, sourceArray, &fieldSource);
