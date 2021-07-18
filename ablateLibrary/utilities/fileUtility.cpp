@@ -28,7 +28,7 @@ std::filesystem::path ablate::utilities::FileUtility::LocateFile(std::string fil
                 // create a new path (this assumes same file system on all machines)
                 auto newPath = remoteRelocatePath / std::filesystem::path(localPath).filename();
                 if (rank == 0) {
-                    std::filesystem::copy(localPath, newPath);
+                    std::filesystem::copy(localPath, newPath, std::filesystem::copy_options::overwrite_existing);
                 }
                 MPI_Barrier(PETSC_COMM_WORLD);
 

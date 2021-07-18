@@ -265,7 +265,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             CHKERRQ(ierr);
             pointArray[0] = temperature;
             for (std::size_t s = 0; s < numberSpecies; s++) {
-                pointArray[s + 1] = densityYi[s] / euler[ablate::flow::processes::EulerAdvection::RHO];
+                pointArray[s + 1] = PetscMin(PetscMax(0.0, densityYi[s] / euler[ablate::flow::processes::EulerAdvection::RHO]), 1.0);
             }
 
             // precompute some values with the point array
