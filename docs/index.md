@@ -32,3 +32,8 @@ The test directory holds four sub-test projects, each focused on a different asp
 
 ### docs
 The Markdown documents for ablate.  These are build with [Jekyll](jekyllrb.com) and published automatically upon merge. Follow the [Quickstart](https://jekyllrb.com/docs/) steps to preview your changes locally.  
+
+## Acknowledgements
+This research is funded by the United States Department of Energy’s (DoE) National Nuclear Security Administration
+(NNSA) under the Predictive Science Academic Alliance Program III (PSAAP III) at the University at Buffalo, under
+contract number DE-NA000396
