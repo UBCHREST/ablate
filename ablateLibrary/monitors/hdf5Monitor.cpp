@@ -26,6 +26,7 @@ void ablate::monitors::Hdf5Monitor::Register(std::shared_ptr<Monitorable> object
     // setup the petsc viewer
     PetscViewerHDF5Open(PETSC_COMM_WORLD, outputFilePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;
 }
+
 PetscErrorCode ablate::monitors::Hdf5Monitor::OutputHdf5(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx) {
     PetscFunctionBeginUser;
     auto monitor = (ablate::monitors::Hdf5Monitor *)mctx;

@@ -356,8 +356,6 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
     if (steps == 0) {
         // Print the initial mesh
         DMView(GetDM(), viewer) >> checkError;
-
-
     }
 
     // set the dm sequence number, because we may be skipping outputs
@@ -366,12 +364,8 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
         DMSetOutputSequenceNumber(auxDM, steps, time) >> checkError;
     }
 
-    PetscPrintf(PetscObjectComm((PetscObject)u), "before VecView %ld\n", (long) std::time(nullptr));
-
     // Always save the main flowField
     VecView(flowField, viewer) >> checkError;
-    PetscPrintf(PetscObjectComm((PetscObject)u), "after VecView %ld\n", (long) std::time(nullptr));
-    PetscPrintf(PetscObjectComm((PetscObject)u), "before auxField %ld\n", (long) std::time(nullptr));
 
     // If there is aux data output
     if (auxField) {
@@ -392,8 +386,6 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
         VecView(auxGlobalField, viewer) >> checkError;
         DMRestoreGlobalVector(auxDM, &auxGlobalField) >> checkError;
     }
-
-    PetscPrintf(PetscObjectComm((PetscObject)u), "after auxField %ld\n", (long) std::time(nullptr));
 
     if (!exactSolutions.empty()) {
         Vec exactVec;
