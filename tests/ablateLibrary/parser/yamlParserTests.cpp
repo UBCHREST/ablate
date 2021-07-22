@@ -676,7 +676,7 @@ TEST(YamlParserTests, ShouldPrintToStream) {
     ASSERT_EQ(outStream.str(), yaml.str());
 }
 
-TEST(YamlParserTests, ShouldAllowOverwrittenValues) {
+TEST(YamlParserTests, ShouldAllowOverWrittenValues) {
     // arrange
     std::stringstream yaml;
     yaml << "---" << std::endl;
