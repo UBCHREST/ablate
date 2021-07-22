@@ -26,6 +26,5 @@ Timestep: 0023 time = (.*) dt = (.*)<expects> ~ ~
 Timestep: 0024 time = (.*) dt = (.*)<expects> ~ ~
 Timestep: 0025 time = (.*) dt = (.*)<expects> ~ ~
 ResultFiles:
-compressibleFlowVortex.yaml
 vortexFlowField.hdf5
 vortexFlowField.xmf

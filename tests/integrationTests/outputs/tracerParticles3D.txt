@@ -9,4 +9,3 @@ particles.hdf5
 particles.xmf
 theFlowField.hdf5
 theFlowField.xmf
-tracerParticles3D.yaml

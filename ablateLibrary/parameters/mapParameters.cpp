@@ -17,3 +17,9 @@ std::unordered_set<std::string> ablate::parameters::MapParameters::GetKeys() con
     }
     return keys;
 }
+
+ablate::parameters::MapParameters::MapParameters(std::initializer_list<std::pair<std::string, std::string>> list) {
+    for (const auto& pair : list) {
+        values[pair.first] = pair.second;
+    }
+}
