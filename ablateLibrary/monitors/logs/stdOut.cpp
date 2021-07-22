@@ -9,15 +9,14 @@ void ablate::monitors::logs::StdOut::Initialize(MPI_Comm comm) {
     output = rank == 0;
 }
 
-void ablate::monitors::logs::StdOut::Printf(const char * format, ...) {
-    if(output) {
+void ablate::monitors::logs::StdOut::Printf(const char* format, ...) {
+    if (output) {
         va_list args;
-        va_start (args, format);
-        PetscVFPrintf(PETSC_STDOUT,format,args) >> checkError;
-        va_end (args);
+        va_start(args, format);
+        PetscVFPrintf(PETSC_STDOUT, format, args) >> checkError;
+        va_end(args);
     }
 }
-
 
 #include "parser/registrar.hpp"
 REGISTER_WITHOUT_ARGUMENTS(ablate::monitors::logs::Log, ablate::monitors::logs::StdOut, "Writes to the standard out");

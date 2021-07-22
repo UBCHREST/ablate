@@ -3,7 +3,8 @@
 #include <utilities/petscError.hpp>
 #include "mathFunctions/mathFunction.hpp"
 
-ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope errorScope, ablate::monitors::SolutionErrorMonitor::Norm normType,std::shared_ptr<logs::Log> logIn)
+ablate::monitors::SolutionErrorMonitor::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope errorScope, ablate::monitors::SolutionErrorMonitor::Norm normType,
+                                                             std::shared_ptr<logs::Log> logIn)
     : errorScope(errorScope), normType(normType), log(logIn ? logIn : std::make_shared<logs::StdOut>()) {}
 
 PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
@@ -27,7 +28,7 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
     SolutionErrorMonitor* errorMonitor = (SolutionErrorMonitor*)ctx;
 
     // if this is the first time step init the log
-    if(step == 0){
+    if (step == 0) {
         errorMonitor->log->Initialize(PetscObjectComm((PetscObject)dm));
     }
 
@@ -45,11 +46,12 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
     // Change the output depending upon type
     switch (errorMonitor->errorScope) {
         case Scope::VECTOR:
-            errorMonitor->log->Printf("Timestep: %04d time = %-8.4g \t %s error: [%2.3g]\n", (int)step, (double)crtime, errorTypeName.c_str(), (double)ferrors[0]);
+            errorMonitor->log->Printf("Timestep: %04d time = %-8.4g \t %s", (int)step, (double)crtime, errorTypeName.c_str());
+            errorMonitor->log->Print("error", ferrors, "%2.3g");
+            errorMonitor->log->Print("\n");
             break;
         case Scope::COMPONENT: {
             errorMonitor->log->Printf("Timestep: %04d time = %-8.4g \t %s error:\n", (int)step, (double)crtime, errorTypeName.c_str());
-            PetscInt errorIndex = 0;
             for (PetscInt f = 0; f < numberOfFields; f++) {
                 PetscObject field;
                 ierr = DMGetField(dm, f, NULL, &field);
@@ -57,11 +59,9 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
                 const char* name;
                 PetscObjectGetName((PetscObject)field, &name);
 
-                errorMonitor->log->Printf("\t %s: [%2.3g", name, (double)ferrors[errorIndex++]);
-                for (PetscInt c = 1; c < numberComponentsPerField[f]; c++) {
-                    errorMonitor->log->Printf(", %2.3g", (double)ferrors[errorIndex++]);
-                }
-                errorMonitor->log->Print("]\n");
+                errorMonitor->log->Print("\t ");
+                errorMonitor->log->Print(name, ferrors, "%2.3g");
+                errorMonitor->log->Print("\n");
             }
         } break;
         default: {
@@ -203,5 +203,4 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::S
 #include "parser/registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::SolutionErrorMonitor, "Computes and reports the error every time step",
          ENUM(ablate::monitors::SolutionErrorMonitor::Scope, "scope", "how the error should be calculated ('vector', 'component')"),
-         ENUM(ablate::monitors::SolutionErrorMonitor::Norm, "type", "norm type ('l2', 'linf', 'l2_norm')"),
-         OPT(ablate::monitors::logs::Log, "log", "Where to record log (default is stdout)"));
+         ENUM(ablate::monitors::SolutionErrorMonitor::Norm, "type", "norm type ('l2', 'linf', 'l2_norm')"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

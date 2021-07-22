@@ -68,7 +68,11 @@ flow: !ablate::flow::CompressibleFlow
     - !ablate::monitors::SolutionErrorMonitor
       scope: component
       type: l2_norm
-   
+    - !ablate::monitors::SolutionErrorMonitor
+      scope: component
+      type: l2_norm
+      log: !ablate::monitors::logs::FileLog
+        name: solutionMonitor.log
 
   eos: !ablate::eos::PerfectGas
     parameters:

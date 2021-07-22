@@ -656,6 +656,31 @@ TEST(YamlParserTests, ShouldLocateFileNextToInputFile) {
     fs::remove(tempYaml);
 }
 
+TEST(YamlParserTests, ShouldCheckContainsForObject) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: " << std::endl;
+    yaml << "   item1: blue " << std::endl;
+    yaml << "   item2: blue " << std::endl;
+    yaml << " list1: " << std::endl;
+    yaml << "   - !green" << std::endl;
+    yaml << "   - subList2: " << std::endl;
+    yaml << "     subItem1: blue " << std::endl;
+    yaml << "     subItem2: " << std::endl;
+
+    // act
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+    auto yamlParserChild = yamlParser->GetFactory("item");
+    auto yamlParserChildList = yamlParser->GetFactorySequence("list1");
+
+    // assert
+    ASSERT_TRUE(yamlParserChild->Contains("item1"));
+    ASSERT_FALSE(yamlParserChild->Contains("item3"));
+    ASSERT_FALSE(yamlParserChildList[0]->Contains("item3"));
+    ASSERT_TRUE(yamlParserChildList[1]->Contains("subItem1"));
+}
+
 TEST(YamlParserTests, ShouldPrintToStream) {
     // arrange
     std::stringstream yaml;

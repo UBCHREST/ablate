@@ -1,8 +1,8 @@
 #ifndef ABLATELIBRARY_FILELOG_HPP
 #define ABLATELIBRARY_FILELOG_HPP
 
-#include <filesystem>
 #include <petsc.h>
+#include <filesystem>
 #include "log.hpp"
 
 namespace ablate::monitors::logs {
@@ -17,7 +17,7 @@ class FileLog : public Log {
     explicit FileLog(std::string fileName);
     ~FileLog() override;
 
-    void Printf(const char*, ...) final;
+    void Printf(const char *, ...) final;
     void Initialize(MPI_Comm comm) final;
 };
 }  // namespace ablate::monitors::logs

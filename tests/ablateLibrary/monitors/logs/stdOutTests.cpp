@@ -9,9 +9,9 @@
 
 using namespace ablate;
 
-class StdOutLogTestFigure : public testingResources::MpiTestParamFixture {};
+class StdOutLogTestFixture : public testingResources::MpiTestParamFixture {};
 
-TEST_P(StdOutLogTestFigure, ShouldPrintToStdOut) {
+TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
     StartWithMPI
         {
             // arrange
@@ -33,7 +33,7 @@ TEST_P(StdOutLogTestFigure, ShouldPrintToStdOut) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(LogTests, StdOutLogTestFigure,
+INSTANTIATE_TEST_SUITE_P(LogTests, StdOutLogTestFixture,
                          testing::Values((MpiTestParameter){.testName = "std out 1 proc", .nproc = 1, .expectedOutputFile = "outputs/monitors/logs/stdOutLogFile", .arguments = ""},
                                          (MpiTestParameter){.testName = "std out 2 proc", .nproc = 2, .expectedOutputFile = "outputs/monitors/logs/stdOutLogFile", .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter> &info) { return info.param.getTestName(); });

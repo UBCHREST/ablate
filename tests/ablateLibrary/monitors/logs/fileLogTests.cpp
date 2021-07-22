@@ -1,20 +1,20 @@
 #include <petsc.h>
 #include <MpiTestParamFixture.hpp>
 #include <cmath>
-#include "environment/runEnvironment.hpp"
 #include <fstream>
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "monitors/logs/fileLog.hpp"
 #include "parameters/mapParameters.hpp"
 
 using namespace ablate;
 
-class FileLogTestFigure : public testingResources::MpiTestParamFixture {};
+class FileLogTestFixture : public testingResources::MpiTestParamFixture {};
 
-TEST_P(FileLogTestFigure, ShouldPrintToFile) {
+TEST_P(FileLogTestFixture, ShouldPrintToFile) {
     StartWithMPI
         {
             // arrange
@@ -43,7 +43,7 @@ TEST_P(FileLogTestFigure, ShouldPrintToFile) {
     ASSERT_EQ(buffer.str(), "Log Out Log\nrank: 0\n");
 }
 
-TEST_P(FileLogTestFigure, ShouldPrintToFileInOutputDirectory) {
+TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
     StartWithMPI
         {
             // arrange
@@ -52,7 +52,7 @@ TEST_P(FileLogTestFigure, ShouldPrintToFileInOutputDirectory) {
 
             // Set the global environment
             auto tempDir = std::filesystem::temp_directory_path() / "nameOfTestDir";
-            parameters::MapParameters parameters ({{"outputDirectory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
+            parameters::MapParameters parameters({{"outputDirectory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
             environment::RunEnvironment::Setup(parameters);
 
             // Create the fileLog
@@ -78,7 +78,6 @@ TEST_P(FileLogTestFigure, ShouldPrintToFileInOutputDirectory) {
     ASSERT_EQ(buffer.str(), "Log Out Log\nrank: 0\n");
 }
 
-INSTANTIATE_TEST_SUITE_P(LogTests, FileLogTestFigure,
-                         testing::Values((MpiTestParameter){.testName = "logFile 1 proc", .nproc = 1,.arguments = ""},
-                                         (MpiTestParameter){.testName = "logFile 2 proc", .nproc = 2,.arguments = ""}),
+INSTANTIATE_TEST_SUITE_P(LogTests, FileLogTestFixture,
+                         testing::Values((MpiTestParameter){.testName = "logFile 1 proc", .nproc = 1, .arguments = ""}, (MpiTestParameter){.testName = "logFile 2 proc", .nproc = 2, .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter> &info) { return info.param.getTestName(); });
