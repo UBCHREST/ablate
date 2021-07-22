@@ -4,4 +4,5 @@ target_sources(libraryTests
         stdOutTests.cpp
         fileLogTests.cpp
         streamLogTests.cpp
+        csvLogTests.cpp
         )

@@ -4,7 +4,7 @@
 #include "environment/runEnvironment.hpp"
 
 ablate::monitors::logs::FileLog::FileLog(std::string fileName)
-    : outputPath(std::filesystem::path(fileName).is_absolute() ? std::filesystem::path(fileName) : ablate::environment::RunEnvironment::Get().GetOutputDirectory() / fileName) {}
+    : outputPath(std::filesystem::path(fileName).is_absolute() ? std::filesystem::path(fileName) : ablate::environment::RunEnvironment::Get().GetOutputDirectory() / fileName), file(nullptr) {}
 
 ablate::monitors::logs::FileLog::~FileLog() {
     if (file) {

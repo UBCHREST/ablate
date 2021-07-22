@@ -2,6 +2,8 @@ target_sources(ablateLibrary
         PUBLIC
         log.hpp
         log.cpp
+        csvLog.hpp
+        csvLog.cpp
         streamLog.hpp
         streamLog.cpp
         fileLog.hpp
