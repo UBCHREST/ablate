@@ -254,8 +254,8 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     // Check if any of the fields are fe
     PetscBool isFE = PETSC_FALSE;
     PetscBool isFV = PETSC_FALSE;
-    for (const auto& flowField : flowFieldDescriptors) {
-        switch (flowField.fieldType) {
+    for (const auto& flowFieldDescriptor : flowFieldDescriptors) {
+        switch (flowFieldDescriptor.fieldType) {
             case (FieldType::FE):
                 isFE = PETSC_TRUE;
                 break;
@@ -356,10 +356,12 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
     if (steps == 0) {
         // Print the initial mesh
         DMView(GetDM(), viewer) >> checkError;
+    }
 
-        if (auxDM) {
-            DMSetOutputSequenceNumber(auxDM, steps, time) >> checkError;
-        }
+    // set the dm sequence number, because we may be skipping outputs
+    DMSetOutputSequenceNumber(GetDM(), steps, time) >> checkError;
+    if (auxDM) {
+        DMSetOutputSequenceNumber(auxDM, steps, time) >> checkError;
     }
 
     // Always save the main flowField
@@ -377,9 +379,9 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
         DMGetGlobalVector(auxDM, &auxGlobalField) >> checkError;
 
         // copy over the name of the auxFieldVector
-        const char* name;
-        PetscObjectGetName((PetscObject)auxField, &name) >> checkError;
-        PetscObjectSetName((PetscObject)auxGlobalField, name) >> checkError;
+        const char* tempName;
+        PetscObjectGetName((PetscObject)auxField, &tempName) >> checkError;
+        PetscObjectSetName((PetscObject)auxGlobalField, tempName) >> checkError;
         DMLocalToGlobal(auxDM, auxField, INSERT_VALUES, auxGlobalField) >> checkError;
         VecView(auxGlobalField, viewer) >> checkError;
         DMRestoreGlobalVector(auxDM, &auxGlobalField) >> checkError;

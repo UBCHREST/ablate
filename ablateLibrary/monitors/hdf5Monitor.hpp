@@ -6,6 +6,9 @@
 #include "viewable.hpp"
 namespace ablate::monitors {
 class Hdf5Monitor : public Monitor {
+   private:
+    PetscInt index = 0;
+
    protected:
     PetscViewer petscViewer = nullptr;
     std::filesystem::path outputFilePath;

@@ -41,7 +41,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TCh
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
               Create timestepping solver context
               - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-    TSCreate(PETSC_COMM_WORLD, &ts) >> checkError;
+    TSCreate(PETSC_COMM_SELF, &ts) >> checkError;
     TSSetType(ts, TSARKIMEX) >> checkError;
     TSARKIMEXSetFullyImplicit(ts, PETSC_TRUE) >> checkError;
     TSARKIMEXSetType(ts, TSARKIMEX4) >> checkError;
@@ -265,7 +265,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             CHKERRQ(ierr);
             pointArray[0] = temperature;
             for (std::size_t s = 0; s < numberSpecies; s++) {
-                pointArray[s + 1] = densityYi[s] / euler[ablate::flow::processes::EulerAdvection::RHO];
+                pointArray[s + 1] = PetscMin(PetscMax(0.0, densityYi[s] / euler[ablate::flow::processes::EulerAdvection::RHO]), 1.0);
             }
 
             // precompute some values with the point array
@@ -285,10 +285,41 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             CHKERRQ(ierr);
             ierr = TSSetMaxTime(ts, time + dt);
             CHKERRQ(ierr);
+            ierr = TSSetTimeStep(ts, 1e-10);
+            CHKERRQ(ierr);
+            ierr = TSSetStepNumber(ts, 0);
+            CHKERRQ(ierr);
 
             // solver for this point
             ierr = TSSolve(ts, pointData);
-            CHKERRQ(ierr);
+
+            if (ierr != 0) {
+                std::string error = "Could not solve chemistry ode, setting source terms to zero (euler, yi): ";
+                for (PetscInt i = 0; i < dim + 2; i++) {
+                    error += std::to_string(euler[i]) + ", ";
+                }
+                for (std::size_t sp = 0; sp < numberSpecies; sp++) {
+                    error += std::to_string(densityYi[sp]) + ", ";
+                }
+                std::cout << error << std::endl;
+
+                // Use the updated values to compute the source terms for euler and species transport
+                PetscScalar* fieldSource;
+                ierr = DMPlexPointLocalRef(fieldDm, cell, sourceArray, &fieldSource);
+                CHKERRQ(ierr);
+
+                fieldSource[ablate::flow::processes::EulerAdvection::RHO] = 0.0;
+                fieldSource[ablate::flow::processes::EulerAdvection::RHOE] = 0.0;
+                for (PetscInt d = 0; d < dim; d++) {
+                    fieldSource[ablate::flow::processes::EulerAdvection::RHOU + d] = 0.0;
+                }
+                for (std::size_t sp = 0; sp < numberSpecies; sp++) {
+                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                    fieldSource[ablate::flow::processes::EulerAdvection::RHOU + dim + sp] = 0.0;
+                }
+
+                continue;
+            }
 
             // Use the updated values to compute the source terms for euler and species transport
             PetscScalar* fieldSource;
