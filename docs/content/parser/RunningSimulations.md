@@ -40,7 +40,7 @@ If you built ABLATE using the command line you can run ABLATE using either the d
     ./ablate --input /path/to/the/inputfile.yaml
 
     # similarly, ABLATE can be run using mpi
-    mpirun -n 3 ./abalte --input /path/to/the/inputfile.yaml
+    mpirun -n 3 ./ablate --input /path/to/the/inputfile.yaml
     ```
 
 Other available command line arguments are listed in [Parser Command Line Arguments](#parser-command-line-arguments).
