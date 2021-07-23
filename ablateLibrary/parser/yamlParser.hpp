@@ -3,7 +3,9 @@
 
 #include <yaml-cpp/yaml.h>
 #include <filesystem>
+#include <iostream>
 #include "factory.hpp"
+#include "parameters/parameters.hpp"
 
 namespace ablate::parser {
 class YamlParser : public Factory {
@@ -24,7 +26,7 @@ class YamlParser : public Factory {
      * @param nodePath
      * @param type
      */
-    YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles);
+    YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles, std::vector<std::filesystem::path> searchDirectories = {});
     inline void MarkUsage(const std::string& key) const { nodeUsages[key]++; }
 
     template <typename T>
@@ -41,19 +43,26 @@ class YamlParser : public Factory {
         return parameter.template as<T>();
     }
 
+    /**
+     * recursive call to update parameters
+     */
+    static void ReplaceValue(YAML::Node& yamlConfiguration, std::string key, std::string value);
+
    public:
+    explicit YamlParser(const YAML::Node yamlConfiguration, bool relocateRemoteFiles = false, std::shared_ptr<parameters::Parameters> overwriteParameters = {});
+    ~YamlParser() override = default;
+
     /***
      * Direct creation using a yaml string
      * @param yamlString
      */
-    explicit YamlParser(std::string yamlString, bool relocateRemoteFiles = false);
-    ~YamlParser() override = default;
+    explicit YamlParser(std::string yamlString, bool relocateRemoteFiles = false, std::shared_ptr<parameters::Parameters> overwriteParameters = {});
 
     /***
      * Read in file from system
      * @param filePath
      */
-    explicit YamlParser(std::filesystem::path filePath, bool relocateRemoteFiles = true);
+    explicit YamlParser(std::filesystem::path filePath, bool relocateRemoteFiles = true, std::shared_ptr<parameters::Parameters> overwriteParameters = {});
 
     /* gets the class type represented by this factory */
     const std::string& GetClassType() const override { return type; }
@@ -113,6 +122,9 @@ class YamlParser : public Factory {
 
     /** get unused values **/
     std::vector<std::string> GetUnusedValues() const;
+
+    /** print a copy of the yaml input as updated **/
+    void Print(std::ostream&) const;
 };
 }  // namespace ablate::parser
 

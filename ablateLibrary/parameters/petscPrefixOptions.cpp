@@ -19,7 +19,7 @@ ablate::parameters::PetscPrefixOptions::PetscPrefixOptions(std::string prefix) :
         std::string subString;
         keyAndOptions >> subString;
 
-        // if this options starts with the previx
+        // if this options starts with the prefix
         if (subString.find(prefix) == 0) {
             char value[PETSC_MAX_VALUE_SIZE];
             // Get the value from petsc

@@ -41,4 +41,3 @@ Timestep: 0019 time = (.*) 	 l2_norm error:<expects> ~
 Timestep: 0020 time = (.*) 	 l2_norm error:<expects> >0.002
 	 euler: \[(.*), (.*), (.*), (.*)\]<expects> <0.01 <1000 <28 <1
 ResultFiles:
-compressibleCouetteFlow.yaml
