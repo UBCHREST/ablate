@@ -94,4 +94,8 @@ flow: !ablate::flow::IncompressibleFlow
         formula: "1.0"
   monitors:
     - !ablate::monitors::FieldErrorMonitor
+    - !ablate::monitors::FieldErrorMonitor
+      log: !ablate::monitors::logs::FileLog
+        name: errorMonitor.log
+
     
