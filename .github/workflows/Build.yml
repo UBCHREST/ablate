@@ -70,7 +70,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           custom_tag: ${{env.VERSION}}
 
-  generate-docs:
+  generate-auto-docs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
 
@@ -89,6 +89,7 @@ jobs:
         uses: EndBug/add-and-commit@v7
         with:
           default_author: github_actions
-          message: 'Auto generated documentation'
+          pull_strategy: 'NO-PULL'
+          message: 'auto-generated documentation'
           add: 'docs/generatedDocs/*'
-          branch: 'gh-pages'
+          push:  'origin gh-pages'
