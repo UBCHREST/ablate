@@ -92,4 +92,4 @@ jobs:
           pull_strategy: 'NO-PULL'
           message: 'auto-generated documentation'
           add: 'docs/generatedDocs/*'
-          push:  'origin gh-pages'
+          push:  'origin HEAD:gh-pages'
