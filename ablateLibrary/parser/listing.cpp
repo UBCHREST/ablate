@@ -11,10 +11,11 @@ ablate::parser::Listing& ablate::parser::Listing::Get() {
 }
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing& listing) {
     for (auto interface : listing.entries) {
-        os << "Interface: " << utilities::Demangler::Demangle(interface.first) << std::endl;
+        os << "# " << utilities::Demangler::Demangle(interface.first);
         for (auto classEntry : interface.second) {
-            os << '\t' << classEntry;
+            os << std::endl << classEntry;
         }
+        os << std::endl;
     }
 
     return os;
@@ -27,9 +28,9 @@ std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser:
 }
 
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing::ClassEntry& classEntry) {
-    os << classEntry.className << (classEntry.defaultConstructor ? "*" : "") << " - " << classEntry.description << std::endl;
+    os << "## " << classEntry.className << (classEntry.defaultConstructor ? "*" : "") << std::endl << classEntry.description << std::endl << std::endl;
     for (auto argumentEntry : classEntry.arguments) {
-        os << '\t' << '\t' << argumentEntry << std::endl;
+        os << "- " << argumentEntry << std::endl;
     }
     return os;
 }
