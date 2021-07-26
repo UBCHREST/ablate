@@ -18,6 +18,12 @@ class Builder {
      * @param stream
      */
     static void PrintVersion(std::ostream& stream);
+
+    /**
+     * print the version information for the ablate library
+     * @param stream
+     */
+    static void PrintInfo(std::ostream& stream);
 };
 }  // namespace ablate
 

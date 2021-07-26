@@ -11,26 +11,26 @@ ablate::parser::Listing& ablate::parser::Listing::Get() {
 }
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing& listing) {
     for (auto interface : listing.entries) {
-        os << "# " << utilities::Demangler::Demangle(interface.first);
+        os << "# " << utilities::Demangler::Demangle(interface.first) << std::endl;
         for (auto classEntry : interface.second) {
-            os << std::endl << classEntry;
+            os << classEntry;
         }
-        os << std::endl;
     }
 
     return os;
 }
 
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing::ArgumentEntry& argumentEntry) {
-    os << argumentEntry.name << "(" << utilities::Demangler::Demangle(argumentEntry.interface) << ") - " << (argumentEntry.optional ? "OPTIONAL: " : "") << argumentEntry.description;
-
+    os << argumentEntry.name << (argumentEntry.optional ? "" : " (req) ") << std::endl;
+    os << ": " << "(" << utilities::Demangler::Demangle(argumentEntry.interface) << ") "  << argumentEntry.description;
+    os << std::endl << std::endl;
     return os;
 }
 
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing::ClassEntry& classEntry) {
     os << "## " << classEntry.className << (classEntry.defaultConstructor ? "*" : "") << std::endl << classEntry.description << std::endl << std::endl;
     for (auto argumentEntry : classEntry.arguments) {
-        os << "- " << argumentEntry << std::endl;
+        os << argumentEntry;
     }
     return os;
 }

@@ -83,7 +83,10 @@ jobs:
         run: docker build . --file DockerTestFile --tag framework-test-image
 
       - name: Get the version from the build file
-        run: echo "VERSION=$(docker run --rm framework-test-image awk -F= '/CMAKE_PROJECT_VERSION:/ {print $NF}' CMakeCache.txt )" > docs/generatedDocs/version.html
+        run: docker run --rm framework-test-image ./ablate --version > docs/_includes/generated/version.html
+
+      - name: Write the component docs
+        run: docker run --rm framework-test-image ./ablate --help > docs/_includes/generated/components.md
 
       - name: Commit changes
         uses: EndBug/add-and-commit@v7

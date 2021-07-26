@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <parameters/petscPrefixOptions.hpp>
+#include <utilities/demangler.hpp>
 #include <utilities/fileUtility.hpp>
 #include <utilities/mpiError.hpp>
 #include "builder.hpp"
@@ -19,14 +20,21 @@ int main(int argc, char** args) {
     PetscInitialize(&argc, &args, NULL, NULL) >> checkError;
 
     // check to see if we should print version
-    PetscBool printVersion = PETSC_FALSE;
-    PetscOptionsGetBool(NULL, NULL, "-version", &printVersion, NULL) >> checkError;
-    if (!printVersion) {
-        PetscOptionsGetBool(NULL, NULL, "--version", &printVersion, NULL) >> checkError;
+    PetscBool printInfo = PETSC_FALSE;
+    PetscOptionsGetBool(NULL, NULL, "-version", &printInfo, NULL) >> checkError;
+    if (!printInfo) {
+        PetscOptionsGetBool(NULL, NULL, "--info", &printInfo, NULL) >> checkError;
     }
+    if (printInfo) {
+        Builder::PrintInfo(std::cout);
+        std::cout << "----------------------------------------" << std::endl;
+    }
+
+    PetscBool printVersion = PETSC_FALSE;
+    PetscOptionsGetBool(NULL, NULL, "--version", &printVersion, NULL) >> checkError;
     if (printVersion) {
         Builder::PrintVersion(std::cout);
-        std::cout << "----------------------------------------" << std::endl;
+        return 0;
     }
 
     // check to see if we should print options
