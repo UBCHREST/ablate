@@ -48,9 +48,7 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     timeStepper->Solve(flow);
 }
 
-void ablate::Builder::PrintVersion(std::ostream& stream) {
-    stream << ABLATECORE_VERSION;
-}
+void ablate::Builder::PrintVersion(std::ostream& stream) { stream << ABLATECORE_VERSION; }
 
 void ablate::Builder::PrintInfo(std::ostream& stream) {
     stream << "ABLATE: " << std::endl;

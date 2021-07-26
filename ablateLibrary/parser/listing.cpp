@@ -22,7 +22,8 @@ std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser:
 
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing::ArgumentEntry& argumentEntry) {
     os << argumentEntry.name << (argumentEntry.optional ? "" : " (req) ") << std::endl;
-    os << ": " << "(" << utilities::Demangler::Demangle(argumentEntry.interface) << ") "  << argumentEntry.description;
+    os << ": "
+       << "(" << utilities::Demangler::Demangle(argumentEntry.interface) << ") " << argumentEntry.description;
     os << std::endl << std::endl;
     return os;
 }
