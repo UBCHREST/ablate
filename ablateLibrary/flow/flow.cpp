@@ -412,3 +412,12 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
         DMRestoreGlobalVector(dm->GetDomain(), &exactVec) >> checkError;
     }
 }
+
+const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetFieldDescriptor(const std::string& fieldName) const {
+    for (const auto& descriptor : flowFieldDescriptors) {
+        if (descriptor.fieldName == fieldName) {
+            return descriptor;
+        }
+    }
+    throw std::invalid_argument("Cannot locate field descriptor for " + fieldName);
+}

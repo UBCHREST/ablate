@@ -10,6 +10,8 @@ target_sources(ablateLibrary
         solutionErrorMonitor.cpp
         timeStepMonitor.hpp
         timeStepMonitor.cpp
+        ignitionDelayPeakYi.hpp
+        ignitionDelayPeakYi.cpp
         )
 
 add_subdirectory(logs)

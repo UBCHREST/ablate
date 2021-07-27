@@ -15,10 +15,10 @@
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
 #endif
 
-ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TChem> eosIn)
+ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn)
     : fieldDm(nullptr),
       sourceVec(nullptr),
-      eos(eosIn),
+      eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)),
       numberSpecies(eosIn->GetSpecies().size()),
       ts(nullptr),
       pointData(nullptr),
@@ -26,6 +26,11 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::TCh
       tchemScratch(nullptr),
       jacobianScratch(nullptr),
       rows(nullptr) {
+    // make sure that the eos is set
+    if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
+        throw std::invalid_argument("ablate::flow::processes::TChemReactions::TChemReactions only accepts EOS of type eos::TChem");
+    }
+
     // size up the scratch variables
     PetscMalloc3(numberSpecies + 1, &tchemScratch, PetscSqr(numberSpecies + 1), &jacobianScratch, numberSpecies, &rows) >> checkError;
     // The rows will not change, so set them once
@@ -452,4 +457,4 @@ PetscErrorCode ablate::flow::processes::TChemReactions::AddChemistrySourceToFlow
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::TChemReactions, "reactions using the TChem v1 library", OPT(eos::TChem, "eos", "the tChem v1 eos"));
+REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::TChemReactions, "reactions using the TChem v1 library", ARG(eos::EOS, "eos", "the tChem v1 eos"));

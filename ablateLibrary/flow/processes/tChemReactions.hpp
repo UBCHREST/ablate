@@ -57,7 +57,7 @@ class TChemReactions : public FlowProcess {
     static PetscErrorCode AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
-    explicit TChemReactions(std::shared_ptr<eos::TChem> eos);
+    explicit TChemReactions(std::shared_ptr<eos::EOS> eos);
     ~TChemReactions() override;
     /**
      * public function to link this process with the flow

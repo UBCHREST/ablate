@@ -1,0 +1,4 @@
+SUCCESS
+Computed Ignition Delay: (.*)<expects> =0.042325
+ResultFiles:
+ignitionDelayPeakYi.csv
