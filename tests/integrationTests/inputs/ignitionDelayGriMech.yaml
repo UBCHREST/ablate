@@ -60,4 +60,13 @@ flow: !ablate::flow::FVFlow
       log: !ablate::monitors::logs::StdOut {}
       historyLog: !ablate::monitors::logs::CsvLog
         name: ignitionDelayPeakYi.csv
+    - !ablate::monitors::IgnitionDelayTemperature
+      eos: !ablate::eos::TChem
+        mechFile: inputs/grimech30.dat
+        thermoFile: inputs/thermo30.dat
+      location: [0.5, 0.5]
+      thresholdTemperature: 1500
+      log: !ablate::monitors::logs::StdOut {}
+      historyLog: !ablate::monitors::logs::CsvLog
+        name: ignitionDelayTemperature.csv
 

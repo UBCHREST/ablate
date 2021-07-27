@@ -12,6 +12,8 @@ target_sources(ablateLibrary
         timeStepMonitor.cpp
         ignitionDelayPeakYi.hpp
         ignitionDelayPeakYi.cpp
+        ignitionDelayTemperature.hpp
+        ignitionDelayTemperature.cpp
         )
 
 add_subdirectory(logs)

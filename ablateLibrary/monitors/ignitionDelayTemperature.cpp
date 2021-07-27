@@ -1,28 +1,24 @@
-#include "ignitionDelayPeakYi.hpp"
+#include "ignitionDelayTemperature.hpp"
 #include "flow/fvFlow.hpp"
 #include "flow/processes/eulerAdvection.hpp"
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::monitors::IgnitionDelayPeakYi::IgnitionDelayPeakYi(std::string species, std::vector<double> location, std::shared_ptr<logs::Log> logIn, std::shared_ptr<logs::Log> historyLogIn)
-    : log(logIn ? logIn : std::make_shared<logs::StdOut>()), historyLog(historyLogIn), species(species), location(location) {}
+ablate::monitors::IgnitionDelayTemperature::IgnitionDelayTemperature(std::shared_ptr<eos::EOS> eosIn, std::vector<double> location, double thresholdTemperatureIn, std::shared_ptr<logs::Log> logIn,
+                                                                     std::shared_ptr<logs::Log> historyLogIn)
+    : eos(eosIn), thresholdTemperature(thresholdTemperatureIn), log(logIn ? logIn : std::make_shared<logs::StdOut>()), historyLog(historyLogIn), location(location) {}
 
-ablate::monitors::IgnitionDelayPeakYi::~IgnitionDelayPeakYi() {
-    // compute the time at the maximum yi
-    std::size_t loc = 0;
-    double maxValue = 0.0;
-    for (std::size_t i = 0; i < yiHistory.size(); i++) {
-        if (yiHistory[i] > maxValue) {
-            maxValue = yiHistory[i];
-            loc = i;
+ablate::monitors::IgnitionDelayTemperature::~IgnitionDelayTemperature() {
+    for (std::size_t i = 0; i < temperatureHistory.size(); i++) {
+        if (temperatureHistory[i] > thresholdTemperature) {
+            log->Printf("Computed Ignition Delay (Temperature): %f\n", timeHistory[i]);
+            return;
         }
     }
-
-    log->Printf("Computed Ignition Delay (%s): %f\n", species.c_str(), timeHistory[loc]);
 }
 
-void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<Monitorable> monitorableObject) {
+void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<Monitorable> monitorableObject) {
     // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate
     auto flow = std::dynamic_pointer_cast<ablate::flow::FVFlow>(monitorableObject);
     if (!flow) {
@@ -49,17 +45,6 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<Monitorable
         yiId = densityYiIdValue.value();
     } else {
         throw std::invalid_argument("The IgnitionDelay monitor expects to find densityYi in the ablate::flow::FVFlow");
-    }
-
-    const auto& speciesList = flow->GetFieldDescriptor("densityYi").componentNames;
-    yiOffset = -1;
-    for (std::size_t sp = 0; sp < speciesList.size(); sp++) {
-        if (speciesList[sp] == species) {
-            yiOffset = sp;
-        }
-    }
-    if (yiOffset < 0) {
-        throw std::invalid_argument("The IgnitionDelay monitor cannot find the " + species + " species");
     }
 
     // Locate the closest cell
@@ -99,8 +84,7 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<Monitorable
         historyLog->Initialize(PetscObjectComm((PetscObject)flow->GetDM()));
     }
 }
-
-PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
+PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
     DM dm;
@@ -109,8 +93,11 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
     CHKERRQ(ierr);
     ierr = DMGetDS(dm, &ds);
     CHKERRQ(ierr);
+    PetscInt dim;
+    ierr = DMGetDimension(dm, &dim);
+    CHKERRQ(ierr);
 
-    IgnitionDelayPeakYi* monitor = (IgnitionDelayPeakYi*)ctx;
+    IgnitionDelayTemperature* monitor = (IgnitionDelayTemperature*)ctx;
 
     // extract the gradLocalVec
     const PetscScalar* uArray;
@@ -125,13 +112,24 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
     ierr = DMPlexPointGlobalFieldRead(dm, monitor->cellOfInterest, monitor->yiId, uArray, &densityYiValues);
     CHKERRQ(ierr);
 
+    // compute the temperature
+    // using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
+    double T;
+    const double density = eulerValues[ablate::flow::processes::EulerAdvection::RHO];
+    monitor->eos->GetComputeTemperatureFunction()(dim,
+                                                  density,
+                                                  eulerValues[ablate::flow::processes::EulerAdvection::RHOE] / density,
+                                                  eulerValues + ablate::flow::processes::EulerAdvection::RHOU,
+                                                  densityYiValues,
+                                                  &T,
+                                                  monitor->eos->GetComputeTemperatureContext());
+
     // Store the result
-    double yi = densityYiValues[monitor->yiOffset] / eulerValues[ablate::flow::processes::EulerAdvection::RHO];
     monitor->timeHistory.push_back(crtime);
-    monitor->yiHistory.push_back(yi);
+    monitor->temperatureHistory.push_back(T);
 
     if (monitor->historyLog) {
-        monitor->historyLog->Printf("%d Time: %f Yi: %f\n", step, crtime, yi);
+        monitor->historyLog->Printf("%d Time: %f Temperature: %f\n", step, crtime, T);
     }
 
     ierr = VecRestoreArrayRead(u, &uArray);
@@ -140,7 +138,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::monitors::Monitor, ablate::monitors::IgnitionDelayPeakYi, "Compute the ignition time based upon peak mass fraction",
-         ARG(std::string, "species", "the species used to determine the peak Yi"), ARG(std::vector<double>, "location", "the monitor location"),
+REGISTER(ablate::monitors::Monitor, ablate::monitors::IgnitionDelayTemperature, "Compute the ignition time based upon temperature change", ARG(eos::EOS, "eos", "the eos used to compute temperature"),
+         ARG(std::vector<double>, "location", "the monitor location"), ARG(double, "thresholdTemperature", "the temperature used to define ignition delay"),
          OPT(ablate::monitors::logs::Log, "log", "where to record the final ignition time (default is stdout)"),
          OPT(ablate::monitors::logs::Log, "historyLog", "where to record the time and yi history (default is none)"));

@@ -9,7 +9,6 @@ namespace ablate::monitors {
 /**
  * The ignition delay monitor logs the mass fraction of the specified species and computes the ignition delay from its peak value.
  */
-
 class IgnitionDelayPeakYi : public Monitor {
    private:
     static PetscErrorCode MonitorIgnition(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx);
