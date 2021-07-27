@@ -1,8 +1,11 @@
 #ifndef ABLATELIBRARY_DEMANGLER_H
 #define ABLATELIBRARY_DEMANGLER_H
 
+#include <filesystem>
 #include <map>
 #include <string>
+#include <vector>
+
 namespace ablate::utilities {
 class Demangler {
    public:
@@ -12,6 +15,10 @@ class Demangler {
     inline static std::map<std::string, std::string> prettyNames = {
         {typeid(std::string).name(), "string"},
         {typeid(std::map<std::string, std::string>).name(), "argument map"},
+        {typeid(std::vector<int>).name(), "int list"},
+        {typeid(std::vector<double>).name(), "double list"},
+        {typeid(std::vector<std::string>).name(), "string list"},
+        {typeid(std::filesystem::path).name(), "file path or url"},
     };
 };
 }  // namespace ablate::utilities
