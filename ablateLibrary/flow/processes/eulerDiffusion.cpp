@@ -2,31 +2,32 @@
 #include <utilities/petscError.hpp>
 #include "eulerAdvection.hpp"
 
-PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar *conservedValues,
-                                                                                  PetscScalar *auxField, void *ctx) {
+// When used, you must request euler, then densityYi
+PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
+                                                                                  const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
-    PetscReal density = conservedValues[EulerAdvection::RHO];
-    PetscReal totalEnergy = conservedValues[EulerAdvection::RHOE] / density;
+    PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
+    PetscReal totalEnergy = conservedValues[uOff[0] + EulerAdvection::RHOE] / density;
     EulerDiffusionData flowParameters = (EulerDiffusionData)ctx;
     PetscErrorCode ierr = flowParameters->computeTemperatureFunction(dim,
                                                                      density,
                                                                      totalEnergy,
-                                                                     conservedValues + EulerAdvection::RHOU,
-                                                                     flowParameters->numberSpecies ? conservedValues + EulerAdvection::RHOU + dim : NULL,
-                                                                     &auxField[T],
+                                                                     conservedValues + uOff[0] + EulerAdvection::RHOU,
+                                                                     flowParameters->numberSpecies ? conservedValues + uOff[1] : NULL,
+                                                                     auxField,
                                                                      flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscScalar *conservedValues, PetscScalar *auxField,
-                                                                               void *ctx) {
+PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues,
+                                                                               PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
-    PetscReal density = conservedValues[EulerAdvection::RHO];
+    PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
 
     for (PetscInt d = 0; d < dim; d++) {
-        auxField[d] = conservedValues[EulerAdvection::RHOU + d] / density;
+        auxField[d] = conservedValues[uOff[0] + EulerAdvection::RHOU + d] / density;
     }
 
     PetscFunctionReturn(0);
@@ -54,9 +55,14 @@ void ablate::flow::processes::EulerDiffusion::Initialize(ablate::flow::FVFlow &f
         flow.RegisterRHSFunction(CompressibleFlowEulerDiffusion, eulerDiffusionData, "euler", {"euler"}, {"T", "vel"});
     }
 
-    // add in aux update variables TODO: remove hard coded order of the temperature using a aOff type argument
-    flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, eulerDiffusionData, "T");
-    flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, eulerDiffusionData, "vel");
+    // add in aux update variables
+    flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, eulerDiffusionData, "vel", {"euler"});
+
+    if (eulerDiffusionData->numberSpecies > 0) {
+        flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, eulerDiffusionData, "T", {"euler", "densityYi"});
+    } else {
+        flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, eulerDiffusionData, "T", {"euler"});
+    }
 
     // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
     PetscBool automaticTimeStepCalculator = PETSC_TRUE;
@@ -75,6 +81,10 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowEulerDif
                                                                                        const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
                                                                                        const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
+    // this order is based upon the order that they are passed into RegisterRHSFunction
+    const int T = 0;
+    const int VEL = 1;
+
     PetscErrorCode ierr;
     EulerDiffusionData flowParameters = (EulerDiffusionData)ctx;
 

@@ -23,12 +23,10 @@ class FVFlow : public Flow {
     // hold the update functions for flux and point sources
     std::vector<FVMRHSFluxFunctionDescription> rhsFluxFunctionDescriptions;
     std::vector<FVMRHSPointFunctionDescription> rhsPointFunctionDescriptions;
+    std::vector<FVAuxFieldUpdateFunctionDescription> auxFieldUpdateFunctionDescriptions;
 
     // allow the use of any arbitrary rhs functions
     std::vector<std::pair<RHSArbitraryFunction, void*>> rhsArbitraryFunctions;
-    // functions to update each aux field
-    std::vector<FVAuxFieldUpdateFunction> auxFieldUpdateFunctions;
-    std::vector<void*> auxFieldUpdateContexts;
 
     // functions to update the timestep
     std::vector<std::pair<ComputeTimeStepFunction, void*>> timeStepFunctions;
@@ -99,7 +97,7 @@ class FVFlow : public Flow {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField);
+    void RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields);
 
     /**
      * Register a dtCalculator

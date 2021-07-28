@@ -901,7 +901,7 @@ PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescr
  * @param updateFunction
  * @return
  */
-PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField, PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunction* updateFunctions, void** data) {
+PetscErrorCode FVFlowUpdateAuxFieldsFV(PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunctionDescription* functionDescriptions, DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
@@ -913,8 +913,9 @@ PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locX
     ierr = VecGetDM(cellGeomVec, &dmCell);CHKERRQ(ierr);
     ierr = VecGetArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
 
-    // Assume that the euler field is always zero
-    PetscInt EULER = 0;
+    // Get the ds
+    PetscDS ds;
+    ierr = DMGetDS(dm, &ds);CHKERRQ(ierr);
 
     // Get the cell start and end for the fv cells
     PetscInt cellStart, cellEnd;
@@ -931,6 +932,17 @@ PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locX
     PetscInt dim;
     ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
+    // determine the number of fields and the totDim
+    PetscInt nf;
+    ierr = PetscDSGetNumFields(ds, &nf);CHKERRQ(ierr);
+
+    // Create the required offset arrays. These are sized for the max possible value
+    PetscInt *uOff = NULL;
+    PetscCalloc1(nf, &uOff);
+
+    PetscInt * uOffTotal;
+    ierr = PetscDSGetComponentOffsets(ds, &uOffTotal);CHKERRQ(ierr);
+
     // March over each cell volume
     for (PetscInt c = cellStart; c < cellEnd; ++c) {
         PetscFVCellGeom       *cellGeom;
@@ -938,21 +950,28 @@ PetscErrorCode FVFlowUpdateAuxFieldsFV(DM dm, DM auxDM, PetscReal time, Vec locX
         PetscReal           *auxValues;
 
         ierr = DMPlexPointLocalRead(dmCell, c, cellGeomArray, &cellGeom);CHKERRQ(ierr);
-        ierr = DMPlexPointLocalFieldRead(dm, c, EULER, locFlowFieldArray, &fieldValues);CHKERRQ(ierr);
+        ierr = DMPlexPointLocalRead(dm, c, locFlowFieldArray, &fieldValues);CHKERRQ(ierr);
 
-        for (PetscInt auxFieldIndex = 0; auxFieldIndex < numberUpdateFunctions; auxFieldIndex ++){
-            ierr = DMPlexPointLocalFieldRef(auxDM, c, auxFieldIndex, localAuxFlowFieldArray, &auxValues);CHKERRQ(ierr);
+        // for each function description
+        for (PetscInt d = 0; d < numberUpdateFunctions; ++d) {
+            // get the uOff for the req fields
+            for(PetscInt rf =0; rf < functionDescriptions[d].numberInputFields; rf++){
+                uOff[rf] = uOffTotal[functionDescriptions[d].inputFields[rf]];
+            }
+
+            // grab the local aux field
+            ierr = DMPlexPointLocalFieldRef(auxDM, c, functionDescriptions[d].auxField, localAuxFlowFieldArray, &auxValues);CHKERRQ(ierr);
+
 
             // If an update function was passed
-            if (updateFunctions[auxFieldIndex]){
-                updateFunctions[auxFieldIndex](time, dim, cellGeom, fieldValues, auxValues, data[auxFieldIndex]);
-            }
+            functionDescriptions[d].function(time, dim, cellGeom, uOff, fieldValues, auxValues, functionDescriptions[d].context);
         }
     }
 
     ierr = VecRestoreArrayRead(cellGeomVec, &cellGeomArray);CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(locXVec, &locFlowFieldArray);CHKERRQ(ierr);
     ierr = VecRestoreArray(locAuxField, &localAuxFlowFieldArray);CHKERRQ(ierr);
+    PetscFree(uOff);
 
     PetscFunctionReturn(0);
 }

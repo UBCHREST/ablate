@@ -5,8 +5,6 @@
 namespace ablate::flow::processes {
 
 class EulerDiffusion : public FlowProcess {
-    typedef enum { T, VEL, TOTAL_COMPRESSIBLE_AUX_COMPONENTS } CompressibleAuxComponents;
-
    public:
     struct _EulerDiffusionData {
         /* thermal conductivity*/
@@ -59,8 +57,10 @@ class EulerDiffusion : public FlowProcess {
                                                          const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[],
                                                          const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* fL, void* ctx);
     // function to update the aux temperature field
-    static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
-    static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
+    static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
+                                                    void* ctx);
+    static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
+                                                 void* ctx);
 
     // static function to compute time step for euler diffusion
     static double ComputeTimeStep(TS ts, Flow& flow, void* ctx);

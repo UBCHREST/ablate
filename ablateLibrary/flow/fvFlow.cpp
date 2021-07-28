@@ -82,8 +82,7 @@ PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, V
     CHKERRQ(ierr);
 
     // update any aux fields, including ghost cells
-    ierr = FVFlowUpdateAuxFieldsFV(
-        flow->dm->GetDomain(), flow->auxDM, time, locXVec, flow->auxField, flow->auxFieldUpdateFunctions.size(), &flow->auxFieldUpdateFunctions[0], &flow->auxFieldUpdateContexts[0]);
+    ierr = FVFlowUpdateAuxFieldsFV(flow->auxFieldUpdateFunctionDescriptions.size(), &flow->auxFieldUpdateFunctionDescriptions[0], flow->dm->GetDomain(), flow->auxDM, time, locXVec, flow->auxField);
     CHKERRQ(ierr);
 
     // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
@@ -231,7 +230,7 @@ void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSPointFunction function, voi
 
 void ablate::flow::FVFlow::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.push_back(std::make_pair(function, context)); }
 
-void ablate::flow::FVFlow::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField) {
+void ablate::flow::FVFlow::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields) {
     // find the field location
     auto auxFieldLocation = this->GetAuxFieldId(auxField);
 
@@ -239,12 +238,21 @@ void ablate::flow::FVFlow::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction funct
         throw std::invalid_argument("Cannot locate aux flow field " + auxField);
     }
 
-    // Make sure the items are sized correct
-    auxFieldUpdateFunctions.resize(this->auxFieldDescriptors.size());
-    auxFieldUpdateContexts.resize(this->auxFieldDescriptors.size());
+    FVAuxFieldUpdateFunctionDescription functionDescription{.function = function,
+                                                            .context = context,
+                                                            .inputFields = {-1, -1, -1, -1}, /**default to empty.**/
+                                                            .numberInputFields = (PetscInt)inputFields.size(),
+                                                            .auxField = auxFieldLocation.value()};
 
-    auxFieldUpdateFunctions[auxFieldLocation.value()] = function;
-    auxFieldUpdateContexts[auxFieldLocation.value()] = context;
+    for (std::size_t i = 0; i < inputFields.size(); i++) {
+        auto fieldId = this->GetFieldId(inputFields[i]);
+        if (!fieldId) {
+            throw std::invalid_argument("Cannot locate flow field " + inputFields[i]);
+        }
+        functionDescription.inputFields[i] = fieldId.value();
+    }
+
+    auxFieldUpdateFunctionDescriptions.push_back(functionDescription);
 }
 
 void ablate::flow::FVFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow) {
