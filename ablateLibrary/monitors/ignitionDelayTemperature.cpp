@@ -12,7 +12,7 @@ ablate::monitors::IgnitionDelayTemperature::IgnitionDelayTemperature(std::shared
 ablate::monitors::IgnitionDelayTemperature::~IgnitionDelayTemperature() {
     for (std::size_t i = 0; i < temperatureHistory.size(); i++) {
         if (temperatureHistory[i] > thresholdTemperature) {
-            log->Printf("Computed Ignition Delay (Temperature): %f\n", timeHistory[i]);
+            log->Printf("Computed Ignition Delay (Temperature): %g\n", timeHistory[i]);
             return;
         }
     }
@@ -129,7 +129,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     monitor->temperatureHistory.push_back(T);
 
     if (monitor->historyLog) {
-        monitor->historyLog->Printf("%d Time: %f Temperature: %f\n", step, crtime, T);
+        monitor->historyLog->Printf("%d Time: %g Temperature: %f\n", step, crtime, T);
     }
 
     ierr = VecRestoreArrayRead(u, &uArray);

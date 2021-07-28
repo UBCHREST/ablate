@@ -19,7 +19,7 @@ ablate::monitors::IgnitionDelayPeakYi::~IgnitionDelayPeakYi() {
         }
     }
 
-    log->Printf("Computed Ignition Delay (%s): %f\n", species.c_str(), timeHistory[loc]);
+    log->Printf("Computed Ignition Delay (%s): %g\n", species.c_str(), timeHistory[loc]);
 }
 
 void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<Monitorable> monitorableObject) {
@@ -131,7 +131,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
     monitor->yiHistory.push_back(yi);
 
     if (monitor->historyLog) {
-        monitor->historyLog->Printf("%d Time: %f Yi: %f\n", step, crtime, yi);
+        monitor->historyLog->Printf("%d Time: %g Yi: %f\n", step, crtime, yi);
     }
 
     ierr = VecRestoreArrayRead(u, &uArray);
