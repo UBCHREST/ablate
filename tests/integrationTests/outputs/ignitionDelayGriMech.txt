@@ -1,7 +1,6 @@
 SUCCESS
 SUCCESS
-Computed Ignition Delay \(Temperature\): (.*)<expects> <0.05
-Computed Ignition Delay \(OH\): (.*)<expects> <0.05
+Computed Ignition Delay \(OH\): (.*)<expects> =0.042325
 ResultFiles:
 ignitionDelayPeakYi.csv
 ignitionDelayTemperature.csv
