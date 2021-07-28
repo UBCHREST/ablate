@@ -11,6 +11,9 @@ class EulerDiffusion : public FlowProcess {
         PetscReal k;
         /* dynamic viscosity*/
         PetscReal mu;
+        /* diffusivity */
+        PetscReal diff;
+
         /* number of gas species */
         PetscInt numberSpecies;
 
@@ -56,11 +59,22 @@ class EulerDiffusion : public FlowProcess {
     static PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[],
                                                          const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[],
                                                          const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* fL, void* ctx);
-    // function to update the aux temperature field
+    /**
+     * Function to compute the temperature field. This function assumes that the input values will be {"euler", "densityYi"}
+     */
     static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
                                                     void* ctx);
+    /**
+     * Function to compute the velocity. This function assumes that the input values will be {"euler"}
+     */
     static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
                                                  void* ctx);
+
+    /**
+     * Function to compute the mass fraction. This function assumes that the input values will be {"euler", "densityYi"}
+     */
+    static PetscErrorCode UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
+                                                    void* ctx);
 
     // static function to compute time step for euler diffusion
     static double ComputeTimeStep(TS ts, Flow& flow, void* ctx);

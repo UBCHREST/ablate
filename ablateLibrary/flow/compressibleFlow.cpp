@@ -18,7 +18,8 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
                   .componentNames = eosIn->GetSpecies(),
               },
               {.solutionField = false, .fieldName = "T", .fieldPrefix = "T", .components = 1, .fieldType = FieldType::FV},
-              {.solutionField = false, .fieldName = "vel", .fieldPrefix = "vel", .components = mesh->GetDimensions(), .fieldType = FieldType::FV}},
+              {.solutionField = false, .fieldName = "vel", .fieldPrefix = "vel", .components = mesh->GetDimensions(), .fieldType = FieldType::FV},
+              {.solutionField = false, .fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eosIn->GetSpecies().size(), .fieldType = FieldType::FV}},
              {
                  // create assumed processes for compressible flow
                  std::make_shared<ablate::flow::processes::EulerAdvection>(parameters, eosIn, fluxCalculatorIn),
