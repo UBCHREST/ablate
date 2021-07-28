@@ -62,36 +62,30 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<Monitorable
         throw std::invalid_argument("The IgnitionDelay monitor cannot find the " + species + " species");
     }
 
-    // Locate the closest cell
-    PetscReal distance = PETSC_MAX_REAL;
+    // Convert the location to a vec
+    Vec locVec;
+    VecCreateSeqWithArray((PetscObjectComm((PetscObject)flow->GetDM())), location.size(), location.size(), &location[0], &locVec) >> checkError;
 
-    // Get the cell start and end for the fv cells
-    PetscInt cellStart, cellEnd;
-    DMPlexGetHeightStratum(flow->GetDM(), 0, &cellStart, &cellEnd) >> checkError;
+    // Get all points still in this mesh
+    PetscSF cellSF = NULL;
+    DMLocatePoints(flow->GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
+    const PetscSFNode* cells;
+    PetscInt numberFound;
+    PetscInt rank;
+    MPI_Comm_rank((PetscObjectComm((PetscObject)flow->GetDM())), &rank) >> checkMpiError;
 
-    // Extract the cell geometry, and the dm that holds the information
-    Vec cellGeomVec;
-    DM dmCell;
-    const PetscScalar* cellGeomArray;
-    DMPlexGetGeometryFVM(flow->GetDM(), NULL, &cellGeomVec, NULL) >> checkError;
-    VecGetDM(cellGeomVec, &dmCell) >> checkError;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-
-    for (PetscInt c = cellStart; c < cellEnd; ++c) {
-        PetscFVCellGeom* cellGeom;
-        DMPlexPointLocalRead(dmCell, c, cellGeomArray, &cellGeom) >> checkError;
-
-        PetscReal dis = 0.0;
-        for (std::size_t d = 0; d < location.size(); d++) {
-            dis += PetscSqr(cellGeom->centroid[d] - location[d]);
+    PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError;
+    if (numberFound == 1) {
+        if (cells[0].rank == rank) {
+            cellOfInterest = cells[0].index;
         }
-        dis = PetscSqrtReal(dis);
-        if (dis < distance) {
-            cellOfInterest = c;
-            distance = dis;
-        }
+    } else {
+        throw std::runtime_error("Cannot locate cell for location in IgnitionDelayPeakYi");
     }
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+
+    // restore
+    PetscSFDestroy(&cellSF) >> checkError;
+    VecDestroy(&locVec) >> checkError;
 
     // init the log(s)
     log->Initialize(PetscObjectComm((PetscObject)flow->GetDM()));
