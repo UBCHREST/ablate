@@ -11,8 +11,6 @@ class EulerDiffusion : public FlowProcess {
         PetscReal k;
         /* dynamic viscosity*/
         PetscReal mu;
-        /* diffusivity */
-        PetscReal diff;
 
         /* number of gas species */
         PetscInt numberSpecies;
@@ -69,12 +67,6 @@ class EulerDiffusion : public FlowProcess {
      */
     static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
                                                  void* ctx);
-
-    /**
-     * Function to compute the mass fraction. This function assumes that the input values will be {"euler", "densityYi"}
-     */
-    static PetscErrorCode UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
-                                                    void* ctx);
 
     // static function to compute time step for euler diffusion
     static double ComputeTimeStep(TS ts, Flow& flow, void* ctx);

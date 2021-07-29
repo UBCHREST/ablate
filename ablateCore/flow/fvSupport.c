@@ -955,13 +955,12 @@ PetscErrorCode FVFlowUpdateAuxFieldsFV(PetscInt numberUpdateFunctions, FVAuxFiel
         // for each function description
         for (PetscInt d = 0; d < numberUpdateFunctions; ++d) {
             // get the uOff for the req fields
-            for(PetscInt rf =0; rf < functionDescriptions[d].numberInputFields; rf++){
+            for (PetscInt rf =0; rf < functionDescriptions[d].numberInputFields; rf++){
                 uOff[rf] = uOffTotal[functionDescriptions[d].inputFields[rf]];
             }
 
             // grab the local aux field
             ierr = DMPlexPointLocalFieldRef(auxDM, c, functionDescriptions[d].auxField, localAuxFlowFieldArray, &auxValues);CHKERRQ(ierr);
-
 
             // If an update function was passed
             functionDescriptions[d].function(time, dim, cellGeom, uOff, fieldValues, auxValues, functionDescriptions[d].context);

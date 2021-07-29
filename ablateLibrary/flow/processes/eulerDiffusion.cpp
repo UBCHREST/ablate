@@ -33,30 +33,15 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxVelocityField(P
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues,
-                                                                               PetscScalar *auxField, void *ctx) {
-    PetscFunctionBeginUser;
-    PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
-
-    EulerDiffusionData flowParameters = (EulerDiffusionData)ctx;
-
-    for (PetscInt sp = 0; sp < flowParameters->numberSpecies; sp++) {
-        auxField[sp] = conservedValues[uOff[1] + sp] / density;
-    }
-
-    PetscFunctionReturn(0);
-}
-
 ablate::flow::processes::EulerDiffusion::EulerDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn) : eos(eosIn) {
     PetscNew(&eulerDiffusionData);
 
     // Store the required data for the low level c functions
     eulerDiffusionData->mu = parameters->Get<PetscReal>("mu", 0.0);
     eulerDiffusionData->k = parameters->Get<PetscReal>("k", 0.0);
-    eulerDiffusionData->diff = parameters->Get<PetscReal>("D", 0.0);
 
     // set the decode state function
-    eulerDiffusionData->computeTemperatureFunction   = eos->GetComputeTemperatureFunction();
+    eulerDiffusionData->computeTemperatureFunction = eos->GetComputeTemperatureFunction();
     eulerDiffusionData->computeTemperatureContext = eos->GetComputeTemperatureContext();
     eulerDiffusionData->numberSpecies = eos->GetSpecies().size();
 }
@@ -64,24 +49,18 @@ ablate::flow::processes::EulerDiffusion::EulerDiffusion(std::shared_ptr<paramete
 ablate::flow::processes::EulerDiffusion::~EulerDiffusion() { PetscFree(eulerDiffusionData); }
 
 void ablate::flow::processes::EulerDiffusion::Initialize(ablate::flow::FVFlow &flow) {
+    // if there are any coefficients for diffusion, compute diffusion
+    if (eulerDiffusionData->k || eulerDiffusionData->mu) {
+        // Register the euler diffusion source terms
+        flow.RegisterRHSFunction(CompressibleFlowEulerDiffusion, eulerDiffusionData, "euler", {"euler"}, {"T", "vel"});
+    }
+
     // If there are species
     if (eulerDiffusionData->numberSpecies > 0) {
-        if (eulerDiffusionData->k || eulerDiffusionData->mu || eulerDiffusionData->diff) {
-            // Register the euler diffusion source terms
-            flow.RegisterRHSFunction(CompressibleFlowEulerDiffusion, eulerDiffusionData, "euler", {"euler"}, {"T", "vel"});
-        }
-
         // add in aux update variables
         flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, eulerDiffusionData, "vel", {"euler"});
         flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, eulerDiffusionData, "T", {"euler", "densityYi"});
-        flow.RegisterAuxFieldUpdate(UpdateAuxMassFractionField, eulerDiffusionData, "yi", {"euler", "densityYi"});
-    }else{
-        // if there are any coefficients for diffusion, compute diffusion
-        if (eulerDiffusionData->k || eulerDiffusionData->mu) {
-            // Register the euler diffusion source terms
-            flow.RegisterRHSFunction(CompressibleFlowEulerDiffusion, eulerDiffusionData, "euler", {"euler"}, {"T", "vel"});
-        }
-
+    } else {
         // add in aux update variables
         flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, eulerDiffusionData, "vel", {"euler"});
         flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, eulerDiffusionData, "T", {"euler"});
