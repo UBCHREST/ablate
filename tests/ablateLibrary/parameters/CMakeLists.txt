@@ -3,4 +3,5 @@ target_sources(libraryTests
         parameterTests.cpp
         factoryParameterTests.cpp
         mockParameters.hpp
+        mapParameterTests.cpp
         )

@@ -1,6 +1,10 @@
+#include <fstream>
 #include <iostream>
 #include <memory>
+#include <parameters/petscPrefixOptions.hpp>
+#include <utilities/demangler.hpp>
 #include <utilities/fileUtility.hpp>
+#include <utilities/mpiError.hpp>
 #include "builder.hpp"
 #include "environment/runEnvironment.hpp"
 #include "parser/listing.h"
@@ -9,19 +13,28 @@
 
 using namespace ablate;
 
-int main(int argc, char **args) {
+const char* replacementInputPrefix = "-yaml::";
+
+int main(int argc, char** args) {
     // initialize petsc and mpi
     PetscInitialize(&argc, &args, NULL, NULL) >> checkError;
 
     // check to see if we should print version
-    PetscBool printVersion = PETSC_FALSE;
-    PetscOptionsGetBool(NULL, NULL, "-version", &printVersion, NULL) >> checkError;
-    if(!printVersion){
-        PetscOptionsGetBool(NULL, NULL, "--version", &printVersion, NULL) >> checkError;
+    PetscBool printInfo = PETSC_FALSE;
+    PetscOptionsGetBool(NULL, NULL, "-version", &printInfo, NULL) >> checkError;
+    if (!printInfo) {
+        PetscOptionsGetBool(NULL, NULL, "--info", &printInfo, NULL) >> checkError;
     }
+    if (printInfo) {
+        Builder::PrintInfo(std::cout);
+        std::cout << "----------------------------------------" << std::endl;
+    }
+
+    PetscBool printVersion = PETSC_FALSE;
+    PetscOptionsGetBool(NULL, NULL, "--version", &printVersion, NULL) >> checkError;
     if (printVersion) {
         Builder::PrintVersion(std::cout);
-        std::cout << "----------------------------------------" << std::endl;
+        return 0;
     }
 
     // check to see if we should print options
@@ -29,6 +42,7 @@ int main(int argc, char **args) {
     PetscOptionsGetBool(NULL, NULL, "--help", &printParserOptions, NULL) >> checkError;
     if (printParserOptions) {
         std::cout << parser::Listing::Get() << std::endl;
+        return 0;
     }
 
     // check to see if we should print options
@@ -45,21 +59,34 @@ int main(int argc, char **args) {
         throw std::invalid_argument("unable to locate input file: " + filePath.string());
     }
     {
+        // build options from the command line
+        auto yamlOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>(replacementInputPrefix);
+
         // create the yaml parser
-        std::shared_ptr<parser::YamlParser> parser = std::make_shared<parser::YamlParser>(filePath);
+        std::shared_ptr<parser::YamlParser> parser = std::make_shared<parser::YamlParser>(filePath, true, yamlOptions);
 
         // setup the monitor
         auto setupEnvironmentParameters = parser->GetByName<ablate::parameters::Parameters>("environment");
         environment::RunEnvironment::Setup(*setupEnvironmentParameters, filePath);
+
+        // Copy over the input file
+        int rank;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
+        if (rank == 0) {
+            std::filesystem::path inputCopy = environment::RunEnvironment::Get().GetOutputDirectory() / filePath.filename();
+            std::ofstream stream(inputCopy);
+            parser->Print(stream);
+            stream.close();
+        }
 
         // run with the parser
         Builder::Run(parser);
 
         // check for unused parameters
         auto unusedValues = parser->GetUnusedValues();
-        if(!unusedValues.empty()){
+        if (!unusedValues.empty()) {
             std::cout << "WARNING: The following input parameters were not used:" << std::endl;
-            for(auto unusedValue : unusedValues){
+            for (auto unusedValue : unusedValues) {
                 std::cout << unusedValue << std::endl;
             }
         }

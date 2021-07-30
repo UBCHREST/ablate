@@ -50,11 +50,6 @@ ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters
     if (mpiRank == 0) {
         // make the output directory
         std::filesystem::create_directories(outputDirectory);
-
-        // copy over the input file
-        if (!inputPath.empty()) {
-            std::filesystem::copy(inputPath, outputDirectory / inputPath.filename(), std::filesystem::copy_options::overwrite_existing);
-        }
     }
 }
 

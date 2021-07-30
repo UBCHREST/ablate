@@ -1,6 +1,7 @@
 #include <PetscTestFixture.hpp>
 #include <fstream>
 #include <memory>
+#include <parameters/mapParameters.hpp>
 #include <sstream>
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
@@ -627,7 +628,8 @@ TEST(YamlParserTests, ShouldLocateFileNextToInputFile) {
     {
         std::ofstream ofs(tempYaml);
         ofs << "---" << std::endl;
-        ofs << " fileName: tempFileNameForTesting.txt" << std::endl;
+        ofs << " mesh: " << std::endl;
+        ofs << "   fileName: tempFileNameForTesting.txt" << std::endl;
         ofs.close();
     }
 
@@ -639,9 +641,10 @@ TEST(YamlParserTests, ShouldLocateFileNextToInputFile) {
     }
 
     auto yamlParser = std::make_shared<YamlParser>(tempYaml);
+    auto yamlMeshFactory = yamlParser->GetFactory("mesh");
 
     // act
-    auto computedFilePath = yamlParser->Get(ArgumentIdentifier<std::filesystem::path>{"fileName"});
+    auto computedFilePath = yamlMeshFactory->Get(ArgumentIdentifier<std::filesystem::path>{"fileName"});
 
     // assert
     ASSERT_TRUE(std::filesystem::exists(computedFilePath));
@@ -651,6 +654,92 @@ TEST(YamlParserTests, ShouldLocateFileNextToInputFile) {
     // cleanup
     fs::remove(tmpFile);
     fs::remove(tempYaml);
+}
+
+TEST(YamlParserTests, ShouldCheckContainsForObject) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: " << std::endl;
+    yaml << "   item1: blue " << std::endl;
+    yaml << "   item2: blue " << std::endl;
+    yaml << " list1: " << std::endl;
+    yaml << "   - !green" << std::endl;
+    yaml << "   - subList2: " << std::endl;
+    yaml << "     subItem1: blue " << std::endl;
+    yaml << "     subItem2: " << std::endl;
+
+    // act
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+    auto yamlParserChild = yamlParser->GetFactory("item");
+    auto yamlParserChildList = yamlParser->GetFactorySequence("list1");
+
+    // assert
+    ASSERT_TRUE(yamlParserChild->Contains("item1"));
+    ASSERT_FALSE(yamlParserChild->Contains("item3"));
+    ASSERT_FALSE(yamlParserChildList[0]->Contains("item3"));
+    ASSERT_TRUE(yamlParserChildList[1]->Contains("subItem1"));
+}
+
+TEST(YamlParserTests, ShouldPrintToStream) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << "item1: 22" << std::endl;
+    yaml << "item2:" << std::endl;
+    yaml << "  item3: 3" << std::endl;
+    yaml << "  item4: 5" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    std::stringstream outStream;
+
+    // act
+    yamlParser->Print(outStream);
+
+    // assert
+    ASSERT_EQ(outStream.str(), yaml.str());
+}
+
+TEST(YamlParserTests, ShouldAllowOverWrittenValues) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << "item1: 22" << std::endl;
+    yaml << "item2:" << std::endl;
+    yaml << "  item3: 3" << std::endl;
+    yaml << "  item4: 5" << std::endl;
+    yaml << "  item5: " << std::endl;
+    yaml << "    item6: {} " << std::endl;
+
+    auto params = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+        {"item1", "44"},
+        {"item2::item4", "55"},
+        {"item2::item5::item6::item7", "77"},
+
+    });
+
+    // act
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str(), false, params);
+
+    // assert
+    ASSERT_EQ("44", yamlParser->GetByName<std::string>("item1"));
+    ASSERT_EQ("55", yamlParser->GetFactory("item2")->GetByName<std::string>("item4"));
+    ASSERT_EQ("77", yamlParser->GetFactory("item2")->GetFactory("item5")->GetFactory("item6")->GetByName<std::string>("item7"));
+
+    // the output should be updated
+    std::stringstream yamlUpdated;
+    yamlUpdated << "---" << std::endl;
+    yamlUpdated << "item1: 44" << std::endl;
+    yamlUpdated << "item2:" << std::endl;
+    yamlUpdated << "  item3: 3" << std::endl;
+    yamlUpdated << "  item4: 55" << std::endl;
+    yamlUpdated << "  item5:" << std::endl;
+    yamlUpdated << "    item6: {item7: 77}" << std::endl;
+
+    std::stringstream outStream;
+    yamlParser->Print(outStream);
+    ASSERT_EQ(outStream.str(), yamlUpdated.str());
 }
 
 class YamlParserTestsPetscTestFixture : public testingResources::PetscTestFixture {};

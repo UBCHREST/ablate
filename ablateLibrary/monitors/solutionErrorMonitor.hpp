@@ -1,21 +1,25 @@
 #ifndef ABLATELIBRARY_SOLUTIONERRORMONITOR_HPP
 #define ABLATELIBRARY_SOLUTIONERRORMONITOR_HPP
 #include <iostream>
+#include <monitors/logs/log.hpp>
 #include <vector>
 #include "monitor.hpp"
+
 namespace ablate::monitors {
 
 class SolutionErrorMonitor : public Monitor {
-   private:
-    static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
-
    public:
     enum class Scope { VECTOR, COMPONENT };
-    Scope errorScope;
     enum class Norm { L2, LINF, L2_NORM };
-    Norm normType;
 
-    SolutionErrorMonitor(Scope errorScope, Norm normType);
+   private:
+    static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
+    Scope errorScope;
+    Norm normType;
+    const std::shared_ptr<logs::Log> log;
+
+   public:
+    SolutionErrorMonitor(Scope errorScope, Norm normType, std::shared_ptr<logs::Log> log = {});
 
     void Register(std::shared_ptr<Monitorable>) override {}
     PetscMonitorFunction GetPetscFunction() override { return MonitorError; }

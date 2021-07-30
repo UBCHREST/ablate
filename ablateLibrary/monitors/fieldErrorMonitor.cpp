@@ -1,5 +1,8 @@
 #include "fieldErrorMonitor.hpp"
+#include <monitors/logs/stdOut.hpp>
 #include "mathFunctions/mathFunction.hpp"
+
+ablate::monitors::FieldErrorMonitor::FieldErrorMonitor(std::shared_ptr<logs::Log> logIn) : log(logIn ? logIn : std::make_shared<logs::StdOut>()) {}
 
 PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
     DM dm;
@@ -17,6 +20,12 @@ PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt
     ierr = PetscDSGetNumFields(ds, &numberOfFields);
     CHKERRQ(ierr);
 
+    FieldErrorMonitor *monitor = (FieldErrorMonitor *)ctx;
+    // if this is the first time step init the log
+    if (step == 0) {
+        monitor->log->Initialize(PetscObjectComm((PetscObject)dm));
+    }
+
     // Get the exact funcs and contx
     std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields);
     std::vector<void *> ctxs(numberOfFields);
@@ -33,19 +42,14 @@ PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt
     ierr = DMComputeL2FieldDiff(dm, crtime, &exactFuncs[0], &ctxs[0], u, &ferrors[0]);
     CHKERRQ(ierr);
 
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g \t L_2 Error: [%2.3g", (int)step, (double)crtime, (double)ferrors[0]);
-    CHKERRQ(ierr);
-
-    // Now print the other errors
-    for (auto i = 1; i < numberOfFields; i++) {
-        ierr = PetscPrintf(PETSC_COMM_WORLD, ", %2.3g", (double)ferrors[i]);
-        CHKERRQ(ierr);
-    }
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "]\n");
+    monitor->log->Printf("Timestep: %04d time = %-8.4g \t ", (int)step, (double)crtime);
+    monitor->log->Print("L_2 Error", ferrors, "%2.3g");
+    monitor->log->Print("\n");
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
 #include "parser/registrar.hpp"
-REGISTER_WITHOUT_ARGUMENTS(ablate::monitors::Monitor, ablate::monitors::FieldErrorMonitor, "Computes and reports the error every time step");
+REGISTER(ablate::monitors::Monitor, ablate::monitors::FieldErrorMonitor, "Computes and reports the error every time step",
+         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

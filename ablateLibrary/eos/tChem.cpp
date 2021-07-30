@@ -29,8 +29,15 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
     }
     MPI_Barrier(PETSC_COMM_WORLD);
 
-    // initialize TChem (with tabulation off?)
-    TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
+    // initialize TChem (with tabulation off?).  TChem init reads/writes file it can only be done one at a time
+    int size;
+    MPI_Comm_size(PETSC_COMM_WORLD, &size) >> checkMpiError;
+    for (int r = 0; r < size; r++) {
+        if (r == rank) {
+            TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
+        }
+        MPI_Barrier(PETSC_COMM_WORLD);
+    }
 
     // March over and get each species name
     numberSpecies = TC_getNspec();
@@ -104,6 +111,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
     int err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
     TCCHKERRQ(err);
     double f2 = internalEnergyRef - e2;
+    T = t2;  // set for first guess
     if (PetscAbs(f2) > EPS_T_RHO_E) {
         double t0 = t2;
         double f0 = f2;

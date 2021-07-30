@@ -1,5 +1,9 @@
 #include "timeStepMonitor.hpp"
-PetscErrorCode ablate::monitors::TimeStepMonitor::MonitorTimeStep(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
+#include <monitors/logs/stdOut.hpp>
+
+ablate::monitors::TimeStepMonitor::TimeStepMonitor(std::shared_ptr<logs::Log> logIn) : log(logIn ? logIn : std::make_shared<logs::StdOut>()) {}
+
+PetscErrorCode ablate::monitors::TimeStepMonitor::MonitorTimeStep(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
@@ -7,11 +11,17 @@ PetscErrorCode ablate::monitors::TimeStepMonitor::MonitorTimeStep(TS ts, PetscIn
     ierr = TSGetTimeStep(ts, &dt);
     CHKERRQ(ierr);
 
-    ierr = PetscPrintf(PETSC_COMM_WORLD, "Timestep: %04d time = %-8.4g dt = %g\n", (int)step, (double)crtime, (double)dt);
+    TimeStepMonitor* monitor = (TimeStepMonitor*)ctx;
+    // if this is the first time step init the log
+    if (step == 0) {
+        monitor->log->Initialize(PetscObjectComm((PetscObject)ts));
+    }
+
+    monitor->log->Printf("Timestep: %04d time = %-8.4g dt = %g\n", (int)step, (double)crtime, (double)dt);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
 #include "parser/registrar.hpp"
-REGISTER_WITHOUT_ARGUMENTS(ablate::monitors::Monitor, ablate::monitors::TimeStepMonitor, "Reports the current step, time, and dt");
+REGISTER(ablate::monitors::Monitor, ablate::monitors::TimeStepMonitor, "Reports the current step, time, and dt", OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

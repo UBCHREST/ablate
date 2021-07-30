@@ -49,8 +49,6 @@ TEST_F(RunEnvironmentTestFixture, ShouldSetupDefaultEnviroment) {
     ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(uniqueTitle, 0) == 0) << "the output directory should start with the title";
     ASSERT_EQ(tempInputFile.parent_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be next to the input file";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should contain a copy of the input file";
-    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory() / "tempFile.yaml"), std::filesystem::file_size(tempInputFile)) << "the copied input file should be the same size";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -71,8 +69,6 @@ TEST_F(RunEnvironmentTestFixture, ShouldNotTagOutputDirectory) {
     ASSERT_EQ(runEnvironment.GetOutputDirectory().filename().string(), uniqueTitle) << "the output directory should be the title";
     ASSERT_EQ(tempInputFile.parent_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be next to the input file";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should contain a copy of the input file";
-    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory() / "tempFile.yaml"), std::filesystem::file_size(tempInputFile)) << "the copied input file should be the same size";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -95,8 +91,6 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseAndTagSpecifiedOutputDirectory) {
     ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(outputDirectory.filename().string(), 0) == 0) << "the output directory should start with specified_output_dir_";
     ASSERT_EQ(outputDirectory.parent_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be in the specified location";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should contain a copy of the input file";
-    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory() / "tempFile.yaml"), std::filesystem::file_size(tempInputFile)) << "the copied input file should be the same size";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -118,8 +112,6 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirector
     // assert
     ASSERT_EQ(outputDirectory, runEnvironment.GetOutputDirectory()) << "the output directory should the one specified";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_TRUE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should contain a copy of the input file";
-    ASSERT_EQ(std::filesystem::file_size(runEnvironment.GetOutputDirectory() / "tempFile.yaml"), std::filesystem::file_size(tempInputFile)) << "the copied input file should be the same size";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -140,7 +132,6 @@ TEST_F(RunEnvironmentTestFixture, ShouldSetupDefaultWithoutInputFile) {
     ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(uniqueTitle, 0) == 0) << "the output directory should start with the title";
     ASSERT_EQ(std::filesystem::current_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be next to the input file";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_FALSE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should not contain a copy of the input file";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -161,7 +152,6 @@ TEST_F(RunEnvironmentTestFixture, ShouldNotTagOutputDirectoryWithoutInputFile) {
     ASSERT_EQ(runEnvironment.GetOutputDirectory().filename().string(), uniqueTitle) << "the output directory should be the title";
     ASSERT_EQ(std::filesystem::current_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be next to the input file";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_FALSE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should not contain a copy of the input file";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -184,7 +174,6 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseAndTagSpecifiedOutputDirectoryWithout
     ASSERT_TRUE(runEnvironment.GetOutputDirectory().filename().string().rfind(outputDirectory.filename().string(), 0) == 0) << "the output directory should start with specified_output_dir_";
     ASSERT_EQ(outputDirectory.parent_path(), runEnvironment.GetOutputDirectory().parent_path()) << "the output directory should be in the specified location";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_FALSE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should not contain a copy of the input file";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
@@ -206,7 +195,6 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirector
     // assert
     ASSERT_EQ(outputDirectory, runEnvironment.GetOutputDirectory()) << "the output directory should the one specified";
     ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
-    ASSERT_FALSE(std::filesystem::exists(runEnvironment.GetOutputDirectory() / "tempFile.yaml")) << "the output directory should not contain a copy of the input file";
 
     // cleanup
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
