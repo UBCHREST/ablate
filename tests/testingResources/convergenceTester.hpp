@@ -1,6 +1,8 @@
 #ifndef ABLATECLIENTTEMPLATE_CONVERGENCETESTER_HPP
 #define ABLATECLIENTTEMPLATE_CONVERGENCETESTER_HPP
 
+#include <petsc.h>
+#include <memory>
 #include <monitors/logs/log.hpp>
 #include <vector>
 
