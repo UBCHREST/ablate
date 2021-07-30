@@ -124,6 +124,8 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     std::optional<int> GetFieldId(const std::string& fieldName) const;
 
     std::optional<int> GetAuxFieldId(const std::string& fieldName) const;
+
+    const FlowFieldDescriptor& GetFieldDescriptor(const std::string& fieldName) const;
 };
 }  // namespace ablate::flow
 

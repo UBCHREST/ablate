@@ -3,17 +3,29 @@
 #include <utilities/fileUtility.hpp>
 #include <utilities/mpiError.hpp>
 
-ablate::parser::YamlParser::YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles)
-    : type(type), nodePath(nodePath), yamlConfiguration(yamlConfiguration), relocateRemoteFiles(relocateRemoteFiles) {
+ablate::parser::YamlParser::YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles, std::vector<std::filesystem::path> searchDirectories)
+    : type(type), nodePath(nodePath), yamlConfiguration(yamlConfiguration), relocateRemoteFiles(relocateRemoteFiles), searchDirectories(searchDirectories) {
     // store each child in the map with zero usages
     for (auto childNode : yamlConfiguration) {
         nodeUsages[YAML::key_to_string(childNode.first)] = 0;
     }
 }
 
-ablate::parser::YamlParser::YamlParser(std::string yamlString, bool relocateRemoteFiles) : YamlParser(YAML::Load(yamlString), "root", "", relocateRemoteFiles) {}
+ablate::parser::YamlParser::YamlParser(YAML::Node yamlConfiguration, bool relocateRemoteFiles, std::shared_ptr<ablate::parameters::Parameters> overwriteParameters)
+    : YamlParser(yamlConfiguration, "root", "", relocateRemoteFiles) {
+    // override/add any of the values in the overwriteParameters
+    if (overwriteParameters) {
+        for (const auto& key : overwriteParameters->GetKeys()) {
+            ReplaceValue(yamlConfiguration, key, overwriteParameters->GetExpect<std::string>(key));
+        }
+    }
+}
 
-ablate::parser::YamlParser::YamlParser(std::filesystem::path filePath, bool relocateRemoteFiles) : YamlParser(YAML::LoadFile(filePath), "root", "", relocateRemoteFiles) {
+ablate::parser::YamlParser::YamlParser(std::string yamlString, bool relocateRemoteFiles, std::shared_ptr<ablate::parameters::Parameters> overwriteParameters)
+    : YamlParser(YAML::Load(yamlString), relocateRemoteFiles, overwriteParameters) {}
+
+ablate::parser::YamlParser::YamlParser(std::filesystem::path filePath, bool relocateRemoteFiles, std::shared_ptr<ablate::parameters::Parameters> overwriteParameters)
+    : YamlParser(YAML::LoadFile(filePath), relocateRemoteFiles, overwriteParameters) {
     // add the file parent to the search directory
     searchDirectories.push_back(filePath.parent_path());
 }
@@ -38,7 +50,7 @@ std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(
 
         // mark usage and store pointer
         MarkUsage(name);
-        childFactories[name] = std::shared_ptr<YamlParser>(new YamlParser(parameter, childPath, tagType, relocateRemoteFiles));
+        childFactories[name] = std::shared_ptr<YamlParser>(new YamlParser(parameter, childPath, tagType, relocateRemoteFiles, searchDirectories));
     }
 
     return childFactories[name];
@@ -74,7 +86,7 @@ std::vector<std::shared_ptr<ablate::parser::Factory>> ablate::parser::YamlParser
             tagType = tagType.size() > 0 ? tagType.substr(1) : tagType;
 
             // mark usage and store pointer
-            childFactories[childName] = std::shared_ptr<YamlParser>(new YamlParser(childParameter, childPath, tagType, relocateRemoteFiles));
+            childFactories[childName] = std::shared_ptr<YamlParser>(new YamlParser(childParameter, childPath, tagType, relocateRemoteFiles, searchDirectories));
         }
 
         children.push_back(childFactories[childName]);
@@ -121,5 +133,21 @@ std::filesystem::path ablate::parser::YamlParser::Get(const ablate::parser::Argu
         return {};
     } else {
         return utilities::FileUtility::LocateFile(file, MPI_COMM_WORLD, searchDirectories, relocateRemoteFiles ? environment::RunEnvironment::Get().GetOutputDirectory() : std::filesystem::path());
+    }
+}
+
+void ablate::parser::YamlParser::Print(std::ostream& stream) const { stream << "---" << std::endl << yamlConfiguration << std::endl; }
+
+void ablate::parser::YamlParser::ReplaceValue(YAML::Node& yamlConfiguration, std::string key, std::string value) {
+    // Check to see if there are any separators in the key
+    auto separator = key.find("::");
+    if (separator == std::string::npos) {
+        // we are at the end, so just apply it
+        yamlConfiguration[key] = value;
+    } else {
+        // strip off the first part of the key and try again
+        auto thisKey = key.substr(0, separator);
+        auto childConfig = yamlConfiguration[thisKey];
+        ReplaceValue(childConfig, key.substr(separator + 2), value);
     }
 }

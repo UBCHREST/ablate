@@ -19,4 +19,3 @@ flowTracerParticles.hdf5
 flowTracerParticles.xmf
 theFlowField.hdf5
 theFlowField.xmf
-tracerParticles2DHDF5Monitor.yaml
