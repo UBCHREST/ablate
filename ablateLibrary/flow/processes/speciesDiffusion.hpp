@@ -13,6 +13,15 @@ class SpeciesDiffusion : public FlowProcess {
 
         /* number of gas species */
         PetscInt numberSpecies;
+
+        /* functions to compute species enthalpy */
+        eos::ComputeTemperatureFunction computeTemperatureFunction;
+        void* computeTemperatureContext;
+        eos::ComputeSpeciesSensibleEnthalpyFunction computeSpeciesSensibleEnthalpyFunction;
+        void* computeSpeciesSensibleEnthalpyContext;
+
+        /* store a scratch space for speciesSpeciesSensibleEnthalpy */
+        std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;
     };
     typedef struct _SpeciesDiffusionData* SpeciesDiffusionData;
 
@@ -38,7 +47,7 @@ class SpeciesDiffusion : public FlowProcess {
     /**
      * This computes the energy transfer for species diffusion flux for rhoE
      * f = "euler"
-     * u = {"euler"}
+     * u = {"euler", "densityYi"}
      * a = {"yi"}
      * ctx = SpeciesDiffusionData
      * @return

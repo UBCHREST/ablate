@@ -94,7 +94,7 @@ $$\begin{eqnarray}
 \Theta_z = u \tau_{zx} + v \tau_{zy} + w \tau_{zz} + k \frac{\partial T}{\partial z} + \rho \sum_{m=1}^N h_m \mathcal{D}_m \frac{\partial Y_m}{\partial z}
 \end{eqnarray}$$
 
-where $h_m$ is the enthalpy of species m.
+where &$h_m$& is the sensible enthalpy of species m.
 
 ## References
  - Blazek, J. (2001). Computational fluid dynamics: Principles and applications.

@@ -35,24 +35,29 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
     for (int r = 0; r < size; r++) {
         if (r == rank) {
             TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
+
+            // Perform the local init
+            // March over and get each species name
+            numberSpecies = TC_getNspec();
+            std::vector<char> allSpeciesNames(numberSpecies * LENGTHOFSPECNAME);
+            TC_getSnames(numberSpecies, &allSpeciesNames[0]) >> errorChecker;
+
+            // copy each species name
+            for (auto s = 0; s < numberSpecies; s++) {
+                auto offset = LENGTHOFSPECNAME * s;
+                species.push_back(&allSpeciesNames[offset]);
+            }
+
+            // size the working vector
+            tempYiWorkingVector.resize(numberSpecies + 1);
+            sourceWorkingVector.resize(numberSpecies + 1);
+
+            // precompute the speciesHeatOfFormation at tref
+            speciesHeatOfFormation.resize(numberSpecies);
+            TC_getHspecMs(TREF, numberSpecies, &speciesHeatOfFormation[0]) >> errorChecker;
         }
         MPI_Barrier(PETSC_COMM_WORLD);
     }
-
-    // March over and get each species name
-    numberSpecies = TC_getNspec();
-    std::vector<char> allSpeciesNames(numberSpecies * LENGTHOFSPECNAME);
-    TC_getSnames(numberSpecies, &allSpeciesNames[0]) >> errorChecker;
-
-    // copy each species name
-    for (auto s = 0; s < numberSpecies; s++) {
-        auto offset = LENGTHOFSPECNAME * s;
-        species.push_back(&allSpeciesNames[offset]);
-    }
-
-    // size the working vector
-    tempYiWorkingVector.resize(numberSpecies + 1);
-    sourceWorkingVector.resize(numberSpecies + 1);
 }
 
 ablate::eos::TChem::~TChem() {
@@ -217,6 +222,22 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal d
     double cv = cp - R;
     double gamma = cp / cv;
     *a = PetscSqrtReal(gamma * R * temperature);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::TChemComputeSpeciesSensibleEnthalpy(PetscReal t, PetscReal *hi, void *ctx) {
+    PetscFunctionBeginUser;
+    TChem *tChem = (TChem *)ctx;
+
+    // compute the total enthalpy of each species
+    int ierr = TC_getHspecMs(t, tChem->numberSpecies, hi);
+    TCCHKERRQ(ierr);
+
+    // subtract away the heat of formation
+    for (auto s = 0; s < tChem->numberSpecies; s++) {
+        hi[s] -= tChem->speciesHeatOfFormation[s];
+    }
+
     PetscFunctionReturn(0);
 }
 

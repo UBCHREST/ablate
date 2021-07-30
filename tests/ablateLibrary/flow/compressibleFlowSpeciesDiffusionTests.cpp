@@ -42,9 +42,42 @@ class CompressibleFlowSpeciesDiffusionTestFixture : public testingResources::Mpi
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
-static PetscErrorCode ComputeDensityYiExact(PetscInt dim, PetscReal time, const PetscReal xyz[], PetscInt Nf, PetscScalar *yi, void *ctx) {
+///////////////////////////////////////////////////////////////
+// Create a fake eos that makes testing easier
+class MockEOS : public ablate::eos::EOS {
+   public:
+    inline static PetscReal speciesSensibleEnthalpy[3] = {1000.0, 2000.0, 3000.0};
+    inline static const std::vector<std::string> species = {"sp0", "sp1", "sp2"};
+
+   private:
+    static PetscErrorCode MockTemperatureFunction(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx) {
+        *T = NAN;
+        return 0;
+    }
+
+    static PetscErrorCode MockSpeciesSensibleEnthalpyFunction(PetscReal T, PetscReal* hi, void* ctx) {
+        for (std::size_t s = 0; s < species.size(); s++) {
+            hi[s] = speciesSensibleEnthalpy[s];
+        }
+        return 0;
+    }
+
+   public:
+    MockEOS() : EOS("mockEOS") {}
+    void View(std::ostream& stream) const override { stream << "MockEos"; }
+    ablate::eos::DecodeStateFunction GetDecodeStateFunction() override { throw std::runtime_error("not supported"); }
+    void* GetDecodeStateContext() override { return nullptr; }
+    ablate::eos::ComputeTemperatureFunction GetComputeTemperatureFunction() override { return MockTemperatureFunction; }
+    void* GetComputeTemperatureContext() override { return nullptr; }
+    ablate::eos::ComputeSpeciesSensibleEnthalpyFunction GetComputeSpeciesSensibleEnthalpyFunction() override { return MockSpeciesSensibleEnthalpyFunction; }
+    void* GetComputeSpeciesSensibleEnthalpyContext() override { return nullptr; }
+
+    const std::vector<std::string>& GetSpecies() const override { return species; }
+};
+////////////////////////////////////
+static PetscErrorCode ComputeDensityYiExact(PetscInt dim, PetscReal time, const PetscReal xyz[], PetscInt Nf, PetscScalar* yi, void* ctx) {
     PetscFunctionBeginUser;
-    InputParameters *parameters = (InputParameters *)ctx;
+    InputParameters* parameters = (InputParameters*)ctx;
     PetscReal yiInit = 0.5;
     PetscReal yi0 = 0.0;
     for (PetscReal n = 1; n < 2000; n++) {
@@ -58,6 +91,27 @@ static PetscErrorCode ComputeDensityYiExact(PetscInt dim, PetscReal time, const 
     PetscFunctionReturn(0);
 }
 
+/**
+ * Computes the euler exact assuming constant density, no velocity, and rho*e assuming that e is a sum o yi*hi
+ */
+static PetscErrorCode ComputeEulerExact(PetscInt dim, PetscReal time, const PetscReal xyz[], PetscInt Nf, PetscScalar* euler, void* ctx) {
+    PetscFunctionBeginUser;
+    InputParameters* parameters = (InputParameters*)ctx;
+
+    euler[0] = parameters->rho;
+    euler[1] = 0.0;
+    euler[2] = 0.0;
+    euler[3] = 0.0;
+
+    // compute the current yi
+    std::vector<PetscReal> rhoYi(MockEOS::species.size());
+    ComputeDensityYiExact(dim, time, xyz, Nf, &rhoYi[0], ctx);
+    for (std::size_t s = 0; s < rhoYi.size(); s++) {
+        euler[1] += rhoYi[s] * MockEOS::speciesSensibleEnthalpy[s];
+    }
+
+    PetscFunctionReturn(0);
+}
 TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
         PetscErrorCode ierr;
@@ -100,10 +154,10 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             // create an eos with three species
             auto eosParameters = std::make_shared<ablate::parameters::MapParameters>();
-            std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(eosParameters, std::vector<std::string>{"sp0", "sp1", "sp2"});
+            std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<MockEOS>();
 
             // create a constant density field
-            auto eulerExact = mathFunctions::Create(std::to_string(parameters.rho) + ", -58970.06564527616, 0.0, 0.0");
+            auto eulerExact = mathFunctions::Create(ComputeEulerExact, &parameters);
             auto eulerExactField = std::make_shared<mathFunctions::FieldSolution>("euler", eulerExact);
 
             // Create the yi field solutions
@@ -180,19 +234,19 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowSpeciesDiffusionTestF
                                                                                       .parameters = {.dim = 2, .L = 0.1, .diff = 1.0E-5, .rho = 1.0},
                                                                                       .initialNx = 3,
                                                                                       .levels = 3,
-                                                                                      .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1.8, 1.8, NAN},
-                                                                                      .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1.0, 1.0, NAN}},
+                                                                                      .expectedL2Convergence = {NAN, 1.8, NAN, NAN, 1.8, 1.8, NAN},
+                                                                                      .expectedLInfConvergence = {NAN, 1.0, NAN, NAN, 1.0, 1.0, NAN}},
                                          (CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species diffusion mpi 1 density 2.0", .nproc = 1, .arguments = ""},
                                                                                       .parameters = {.dim = 2, .L = 0.1, .diff = 1.0E-5, .rho = 2.0},
                                                                                       .initialNx = 3,
                                                                                       .levels = 3,
-                                                                                      .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1.8, 1.8, NAN},
-                                                                                      .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1.0, 1.0, NAN}},
+                                                                                      .expectedL2Convergence = {NAN, 1.8, NAN, NAN, 1.8, 1.8, NAN},
+                                                                                      .expectedLInfConvergence = {NAN, 1.0, NAN, NAN, 1.0, 1.0, NAN}},
                                          (CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species diffusion mpi 2 density 2.0", .nproc = 2, .arguments = ""},
                                                                                       .parameters = {.dim = 2, .L = 0.1, .diff = 1.0E-5, .rho = 2.0},
                                                                                       .initialNx = 3,
                                                                                       .levels = 3,
-                                                                                      .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1.8, 1.8, NAN},
-                                                                                      .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1.0, 1.0, NAN}}),
-                         [](const testing::TestParamInfo<CompressibleSpeciesDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+                                                                                      .expectedL2Convergence = {NAN, 1.8, NAN, NAN, 1.8, 1.8, NAN},
+                                                                                      .expectedLInfConvergence = {NAN, 1.0, NAN, NAN, 1.0, 1.0, NAN}}),
+                         [](const testing::TestParamInfo<CompressibleSpeciesDiffusionTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
