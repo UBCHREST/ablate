@@ -59,12 +59,25 @@ PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeTemperature(PetscInt di
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeSpeciesSensibleEnthalpy(PetscReal T, PetscReal *hi, void *ctx) {
+PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeSpeciesSensibleEnthalpy(PetscReal temperature, PetscReal *hi, void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
     for (PetscInt s = 0; s < parameters->numberSpecies; s++) {
         hi[s] = 0.0;
     }
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeDensityFunctionFromTemperaturePressure(PetscReal temperature, PetscReal pressure, const PetscReal *yi, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    Parameters *parameters = (Parameters *)ctx;
+    *density = pressure / (temperature * parameters->rGas);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleInternalEnergy, void *ctx) {
+    PetscFunctionBeginUser;
+    Parameters *parameters = (Parameters *)ctx;
+    PetscReal cv = parameters->rGas / (parameters->gamma - 1.0);
+    *sensibleInternalEnergy = T * cv;
     PetscFunctionReturn(0);
 }
 

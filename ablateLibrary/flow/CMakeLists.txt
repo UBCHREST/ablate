@@ -19,3 +19,4 @@ target_sources(ablateLibrary
 add_subdirectory(boundaryConditions)
 add_subdirectory(fluxCalculator)
 add_subdirectory(processes)
+add_subdirectory(fieldFunctions)

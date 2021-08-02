@@ -3,7 +3,7 @@
 
 #include <memory>
 #include "flow/flow.hpp"
-#include "mathFunctions/fieldSolution.hpp"
+#include "mathFunctions/fieldFunction.hpp"
 #include "mathFunctions/mathFunction.hpp"
 #include "monitors/viewable.hpp"
 #include "particles/initializers/initializer.hpp"
@@ -59,7 +59,7 @@ class Particles : public monitors::Viewable {
 
     // Store the particle location and field initialization
     std::shared_ptr<particles::initializers::Initializer> initializer = nullptr;
-    const std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization;
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization;
 
     /**
      * Gets and packs the solution vector
@@ -95,7 +95,7 @@ class Particles : public monitors::Viewable {
     static PetscErrorCode ComputeParticleError(TS particleTS, Vec u, Vec e);
 
    public:
-    explicit Particles(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization,
+    explicit Particles(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
                        std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options);
     virtual ~Particles();
 

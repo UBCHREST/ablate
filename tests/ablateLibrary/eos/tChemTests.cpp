@@ -5,7 +5,7 @@
 /*
  * Helper function to fill mass fraction
  */
-static std::vector<PetscReal> GetDensityMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn, double density) {
+static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn) {
     std::vector<PetscReal> yi(species.size(), 0.0);
 
     for (const auto& value : yiIn) {
@@ -14,10 +14,19 @@ static std::vector<PetscReal> GetDensityMassFraction(const std::vector<std::stri
         if (it != species.end()) {
             auto index = std::distance(species.begin(), it);
 
-            yi[index] = value.second * density;
+            yi[index] = value.second;
         }
     }
     return yi;
+}
+
+static std::vector<PetscReal> GetDensityMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn, double density) {
+    auto densityYis = GetMassFraction(species, yiIn);
+    for (auto& densityYi : densityYis) {
+        densityYi *= density;
+    }
+
+    return densityYis;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -153,10 +162,10 @@ struct TChemStateParameters {
     PetscReal densityIn;
     PetscReal totalEnergyIn;
     std::vector<PetscReal> massFluxIn;
-    PetscReal expectedTemperature;
-    PetscReal expectedInternalEnergy;
-    PetscReal expectedSpeedOfSound;
-    PetscReal expectedPressure;
+    PetscReal temperature;
+    PetscReal internalEnergy;
+    PetscReal speedOfSound;
+    PetscReal pressure;
 };
 
 class TChemStateTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemStateParameters> {};
@@ -188,9 +197,9 @@ TEST_P(TChemStateTestFixture, ShouldDecodeState) {
 
     // assert
     ASSERT_EQ(ierr, 0);
-    ASSERT_NEAR(internalEnergy, params.expectedInternalEnergy, .1);
-    ASSERT_NEAR(speedOfSound, params.expectedSpeedOfSound, .1);
-    ASSERT_LT(PetscAbs(pressure - params.expectedPressure) / params.expectedPressure, 1E-5) << "The percent difference in pressure should be less than 1E-5";
+    ASSERT_NEAR(internalEnergy, params.internalEnergy, .1);
+    ASSERT_NEAR(speedOfSound, params.speedOfSound, .1);
+    ASSERT_LT(PetscAbs(pressure - params.pressure) / params.pressure, 1E-5) << "The percent difference in pressure should be less than 1E-5";
 }
 
 TEST_P(TChemStateTestFixture, ShouldComputeTemperature) {
@@ -212,7 +221,51 @@ TEST_P(TChemStateTestFixture, ShouldComputeTemperature) {
 
     // assert
     ASSERT_EQ(ierr, 0);
-    ASSERT_NEAR(temperature, params.expectedTemperature, 1E-2);
+    ASSERT_NEAR(temperature, params.temperature, 1E-2);
+}
+
+TEST_P(TChemStateTestFixture, ShouldComputeDensityFromTemperatureAndPressure) {
+    // arrange
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // get the mass fraction as an array
+    auto yi = GetMassFraction(eos->GetSpecies(), params.yiIn);
+
+    // Prepare outputs
+    PetscReal density;
+
+    // act
+    PetscErrorCode ierr =
+        eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(params.temperature, params.pressure, &yi[0], &density, eos->GetComputeDensityFunctionFromTemperaturePressureContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(density, params.densityIn, 1E-2);
+}
+
+TEST_P(TChemStateTestFixture, ShouldComputeSensibleInternalEnergy) {
+    // arrange
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // get the mass fraction as an array
+    auto yi = GetMassFraction(eos->GetSpecies(), params.yiIn);
+
+    // Prepare outputs
+    PetscReal sensibleInternalEnergy;
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeSensibleInternalEnergyFunction()(params.temperature, params.densityIn, &yi[0], &sensibleInternalEnergy, eos->GetComputeSensibleInternalEnergyContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    const double error = (sensibleInternalEnergy - params.internalEnergy) / params.internalEnergy;
+    ASSERT_LT(error, 1E-3);
 }
 
 INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
@@ -222,48 +275,48 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .densityIn = 1.2,
                                                                 .totalEnergyIn = 1.E+05,
                                                                 .massFluxIn = {1.2 * 10, -1.2 * 20, 1.2 * 30},
-                                                                .expectedTemperature = 499.25,
-                                                                .expectedInternalEnergy = 99300.0,
-                                                                .expectedSpeedOfSound = 464.33,
-                                                                .expectedPressure = 197710.5},
+                                                                .temperature = 499.25,
+                                                                .internalEnergy = 99300.0,
+                                                                .speedOfSound = 464.33,
+                                                                .pressure = 197710.5},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
                                                                 .yiIn = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
                                                                 .densityIn = 0.8,
                                                                 .totalEnergyIn = 3.2E5,
                                                                 .massFluxIn = {0, 0, 0},
-                                                                .expectedTemperature = 762.664,
-                                                                .expectedInternalEnergy = 320000.0,
-                                                                .expectedSpeedOfSound = 560.83,
-                                                                .expectedPressure = 189973.54},
+                                                                .temperature = 762.664,
+                                                                .internalEnergy = 320000.0,
+                                                                .speedOfSound = 560.83,
+                                                                .pressure = 189973.54},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
                                                                 .yiIn = {{"N2", 1.0}},
                                                                 .densityIn = 3.3,
                                                                 .totalEnergyIn = 1000,
                                                                 .massFluxIn = {0.0, 3.3 * 2, 3.3 * 4},
-                                                                .expectedTemperature = 418.079,
-                                                                .expectedInternalEnergy = 990.0,
-                                                                .expectedSpeedOfSound = 416.04,
-                                                                .expectedPressure = 409488.10},
+                                                                .temperature = 418.079,
+                                                                .internalEnergy = 990.0,
+                                                                .speedOfSound = 416.04,
+                                                                .pressure = 409488.10},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
                                                                 .yiIn = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
                                                                 .densityIn = 0.01,
                                                                 .totalEnergyIn = 1E5,
                                                                 .massFluxIn = {.01 * -1, .01 * -2, .01 * -3},
-                                                                .expectedTemperature = 437.46,
-                                                                .expectedInternalEnergy = 99993.0,
-                                                                .expectedSpeedOfSound = 1013.73,
-                                                                .expectedPressure = 7411.11},
+                                                                .temperature = 437.46,
+                                                                .internalEnergy = 99993.0,
+                                                                .speedOfSound = 1013.73,
+                                                                .pressure = 7411.11},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
                                                                 .yiIn = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
                                                                 .densityIn = 999.9,
                                                                 .totalEnergyIn = 1E4,
                                                                 .massFluxIn = {999.9 * -10, 999.9 * -20, 999.9 * -300},
-                                                                .expectedTemperature = 394.59,
-                                                                .expectedInternalEnergy = -35250.0,
-                                                                .expectedSpeedOfSound = 623.9,
-                                                                .expectedPressure = 281125963.5}),
+                                                                .temperature = 394.59,
+                                                                .internalEnergy = -35250.0,
+                                                                .speedOfSound = 623.9,
+                                                                .pressure = 281125963.5}),
                          [](const testing::TestParamInfo<TChemStateParameters>& info) { return std::to_string(info.index); });

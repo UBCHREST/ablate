@@ -1,0 +1,7 @@
+target_sources(ablateLibrary
+        PUBLIC
+        compressibleFlowState.hpp
+        compressibleFlowState.cpp
+        euler.hpp
+        euler.cpp
+        )

@@ -8,9 +8,9 @@
 
 ablate::flow::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn,
                                                                  std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn,
-                                                                 std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization,
+                                                                 std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                 std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions)
+                                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
     : FVFlow(name, mesh, parameters,
              {{.fieldName = "euler", .fieldPrefix = "euler", .components = 2 + mesh->GetDimensions(), .fieldType = FieldType::FV},
               {
@@ -38,6 +38,6 @@ REGISTER(ablate::flow::Flow, ablate::flow::ReactingCompressibleFlow, "reacting c
          ARG(ablate::mesh::Mesh, "mesh", "the  mesh and discretization"), ARG(ablate::eos::EOS, "eos", "the TChem v1 equation of state used to describe the flow"),
          ARG(ablate::parameters::Parameters, "parameters", "the compressible flow parameters cfl, gamma, etc."),
          OPT(ablate::flow::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (defaults to AUSM)"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSc"),
-         OPT(std::vector<mathFunctions::FieldSolution>, "initialization", "the flow field initialization"),
+         OPT(std::vector<mathFunctions::FieldFunction>, "initialization", "the flow field initialization"),
          OPT(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         OPT(std::vector<mathFunctions::FieldSolution>, "exactSolution", "optional exact solutions that can be used for error calculations"));
+         OPT(std::vector<mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

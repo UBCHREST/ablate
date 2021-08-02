@@ -71,6 +71,10 @@ class MockEOS : public ablate::eos::EOS {
     void* GetComputeTemperatureContext() override { return nullptr; }
     ablate::eos::ComputeSpeciesSensibleEnthalpyFunction GetComputeSpeciesSensibleEnthalpyFunction() override { return MockSpeciesSensibleEnthalpyFunction; }
     void* GetComputeSpeciesSensibleEnthalpyContext() override { return nullptr; }
+    ablate::eos::ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { throw std::runtime_error("not supported"); }
+    void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return nullptr; }
+    ablate::eos::ComputeSensibleInternalEnergy GetComputeSensibleInternalEnergyFunction() override { throw std::runtime_error("not supported"); }
+    void* GetComputeSensibleInternalEnergyContext() override { return nullptr; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };
@@ -158,11 +162,11 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             // create a constant density field
             auto eulerExact = mathFunctions::Create(ComputeEulerExact, &parameters);
-            auto eulerExactField = std::make_shared<mathFunctions::FieldSolution>("euler", eulerExact);
+            auto eulerExactField = std::make_shared<mathFunctions::FieldFunction>("euler", eulerExact);
 
             // Create the yi field solutions
             auto yiExact = ablate::mathFunctions::Create(ComputeDensityYiExact, &parameters);
-            auto yiExactField = std::make_shared<mathFunctions::FieldSolution>("densityYi", yiExact);
+            auto yiExactField = std::make_shared<mathFunctions::FieldFunction>("densityYi", yiExact);
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<flow::boundaryConditions::EssentialGhost>("euler", "walls", std::vector<int>{4, 2}, eulerExact),
@@ -191,10 +195,10 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                     {.solutionField = false, .fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eos->GetSpecies().size(), .fieldType = ablate::flow::FieldType::FV}},
                 flowProcesses,
                 petscFlowOptions /*options*/,
-                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{eulerExactField, yiExactField} /*initialization*/,
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
                 boundaryConditions /*boundary conditions*/,
-                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{},
-                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{eulerExactField, yiExactField});
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
 
             flowObject->SetupSolve(timeStepper.GetTS());
 

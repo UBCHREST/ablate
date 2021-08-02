@@ -207,10 +207,10 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
-            auto velocityExact = std::make_shared<mathFunctions::FieldSolution>(
+            auto velocityExact = std::make_shared<mathFunctions::FieldFunction>(
                 "velocity", ablate::mathFunctions::Create(testingParam.uExact, &testingParam.parameters), ablate::mathFunctions::Create(testingParam.u_tExact, &testingParam.parameters));
-            auto pressureExact = std::make_shared<mathFunctions::FieldSolution>("pressure", ablate::mathFunctions::Create(testingParam.pExact, &testingParam.parameters));
-            auto temperatureExact = std::make_shared<mathFunctions::FieldSolution>(
+            auto pressureExact = std::make_shared<mathFunctions::FieldFunction>("pressure", ablate::mathFunctions::Create(testingParam.pExact, &testingParam.parameters));
+            auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>(
                 "temperature", ablate::mathFunctions::Create(testingParam.TExact, &testingParam.parameters), ablate::mathFunctions::Create(testingParam.T_tExact, &testingParam.parameters));
 
             auto flowObject = std::make_shared<ablate::flow::IncompressibleFlow>(
@@ -219,7 +219,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 parameters,
                 nullptr,
                 /* initialization functions */
-                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{velocityExact, pressureExact, temperatureExact},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
                     std::make_shared<boundaryConditions::Essential>(
@@ -227,9 +227,9 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                     std::make_shared<boundaryConditions::Essential>(
                         "temperature", "wall temp", std::vector<int>{3, 1, 2, 4}, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.T_tExact))},
                 /* aux updates*/
-                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{},
                 /* exact solutions*/
-                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{velocityExact, pressureExact, temperatureExact});
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
             // Override problem with source terms, boundary, and set the exact solution
             {
@@ -261,10 +261,10 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                                                                                                                              {"gravityField", std::to_string(testingParam.parameters.grav) + " 0 0"}});
 
             // convert the constant values to fieldInitializations
-            auto fieldInitialization = std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{
-                std::make_shared<mathFunctions::FieldSolution>(ablate::particles::Inertial::ParticleVelocity, ablate::mathFunctions::Create(testingParam.parameters.pVel)),
-                std::make_shared<mathFunctions::FieldSolution>(ablate::particles::Inertial::ParticleDiameter, ablate::mathFunctions::Create(testingParam.parameters.dp)),
-                std::make_shared<mathFunctions::FieldSolution>(ablate::particles::Inertial::ParticleDensity, ablate::mathFunctions::Create(testingParam.parameters.rhoP)),
+            auto fieldInitialization = std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{
+                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::Inertial::ParticleVelocity, ablate::mathFunctions::Create(testingParam.parameters.pVel)),
+                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::Inertial::ParticleDiameter, ablate::mathFunctions::Create(testingParam.parameters.dp)),
+                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::Inertial::ParticleDensity, ablate::mathFunctions::Create(testingParam.parameters.rhoP)),
             };
 
             // Use the petsc options that start with -particle_

@@ -4,10 +4,10 @@
 #include "utilities/petscError.hpp"
 
 ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
-                                                     std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization,
+                                                     std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                     std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields,
-                                                     std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions)
+                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
+                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
     : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolutions) {
     // Register each field, this order must match the order in LowMachFlowFields enum
     RegisterField({.fieldName = "velocity", .fieldPrefix = "vel_", .components = dim, .fieldType = FieldType::FE});
@@ -139,7 +139,7 @@ void ablate::flow::IncompressibleFlow::CompleteFlowInitialization(DM dm, Vec u) 
 #include "parser/registrar.hpp"
 REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible FE flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
          ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
-         ARG(std::vector<mathFunctions::FieldSolution>, "initialization", "the solution used to initialize the flow field"),
+         ARG(std::vector<mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),
          ARG(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         OPT(std::vector<mathFunctions::FieldSolution>, "auxFields", "enables and sets the update functions for the auxFields"),
-         OPT(std::vector<mathFunctions::FieldSolution>, "exactSolution", "optional exact solutions that can be used for error calculations"));
+         OPT(std::vector<mathFunctions::FieldFunction>, "auxFields", "enables and sets the update functions for the auxFields"),
+         OPT(std::vector<mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

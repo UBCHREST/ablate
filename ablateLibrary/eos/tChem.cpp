@@ -179,6 +179,7 @@ PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(PetscInt dim, PetscRe
 
     PetscFunctionReturn(0);
 }
+
 PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, const PetscReal densityYi[], PetscReal *internalEnergy,
                                                        PetscReal *a, PetscReal *p, void *ctx) {
     PetscFunctionBeginUser;
@@ -237,6 +238,55 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSpeciesSensibleEnthalpy(PetscReal
     for (auto s = 0; s < tChem->numberSpecies; s++) {
         hi[s] -= tChem->speciesHeatOfFormation[s];
     }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::TChemComputeDensityFunctionFromTemperaturePressure(PetscReal temperature, PetscReal pressure, const PetscReal *yi, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    TChem *tChem = (TChem *)ctx;
+
+    // Fill the working array
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
+    tempYiWorkingArray[0] = temperature;
+    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
+        tempYiWorkingArray[sp + 1] = yi[sp];
+    }
+
+    // precompute some values
+    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
+    TCCHKERRQ(err);
+
+    // compute r
+    double R = 1000.0 * RUNIV / mwMix;
+
+    // compute pressure p = rho*R*T
+    *density = pressure / (temperature * R);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::TChemComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleInternalEnergy, void *ctx) {
+    PetscFunctionBeginUser;
+    TChem *tChem = (TChem *)ctx;
+
+    // Fill the working array
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
+    tempYiWorkingArray[0] = T;
+    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
+        tempYiWorkingArray[sp + 1] = yi[sp];
+    }
+
+    // precompute some values
+    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
+    TCCHKERRQ(err);
+
+    // compute the sensibleInternalEnergy
+    double sensibleInternalEnergyCompute;
+    err = ComputeSensibleInternalEnergy(tChem->numberSpecies, tempYiWorkingArray, mwMix, sensibleInternalEnergyCompute);
+    *sensibleInternalEnergy = sensibleInternalEnergyCompute;
+    TCCHKERRQ(err);
 
     PetscFunctionReturn(0);
 }

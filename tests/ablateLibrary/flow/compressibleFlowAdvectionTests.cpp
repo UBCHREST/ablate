@@ -68,8 +68,8 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                  std::vector<std::string>{"O2", "H2O", "N2"});
 
             // setup solutions from the exact params
-            auto exactEulerSolution = std::make_shared<mathFunctions::FieldSolution>("euler", GetParam().eulerExact);
-            auto yiExactSolution = std::make_shared<mathFunctions::FieldSolution>("densityYi", GetParam().densityYiExact);
+            auto exactEulerSolution = std::make_shared<mathFunctions::FieldFunction>("euler", GetParam().eulerExact);
+            auto yiExactSolution = std::make_shared<mathFunctions::FieldFunction>("densityYi", GetParam().densityYiExact);
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<flow::boundaryConditions::EssentialGhost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, GetParam().eulerExact),
@@ -81,9 +81,9 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                                parameters,
                                                                                nullptr,
                                                                                nullptr /*options*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactEulerSolution, yiExactSolution} /*initialization*/,
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution} /*initialization*/,
                                                                                boundaryConditions /*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactEulerSolution, yiExactSolution});
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
 
             // assume one flow field right now
             flowObject->CompleteProblemSetup(ts);
