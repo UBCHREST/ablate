@@ -18,7 +18,7 @@ using ComputeSpeciesSensibleEnthalpyFunction = PetscErrorCode (*)(PetscReal T, P
 
 using ComputeDensityFunctionFromTemperaturePressure = PetscErrorCode (*)(PetscReal T, PetscReal pressure, const PetscReal yi[], PetscReal* density, void* ctx);
 
-using ComputeSensibleInternalEnergy = PetscErrorCode (*)(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
+using ComputeSensibleInternalEnergyFunction = PetscErrorCode (*)(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
 
 /**
  * The EOS is a combination of species model and EOS.  This allows the eos to dictate the order/number of species.  This can be relaxed in the future
@@ -43,7 +43,7 @@ class EOS {
     virtual void* GetComputeSpeciesSensibleEnthalpyContext() = 0;
     virtual ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() = 0;
     virtual void* GetComputeDensityFunctionFromTemperaturePressureContext() = 0;
-    virtual ComputeSensibleInternalEnergy GetComputeSensibleInternalEnergyFunction() = 0;
+    virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() = 0;
     virtual void* GetComputeSensibleInternalEnergyContext() = 0;
 
     // species model functions

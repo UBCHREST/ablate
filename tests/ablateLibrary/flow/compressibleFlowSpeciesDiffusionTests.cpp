@@ -73,7 +73,7 @@ class MockEOS : public ablate::eos::EOS {
     void* GetComputeSpeciesSensibleEnthalpyContext() override { return nullptr; }
     ablate::eos::ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { throw std::runtime_error("not supported"); }
     void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return nullptr; }
-    ablate::eos::ComputeSensibleInternalEnergy GetComputeSensibleInternalEnergyFunction() override { throw std::runtime_error("not supported"); }
+    ablate::eos::ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { throw std::runtime_error("not supported"); }
     void* GetComputeSensibleInternalEnergyContext() override { return nullptr; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }

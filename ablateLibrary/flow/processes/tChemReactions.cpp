@@ -238,6 +238,9 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
     eos::ComputeTemperatureFunction temperatureFunction = eos->GetComputeTemperatureFunction();
     void* temperatureContext = eos->GetComputeTemperatureContext();
 
+    eos::ComputeSensibleInternalEnergyFunction sensibleInternalEnergyFunction = eos->GetComputeSensibleInternalEnergyFunction();
+    void* sensibleInternalEnergyContext = eos->GetComputeSensibleInternalEnergyContext();
+
     // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
         // if there is a cell array, use it, otherwise it is just c
@@ -335,10 +338,8 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             VecGetArray(pointData, &pointArray) >> checkError;
 
             // Use the point array to compute the updatedInternalEnergy
-            err = TC_getMs2Wmix(pointArray + 1, numberSpecies, &mwMix);
-            TCCHKERRQ(err);
             PetscReal updatedInternalEnergy;
-            ierr = eos::TChem::ComputeSensibleInternalEnergy(numberSpecies, pointArray, mwMix, updatedInternalEnergy);
+            ierr = sensibleInternalEnergyFunction(pointArray[0], euler[ablate::flow::processes::EulerAdvection::RHO], pointArray + 1, &updatedInternalEnergy, sensibleInternalEnergyContext);
             CHKERRQ(ierr);
 
             // compute the ke

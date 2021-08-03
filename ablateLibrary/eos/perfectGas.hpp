@@ -37,7 +37,7 @@ class PerfectGas : public EOS {
     void* GetComputeSpeciesSensibleEnthalpyContext() override { return &parameters; }
     virtual ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { return PerfectGasComputeDensityFunctionFromTemperaturePressure; }
     virtual void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return &parameters; }
-    virtual ComputeSensibleInternalEnergy GetComputeSensibleInternalEnergyFunction() override { return PerfectGasComputeSensibleInternalEnergy; }
+    virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return PerfectGasComputeSensibleInternalEnergy; }
     virtual void* GetComputeSensibleInternalEnergyContext() override { return &parameters; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }

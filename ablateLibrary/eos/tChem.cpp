@@ -85,7 +85,7 @@ void ablate::eos::TChem::View(std::ostream &stream) const {
  * @param T
  * @return
  */
-int ablate::eos::TChem::ComputeSensibleInternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
+int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
     // get the required values
     double totalEnthalpy;
     int err = TC_getMs2HmixMs(tempYiWorkingArray, numSpec + 1, &totalEnthalpy);
@@ -106,7 +106,7 @@ int ablate::eos::TChem::ComputeSensibleInternalEnergy(int numSpec, double *tempY
     return err;
 }
 
-PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T) {
+PetscErrorCode ablate::eos::TChem::ComputeTemperatureInternal(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T) {
     PetscFunctionBeginUser;
 
     // This is an iterative process to go compute temperature from density
@@ -119,7 +119,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
     // compute the first error
     double e2;
     tempYiWorkingArray[0] = t2;
-    int err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
+    int err = ComputeSensibleInternalEnergyInternal(numSpec, tempYiWorkingArray, mwMix, e2);
     TCCHKERRQ(err);
     double f2 = internalEnergyRef - e2;
     T = t2;  // set for first guess
@@ -129,7 +129,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
         double t1 = t0 + 1;
         double e1;
         tempYiWorkingArray[0] = t1;
-        err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e1);
+        err = ComputeSensibleInternalEnergyInternal(numSpec, tempYiWorkingArray, mwMix, e1);
         TCCHKERRQ(err);
         double f1 = internalEnergyRef - e1;
 
@@ -137,7 +137,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
             t2 = t1 - f1 * (t1 - t0) / (f1 - f0 + 1E-30);
             t2 = PetscMax(1.0, t2);
             tempYiWorkingArray[0] = t2;
-            err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
+            err = ComputeSensibleInternalEnergyInternal(numSpec, tempYiWorkingArray, mwMix, e2);
             TCCHKERRQ(err);
             f2 = internalEnergyRef - e2;
             if (PetscAbs(f2) <= EPS_T_RHO_E) {
@@ -180,7 +180,7 @@ PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(PetscInt dim, PetscRe
     TCCHKERRQ(err);
 
     // compute the temperature
-    PetscErrorCode ierr = ComputeTemperature(tChem->numberSpecies, tempYiWorkingArray, internalEnergyRef, mwMix, *T);
+    PetscErrorCode ierr = ComputeTemperatureInternal(tChem->numberSpecies, tempYiWorkingArray, internalEnergyRef, mwMix, *T);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -212,7 +212,7 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal d
 
     // compute the temperature
     double temperature;
-    PetscErrorCode ierr = ComputeTemperature(tChem->numberSpecies, tempYiWorkingArray, *internalEnergy, mwMix, temperature);
+    PetscErrorCode ierr = ComputeTemperatureInternal(tChem->numberSpecies, tempYiWorkingArray, *internalEnergy, mwMix, temperature);
     CHKERRQ(ierr);
 
     // compute r
@@ -290,7 +290,7 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSensibleInternalEnergy(PetscReal 
 
     // compute the sensibleInternalEnergy
     double sensibleInternalEnergyCompute;
-    err = ComputeSensibleInternalEnergy(tChem->numberSpecies, tempYiWorkingArray, mwMix, sensibleInternalEnergyCompute);
+    err = ComputeSensibleInternalEnergyInternal(tChem->numberSpecies, tempYiWorkingArray, mwMix, sensibleInternalEnergyCompute);
     *sensibleInternalEnergy = sensibleInternalEnergyCompute;
     TCCHKERRQ(err);
 

@@ -55,7 +55,18 @@ class TChem : public EOS {
      * @param T
      * @return
      */
-    static PetscErrorCode ComputeTemperature(int numSpec, double* tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double& T);
+    static PetscErrorCode ComputeTemperatureInternal(int numSpec, double* tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double& T);
+
+    /**
+     * the tempYiWorkingArray array is expected to be filled
+     * @param numSpec
+     * @param tempYiWorkingArray
+     * @param T
+     * @param mwMix
+     * @param internalEnergy
+     * @return
+     */
+    static int ComputeSensibleInternalEnergyInternal(int numSpec, double* tempYiWorkingArray, double mwMix, double& internalEnergy);
 
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);
@@ -76,19 +87,8 @@ class TChem : public EOS {
     void* GetComputeSpeciesSensibleEnthalpyContext() override { return this; }
     virtual ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { return TChemComputeDensityFunctionFromTemperaturePressure; }
     virtual void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return this; }
-    virtual ComputeSensibleInternalEnergy GetComputeSensibleInternalEnergyFunction() override { return TChemComputeSensibleInternalEnergy; }
+    virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return TChemComputeSensibleInternalEnergy; }
     virtual void* GetComputeSensibleInternalEnergyContext() override { return this; }
-
-    /**
-     * the tempYiWorkingArray array is expected to be filled
-     * @param numSpec
-     * @param tempYiWorkingArray
-     * @param T
-     * @param mwMix
-     * @param internalEnergy
-     * @return
-     */
-    static int ComputeSensibleInternalEnergy(int numSpec, double* tempYiWorkingArray, double mwMix, double& internalEnergy);
 };
 
 }  // namespace ablate::eos
