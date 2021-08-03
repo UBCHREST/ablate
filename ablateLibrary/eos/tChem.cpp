@@ -289,7 +289,7 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSensibleInternalEnergy(PetscReal 
     TCCHKERRQ(err);
 
     // compute the sensibleInternalEnergy
-    double sensibleInternalEnergyCompute;
+    double sensibleInternalEnergyCompute = 0;
     err = ComputeSensibleInternalEnergyInternal(tChem->numberSpecies, tempYiWorkingArray, mwMix, sensibleInternalEnergyCompute);
     *sensibleInternalEnergy = sensibleInternalEnergyCompute;
     TCCHKERRQ(err);

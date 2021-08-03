@@ -139,7 +139,7 @@ PetscErrorCode ablate::flow::fieldFunctions::CompressibleFlowState::ComputeDensi
 
 #include "parser/registrar.hpp"
 REGISTERDEFAULT(ablate::flow::fieldFunctions::CompressibleFlowState, ablate::flow::fieldFunctions::CompressibleFlowState,
-                "a simple stucture used to describe a compressible flow field using an EOS, T, pressure, vel, Yi", ARG(ablate::eos::EOS, "eos", "the eos used for the flow field"),
+                "a simple structure used to describe a compressible flow field using an EOS, T, pressure, vel, Yi", ARG(ablate::eos::EOS, "eos", "the eos used for the flow field"),
                 ARG(ablate::mathFunctions::MathFunction, "temperature", "the temperature field (K)"), ARG(ablate::mathFunctions::MathFunction, "pressure", "the pressure field (Pa)"),
                 ARG(ablate::mathFunctions::MathFunction, "velocity", "the velocity field (m/2)"),
                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "massFractions", "a list of fieldFunctions where each mass fraction is for a separate species"));
