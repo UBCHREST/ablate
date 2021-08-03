@@ -69,21 +69,13 @@ flow: !ablate::flow::IncompressibleFlow
     - *temperatureField
   boundaryConditions:
     - !ablate::flow::boundaryConditions::Essential
-      fieldName: velocity
       boundaryName: "wall velocity"
       labelIds: [3, 1, 2, 4]
-      boundaryValue:
-        formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
-      timeDerivativeValue:
-        formula: "1.0, 1.0"
+      boundaryValue: *velocityField
     - !ablate::flow::boundaryConditions::Essential
-      fieldName: temperature
       boundaryName: "wall temp"
       labelIds: [3, 1, 2, 4]
-      boundaryValue:
-        formula: "t + x + y"
-      timeDerivativeValue:
-        formula: "1.0"
+      boundaryValue: *temperatureField
   monitors:
     - !ablate::monitors::Hdf5Monitor
       interval: 0

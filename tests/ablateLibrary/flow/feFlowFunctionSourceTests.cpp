@@ -597,10 +597,8 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                                           /* boundary conditions */
                                           std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
-                                              std::make_shared<boundaryConditions::Essential>(
-                                                  "velocity", "velocity wall", std::vector<int>{3, 1, 2, 4}, mathFunctions::Create(testingParam.uExact), mathFunctions::Create(testingParam.u_tExact)),
-                                              std::make_shared<boundaryConditions::Essential>(
-                                                  "temperature", "temp wall", std::vector<int>{3, 1, 2, 4}, mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact)),
+                                              std::make_shared<boundaryConditions::Essential>("velocity wall", std::vector<int>{3, 1, 2, 4}, velocityExact),
+                                              std::make_shared<boundaryConditions::Essential>("temp wall", std::vector<int>{3, 1, 2, 4}, temperatureExact),
                                           },
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
