@@ -23,6 +23,8 @@ class TimeStepper {
     void Solve(std::shared_ptr<Solvable>);
 
     void AddMonitor(std::shared_ptr<monitors::Monitor>);
+
+    double GetTime() const;
 };
 }  // namespace ablate::solve
 

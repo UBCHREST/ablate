@@ -45,7 +45,7 @@ TEST_P(TChemCreateAndViewFixture, ShouldCreateAndView) {
     ASSERT_EQ(outputString, GetParam().expectedView);
 }
 
-INSTANTIATE_TEST_SUITE_P(EOSTests, TChemCreateAndViewFixture,
+INSTANTIATE_TEST_SUITE_P(TChemTests, TChemCreateAndViewFixture,
                          testing::Values((TChemCreateAndViewParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                         .thermoFile = "inputs/eos/thermo30.dat",
                                                                         .expectedView = "EOS: TChemV1\n\tmechFile: \"inputs/eos/grimech30.dat\"\n\tthermoFile: \"inputs/eos/thermo30.dat\"\n"}),
@@ -73,7 +73,7 @@ TEST_P(TChemGetSpeciesFixture, ShouldGetCorrectSpecies) {
     ASSERT_EQ(species, GetParam().expectedSpecies);
 }
 
-INSTANTIATE_TEST_SUITE_P(EOSTests, TChemGetSpeciesFixture,
+INSTANTIATE_TEST_SUITE_P(TChemTests, TChemGetSpeciesFixture,
                          testing::Values((TChemGetSpeciesParameters){
                              .mechFile = "inputs/eos/grimech30.dat",
                              .thermoFile = "inputs/eos/thermo30.dat",
@@ -81,6 +81,67 @@ INSTANTIATE_TEST_SUITE_P(EOSTests, TChemGetSpeciesFixture,
                                                  "CH2OH", "CH3O", "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO", "HCCOH",  "N",   "NH",   "NH2",  "NH3",    "NNH",   "NO",
                                                  "NO2",   "N2O",  "HNO",   "CN",  "HCN",  "H2CN", "HCNN", "HCNO", "HOCN", "HNCO", "NCO",   "N2",     "AR",  "C3H7", "C3H8", "CH2CHO", "CH3CHO"}}),
                          [](const testing::TestParamInfo<TChemGetSpeciesParameters>& info) { return info.param.mechFile.stem().string() + "_" + info.param.thermoFile.stem().string(); });
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// TChem get species enthalpy
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct TChemSensibleSpeciesEnthalpyParameters {
+    std::filesystem::path mechFile;
+    std::filesystem::path thermoFile;
+    double temperature;
+    std::vector<PetscReal> expectedSensibleSpeciesEnthalpy;
+};
+
+class TChemSensibleSpeciesEnthalpyFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemSensibleSpeciesEnthalpyParameters> {};
+
+TEST_P(TChemSensibleSpeciesEnthalpyFixture, ShouldComputeCorrectSpeciesEnthalpy) {
+    // arrange
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    std::vector<PetscReal> computedSensibleSpeciesEnthalpy(GetParam().expectedSensibleSpeciesEnthalpy.size(), NAN);
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeSpeciesSensibleEnthalpyFunction()(GetParam().temperature, &computedSensibleSpeciesEnthalpy[0], eos->GetComputeSpeciesSensibleEnthalpyContext());
+
+    // assert the output is as expected
+    ASSERT_EQ(ierr, 0);
+    for (std::size_t s = 0; s < eos->GetSpecies().size(); s++) {
+        const double error = (GetParam().expectedSensibleSpeciesEnthalpy[s] - computedSensibleSpeciesEnthalpy[s]) / (GetParam().expectedSensibleSpeciesEnthalpy[s] + 1E-30);
+        ASSERT_LT(error, 1E-3) << "The percent difference for expectedSensibleSpeciesEnthalpy of " << eos->GetSpecies()[s] << " is greater than expected";
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    TChemTests, TChemSensibleSpeciesEnthalpyFixture,
+    testing::Values((TChemSensibleSpeciesEnthalpyParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                             .thermoFile = "inputs/eos/thermo30.dat",
+                                                             .temperature = 298.15,
+                                                             .expectedSensibleSpeciesEnthalpy = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                                                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                                                                                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}},
+                    (TChemSensibleSpeciesEnthalpyParameters){
+                        .mechFile = "inputs/eos/grimech30.dat",
+                        .thermoFile = "inputs/eos/thermo30.dat",
+                        .temperature = 350.0,
+                        .expectedSensibleSpeciesEnthalpy = {7.460590e+05, 1.069273e+06, 7.055272e+04, 4.785883e+04, 9.080069e+04, 9.707818e+04, 5.566472e+04, 6.614152e+04, 8.991894e+04,
+                                                            1.162188e+05, 1.308620e+05, 1.257292e+05, 1.353844e+05, 1.188149e+05, 5.401828e+04, 4.507353e+04, 6.258466e+04, 6.258237e+04,
+                                                            8.324871e+04, 6.636699e+04, 7.404635e+04, 8.828951e+04, 9.116586e+04, 8.561139e+04, 8.372083e+04, 9.475268e+04, 9.592900e+04,
+                                                            6.316233e+04, 6.639892e+04, 7.465792e+04, 7.694628e+04, 1.007995e+05, 1.101965e+05, 1.106852e+05, 6.281819e+04, 5.155943e+04,
+                                                            4.282066e+04, 4.682740e+04, 5.720448e+04, 5.820967e+04, 7.055767e+04, 7.307891e+04, 6.404595e+04, 5.831064e+04, 5.708868e+04,
+                                                            5.750638e+04, 5.076174e+04, 5.392193e+04, 2.697916e+04, 9.164036e+04, 9.281967e+04, 6.885935e+04, 6.825274e+04}},
+                    (TChemSensibleSpeciesEnthalpyParameters){
+                        .mechFile = "inputs/eos/grimech30.dat",
+                        .thermoFile = "inputs/eos/thermo30.dat",
+                        .temperature = 3000.0,
+                        .expectedSensibleSpeciesEnthalpy = {4.401447e+07, 5.571873e+07, 3.536189e+06, 3.066045e+06, 5.280429e+06, 7.086383e+06, 4.236784e+06, 5.394231e+06, 4.719917e+06,
+                                                            7.461729e+06, 9.382657e+06, 9.338441e+06, 1.186369e+07, 1.461963e+07, 3.338867e+06, 3.472244e+06, 4.745156e+06, 6.099301e+06,
+                                                            7.376036e+06, 7.489415e+06, 8.456529e+06, 6.201523e+06, 7.700047e+06, 8.726732e+06, 1.006060e+07, 1.118903e+07, 1.239586e+07,
+                                                            4.817136e+06, 5.843981e+06, 6.082402e+06, 4.013085e+06, 6.105222e+06, 8.300475e+06, 1.027588e+07, 4.726630e+06, 3.168311e+06,
+                                                            3.227706e+06, 3.530461e+06, 4.750059e+06, 3.741030e+06, 5.402331e+06, 6.678596e+06, 4.877817e+06, 4.658460e+06, 4.383264e+06,
+                                                            4.569753e+06, 3.683059e+06, 3.310248e+06, 1.405856e+06, 1.109638e+07, 1.193612e+07, 6.659771e+06, 7.583124e+06}}),
+    [](const testing::TestParamInfo<TChemSensibleSpeciesEnthalpyParameters>& info) {
+        return info.param.mechFile.stem().string() + "_" + info.param.thermoFile.stem().string() + "_Temp_" + std::to_string((int)info.param.temperature);
+    });
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// EOS decode state tests
@@ -154,7 +215,7 @@ TEST_P(TChemStateTestFixture, ShouldComputeTemperature) {
     ASSERT_NEAR(temperature, params.expectedTemperature, 1E-2);
 }
 
-INSTANTIATE_TEST_SUITE_P(EOSTests, TChemStateTestFixture,
+INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                          testing::Values((TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
                                                                 .yiIn = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},

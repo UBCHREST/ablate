@@ -1,6 +1,7 @@
 #include "compressibleFlow.hpp"
 #include <flow/processes/eulerAdvection.hpp>
 #include <flow/processes/eulerDiffusion.hpp>
+#include <flow/processes/speciesDiffusion.hpp>
 #include <utilities/mpiError.hpp>
 
 ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> parameters,
@@ -18,11 +19,13 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
                   .componentNames = eosIn->GetSpecies(),
               },
               {.solutionField = false, .fieldName = "T", .fieldPrefix = "T", .components = 1, .fieldType = FieldType::FV},
-              {.solutionField = false, .fieldName = "vel", .fieldPrefix = "vel", .components = mesh->GetDimensions(), .fieldType = FieldType::FV}},
+              {.solutionField = false, .fieldName = "vel", .fieldPrefix = "vel", .components = mesh->GetDimensions(), .fieldType = FieldType::FV},
+              {.solutionField = false, .fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eosIn->GetSpecies().size(), .fieldType = FieldType::FV}},
              {
                  // create assumed processes for compressible flow
                  std::make_shared<ablate::flow::processes::EulerAdvection>(parameters, eosIn, fluxCalculatorIn),
                  std::make_shared<ablate::flow::processes::EulerDiffusion>(parameters, eosIn),
+                 std::make_shared<ablate::flow::processes::SpeciesDiffusion>(parameters, eosIn),
              },
              options, initialization, boundaryConditions, {}, exactSolutions) {}
 

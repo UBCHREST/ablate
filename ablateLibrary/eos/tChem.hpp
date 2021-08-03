@@ -29,6 +29,9 @@ class TChem : public EOS {
     std::vector<double> tempYiWorkingVector;
     std::vector<double> sourceWorkingVector;
 
+    // precompute the speciesHeatOfFormation taken at TREF
+    std::vector<double> speciesHeatOfFormation;
+
     // write/reproduce the periodic table
     static const char* periodicTable;
     inline static const char* periodicTableFileName = "periodictable.dat";
@@ -36,6 +39,7 @@ class TChem : public EOS {
     static PetscErrorCode TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
                                               PetscReal* p, void* ctx);
     static PetscErrorCode TChemComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
+    static PetscErrorCode TChemComputeSpeciesSensibleEnthalpy(PetscReal T, PetscReal* hi, void* ctx);
 
     // Private static helper functions
     inline const static double TREF = 298.15;
@@ -66,6 +70,8 @@ class TChem : public EOS {
     void* GetDecodeStateContext() override { return this; }
     ComputeTemperatureFunction GetComputeTemperatureFunction() override { return TChemComputeTemperature; }
     void* GetComputeTemperatureContext() override { return this; }
+    ComputeSpeciesSensibleEnthalpyFunction GetComputeSpeciesSensibleEnthalpyFunction() override { return TChemComputeSpeciesSensibleEnthalpy; }
+    void* GetComputeSpeciesSensibleEnthalpyContext() override { return this; }
 
     /**
      * the tempYiWorkingArray array is expected to be filled

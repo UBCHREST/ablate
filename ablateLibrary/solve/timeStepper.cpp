@@ -44,12 +44,19 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
 
     TSSolve(ts, solutionVec) >> checkError;
 }
+
 void ablate::solve::TimeStepper::AddMonitor(std::shared_ptr<monitors::Monitor> monitor) {
     // store a reference to the monitor
     monitors.push_back(monitor);
 
     // register the monitor with the ts
     TSMonitorSet(ts, monitor->GetPetscFunction(), monitor->GetContext(), NULL) >> checkError;
+}
+
+double ablate::solve::TimeStepper::GetTime() const {
+    PetscReal time;
+    TSGetTime(ts, &time) >> checkError;
+    return (double)time;
 }
 
 REGISTERDEFAULT(ablate::solve::TimeStepper, ablate::solve::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),

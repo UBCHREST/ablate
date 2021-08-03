@@ -28,7 +28,7 @@ TEST_P(PerfectGasTestCreateAndViewFixture, ShouldCreateAndView) {
     ASSERT_EQ(outputString, GetParam().expectedView);
 }
 
-INSTANTIATE_TEST_SUITE_P(EOSTests, PerfectGasTestCreateAndViewFixture,
+INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, PerfectGasTestCreateAndViewFixture,
                          testing::Values((EOSTestCreateAndViewParameters){.options = {}, .expectedView = "EOS: perfectGas\n\tgamma: 1.4\n\tRgas: 287\n"},
                                          (EOSTestCreateAndViewParameters){.options = {{"gamma", "3.2"}, {"Rgas", "100.2"}}, .expectedView = "EOS: perfectGas\n\tgamma: 3.2\n\tRgas: 100.2\n"},
                                          (EOSTestCreateAndViewParameters){.options = {{"gamma", "3.2"}, {"Rgas", "100.2"}},
@@ -76,7 +76,7 @@ TEST_P(PerfectGasTestDecodeStateFixture, ShouldDecodeState) {
     ASSERT_NEAR(pressure, params.expectedPressure, 1E-6);
 }
 
-INSTANTIATE_TEST_SUITE_P(EOSTests, PerfectGasTestDecodeStateFixture,
+INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, PerfectGasTestDecodeStateFixture,
                          testing::Values((EOSTestDecodeStateParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
                                                                         .densityYiIn = {},
                                                                         .densityIn = 1.2,
@@ -130,7 +130,7 @@ TEST_P(PerfectGasTestTemperatureFixture, ShouldComputeTemperature) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    EOSTests, PerfectGasTestTemperatureFixture,
+    PerfectGasEOSTests, PerfectGasTestTemperatureFixture,
     testing::Values((EOSTestTemperatureParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
                                                    .densityYiIn = {},
                                                    .densityIn = 1.2,
@@ -144,7 +144,7 @@ INSTANTIATE_TEST_SUITE_P(
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS get species tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-TEST(EOSTests, PerfectGasShouldReportNoSpeciesByDefault) {
+TEST(PerfectGasEOSTests, PerfectGasShouldReportNoSpeciesByDefault) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>();
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
@@ -156,7 +156,7 @@ TEST(EOSTests, PerfectGasShouldReportNoSpeciesByDefault) {
     ASSERT_EQ(0, species.size());
 }
 
-TEST(EOSTests, PerfectGasShouldReportSpeciesWhenProvided) {
+TEST(PerfectGasEOSTests, PerfectGasShouldReportSpeciesWhenProvided) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>();
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters, std::vector<std::string>{"N2", "H2"});
@@ -168,4 +168,23 @@ TEST(EOSTests, PerfectGasShouldReportSpeciesWhenProvided) {
     ASSERT_EQ(2, species.size());
     ASSERT_EQ("N2", species[0]);
     ASSERT_EQ("H2", species[1]);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// EOS get species enthalpy
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+TEST(PerfectGasEOSTests, ShouldAssumeNoSpeciesEnthalpy) {
+    // arrange
+    auto parameters = std::make_shared<ablate::parameters::MapParameters>();
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters, std::vector<std::string>{"O2", "CH4", "N2"});
+
+    std::vector<PetscReal> hiResult(3, 1);
+
+    // act
+    auto iErr = eos->GetComputeSpeciesSensibleEnthalpyFunction()(NAN, &hiResult[0], eos->GetComputeSpeciesSensibleEnthalpyContext());
+
+    // assert
+    ASSERT_EQ(0, iErr);
+    auto expected = std::vector<PetscReal>{0.0, 0.0, 0.0};
+    ASSERT_EQ(hiResult, expected);
 }
