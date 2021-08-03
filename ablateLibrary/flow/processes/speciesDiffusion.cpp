@@ -128,3 +128,7 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionSpecie
 
     PetscFunctionReturn(0);
 }
+
+#include "parser/registrar.hpp"
+REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::SpeciesDiffusion, "diffusion for the species yi field",
+         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by diffusion"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
