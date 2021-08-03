@@ -779,6 +779,24 @@ TEST(YamlParserTests, ShouldSupportAliasesAndAnchorsForMaps) {
     ASSERT_EQ(55, factory2->Get(ArgumentIdentifier<int>{.inputName = "item11"}));
 }
 
+TEST(YamlParserTests, ShouldReturnFactoryForScalarValues) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: !classType123 22.3 " << std::endl;
+    std::string emptyString = {};
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto factory1 = yamlParser->GetFactory("item");
+
+    // assert
+    ASSERT_EQ("22.3", factory1->Get(ArgumentIdentifier<std::string>{.inputName = {}}));
+    ASSERT_EQ(22.3, factory1->Get(ArgumentIdentifier<double>{.inputName = {}}));
+    ASSERT_EQ("classType123", factory1->GetClassType());
+}
+
 class YamlParserTestsPetscTestFixture : public testingResources::PetscTestFixture {};
 
 TEST_F(YamlParserTestsPetscTestFixture, ShouldDownloadFile) {

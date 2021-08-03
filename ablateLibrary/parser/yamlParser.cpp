@@ -38,10 +38,6 @@ std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(
             throw std::invalid_argument("unable to find item " + name + " in " + nodePath);
         }
 
-        if (!parameter.IsMap()) {
-            throw std::invalid_argument("item " + name + " is expected to be a map in " + nodePath);
-        }
-
         std::string childPath = nodePath + "/" + name;
 
         auto tagType = parameter.Tag();

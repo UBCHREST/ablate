@@ -27,11 +27,16 @@ class YamlParser : public Factory {
      * @param type
      */
     YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles, std::vector<std::filesystem::path> searchDirectories = {});
-    inline void MarkUsage(const std::string& key) const { nodeUsages[key]++; }
+    inline void MarkUsage(const std::string& key) const {
+        if(!key.empty()){
+            nodeUsages[key]++;
+        }
+    }
 
     template <typename T>
     inline T GetValueFromYaml(const ArgumentIdentifier<T>& identifier) const {
-        auto parameter = yamlConfiguration[identifier.inputName];
+        // treat this yamlConfiguration as the item if the identifier is default
+        auto parameter = identifier.inputName.empty() ? yamlConfiguration : yamlConfiguration[identifier.inputName];
         if (!parameter) {
             if (identifier.optional) {
                 return {};
@@ -69,7 +74,8 @@ class YamlParser : public Factory {
 
     /* return a string*/
     std::string Get(const ArgumentIdentifier<std::string>& identifier) const override {
-        auto parameter = yamlConfiguration[identifier.inputName];
+        // treat this yamlConfiguration as the item if the identifier is default
+        auto parameter = identifier.inputName.empty() ? yamlConfiguration : yamlConfiguration[identifier.inputName];
         if (!parameter) {
             if (identifier.optional) {
                 return {};
