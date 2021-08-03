@@ -45,33 +45,33 @@ flow: !ablate::flow::IncompressibleFlow
     cp: 1.0
   initialization:
     - fieldName: "velocity"
-      solutionField:
+      field:
         formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
       timeDerivative:
         formula: "1.0, 1.0"
     - fieldName: "pressure"
-      solutionField:
+      field:
         formula: "x + y - 1"
       timeDerivative:
         formula: "0.0"
     - fieldName: "temperature"
-      solutionField:
+      field:
         formula: "t + x + y"
       timeDerivative:
         formula: "1.0"
   exactSolution:
     - fieldName: "velocity"
-      solutionField:
+      field:
         formula: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
       timeDerivative:
         formula: "1.0, 1.0"
     - fieldName: "pressure"
-      solutionField:
+      field:
         formula: "x + y - 1"
       timeDerivative:
         formula: "0.0"
     - fieldName: "temperature"
-      solutionField:
+      field:
         formula: "t + x + y"
       timeDerivative:
         formula: "1.0"      

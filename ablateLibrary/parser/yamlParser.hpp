@@ -36,7 +36,7 @@ class YamlParser : public Factory {
             if (identifier.optional) {
                 return {};
             } else {
-                throw std::invalid_argument("unable to " + identifier.inputName + " in " + nodePath);
+                throw std::invalid_argument("unable to locate " + identifier.inputName + " in " + nodePath);
             }
         }
         MarkUsage(identifier.inputName);
@@ -74,7 +74,7 @@ class YamlParser : public Factory {
             if (identifier.optional) {
                 return {};
             } else {
-                throw std::invalid_argument("unable to " + identifier.inputName + " in " + nodePath);
+                throw std::invalid_argument("unable to locate " + identifier.inputName + " in " + nodePath);
             }
         }
         MarkUsage(identifier.inputName);

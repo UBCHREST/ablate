@@ -168,12 +168,10 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             auto yiExact = ablate::mathFunctions::Create(ComputeDensityYiExact, &parameters);
             auto yiExactField = std::make_shared<mathFunctions::FieldFunction>("densityYi", yiExact);
 
-            auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<flow::boundaryConditions::EssentialGhost>("euler", "walls", std::vector<int>{4, 2}, eulerExact),
-                std::make_shared<flow::boundaryConditions::EssentialGhost>("densityYi", "left", std::vector<int>{4}, yiExact),
-                std::make_shared<flow::boundaryConditions::EssentialGhost>("densityYi", "right", std::vector<int>{2}, yiExact)
-
-            };
+            auto boundaryConditions =
+                std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{std::make_shared<flow::boundaryConditions::EssentialGhost>("walls", std::vector<int>{4, 2}, eulerExactField),
+                                                                                          std::make_shared<flow::boundaryConditions::EssentialGhost>("left", std::vector<int>{4}, yiExactField),
+                                                                                          std::make_shared<flow::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, yiExactField)};
 
             auto flowProcesses = std::vector<std::shared_ptr<ablate::flow::processes::FlowProcess>>{
                 std::make_shared<ablate::flow::processes::SpeciesDiffusion>(flowParameters, eos),

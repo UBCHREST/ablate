@@ -7,12 +7,12 @@
 
 namespace ablate::flow::fieldFunctions {
 
-class Euler : public ablate::mathFunctions::FieldFunction {
+class MassFractions : public ablate::mathFunctions::FieldFunction {
    private:
     const std::shared_ptr<ablate::flow::fieldFunctions::CompressibleFlowState> flowState;
 
    public:
-    explicit Euler(std::shared_ptr<ablate::flow::fieldFunctions::CompressibleFlowState> flowState);
+    explicit MassFractions(std::shared_ptr<ablate::flow::fieldFunctions::CompressibleFlowState> flowState);
 };
 
 }  // namespace ablate::flow::fieldFunctions

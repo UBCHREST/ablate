@@ -4,4 +4,6 @@ target_sources(ablateLibrary
         compressibleFlowState.cpp
         euler.hpp
         euler.cpp
+        massFractions.hpp
+        massFractions.cpp
         )

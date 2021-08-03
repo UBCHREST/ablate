@@ -25,7 +25,7 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
 
     int mpiInitialized;
     MPI_Initialized(&mpiInitialized) >> checkMpiError;
-    if(mpiInitialized) {
+    if (mpiInitialized) {
         MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
         if (rank == 0) {
             std::ofstream periodicTableFile(periodicTableFileName);
@@ -60,7 +60,7 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
             speciesHeatOfFormation.resize(numberSpecies);
             TC_getHspecMs(TREF, numberSpecies, &speciesHeatOfFormation[0]) >> errorChecker;
         }
-        if(mpiInitialized) {
+        if (mpiInitialized) {
             MPI_Barrier(PETSC_COMM_WORLD);
         }
     }
