@@ -12,3 +12,4 @@ target_sources(libraryTests
         )
 
 add_subdirectory(fluxCalculator)
+add_subdirectory(fieldFunctions)

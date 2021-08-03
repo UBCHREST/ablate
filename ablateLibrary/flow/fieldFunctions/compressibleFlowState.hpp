@@ -5,7 +5,7 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include <memory>
 #include <vector>
-namespace ablate::flow::fieldSolutions {
+namespace ablate::flow::fieldFunctions {
 
 class CompressibleFlowState {
    private:
@@ -20,8 +20,8 @@ class CompressibleFlowState {
     CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eos, std::shared_ptr<mathFunctions::MathFunction> temperatureFunction, std::shared_ptr<mathFunctions::MathFunction> pressureFunction,
                           std::shared_ptr<mathFunctions::MathFunction> velocityFunction, std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> yiFunctions = {});
 
-    static PetscErrorCode ComputeEulerFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
-    static PetscErrorCode ComputeDensityYiFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
+    PetscErrorCode ComputeEulerFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
+    PetscErrorCode ComputeDensityYiFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 };
 
 }  // namespace ablate::flow::fieldSolutions

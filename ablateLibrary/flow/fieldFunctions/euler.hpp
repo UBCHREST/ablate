@@ -4,7 +4,7 @@
 #include <eos/eos.hpp>
 #include <mathFunctions/fieldFunction.hpp>
 
-namespace ablate::flow::fieldSolutions {
+namespace ablate::flow::fieldFunctions {
 
 class Euler : public ablate::mathFunctions::FieldFunction {
    private:

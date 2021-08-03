@@ -20,18 +20,22 @@
 ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::path thermoFileIn)
     : EOS("TChemV1"), errorChecker("Error in TChem library, return code "), mechFile(mechFileIn), thermoFile(thermoFileIn) {
     // TChem requires a periodic file in the working directory.  To simplify setup, we will just write it every time we are run
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
-    if (rank == 0) {
-        std::ofstream periodicTableFile(periodicTableFileName);
-        periodicTableFile << periodicTable;
-        periodicTableFile.close();
-    }
-    MPI_Barrier(PETSC_COMM_WORLD);
+    int size = 1;
+    int rank = 0;
 
+    int mpiInitialized;
+    MPI_Initialized(&mpiInitialized) >> checkMpiError;
+    if(mpiInitialized) {
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
+        if (rank == 0) {
+            std::ofstream periodicTableFile(periodicTableFileName);
+            periodicTableFile << periodicTable;
+            periodicTableFile.close();
+        }
+        MPI_Barrier(PETSC_COMM_WORLD);
+        MPI_Comm_size(PETSC_COMM_WORLD, &size) >> checkMpiError;
+    }
     // initialize TChem (with tabulation off?).  TChem init reads/writes file it can only be done one at a time
-    int size;
-    MPI_Comm_size(PETSC_COMM_WORLD, &size) >> checkMpiError;
     for (int r = 0; r < size; r++) {
         if (r == rank) {
             TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
@@ -56,7 +60,9 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
             speciesHeatOfFormation.resize(numberSpecies);
             TC_getHspecMs(TREF, numberSpecies, &speciesHeatOfFormation[0]) >> errorChecker;
         }
-        MPI_Barrier(PETSC_COMM_WORLD);
+        if(mpiInitialized) {
+            MPI_Barrier(PETSC_COMM_WORLD);
+        }
     }
 }
 

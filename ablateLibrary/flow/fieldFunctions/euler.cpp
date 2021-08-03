@@ -1,7 +1,7 @@
 #include "euler.hpp"
 #include <mathFunctions/functionPointer.hpp>
 
-ablate::flow::fieldSolutions::Euler::Euler(std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<mathFunctions::MathFunction> temperatureFunctionIn,
+ablate::flow::fieldFunctions::Euler::Euler(std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<mathFunctions::MathFunction> temperatureFunctionIn,
                                            std::shared_ptr<mathFunctions::MathFunction> pressureFunctionIn, std::shared_ptr<mathFunctions::MathFunction> velocityFunctionIn)
     : ablate::mathFunctions::FieldFunction("euler", std::make_shared<ablate::mathFunctions::FunctionPointer>(EulerFromTemperatureAndPressure, this)),
       eos(eosIn),
@@ -23,11 +23,11 @@ ablate::flow::fieldSolutions::Euler::Euler(std::shared_ptr<ablate::eos::EOS> eos
     }
 }
 
-PetscErrorCode ablate::flow::fieldSolutions::Euler::EulerFromTemperatureAndPressure(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
+PetscErrorCode ablate::flow::fieldFunctions::Euler::EulerFromTemperatureAndPressure(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
-    auto eulerInit = (ablate::flow::fieldSolutions::Euler *)ctx;
+    auto eulerInit = (ablate::flow::fieldFunctions::Euler *)ctx;
 
     // get the temperature, pressure, and velocity
     PetscReal temperature;
