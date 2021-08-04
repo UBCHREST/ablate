@@ -28,7 +28,7 @@ class YamlParser : public Factory {
      */
     YamlParser(const YAML::Node yamlConfiguration, std::string nodePath, std::string type, bool relocateRemoteFiles, std::vector<std::filesystem::path> searchDirectories = {});
     inline void MarkUsage(const std::string& key) const {
-        if(!key.empty()){
+        if (!key.empty()) {
             nodeUsages[key]++;
         }
     }

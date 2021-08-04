@@ -11,9 +11,7 @@ TEST(ParsedFunctionTests, ShouldBeCreatedFromRegistar) {
     std::shared_ptr<ablateTesting::parser::MockFactory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
     const std::string expectedClassType = "";  // should be default class
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
-    EXPECT_CALL(*mockFactory, Get(ablate::parser::ArgumentIdentifier<std::string>{"formula", "the formula that may accept x, y, z, t"}))
-        .Times(::testing::Exactly(1))
-        .WillOnce(::testing::Return("x+y+z+t"));
+    EXPECT_CALL(*mockFactory, Get(ablate::parser::ArgumentIdentifier<std::string>{})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("x+y+z+t"));
 
     // act
     auto instance = ResolveAndCreate<ablate::mathFunctions::MathFunction>(mockFactory);

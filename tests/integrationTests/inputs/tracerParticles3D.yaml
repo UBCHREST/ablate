@@ -43,22 +43,16 @@ flow: !ablate::flow::IncompressibleFlow
   initialization:
     - &velocityField
       fieldName: "velocity"
-      field:
-        formula: "t + x^2 + y^2 + z^2, t + 2*x^2 - 2*x*y + z, t"
-      timeDerivative:
-        formula: "1.0, 1.0, 1.0"
+      field: "t + x^2 + y^2 + z^2, t + 2*x^2 - 2*x*y + z, t"
+      timeDerivative: "1.0, 1.0, 1.0"
     - &pressureField
       fieldName: "pressure"
-      field:
-        formula: "x + y - 1"
-      timeDerivative:
-        formula: "0.0"
+      field: "x + y - 1"
+      timeDerivative: "0.0"
     - &temperatureField
       fieldName: "temperature"
-      field:
-        formula: "t + x + y + z"
-      timeDerivative:
-        formula: "1.0"
+      field: "t + x + y + z"
+      timeDerivative: "1.0"
   boundaryConditions:
     - !ablate::flow::boundaryConditions::Essential
       boundaryName: "velocity"
@@ -83,8 +77,7 @@ particles:
       lower: [0.25,0.25,.25]
       upper: [0.75,0.75,.75]
       particlesPerDim: 10
-    exactSolution:
-      formula: "t + x + y"
+    exactSolution: "t + x + y"
     monitors:
       - !ablate::monitors::Hdf5Monitor
         interval: 0
