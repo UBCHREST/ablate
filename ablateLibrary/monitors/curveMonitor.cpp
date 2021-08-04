@@ -6,7 +6,8 @@
 #include <utilities/petscError.hpp>
 #include "environment/runEnvironment.hpp"
 
-ablate::monitors::CurveMonitor::CurveMonitor(int interval, std::string prefix, std::vector<double> start, std::vector<double> end, std::vector<std::string> outputFields, std::vector<std::string> outputAuxFields)
+ablate::monitors::CurveMonitor::CurveMonitor(int interval, std::string prefix, std::vector<double> start, std::vector<double> end, std::vector<std::string> outputFields,
+                                             std::vector<std::string> outputAuxFields)
     : interval(interval), start(start), end(end), outputFields(outputFields), outputAuxFields(outputAuxFields), filePrefix(prefix) {}
 
 void ablate::monitors::CurveMonitor::Register(std::shared_ptr<Monitorable> monitorableObject) {
@@ -99,7 +100,7 @@ void ablate::monitors::CurveMonitor::Register(std::shared_ptr<Monitorable> monit
 }
 
 static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIndex, const ablate::flow::FlowFieldDescriptor& fieldDescription, const std::vector<PetscInt>& indexLocations,
-                                          const std::vector<PetscReal> distanceAlongLine, PetscErrorCode (plexPointRead)(DM,PetscInt,PetscInt,const PetscScalar*, void*),  Vec u) {
+                                          const std::vector<PetscReal> distanceAlongLine, PetscErrorCode(plexPointRead)(DM, PetscInt, PetscInt, const PetscScalar*, void*), Vec u) {
     // Open the array
     const PetscScalar* uArray;
     PetscErrorCode ierr = VecGetArrayRead(u, &uArray);
@@ -112,7 +113,8 @@ static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIn
 
     // Output each component
     for (PetscInt c = 0; c < fieldDescription.components; c++) {
-        stream << "#" << fieldDescription.fieldName << (fieldDescription.components > 1 ?  "_" + (fieldDescription.componentNames.empty() ? std::to_string(c) : fieldDescription.componentNames[c])  : "") << std::endl;
+        stream << "#" << fieldDescription.fieldName << (fieldDescription.components > 1 ? "_" + (fieldDescription.componentNames.empty() ? std::to_string(c) : fieldDescription.componentNames[c]) : "")
+               << std::endl;
 
         // Output each cell
         for (std::size_t i = 0; i < indexLocations.size(); i++) {
@@ -148,7 +150,8 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
 
     if (steps == 0 || monitor->interval == 0 || (steps % monitor->interval == 0)) {
         // Open a new file
-        std::filesystem::path outputFile = ablate::environment::RunEnvironment::Get().GetOutputDirectory() / (monitor->filePrefix + "." + std::to_string(monitor->outputIndex) + monitor->fileExtension);
+        std::filesystem::path outputFile =
+            ablate::environment::RunEnvironment::Get().GetOutputDirectory() / (monitor->filePrefix + "." + std::to_string(monitor->outputIndex) + monitor->fileExtension);
         monitor->outputIndex++;
         std::ofstream curveFile;
         curveFile.open(outputFile);
@@ -182,8 +185,6 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::monitors::Monitor, ablate::monitors::CurveMonitor, "Outputs the results along a line as a curve file (beta)",
-         ARG(int, "interval", "output interval"),
-         ARG(std::string, "prefix", "the file prefix"),
-         ARG(std::vector<double>, "start", "the line start location"), ARG(std::vector<double>, "end", "the line end location"),
+REGISTER(ablate::monitors::Monitor, ablate::monitors::CurveMonitor, "Outputs the results along a line as a curve file (beta)", ARG(int, "interval", "output interval"),
+         ARG(std::string, "prefix", "the file prefix"), ARG(std::vector<double>, "start", "the line start location"), ARG(std::vector<double>, "end", "the line end location"),
          ARG(std::vector<std::string>, "outputFields", "a list of fields to write to the curve"), ARG(std::vector<std::string>, "outputAuxFields", "a list of aux fields to write to the curve "));
