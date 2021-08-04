@@ -421,3 +421,13 @@ const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetFieldDescriptor(
     }
     throw std::invalid_argument("Cannot locate field descriptor for " + fieldName);
 }
+
+const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetAuxFieldDescriptor(const std::string& fieldName) const {
+    for (const auto& descriptor : auxFieldDescriptors) {
+        if (descriptor.fieldName == fieldName) {
+            return descriptor;
+        }
+    }
+    throw std::invalid_argument("Cannot locate aux field descriptor for " + fieldName);
+}
+
