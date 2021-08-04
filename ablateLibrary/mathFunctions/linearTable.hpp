@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_LINEARINTERPOLATOR_HPP
-#define ABLATELIBRARY_LINEARINTERPOLATOR_HPP
+#ifndef ABLATELIBRARY_LINEARTABLE_HPP
+#define ABLATELIBRARY_LINEARTABLE_HPP
 
 #include <filesystem>
 #include <istream>
@@ -8,7 +8,7 @@
 namespace ablate::mathFunctions {
 
 /**
- * a simple interpolator that reads a text file and interpolates the value.  The xAxisColumn is assumed to be monotonic.
+ * a simple table that reads a text file and interpolates the value.  The xAxisColumn is assumed to be monotonic.
  * An example input would look like
  * x,y,z
  * 1,2,3
@@ -16,11 +16,11 @@ namespace ablate::mathFunctions {
  */
 class LinearTable : public MathFunction {
    private:
-    std::vector<double> xValues;
-    std::vector<std::vector<double>> yValues;
-    const std::string xColumn;
-    const std::vector<std::string> yColumns;
-    const std::shared_ptr<MathFunction> locationToXCoordFunction;
+    std::vector<double> independentValues;
+    std::vector<std::vector<double>> dependentValues;
+    const std::string independentColumnName;
+    const std::vector<std::string> dependentColumnsNames;
+    const std::shared_ptr<MathFunction> independentValueFunction;
 
    private:
     void ParseInputData(std::istream& inputFile);
@@ -30,8 +30,8 @@ class LinearTable : public MathFunction {
     static PetscErrorCode LinearInterpolatorPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
    public:
-    LinearTable(std::filesystem::path inputFile, std::string xColumn, std::vector<std::string> yColumns, std::shared_ptr<MathFunction> locationToXCoord);
-    LinearTable(std::istream& inputFile, std::string xColumn, std::vector<std::string> yColumns, std::shared_ptr<MathFunction> locationToXCoord);
+    LinearTable(std::filesystem::path inputFile, std::string independentColumnName, std::vector<std::string> dependentColumnsNames, std::shared_ptr<MathFunction> independentValueFunction);
+    LinearTable(std::istream& inputStream, std::string independentColumnName, std::vector<std::string> dependentColumnsNames, std::shared_ptr<MathFunction> independentValueFunction);
 
     double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 
@@ -45,9 +45,9 @@ class LinearTable : public MathFunction {
 
     PetscFunction GetPetscFunction() override { return LinearInterpolatorPetscFunction; }
 
-    const std::vector<double>& GetXValues() const { return xValues; }
+    const std::vector<double>& GetIndependentValues() const { return independentValues; }
 
-    const std::vector<std::vector<double>>& GetYValues() const { return yValues; }
+    const std::vector<std::vector<double>>& GetDependentValues() const { return dependentValues; }
 };
 }  // namespace ablate::mathFunctions
-#endif  // ABLATELIBRARY_LINEARINTERPOLATOR_HPP
+#endif  // ABLATELIBRARY_LINEARTABLE_HPP

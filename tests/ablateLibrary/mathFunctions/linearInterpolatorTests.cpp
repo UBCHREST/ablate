@@ -1,7 +1,7 @@
 #include <memory>
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "mathFunctions/linearInterpolator.hpp"
+#include "mathFunctions/linearTable.hpp"
 
 namespace ablateTesting::mathFunctions {
 
@@ -10,7 +10,7 @@ static int ToXFunction(int dim, double time, const double x[], int nf, double* u
     return 0;
 }
 
-TEST(LinearInterpolatorTests, ShouldCreateAndParseStream) {
+TEST(LinearTableTests, ShouldCreateAndParseStream) {
     // arrange
     std::string csvFileString =
         "x, y, z\n"
@@ -25,16 +25,16 @@ TEST(LinearInterpolatorTests, ShouldCreateAndParseStream) {
 
     // assert
     auto expectedXValues = std::vector<double>{0.1, 0.2, 0.3};
-    ASSERT_EQ(interpolator.GetXValues(), expectedXValues);
+    ASSERT_EQ(interpolator.GetIndependentValues(), expectedXValues);
 
     auto expectedYValues0 = std::vector<double>{3, 4, 2};
-    ASSERT_EQ(interpolator.GetYValues()[0], expectedYValues0);
+    ASSERT_EQ(interpolator.GetDependentValues()[0], expectedYValues0);
 
     auto expectedYValues1 = std::vector<double>{2.2, 2.2, 1.1};
-    ASSERT_EQ(interpolator.GetYValues()[1], expectedYValues1);
+    ASSERT_EQ(interpolator.GetDependentValues()[1], expectedYValues1);
 }
 
-TEST(LinearInterpolatorTests, ShouldThrowErrorForMissingXColumn) {
+TEST(LinearTableTests, ShouldThrowErrorForMissingXColumn) {
     // arrange
     std::string csvFileString =
         "xx, y, z\n"
@@ -64,7 +64,7 @@ TEST(LinearInterpolatorTests, ShouldThrowErrorForMissingYColumn) {
     ASSERT_THROW(ablate::mathFunctions::LinearTable(csvFileStream, "x", {"z", "y"}, ablate::mathFunctions::Create(ToXFunction)), std::invalid_argument);
 }
 
-struct LinearInterpolatorTestParameters {
+struct LinearTableTestParameters {
     std::vector<std::string> yColumns;
     std::vector<PetscReal> xyz;
     PetscReal time;
@@ -72,7 +72,7 @@ struct LinearInterpolatorTestParameters {
     std::vector<double> expectedValues;
 };
 
-class LinearInterpolatorTestFixture : public ::testing::TestWithParam<LinearInterpolatorTestParameters> {
+class LinearTableTestFixture : public ::testing::TestWithParam<LinearTableTestParameters> {
    public:
     const std::string csvFileString =
         "x, y, z\n"
@@ -85,7 +85,7 @@ class LinearInterpolatorTestFixture : public ::testing::TestWithParam<LinearInte
         ".7, 1.1, 2.\n";
 };
 
-TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXYZTSignature) {
+TEST_P(LinearTableTestFixture, ShouldInterpolateValueUsingXYZTSignature) {
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
@@ -103,7 +103,7 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXYZTSignature) 
     ASSERT_DOUBLE_EQ(GetParam().expectedValues[0], value);
 }
 
-TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXyzNdimsSignature) {
+TEST_P(LinearTableTestFixture, ShouldInterpolateValueUsingXyzNdimsSignature) {
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
@@ -116,7 +116,7 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXyzNdimsSignatu
     ASSERT_DOUBLE_EQ(GetParam().expectedValues[0], value);
 }
 
-TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXYZTVectorSignature) {
+TEST_P(LinearTableTestFixture, ShouldInterpolateValueUsingXYZTVectorSignature) {
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
@@ -137,7 +137,7 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXYZTVectorSigna
     }
 }
 
-TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXyzNdimsTVectorSignature) {
+TEST_P(LinearTableTestFixture, ShouldInterpolateValueUsingXyzNdimsTVectorSignature) {
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
@@ -153,7 +153,7 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXyzNdimsTVector
     }
 }
 
-TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingPetscFunction) {
+TEST_P(LinearTableTestFixture, ShouldInterpolateValueUsingPetscFunction) {
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
@@ -172,9 +172,9 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingPetscFunction) 
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, LinearInterpolatorTestFixture,
+INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, LinearTableTestFixture,
                          testing::Values(
-                             (LinearInterpolatorTestParameters){
+                             (LinearTableTestParameters){
                                  .yColumns = {"y"},
                                  .xyz = {.3, NAN, NAN},
                                  .time = NAN,
@@ -182,41 +182,41 @@ INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, LinearInterpolatorTestFixture,
                                  .expectedValues = {1.1},
 
                              },
-                             (LinearInterpolatorTestParameters){
+                             (LinearTableTestParameters){
                                  .yColumns = {"z"},
                                  .xyz = {NAN, NAN, NAN},
                                  .time = .5,
                                  .xCoordFunction = ablate::mathFunctions::Create("t"),
                                  .expectedValues = {2.4},
                              },
-                             (LinearInterpolatorTestParameters){
+                             (LinearTableTestParameters){
                                  .yColumns = {"y"},
                                  .xyz = {NAN, NAN, NAN},
                                  .time = -10,
                                  .xCoordFunction = ablate::mathFunctions::Create("t"),
                                  .expectedValues = {2.2},
                              },
-                             (LinearInterpolatorTestParameters){
+                             (LinearTableTestParameters){
                                  .yColumns = {"z"},
                                  .xyz = {NAN},
                                  .time = 2.0,
                                  .xCoordFunction = ablate::mathFunctions::Create("t"),
                                  .expectedValues = {2.0},
                              },
-                             (LinearInterpolatorTestParameters){
+                             (LinearTableTestParameters){
                                  .yColumns = {"z"},
                                  .xyz = {.1, .2, .05},
                                  .time = 0.0,
                                  .xCoordFunction = ablate::mathFunctions::Create("x + y + z"),
                                  .expectedValues = {2.1},
                              },
-                             (LinearInterpolatorTestParameters){
+                             (LinearTableTestParameters){
                                  .yColumns = {"y", "z"},
                                  .xyz = {.1, .2, .05},
                                  .time = 0.0,
                                  .xCoordFunction = ablate::mathFunctions::Create("x + y + z + 0.21"),
                                  .expectedValues = {0.7, 2.32},
                              }),
-                         [](const testing::TestParamInfo<LinearInterpolatorTestParameters>& info) { return std::to_string(info.index); });
+                         [](const testing::TestParamInfo<LinearTableTestParameters>& info) { return std::to_string(info.index); });
 
 }  // namespace ablateTesting::mathFunctions
