@@ -1,7 +1,7 @@
 #include "speciesDiffusion.hpp"
 #include "eulerAdvection.hpp"
 
-ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos) {
+ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn): eos(eosIn) {
     PetscNew(&speciesDiffusionData);
     speciesDiffusionData->diff = parameters->Get<PetscReal>("D", 0.0);
     speciesDiffusionData->numberSpecies = eos->GetSpecies().size();
