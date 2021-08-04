@@ -3,7 +3,7 @@
 #include <iostream>
 #include <string>
 
-ablate::mathFunctions::LinearInterpolator::LinearInterpolator(std::filesystem::path inputFile, std::string xAxisColumn, std::vector<std::string> yColumns,
+ablate::mathFunctions::LinearTable::LinearTable(std::filesystem::path inputFile, std::string xAxisColumn, std::vector<std::string> yColumns,
                                                               std::shared_ptr<MathFunction> locationToXCoordFunction)
     : xColumn(xAxisColumn), yColumns(yColumns), locationToXCoordFunction(locationToXCoordFunction) {
     // open the file
@@ -13,7 +13,7 @@ ablate::mathFunctions::LinearInterpolator::LinearInterpolator(std::filesystem::p
     inputFileStream.close();
 }
 
-ablate::mathFunctions::LinearInterpolator::LinearInterpolator(std::istream& inputStream, std::string xAxisColumn, std::vector<std::string> yColumns,
+ablate::mathFunctions::LinearTable::LinearTable(std::istream& inputStream, std::string xAxisColumn, std::vector<std::string> yColumns,
                                                               std::shared_ptr<MathFunction> locationToXCoordFunction)
     : xColumn(xAxisColumn), yColumns(yColumns), locationToXCoordFunction(locationToXCoordFunction) {
     ParseInputData(inputStream);
@@ -25,7 +25,7 @@ static inline void trim(std::string& s) {
     s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
 }
 
-void ablate::mathFunctions::LinearInterpolator::ParseInputData(std::istream& inputStream) {
+void ablate::mathFunctions::LinearTable::ParseInputData(std::istream& inputStream) {
     // determine the headers from the first row
     std::vector<std::string> headers;
     std::string line;
@@ -77,7 +77,7 @@ void ablate::mathFunctions::LinearInterpolator::ParseInputData(std::istream& inp
         }
     }
 }
-void ablate::mathFunctions::LinearInterpolator::Interpolate(double x, size_t numInterpolations, double* result) const {
+void ablate::mathFunctions::LinearTable::Interpolate(double x, size_t numInterpolations, double* result) const {
     // Determine the upper index
     std::size_t upIndex = 0;
     for (upIndex = 1; upIndex < xValues.size() - 1; upIndex++) {
@@ -104,31 +104,31 @@ void ablate::mathFunctions::LinearInterpolator::Interpolate(double x, size_t num
         result[s] = yValues[s][upIndex - 1] + (x_x0 / deltaX) * (yValues[s][upIndex] - yValues[s][upIndex - 1]);
     }
 }
-double ablate::mathFunctions::LinearInterpolator::Eval(const double& x, const double& y, const double& z, const double& t) const {
+double ablate::mathFunctions::LinearTable::Eval(const double& x, const double& y, const double& z, const double& t) const {
     double tableX = locationToXCoordFunction->Eval(x, y, z, t);
     double result;
     Interpolate(tableX, 1, &result);
     return result;
 }
-double ablate::mathFunctions::LinearInterpolator::Eval(const double* xyz, const int& ndims, const double& t) const {
+double ablate::mathFunctions::LinearTable::Eval(const double* xyz, const int& ndims, const double& t) const {
     double tableX = locationToXCoordFunction->Eval(xyz, ndims, t);
     double result;
     Interpolate(tableX, 1, &result);
     return result;
 }
-void ablate::mathFunctions::LinearInterpolator::Eval(const double& x, const double& y, const double& z, const double& t, std::vector<double>& result) const {
+void ablate::mathFunctions::LinearTable::Eval(const double& x, const double& y, const double& z, const double& t, std::vector<double>& result) const {
     double tableX = locationToXCoordFunction->Eval(x, y, z, t);
     Interpolate(tableX, result.size() < yValues.size() ? result.size() : yValues.size(), &result[0]);
 }
-void ablate::mathFunctions::LinearInterpolator::Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const {
+void ablate::mathFunctions::LinearTable::Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const {
     double tableX = locationToXCoordFunction->Eval(xyz, ndims, t);
     Interpolate(tableX, result.size() < yValues.size() ? result.size() : yValues.size(), &result[0]);
 }
-PetscErrorCode ablate::mathFunctions::LinearInterpolator::LinearInterpolatorPetscFunction(PetscInt dim, PetscReal time, const PetscReal* x, PetscInt nf, PetscScalar* u, void* ctx) {
+PetscErrorCode ablate::mathFunctions::LinearTable::LinearInterpolatorPetscFunction(PetscInt dim, PetscReal time, const PetscReal* x, PetscInt nf, PetscScalar* u, void* ctx) {
     // wrap in try, so we return petsc error code instead of c++ exception
     PetscFunctionBeginUser;
     try {
-        auto table = (LinearInterpolator*)ctx;
+        auto table = (LinearTable*)ctx;
 
         double tableX = table->locationToXCoordFunction->Eval(x, dim, time);
         table->Interpolate(tableX, nf < (PetscInt)table->yValues.size() ? nf : table->yValues.size(), u);

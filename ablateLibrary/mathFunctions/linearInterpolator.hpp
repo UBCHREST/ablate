@@ -14,7 +14,7 @@ namespace ablate::mathFunctions {
  * 1,2,3
  * 2,2,1
  */
-class LinearInterpolator : public MathFunction {
+class LinearTable : public MathFunction {
    private:
     std::vector<double> xValues;
     std::vector<std::vector<double>> yValues;
@@ -30,8 +30,8 @@ class LinearInterpolator : public MathFunction {
     static PetscErrorCode LinearInterpolatorPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
    public:
-    LinearInterpolator(std::filesystem::path inputFile, std::string xColumn, std::vector<std::string> yColumns, std::shared_ptr<MathFunction> locationToXCoord);
-    LinearInterpolator(std::istream& inputFile, std::string xColumn, std::vector<std::string> yColumns, std::shared_ptr<MathFunction> locationToXCoord);
+    LinearTable(std::filesystem::path inputFile, std::string xColumn, std::vector<std::string> yColumns, std::shared_ptr<MathFunction> locationToXCoord);
+    LinearTable(std::istream& inputFile, std::string xColumn, std::vector<std::string> yColumns, std::shared_ptr<MathFunction> locationToXCoord);
 
     double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 

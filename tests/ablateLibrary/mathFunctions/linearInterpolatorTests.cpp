@@ -21,7 +21,7 @@ TEST(LinearInterpolatorTests, ShouldCreateAndParseStream) {
     std::istringstream csvFileStream(csvFileString);
 
     // act
-    ablate::mathFunctions::LinearInterpolator interpolator(csvFileStream, "x", {"z", "y"}, ablate::mathFunctions::Create(ToXFunction));
+    ablate::mathFunctions::LinearTable interpolator(csvFileStream, "x", {"z", "y"}, ablate::mathFunctions::Create(ToXFunction));
 
     // assert
     auto expectedXValues = std::vector<double>{0.1, 0.2, 0.3};
@@ -46,7 +46,7 @@ TEST(LinearInterpolatorTests, ShouldThrowErrorForMissingXColumn) {
 
     // act
     // assert
-    ASSERT_THROW(ablate::mathFunctions::LinearInterpolator(csvFileStream, "x", {"z", "y"}, ablate::mathFunctions::Create(ToXFunction)), std::invalid_argument);
+    ASSERT_THROW(ablate::mathFunctions::LinearTable(csvFileStream, "x", {"z", "y"}, ablate::mathFunctions::Create(ToXFunction)), std::invalid_argument);
 }
 
 TEST(LinearInterpolatorTests, ShouldThrowErrorForMissingYColumn) {
@@ -61,7 +61,7 @@ TEST(LinearInterpolatorTests, ShouldThrowErrorForMissingYColumn) {
 
     // act
     // assert
-    ASSERT_THROW(ablate::mathFunctions::LinearInterpolator(csvFileStream, "x", {"z", "y"}, ablate::mathFunctions::Create(ToXFunction)), std::invalid_argument);
+    ASSERT_THROW(ablate::mathFunctions::LinearTable(csvFileStream, "x", {"z", "y"}, ablate::mathFunctions::Create(ToXFunction)), std::invalid_argument);
 }
 
 struct LinearInterpolatorTestParameters {
@@ -89,7 +89,7 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXYZTSignature) 
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
-    ablate::mathFunctions::LinearInterpolator linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
+    ablate::mathFunctions::LinearTable linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
 
     // get the needed values
     double x = GetParam().xyz[0];
@@ -107,7 +107,7 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXyzNdimsSignatu
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
-    ablate::mathFunctions::LinearInterpolator linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
+    ablate::mathFunctions::LinearTable linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
 
     // act
     auto value = linearInterpolator.Eval(&GetParam().xyz[0], GetParam().xyz.size(), GetParam().time);
@@ -120,7 +120,7 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXYZTVectorSigna
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
-    ablate::mathFunctions::LinearInterpolator linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
+    ablate::mathFunctions::LinearTable linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
     std::vector<double> result(GetParam().expectedValues.size());
 
     // get the needed values
@@ -141,7 +141,7 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingXyzNdimsTVector
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
-    ablate::mathFunctions::LinearInterpolator linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
+    ablate::mathFunctions::LinearTable linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
     std::vector<double> result(GetParam().expectedValues.size());
 
     // act
@@ -157,7 +157,7 @@ TEST_P(LinearInterpolatorTestFixture, ShouldInterpolateValueUsingPetscFunction) 
     // arrange
     std::istringstream csvFileStream(csvFileString);
 
-    ablate::mathFunctions::LinearInterpolator linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
+    ablate::mathFunctions::LinearTable linearInterpolator(csvFileStream, "x", GetParam().yColumns, GetParam().xCoordFunction);
     std::vector<double> result(GetParam().expectedValues.size());
 
     auto petscFunction = linearInterpolator.GetPetscFunction();
