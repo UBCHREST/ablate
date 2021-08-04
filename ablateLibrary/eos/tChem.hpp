@@ -14,6 +14,9 @@ namespace ablate::eos {
 
 class TChem : public EOS {
    private:
+    // this is bad practice but only one instance of of the TCHEM library can be inited at at once, so keep track of the number of classes using the library
+    inline static int libCount =0;
+
     // hold an error checker for the tchem outside library
     const utilities::IntErrorChecker errorChecker;
 
