@@ -1,4 +1,5 @@
 #include "massFractions.hpp"
+#include <algorithm>
 #include <mathFunctions/functionPointer.hpp>
 
 ablate::flow::fieldFunctions::MassFractions::MassFractions(std::shared_ptr<ablate::eos::EOS> eos, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> massFractionFieldFunctionsIn)
