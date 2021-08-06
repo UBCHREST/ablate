@@ -2,11 +2,11 @@
 
 ablate::eos::transport::Constant::Constant(double k, double mu, double diff): active(k || mu || diff), k(k), mu(mu), diff(diff){}
 
-void ablate::eos::transport::Constant::OneArgumentFunction(PetscReal, PetscReal &result, void *ctx) {
+void ablate::eos::transport::Constant::OneArgumentFunction(PetscReal, const PetscReal*, PetscReal &result, void *ctx) {
     result = *(double*)ctx;
 }
 
-void ablate::eos::transport::Constant::TwoArgumentFunction(PetscReal, PetscReal, PetscReal &result, void *ctx) {
+void ablate::eos::transport::Constant::TwoArgumentFunction(PetscReal, PetscReal, const PetscReal*, PetscReal &result, void *ctx) {
     result = *(double*)ctx;
 }
 

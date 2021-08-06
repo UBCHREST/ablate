@@ -98,8 +98,11 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionEnergy
     }
 
     // compute diff
-    PetscReal diff;
-    flowParameters->diffFunction(temperature,density, diff, flowParameters->diffContext );
+    PetscReal diffLeft = 0.0;
+    flowParameters->diffFunction(temperatureLeft,fieldL[uOff[euler] + EulerAdvection::RHO], auxL + aOff[yi], diffLeft, flowParameters->diffContext );
+    PetscReal diffRight = 0.0;
+    flowParameters->diffFunction(temperatureRight,fieldR[uOff[euler] + EulerAdvection::RHO], auxR + aOff[yi], diffRight, flowParameters->diffContext );
+    PetscReal diff = 0.5*(diffLeft + diffRight);
 
     for (PetscInt sp = 0; sp < flowParameters->numberSpecies; ++sp) {
         for (PetscInt d = 0; d < dim; ++d) {
@@ -147,12 +150,12 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionSpecie
                                                       flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
 
-    // compute the enthalpy for each species
-    PetscReal temperature = 0.5 * (temperatureLeft + temperatureRight);
-
     // compute diff
-    PetscReal diff;
-    flowParameters->diffFunction(temperature,density, diff, flowParameters->diffContext );
+    PetscReal diffLeft = 0.0;
+    flowParameters->diffFunction(temperatureLeft,fieldL[uOff[euler] + EulerAdvection::RHO], auxL + aOff[yi], diffLeft, flowParameters->diffContext );
+    PetscReal diffRight = 0.0;
+    flowParameters->diffFunction(temperatureRight,fieldR[uOff[euler] + EulerAdvection::RHO], auxR + aOff[yi], diffRight, flowParameters->diffContext );
+    PetscReal diff = 0.5*(diffLeft + diffRight);
 
     // species equations
     for (PetscInt sp = 0; sp < flowParameters->numberSpecies; ++sp) {

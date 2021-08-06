@@ -3,3 +3,5 @@ target_sources(libraryTests
         perfectGasTests.cpp
         tChemTests.cpp
         )
+
+add_subdirectory(transport)

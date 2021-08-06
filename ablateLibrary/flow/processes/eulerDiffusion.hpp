@@ -15,6 +15,9 @@ class EulerDiffusion : public FlowProcess {
         eos::transport::ComputeViscosityFunction muFunction;
         void* muContext;
 
+        /* store a scratch variable to hold yi*/
+        std::vector<PetscReal> yiScratch;
+
         /* number of gas species */
         PetscInt numberSpecies;
 
@@ -50,7 +53,7 @@ class EulerDiffusion : public FlowProcess {
     std::shared_ptr<eos::transport::TransportModel> transportModel;
     /**
      * This Computes the diffusion flux for euler rhoE, rhoVel
-     * u = {"euler"}
+     * u = {"euler", "densityYi"}
      * a = {"temperature", "velocity"}
      * ctx = FlowData_CompressibleFlow
      * @return
