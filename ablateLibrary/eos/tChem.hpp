@@ -15,7 +15,7 @@ namespace ablate::eos {
 class TChem : public EOS {
    private:
     // this is bad practice but only one instance of of the TCHEM library can be inited at at once, so keep track of the number of classes using the library
-    inline static int libCount =0;
+    inline static int libCount = 0;
 
     // hold an error checker for the tchem outside library
     const utilities::IntErrorChecker errorChecker;
@@ -90,10 +90,10 @@ class TChem : public EOS {
     void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return this; }
     ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return TChemComputeSensibleInternalEnergy; }
     void* GetComputeSensibleInternalEnergyContext() override { return this; }
-    ComputeSpecificHeatConstantPressureFunction GetComputeSpecificHeatConstantPressureFunction() override {return TChemComputeSpecificHeatConstantPressure;}
-    void* GetComputeSpecificHeatConstantPressureContext() override {return this;}
+    ComputeSpecificHeatConstantPressureFunction GetComputeSpecificHeatConstantPressureFunction() override { return TChemComputeSpecificHeatConstantPressure; }
+    void* GetComputeSpecificHeatConstantPressureContext() override { return this; }
 
-    static int ComputeEnthalpyOfFormation(int numSpec, double *tempYiWorkingArray, double &enthalpyOfFormation);
+    static int ComputeEnthalpyOfFormation(int numSpec, double* tempYiWorkingArray, double& enthalpyOfFormation);
 
     // Private static helper functions
     inline const static double TREF = 298.15;

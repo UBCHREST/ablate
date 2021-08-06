@@ -4,9 +4,9 @@
 #include <flow/processes/speciesDiffusion.hpp>
 #include <utilities/mpiError.hpp>
 
-ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::transport::TransportModel> transport,
-                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn, std::shared_ptr<parameters::Parameters> options,
-                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
+ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> parameters,
+                                                 std::shared_ptr<eos::transport::TransportModel> transport, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn,
+                                                 std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
     : FVFlow(name, mesh, parameters,
@@ -25,7 +25,7 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
                  // create assumed processes for compressible flow
                  std::make_shared<ablate::flow::processes::EulerAdvection>(parameters, eosIn, fluxCalculatorIn),
                  std::make_shared<ablate::flow::processes::EulerDiffusion>(eosIn, transport),
-                 std::make_shared<ablate::flow::processes::SpeciesDiffusion>(eosIn,transport),
+                 std::make_shared<ablate::flow::processes::SpeciesDiffusion>(eosIn, transport),
              },
              options, initialization, boundaryConditions, {}, exactSolutions) {}
 

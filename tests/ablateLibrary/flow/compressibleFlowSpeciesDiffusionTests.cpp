@@ -46,7 +46,7 @@ class CompressibleFlowSpeciesDiffusionTestFixture : public testingResources::Mpi
 
 ///////////////////////////////////////////////////////////////
 const static PetscReal speciesSensibleEnthalpy[3] = {1000.0, 2000.0, 3000.0};
-const static  std::vector<std::string> species = {"sp0", "sp1", "sp2"};
+const static std::vector<std::string> species = {"sp0", "sp1", "sp2"};
 static PetscErrorCode MockTemperatureFunction(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx) {
     *T = NAN;
     return 0;

@@ -297,8 +297,8 @@ TEST_P(ComputeSpecificHeatConstantPressureTestFixture, ShouldComputeCorrectEnerg
     ASSERT_NEAR(cp, params.expectedCp, 1E-3);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    PerfectGasEOSTests, ComputeSpecificHeatConstantPressureTestFixture,
-    testing::Values((ComputeSpecificHeatConstantPressureParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 8.0},
-                    (ComputeSpecificHeatConstantPressureParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 1004.5}),
-    [](const testing::TestParamInfo<ComputeSpecificHeatConstantPressureParameters>& info) { return std::to_string(info.index); });
+INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, ComputeSpecificHeatConstantPressureTestFixture,
+                         testing::Values((ComputeSpecificHeatConstantPressureParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 8.0},
+                                         (ComputeSpecificHeatConstantPressureParameters){
+                                             .options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 1004.5}),
+                         [](const testing::TestParamInfo<ComputeSpecificHeatConstantPressureParameters>& info) { return std::to_string(info.index); });

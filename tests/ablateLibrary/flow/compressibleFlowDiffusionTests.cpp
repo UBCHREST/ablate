@@ -7,6 +7,7 @@
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "eos/perfectGas.hpp"
+#include "eos/transport/constant.hpp"
 #include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
 #include "flow/fluxCalculator/offFlux.hpp"
@@ -14,7 +15,6 @@
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
-#include "eos/transport/constant.hpp"
 
 typedef struct {
     PetscInt dim;

@@ -17,7 +17,6 @@ class MassFractions : public ablate::mathFunctions::FieldFunction {
 
     static PetscErrorCode ComputeYiFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
-
    public:
     explicit MassFractions(std::shared_ptr<ablate::eos::EOS> eos, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> massFractionFunctions);
 };

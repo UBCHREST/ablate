@@ -1,15 +1,16 @@
 #include "speciesDiffusion.hpp"
 #include "eulerAdvection.hpp"
 
-ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<eos::EOS> eosIn,  std::shared_ptr<eos::transport::TransportModel> transportModelIn): eos(eosIn), transportModel(transportModelIn) {
+ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn)
+    : eos(eosIn), transportModel(transportModelIn) {
     PetscNew(&speciesDiffusionData);
 
-    if(transportModel) {
+    if (transportModel) {
         speciesDiffusionData->diffFunction = transportModel->GetComputeDiffusivityFunction();
         speciesDiffusionData->diffContext = transportModel->GetComputeDiffusivityContext();
-    }else{
-        speciesDiffusionData->diffFunction  = nullptr;
-        speciesDiffusionData->diffContext =nullptr;
+    } else {
+        speciesDiffusionData->diffFunction = nullptr;
+        speciesDiffusionData->diffContext = nullptr;
     }
 
     // set the eos functions
@@ -99,10 +100,10 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionEnergy
 
     // compute diff
     PetscReal diffLeft = 0.0;
-    flowParameters->diffFunction(temperatureLeft,fieldL[uOff[euler] + EulerAdvection::RHO], auxL + aOff[yi], diffLeft, flowParameters->diffContext );
+    flowParameters->diffFunction(temperatureLeft, fieldL[uOff[euler] + EulerAdvection::RHO], auxL + aOff[yi], diffLeft, flowParameters->diffContext);
     PetscReal diffRight = 0.0;
-    flowParameters->diffFunction(temperatureRight,fieldR[uOff[euler] + EulerAdvection::RHO], auxR + aOff[yi], diffRight, flowParameters->diffContext );
-    PetscReal diff = 0.5*(diffLeft + diffRight);
+    flowParameters->diffFunction(temperatureRight, fieldR[uOff[euler] + EulerAdvection::RHO], auxR + aOff[yi], diffRight, flowParameters->diffContext);
+    PetscReal diff = 0.5 * (diffLeft + diffRight);
 
     for (PetscInt sp = 0; sp < flowParameters->numberSpecies; ++sp) {
         for (PetscInt d = 0; d < dim; ++d) {
@@ -152,10 +153,10 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionSpecie
 
     // compute diff
     PetscReal diffLeft = 0.0;
-    flowParameters->diffFunction(temperatureLeft,fieldL[uOff[euler] + EulerAdvection::RHO], auxL + aOff[yi], diffLeft, flowParameters->diffContext );
+    flowParameters->diffFunction(temperatureLeft, fieldL[uOff[euler] + EulerAdvection::RHO], auxL + aOff[yi], diffLeft, flowParameters->diffContext);
     PetscReal diffRight = 0.0;
-    flowParameters->diffFunction(temperatureRight,fieldR[uOff[euler] + EulerAdvection::RHO], auxR + aOff[yi], diffRight, flowParameters->diffContext );
-    PetscReal diff = 0.5*(diffLeft + diffRight);
+    flowParameters->diffFunction(temperatureRight, fieldR[uOff[euler] + EulerAdvection::RHO], auxR + aOff[yi], diffRight, flowParameters->diffContext);
+    PetscReal diff = 0.5 * (diffLeft + diffRight);
 
     // species equations
     for (PetscInt sp = 0; sp < flowParameters->numberSpecies; ++sp) {

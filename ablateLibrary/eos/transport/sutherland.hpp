@@ -13,10 +13,10 @@ class Sutherland : public TransportModel {
 
     // constant values
     inline const static PetscReal pr = 0.707;
-    inline const static PetscReal muo=1.716e-5;
-    inline const static PetscReal to=273.e+0;
-    inline const static PetscReal so=111.e+0;
-    inline const static PetscReal sc=0.707;
+    inline const static PetscReal muo = 1.716e-5;
+    inline const static PetscReal to = 273.e+0;
+    inline const static PetscReal so = 111.e+0;
+    inline const static PetscReal sc = 0.707;
 
     static void SutherlandComputeConductivityFunction(PetscReal temperature, PetscReal density, const PetscReal* yi, PetscReal& conductivity, void* ctx);
     static void SutherlandComputeViscosityFunction(PetscReal temperature, PetscReal density, const PetscReal* yi, PetscReal& viscosity, void* ctx);

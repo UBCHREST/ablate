@@ -83,7 +83,7 @@ PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeSensibleInternalEnergy(
 PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
-    (*specificHeat) = parameters->gamma* parameters->rGas / (parameters->gamma - 1.0);
+    (*specificHeat) = parameters->gamma * parameters->rGas / (parameters->gamma - 1.0);
     PetscFunctionReturn(0);
 }
 

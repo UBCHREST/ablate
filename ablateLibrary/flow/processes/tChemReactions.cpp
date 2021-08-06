@@ -15,8 +15,8 @@
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
 #endif
 
-//PETSC_EXTERN int TC_getSrcCV(double *scal,int Nvars,double *omega);
-//PETSC_EXTERN void TC_setDens(double density);
+// PETSC_EXTERN int TC_getSrcCV(double *scal,int Nvars,double *omega);
+// PETSC_EXTERN void TC_setDens(double density);
 
 ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn)
     : fieldDm(nullptr),
@@ -240,8 +240,8 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
     eos::ComputeTemperatureFunction temperatureFunction = eos->GetComputeTemperatureFunction();
     void* temperatureContext = eos->GetComputeTemperatureContext();
 
-//    eos::ComputeSensibleInternalEnergyFunction sensibleInternalEnergyFunction = eos->GetComputeSensibleInternalEnergyFunction();
-//    void* sensibleInternalEnergyContext = eos->GetComputeSensibleInternalEnergyContext();
+    //    eos::ComputeSensibleInternalEnergyFunction sensibleInternalEnergyFunction = eos->GetComputeSensibleInternalEnergyFunction();
+    //    void* sensibleInternalEnergyContext = eos->GetComputeSensibleInternalEnergyContext();
 
     // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
@@ -292,7 +292,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             PetscReal hof;
             err = eos::TChem::ComputeEnthalpyOfFormation(numberSpecies, pointArray, hof);
             TCCHKERRQ(err);
-            PetscReal enerTotal = hof + euler[ablate::flow::processes::EulerAdvection::RHOE]/euler[ablate::flow::processes::EulerAdvection::RHO];
+            PetscReal enerTotal = hof + euler[ablate::flow::processes::EulerAdvection::RHOE] / euler[ablate::flow::processes::EulerAdvection::RHO];
 
             ierr = VecRestoreArray(pointData, &pointArray);
             CHKERRQ(ierr);

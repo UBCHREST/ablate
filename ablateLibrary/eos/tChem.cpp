@@ -38,7 +38,7 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
     // initialize TChem (with tabulation off?).  TChem init reads/writes file it can only be done one at a time
     for (int r = 0; r < size; r++) {
         if (r == rank) {
-            if(libCount == 0) {
+            if (libCount == 0) {
                 TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
             }
             libCount++;
@@ -73,7 +73,7 @@ ablate::eos::TChem::~TChem() {
     libCount--;
 
     /* Free memory and reset variables to allow TC_initchem to be called again */
-    if(libCount == 0) {
+    if (libCount == 0) {
         TC_reset();
     }
 }
@@ -101,7 +101,6 @@ int ablate::eos::TChem::ComputeEnthalpyOfFormation(int numSpec, double *tempYiWo
     tempYiWorkingArray[0] = currentT;
     return err;
 }
-
 
 /**
  * the tempYiWorkingArray array is expected to be filled.

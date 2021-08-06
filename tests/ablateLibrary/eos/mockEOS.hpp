@@ -2,10 +2,10 @@
 #define ABLATELIBRARY_MOCKEOS_HPP
 
 #include <map>
+#include <ostream>
 #include <string>
 #include "eos/eos.hpp"
 #include "gmock/gmock.h"
-#include <ostream>
 
 namespace ablateTesting::eos {
 
@@ -13,7 +13,7 @@ class MockEOS : public ablate::eos::EOS {
    public:
     MockEOS() : ablate::eos::EOS("MockEOS") {}
 
-    MOCK_METHOD(void, View, (std::ostream& stream), (override, const));
+    MOCK_METHOD(void, View, (std::ostream & stream), (override, const));
 
     MOCK_METHOD(ablate::eos::DecodeStateFunction, GetDecodeStateFunction, (), (override));
     MOCK_METHOD(void*, GetDecodeStateContext, (), (override));

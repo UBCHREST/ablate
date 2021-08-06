@@ -1,8 +1,8 @@
 #include "linearTable.hpp"
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <algorithm>
 
 ablate::mathFunctions::LinearTable::LinearTable(std::filesystem::path inputFile, std::string xAxisColumn, std::vector<std::string> yColumns, std::shared_ptr<MathFunction> locationToXCoordFunction)
     : independentColumnName(xAxisColumn), dependentColumnsNames(yColumns), independentValueFunction(locationToXCoordFunction) {
@@ -143,5 +143,4 @@ REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::LinearTable
          "A table that is built from a spreadsheet that allows linear interpolation of variables based on monotonically increasing independent variables",
          ARG(std::filesystem::path, "file", "a file with csv data and header"), ARG(std::string, "independent", "the name of the independent column name as defined in the header"),
          ARG(std::vector<std::string>, "dependent", "the names of the dependent column in the order in which to apply them"),
-         ARG(ablate::mathFunctions::MathFunction, "mappingFunction", " the function that maps from the physical x,y,z, and t space to the table independent variable")
-);
+         ARG(ablate::mathFunctions::MathFunction, "mappingFunction", " the function that maps from the physical x,y,z, and t space to the table independent variable"));

@@ -11,22 +11,13 @@ void ablate::eos::transport::Sutherland::SutherlandComputeConductivityFunction(P
     // compute mu
     double mu = muo * PetscSqrtReal(temperature / to) * (temperature / to) * (to + so) / (temperature + so);
     conductivity = mu * cp / pr;
-    if(PetscIsInfOrNanReal(conductivity)){
-        std::cout << "bad " << std::endl;
-    }
 }
 void ablate::eos::transport::Sutherland::SutherlandComputeViscosityFunction(PetscReal temperature, PetscReal, const PetscReal *, PetscReal &viscosity, void *ctx) {
     viscosity = muo * PetscSqrtReal(temperature / to) * (temperature / to) * (to + so) / (temperature + so);
-    if(PetscIsInfOrNanReal(viscosity)){
-        std::cout << "bad " << std::endl;
-    }
 }
 void ablate::eos::transport::Sutherland::SutherlandComputeDiffusivityFunction(PetscReal temperature, PetscReal density, const PetscReal *yi, PetscReal &diffusivity, void *ctx) {
     double mu = muo * PetscSqrtReal(temperature / to) * (temperature / to) * (to + so) / (temperature + so);
     diffusivity = mu / density / sc;
-    if(PetscIsInfOrNanReal(diffusivity)){
-        std::cout << "bad " << std::endl;
-    }
 }
 
 #include "parser/registrar.hpp"
