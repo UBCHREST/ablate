@@ -3,4 +3,6 @@ target_sources(ablateLibrary
         transportModel.hpp
         constant.hpp
         constant.cpp
+        sutherland.hpp
+        sutherland.cpp
         )

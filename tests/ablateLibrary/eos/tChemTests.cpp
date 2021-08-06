@@ -158,14 +158,15 @@ INSTANTIATE_TEST_SUITE_P(
 struct TChemStateParameters {
     std::filesystem::path mechFile;
     std::filesystem::path thermoFile;
-    std::map<std::string, PetscReal> yiIn;
-    PetscReal densityIn;
-    PetscReal totalEnergyIn;
-    std::vector<PetscReal> massFluxIn;
+    std::map<std::string, PetscReal> yi;
+    PetscReal density;
+    PetscReal totalEnergy;
+    std::vector<PetscReal> massFlux;
     PetscReal temperature;
     PetscReal internalEnergy;
     PetscReal speedOfSound;
     PetscReal pressure;
+    PetscReal specificHeatCp;
 };
 
 class TChemStateTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemStateParameters> {};
@@ -183,17 +184,17 @@ TEST_P(TChemStateTestFixture, ShouldDecodeState) {
     PetscReal pressure;
 
     // get the mass fraction as an array
-    auto densityYi = GetDensityMassFraction(eos->GetSpecies(), params.yiIn, params.densityIn);
+    auto densityYi = GetDensityMassFraction(eos->GetSpecies(), params.yi, params.density);
 
     // convert the massFrac in to velocity
     std::vector<double> velocityIn;
-    for (const auto& rhoV : params.massFluxIn) {
-        velocityIn.push_back(rhoV / params.densityIn);
+    for (const auto& rhoV : params.massFlux) {
+        velocityIn.push_back(rhoV / params.density);
     }
 
     // act
-    PetscErrorCode ierr = eos->GetDecodeStateFunction()(
-        velocityIn.size(), params.densityIn, params.totalEnergyIn, &velocityIn[0], &densityYi[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
+    PetscErrorCode ierr =
+        eos->GetDecodeStateFunction()(velocityIn.size(), params.density, params.totalEnergy, &velocityIn[0], &densityYi[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
@@ -210,14 +211,14 @@ TEST_P(TChemStateTestFixture, ShouldComputeTemperature) {
     const auto& params = GetParam();
 
     // get the mass fraction as an array
-    auto densityYi = GetDensityMassFraction(eos->GetSpecies(), params.yiIn, params.densityIn);
+    auto densityYi = GetDensityMassFraction(eos->GetSpecies(), params.yi, params.density);
 
     // Prepare outputs
     PetscReal temperature;
 
     // act
     PetscErrorCode ierr =
-        eos->GetComputeTemperatureFunction()(params.massFluxIn.size(), params.densityIn, params.totalEnergyIn, &params.massFluxIn[0], &densityYi[0], &temperature, eos->GetComputeTemperatureContext());
+        eos->GetComputeTemperatureFunction()(params.massFlux.size(), params.density, params.totalEnergy, &params.massFlux[0], &densityYi[0], &temperature, eos->GetComputeTemperatureContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
@@ -232,7 +233,7 @@ TEST_P(TChemStateTestFixture, ShouldComputeDensityFromTemperatureAndPressure) {
     const auto& params = GetParam();
 
     // get the mass fraction as an array
-    auto yi = GetMassFraction(eos->GetSpecies(), params.yiIn);
+    auto yi = GetMassFraction(eos->GetSpecies(), params.yi);
 
     // Prepare outputs
     PetscReal density;
@@ -243,7 +244,7 @@ TEST_P(TChemStateTestFixture, ShouldComputeDensityFromTemperatureAndPressure) {
 
     // assert
     ASSERT_EQ(ierr, 0);
-    ASSERT_NEAR(density, params.densityIn, 1E-2);
+    ASSERT_NEAR(density, params.density, 1E-2);
 }
 
 TEST_P(TChemStateTestFixture, ShouldComputeSensibleInternalEnergy) {
@@ -254,13 +255,13 @@ TEST_P(TChemStateTestFixture, ShouldComputeSensibleInternalEnergy) {
     const auto& params = GetParam();
 
     // get the mass fraction as an array
-    auto yi = GetMassFraction(eos->GetSpecies(), params.yiIn);
+    auto yi = GetMassFraction(eos->GetSpecies(), params.yi);
 
     // Prepare outputs
     PetscReal sensibleInternalEnergy;
 
     // act
-    PetscErrorCode ierr = eos->GetComputeSensibleInternalEnergyFunction()(params.temperature, params.densityIn, &yi[0], &sensibleInternalEnergy, eos->GetComputeSensibleInternalEnergyContext());
+    PetscErrorCode ierr = eos->GetComputeSensibleInternalEnergyFunction()(params.temperature, params.density, &yi[0], &sensibleInternalEnergy, eos->GetComputeSensibleInternalEnergyContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
@@ -268,55 +269,81 @@ TEST_P(TChemStateTestFixture, ShouldComputeSensibleInternalEnergy) {
     ASSERT_LT(error, 1E-3);
 }
 
+TEST_P(TChemStateTestFixture, ShouldComputeSpecificHeatConstantPressure) {
+    // arrange
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // get the mass fraction as an array
+    auto yi = GetMassFraction(eos->GetSpecies(), params.yi);
+
+    // Prepare outputs
+    PetscReal cp;
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeSpecificHeatConstantPressureFunction()(params.temperature, params.density, &yi[0], &cp, eos->GetComputeSpecificHeatConstantPressureContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(params.specificHeatCp, cp, 1.0);
+}
+
 INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                          testing::Values((TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
-                                                                .yiIn = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-                                                                .densityIn = 1.2,
-                                                                .totalEnergyIn = 1.E+05,
-                                                                .massFluxIn = {1.2 * 10, -1.2 * 20, 1.2 * 30},
+                                                                .yi = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
+                                                                .density = 1.2,
+                                                                .totalEnergy = 1.E+05,
+                                                                .massFlux = {1.2 * 10, -1.2 * 20, 1.2 * 30},
                                                                 .temperature = 499.25,
                                                                 .internalEnergy = 99300.0,
                                                                 .speedOfSound = 464.33,
-                                                                .pressure = 197710.5},
+                                                                .pressure = 197710.5,
+                                                                .specificHeatCp = 1399.301411},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
-                                                                .yiIn = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
-                                                                .densityIn = 0.8,
-                                                                .totalEnergyIn = 3.2E5,
-                                                                .massFluxIn = {0, 0, 0},
+                                                                .yi = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
+                                                                .density = 0.8,
+                                                                .totalEnergy = 3.2E5,
+                                                                .massFlux = {0, 0, 0},
                                                                 .temperature = 762.664,
                                                                 .internalEnergy = 320000.0,
                                                                 .speedOfSound = 560.83,
-                                                                .pressure = 189973.54},
+                                                                .pressure = 189973.54,
+                                                                .specificHeatCp = 1270.738292},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
-                                                                .yiIn = {{"N2", 1.0}},
-                                                                .densityIn = 3.3,
-                                                                .totalEnergyIn = 1000,
-                                                                .massFluxIn = {0.0, 3.3 * 2, 3.3 * 4},
+                                                                .yi = {{"N2", 1.0}},
+                                                                .density = 3.3,
+                                                                .totalEnergy = 1000,
+                                                                .massFlux = {0.0, 3.3 * 2, 3.3 * 4},
                                                                 .temperature = 418.079,
                                                                 .internalEnergy = 990.0,
                                                                 .speedOfSound = 416.04,
-                                                                .pressure = 409488.10},
+                                                                .pressure = 409488.10,
+                                                                .specificHeatCp = 1048.36597},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
-                                                                .yiIn = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
-                                                                .densityIn = 0.01,
-                                                                .totalEnergyIn = 1E5,
-                                                                .massFluxIn = {.01 * -1, .01 * -2, .01 * -3},
+                                                                .yi = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
+                                                                .density = 0.01,
+                                                                .totalEnergy = 1E5,
+                                                                .massFlux = {.01 * -1, .01 * -2, .01 * -3},
                                                                 .temperature = 437.46,
                                                                 .internalEnergy = 99993.0,
                                                                 .speedOfSound = 1013.73,
-                                                                .pressure = 7411.11},
+                                                                .pressure = 7411.11,
+                                                                .specificHeatCp = 6075.990042},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
-                                                                .yiIn = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-                                                                .densityIn = 999.9,
-                                                                .totalEnergyIn = 1E4,
-                                                                .massFluxIn = {999.9 * -10, 999.9 * -20, 999.9 * -300},
+                                                                .yi = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
+                                                                .density = 999.9,
+                                                                .totalEnergy = 1E4,
+                                                                .massFlux = {999.9 * -10, 999.9 * -20, 999.9 * -300},
                                                                 .temperature = 394.59,
                                                                 .internalEnergy = -35250.0,
                                                                 .speedOfSound = 623.9,
-                                                                .pressure = 281125963.5}),
+                                                                .pressure = 281125963.5,
+                                                                .specificHeatCp = 2564.816937}),
                          [](const testing::TestParamInfo<TChemStateParameters>& info) { return std::to_string(info.index); });

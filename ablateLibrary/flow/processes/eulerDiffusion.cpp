@@ -90,7 +90,7 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowEulerDif
     const int T = 0;
     const int VEL = 1;
     const int EULER = 0;
-    const int DENSITY_YI = 2;
+    const int DENSITY_YI = 1;
 
     PetscErrorCode ierr;
     EulerDiffusionData flowParameters = (EulerDiffusionData)ctx;
@@ -98,23 +98,23 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowEulerDif
     // Compute mu and k
     PetscReal *yiScratch = &flowParameters->yiScratch[0];
     for (std::size_t s = 0; s < flowParameters->yiScratch.size(); s++) {
-        yiScratch[s] = fieldL[uOff[DENSITY_YI] + s] / fieldL[uOff[EULER]];
+        yiScratch[s] = fieldL[uOff[DENSITY_YI] + s] / fieldL[uOff[EULER] + EulerAdvection::RHO];
     }
 
     PetscReal muLeft = 0.0;
-    flowParameters->muFunction(auxL[aOff[T]], yiScratch, muLeft, flowParameters->muContext);
+    flowParameters->muFunction(auxL[aOff[T]], fieldL[uOff[EULER] + EulerAdvection::RHO], yiScratch, muLeft, flowParameters->muContext);
     PetscReal kLeft = 0.0;
-    flowParameters->kFunction(auxL[aOff[T]], yiScratch, kLeft, flowParameters->kContext);
+    flowParameters->kFunction(auxL[aOff[T]], fieldL[uOff[EULER] + EulerAdvection::RHO], yiScratch, kLeft, flowParameters->kContext);
 
     // Compute mu and k
     for (std::size_t s = 0; s < flowParameters->yiScratch.size(); s++) {
-        yiScratch[s] = fieldR[uOff[DENSITY_YI] + s] / fieldR[uOff[EULER]];
+        yiScratch[s] = fieldR[uOff[DENSITY_YI] + s] / fieldR[uOff[EULER] + EulerAdvection::RHO];
     }
 
     PetscReal muRight = 0.0;
-    flowParameters->muFunction(auxR[aOff[T]], yiScratch, muRight, flowParameters->muContext);
+    flowParameters->muFunction(auxR[aOff[T]], fieldR[uOff[EULER] + EulerAdvection::RHO], yiScratch, muRight, flowParameters->muContext);
     PetscReal kRight = 0.0;
-    flowParameters->kFunction(auxR[aOff[T]], yiScratch, kRight, flowParameters->kContext);
+    flowParameters->kFunction(auxR[aOff[T]], fieldR[uOff[EULER] + EulerAdvection::RHO], yiScratch, kRight, flowParameters->kContext);
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
@@ -167,7 +167,7 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowComputeS
 
     // March over each velocity component, u, v, w
     for (PetscInt c = 0; c < dim; ++c) {
-        // March over each physical coordinate coordinate
+        // March over each physical coordinates
         for (PetscInt d = 0; d < dim; ++d) {
             if (d == c) {
                 // for the xx, yy, zz, components

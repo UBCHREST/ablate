@@ -1,7 +1,7 @@
 #include "eos/transport/constant.hpp"
 #include "gtest/gtest.h"
 
-TEST(ConstantTransportTests, ShouldRecordContantValues) {
+TEST(ConstantTransportTests, ShouldRecordConstantValues) {
     // ARRANGE
     const PetscReal expectedK = .234;
     const PetscReal expectedMu = 10.213;
@@ -14,8 +14,8 @@ TEST(ConstantTransportTests, ShouldRecordContantValues) {
     PetscReal computedMu = NAN;
     PetscReal computedDiff = NAN;
 
-    constantModel->GetComputeConductivityFunction()(NAN, NULL, computedK, constantModel->GetComputeConductivityContext());
-    constantModel->GetComputeViscosityFunction()(NAN, NULL, computedMu, constantModel->GetComputeViscosityContext());
+    constantModel->GetComputeConductivityFunction()(NAN, NAN, NULL, computedK, constantModel->GetComputeConductivityContext());
+    constantModel->GetComputeViscosityFunction()(NAN, NAN, NULL, computedMu, constantModel->GetComputeViscosityContext());
     constantModel->GetComputeDiffusivityFunction()(NAN, NAN, NULL, computedDiff, constantModel->GetComputeDiffusivityContext());
 
     // ASSERT

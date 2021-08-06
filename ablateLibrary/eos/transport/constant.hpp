@@ -10,19 +10,18 @@ class Constant : public TransportModel {
     const PetscReal mu;
     const PetscReal diff;
 
-    static void OneArgumentFunction(PetscReal, const PetscReal* yi, PetscReal&, void* ctx);
-    static void TwoArgumentFunction(PetscReal, PetscReal, const PetscReal* yi, PetscReal&, void* ctx);
+    static void ConstantFunction(PetscReal, PetscReal, const PetscReal* yi, PetscReal&, void* ctx);
 
    public:
     explicit Constant(double k = 0, double mu = 0, double diff = 0);
     explicit Constant(const Constant&) = delete;
     void operator=(const Constant&) = delete;
 
-    ComputeConductivityFunction GetComputeConductivityFunction() override { return active ? OneArgumentFunction : nullptr; }
+    ComputeConductivityFunction GetComputeConductivityFunction() override { return active ? ConstantFunction : nullptr; }
     void* GetComputeConductivityContext() override { return (void*)&k; }
-    ComputeViscosityFunction GetComputeViscosityFunction() override { return active ? OneArgumentFunction : nullptr; }
+    ComputeViscosityFunction GetComputeViscosityFunction() override { return active ? ConstantFunction : nullptr; }
     void* GetComputeViscosityContext() override { return (void*)&mu; }
-    ComputeDiffusivityFunction GetComputeDiffusivityFunction() override { return active ? TwoArgumentFunction : nullptr; }
+    ComputeDiffusivityFunction GetComputeDiffusivityFunction() override { return active ? ConstantFunction : nullptr; }
     void* GetComputeDiffusivityContext() override { return (void*)&diff; }
 };
 }  // namespace ablate::eos::transport

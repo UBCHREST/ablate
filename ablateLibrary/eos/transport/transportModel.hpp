@@ -3,8 +3,8 @@
 #include <petscsystypes.h>
 namespace ablate::eos::transport {
 
-using ComputeConductivityFunction = void (*)(PetscReal temperature, const PetscReal* yi, PetscReal& conductivity,void* ctx);
-using ComputeViscosityFunction = void (*)(PetscReal temperature, const PetscReal* yi,PetscReal& viscosity, void* ctx);
+using ComputeConductivityFunction = void (*)(PetscReal temperature, PetscReal density, const PetscReal* yi, PetscReal& conductivity,void* ctx);
+using ComputeViscosityFunction = void (*)(PetscReal temperature, PetscReal density, const PetscReal* yi,PetscReal& viscosity, void* ctx);
 using ComputeDiffusivityFunction = void (*)(PetscReal temperature, PetscReal density, const PetscReal* yi, PetscReal& diffusivity, void* ctx);
 
 class TransportModel {

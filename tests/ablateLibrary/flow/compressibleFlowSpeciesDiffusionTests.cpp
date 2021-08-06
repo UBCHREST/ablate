@@ -1,6 +1,7 @@
 #include <petsc.h>
 #include <cmath>
 #include <convergenceTester.hpp>
+#include <eos/mockEOS.hpp>
 #include <eos/transport/constant.hpp>
 #include <flow/boundaryConditions/essentialGhost.hpp>
 #include <flow/processes/eulerDiffusion.hpp>
@@ -15,7 +16,7 @@
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "eos/perfectGas.hpp"
+#include "eos/mockEOS.hpp"
 #include "flow/boundaryConditions/ghost.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
@@ -44,41 +45,20 @@ class CompressibleFlowSpeciesDiffusionTestFixture : public testingResources::Mpi
 };
 
 ///////////////////////////////////////////////////////////////
-// Create a fake eos that makes testing easier
-class MockEOS : public ablate::eos::EOS {
-   public:
-    inline static PetscReal speciesSensibleEnthalpy[3] = {1000.0, 2000.0, 3000.0};
-    inline static const std::vector<std::string> species = {"sp0", "sp1", "sp2"};
+const static PetscReal speciesSensibleEnthalpy[3] = {1000.0, 2000.0, 3000.0};
+const static  std::vector<std::string> species = {"sp0", "sp1", "sp2"};
+static PetscErrorCode MockTemperatureFunction(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx) {
+    *T = NAN;
+    return 0;
+}
 
-   private:
-    static PetscErrorCode MockTemperatureFunction(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx) {
-        *T = NAN;
-        return 0;
+static PetscErrorCode MockSpeciesSensibleEnthalpyFunction(PetscReal T, PetscReal* hi, void* ctx) {
+    for (std::size_t s = 0; s < species.size(); s++) {
+        hi[s] = speciesSensibleEnthalpy[s];
     }
+    return 0;
+}
 
-    static PetscErrorCode MockSpeciesSensibleEnthalpyFunction(PetscReal T, PetscReal* hi, void* ctx) {
-        for (std::size_t s = 0; s < species.size(); s++) {
-            hi[s] = speciesSensibleEnthalpy[s];
-        }
-        return 0;
-    }
-
-   public:
-    MockEOS() : EOS("mockEOS") {}
-    void View(std::ostream& stream) const override { stream << "MockEos"; }
-    ablate::eos::DecodeStateFunction GetDecodeStateFunction() override { throw std::runtime_error("not supported"); }
-    void* GetDecodeStateContext() override { return nullptr; }
-    ablate::eos::ComputeTemperatureFunction GetComputeTemperatureFunction() override { return MockTemperatureFunction; }
-    void* GetComputeTemperatureContext() override { return nullptr; }
-    ablate::eos::ComputeSpeciesSensibleEnthalpyFunction GetComputeSpeciesSensibleEnthalpyFunction() override { return MockSpeciesSensibleEnthalpyFunction; }
-    void* GetComputeSpeciesSensibleEnthalpyContext() override { return nullptr; }
-    ablate::eos::ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { throw std::runtime_error("not supported"); }
-    void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return nullptr; }
-    ablate::eos::ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { throw std::runtime_error("not supported"); }
-    void* GetComputeSensibleInternalEnergyContext() override { return nullptr; }
-
-    const std::vector<std::string>& GetSpecies() const override { return species; }
-};
 ////////////////////////////////////
 static PetscErrorCode ComputeDensityYiExact(PetscInt dim, PetscReal time, const PetscReal xyz[], PetscInt Nf, PetscScalar* yi, void* ctx) {
     PetscFunctionBeginUser;
@@ -109,10 +89,10 @@ static PetscErrorCode ComputeEulerExact(PetscInt dim, PetscReal time, const Pets
     euler[3] = 0.0;
 
     // compute the current yi
-    std::vector<PetscReal> rhoYi(MockEOS::species.size());
+    std::vector<PetscReal> rhoYi(species.size());
     ComputeDensityYiExact(dim, time, xyz, Nf, &rhoYi[0], ctx);
     for (std::size_t s = 0; s < rhoYi.size(); s++) {
-        euler[1] += rhoYi[s] * MockEOS::speciesSensibleEnthalpy[s];
+        euler[1] += rhoYi[s] * speciesSensibleEnthalpy[s];
     }
 
     PetscFunctionReturn(0);
@@ -160,7 +140,14 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             // create an eos with three species
             auto eosParameters = std::make_shared<ablate::parameters::MapParameters>();
-            std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<MockEOS>();
+
+            // create a mock eos
+            std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
+            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
+            EXPECT_CALL(*eos, GetComputeTemperatureFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockTemperatureFunction));
+            EXPECT_CALL(*eos, GetComputeTemperatureContext()).Times(::testing::Exactly(1));
+            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockSpeciesSensibleEnthalpyFunction));
+            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyContext()).Times(::testing::Exactly(1));
 
             // create a constant density field
             auto eulerExact = mathFunctions::Create(ComputeEulerExact, &parameters);

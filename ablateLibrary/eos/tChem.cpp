@@ -316,6 +316,24 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSensibleInternalEnergy(PetscReal 
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode ablate::eos::TChem::TChemComputeSpecificHeatConstantPressure(PetscReal T, PetscReal, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    TChem *tChem = (TChem *)ctx;
+
+    // Fill the working array
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
+    tempYiWorkingArray[0] = T;
+    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
+        tempYiWorkingArray[sp + 1] = yi[sp];
+    }
+
+    // call the tChem library
+    int err = TC_getMs2CpMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, specificHeat);
+    TCCHKERRQ(err);
+
+    PetscFunctionReturn(0);
+}
+
 const char *ablate::eos::TChem::periodicTable =
     "102 10\n"
     "H          HE         LI         BE         B          C          N          O          F          NE\n"
