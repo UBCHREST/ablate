@@ -21,6 +21,10 @@ std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser:
 }
 
 std::ostream& ablate::parser::operator<<(std::ostream& os, const ablate::parser::Listing::ArgumentEntry& argumentEntry) {
+    // if there is no name or description just return
+    if (argumentEntry.name.empty() && argumentEntry.description.empty()) {
+        return os;
+    }
     os << argumentEntry.name << (argumentEntry.optional ? "" : " (req) ") << std::endl;
     os << ": "
        << "(" << utilities::Demangler::Demangle(argumentEntry.interface) << ") " << argumentEntry.description;

@@ -5,8 +5,8 @@
 
 ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FlowFieldDescriptor> fieldDescriptors,
                              std::vector<std::shared_ptr<processes::FlowProcess>> flowProcessesIn, std::shared_ptr<parameters::Parameters> options,
-                             std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                             std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution)
+                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolution), flowProcesses(flowProcessesIn) {
     // make sure that the dm works with fv
     const PetscInt ghostCellDepth = 1;
@@ -55,8 +55,8 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
 
 ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldDescriptor>> fieldDescriptors,
                              std::vector<std::shared_ptr<processes::FlowProcess>> flowProcessesIn, std::shared_ptr<parameters::Parameters> options,
-                             std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                             std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution)
+                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : ablate::flow::FVFlow::FVFlow(
           name, mesh, parameters,
           [](auto fieldDescriptorsPtrs) {
@@ -294,7 +294,7 @@ void ablate::flow::FVFlow::RegisterComputeTimeStepFunction(ComputeTimeStepFuncti
 REGISTER(ablate::flow::Flow, ablate::flow::FVFlow, "finite volume flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the  mesh and discretization"),
          OPT(ablate::parameters::Parameters, "parameters", "the parameters used by the flow"), ARG(std::vector<ablate::flow::FlowFieldDescriptor>, "fields", "field descriptions"),
          ARG(std::vector<ablate::flow::processes::FlowProcess>, "processes", "the processes used to describe the flow"),
-         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"), OPT(std::vector<mathFunctions::FieldSolution>, "initialization", "the flow field initialization"),
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"), OPT(std::vector<mathFunctions::FieldFunction>, "initialization", "the flow field initialization"),
          OPT(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         OPT(std::vector<mathFunctions::FieldSolution>, "auxiliaryFields", "the aux flow field initialization"),
-         OPT(std::vector<mathFunctions::FieldSolution>, "exactSolution", "optional exact solutions that can be used for error calculations"));
+         OPT(std::vector<mathFunctions::FieldFunction>, "auxiliaryFields", "the aux flow field initialization"),
+         OPT(std::vector<mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

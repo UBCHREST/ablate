@@ -20,18 +20,22 @@
 ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::path thermoFileIn)
     : EOS("TChemV1"), errorChecker("Error in TChem library, return code "), mechFile(mechFileIn), thermoFile(thermoFileIn) {
     // TChem requires a periodic file in the working directory.  To simplify setup, we will just write it every time we are run
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
-    if (rank == 0) {
-        std::ofstream periodicTableFile(periodicTableFileName);
-        periodicTableFile << periodicTable;
-        periodicTableFile.close();
-    }
-    MPI_Barrier(PETSC_COMM_WORLD);
+    int size = 1;
+    int rank = 0;
 
+    int mpiInitialized;
+    MPI_Initialized(&mpiInitialized) >> checkMpiError;
+    if (mpiInitialized) {
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
+        if (rank == 0) {
+            std::ofstream periodicTableFile(periodicTableFileName);
+            periodicTableFile << periodicTable;
+            periodicTableFile.close();
+        }
+        MPI_Barrier(PETSC_COMM_WORLD);
+        MPI_Comm_size(PETSC_COMM_WORLD, &size) >> checkMpiError;
+    }
     // initialize TChem (with tabulation off?).  TChem init reads/writes file it can only be done one at a time
-    int size;
-    MPI_Comm_size(PETSC_COMM_WORLD, &size) >> checkMpiError;
     for (int r = 0; r < size; r++) {
         if (r == rank) {
             TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
@@ -56,7 +60,9 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
             speciesHeatOfFormation.resize(numberSpecies);
             TC_getHspecMs(TREF, numberSpecies, &speciesHeatOfFormation[0]) >> errorChecker;
         }
-        MPI_Barrier(PETSC_COMM_WORLD);
+        if (mpiInitialized) {
+            MPI_Barrier(PETSC_COMM_WORLD);
+        }
     }
 }
 
@@ -79,7 +85,7 @@ void ablate::eos::TChem::View(std::ostream &stream) const {
  * @param T
  * @return
  */
-int ablate::eos::TChem::ComputeSensibleInternalEnergy(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
+int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
     // get the required values
     double totalEnthalpy;
     int err = TC_getMs2HmixMs(tempYiWorkingArray, numSpec + 1, &totalEnthalpy);
@@ -100,7 +106,7 @@ int ablate::eos::TChem::ComputeSensibleInternalEnergy(int numSpec, double *tempY
     return err;
 }
 
-PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T) {
+PetscErrorCode ablate::eos::TChem::ComputeTemperatureInternal(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T) {
     PetscFunctionBeginUser;
 
     // This is an iterative process to go compute temperature from density
@@ -113,7 +119,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
     // compute the first error
     double e2;
     tempYiWorkingArray[0] = t2;
-    int err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
+    int err = ComputeSensibleInternalEnergyInternal(numSpec, tempYiWorkingArray, mwMix, e2);
     TCCHKERRQ(err);
     double f2 = internalEnergyRef - e2;
     T = t2;  // set for first guess
@@ -123,7 +129,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
         double t1 = t0 + 1;
         double e1;
         tempYiWorkingArray[0] = t1;
-        err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e1);
+        err = ComputeSensibleInternalEnergyInternal(numSpec, tempYiWorkingArray, mwMix, e1);
         TCCHKERRQ(err);
         double f1 = internalEnergyRef - e1;
 
@@ -131,7 +137,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperature(int numSpec, double *tempY
             t2 = t1 - f1 * (t1 - t0) / (f1 - f0 + 1E-30);
             t2 = PetscMax(1.0, t2);
             tempYiWorkingArray[0] = t2;
-            err = ComputeSensibleInternalEnergy(numSpec, tempYiWorkingArray, mwMix, e2);
+            err = ComputeSensibleInternalEnergyInternal(numSpec, tempYiWorkingArray, mwMix, e2);
             TCCHKERRQ(err);
             f2 = internalEnergyRef - e2;
             if (PetscAbs(f2) <= EPS_T_RHO_E) {
@@ -174,11 +180,12 @@ PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(PetscInt dim, PetscRe
     TCCHKERRQ(err);
 
     // compute the temperature
-    PetscErrorCode ierr = ComputeTemperature(tChem->numberSpecies, tempYiWorkingArray, internalEnergyRef, mwMix, *T);
+    PetscErrorCode ierr = ComputeTemperatureInternal(tChem->numberSpecies, tempYiWorkingArray, internalEnergyRef, mwMix, *T);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
+
 PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, const PetscReal densityYi[], PetscReal *internalEnergy,
                                                        PetscReal *a, PetscReal *p, void *ctx) {
     PetscFunctionBeginUser;
@@ -205,7 +212,7 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal d
 
     // compute the temperature
     double temperature;
-    PetscErrorCode ierr = ComputeTemperature(tChem->numberSpecies, tempYiWorkingArray, *internalEnergy, mwMix, temperature);
+    PetscErrorCode ierr = ComputeTemperatureInternal(tChem->numberSpecies, tempYiWorkingArray, *internalEnergy, mwMix, temperature);
     CHKERRQ(ierr);
 
     // compute r
@@ -237,6 +244,55 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSpeciesSensibleEnthalpy(PetscReal
     for (auto s = 0; s < tChem->numberSpecies; s++) {
         hi[s] -= tChem->speciesHeatOfFormation[s];
     }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::TChemComputeDensityFunctionFromTemperaturePressure(PetscReal temperature, PetscReal pressure, const PetscReal *yi, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    TChem *tChem = (TChem *)ctx;
+
+    // Fill the working array
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
+    tempYiWorkingArray[0] = temperature;
+    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
+        tempYiWorkingArray[sp + 1] = yi[sp];
+    }
+
+    // precompute some values
+    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
+    TCCHKERRQ(err);
+
+    // compute r
+    double R = 1000.0 * RUNIV / mwMix;
+
+    // compute pressure p = rho*R*T
+    *density = pressure / (temperature * R);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::TChemComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleInternalEnergy, void *ctx) {
+    PetscFunctionBeginUser;
+    TChem *tChem = (TChem *)ctx;
+
+    // Fill the working array
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
+    tempYiWorkingArray[0] = T;
+    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
+        tempYiWorkingArray[sp + 1] = yi[sp];
+    }
+
+    // precompute some values
+    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
+    TCCHKERRQ(err);
+
+    // compute the sensibleInternalEnergy
+    double sensibleInternalEnergyCompute = 0;
+    err = ComputeSensibleInternalEnergyInternal(tChem->numberSpecies, tempYiWorkingArray, mwMix, sensibleInternalEnergyCompute);
+    *sensibleInternalEnergy = sensibleInternalEnergyCompute;
+    TCCHKERRQ(err);
 
     PetscFunctionReturn(0);
 }

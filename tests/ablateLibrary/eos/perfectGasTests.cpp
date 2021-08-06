@@ -188,3 +188,80 @@ TEST(PerfectGasEOSTests, ShouldAssumeNoSpeciesEnthalpy) {
     auto expected = std::vector<PetscReal>{0.0, 0.0, 0.0};
     ASSERT_EQ(hiResult, expected);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Perfect Gas DensityFunctionFromTemperaturePressure
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct PerfectGasTestComputeDensityParameters {
+    std::map<std::string, std::string> options;
+    PetscReal temperatureIn;
+    PetscReal pressureIn;
+    PetscReal expectedDensity;
+};
+
+class PerfectGasTestComputeDensityTextFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<PerfectGasTestComputeDensityParameters> {};
+
+TEST_P(PerfectGasTestComputeDensityTextFixture, ShouldComputeCorrectTemperature) {
+    // arrange
+    auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // Prepare outputs
+    PetscReal density;
+
+    // act
+    PetscErrorCode ierr =
+        eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(params.temperatureIn, params.pressureIn, nullptr, &density, eos->GetComputeDensityFunctionFromTemperaturePressureContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(density, params.expectedDensity, 1E-3);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    PerfectGasEOSTests, PerfectGasTestComputeDensityTextFixture,
+    testing::Values((PerfectGasTestComputeDensityParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 300.0, .pressureIn = 101325.0, .expectedDensity = 1.17682},
+                    (PerfectGasTestComputeDensityParameters){.options = {{"gamma", "1.4"}, {"Rgas", "487.0"}}, .temperatureIn = 1000.0, .pressureIn = 1013250.0, .expectedDensity = 2.08059}),
+    [](const testing::TestParamInfo<PerfectGasTestComputeDensityParameters>& info) { return std::to_string(info.index); });
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Perfect Gas DensityFunctionFromTemperaturePressure
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct ComputeSensibleInternalEnergyParameters {
+    std::map<std::string, std::string> options;
+    PetscReal temperatureIn;
+    PetscReal densityIn;
+    PetscReal expectedSensibleInternalEnergy;
+};
+
+class ComputeSensibleInternalEnergyTextFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ComputeSensibleInternalEnergyParameters> {};
+
+TEST_P(ComputeSensibleInternalEnergyTextFixture, ShouldComputeCorrectEnergy) {
+    // arrange
+    auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // Prepare outputs
+    PetscReal internalEnergy;
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeSensibleInternalEnergyFunction()(params.temperatureIn, params.densityIn, nullptr, &internalEnergy, eos->GetComputeSensibleInternalEnergyContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(internalEnergy, params.expectedSensibleInternalEnergy, 1E-3);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    PerfectGasEOSTests, ComputeSensibleInternalEnergyTextFixture,
+    testing::Values((ComputeSensibleInternalEnergyParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = 39000, .densityIn = .9, .expectedSensibleInternalEnergy = 1.56E5},
+                    (ComputeSensibleInternalEnergyParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 1.1, .expectedSensibleInternalEnergy = 251125.00},
+                    (ComputeSensibleInternalEnergyParameters){
+                        .options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 20.1, .expectedSensibleInternalEnergy = 251125.00}),
+    [](const testing::TestParamInfo<ComputeSensibleInternalEnergyParameters>& info) { return std::to_string(info.index); });

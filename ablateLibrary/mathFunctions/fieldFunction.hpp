@@ -1,18 +1,19 @@
-#ifndef ABLATELIBRARY_FIELDSOLUTION_HPP
-#define ABLATELIBRARY_FIELDSOLUTION_HPP
+#ifndef ABLATELIBRARY_FIELDFUNCTION_HPP
+#define ABLATELIBRARY_FIELDFUNCTION_HPP
 #include <memory>
 #include <string>
 #include "mathFunctions/mathFunction.hpp"
 
 namespace ablate::mathFunctions {
-class FieldSolution {
+class FieldFunction {
    private:
     const std::shared_ptr<mathFunctions::MathFunction> solutionField;
     const std::shared_ptr<mathFunctions::MathFunction> timeDerivative;
     const std::string fieldName;
 
    public:
-    FieldSolution(std::string fieldName, std::shared_ptr<mathFunctions::MathFunction> solutionField, std::shared_ptr<mathFunctions::MathFunction> timeDerivative = {});
+    FieldFunction(std::string fieldName, std::shared_ptr<mathFunctions::MathFunction> solutionField, std::shared_ptr<mathFunctions::MathFunction> timeDerivative = {});
+    virtual ~FieldFunction() = default;
 
     const std::string& GetName() const { return fieldName; }
 
@@ -21,6 +22,9 @@ class FieldSolution {
 
     bool HasTimeDerivative() const { return timeDerivative != nullptr; }
     mathFunctions::MathFunction& GetTimeDerivative() { return *timeDerivative; }
+
+    std::shared_ptr<mathFunctions::MathFunction> GetFieldFunction() const { return solutionField; }
+    std::shared_ptr<mathFunctions::MathFunction> GetTimeDerivativeFunction() const { return timeDerivative; }
 };
 }  // namespace ablate::mathFunctions
-#endif  // ABLATELIBRARY_FIELDSOLUTION_HPP
+#endif  // ABLATELIBRARY_FIELDFUNCTION_HPP

@@ -33,34 +33,25 @@ flow: !ablate::flow::ReactingCompressibleFlow
     k: 0.0
     mu: 0.0
   initialization:
-    - fieldName: "euler" #for euler all components are in a single field
-      solutionField:
-        formula: >-
-            1.0,
-            sqrt(x*x+y*y) <.05 ? 1498029.067485712: -58970.06564527616,
-            0.0,
-            0.0
-    - fieldName: "densityYi" #H2,H,O,O2,OH,H2O,HO2,H2O2,C,CH,CH2,CH2(S),CH3,CH4,CO,CO2,HCO,CH2O,CH2OH,CH3O,CH3OH,C2H,C2H2,C2H3,C2H4,C2H5,C2H6,HCCO,CH2CO,HCCOH,N,NH,NH2,NH3,NNH,NO,NO2,N2O,HNO,CN,HCN,H2CN,HCNN,HCNO,HOCN,HNCO,NCO,N2,AR,C3H7,C3H8,CH2CHO,CH3CHO
-      solutionField:
-        formula: 0,0,0,0.2,0,0,0,0,0,0,0,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.6,0,0,0,0,0
+    - &eulerField
+      fieldName: "euler" #for euler all components are in a single field
+      field: >-
+        1.0,
+        sqrt(x*x+y*y) <.05 ? 1498029.067485712: -58970.06564527616,
+        0.0,
+        0.0
+    - &densityYiField
+      fieldName: "densityYi" #H2,H,O,O2,OH,H2O,HO2,H2O2,C,CH,CH2,CH2(S),CH3,CH4,CO,CO2,HCO,CH2O,CH2OH,CH3O,CH3OH,C2H,C2H2,C2H3,C2H4,C2H5,C2H6,HCCO,CH2CO,HCCOH,N,NH,NH2,NH3,NNH,NO,NO2,N2O,HNO,CN,HCN,H2CN,HCNN,HCNO,HOCN,HNCO,NCO,N2,AR,C3H7,C3H8,CH2CHO,CH3CHO
+      field: 0,0,0,0.2,0,0,0,0,0,0,0,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.6,0,0,0,0,0
   boundaryConditions:
     - !ablate::flow::boundaryConditions::EssentialGhost
-      fieldName: euler
       boundaryName: "walls"
       labelIds: [1, 2, 3, 4]
-      boundaryValue:
-        formula: >-
-            1.0,
-            sqrt(x*x+y*y) <.05 ? 1498029.067485712: -58970.06564527616,
-            0.0,
-            0.0
+      boundaryValue: *eulerField
     - !ablate::flow::boundaryConditions::EssentialGhost
-      fieldName: densityYi
       boundaryName: "walls"
       labelIds: [1, 2, 3, 4]
-      boundaryValue:
-        formula: 0,0,0,0.2,0,0,0,0,0,0,0,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.6,0,0,0,0,0
-  
+      boundaryValue: *densityYiField
   monitors:
     - !ablate::monitors::TimeStepMonitor
     - !ablate::monitors::Hdf5Monitor

@@ -62,33 +62,32 @@ flow: !ablate::flow::FVFlow
 
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
-      solutionField:
-        formula: >-
-          1.0,
-          215250.0,
-          0.0,
-          0.0
+      field: >-
+        1.0,
+        215250.0,
+        0.0,
+        0.0
   exactSolution:
     - fieldName: "euler" # rho, rho_e = rho*(CvT + u^2/2), rho_u, rho_v
-      solutionField: 
-        formula: >-
-          1.0, 
-          1.0 * (215250.0 + (0.5 * (50 * y)^2)),
-          1.0 * 50 * y, 
-          1.0 * 0.0
+      field: >-
+        1.0,
+        1.0 * (215250.0 + (0.5 * (50 * y)^2)),
+        1.0 * 50 * y,
+        1.0 * 0.0
   boundaryConditions:
     - !ablate::flow::boundaryConditions::EssentialGhost
-      fieldName: euler
       boundaryName: "walls"
       labelIds: [1]
       boundaryValue:
-        formula: "1.0, 215250.0, 0.0, 0.0"
+        fieldName: euler
+        field: "1.0, 215250.0, 0.0, 0.0"
     - !ablate::flow::boundaryConditions::EssentialGhost
       fieldName: euler
       boundaryName: "walls"
       labelIds: [3]
       boundaryValue:
-        formula: "1.0, 216500.0, 50.0, 0.0"
+        fieldName: euler
+        field: "1.0, 216500.0, 50.0, 0.0"
   
   monitors:
     - !ablate::monitors::SolutionErrorMonitor

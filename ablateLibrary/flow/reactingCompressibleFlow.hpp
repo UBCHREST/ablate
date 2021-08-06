@@ -14,9 +14,9 @@ class ReactingCompressibleFlow : public FVFlow {
    public:
     ReactingCompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> parameters,
                              std::shared_ptr<fluxCalculator::FluxCalculator> = {}, std::shared_ptr<parameters::Parameters> options = {},
-                             std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization = {},
+                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {},
                              std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
-                             std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions = {});
+                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
     ~ReactingCompressibleFlow() override = default;
 };
 }  // namespace ablate::flow

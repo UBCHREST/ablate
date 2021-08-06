@@ -303,11 +303,11 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
             auto velocityExact =
-                std::make_shared<mathFunctions::FieldSolution>("velocity", ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact));
+                std::make_shared<mathFunctions::FieldFunction>("velocity", ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact));
             auto pressureExact =
-                std::make_shared<mathFunctions::FieldSolution>("pressure", ablate::mathFunctions::Create(testingParam.pExact), ablate::mathFunctions::Create(testingParam.pDerivativeExact));
+                std::make_shared<mathFunctions::FieldFunction>("pressure", ablate::mathFunctions::Create(testingParam.pExact), ablate::mathFunctions::Create(testingParam.pDerivativeExact));
             auto temperatureExact =
-                std::make_shared<mathFunctions::FieldSolution>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
+                std::make_shared<mathFunctions::FieldFunction>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
 
             auto flowObject = std::make_shared<ablate::flow::IncompressibleFlow>(
                 "testFlow",
@@ -315,29 +315,20 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                 parameters,
                 nullptr,
                 /* initialization functions */
-                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{velocityExact, pressureExact, temperatureExact},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
-                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
-                    std::make_shared<boundaryConditions::Essential>(
-                        "velocity", "top wall velocity", 3, ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact)),
-                    std::make_shared<boundaryConditions::Essential>(
-                        "velocity", "bottom wall velocity", 1, ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact)),
-                    std::make_shared<boundaryConditions::Essential>(
-                        "velocity", "right wall velocity", 2, ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact)),
-                    std::make_shared<boundaryConditions::Essential>(
-                        "velocity", "left wall velocity", 4, ablate::mathFunctions::Create(testingParam.uExact), ablate::mathFunctions::Create(testingParam.uDerivativeExact)),
-                    std::make_shared<boundaryConditions::Essential>(
-                        "temperature", "top wall temp", 3, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact)),
-                    std::make_shared<boundaryConditions::Essential>(
-                        "temperature", "bottom wall temp", 1, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact)),
-                    std::make_shared<boundaryConditions::Essential>(
-                        "temperature", "right wall temp", 2, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact)),
-                    std::make_shared<boundaryConditions::Essential>(
-                        "temperature", "left wall temp", 4, ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact))},
+                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("right wall velocity", 2, velocityExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("left wall velocity", 4, velocityExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("top wall temp", 3, temperatureExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
                 /* aux updates*/
-                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{},
                 /* exact solutions*/
-                std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{velocityExact, pressureExact, temperatureExact});
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
             // Override problem with source terms, boundary, and set the exact solution
             {

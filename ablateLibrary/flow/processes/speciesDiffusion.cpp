@@ -1,7 +1,7 @@
 #include "speciesDiffusion.hpp"
 #include "eulerAdvection.hpp"
 
-ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos) {
+ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn) : eos(eosIn) {
     PetscNew(&speciesDiffusionData);
     speciesDiffusionData->diff = parameters->Get<PetscReal>("D", 0.0);
     speciesDiffusionData->numberSpecies = eos->GetSpecies().size();
@@ -128,3 +128,7 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionSpecie
 
     PetscFunctionReturn(0);
 }
+
+#include "parser/registrar.hpp"
+REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::SpeciesDiffusion, "diffusion for the species yi field",
+         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by diffusion"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));

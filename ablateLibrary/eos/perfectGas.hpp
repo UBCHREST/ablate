@@ -22,6 +22,10 @@ class PerfectGas : public EOS {
 
     static PetscErrorCode PerfectGasComputeSpeciesSensibleEnthalpy(PetscReal T, PetscReal* hi, void* ctx);
 
+    static PetscErrorCode PerfectGasComputeDensityFunctionFromTemperaturePressure(PetscReal T, PetscReal pressure, const PetscReal yi[], PetscReal* density, void* ctx);
+
+    static PetscErrorCode PerfectGasComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
+
    public:
     explicit PerfectGas(std::shared_ptr<ablate::parameters::Parameters>, std::vector<std::string> species = {});
     void View(std::ostream& stream) const override;
@@ -31,6 +35,10 @@ class PerfectGas : public EOS {
     void* GetComputeTemperatureContext() override { return &parameters; }
     ComputeSpeciesSensibleEnthalpyFunction GetComputeSpeciesSensibleEnthalpyFunction() override { return PerfectGasComputeSpeciesSensibleEnthalpy; }
     void* GetComputeSpeciesSensibleEnthalpyContext() override { return &parameters; }
+    virtual ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { return PerfectGasComputeDensityFunctionFromTemperaturePressure; }
+    virtual void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return &parameters; }
+    virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return PerfectGasComputeSensibleInternalEnergy; }
+    virtual void* GetComputeSensibleInternalEnergyContext() override { return &parameters; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };
