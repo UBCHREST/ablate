@@ -143,7 +143,15 @@ void ablate::parser::YamlParser::ReplaceValue(YAML::Node& yamlConfiguration, std
     } else {
         // strip off the first part of the key and try again
         auto thisKey = key.substr(0, separator);
-        auto childConfig = yamlConfiguration[thisKey];
-        ReplaceValue(childConfig, key.substr(separator + 2), value);
+
+        // check to see if this key is an index
+        if (!thisKey.empty() && thisKey[0] == '[' && thisKey.back() == ']') {
+            auto index = std::stoi(thisKey.substr(1, thisKey.size() - 2));
+            auto childConfig = yamlConfiguration[index];
+            ReplaceValue(childConfig, key.substr(separator + 2), value);
+        } else {
+            auto childConfig = yamlConfiguration[thisKey];
+            ReplaceValue(childConfig, key.substr(separator + 2), value);
+        }
     }
 }
