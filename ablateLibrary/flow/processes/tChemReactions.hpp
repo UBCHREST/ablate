@@ -10,9 +10,14 @@ class TChemReactions : public FlowProcess {
    private:
     DM fieldDm;
     Vec sourceVec;
+
+    // Petsc options specific to the chemTs. These may be null by default
+    PetscOptions petscOptions;
+
     std::shared_ptr<eos::TChem> eos;
     const size_t numberSpecies;
     inline const static PetscReal dtInitDefault = 1E-5;
+    PetscReal dtInit; /** this may be different than default if set with petsc options **/
 
     // Hold the single point TS
     TS ts;
@@ -58,7 +63,7 @@ class TChemReactions : public FlowProcess {
     static PetscErrorCode AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
-    explicit TChemReactions(std::shared_ptr<eos::EOS> eos);
+    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {});
     ~TChemReactions() override;
     /**
      * public function to link this process with the flow

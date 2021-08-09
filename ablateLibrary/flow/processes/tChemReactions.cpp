@@ -11,18 +11,18 @@
 #include <TC_interface.h>
 #include <TC_params.h>
 #include <flow/processes/eulerAdvection.hpp>
+#include <utilities/petscOptions.hpp>
 #else
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
 #endif
 
-// PETSC_EXTERN int TC_getSrcCV(double *scal,int Nvars,double *omega);
-// PETSC_EXTERN void TC_setDens(double density);
-
-ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn)
+ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> options)
     : fieldDm(nullptr),
       sourceVec(nullptr),
+      petscOptions(nullptr),
       eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)),
       numberSpecies(eosIn->GetSpecies().size()),
+      dtInit(NAN),
       ts(nullptr),
       pointData(nullptr),
       jacobian(nullptr),
@@ -32,6 +32,12 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
         throw std::invalid_argument("ablate::flow::processes::TChemReactions::TChemReactions only accepts EOS of type eos::TChem");
+    }
+
+    // Set the options if provided
+    if (options) {
+        PetscOptionsCreate(&petscOptions) >> checkError;
+        options->Fill(petscOptions);
     }
 
     // size up the scratch variables
@@ -50,6 +56,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
               Create timestepping solver context
               - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
     TSCreate(PETSC_COMM_SELF, &ts) >> checkError;
+    PetscObjectSetOptions((PetscObject)ts, petscOptions) >> checkError;
     TSSetType(ts, TSARKIMEX) >> checkError;
     TSARKIMEXSetFullyImplicit(ts, PETSC_TRUE) >> checkError;
     TSARKIMEXSetType(ts, TSARKIMEX4) >> checkError;
@@ -65,6 +72,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
     TSAdaptSetStepLimits(adapt, 1e-12, 1E-4) >> checkError; /* Also available with -ts_adapt_dt_min/-ts_adapt_dt_max */
     TSSetMaxSNESFailures(ts, -1) >> checkError;             /* Retry step an unlimited number of times */
     TSSetFromOptions(ts) >> checkError;
+    TSGetTimeStep(ts, &dtInit) >> checkError;
 }
 ablate::flow::processes::TChemReactions::~TChemReactions() {
     if (fieldDm) {
@@ -72,6 +80,9 @@ ablate::flow::processes::TChemReactions::~TChemReactions() {
     }
     if (sourceVec) {
         VecDestroy(&sourceVec) >> checkError;
+    }
+    if (petscOptions) {
+        ablate::utilities::PetscOptionsDestroyAndCheck("TChemReactions", &petscOptions);
     }
     if (ts) {
         TSDestroy(&ts) >> checkError;
@@ -302,7 +313,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             CHKERRQ(ierr);
             ierr = TSSetMaxTime(ts, time + dt);
             CHKERRQ(ierr);
-            ierr = TSSetTimeStep(ts, dtInitDefault);
+            ierr = TSSetTimeStep(ts, dtInit);
             CHKERRQ(ierr);
             ierr = TSSetStepNumber(ts, 0);
             CHKERRQ(ierr);
@@ -468,4 +479,5 @@ PetscErrorCode ablate::flow::processes::TChemReactions::AddChemistrySourceToFlow
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::TChemReactions, "reactions using the TChem v1 library", ARG(eos::EOS, "eos", "the tChem v1 eos"));
+REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::TChemReactions, "reactions using the TChem v1 library", ARG(eos::EOS, "eos", "the tChem v1 eos"),
+         OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"));
