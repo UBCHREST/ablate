@@ -15,6 +15,9 @@
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
 #endif
 
+//PETSC_EXTERN int TC_getSrcCV(double *scal,int Nvars,double *omega);
+//PETSC_EXTERN void TC_setDens(double density);
+
 ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn)
     : fieldDm(nullptr),
       sourceVec(nullptr),
@@ -56,8 +59,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
 
     // set the adapting control
     TSSetSolution(ts, pointData) >> checkError;
-    PetscReal dt = 1e-10; /* Initial time step */
-    TSSetTimeStep(ts, dt) >> checkError;
+    TSSetTimeStep(ts, dtInitDefault) >> checkError;
     TSAdapt adapt;
     TSGetAdapt(ts, &adapt) >> checkError;
     TSAdaptSetStepLimits(adapt, 1e-12, 1E-4) >> checkError; /* Also available with -ts_adapt_dt_min/-ts_adapt_dt_max */
@@ -238,8 +240,8 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
     eos::ComputeTemperatureFunction temperatureFunction = eos->GetComputeTemperatureFunction();
     void* temperatureContext = eos->GetComputeTemperatureContext();
 
-    eos::ComputeSensibleInternalEnergyFunction sensibleInternalEnergyFunction = eos->GetComputeSensibleInternalEnergyFunction();
-    void* sensibleInternalEnergyContext = eos->GetComputeSensibleInternalEnergyContext();
+//    eos::ComputeSensibleInternalEnergyFunction sensibleInternalEnergyFunction = eos->GetComputeSensibleInternalEnergyFunction();
+//    void* sensibleInternalEnergyContext = eos->GetComputeSensibleInternalEnergyContext();
 
     // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
@@ -280,20 +282,27 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
             int err = TC_getMs2Wmix(pointArray + 1, numberSpecies, &mwMix);
             TCCHKERRQ(err);
-            ierr = VecRestoreArray(pointData, &pointArray);
-            CHKERRQ(ierr);
 
             // compute the pressure as this node from T, Yi
             double R = 1000.0 * RUNIV / mwMix;
             PetscReal pressure = euler[ablate::flow::processes::EulerAdvection::RHO] * temperature * R;
             TC_setThermoPres(pressure);
 
+            // Compute the total energy sen + hof
+            PetscReal hof;
+            err = eos::TChem::ComputeEnthalpyOfFormation(numberSpecies, pointArray, hof);
+            TCCHKERRQ(err);
+            PetscReal enerTotal = hof + euler[ablate::flow::processes::EulerAdvection::RHOE]/euler[ablate::flow::processes::EulerAdvection::RHO];
+
+            ierr = VecRestoreArray(pointData, &pointArray);
+            CHKERRQ(ierr);
+
             // Do a soft reset on the ode solver
             ierr = TSSetTime(ts, time);
             CHKERRQ(ierr);
             ierr = TSSetMaxTime(ts, time + dt);
             CHKERRQ(ierr);
-            ierr = TSSetTimeStep(ts, 1e-10);
+            ierr = TSSetTimeStep(ts, dtInitDefault);
             CHKERRQ(ierr);
             ierr = TSSetStepNumber(ts, 0);
             CHKERRQ(ierr);
@@ -337,10 +346,11 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             // get the array data again
             VecGetArray(pointData, &pointArray) >> checkError;
 
-            // Use the point array to compute the updatedInternalEnergy
-            PetscReal updatedInternalEnergy;
-            ierr = sensibleInternalEnergyFunction(pointArray[0], euler[ablate::flow::processes::EulerAdvection::RHO], pointArray + 1, &updatedInternalEnergy, sensibleInternalEnergyContext);
-            CHKERRQ(ierr);
+            // Use the point array to compute the hof
+            double updatedHof;
+            err = eos::TChem::ComputeEnthalpyOfFormation(numberSpecies, pointArray, updatedHof);
+            TCCHKERRQ(err);
+            double updatedInternalEnergy = enerTotal - updatedHof;
 
             // compute the ke
             PetscReal ke = 0.0;

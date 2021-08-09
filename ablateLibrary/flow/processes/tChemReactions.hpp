@@ -12,6 +12,7 @@ class TChemReactions : public FlowProcess {
     Vec sourceVec;
     std::shared_ptr<eos::TChem> eos;
     const size_t numberSpecies;
+    inline const static PetscReal dtInitDefault = 1E-5;
 
     // Hold the single point TS
     TS ts;

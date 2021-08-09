@@ -46,8 +46,6 @@ class TChem : public EOS {
     static PetscErrorCode TChemComputeDensityFunctionFromTemperaturePressure(PetscReal T, PetscReal pressure, const PetscReal densityYi[], PetscReal* density, void* ctx);
     static PetscErrorCode TChemComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal densityYi[], PetscReal* sensibleInternalEnergy, void* ctx);
 
-    // Private static helper functions
-    inline const static double TREF = 298.15;
 
     /**
      * The tempYiWorkingArray is expected to be filled with correct species yi.  The 0 location is set in this function.
@@ -92,6 +90,11 @@ class TChem : public EOS {
     virtual void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return this; }
     virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return TChemComputeSensibleInternalEnergy; }
     virtual void* GetComputeSensibleInternalEnergyContext() override { return this; }
+
+    static int ComputeEnthalpyOfFormation(int numSpec, double *tempYiWorkingArray, double &enthalpyOfFormation);
+
+    // Private static helper functions
+    inline const static double TREF = 298.15;
 };
 
 }  // namespace ablate::eos

@@ -1,6 +1,7 @@
 #include <petsc.h>
 #include <cmath>
 #include <convergenceTester.hpp>
+#include <eos/transport/constant.hpp>
 #include <flow/boundaryConditions/essentialGhost.hpp>
 #include <flow/processes/eulerDiffusion.hpp>
 #include <flow/processes/speciesDiffusion.hpp>
@@ -153,7 +154,8 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                                                                 }));
 
             // setup a flow parameters
-            auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"D", std::to_string(parameters.diff)}});
+            auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{});
+            auto transportModel = std::make_shared<ablate::eos::transport::Constant>(0.0, 0.0, parameters.diff);
             auto petscFlowOptions = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"yipetscfv_type", "leastsquares"}});
 
             // create an eos with three species
@@ -174,7 +176,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                                                                                           std::make_shared<flow::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, yiExactField)};
 
             auto flowProcesses = std::vector<std::shared_ptr<ablate::flow::processes::FlowProcess>>{
-                std::make_shared<ablate::flow::processes::SpeciesDiffusion>(flowParameters, eos),
+                std::make_shared<ablate::flow::processes::SpeciesDiffusion>(eos, transportModel),
             };
 
             auto flowObject = std::make_shared<ablate::flow::FVFlow>(

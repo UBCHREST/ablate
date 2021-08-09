@@ -1,12 +1,19 @@
 #include "speciesDiffusion.hpp"
 #include "eulerAdvection.hpp"
 
-ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn) : eos(eosIn) {
+ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<eos::EOS> eosIn,  std::shared_ptr<eos::transport::TransportModel> transportModelIn): eos(eosIn), transportModel(transportModelIn) {
     PetscNew(&speciesDiffusionData);
-    speciesDiffusionData->diff = parameters->Get<PetscReal>("D", 0.0);
-    speciesDiffusionData->numberSpecies = eos->GetSpecies().size();
+
+    if(transportModel) {
+        speciesDiffusionData->diffFunction = transportModel->GetComputeDiffusivityFunction();
+        speciesDiffusionData->diffContext = transportModel->GetComputeDiffusivityContext();
+    }else{
+        speciesDiffusionData->diffFunction  = nullptr;
+        speciesDiffusionData->diffContext =nullptr;
+    }
 
     // set the eos functions
+    speciesDiffusionData->numberSpecies = eos->GetSpecies().size();
     speciesDiffusionData->computeTemperatureFunction = eos->GetComputeTemperatureFunction();
     speciesDiffusionData->computeTemperatureContext = eos->GetComputeTemperatureContext();
 
@@ -19,7 +26,7 @@ ablate::flow::processes::SpeciesDiffusion::~SpeciesDiffusion() { PetscFree(speci
 void ablate::flow::processes::SpeciesDiffusion::Initialize(ablate::flow::FVFlow &flow) {
     // if there are any coefficients for diffusion, compute diffusion
     if (speciesDiffusionData->numberSpecies > 0) {
-        if (speciesDiffusionData->diff > 0) {
+        if (speciesDiffusionData->diffFunction) {
             // Register the euler diffusion source terms
             flow.RegisterRHSFunction(SpeciesDiffusionEnergyFlux, speciesDiffusionData, "euler", {"euler", "densityYi"}, {"yi"});
             flow.RegisterRHSFunction(SpeciesDiffusionSpeciesFlux, speciesDiffusionData, "densityYi", {"euler"}, {"yi"});
@@ -90,11 +97,15 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionEnergy
         flux[EulerAdvection::RHOU + d] = 0.0;
     }
 
+    // compute diff
+    PetscReal diff;
+    flowParameters->diffFunction(temperature,density, diff, flowParameters->diffContext );
+
     for (PetscInt sp = 0; sp < flowParameters->numberSpecies; ++sp) {
         for (PetscInt d = 0; d < dim; ++d) {
             // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
             const int offset = aOff_x[yi] + (sp * dim) + d;
-            PetscReal speciesFlux = -fg->normal[d] * density * flowParameters->diff * flowParameters->speciesSpeciesSensibleEnthalpy[sp] * 0.5 * (gradAuxL[offset] + gradAuxR[offset]);
+            PetscReal speciesFlux = -fg->normal[d] * density * diff * flowParameters->speciesSpeciesSensibleEnthalpy[sp] * 0.5 * (gradAuxL[offset] + gradAuxR[offset]);
             flux[EulerAdvection::RHOE] += speciesFlux;
         }
     }
@@ -115,13 +126,41 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionSpecie
     // get the current density from euler
     const PetscReal density = 0.5 * (fieldL[uOff[euler] + EulerAdvection::RHO] + fieldR[uOff[euler] + EulerAdvection::RHO]);
 
+    PetscErrorCode ierr;
+    PetscReal temperatureLeft;
+    ierr = flowParameters->computeTemperatureFunction(dim,
+                                                      fieldL[uOff[euler] + EulerAdvection::RHO],
+                                                      fieldL[uOff[euler] + EulerAdvection::RHOE] / fieldL[uOff[euler] + EulerAdvection::RHO],
+                                                      fieldL + uOff[euler] + EulerAdvection::RHOU,
+                                                      auxL + aOff[yi],
+                                                      &temperatureLeft,
+                                                      flowParameters->computeTemperatureContext);
+    CHKERRQ(ierr);
+
+    PetscReal temperatureRight;
+    ierr = flowParameters->computeTemperatureFunction(dim,
+                                                      fieldR[uOff[euler] + EulerAdvection::RHO],
+                                                      fieldR[uOff[euler] + EulerAdvection::RHOE] / fieldR[uOff[euler] + EulerAdvection::RHO],
+                                                      fieldR + uOff[euler] + EulerAdvection::RHOU,
+                                                      auxR + aOff[yi],
+                                                      &temperatureRight,
+                                                      flowParameters->computeTemperatureContext);
+    CHKERRQ(ierr);
+
+    // compute the enthalpy for each species
+    PetscReal temperature = 0.5 * (temperatureLeft + temperatureRight);
+
+    // compute diff
+    PetscReal diff;
+    flowParameters->diffFunction(temperature,density, diff, flowParameters->diffContext );
+
     // species equations
     for (PetscInt sp = 0; sp < flowParameters->numberSpecies; ++sp) {
         flux[sp] = 0;
         for (PetscInt d = 0; d < dim; ++d) {
             // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
             const int offset = aOff_x[yi] + (sp * dim) + d;
-            PetscReal speciesFlux = -fg->normal[d] * density * flowParameters->diff * 0.5 * (gradAuxL[offset] + gradAuxR[offset]);
+            PetscReal speciesFlux = -fg->normal[d] * density * diff * 0.5 * (gradAuxL[offset] + gradAuxR[offset]);
             flux[sp] += speciesFlux;
         }
     }
@@ -131,4 +170,4 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionSpecie
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::SpeciesDiffusion, "diffusion for the species yi field",
-         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by diffusion"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
+         ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"), OPT(ablate::eos::transport::TransportModel, "parameters", "the diffusion transport model"));

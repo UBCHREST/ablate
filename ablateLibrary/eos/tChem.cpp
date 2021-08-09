@@ -92,6 +92,23 @@ void ablate::eos::TChem::View(std::ostream &stream) const {
  * @param T
  * @return
  */
+int ablate::eos::TChem::ComputeEnthalpyOfFormation(int numSpec, double *tempYiWorkingArray, double &enthalpyOfFormation) {
+    // compute the heat of formation
+    double currentT = tempYiWorkingArray[0];
+    tempYiWorkingArray[0] = TREF;
+    int err = TC_getMs2HmixMs(tempYiWorkingArray, numSpec + 1, &enthalpyOfFormation);
+
+    tempYiWorkingArray[0] = currentT;
+    return err;
+}
+
+
+/**
+ * the tempYiWorkingArray array is expected to be filled.
+ * @param yi
+ * @param T
+ * @return
+ */
 int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
     // get the required values
     double totalEnthalpy;
@@ -100,16 +117,11 @@ int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, doubl
         return err;
     }
 
-    // store the input temperature
-    double T = tempYiWorkingArray[0];
-
     // compute the heat of formation
-    tempYiWorkingArray[0] = TREF;
     double enthalpyOfFormation;
-    err = TC_getMs2HmixMs(tempYiWorkingArray, numSpec + 1, &enthalpyOfFormation);
+    err = ComputeEnthalpyOfFormation(numSpec, tempYiWorkingArray, enthalpyOfFormation);
 
-    internalEnergy = (totalEnthalpy - enthalpyOfFormation) - T * 1000.0 * RUNIV / mwMix;
-    tempYiWorkingArray[0] = T;
+    internalEnergy = (totalEnthalpy - enthalpyOfFormation) - tempYiWorkingArray[0] * 1000.0 * RUNIV / mwMix;
     return err;
 }
 

@@ -14,6 +14,7 @@
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
+#include "eos/transport/constant.hpp"
 
 typedef struct {
     PetscInt dim;
@@ -204,7 +205,9 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
 
-            auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}, {"mu", "0.0"}, {"k", std::to_string(parameters.k)}});
+            auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
+
+            auto transportModel = std::make_shared<ablate::eos::transport::Constant>(parameters.k);
 
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &parameters));
 
@@ -217,6 +220,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                flowParameters,
+                                                                               transportModel,
                                                                                std::make_shared<flow::fluxCalculator::OffFlux>(),
                                                                                nullptr /*options*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
