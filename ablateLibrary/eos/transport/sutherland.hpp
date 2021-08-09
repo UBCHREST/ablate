@@ -2,7 +2,9 @@
 #define ABLATELIBRARY_SUTHERLAND_HPP
 
 #include <eos/eos.hpp>
+#include <memory>
 #include "transportModel.hpp"
+
 namespace ablate::eos::transport {
 
 class Sutherland : public TransportModel {
