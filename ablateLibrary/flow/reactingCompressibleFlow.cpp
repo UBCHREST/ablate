@@ -4,7 +4,6 @@
 #include <flow/processes/speciesDiffusion.hpp>
 #include <flow/processes/tChemReactions.hpp>
 #include <utilities/mpiError.hpp>
-#include "compressibleFlow.hpp"
 
 ablate::flow::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn,
                                                                  std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::transport::TransportModel> transport,
@@ -26,9 +25,9 @@ ablate::flow::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string nam
               {.solutionField = false, .fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eosIn->GetSpecies().size(), .fieldType = FieldType::FV, .componentNames = eosIn->GetSpecies()}},
              {
                  // create assumed processes for compressible flow
-                 std::make_shared<ablate::flow::processes::EulerAdvection>(parameters, eosIn, fluxCalculatorIn),
-                 std::make_shared<ablate::flow::processes::EulerDiffusion>(eosIn, transport),
-                 std::make_shared<ablate::flow::processes::SpeciesDiffusion>(eosIn, transport),
+//                 std::make_shared<ablate::flow::processes::EulerAdvection>(parameters, eosIn, fluxCalculatorIn),
+//                 std::make_shared<ablate::flow::processes::EulerDiffusion>(eosIn, transport),
+//                 std::make_shared<ablate::flow::processes::SpeciesDiffusion>(eosIn, transport),
                  std::make_shared<ablate::flow::processes::TChemReactions>(std::dynamic_pointer_cast<eos::TChem>(eosIn) ? std::dynamic_pointer_cast<eos::TChem>(eosIn)
                                                                                                                         : throw std::invalid_argument("The eos must of type eos::TChem")),
              },

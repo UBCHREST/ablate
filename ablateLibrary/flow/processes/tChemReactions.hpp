@@ -54,11 +54,11 @@ class TChemReactions : public FlowProcess {
 
     /**
      * private function to compute the energy and densityYi source terms over the next dt
-     * @param ts
+     * @param flowTs
      * @param flow
      * @return
      */
-    PetscErrorCode ChemistryFlowPreStep(TS ts, ablate::flow::Flow &flow);
+    PetscErrorCode ChemistryFlowPreStage(TS flowTs, ablate::flow::Flow &flow, PetscReal stagetime);
 
     static PetscErrorCode AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 

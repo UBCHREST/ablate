@@ -11,7 +11,7 @@ ablate::solve::TimeStepper::TimeStepper(std::string name, std::map<std::string, 
 
     // force the time step to end at the exact time step
     TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> checkError;
-
+    TSSetProblemType(ts, TS_NONLINEAR) >> checkError;
     // set the name and prefix as provided
     PetscObjectSetName((PetscObject)ts, name.c_str()) >> checkError;
     TSSetOptionsPrefix(ts, name.c_str()) >> checkError;

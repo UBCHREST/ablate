@@ -112,9 +112,17 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription,
             PetscObjectSetName((PetscObject)fvm, flowFieldDescription.fieldName.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;
 
+            // Get the limiter
+            PetscLimiter limiter;
+            PetscFVGetLimiter(fvm, &limiter) >> checkError;
+            PetscObjectSetOptionsPrefix((PetscObject)limiter, flowFieldDescription.fieldPrefix.c_str()) >> checkError;
+            PetscObjectSetOptions((PetscObject)limiter, petscOptions) >> checkError;
+
             PetscFVSetFromOptions(fvm) >> checkError;
             PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;
             PetscFVSetSpatialDimension(fvm, dim) >> checkError;
+
+            // override the limiter if this is an aux field
 
             // If there are any names provided, name each component in this field this is used by some of the output fields
             for (std::size_t c = 0; c < flowFieldDescription.componentNames.size(); c++) {
@@ -172,6 +180,26 @@ PetscErrorCode ablate::flow::Flow::TSPreStepFunction(TS ts) {
     for (const auto& function : flowObject->preStepFunctions) {
         try {
             function(ts, *flowObject);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::flow::Flow::TSPreStageFunction(TS ts,  PetscReal stagetime) {
+    PetscFunctionBeginUser;
+    DM dm;
+    PetscErrorCode ierr = TSGetDM(ts, &dm);
+    CHKERRQ(ierr);
+    ablate::flow::Flow* flowObject;
+    ierr = DMGetApplicationContext(dm, &flowObject);
+    CHKERRQ(ierr);
+
+    for (const auto& function : flowObject->preStageFunctions) {
+        try {
+            function(ts, *flowObject, stagetime);
         } catch (std::exception& exp) {
             SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
         }
@@ -273,6 +301,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     if (isFV) {
         DMTSSetRHSFunctionLocal(dm->GetDomain(), DMPlexTSComputeRHSFunctionFVM, this) >> checkError;
     }
+    TSSetPreStage(ts, TSPreStageFunction) >> checkError;
     TSSetPreStep(ts, TSPreStepFunction) >> checkError;
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
     TSSetPostEvaluate(ts, TSPostEvaluateFunction) >> checkError;
