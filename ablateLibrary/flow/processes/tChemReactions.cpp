@@ -62,7 +62,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
     TSARKIMEXSetType(ts, TSARKIMEX4) >> checkError;
     TSSetRHSFunction(ts, NULL, SinglePointChemistryRHS, this) >> checkError;
     TSSetRHSJacobian(ts, jacobian, jacobian, SinglePointChemistryJacobian, this) >> checkError;
-    TSSetExactFinalTime(ts, TS_EXACTFINALTIME_STEPOVER) >> checkError;
+    TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> checkError;
 
     // set the adapting control
     TSSetSolution(ts, pointData) >> checkError;
@@ -378,7 +378,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStage(TS
             }
             for (std::size_t sp = 0; sp < numberSpecies; sp++) {
                 // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                fieldSource[ablate::flow::processes::EulerAdvection::RHOU + dim + sp] = (euler[ablate::flow::processes::EulerAdvection::RHO] * pointArray[sp + 1] - densityYi[sp]) / dt;
+                fieldSource[ablate::flow::processes::EulerAdvection::RHOU + dim + sp] = (euler[ablate::flow::processes::EulerAdvection::RHO] * PetscMin(1.0, PetscMax(pointArray[sp + 1], 0.0)) - densityYi[sp]) / dt;
             }
 
             VecRestoreArray(pointData, &pointArray);
