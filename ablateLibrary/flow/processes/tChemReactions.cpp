@@ -234,7 +234,6 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStage(TS
     PetscReal dt;
     ierr = TSGetTimeStep(flowTs, &dt);
     CHKERRQ(ierr);
-    std::cout << "\tChemistryFlowPreStage: " << stepNumber << ", " << time << ", " << dt << std::endl;
 
     // get access to the underlying data for the flow
     PetscInt flowEulerId = flow.GetFieldId("euler").value();
