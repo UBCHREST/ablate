@@ -327,7 +327,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStage(TS
             ierr = TSSolve(ts, pointData);
 
             if (ierr != 0) {
-                std::string error = "Could not solve chemistry ode, setting source terms to zero (euler, yi): ";
+                std::string error = "Could not solve chemistry ode, setting source terms to zero T,P (" + std::to_string(temperature) + ", " + std::to_string(pressure) + ") \n (euler, yi): ";
                 for (PetscInt i = 0; i < dim + 2; i++) {
                     error += std::to_string(euler[i]) + ", ";
                 }
