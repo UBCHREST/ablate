@@ -50,7 +50,7 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
             --download-slepc --download-suitesparse --download-superlu_dist \
             --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem
     
-       # Build PETSc
+       # Follow the on screen directions to make PETSc
        ```
 
    2. Configure PETSc with the following options from the petsc directory to build the release configuration.  Run the following make command.
@@ -63,8 +63,7 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
             --download-slepc --download-suitesparse --download-superlu_dist \
             --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem --with-debugging=0 
     
-       # Build PETSc
-
+       # Follow the on screen directions to make PETSc
        ```
 3. Set up the environmental variables so that ABLATE can locate PETSc. The PETSC_DIR path should be the path to the downloaded PETSc files.  This value is reported in the output of the configure command.
     ```bash
