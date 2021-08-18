@@ -180,6 +180,26 @@ PetscErrorCode ablate::flow::Flow::TSPreStepFunction(TS ts) {
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode ablate::flow::Flow::TSPreStageFunction(TS ts, PetscReal stagetime) {
+    PetscFunctionBeginUser;
+    DM dm;
+    PetscErrorCode ierr = TSGetDM(ts, &dm);
+    CHKERRQ(ierr);
+    ablate::flow::Flow* flowObject;
+    ierr = DMGetApplicationContext(dm, &flowObject);
+    CHKERRQ(ierr);
+
+    for (const auto& function : flowObject->preStageFunctions) {
+        try {
+            function(ts, *flowObject, stagetime);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode ablate::flow::Flow::TSPostStepFunction(TS ts) {
     PetscFunctionBeginUser;
     DM dm;
@@ -273,6 +293,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     if (isFV) {
         DMTSSetRHSFunctionLocal(dm->GetDomain(), DMPlexTSComputeRHSFunctionFVM, this) >> checkError;
     }
+    TSSetPreStage(ts, TSPreStageFunction) >> checkError;
     TSSetPreStep(ts, TSPreStepFunction) >> checkError;
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
     TSSetPostEvaluate(ts, TSPostEvaluateFunction) >> checkError;

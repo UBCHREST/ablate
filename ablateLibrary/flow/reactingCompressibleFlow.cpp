@@ -4,7 +4,6 @@
 #include <flow/processes/speciesDiffusion.hpp>
 #include <flow/processes/tChemReactions.hpp>
 #include <utilities/mpiError.hpp>
-#include "compressibleFlow.hpp"
 
 ablate::flow::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn,
                                                                  std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::transport::TransportModel> transport,

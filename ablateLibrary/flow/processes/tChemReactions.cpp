@@ -28,7 +28,8 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
       jacobian(nullptr),
       tchemScratch(nullptr),
       jacobianScratch(nullptr),
-      rows(nullptr) {
+      rows(nullptr),
+      chemSolveStage(0) {
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
         throw std::invalid_argument("ablate::flow::processes::TChemReactions::TChemReactions only accepts EOS of type eos::TChem");
@@ -62,7 +63,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
     TSARKIMEXSetType(ts, TSARKIMEX4) >> checkError;
     TSSetRHSFunction(ts, NULL, SinglePointChemistryRHS, this) >> checkError;
     TSSetRHSJacobian(ts, jacobian, jacobian, SinglePointChemistryJacobian, this) >> checkError;
-    TSSetExactFinalTime(ts, TS_EXACTFINALTIME_STEPOVER) >> checkError;
+    TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> checkError;
 
     // set the adapting control
     TSSetSolution(ts, pointData) >> checkError;
@@ -73,6 +74,12 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
     TSSetMaxSNESFailures(ts, -1) >> checkError;             /* Retry step an unlimited number of times */
     TSSetFromOptions(ts) >> checkError;
     TSGetTimeStep(ts, &dtInit) >> checkError;
+
+    // register this chemistry stage
+    PetscLogStageGetId("TChemReactions", &chemSolveStage) >> checkError;
+    if (chemSolveStage < 0) {
+        PetscLogStageRegister("TChemReactions", &chemSolveStage) >> checkError;
+    }
 }
 ablate::flow::processes::TChemReactions::~TChemReactions() {
     if (fieldDm) {
@@ -118,8 +125,8 @@ void ablate::flow::processes::TChemReactions::Initialize(ablate::flow::FVFlow& f
     DMCreateLocalVector(fieldDm, &sourceVec) >> checkError;
 
     // Before each step, compute the source term over the entire dt
-    auto chemistryPreStep = std::bind(&ablate::flow::processes::TChemReactions::ChemistryFlowPreStep, this, std::placeholders::_1, std::placeholders::_2);
-    flow.RegisterPreStep(chemistryPreStep);
+    auto chemistryPreStage = std::bind(&ablate::flow::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    flow.RegisterPreStage(chemistryPreStage);
 
     // Add the rhs point function for the source
     flow.RegisterRHSFunction(AddChemistrySourceToFlow, this);
@@ -192,7 +199,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::SinglePointChemistryJaco
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS flowTs, ablate::flow::Flow& flow) {
+PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStage(TS flowTs, ablate::flow::Flow& flow, PetscReal stagetime) {
     PetscInt stepNumber;
     TSGetStepNumber(flowTs, &stepNumber);
     PetscReal time;
@@ -200,6 +207,13 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
+    // only continue if the stage time is the real time (i.e. the first stage)
+    if (time != stagetime) {
+        PetscFunctionReturn(0);
+    }
+
+    PetscLogStagePush(chemSolveStage) >> checkError;
+
     IS cellIS;
     DM plex;
     PetscInt depth;
@@ -322,7 +336,7 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             ierr = TSSolve(ts, pointData);
 
             if (ierr != 0) {
-                std::string error = "Could not solve chemistry ode, setting source terms to zero (euler, yi): ";
+                std::string error = "Could not solve chemistry ode, setting source terms to zero T,P (" + std::to_string(temperature) + ", " + std::to_string(pressure) + ") \n (euler, yi): ";
                 for (PetscInt i = 0; i < dim + 2; i++) {
                     error += std::to_string(euler[i]) + ", ";
                 }
@@ -363,24 +377,19 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
             TCCHKERRQ(err);
             double updatedInternalEnergy = enerTotal - updatedHof;
 
-            // compute the ke
-            PetscReal ke = 0.0;
-            for (PetscInt d = 0; d < dim; d++) {
-                ke += PetscSqr(euler[ablate::flow::processes::EulerAdvection::RHOU + d] / euler[ablate::flow::processes::EulerAdvection::RHO]);
-            }
-            ke *= 0.5;
-
             // store the computed source terms
             fieldSource[ablate::flow::processes::EulerAdvection::RHO] = 0.0;
             fieldSource[ablate::flow::processes::EulerAdvection::RHOE] =
-                (euler[ablate::flow::processes::EulerAdvection::RHO] * (updatedInternalEnergy + ke) - euler[ablate::flow::processes::EulerAdvection::RHOE]) / dt;
+                (euler[ablate::flow::processes::EulerAdvection::RHO] * updatedInternalEnergy - euler[ablate::flow::processes::EulerAdvection::RHOE]) / dt;
             for (PetscInt d = 0; d < dim; d++) {
                 fieldSource[ablate::flow::processes::EulerAdvection::RHOU + d] = 0.0;
             }
             for (std::size_t sp = 0; sp < numberSpecies; sp++) {
                 // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                fieldSource[ablate::flow::processes::EulerAdvection::RHOU + dim + sp] = (euler[ablate::flow::processes::EulerAdvection::RHO] * pointArray[sp + 1] - densityYi[sp]) / dt;
+                fieldSource[ablate::flow::processes::EulerAdvection::RHOU + dim + sp] =
+                    (euler[ablate::flow::processes::EulerAdvection::RHO] * PetscMin(1.0, PetscMax(pointArray[sp + 1], 0.0)) - densityYi[sp]) / dt;
             }
+
             VecRestoreArray(pointData, &pointArray);
         }
     }
@@ -394,6 +403,8 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStep(TS 
     CHKERRQ(ierr);
     ierr = ISDestroy(&cellIS);
     CHKERRQ(ierr);
+
+    PetscLogStagePop() >> checkError;
     PetscFunctionReturn(0);
 }
 
