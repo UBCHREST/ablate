@@ -61,7 +61,7 @@ else()
 endif()
 
 ### Ablate Library Setup ###
-add_library(ablateLibrary SHARED "")
+add_library(ablateLibrary SHARED "" flow/boundaryConditions/NeumannGhost.cpp)
 
 # Allow public access to the header files in the directory
 target_include_directories(ablateLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})
