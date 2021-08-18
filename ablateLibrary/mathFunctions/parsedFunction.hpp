@@ -36,6 +36,8 @@ class ParsedFunction : public MathFunction {
     void* GetContext() override { return this; }
 
     PetscFunction GetPetscFunction() override { return ParsedPetscFunction; }
+
+    static void DefineAdditionalFunctions(mu::Parser& parser);
 };
 }  // namespace ablate::mathFunctions
 
