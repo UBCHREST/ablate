@@ -30,6 +30,9 @@ class TChemReactions : public FlowProcess {
     /* Dense array for the local Jacobian rows */
     PetscInt *rows;
 
+    /* Keep track of the chemistry ts time */
+    PetscLogStage chemSolveStage;
+
     /**
      * Private function to integrate single point chemistry in time
      * @param ts

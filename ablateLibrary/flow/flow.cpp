@@ -112,17 +112,9 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription,
             PetscObjectSetName((PetscObject)fvm, flowFieldDescription.fieldName.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;
 
-            // Get the limiter
-            PetscLimiter limiter;
-            PetscFVGetLimiter(fvm, &limiter) >> checkError;
-            PetscObjectSetOptionsPrefix((PetscObject)limiter, flowFieldDescription.fieldPrefix.c_str()) >> checkError;
-            PetscObjectSetOptions((PetscObject)limiter, petscOptions) >> checkError;
-
             PetscFVSetFromOptions(fvm) >> checkError;
             PetscFVSetNumComponents(fvm, flowFieldDescription.components) >> checkError;
             PetscFVSetSpatialDimension(fvm, dim) >> checkError;
-
-            // override the limiter if this is an aux field
 
             // If there are any names provided, name each component in this field this is used by some of the output fields
             for (std::size_t c = 0; c < flowFieldDescription.componentNames.size(); c++) {
@@ -188,7 +180,7 @@ PetscErrorCode ablate::flow::Flow::TSPreStepFunction(TS ts) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::flow::Flow::TSPreStageFunction(TS ts,  PetscReal stagetime) {
+PetscErrorCode ablate::flow::Flow::TSPreStageFunction(TS ts, PetscReal stagetime) {
     PetscFunctionBeginUser;
     DM dm;
     PetscErrorCode ierr = TSGetDM(ts, &dm);

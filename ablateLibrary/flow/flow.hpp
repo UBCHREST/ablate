@@ -25,7 +25,7 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     // descriptions to the fields on the auxDM
     std::vector<FlowFieldDescriptor> auxFieldDescriptors;
 
-    static PetscErrorCode TSPreStageFunction(TS ts,  PetscReal stagetime);
+    static PetscErrorCode TSPreStageFunction(TS ts, PetscReal stagetime);
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);
     static PetscErrorCode TSPostEvaluateFunction(TS ts);
