@@ -36,7 +36,7 @@ class SolutionErrorMonitor : public Monitor {
 std::ostream& operator<<(std::ostream& os, const SolutionErrorMonitor::Scope& v);
 /**
  * Support function for the Scope Enum
- * @param is
+ * @param os
  * @param v
  * @return
  */
@@ -51,7 +51,7 @@ std::istream& operator>>(std::istream& is, SolutionErrorMonitor::Scope& v);
 std::ostream& operator<<(std::ostream& os, const SolutionErrorMonitor::Norm& v);
 /**
  * Support function for the Scope Enum
- * @param is
+ * @param os
  * @param v
  * @return
  */
