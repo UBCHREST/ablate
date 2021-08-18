@@ -14,4 +14,6 @@ target_sources(ablateLibrary
         constantValue.cpp
         parsedSeries.hpp
         parsedSeries.cpp
+        linearTable.hpp
+        linearTable.cpp
         )

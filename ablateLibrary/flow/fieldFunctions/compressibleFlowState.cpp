@@ -3,8 +3,8 @@
 ablate::flow::fieldFunctions::CompressibleFlowState::CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<mathFunctions::MathFunction> temperatureFunctionIn,
                                                                            std::shared_ptr<mathFunctions::MathFunction> pressureFunctionIn,
                                                                            std::shared_ptr<mathFunctions::MathFunction> velocityFunctionIn,
-                                                                           std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> yiFunctionsIn)
-    : eos(eosIn), temperatureFunction(temperatureFunctionIn), pressureFunction(pressureFunctionIn), velocityFunction(velocityFunctionIn) {
+                                                                           std::shared_ptr<mathFunctions::FieldFunction> massFractionFunctionIn)
+    : eos(eosIn), temperatureFunction(temperatureFunctionIn), pressureFunction(pressureFunctionIn), velocityFunction(velocityFunctionIn), massFractionFunction(massFractionFunctionIn) {
     // error checking
     // right now temperature and pressure are assumed, but this should be expended to handle any combination of primitive variables
     if (!temperatureFunction) {
@@ -18,23 +18,9 @@ ablate::flow::fieldFunctions::CompressibleFlowState::CompressibleFlowState(std::
     }
 
     const auto &species = eos->GetSpecies();
-    if (yiFunctionsIn.empty()) {
+    if (massFractionFunction == nullptr) {
         if (!species.empty()) {
             throw std::invalid_argument("The mass fractions must be specified because there are species in the EOS.");
-        }
-    } else {
-        // Map the mass fractions to species
-        massFractionFunctions.resize(species.size(), nullptr);
-
-        // march over every yiFunctionIn
-        for (const auto &yiFunction : yiFunctionsIn) {
-            auto it = std::find(species.begin(), species.end(), yiFunction->GetName());
-
-            if (it != species.end()) {
-                massFractionFunctions[std::distance(species.begin(), it)] = yiFunction->GetFieldFunction();
-            } else {
-                throw std::invalid_argument("Cannot find field species " + yiFunction->GetName());
-            }
         }
     }
 }
@@ -58,14 +44,9 @@ PetscErrorCode ablate::flow::fieldFunctions::CompressibleFlowState::ComputeEuler
     CHKERRQ(ierr);
 
     // compute the mass fraction at this location
-    std::vector<PetscReal> yi(flowState->massFractionFunctions.size());
-    try {
-        for (std::size_t s = 0; s < yi.size(); s++) {
-            yi[s] = flowState->massFractionFunctions[s] ? flowState->massFractionFunctions[s]->Eval(x, dim, time) : 0.0;
-        }
-    } catch (std::exception &exp) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
-    }
+    std::vector<PetscReal> yi(flowState->eos->GetSpecies().size());
+    ierr = flowState->massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], flowState->massFractionFunction->GetSolutionField().GetContext());
+    CHKERRQ(ierr);
 
     // compute the density
     ierr = flowState->eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(
@@ -100,7 +81,7 @@ PetscErrorCode ablate::flow::fieldFunctions::CompressibleFlowState::ComputeDensi
     auto flowState = (ablate::flow::fieldFunctions::CompressibleFlowState *)ctx;
 
     // make sure the that number of species is correct
-    if ((PetscInt)flowState->massFractionFunctions.size() != Nf) {
+    if ((PetscInt)flowState->eos->GetSpecies().size() != Nf) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "The number of species specified in the CompressibleFlowState does not match requested.");
     }
 
@@ -114,14 +95,9 @@ PetscErrorCode ablate::flow::fieldFunctions::CompressibleFlowState::ComputeDensi
     CHKERRQ(ierr);
 
     // compute the mass fraction at this location
-    std::vector<PetscReal> yi(flowState->massFractionFunctions.size());
-    try {
-        for (std::size_t s = 0; s < yi.size(); s++) {
-            yi[s] = flowState->massFractionFunctions[s] ? flowState->massFractionFunctions[s]->Eval(x, dim, time) : 0.0;
-        }
-    } catch (std::exception &exp) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
-    }
+    std::vector<PetscReal> yi(flowState->eos->GetSpecies().size());
+    ierr = flowState->massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], flowState->massFractionFunction->GetSolutionField().GetContext());
+    CHKERRQ(ierr);
 
     // compute the density
     PetscReal density;
@@ -142,4 +118,4 @@ REGISTERDEFAULT(ablate::flow::fieldFunctions::CompressibleFlowState, ablate::flo
                 "a simple structure used to describe a compressible flow field using an EOS, T, pressure, vel, Yi", ARG(ablate::eos::EOS, "eos", "the eos used for the flow field"),
                 ARG(ablate::mathFunctions::MathFunction, "temperature", "the temperature field (K)"), ARG(ablate::mathFunctions::MathFunction, "pressure", "the pressure field (Pa)"),
                 ARG(ablate::mathFunctions::MathFunction, "velocity", "the velocity field (m/2)"),
-                OPT(std::vector<ablate::mathFunctions::FieldFunction>, "massFractions", "a list of fieldFunctions where each mass fraction is for a separate species"));
+                OPT(ablate::mathFunctions::FieldFunction, "massFractions", "a fieldFunctions used to describe all mass fractions"));

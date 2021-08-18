@@ -199,9 +199,9 @@ struct PerfectGasTestComputeDensityParameters {
     PetscReal expectedDensity;
 };
 
-class PerfectGasTestComputeDensityTextFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<PerfectGasTestComputeDensityParameters> {};
+class PerfectGasTestComputeDensityTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<PerfectGasTestComputeDensityParameters> {};
 
-TEST_P(PerfectGasTestComputeDensityTextFixture, ShouldComputeCorrectTemperature) {
+TEST_P(PerfectGasTestComputeDensityTestFixture, ShouldComputeCorrectTemperature) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
@@ -222,7 +222,7 @@ TEST_P(PerfectGasTestComputeDensityTextFixture, ShouldComputeCorrectTemperature)
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    PerfectGasEOSTests, PerfectGasTestComputeDensityTextFixture,
+    PerfectGasEOSTests, PerfectGasTestComputeDensityTestFixture,
     testing::Values((PerfectGasTestComputeDensityParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 300.0, .pressureIn = 101325.0, .expectedDensity = 1.17682},
                     (PerfectGasTestComputeDensityParameters){.options = {{"gamma", "1.4"}, {"Rgas", "487.0"}}, .temperatureIn = 1000.0, .pressureIn = 1013250.0, .expectedDensity = 2.08059}),
     [](const testing::TestParamInfo<PerfectGasTestComputeDensityParameters>& info) { return std::to_string(info.index); });
@@ -237,9 +237,9 @@ struct ComputeSensibleInternalEnergyParameters {
     PetscReal expectedSensibleInternalEnergy;
 };
 
-class ComputeSensibleInternalEnergyTextFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ComputeSensibleInternalEnergyParameters> {};
+class ComputeSensibleInternalEnergyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ComputeSensibleInternalEnergyParameters> {};
 
-TEST_P(ComputeSensibleInternalEnergyTextFixture, ShouldComputeCorrectEnergy) {
+TEST_P(ComputeSensibleInternalEnergyTestFixture, ShouldComputeCorrectEnergy) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
@@ -259,9 +259,46 @@ TEST_P(ComputeSensibleInternalEnergyTextFixture, ShouldComputeCorrectEnergy) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    PerfectGasEOSTests, ComputeSensibleInternalEnergyTextFixture,
+    PerfectGasEOSTests, ComputeSensibleInternalEnergyTestFixture,
     testing::Values((ComputeSensibleInternalEnergyParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = 39000, .densityIn = .9, .expectedSensibleInternalEnergy = 1.56E5},
                     (ComputeSensibleInternalEnergyParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 1.1, .expectedSensibleInternalEnergy = 251125.00},
                     (ComputeSensibleInternalEnergyParameters){
                         .options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 20.1, .expectedSensibleInternalEnergy = 251125.00}),
     [](const testing::TestParamInfo<ComputeSensibleInternalEnergyParameters>& info) { return std::to_string(info.index); });
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Perfect Gas ComputeSpecificHeatConstantPressure
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct ComputeSpecificHeatConstantPressureParameters {
+    std::map<std::string, std::string> options;
+    PetscReal temperatureIn;
+    PetscReal densityIn;
+    PetscReal expectedCp;
+};
+
+class ComputeSpecificHeatConstantPressureTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ComputeSpecificHeatConstantPressureParameters> {};
+
+TEST_P(ComputeSpecificHeatConstantPressureTestFixture, ShouldComputeCorrectEnergy) {
+    // arrange
+    auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // Prepare outputs
+    PetscReal cp;
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeSpecificHeatConstantPressureFunction()(params.temperatureIn, params.densityIn, nullptr, &cp, eos->GetComputeSensibleInternalEnergyContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(cp, params.expectedCp, 1E-3);
+}
+
+INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, ComputeSpecificHeatConstantPressureTestFixture,
+                         testing::Values((ComputeSpecificHeatConstantPressureParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 8.0},
+                                         (ComputeSpecificHeatConstantPressureParameters){
+                                             .options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 1004.5}),
+                         [](const testing::TestParamInfo<ComputeSpecificHeatConstantPressureParameters>& info) { return std::to_string(info.index); });

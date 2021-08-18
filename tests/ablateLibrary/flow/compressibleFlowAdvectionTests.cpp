@@ -62,7 +62,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             auto mesh = std::make_shared<ablate::mesh::BoxMesh>(
                 "simpleMesh", std::vector<int>{nx1D, nx1D}, std::vector<double>{0.0, 0.0}, std::vector<double>{.01, .01}, std::vector<std::string>{} /*boundary*/, false /*simplex*/);
             // setup a flow parameters
-            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}, {"mu", "0.0"}, {"k", "0.0"}});
+            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}});
 
             auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}),
                                                                  std::vector<std::string>{"O2", "H2O", "N2"});
@@ -79,6 +79,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                                mesh,
                                                                                eos,
                                                                                parameters,
+                                                                               nullptr /*transportModel*/,
                                                                                nullptr,
                                                                                nullptr /*options*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution} /*initialization*/,

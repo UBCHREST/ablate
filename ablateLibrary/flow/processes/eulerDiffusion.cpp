@@ -33,29 +33,43 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxVelocityField(P
     PetscFunctionReturn(0);
 }
 
-ablate::flow::processes::EulerDiffusion::EulerDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn) : eos(eosIn) {
+ablate::flow::processes::EulerDiffusion::EulerDiffusion(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn)
+    : eos(eosIn), transportModel(transportModelIn) {
     PetscNew(&eulerDiffusionData);
 
     // Store the required data for the low level c functions
-    eulerDiffusionData->mu = parameters->Get<PetscReal>("mu", 0.0);
-    eulerDiffusionData->k = parameters->Get<PetscReal>("k", 0.0);
-
+    if (transportModel) {
+        eulerDiffusionData->muFunction = transportModel->GetComputeViscosityFunction();
+        eulerDiffusionData->muContext = transportModel->GetComputeViscosityContext();
+        eulerDiffusionData->kFunction = transportModel->GetComputeConductivityFunction();
+        eulerDiffusionData->kContext = transportModel->GetComputeConductivityContext();
+    } else {
+        eulerDiffusionData->muFunction = nullptr;
+        eulerDiffusionData->muContext = nullptr;
+        eulerDiffusionData->kFunction = nullptr;
+        eulerDiffusionData->kContext = nullptr;
+    }
     // set the decode state function
     eulerDiffusionData->computeTemperatureFunction = eos->GetComputeTemperatureFunction();
     eulerDiffusionData->computeTemperatureContext = eos->GetComputeTemperatureContext();
     eulerDiffusionData->numberSpecies = eos->GetSpecies().size();
+    eulerDiffusionData->yiScratch.resize(eulerDiffusionData->numberSpecies);
 }
 
 ablate::flow::processes::EulerDiffusion::~EulerDiffusion() { PetscFree(eulerDiffusionData); }
 
 void ablate::flow::processes::EulerDiffusion::Initialize(ablate::flow::FVFlow &flow) {
     // if there are any coefficients for diffusion, compute diffusion
-    if (eulerDiffusionData->k || eulerDiffusionData->mu) {
+    if (eulerDiffusionData->kFunction || eulerDiffusionData->muFunction) {
         // Register the euler diffusion source terms
-        flow.RegisterRHSFunction(CompressibleFlowEulerDiffusion, eulerDiffusionData, "euler", {"euler"}, {"T", "vel"});
+        if (eulerDiffusionData->numberSpecies > 0) {
+            flow.RegisterRHSFunction(CompressibleFlowEulerDiffusion, eulerDiffusionData, "euler", {"euler", "densityYi"}, {"T", "vel"});
+        } else {
+            flow.RegisterRHSFunction(CompressibleFlowEulerDiffusion, eulerDiffusionData, "euler", {"euler"}, {"T", "vel"});
+        }
     }
 
-    // If there are species
+    // check for species
     if (eulerDiffusionData->numberSpecies > 0) {
         // add in aux update variables
         flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, eulerDiffusionData, "vel", {"euler"});
@@ -65,19 +79,8 @@ void ablate::flow::processes::EulerDiffusion::Initialize(ablate::flow::FVFlow &f
         flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, eulerDiffusionData, "vel", {"euler"});
         flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, eulerDiffusionData, "T", {"euler"});
     }
-
-    // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
-    PetscBool automaticTimeStepCalculator = PETSC_TRUE;
-    PetscOptionsGetBool(NULL, NULL, "-automaticTimeStepCalculator", &automaticTimeStepCalculator, NULL);
-    if (automaticTimeStepCalculator) {
-        flow.RegisterComputeTimeStepFunction(ComputeTimeStep, eulerDiffusionData);
-    }
-
-    // determine the dim of the problem
-    PetscInt dim;
-    DMGetDimension(flow.GetDM(), &dim) >> checkError;
-    eulerDiffusionData->dtStabilityFactor = (1.0 / 3.0) / dim;
 }
+
 PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
                                                                                        const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff,
                                                                                        const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
@@ -86,13 +89,36 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowEulerDif
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int T = 0;
     const int VEL = 1;
+    const int EULER = 0;
+    const int DENSITY_YI = 1;
 
     PetscErrorCode ierr;
     EulerDiffusionData flowParameters = (EulerDiffusionData)ctx;
 
+    // Compute mu and k
+    PetscReal *yiScratch = &flowParameters->yiScratch[0];
+    for (std::size_t s = 0; s < flowParameters->yiScratch.size(); s++) {
+        yiScratch[s] = fieldL[uOff[DENSITY_YI] + s] / fieldL[uOff[EULER] + EulerAdvection::RHO];
+    }
+
+    PetscReal muLeft = 0.0;
+    flowParameters->muFunction(auxL[aOff[T]], fieldL[uOff[EULER] + EulerAdvection::RHO], yiScratch, muLeft, flowParameters->muContext);
+    PetscReal kLeft = 0.0;
+    flowParameters->kFunction(auxL[aOff[T]], fieldL[uOff[EULER] + EulerAdvection::RHO], yiScratch, kLeft, flowParameters->kContext);
+
+    // Compute mu and k
+    for (std::size_t s = 0; s < flowParameters->yiScratch.size(); s++) {
+        yiScratch[s] = fieldR[uOff[DENSITY_YI] + s] / fieldR[uOff[EULER] + EulerAdvection::RHO];
+    }
+
+    PetscReal muRight = 0.0;
+    flowParameters->muFunction(auxR[aOff[T]], fieldR[uOff[EULER] + EulerAdvection::RHO], yiScratch, muRight, flowParameters->muContext);
+    PetscReal kRight = 0.0;
+    flowParameters->kFunction(auxR[aOff[T]], fieldR[uOff[EULER] + EulerAdvection::RHO], yiScratch, kRight, flowParameters->kContext);
+
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
-    ierr = CompressibleFlowComputeStressTensor(dim, flowParameters->mu, gradAuxL + aOff_x[VEL], gradAuxR + aOff_x[VEL], tau);
+    ierr = CompressibleFlowComputeStressTensor(dim, 0.5 * (muLeft + muRight), gradAuxL + aOff_x[VEL], gradAuxR + aOff_x[VEL], tau);
     CHKERRQ(ierr);
 
     // for each velocity component
@@ -118,7 +144,7 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowEulerDif
         }
 
         // heat conduction (-k dT/dx - k dT/dy - k dT/dz) . n A
-        heatFlux += +flowParameters->k * 0.5 * (gradAuxL[aOff_x[T] + d] + gradAuxR[aOff_x[T] + d]);
+        heatFlux += 0.5 * (kLeft * gradAuxL[aOff_x[T] + d] + kRight * gradAuxR[aOff_x[T] + d]);
 
         // Multiply by the area normal
         heatFlux *= -fg->normal[d];
@@ -141,7 +167,7 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowComputeS
 
     // March over each velocity component, u, v, w
     for (PetscInt c = 0; c < dim; ++c) {
-        // March over each physical coordinate coordinate
+        // March over each physical coordinates
         for (PetscInt d = 0; d < dim; ++d) {
             if (d == c) {
                 // for the xx, yy, zz, components
@@ -155,52 +181,6 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowComputeS
     PetscFunctionReturn(0);
 }
 
-double ablate::flow::processes::EulerDiffusion::ComputeTimeStep(TS ts, ablate::flow::Flow &flow, void *ctx) {
-    // Get the dm and current solution vector
-    DM dm;
-    TSGetDM(ts, &dm) >> checkError;
-    Vec v;
-    TSGetSolution(ts, &v) >> checkError;
-
-    // Get the flow param
-    EulerDiffusionData eulerDiffusionData = (EulerDiffusionData)ctx;
-
-    // Get the fv geom
-    PetscReal minCellRadius;
-    DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> checkError;
-    PetscInt cStart, cEnd;
-    DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd) >> checkError;
-    const PetscScalar *x;
-    VecGetArrayRead(v, &x) >> checkError;
-
-    // Get the dim from the dm
-    PetscInt dim;
-    DMGetDimension(dm, &dim) >> checkError;
-
-    // assume the smallest cell is the limiting factor for now
-    const PetscReal dx = 2.0 * minCellRadius;
-
-    // Get field location for euler and densityYi
-    auto eulerId = flow.GetFieldId("euler").value();
-
-    // March over each cell
-    PetscReal dtMin = 1000.0;
-    for (PetscInt c = cStart; c < cEnd; ++c) {
-        const PetscReal *xc;
-        DMPlexPointGlobalFieldRead(dm, c, eulerId, x, &xc) >> checkError;
-
-        if (xc) {  // must be real cell and not ghost
-            PetscReal rho = xc[EulerAdvection::RHO];
-            PetscReal nu = eulerDiffusionData->mu / rho;
-
-            PetscReal dt = eulerDiffusionData->dtStabilityFactor * dx / (nu);
-            dtMin = PetscMin(dtMin, dt);
-        }
-    }
-    VecRestoreArrayRead(v, &x) >> checkError;
-    return dtMin;
-}
-
 #include "parser/registrar.hpp"
 REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::EulerDiffusion, "diffusion for the euler field",
-         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
+         ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"), OPT(ablate::eos::transport::TransportModel, "parameters", "the diffusion transport model"));

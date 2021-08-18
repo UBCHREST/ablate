@@ -1,4 +1,5 @@
 #include <petsc.h>
+#include <eos/transport/constant.hpp>
 #include <flow/processes/eulerAdvection.hpp>
 #include <mesh/dmWrapper.hpp>
 #include <vector>
@@ -576,13 +577,14 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, constants.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // Setup the flow data
-            auto parameters =
-                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}, {"mu", std::to_string(constants.mu)}, {"k", std::to_string(constants.k)}});
+            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
 
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(constants.gamma)}, {"Rgas", std::to_string(constants.R)}}));
 
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &constants));
+
+            auto transportModel = std::make_shared<ablate::eos::transport::Constant>(constants.k, constants.mu);
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<flow::boundaryConditions::Ghost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, PhysicsBoundary_Euler, &constants),
@@ -592,6 +594,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                parameters,
+                                                                               transportModel,
                                                                                GetParam().fluxCalculator,
                                                                                nullptr /*options*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
