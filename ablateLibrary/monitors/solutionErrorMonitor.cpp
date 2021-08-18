@@ -52,7 +52,6 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
             break;
         case Scope::COMPONENT: {
             errorMonitor->log->Printf("Timestep: %04d time = %-8.4g \t %s error:\n", (int)step, (double)crtime, errorTypeName.c_str());
-            PetscInt fieldOffset = 0;
             for (PetscInt f = 0; f < numberOfFields; f++) {
                 PetscObject field;
                 ierr = DMGetField(dm, f, NULL, &field);
@@ -61,9 +60,8 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
                 PetscObjectGetName((PetscObject)field, &name);
 
                 errorMonitor->log->Print("\t ");
-                errorMonitor->log->Print(name, numberComponentsPerField[f], &ferrors[fieldOffset], "%2.3g");
+                errorMonitor->log->Print(name, ferrors, "%2.3g");
                 errorMonitor->log->Print("\n");
-                fieldOffset += numberComponentsPerField[f];
             }
         } break;
         default: {
@@ -100,7 +98,7 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
         totalComponents += numberComponentsPerField[f];
     }
 
-    // Create an vector to hold the exact solution
+    // Create a vector to hold the exact solution
     Vec exactVec;
     VecDuplicate(u, &exactVec) >> checkError;
     DMProjectFunction(dm, time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> checkError;
@@ -118,6 +116,10 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
     std::vector<PetscReal> ferrors(totalComponents);
     NormType petscNormType;
     switch (normType) {
+        case Norm::L1_NORM:
+        case Norm::L1:
+            petscNormType = NORM_1;
+            break;
         case Norm::L2_NORM:
         case Norm::L2:
             petscNormType = NORM_2;
@@ -134,6 +136,15 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
     // compute the norm along the stride
     VecStrideNormAll(exactVec, petscNormType, &ferrors[0]) >> checkError;
 
+
+    if (normType == Norm::L1_NORM) {
+        PetscInt size;
+        VecGetSize(exactVec, &size);
+        PetscReal factor = PetscAbsReal(1.0 / (size / totalComponents));
+        for (PetscInt c = 0; c < totalComponents; c++) {
+            ferrors[c] *= factor;
+        }
+    }
     // normalize the error if _norm
     if (normType == Norm::L2_NORM) {
         PetscInt size;
@@ -175,6 +186,10 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::S
 
 std::ostream& ablate::monitors::operator<<(std::ostream& os, const ablate::monitors::SolutionErrorMonitor::Norm& v) {
     switch (v) {
+        case SolutionErrorMonitor::Norm::L1:
+            return os << "l1";
+        case SolutionErrorMonitor::Norm::L1_NORM:
+            return os << "l1_norm";
         case SolutionErrorMonitor::Norm::L2:
             return os << "l2";
         case SolutionErrorMonitor::Norm::LINF:
@@ -190,12 +205,17 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::S
     std::string enumString;
     is >> enumString;
 
-    if (enumString == "l2") {
+    if (enumString == "l1_norm") {
+        v = SolutionErrorMonitor::Norm::L1_NORM;
+    }  else if (enumString == "l1") {
+        v = SolutionErrorMonitor::Norm::L1;
+    }  else if (enumString == "l2") {
         v = SolutionErrorMonitor::Norm::L2;
     } else if (enumString == "linf") {
         v = SolutionErrorMonitor::Norm::LINF;
     } else if (enumString == "l2_norm") {
         v = SolutionErrorMonitor::Norm::L2_NORM;
+
     } else {
         throw std::invalid_argument("Unknown norm type " + enumString);
     }
@@ -205,4 +225,5 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::S
 #include "parser/registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::SolutionErrorMonitor, "Computes and reports the error every time step",
          ENUM(ablate::monitors::SolutionErrorMonitor::Scope, "scope", "how the error should be calculated ('vector', 'component')"),
-         ENUM(ablate::monitors::SolutionErrorMonitor::Norm, "type", "norm type ('l2', 'linf', 'l2_norm')"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
+         ENUM(ablate::monitors::SolutionErrorMonitor::Norm, "type", "norm type ('l1', 'l1_norm', 'l2', 'linf', 'l2_norm')"),
+         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

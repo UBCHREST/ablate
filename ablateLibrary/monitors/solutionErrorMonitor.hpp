@@ -10,7 +10,7 @@ namespace ablate::monitors {
 class SolutionErrorMonitor : public Monitor {
    public:
     enum class Scope { VECTOR, COMPONENT };
-    enum class Norm { L2, LINF, L2_NORM };
+    enum class Norm { L1, L1_NORM, L2, LINF, L2_NORM };
 
    private:
     static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
@@ -36,7 +36,7 @@ class SolutionErrorMonitor : public Monitor {
 std::ostream& operator<<(std::ostream& os, const SolutionErrorMonitor::Scope& v);
 /**
  * Support function for the Scope Enum
- * @param os
+ * @param is
  * @param v
  * @return
  */
@@ -51,7 +51,7 @@ std::istream& operator>>(std::istream& is, SolutionErrorMonitor::Scope& v);
 std::ostream& operator<<(std::ostream& os, const SolutionErrorMonitor::Norm& v);
 /**
  * Support function for the Scope Enum
- * @param os
+ * @param is
  * @param v
  * @return
  */

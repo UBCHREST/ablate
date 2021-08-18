@@ -4,7 +4,8 @@
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
-set(YAML_CPP_INSTALL OFF CACHE BOOL "" FORCE)
+target_link_directories(ablateCore PUBLIC ${PETSc_LIBRARY_DIRS} /opt/homebrew/Cellar/gcc/11.2.0/lib/gcc/11/)
+
 
 FetchContent_Declare(
         yaml-cpp
