@@ -14,6 +14,9 @@ namespace ablate::eos {
 
 class TChem : public EOS {
    private:
+    // this is bad practice but only one instance of of the TCHEM library can be inited at at once, so keep track of the number of classes using the library
+    inline static int libCount = 0;
+
     // hold an error checker for the tchem outside library
     const utilities::IntErrorChecker errorChecker;
 
@@ -40,11 +43,9 @@ class TChem : public EOS {
                                               PetscReal* p, void* ctx);
     static PetscErrorCode TChemComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
     static PetscErrorCode TChemComputeSpeciesSensibleEnthalpy(PetscReal T, PetscReal* hi, void* ctx);
-    static PetscErrorCode TChemComputeDensityFunctionFromTemperaturePressure(PetscReal T, PetscReal pressure, const PetscReal densityYi[], PetscReal* density, void* ctx);
-    static PetscErrorCode TChemComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal densityYi[], PetscReal* sensibleInternalEnergy, void* ctx);
-
-    // Private static helper functions
-    inline const static double TREF = 298.15;
+    static PetscErrorCode TChemComputeDensityFunctionFromTemperaturePressure(PetscReal T, PetscReal pressure, const PetscReal yi[], PetscReal* density, void* ctx);
+    static PetscErrorCode TChemComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
+    static PetscErrorCode TChemComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
 
     /**
      * The tempYiWorkingArray is expected to be filled with correct species yi.  The 0 location is set in this function.
@@ -85,10 +86,17 @@ class TChem : public EOS {
     void* GetComputeTemperatureContext() override { return this; }
     ComputeSpeciesSensibleEnthalpyFunction GetComputeSpeciesSensibleEnthalpyFunction() override { return TChemComputeSpeciesSensibleEnthalpy; }
     void* GetComputeSpeciesSensibleEnthalpyContext() override { return this; }
-    virtual ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { return TChemComputeDensityFunctionFromTemperaturePressure; }
-    virtual void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return this; }
-    virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return TChemComputeSensibleInternalEnergy; }
-    virtual void* GetComputeSensibleInternalEnergyContext() override { return this; }
+    ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { return TChemComputeDensityFunctionFromTemperaturePressure; }
+    void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return this; }
+    ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return TChemComputeSensibleInternalEnergy; }
+    void* GetComputeSensibleInternalEnergyContext() override { return this; }
+    ComputeSpecificHeatConstantPressureFunction GetComputeSpecificHeatConstantPressureFunction() override { return TChemComputeSpecificHeatConstantPressure; }
+    void* GetComputeSpecificHeatConstantPressureContext() override { return this; }
+
+    static int ComputeEnthalpyOfFormation(int numSpec, double* tempYiWorkingArray, double& enthalpyOfFormation);
+
+    // Private static helper functions
+    inline const static double TREF = 298.15;
 };
 
 }  // namespace ablate::eos

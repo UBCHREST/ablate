@@ -12,4 +12,8 @@ target_sources(ablateLibrary
         fieldFunction.hpp
         constantValue.hpp
         constantValue.cpp
+        parsedSeries.hpp
+        parsedSeries.cpp
+        linearTable.hpp
+        linearTable.cpp
         )

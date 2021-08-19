@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_SPECIESDIFFUSION_HPP
 #define ABLATELIBRARY_SPECIESDIFFUSION_HPP
 
+#include <eos/transport/transportModel.hpp>
 #include "flowProcess.hpp"
 
 namespace ablate::flow::processes {
@@ -9,7 +10,8 @@ class SpeciesDiffusion : public FlowProcess {
    public:
     struct _SpeciesDiffusionData {
         /* diffusivity */
-        PetscReal diff;
+        eos::transport::ComputeDiffusivityFunction diffFunction;
+        void* diffContext;
 
         /* number of gas species */
         PetscInt numberSpecies;
@@ -25,7 +27,7 @@ class SpeciesDiffusion : public FlowProcess {
     };
     typedef struct _SpeciesDiffusionData* SpeciesDiffusionData;
 
-    explicit SpeciesDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos);
+    explicit SpeciesDiffusion(std::shared_ptr<eos::EOS> eos, std::shared_ptr<eos::transport::TransportModel> transportModel);
     ~SpeciesDiffusion() override;
 
     /**
@@ -37,6 +39,7 @@ class SpeciesDiffusion : public FlowProcess {
    private:
     SpeciesDiffusionData speciesDiffusionData;
     std::shared_ptr<eos::EOS> eos;
+    std::shared_ptr<eos::transport::TransportModel> transportModel;
 
     /**
      * Function to compute the mass fraction. This function assumes that the input values will be {"euler", "densityYi"}
@@ -59,7 +62,7 @@ class SpeciesDiffusion : public FlowProcess {
      * This computes the species transfer for species diffusion fluxy
      * f = "densityYi"
      * u = {"euler"}
-     * a = {"yi"}
+     * a = {"yi", "T"}
      * ctx = SpeciesDiffusionData
      * @return
      */

@@ -25,6 +25,7 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     // descriptions to the fields on the auxDM
     std::vector<FlowFieldDescriptor> auxFieldDescriptors;
 
+    static PetscErrorCode TSPreStageFunction(TS ts, PetscReal stagetime);
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);
     static PetscErrorCode TSPostEvaluateFunction(TS ts);
@@ -50,6 +51,7 @@ class Flow : public solve::Solvable, public monitors::Viewable {
 
     // pre and post step functions for the flow
     std::vector<std::function<void(TS ts, Flow&)>> preStepFunctions;
+    std::vector<std::function<void(TS ts, Flow&, PetscReal)>> preStageFunctions;
     std::vector<std::function<void(TS ts, Flow&)>> postStepFunctions;
     std::vector<std::function<void(TS ts, Flow&)>> postEvaluateFunctions;
 
@@ -98,6 +100,12 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     void RegisterPreStep(std::function<void(TS ts, Flow&)> preStep) { this->preStepFunctions.push_back(preStep); }
 
     /**
+     * Adds function to be called before each flow step
+     * @param preStep
+     */
+    void RegisterPreStage(std::function<void(TS ts, Flow&, PetscReal)> preStage) { this->preStageFunctions.push_back(preStage); }
+
+    /**
      * Adds function to be called after each flow step
      * @param preStep
      */
@@ -126,6 +134,8 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     std::optional<int> GetAuxFieldId(const std::string& fieldName) const;
 
     const FlowFieldDescriptor& GetFieldDescriptor(const std::string& fieldName) const;
+
+    const FlowFieldDescriptor& GetAuxFieldDescriptor(const std::string& fieldName) const;
 };
 }  // namespace ablate::flow
 
