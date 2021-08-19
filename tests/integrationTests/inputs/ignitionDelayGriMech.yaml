@@ -43,15 +43,13 @@ flow: !ablate::flow::FVFlow
         thermoFile: inputs/thermo30.dat
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
-      solutionField:
-        formula: >-
-          0.2806317906177915,
-          212565.75335864403,
-          0.0,
-          0.0
+      field: >-
+        0.2806317906177915,
+        212565.75335864403,
+        0.0,
+        0.0
     - fieldName: "densityYi" 
-      solutionField: 
-        formula: 0.        ,0.        ,0.        ,0.06177863,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.01548713,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.20336603,0.        ,0.        ,0.        ,0.        ,0.      
+      field: 0.        ,0.        ,0.        ,0.06177863,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.01548713,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.20336603,0.        ,0.        ,0.        ,0.        ,0.
   boundaryConditions: []
   monitors:
     - !ablate::monitors::IgnitionDelayPeakYi

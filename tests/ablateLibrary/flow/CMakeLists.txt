@@ -8,6 +8,8 @@ target_sources(libraryTests
         compressibleFlowMmsSourceTests.cpp
         compressibleFlowAdvectionTests.cpp
         flowFieldDescriptorTests.cpp
+        compressibleFlowSpeciesDiffusionTests.cpp
         )
 
 add_subdirectory(fluxCalculator)
+add_subdirectory(fieldFunctions)

@@ -21,7 +21,7 @@ struct ArgumentIdentifier {
     const std::string inputName;
     const std::string description;
     const bool optional;
-    bool operator==(const ArgumentIdentifier<Interface>& other) const { return inputName == other.inputName && description == other.description && optional == other.optional; }
+    bool operator==(const ArgumentIdentifier<Interface>& other) const { return inputName == other.inputName && optional == other.optional; }
 };
 }  // namespace ablate::parser
 

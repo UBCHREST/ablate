@@ -13,6 +13,7 @@ class TimeStepper {
     TS ts;                                                    /** The PETSC time stepper**/
     std::string name;                                         /** the name for this time stepper **/
     std::vector<std::shared_ptr<monitors::Monitor>> monitors; /** the monitors **/
+    PetscLogStage tsLogStage;
 
    public:
     TimeStepper(std::string name, std::map<std::string, std::string> arguments);
@@ -23,6 +24,8 @@ class TimeStepper {
     void Solve(std::shared_ptr<Solvable>);
 
     void AddMonitor(std::shared_ptr<monitors::Monitor>);
+
+    double GetTime() const;
 };
 }  // namespace ablate::solve
 

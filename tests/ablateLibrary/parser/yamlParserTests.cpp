@@ -711,12 +711,16 @@ TEST(YamlParserTests, ShouldAllowOverWrittenValues) {
     yaml << "  item4: 5" << std::endl;
     yaml << "  item5: " << std::endl;
     yaml << "    item6: {} " << std::endl;
+    yaml << "item9: " << std::endl;
+    yaml << "  - list1: 1" << std::endl;
+    yaml << "  - list2:" << std::endl;
+    yaml << "    item10: 10" << std::endl;
 
     auto params = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
         {"item1", "44"},
         {"item2::item4", "55"},
         {"item2::item5::item6::item7", "77"},
-
+        {"item9::[1]::item10", "100"},
     });
 
     // act
@@ -726,6 +730,7 @@ TEST(YamlParserTests, ShouldAllowOverWrittenValues) {
     ASSERT_EQ("44", yamlParser->GetByName<std::string>("item1"));
     ASSERT_EQ("55", yamlParser->GetFactory("item2")->GetByName<std::string>("item4"));
     ASSERT_EQ("77", yamlParser->GetFactory("item2")->GetFactory("item5")->GetFactory("item6")->GetByName<std::string>("item7"));
+    ASSERT_EQ("100", yamlParser->GetFactorySequence("item9")[1]->GetByName<std::string>("item10"));
 
     // the output should be updated
     std::stringstream yamlUpdated;
@@ -736,10 +741,69 @@ TEST(YamlParserTests, ShouldAllowOverWrittenValues) {
     yamlUpdated << "  item4: 55" << std::endl;
     yamlUpdated << "  item5:" << std::endl;
     yamlUpdated << "    item6: {item7: 77}" << std::endl;
+    yamlUpdated << "item9:" << std::endl;
+    yamlUpdated << "  - list1: 1" << std::endl;
+    yamlUpdated << "  - list2: ~" << std::endl;
+    yamlUpdated << "    item10: 100" << std::endl;
 
     std::stringstream outStream;
     yamlParser->Print(outStream);
     ASSERT_EQ(outStream.str(), yamlUpdated.str());
+}
+
+TEST(YamlParserTests, ShouldSupportAliasesAndAnchorsForScalars) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << "item1: &anchor1  22" << std::endl;
+    yaml << "item2: *anchor1" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    // assert
+    ASSERT_EQ(22, yamlParser->Get(ArgumentIdentifier<int>{.inputName = "item1"}));
+    ASSERT_EQ(22, yamlParser->Get(ArgumentIdentifier<int>{.inputName = "item2"}));
+}
+
+TEST(YamlParserTests, ShouldSupportAliasesAndAnchorsForMaps) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << "item1: &anchor1" << std::endl;
+    yaml << "  item10: 3" << std::endl;
+    yaml << "  item11: 55" << std::endl;
+    yaml << "item2: *anchor1" << std::endl;
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto factory1 = yamlParser->GetFactory("item2");
+    auto factory2 = yamlParser->GetFactory("item2");
+
+    // assert
+    ASSERT_EQ(3, factory1->Get(ArgumentIdentifier<int>{.inputName = "item10"}));
+    ASSERT_EQ(55, factory1->Get(ArgumentIdentifier<int>{.inputName = "item11"}));
+    ASSERT_EQ(3, factory2->Get(ArgumentIdentifier<int>{.inputName = "item10"}));
+    ASSERT_EQ(55, factory2->Get(ArgumentIdentifier<int>{.inputName = "item11"}));
+}
+
+TEST(YamlParserTests, ShouldReturnFactoryForScalarValues) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: !classType123 22.3 " << std::endl;
+    std::string emptyString = {};
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto factory1 = yamlParser->GetFactory("item");
+
+    // assert
+    ASSERT_EQ("22.3", factory1->Get(ArgumentIdentifier<std::string>{.inputName = {}}));
+    ASSERT_EQ(22.3, factory1->Get(ArgumentIdentifier<double>{.inputName = {}}));
+    ASSERT_EQ("classType123", factory1->GetClassType());
 }
 
 class YamlParserTestsPetscTestFixture : public testingResources::PetscTestFixture {};

@@ -1,22 +1,25 @@
 #ifndef ABLATELIBRARY_EULERDIFFUSION_HPP
 #define ABLATELIBRARY_EULERDIFFUSION_HPP
+#include <eos/transport/transportModel.hpp>
 #include "flowProcess.hpp"
 
 namespace ablate::flow::processes {
 
 class EulerDiffusion : public FlowProcess {
-    typedef enum { T, VEL, TOTAL_COMPRESSIBLE_AUX_COMPONENTS } CompressibleAuxComponents;
-
    public:
     struct _EulerDiffusionData {
         /* thermal conductivity*/
-        PetscReal k;
+        eos::transport::ComputeConductivityFunction kFunction;
+        void* kContext;
         /* dynamic viscosity*/
-        PetscReal mu;
+        eos::transport::ComputeViscosityFunction muFunction;
+        void* muContext;
+
+        /* store a scratch variable to hold yi*/
+        std::vector<PetscReal> yiScratch;
+
         /* number of gas species */
         PetscInt numberSpecies;
-
-        PetscReal dtStabilityFactor;
 
         // EOS function calls
         PetscErrorCode (*computeTemperatureFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal* densityYi, PetscReal* T, void* ctx);
@@ -24,7 +27,7 @@ class EulerDiffusion : public FlowProcess {
     };
     typedef struct _EulerDiffusionData* EulerDiffusionData;
 
-    explicit EulerDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos);
+    explicit EulerDiffusion(std::shared_ptr<eos::EOS> eos, std::shared_ptr<eos::transport::TransportModel> transportModel);
     ~EulerDiffusion() override;
 
     /**
@@ -47,10 +50,10 @@ class EulerDiffusion : public FlowProcess {
    private:
     EulerDiffusionData eulerDiffusionData;
     std::shared_ptr<eos::EOS> eos;
-
+    std::shared_ptr<eos::transport::TransportModel> transportModel;
     /**
      * This Computes the diffusion flux for euler rhoE, rhoVel
-     * u = {"euler"}
+     * u = {"euler", "densityYi"}
      * a = {"temperature", "velocity"}
      * ctx = FlowData_CompressibleFlow
      * @return
@@ -58,12 +61,16 @@ class EulerDiffusion : public FlowProcess {
     static PetscErrorCode CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[],
                                                          const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[],
                                                          const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* fL, void* ctx);
-    // function to update the aux temperature field
-    static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
-    static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
-
-    // static function to compute time step for euler diffusion
-    static double ComputeTimeStep(TS ts, Flow& flow, void* ctx);
+    /**
+     * Function to compute the temperature field. This function assumes that the input values will be {"euler", "densityYi"}
+     */
+    static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
+                                                    void* ctx);
+    /**
+     * Function to compute the velocity. This function assumes that the input values will be {"euler"}
+     */
+    static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
+                                                 void* ctx);
 };
 
 }  // namespace ablate::flow::processes

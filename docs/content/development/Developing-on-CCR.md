@@ -42,11 +42,11 @@ The following are available CHREST modules:
 ## Loading all CHREST modules
 Loading all available CHREST modules can be done via
 ```bash
-  module load chrest
+  module load chrest/release
 ```
 for the release version or
 ```bash
-  module load chrest-debug
+  module load chrest/debug
 ```
 for the debug version.
 
@@ -59,7 +59,7 @@ To load pre-build versions of Ablate in the terminal enter
   ```bash
   module load ablate/debug
   ```
-  for the debug version.
+  for the debug version. These will load all required modules for Ablate, add the ```ABLATE_DIR``` environment variable, and add ```ABLATE_DIR``` to ```path```.
 
   All available versions of ABLATE can be seen by using
   ```bash
@@ -81,7 +81,7 @@ To compile ABLATE against pre-built PETSc modules enter in the terminal
     module load petsc-chrest/debug
   ```
 
-  for the debug version of PETSc.
+  for the debug version of PETSc. These will load all required modules for PETSc and add the ```PETSC_DIR``` and ```PETSC_ARCH``` environment variables.
 
   All available versions of PETSc pre-compiled for use with ABLATE can be seen by using
 

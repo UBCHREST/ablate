@@ -1,6 +1,8 @@
 #ifndef ABLATELIBRARY_PETSCTESTERRORCHECKER_HPP
 #define ABLATELIBRARY_PETSCTESTERRORCHECKER_HPP
 
+#include <iostream>
+
 class PetscTestErrorChecker {
     friend void operator>>(int ierr, const PetscTestErrorChecker& errorChecker) {
         if (ierr != 0) {

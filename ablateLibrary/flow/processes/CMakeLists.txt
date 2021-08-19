@@ -7,4 +7,6 @@ target_sources(ablateLibrary
         eulerDiffusion.cpp
         tChemReactions.hpp
         tChemReactions.cpp
+        speciesDiffusion.hpp
+        speciesDiffusion.cpp
         )

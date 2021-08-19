@@ -2,7 +2,6 @@
 #include <petscsys.h>
 #include <algorithm>
 #include <exception>
-#include "parser/registrar.hpp"
 
 static mu::value_type powerFunction(mu::value_type a, mu::value_type b) { return PetscPowReal(a, b); }
 
@@ -13,8 +12,8 @@ ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString
     parser.DefineVar("z", &coordinate[2]);
     parser.DefineVar("t", &time);
 
-    // define some helper functions
-    parser.DefineFun("Power", powerFunction, true);
+    // define any additional helper functions
+    DefineAdditionalFunctions(parser);
 
     parser.SetExpr(formula);
 
@@ -117,5 +116,11 @@ PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscI
     PetscFunctionReturn(0);
 }
 
-REGISTERDEFAULT(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedFunction, "a string based function to be parsed with muparser",
-                ARG(std::string, "formula", "the formula that may accept x, y, z, t"));
+void ablate::mathFunctions::ParsedFunction::DefineAdditionalFunctions(mu::Parser& parser) {
+    // define some helper functions
+    parser.DefineFun("Power", powerFunction, true);
+}
+
+#include "parser/registrar.hpp"
+REGISTERDEFAULT_PASS_THROUGH(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedFunction,
+                             "a string based function to be parsed with muparser. The (string) formula that may accept x, y, z, t as variables", std::string);

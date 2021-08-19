@@ -165,12 +165,11 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 2, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // Setup the flow data
-            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}, {"mu", "0.0"}, {"k", "0.0"}});
-
+            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}});
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}}));
 
-            auto initialCondition = std::make_shared<mathFunctions::FieldSolution>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
+            auto initialCondition = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<flow::boundaryConditions::Ghost>("euler", "wall left", 4, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
@@ -181,11 +180,12 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                                                                                std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                parameters,
+                                                                               nullptr /*transportModel*/,
                                                                                testingParam.fluxCalculator,
                                                                                nullptr /*options*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{initialCondition} /*initialization*/,
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition} /*initialization*/,
                                                                                boundaryConditions /*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{} /*exactSolution*/);
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{} /*exactSolution*/);
 
             // Complete the problem setup
             flowObject->CompleteProblemSetup(ts);

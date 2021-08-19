@@ -11,7 +11,7 @@
 #include <vector>
 #include "flow/boundaryConditions/boundaryCondition.hpp"
 #include "flowFieldDescriptor.hpp"
-#include "mathFunctions/fieldSolution.hpp"
+#include "mathFunctions/fieldFunction.hpp"
 #include "mesh/mesh.hpp"
 #include "solve/solvable.hpp"
 
@@ -25,6 +25,7 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     // descriptions to the fields on the auxDM
     std::vector<FlowFieldDescriptor> auxFieldDescriptors;
 
+    static PetscErrorCode TSPreStageFunction(TS ts, PetscReal stagetime);
     static PetscErrorCode TSPreStepFunction(TS ts);
     static PetscErrorCode TSPostStepFunction(TS ts);
     static PetscErrorCode TSPostEvaluateFunction(TS ts);
@@ -50,13 +51,14 @@ class Flow : public solve::Solvable, public monitors::Viewable {
 
     // pre and post step functions for the flow
     std::vector<std::function<void(TS ts, Flow&)>> preStepFunctions;
+    std::vector<std::function<void(TS ts, Flow&, PetscReal)>> preStageFunctions;
     std::vector<std::function<void(TS ts, Flow&)>> postStepFunctions;
     std::vector<std::function<void(TS ts, Flow&)>> postEvaluateFunctions;
 
-    const std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization;
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
-    const std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFieldsUpdaters;
-    const std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolutions;
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFieldsUpdaters;
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
     // Register the field
     void RegisterField(FlowFieldDescriptor flowFieldDescription);
@@ -70,8 +72,8 @@ class Flow : public solve::Solvable, public monitors::Viewable {
 
    public:
     Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
-         std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-         std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution);
+         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
     virtual ~Flow();
 
     virtual void CompleteProblemSetup(TS ts);
@@ -96,6 +98,12 @@ class Flow : public solve::Solvable, public monitors::Viewable {
      * @param preStep
      */
     void RegisterPreStep(std::function<void(TS ts, Flow&)> preStep) { this->preStepFunctions.push_back(preStep); }
+
+    /**
+     * Adds function to be called before each flow step
+     * @param preStep
+     */
+    void RegisterPreStage(std::function<void(TS ts, Flow&, PetscReal)> preStage) { this->preStageFunctions.push_back(preStage); }
 
     /**
      * Adds function to be called after each flow step
@@ -126,6 +134,8 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     std::optional<int> GetAuxFieldId(const std::string& fieldName) const;
 
     const FlowFieldDescriptor& GetFieldDescriptor(const std::string& fieldName) const;
+
+    const FlowFieldDescriptor& GetAuxFieldDescriptor(const std::string& fieldName) const;
 };
 }  // namespace ablate::flow
 

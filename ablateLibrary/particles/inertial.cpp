@@ -4,7 +4,7 @@
 enum InertialParticleFields { Position, Velocity, TotalParticleField };
 
 ablate::particles::Inertial::Inertial(std::string name, int ndims, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<particles::initializers::Initializer> initializer,
-                                      std::vector<std::shared_ptr<mathFunctions::FieldSolution>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution,
+                                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution,
                                       std::shared_ptr<parameters::Parameters> options)
     : Particles(name, ndims, initializer, fieldInitialization, exactSolution, options) {
     RegisterSolutionField(ParticleFieldDescriptor{.fieldName = ParticleVelocity, .components = ndims, .type = PETSC_REAL});
@@ -229,5 +229,5 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
 REGISTER(ablate::particles::Particles, ablate::particles::Inertial, "particles (with mass) that advect with the flow", ARG(std::string, "name", "the name of the particle group"),
          ARG(int, "ndims", "the number of dimensions for the particle"), ARG(parameters::Parameters, "parameters", "fluid parameters for the particles (fluidDensity, fluidViscosity, gravityField)"),
          ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
-         ARG(std::vector<mathFunctions::FieldSolution>, "fieldInitialization", "the initial particle fields setup methods"),
+         ARG(std::vector<mathFunctions::FieldFunction>, "fieldInitialization", "the initial particle fields setup methods"),
          OPT(mathFunctions::MathFunction, "exactSolution", "the particle location/velocity exact solution"), ARG(parameters::Parameters, "options", "options to be passed to petsc"));

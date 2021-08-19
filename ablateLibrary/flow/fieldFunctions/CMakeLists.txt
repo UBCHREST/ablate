@@ -1,0 +1,11 @@
+target_sources(ablateLibrary
+        PUBLIC
+        compressibleFlowState.hpp
+        compressibleFlowState.cpp
+        euler.hpp
+        euler.cpp
+        massFractions.hpp
+        massFractions.cpp
+        densityMassFractions.hpp
+        densityMassFractions.cpp
+        )

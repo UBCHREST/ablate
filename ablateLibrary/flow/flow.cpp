@@ -4,8 +4,8 @@
 #include "utilities/petscOptions.hpp"
 
 ablate::flow::Flow::Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
-                         std::vector<std::shared_ptr<mathFunctions::FieldSolution>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                         std::vector<std::shared_ptr<mathFunctions::FieldSolution>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldSolution>> exactSolution)
+                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : name(name),
       dm(mesh),
       auxDM(nullptr),
@@ -180,6 +180,26 @@ PetscErrorCode ablate::flow::Flow::TSPreStepFunction(TS ts) {
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode ablate::flow::Flow::TSPreStageFunction(TS ts, PetscReal stagetime) {
+    PetscFunctionBeginUser;
+    DM dm;
+    PetscErrorCode ierr = TSGetDM(ts, &dm);
+    CHKERRQ(ierr);
+    ablate::flow::Flow* flowObject;
+    ierr = DMGetApplicationContext(dm, &flowObject);
+    CHKERRQ(ierr);
+
+    for (const auto& function : flowObject->preStageFunctions) {
+        try {
+            function(ts, *flowObject, stagetime);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode ablate::flow::Flow::TSPostStepFunction(TS ts) {
     PetscFunctionBeginUser;
     DM dm;
@@ -273,6 +293,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
     if (isFV) {
         DMTSSetRHSFunctionLocal(dm->GetDomain(), DMPlexTSComputeRHSFunctionFVM, this) >> checkError;
     }
+    TSSetPreStage(ts, TSPreStageFunction) >> checkError;
     TSSetPreStep(ts, TSPreStepFunction) >> checkError;
     TSSetPostStep(ts, TSPostStepFunction) >> checkError;
     TSSetPostEvaluate(ts, TSPostEvaluateFunction) >> checkError;
@@ -420,4 +441,13 @@ const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetFieldDescriptor(
         }
     }
     throw std::invalid_argument("Cannot locate field descriptor for " + fieldName);
+}
+
+const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetAuxFieldDescriptor(const std::string& fieldName) const {
+    for (const auto& descriptor : auxFieldDescriptors) {
+        if (descriptor.fieldName == fieldName) {
+            return descriptor;
+        }
+    }
+    throw std::invalid_argument("Cannot locate aux field descriptor for " + fieldName);
 }

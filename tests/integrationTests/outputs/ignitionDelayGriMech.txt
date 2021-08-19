@@ -1,5 +1,4 @@
 SUCCESS
-SUCCESS
 Computed Ignition Delay \(OH\): (.*)<expects> <0.05
 ResultFiles:
 ignitionDelayPeakYi.csv

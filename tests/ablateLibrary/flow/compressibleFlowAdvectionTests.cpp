@@ -62,28 +62,29 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             auto mesh = std::make_shared<ablate::mesh::BoxMesh>(
                 "simpleMesh", std::vector<int>{nx1D, nx1D}, std::vector<double>{0.0, 0.0}, std::vector<double>{.01, .01}, std::vector<std::string>{} /*boundary*/, false /*simplex*/);
             // setup a flow parameters
-            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}, {"mu", "0.0"}, {"k", "0.0"}});
+            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}});
 
             auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}),
                                                                  std::vector<std::string>{"O2", "H2O", "N2"});
 
             // setup solutions from the exact params
-            auto exactEulerSolution = std::make_shared<mathFunctions::FieldSolution>("euler", GetParam().eulerExact);
-            auto yiExactSolution = std::make_shared<mathFunctions::FieldSolution>("densityYi", GetParam().densityYiExact);
+            auto exactEulerSolution = std::make_shared<mathFunctions::FieldFunction>("euler", GetParam().eulerExact);
+            auto yiExactSolution = std::make_shared<mathFunctions::FieldFunction>("densityYi", GetParam().densityYiExact);
 
             auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<flow::boundaryConditions::EssentialGhost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, GetParam().eulerExact),
-                std::make_shared<flow::boundaryConditions::EssentialGhost>("densityYi", "walls", std::vector<int>{1, 2, 3, 4}, GetParam().densityYiExact)};
+                std::make_shared<flow::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, exactEulerSolution),
+                std::make_shared<flow::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, yiExactSolution)};
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
                                                                                mesh,
                                                                                eos,
                                                                                parameters,
+                                                                               nullptr /*transportModel*/,
                                                                                nullptr,
                                                                                nullptr /*options*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactEulerSolution, yiExactSolution} /*initialization*/,
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution} /*initialization*/,
                                                                                boundaryConditions /*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldSolution>>{exactEulerSolution, yiExactSolution});
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
 
             // assume one flow field right now
             flowObject->CompleteProblemSetup(ts);
