@@ -69,4 +69,3 @@ endif()
 # keep a separate main statement
 add_executable(ablate main.cpp)
 target_link_libraries(ablate PRIVATE ablateLibrary)
-ablate_default_target_compile_options_cxx(ablate)
