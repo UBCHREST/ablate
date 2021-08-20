@@ -18,8 +18,13 @@ ablate::mathFunctions::ParsedSeries::ParsedSeries(std::string functionString, in
     parser.SetExpr(formula);
 
     // Test the function
-    parser.Eval();
+    try {
+        parser.Eval();
+    } catch (mu::Parser::exception_type& exception) {
+        throw ablate::mathFunctions::ParsedFunction::ConvertToException(exception);
+    }
 }
+
 double ablate::mathFunctions::ParsedSeries::Eval(const double& x, const double& y, const double& z, const double& t) const {
     coordinate[0] = x;
     coordinate[1] = y;

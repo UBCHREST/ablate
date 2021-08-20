@@ -18,7 +18,11 @@ ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString
     parser.SetExpr(formula);
 
     // Test the function
-    parser.Eval();
+    try {
+        parser.Eval();
+    } catch (mu::Parser::exception_type& exception) {
+        throw ablate::mathFunctions::ParsedFunction::ConvertToException(exception);
+    }
 }
 double ablate::mathFunctions::ParsedFunction::Eval(const double& x, const double& y, const double& z, const double& t) const {
     coordinate[0] = x;
@@ -39,6 +43,7 @@ double ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int&
     time = t;
     return parser.Eval();
 }
+
 void ablate::mathFunctions::ParsedFunction::Eval(const double& x, const double& y, const double& z, const double& t, std::vector<double>& result) const {
     coordinate[0] = x;
     coordinate[1] = y;
@@ -119,6 +124,10 @@ PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscI
 void ablate::mathFunctions::ParsedFunction::DefineAdditionalFunctions(mu::Parser& parser) {
     // define some helper functions
     parser.DefineFun("Power", powerFunction, true);
+}
+
+std::invalid_argument ablate::mathFunctions::ParsedFunction::ConvertToException(mu::Parser::exception_type& exception) {
+    return std::invalid_argument("Unable to parser (" + exception.GetExpr() + "). " + exception.GetMsg());
 }
 
 #include "parser/registrar.hpp"

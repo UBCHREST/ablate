@@ -90,6 +90,26 @@ class Factory {
     }
 
     template <typename Interface>
+    std::map<std::string, std::shared_ptr<Interface>> Get(const ArgumentIdentifier<std::map<std::string, Interface>>& identifier) const {
+        if (identifier.optional && !Contains(identifier.inputName)) {
+            return {};
+        }
+
+        auto childFactory = GetFactory(identifier.inputName);
+        auto childrenNames = childFactory->GetKeys();
+
+        // Build and resolve the list
+        std::map<std::string, std::shared_ptr<Interface>> results;
+        for (auto childName : childrenNames) {
+            auto subChildFactory = childFactory->GetFactory(childName);
+
+            results[childName] = (ResolveAndCreate<Interface>(subChildFactory));
+        }
+
+        return results;
+    }
+
+    template <typename Interface>
     inline auto GetByName(const std::string inputName) {
         return Get(ArgumentIdentifier<Interface>{.inputName = inputName});
     }

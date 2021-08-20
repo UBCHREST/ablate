@@ -16,4 +16,6 @@ target_sources(ablateLibrary
         parsedSeries.cpp
         linearTable.hpp
         linearTable.cpp
+        parsedNested.hpp
+        parsedNested.cpp
         )
