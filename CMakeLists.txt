@@ -1,14 +1,24 @@
 cmake_minimum_required(VERSION 3.14)
 
-# Set the compilers based upon the PETSc package
+
 find_package(PkgConfig REQUIRED)
-pkg_get_variable(PETSC_C_COMPILER PETSc ccompiler)
-set(CMAKE_C_COMPILER ${PETSC_C_COMPILER})
-pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
-set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
+
+# Check if a C compiler is explicitly stated
+if(NOT DEFINED CMAKE_C_COMPILER)
+  # Set the compilers based upon the PETSc package
+  pkg_get_variable(PETSC_C_COMPILER PETSc ccompiler)
+  set(CMAKE_C_COMPILER ${PETSC_C_COMPILER})
+endif()
+
+# Check if a CXX compiler is explicitly stated
+if(NOT DEFINED CMAKE_CXX_COMPILER)
+  # Set the compilers based upon the PETSc package
+  pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
+  set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
+endif()
 
 # Set the project details
-project(ablateLibrary VERSION 0.5.4)
+project(ablateLibrary VERSION 0.5.5)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)
