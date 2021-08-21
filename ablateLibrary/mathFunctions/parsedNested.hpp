@@ -16,7 +16,7 @@ class ParsedNested : public MathFunction {
     const std::string formula;
 
     // store the scratch variables
-    std::vector<double*> nestedValues;
+    std::vector<std::unique_ptr<double>> nestedValues;
     std::vector<std::shared_ptr<MathFunction>> nestedFunctions;
 
    private:
@@ -27,7 +27,6 @@ class ParsedNested : public MathFunction {
     void operator=(const ParsedNested&) = delete;
 
     explicit ParsedNested(std::string functionString, std::map<std::string, std::shared_ptr<MathFunction>>);
-    ~ParsedNested() override;
 
     double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 

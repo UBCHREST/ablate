@@ -13,14 +13,11 @@ ablate::mathFunctions::ParsedNested::ParsedNested(std::string functionString, st
         // store the function
         nestedFunctions.push_back(nestedFunction.second);
 
-        // Create a new pointer to a double value
-        double* value = new double;
-
         // store the pointer
-        nestedValues.push_back(value);
+        nestedValues.push_back(std::make_unique<double>(0.0));
 
         // register this with the parser
-        parser.DefineVar(nestedFunction.first, value);
+        parser.DefineVar(nestedFunction.first, nestedValues.back().get());
     }
 
     // define any additional helper functions
@@ -32,13 +29,6 @@ ablate::mathFunctions::ParsedNested::ParsedNested(std::string functionString, st
         parser.Eval();
     } catch (mu::Parser::exception_type& exception) {
         throw ablate::mathFunctions::ParsedFunction::ConvertToException(exception);
-    }
-}
-
-ablate::mathFunctions::ParsedNested::~ParsedNested() {
-    for (auto& pointer : nestedValues) {
-        delete pointer;
-        pointer = nullptr;
     }
 }
 
@@ -144,7 +134,7 @@ PetscErrorCode ablate::mathFunctions::ParsedNested::ParsedPetscNested(PetscInt d
 
         // updated the nested functions
         for (std::size_t i = 0; i < parser->nestedValues.size(); i++) {
-            parser->nestedFunctions[i]->GetPetscFunction()(dim, time, x, 1, parser->nestedValues[i], parser->nestedFunctions[i]->GetContext());
+            parser->nestedFunctions[i]->GetPetscFunction()(dim, time, x, 1, parser->nestedValues[i].get(), parser->nestedFunctions[i]->GetContext());
         }
 
         // Evaluate

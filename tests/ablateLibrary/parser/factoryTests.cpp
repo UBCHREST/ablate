@@ -196,5 +196,4 @@ TEST(FactoryTests, ShouldGetMapOfSharedPointers) {
     ASSERT_TRUE(std::dynamic_pointer_cast<FactoryMockClass1>(result["key1"]) != nullptr);
     ASSERT_TRUE(std::dynamic_pointer_cast<FactoryMockClass1>(result["key2"]) != nullptr);
 }
-
 }  // namespace ablateTesting::parser

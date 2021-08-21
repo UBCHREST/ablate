@@ -25,7 +25,7 @@ TEST(ParsedSeriesTests, ShouldBeCreatedFromRegistar) {
 
 TEST(ParsedSeriesTests, ShouldThrowExceptionInvalidEquation) {
     // arrange/act/assert
-    ASSERT_ANY_THROW(ablate::mathFunctions::ParsedSeries("x+y+z+t+c"));
+    ASSERT_THROW(ablate::mathFunctions::ParsedSeries("x+y+z+t+c"), std::invalid_argument);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -11,7 +11,7 @@ namespace ablateTesting::mathFunctions {
 TEST(ParsedNestedTests, ShouldBeCreatedFromRegistar) {
     // arrange
     std::shared_ptr<ablateTesting::parser::MockFactory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
-    const std::string expectedClassType = "ablate::mathFunctions::ParsedSeries";
+    const std::string expectedClassType = "ablate::mathFunctions::ParsedNested";
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
     EXPECT_CALL(*mockFactory, Get(ablate::parser::ArgumentIdentifier<std::string>{.inputName = "formula"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("x+y+z+t"));
 
@@ -29,13 +29,22 @@ TEST(ParsedNestedTests, ShouldBeCreatedFromRegistar) {
 
 TEST(ParsedNestedTests, ShouldThrowExceptionInvalidEquation) {
     // arrange/act/assert
-    ASSERT_ANY_THROW(ablate::mathFunctions::ParsedNested("x+y+z+t+c", {}));
+    ASSERT_THROW(ablate::mathFunctions::ParsedNested("x+y+z+t+c", {}), std::invalid_argument);
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+static std::map<std::string, std::shared_ptr<ablate::mathFunctions::MathFunction>> ToFunctionMap(const std::map<std::string, std::string>& stringMap) {
+    std::map<std::string, std::shared_ptr<ablate::mathFunctions::MathFunction>> map;
+    for (const auto& formula : stringMap) {
+        map[formula.first] = ablate::mathFunctions::Create(formula.second);
+    }
+    return map;
+};
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct ParsedNestedTestsScalarParameters {
     std::string formula;
-    std::map<std::string, std::shared_ptr<ablate::mathFunctions::MathFunction>> nested;
+    std::map<std::string, std::string> nested;
     double expectedResult;
 };
 
@@ -44,7 +53,7 @@ class ParsedNestedTestsScalarFixture : public ::testing::TestWithParam<ParsedNes
 TEST_P(ParsedNestedTestsScalarFixture, ShouldComputeCorrectAnswerFromXYZ) {
     // arrange
     const auto& param = GetParam();
-    auto function = ablate::mathFunctions::ParsedNested(param.formula, param.nested);
+    auto function = ablate::mathFunctions::ParsedNested(param.formula, ToFunctionMap(param.nested));
 
     // act/assert
     ASSERT_DOUBLE_EQ(param.expectedResult, function.Eval(1.0, 2.0, 3.0, 4.0));
@@ -53,7 +62,7 @@ TEST_P(ParsedNestedTestsScalarFixture, ShouldComputeCorrectAnswerFromXYZ) {
 TEST_P(ParsedNestedTestsScalarFixture, ShouldComputeCorrectAnswerFromCoord) {
     // arrange
     const auto& param = GetParam();
-    auto function = ablate::mathFunctions::ParsedNested(param.formula, param.nested);
+    auto function = ablate::mathFunctions::ParsedNested(param.formula, ToFunctionMap(param.nested));
 
     const double array1[3] = {1.0, 2.0, 3.0};
 
@@ -62,16 +71,14 @@ TEST_P(ParsedNestedTestsScalarFixture, ShouldComputeCorrectAnswerFromCoord) {
 }
 
 INSTANTIATE_TEST_SUITE_P(ParsedNestedTests, ParsedNestedTestsScalarFixture,
-                         testing::Values((ParsedNestedTestsScalarParameters){.formula = "v*x", .nested = {{"v", ablate::mathFunctions::Create(2.0)}}, .expectedResult = 2.0},
-                                         (ParsedNestedTestsScalarParameters){.formula = "v*x + z", .nested = {{"v", ablate::mathFunctions::Create("3.0*y")}}, .expectedResult = 9.0},
-                                         (ParsedNestedTestsScalarParameters){.formula = "t*vel + test",
-                                                                             .nested = {{"vel", ablate::mathFunctions::Create("3.0*y")}, {"test", ablate::mathFunctions::Create("z")}},
-                                                                             .expectedResult = 27}));
+                         testing::Values((ParsedNestedTestsScalarParameters){.formula = "v*x", .nested = {{"v", "2.0"}}, .expectedResult = 2.0},
+                                         (ParsedNestedTestsScalarParameters){.formula = "v*x + z", .nested = {{"v", "3.0*y"}}, .expectedResult = 9.0},
+                                         (ParsedNestedTestsScalarParameters){.formula = "t*vel + test", .nested = {{"vel", "3.0*y"}, {"test", "z"}}, .expectedResult = 27}));
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct ParsedNestedTestsVectorParameters {
     std::string formula;
-    std::map<std::string, std::shared_ptr<ablate::mathFunctions::MathFunction>> nested;
+    std::map<std::string, std::string> nested;
     std::vector<double> expectedResult;
 };
 
@@ -80,7 +87,7 @@ class ParsedNestedTestsVectorFixture : public ::testing::TestWithParam<ParsedNes
 TEST_P(ParsedNestedTestsVectorFixture, ShouldComputeCorrectAnswerFromXYZ) {
     // arrange
     const auto& param = GetParam();
-    auto function = ablate::mathFunctions::ParsedNested(param.formula, param.nested);
+    auto function = ablate::mathFunctions::ParsedNested(param.formula, ToFunctionMap(param.nested));
     std::vector<double> result(param.expectedResult.size(), NAN);
 
     // act
@@ -95,7 +102,7 @@ TEST_P(ParsedNestedTestsVectorFixture, ShouldComputeCorrectAnswerFromXYZ) {
 TEST_P(ParsedNestedTestsVectorFixture, ShouldComputeCorrectAnswerFromCoord) {
     // arrange
     const auto& param = GetParam();
-    auto function = ablate::mathFunctions::ParsedNested(param.formula, param.nested);
+    auto function = ablate::mathFunctions::ParsedNested(param.formula, ToFunctionMap(param.nested));
     std::vector<double> result(param.expectedResult.size(), NAN);
 
     const double array[3] = {1.0, 2.0, 3.0};
@@ -112,7 +119,7 @@ TEST_P(ParsedNestedTestsVectorFixture, ShouldComputeCorrectAnswerFromCoord) {
 TEST_P(ParsedNestedTestsVectorFixture, ShouldComputeCorrectAnswerPetscFunction) {
     // arrange
     const auto& param = GetParam();
-    auto function = ablate::mathFunctions::ParsedNested(param.formula, param.nested);
+    auto function = ablate::mathFunctions::ParsedNested(param.formula, ToFunctionMap(param.nested));
     std::vector<double> result(param.expectedResult.size(), NAN);
 
     const double array[3] = {1.0, 2.0, 3.0};
@@ -130,12 +137,10 @@ TEST_P(ParsedNestedTestsVectorFixture, ShouldComputeCorrectAnswerPetscFunction) 
     }
 }
 INSTANTIATE_TEST_SUITE_P(ParsedNestedTests, ParsedNestedTestsVectorFixture,
-                         testing::Values((ParsedNestedTestsVectorParameters){.formula = "v*x", .nested = {{"v", ablate::mathFunctions::Create(2.0)}}, .expectedResult = {2.0}},
-                                         (ParsedNestedTestsVectorParameters){.formula = "v*x + z", .nested = {{"v", ablate::mathFunctions::Create("3.0*y")}}, .expectedResult = {9.0}},
-                                         (ParsedNestedTestsVectorParameters){.formula = "t*vel + test",
-                                                                             .nested = {{"vel", ablate::mathFunctions::Create("3.0*y")}, {"test", ablate::mathFunctions::Create("z")}},
-                                                                             .expectedResult = {27}},
-                                         (ParsedNestedTestsVectorParameters){.formula = "v*x, v*z + y", .nested = {{"v", ablate::mathFunctions::Create("3.0*y")}}, .expectedResult = {6, 20}},
-                                         (ParsedNestedTestsVectorParameters){.formula = "0, i*y, t/i", .nested = {{"i", ablate::mathFunctions::Create(10.0)}}, .expectedResult = {0, 20, 0.4}}));
+                         testing::Values((ParsedNestedTestsVectorParameters){.formula = "v*x", .nested = {{"v", "2.0"}}, .expectedResult = {2.0}},
+                                         (ParsedNestedTestsVectorParameters){.formula = "v*x + z", .nested = {{"v", "3.0*y"}}, .expectedResult = {9.0}},
+                                         (ParsedNestedTestsVectorParameters){.formula = "t*vel + test", .nested = {{"vel", "3.0*y"}, {"test", "z"}}, .expectedResult = {27}},
+                                         (ParsedNestedTestsVectorParameters){.formula = "v*x, v*z + y", .nested = {{"v", "3.0*y"}}, .expectedResult = {6, 20}},
+                                         (ParsedNestedTestsVectorParameters){.formula = "0, i*y, t/i", .nested = {{"i", "10.0"}}, .expectedResult = {0, 20, 0.4}}));
 
 }  // namespace ablateTesting::mathFunctions
