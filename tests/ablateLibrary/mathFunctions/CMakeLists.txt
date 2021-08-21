@@ -7,4 +7,5 @@ target_sources(libraryTests
         constantValueTests.cpp
         parsedSeriesTests.cpp
         linearInterpolatorTests.cpp
+        parsedNestedTests.cpp
         )

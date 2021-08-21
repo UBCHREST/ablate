@@ -1,6 +1,8 @@
 #ifndef ABLATELIBRARY_RUNENVIRONMENT_HPP
 #define ABLATELIBRARY_RUNENVIRONMENT_HPP
 #include <filesystem>
+#include <memory>
+#include <string>
 #include "parameters/parameters.hpp"
 
 namespace ablate::environment {
@@ -22,12 +24,17 @@ class RunEnvironment {
 
     // static access methods
     static void Setup(const parameters::Parameters&, std::filesystem::path inputPath = {});
-    inline static const RunEnvironment& Get() { return *runEnvironment; }
+    inline static const RunEnvironment& Get() {
+        if (!runEnvironment) {
+            runEnvironment.reset(new RunEnvironment());
+        }
+        return *runEnvironment;
+    }
 
     inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
 
    private:
-    static std::unique_ptr<RunEnvironment> runEnvironment;
+    inline static std::unique_ptr<RunEnvironment> runEnvironment = std::unique_ptr<RunEnvironment>();
 };
 }  // namespace ablate::environment
 

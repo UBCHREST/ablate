@@ -38,6 +38,8 @@ class ParsedFunction : public MathFunction {
     PetscFunction GetPetscFunction() override { return ParsedPetscFunction; }
 
     static void DefineAdditionalFunctions(mu::Parser& parser);
+
+    static std::invalid_argument ConvertToException(mu::Parser::exception_type& exception);
 };
 }  // namespace ablate::mathFunctions
 

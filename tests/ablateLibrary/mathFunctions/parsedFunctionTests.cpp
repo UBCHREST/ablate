@@ -23,7 +23,7 @@ TEST(ParsedFunctionTests, ShouldBeCreatedFromRegistar) {
 
 TEST(ParsedFunctionTests, ShouldThrowExceptionInvalidEquation) {
     // arrange/act/assert
-    ASSERT_ANY_THROW(ablate::mathFunctions::ParsedFunction("x+y+z+t+c"));
+    ASSERT_THROW(ablate::mathFunctions::ParsedFunction("x+y+z+t+c"), std::invalid_argument);
 }
 
 TEST(ParsedFunctionTests, ShouldEvalToScalarFromXYZ) {
