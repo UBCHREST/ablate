@@ -7,4 +7,6 @@ target_sources(ablateLibrary
         ghost.cpp
         essentialGhost.hpp
         essentialGhost.cpp
+        zeroGradientGhost.hpp
+        zeroGradientGhost.cpp
         )
