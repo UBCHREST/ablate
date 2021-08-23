@@ -1,5 +1,6 @@
 #ifndef ABLATELIBRARY_EULERDIFFUSION_HPP
 #define ABLATELIBRARY_EULERDIFFUSION_HPP
+#include <eos/transport/transportModel.hpp>
 #include "flowProcess.hpp"
 
 namespace ablate::flow::processes {
@@ -8,14 +9,17 @@ class EulerDiffusion : public FlowProcess {
    public:
     struct _EulerDiffusionData {
         /* thermal conductivity*/
-        PetscReal k;
+        eos::transport::ComputeConductivityFunction kFunction;
+        void* kContext;
         /* dynamic viscosity*/
-        PetscReal mu;
+        eos::transport::ComputeViscosityFunction muFunction;
+        void* muContext;
+
+        /* store a scratch variable to hold yi*/
+        std::vector<PetscReal> yiScratch;
 
         /* number of gas species */
         PetscInt numberSpecies;
-
-        PetscReal dtStabilityFactor;
 
         // EOS function calls
         PetscErrorCode (*computeTemperatureFunction)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal* densityYi, PetscReal* T, void* ctx);
@@ -23,7 +27,7 @@ class EulerDiffusion : public FlowProcess {
     };
     typedef struct _EulerDiffusionData* EulerDiffusionData;
 
-    explicit EulerDiffusion(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos);
+    explicit EulerDiffusion(std::shared_ptr<eos::EOS> eos, std::shared_ptr<eos::transport::TransportModel> transportModel);
     ~EulerDiffusion() override;
 
     /**
@@ -46,10 +50,10 @@ class EulerDiffusion : public FlowProcess {
    private:
     EulerDiffusionData eulerDiffusionData;
     std::shared_ptr<eos::EOS> eos;
-
+    std::shared_ptr<eos::transport::TransportModel> transportModel;
     /**
      * This Computes the diffusion flux for euler rhoE, rhoVel
-     * u = {"euler"}
+     * u = {"euler", "densityYi"}
      * a = {"temperature", "velocity"}
      * ctx = FlowData_CompressibleFlow
      * @return
@@ -67,9 +71,6 @@ class EulerDiffusion : public FlowProcess {
      */
     static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
                                                  void* ctx);
-
-    // static function to compute time step for euler diffusion
-    static double ComputeTimeStep(TS ts, Flow& flow, void* ctx);
 };
 
 }  // namespace ablate::flow::processes

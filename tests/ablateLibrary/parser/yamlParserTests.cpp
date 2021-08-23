@@ -711,12 +711,16 @@ TEST(YamlParserTests, ShouldAllowOverWrittenValues) {
     yaml << "  item4: 5" << std::endl;
     yaml << "  item5: " << std::endl;
     yaml << "    item6: {} " << std::endl;
+    yaml << "item9: " << std::endl;
+    yaml << "  - list1: 1" << std::endl;
+    yaml << "  - list2:" << std::endl;
+    yaml << "    item10: 10" << std::endl;
 
     auto params = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
         {"item1", "44"},
         {"item2::item4", "55"},
         {"item2::item5::item6::item7", "77"},
-
+        {"item9::[1]::item10", "100"},
     });
 
     // act
@@ -726,6 +730,7 @@ TEST(YamlParserTests, ShouldAllowOverWrittenValues) {
     ASSERT_EQ("44", yamlParser->GetByName<std::string>("item1"));
     ASSERT_EQ("55", yamlParser->GetFactory("item2")->GetByName<std::string>("item4"));
     ASSERT_EQ("77", yamlParser->GetFactory("item2")->GetFactory("item5")->GetFactory("item6")->GetByName<std::string>("item7"));
+    ASSERT_EQ("100", yamlParser->GetFactorySequence("item9")[1]->GetByName<std::string>("item10"));
 
     // the output should be updated
     std::stringstream yamlUpdated;
@@ -736,6 +741,10 @@ TEST(YamlParserTests, ShouldAllowOverWrittenValues) {
     yamlUpdated << "  item4: 55" << std::endl;
     yamlUpdated << "  item5:" << std::endl;
     yamlUpdated << "    item6: {item7: 77}" << std::endl;
+    yamlUpdated << "item9:" << std::endl;
+    yamlUpdated << "  - list1: 1" << std::endl;
+    yamlUpdated << "  - list2: ~" << std::endl;
+    yamlUpdated << "    item10: 100" << std::endl;
 
     std::stringstream outStream;
     yamlParser->Print(outStream);

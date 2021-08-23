@@ -38,7 +38,10 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
     // initialize TChem (with tabulation off?).  TChem init reads/writes file it can only be done one at a time
     for (int r = 0; r < size; r++) {
         if (r == rank) {
-            TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
+            if (libCount == 0) {
+                TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
+            }
+            libCount++;
 
             // Perform the local init
             // March over and get each species name
@@ -67,8 +70,12 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
 }
 
 ablate::eos::TChem::~TChem() {
+    libCount--;
+
     /* Free memory and reset variables to allow TC_initchem to be called again */
-    TC_reset();
+    if (libCount == 0) {
+        TC_reset();
+    }
 }
 
 const std::vector<std::string> &ablate::eos::TChem::GetSpecies() const { return species; }
@@ -85,6 +92,22 @@ void ablate::eos::TChem::View(std::ostream &stream) const {
  * @param T
  * @return
  */
+int ablate::eos::TChem::ComputeEnthalpyOfFormation(int numSpec, double *tempYiWorkingArray, double &enthalpyOfFormation) {
+    // compute the heat of formation
+    double currentT = tempYiWorkingArray[0];
+    tempYiWorkingArray[0] = TREF;
+    int err = TC_getMs2HmixMs(tempYiWorkingArray, numSpec + 1, &enthalpyOfFormation);
+
+    tempYiWorkingArray[0] = currentT;
+    return err;
+}
+
+/**
+ * the tempYiWorkingArray array is expected to be filled.
+ * @param yi
+ * @param T
+ * @return
+ */
 int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
     // get the required values
     double totalEnthalpy;
@@ -93,16 +116,11 @@ int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, doubl
         return err;
     }
 
-    // store the input temperature
-    double T = tempYiWorkingArray[0];
-
     // compute the heat of formation
-    tempYiWorkingArray[0] = TREF;
     double enthalpyOfFormation;
-    err = TC_getMs2HmixMs(tempYiWorkingArray, numSpec + 1, &enthalpyOfFormation);
+    err = ComputeEnthalpyOfFormation(numSpec, tempYiWorkingArray, enthalpyOfFormation);
 
-    internalEnergy = (totalEnthalpy - enthalpyOfFormation) - T * 1000.0 * RUNIV / mwMix;
-    tempYiWorkingArray[0] = T;
+    internalEnergy = (totalEnthalpy - enthalpyOfFormation) - tempYiWorkingArray[0] * 1000.0 * RUNIV / mwMix;
     return err;
 }
 
@@ -292,6 +310,24 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSensibleInternalEnergy(PetscReal 
     double sensibleInternalEnergyCompute = 0;
     err = ComputeSensibleInternalEnergyInternal(tChem->numberSpecies, tempYiWorkingArray, mwMix, sensibleInternalEnergyCompute);
     *sensibleInternalEnergy = sensibleInternalEnergyCompute;
+    TCCHKERRQ(err);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::TChemComputeSpecificHeatConstantPressure(PetscReal T, PetscReal, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    TChem *tChem = (TChem *)ctx;
+
+    // Fill the working array
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
+    tempYiWorkingArray[0] = T;
+    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
+        tempYiWorkingArray[sp + 1] = yi[sp];
+    }
+
+    // call the tChem library
+    int err = TC_getMs2CpMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, specificHeat);
     TCCHKERRQ(err);
 
     PetscFunctionReturn(0);

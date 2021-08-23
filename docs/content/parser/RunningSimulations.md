@@ -45,7 +45,7 @@ If you built ABLATE using the command line you can run ABLATE using either the d
 
 Other available command line arguments are listed in [Parser Command Line Arguments](#parser-command-line-arguments).
 
-Parameters within the yaml file can be overwritten using the command line using the syntax ```-yaml::PATH::TO::PARAMETER updatedValue```.  For instance, the following command would update the Npb parameter in the above Yaml example ```-yaml::particles::initializer::arguments::Npb 40```.
+Parameters within the yaml file can be overwritten using the command line using the syntax ```-yaml::PATH::TO::PARAMETER updatedValue``` or ```-yaml::PATH::[INDEX]::PARAMETER updatedValue``` if there is a list.  For instance, the following command would update the Npb parameter in the above Yaml example ```-yaml::particles::initializer::arguments::Npb 40```.
 
 ## Running ABLATE from CLion
 1. If you are new to CLion it is recommended that you read through the [CLion Quick Start Guide](https://www.jetbrains.com/help/clion/clion-quick-start-guide.html).

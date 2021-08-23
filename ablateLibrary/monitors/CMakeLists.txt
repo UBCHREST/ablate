@@ -14,6 +14,8 @@ target_sources(ablateLibrary
         ignitionDelayPeakYi.cpp
         ignitionDelayTemperature.hpp
         ignitionDelayTemperature.cpp
+        curveMonitor.hpp
+        curveMonitor.cpp
         )
 
 add_subdirectory(logs)

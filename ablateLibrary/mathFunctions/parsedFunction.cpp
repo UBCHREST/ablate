@@ -12,8 +12,8 @@ ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString
     parser.DefineVar("z", &coordinate[2]);
     parser.DefineVar("t", &time);
 
-    // define some helper functions
-    parser.DefineFun("Power", powerFunction, true);
+    // define any additional helper functions
+    DefineAdditionalFunctions(parser);
 
     parser.SetExpr(formula);
 
@@ -114,6 +114,11 @@ PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscI
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
     }
     PetscFunctionReturn(0);
+}
+
+void ablate::mathFunctions::ParsedFunction::DefineAdditionalFunctions(mu::Parser& parser) {
+    // define some helper functions
+    parser.DefineFun("Power", powerFunction, true);
 }
 
 #include "parser/registrar.hpp"

@@ -28,6 +28,7 @@ flow: !ablate::flow::CompressibleFlow
     velpetscfv_type: leastsquares
   parameters:
     cfl: 0.5
+  transport:
     k: 0.0
     mu: 1.0
   initialization:

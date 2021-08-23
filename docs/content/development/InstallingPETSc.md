@@ -5,7 +5,6 @@ parent: Development Guides
 nav_order: 1
 ---
 
-## Note:
 For the most recent development issues, notes, and workarounds for building PETSc for ABLATE check the [ABLATE repo wiki](https://github.com/UBCHREST/ablate/wiki).
 
 ## Install System Specific Prerequisites
@@ -37,33 +36,44 @@ It is recommended that development on Windows uses the [Windows Subsystem for Li
     ```
 
 ## Install PETSc
-The framework requires that PETSc be configured and built with certain options.  Detailed instructions for installing PETSc are available at [https://www.mcs.anl.gov/petsc/documentation/installation.html](https://www.mcs.anl.gov/petsc/documentation/installation.html), but an abbreviated guide is provided for convenience.
+PETSc can be built in two primary configurations, optimized/release and debug.  In short, the debug build makes it easier to debug but is slower.  The release/optimized build is faster to execute.  Microsoft provides a more detailed overview of the [differences](https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-debug-and-release-configurations). The framework requires that PETSc be configured and built with additional options/modules.  Detailed instructions for installing PETSc are available at [petsc.org](https://petsc.org/release/install/), but an abbreviated guide is provided for convenience.  Check [petsc.org](https://petsc.org/release/install/) for additional configuration and compiler flags specific to your system.  
 1. Clone PETSc ```git clone https://gitlab.com/petsc/petsc.git ```
-	- To checkout a specific version or commit ```git checkout v3.14.2``` 
-1. Configure PETSc with at least the following options from the petsc directory
+    - To checkout a specific version or commit ```git checkout release``` 
+2. Configure PETSc to be built in both debug and optimized configurations
+   1. Configure PETSc with the following options from the petsc directory to build the debug configuration.  Run the following make command.
+       ```bash
+       # Configure debug PETSc
+       ./configure PETSC_ARCH=arch-ablate-debug --download-mpich --download-fblaslapack --download-ctetgen \
+            --download-egads --download-fftw --download-hdf5 --download-metis \
+            --download-ml --download-mumps --download-netcdf --download-p4est \
+            --download-parmetis --download-pnetcdf --download-scalapack \
+            --download-slepc --download-suitesparse --download-superlu_dist \
+            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem
+    
+       # Follow the on screen directions to make PETSc
+       ```
+
+   2. Configure PETSc with the following options from the petsc directory to build the release configuration.  Run the following make command.
+       ```bash   
+       # Configure opt PETSc
+       ./configure PETSC_ARCH=arch-ablate-opt --download-mpich --download-fblaslapack --download-ctetgen \
+            --download-egads --download-fftw --download-hdf5 --download-metis \
+            --download-ml --download-mumps --download-netcdf --download-p4est \
+            --download-parmetis --download-pnetcdf --download-scalapack \
+            --download-slepc --download-suitesparse --download-superlu_dist \
+            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem --with-debugging=0 
+    
+       # Follow the on screen directions to make PETSc
+       ```
+3. Set up the environmental variables so that ABLATE can locate PETSc. The PETSC_DIR path should be the path to the downloaded PETSc files.  This value is reported in the output of the configure command.
     ```bash
-    ./configure --download-mpich --download-fblaslapack --download-ctetgen \
- 	    --download-egads --download-fftw --download-hdf5 --download-metis \
- 	    --download-ml --download-mumps --download-netcdf --download-p4est \
- 	    --download-parmetis --download-pnetcdf --download-scalapack \
- 	    --download-slepc --download-suitesparse --download-superlu_dist \
- 	    --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem
-    ```
-1. Determine the PETSC_DIR and PETSC_ARCH values from the output of the configure command.  Look for output similar to:
-    ```bash
-    ...	
-    xxx=========================================================================xxx
-     Configure stage complete. Now build PETSc libraries with:
-      make PETSC_DIR=/Users/path/petsc PETSC_ARCH=arch-darwin-c-debug all
-    xxx=========================================================================xxx
-    ```
     Add the following environment variables where PETSC_DIR and PETSC_ARCH are replaced with specified values from the configure command.  On macOS this means putting the following in the ~/.zshrc or ~/.bashrc hidden file (depending on version).  On most Linux versions add the following to the ~/.bashrc file.
     ```bash
     export PETSC_DIR="/path/to/petsc-install"
-    export PETSC_ARCH="petsc arch name"
+    export PETSC_ARCH="arch-ablate-debug" # arch-ablate-debug or arch-ablate-opt
     export PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
     
     # Include the bin directory to access mpi commands
     export PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
     ```
-1. Use the configured build system to compile PETSc ```make all check```
+   Specify either the arch-ablate-opt or arch-ablate-debug for PETSC_ARCH depending on what you are running.  If you are developing new capabilities you may want to specify debug.  If you are running large simulations specify opt. This can be changed at any time (may require restarting the terminal/IDE/CLion).

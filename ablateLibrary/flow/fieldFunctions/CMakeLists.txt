@@ -6,4 +6,6 @@ target_sources(ablateLibrary
         euler.cpp
         massFractions.hpp
         massFractions.cpp
+        densityMassFractions.hpp
+        densityMassFractions.cpp
         )

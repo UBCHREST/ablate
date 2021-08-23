@@ -14,11 +14,11 @@ class CompressibleFlowState {
     const std::shared_ptr<mathFunctions::MathFunction> pressureFunction;
     const std::shared_ptr<mathFunctions::MathFunction> velocityFunction;
 
-    std::vector<std::shared_ptr<mathFunctions::MathFunction>> massFractionFunctions;
+    const std::shared_ptr<mathFunctions::FieldFunction> massFractionFunction;
 
    public:
     CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eos, std::shared_ptr<mathFunctions::MathFunction> temperatureFunction, std::shared_ptr<mathFunctions::MathFunction> pressureFunction,
-                          std::shared_ptr<mathFunctions::MathFunction> velocityFunction, std::vector<std::shared_ptr<ablate::mathFunctions::FieldFunction>> yiFunctions = {});
+                          std::shared_ptr<mathFunctions::MathFunction> velocityFunction, std::shared_ptr<mathFunctions::FieldFunction> massFractionFunction = {});
 
     static PetscErrorCode ComputeEulerFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
     static PetscErrorCode ComputeDensityYiFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);

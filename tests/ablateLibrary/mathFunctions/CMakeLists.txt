@@ -5,4 +5,6 @@ target_sources(libraryTests
         functionPointerTests.cpp
         functionFactoryTests.cpp
         constantValueTests.cpp
+        parsedSeriesTests.cpp
+        linearInterpolatorTests.cpp
         )
