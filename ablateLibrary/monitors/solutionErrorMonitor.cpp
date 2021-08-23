@@ -60,7 +60,7 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
                 PetscObjectGetName((PetscObject)field, &name);
 
                 errorMonitor->log->Print("\t ");
-                errorMonitor->log->Print(name, ferrors, "%2.3g");
+                errorMonitor->log->Print(name, numberComponentsPerField[f], &ferrors[fieldOffset], "%2.3g");
                 errorMonitor->log->Print("\n");
             }
         } break;
