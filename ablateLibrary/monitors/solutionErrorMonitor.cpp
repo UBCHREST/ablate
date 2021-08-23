@@ -52,6 +52,7 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
             break;
         case Scope::COMPONENT: {
             errorMonitor->log->Printf("Timestep: %04d time = %-8.4g \t %s error:\n", (int)step, (double)crtime, errorTypeName.c_str());
+            PetscInt fieldOffset = 0;
             for (PetscInt f = 0; f < numberOfFields; f++) {
                 PetscObject field;
                 ierr = DMGetField(dm, f, NULL, &field);
@@ -62,6 +63,7 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
                 errorMonitor->log->Print("\t ");
                 errorMonitor->log->Print(name, numberComponentsPerField[f], &ferrors[fieldOffset], "%2.3g");
                 errorMonitor->log->Print("\n");
+                fieldOffset += numberComponentsPerField[f];
             }
         } break;
         default: {
