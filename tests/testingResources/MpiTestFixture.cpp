@@ -147,16 +147,19 @@ void testingResources::MpiTestFixture::CompareOutputFiles() {
                         }
                         break;
                     case '~':
-                        // is anything once trimmed
+                        // is any number once trimmed
                         ASSERT_TRUE(actualValueString.find_first_not_of(" \t\n\v\f\r") != std::string::npos) << " on line " << expectedLine;
+                        break;
+                    case '*':
+                        // is anything of length
+                        ASSERT_TRUE(!actualValueString.empty()) << " on line " << expectedLine;
                         break;
                     default:
                         FAIL() << "Unknown compare char " << compareChar << " on line " << expectedLine;
                 }
             }
-
-            lineNumber++;
         }
+        lineNumber++;
     }
 
     ASSERT_FALSE(std::getline(actualStream, actualLine)) << "actual results should reach end of file";
