@@ -451,3 +451,11 @@ const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetAuxFieldDescript
     }
     throw std::invalid_argument("Cannot locate aux field descriptor for " + fieldName);
 }
+
+PetscClassId ablate::flow::Flow::GetPetscClassId() {
+    // Register this class with petsc if flow has not been register
+    if (!petscClassId) {
+        PetscClassIdRegister("ablate::flow::Flow", &petscClassId) >> checkError;
+    }
+    return petscClassId;
+}
