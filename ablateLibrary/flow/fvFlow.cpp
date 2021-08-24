@@ -54,7 +54,7 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
 
     // setup the event
     std::string eventName = name + "::FVRHSFunctionLocal";
-    PetscLogEventRegister(name.c_str(), GetPetscClassId(), &eventFVRHSFunctionLocal) >> checkError;
+    PetscLogEventRegister(eventName.c_str(), GetPetscClassId(), &eventFVRHSFunctionLocal) >> checkError;
 }
 
 ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldDescriptor>> fieldDescriptors,
