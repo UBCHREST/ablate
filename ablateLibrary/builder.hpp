@@ -1,5 +1,6 @@
 #ifndef ABLATELIBRARY_BUILDER_HPP
 #define ABLATELIBRARY_BUILDER_HPP
+#include <yaml-cpp/node/node.h>
 #include <memory>
 #include <ostream>
 #include "parser/factory.hpp"
@@ -11,7 +12,7 @@ class Builder {
      * default run method for particles and flow
      * @param factory
      */
-    static void Run(std::shared_ptr<ablate::parser::Factory> factory);
+    static void Run(std::shared_ptr<ablate::parser::Factory> factory, YAML::Node& restartNode);
 
     /**
      * print the version information for the ablate library

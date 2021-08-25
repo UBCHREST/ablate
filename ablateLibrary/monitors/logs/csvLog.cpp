@@ -14,6 +14,7 @@ ablate::monitors::logs::CsvLog::~CsvLog() {
     }
 }
 void ablate::monitors::logs::CsvLog::Initialize(MPI_Comm commIn) {
+    Log::Initialize(commIn);
     comm = commIn;
     PetscFOpen(comm, outputPath.c_str(), "w", &file) >> checkError;
 }

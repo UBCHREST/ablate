@@ -28,7 +28,7 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
     SolutionErrorMonitor* errorMonitor = (SolutionErrorMonitor*)ctx;
 
     // if this is the first time step init the log
-    if (step == 0) {
+    if (!errorMonitor->log->Initialized()) {
         errorMonitor->log->Initialize(PetscObjectComm((PetscObject)dm));
     }
 

@@ -25,6 +25,8 @@ class TimeStepper {
 
     TS& GetTS() { return ts; }
 
+    void SetupSolve(std::shared_ptr<Solvable>);
+
     void Solve(std::shared_ptr<Solvable>);
 
     void AddMonitor(std::shared_ptr<monitors::Monitor>);

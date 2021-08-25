@@ -37,13 +37,6 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     // Get the solution vector
     Vec solutionVec = solvable->GetSolutionVector();
 
-    // set the ts from options
-    TSSetFromOptions(ts) >> checkError;
-
-    // finish setting up the ts
-    PetscReal time;
-    TSGetTime(ts, &time) >> checkError;
-
     // reset the dm
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
@@ -71,6 +64,11 @@ double ablate::solve::TimeStepper::GetTime() const {
     PetscReal time;
     TSGetTime(ts, &time) >> checkError;
     return (double)time;
+}
+
+void ablate::solve::TimeStepper::SetupSolve(std::shared_ptr<Solvable> solvable) {
+    // set the ts from options
+    TSSetFromOptions(ts) >> checkError;
 }
 
 PetscClassId ablate::solve::TimeStepper::GetPetscClassId() {

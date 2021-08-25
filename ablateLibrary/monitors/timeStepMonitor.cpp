@@ -13,7 +13,7 @@ PetscErrorCode ablate::monitors::TimeStepMonitor::MonitorTimeStep(TS ts, PetscIn
 
     TimeStepMonitor* monitor = (TimeStepMonitor*)ctx;
     // if this is the first time step init the log
-    if (step == 0) {
+    if (!monitor->log->Initialized()) {
         monitor->log->Initialize(PetscObjectComm((PetscObject)ts));
     }
 

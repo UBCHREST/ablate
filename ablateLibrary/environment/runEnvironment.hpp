@@ -10,6 +10,7 @@ class RunEnvironment {
    private:
     std::filesystem::path outputDirectory;
     const std::string title;
+    std::filesystem::path inputPath;
 
     // default empty funEnvironment
     explicit RunEnvironment();
@@ -32,6 +33,7 @@ class RunEnvironment {
     }
 
     inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
+    inline const std::filesystem::path& GetInputPath() const { return inputPath; }
 
    private:
     inline static std::unique_ptr<RunEnvironment> runEnvironment = std::unique_ptr<RunEnvironment>();
