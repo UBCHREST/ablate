@@ -13,6 +13,10 @@ class Builder {
      * @param factory
      */
     static void Run(std::shared_ptr<ablate::parser::Factory> factory, YAML::Node& restartNode);
+    static void Run(std::shared_ptr<ablate::parser::Factory> factory){
+        YAML::Node tmp;
+        Run(factory, tmp);
+    }
 
     /**
      * print the version information for the ablate library
