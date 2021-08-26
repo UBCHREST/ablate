@@ -457,11 +457,11 @@ static PetscErrorCode ComputeBoundaryCellGradient(PetscInt dim, PetscInt dof, co
 
         // over each direction
         for (PetscInt dir = 0; dir < dim; dir++) {
-            PetscReal dx = (cellGeomG->centroid[dir] - faceGeom->centroid[dir]);
+            PetscReal dx = (cellGeomG->centroid[dir] - cellGeom->centroid[dir])/2.0;
 
             // If there is a contribution in this direction
             if (PetscAbs(dx) > 1E-8) {
-                a_xGradG[pd*dim + dir] = dPhidS / (dx);
+                a_xGradG[pd*dim + dir] = dPhidS / dx;
             } else {
                 a_xGradG[pd*dim + dir] = 0.0;
             }
