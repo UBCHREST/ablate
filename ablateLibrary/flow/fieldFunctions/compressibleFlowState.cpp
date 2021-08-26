@@ -45,8 +45,10 @@ PetscErrorCode ablate::flow::fieldFunctions::CompressibleFlowState::ComputeEuler
 
     // compute the mass fraction at this location
     std::vector<PetscReal> yi(flowState->eos->GetSpecies().size());
-    ierr = flowState->massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], flowState->massFractionFunction->GetSolutionField().GetContext());
-    CHKERRQ(ierr);
+    if(flowState->massFractionFunction) {
+        ierr = flowState->massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], flowState->massFractionFunction->GetSolutionField().GetContext());
+        CHKERRQ(ierr);
+    }
 
     // compute the density
     ierr = flowState->eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(
