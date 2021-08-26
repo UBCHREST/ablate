@@ -67,6 +67,9 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser, YAML:
         VecLoad(flow->GetSolutionVector(), petscViewer) >> checkError;
         PetscViewerDestroy(&petscViewer) >> checkError;
     }
+    PetscInt vecSize;
+    VecGetSize(flow->GetSolutionVector(), &vecSize);
+    std::cout << "VecSize: " << vecSize << std::endl;
 
     timeStepper->Solve(flow);
 }
