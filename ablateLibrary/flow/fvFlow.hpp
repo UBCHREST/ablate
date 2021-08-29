@@ -37,9 +37,6 @@ class FVFlow : public Flow {
     // static function to update the flowfield
     static void ComputeTimeStep(TS, Flow&);
 
-    // petsc event to count the time used to compute FVRHSFunctionLocal
-    PetscLogEvent eventFVRHSFunctionLocal;
-
    public:
     FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FlowFieldDescriptor> fieldDescriptors,
            std::vector<std::shared_ptr<processes::FlowProcess>> flowProcesses, std::shared_ptr<parameters::Parameters> options,
