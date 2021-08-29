@@ -42,7 +42,7 @@ ablate::mesh::BoxMesh::BoxMesh(std::string name, std::vector<int> faces, std::ve
     if (size == 0) {
         int rank;
         MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
-        throw std::runtime_error("BoxMesh Error: Rank " + std::to_string(rank) + " distribution resulted in no cells.  Increase the number of cells in each direction.");
+//        throw std::runtime_error("BoxMesh Error: Rank " + std::to_string(rank) + " distribution resulted in no cells.  Increase the number of cells in each direction.");
     }
 }
 ablate::mesh::BoxMesh::~BoxMesh() {
