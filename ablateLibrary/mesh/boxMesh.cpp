@@ -34,16 +34,6 @@ ablate::mesh::BoxMesh::BoxMesh(std::string name, std::vector<int> faces, std::ve
     DMPlexCreateBoxMesh(PETSC_COMM_WORLD, dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &faces[0], &lower[0], &upper[0], &boundaryTypes[0], PETSC_TRUE, &dm) >> checkError;
     PetscObjectSetOptions((PetscObject)dm, petscOptions) >> checkError;
     DMSetFromOptions(dm) >> checkError;
-
-    IS globalCellNumbers;
-    DMPlexGetCellNumbering(dm, &globalCellNumbers) >> checkError;
-    PetscInt size;
-    ISGetLocalSize(globalCellNumbers, &size) >> checkError;
-    if (size == 0) {
-        int rank;
-        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkMpiError;
-        throw std::runtime_error("BoxMesh Error: Rank " + std::to_string(rank) + " distribution resulted in no cells.  Increase the number of cells in each direction.");
-    }
 }
 ablate::mesh::BoxMesh::~BoxMesh() {
     if (dm) {

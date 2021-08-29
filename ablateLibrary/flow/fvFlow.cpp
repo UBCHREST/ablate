@@ -51,10 +51,6 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
 
     // Set the flux calculator solver for each component
     PetscDSSetFromOptions(prob) >> checkError;
-
-    // setup the event
-    std::string eventName = name + "::FVRHSFunctionLocal";
-    PetscLogEventRegister(eventName.c_str(), GetPetscClassId(), &eventFVRHSFunctionLocal) >> checkError;
 }
 
 ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldDescriptor>> fieldDescriptors,
@@ -77,9 +73,6 @@ PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, V
     PetscErrorCode ierr;
 
     ablate::flow::FVFlow* flow = (ablate::flow::FVFlow*)ctx;
-    // Log this event
-    ierr = PetscLogEventBegin(flow->eventFVRHSFunctionLocal, 0, 0, 0, 0);
-    CHKERRQ(ierr);
 
     /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
     Vec facegeom, cellgeom;
@@ -108,10 +101,6 @@ PetscErrorCode ablate::flow::FVFlow::FVRHSFunctionLocal(DM dm, PetscReal time, V
         ierr = rhsFunction.first(dm, time, locXVec, globFVec, rhsFunction.second);
         CHKERRQ(ierr);
     }
-
-    // end event log
-    PetscLogEventEnd(flow->eventFVRHSFunctionLocal, 0, 0, 0, 0);
-    CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
@@ -157,11 +146,6 @@ void ablate::flow::FVFlow::CompleteProblemSetup(TS ts) {
     if (!timeStepFunctions.empty()) {
         preStepFunctions.push_back(ComputeTimeStep);
     }
-
-    // Register the dof for the event
-    PetscInt dof;
-    VecGetSize(flowField, &dof) >> checkError;
-    PetscLogEventSetDof(eventFVRHSFunctionLocal, 0, dof) >> checkError;
 }
 void ablate::flow::FVFlow::RegisterRHSFunction(FVMRHSFluxFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields) {
     // map the field, inputFields, and auxFields to locations

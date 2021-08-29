@@ -5,7 +5,7 @@
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
-ablate::solve::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string, std::string> arguments) : name(nameIn), tsLogStage() {
+ablate::solve::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string, std::string> arguments) : name(nameIn), tsLogEvent(-1) {
     // create an instance of the ts
     TSCreate(PETSC_COMM_WORLD, &ts) >> checkError;
 
@@ -23,10 +23,11 @@ ablate::solve::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string
     // Set this as the context
     TSSetApplicationContext(ts, this) >> checkError;
 
-    // register this solve stage
-    PetscLogStageGetId(name.c_str(), &tsLogStage) >> checkError;
-    if (tsLogStage < 0) {
-        PetscLogStageRegister(name.c_str(), &tsLogStage) >> checkError;
+    // Setup the tsSolve event for this solve
+    std::string eventName = name + "::TSSolve";
+    PetscLogEventGetId(eventName.c_str(), &tsLogEvent) >> checkError;
+    if (tsLogEvent < 0) {
+        PetscLogEventRegister(eventName.c_str(), GetPetscClassId(), &tsLogEvent) >> checkError;
     }
 }
 
@@ -49,9 +50,13 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
 
     TSViewFromOptions(ts, NULL, "-ts_view") >> checkError;
 
-    PetscLogStagePush(tsLogStage) >> checkError;
+    // Register the dof for the event
+    PetscInt dof;
+    VecGetSize(solutionVec, &dof) >> checkError;
+    PetscLogEventSetDof(tsLogEvent, 0, dof) >> checkError;
+    PetscLogEventBegin(tsLogEvent, 0, 0, 0, 0);
     TSSolve(ts, solutionVec) >> checkError;
-    PetscLogStagePop() >> checkError;
+    PetscLogEventEnd(tsLogEvent, 0, 0, 0, 0);
 }
 
 void ablate::solve::TimeStepper::AddMonitor(std::shared_ptr<monitors::Monitor> monitor) {
@@ -66,6 +71,14 @@ double ablate::solve::TimeStepper::GetTime() const {
     PetscReal time;
     TSGetTime(ts, &time) >> checkError;
     return (double)time;
+}
+
+PetscClassId ablate::solve::TimeStepper::GetPetscClassId() {
+    // Register this class with petsc if flow has not been register
+    if (!petscClassId) {
+        PetscClassIdRegister("ablate::solve::TimeStepper", &petscClassId) >> checkError;
+    }
+    return petscClassId;
 }
 
 REGISTERDEFAULT(ablate::solve::TimeStepper, ablate::solve::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),

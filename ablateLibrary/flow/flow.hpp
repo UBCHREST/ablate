@@ -69,9 +69,6 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     // Petsc options specific to flow. These may be null by default
     PetscOptions petscOptions;
 
-    // Store a petsc class id used for flow used for logging
-    inline static PetscClassId petscClassId = 0;
-
    public:
     Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
@@ -138,8 +135,6 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     const FlowFieldDescriptor& GetFieldDescriptor(const std::string& fieldName) const;
 
     const FlowFieldDescriptor& GetAuxFieldDescriptor(const std::string& fieldName) const;
-
-    static PetscClassId GetPetscClassId();
 };
 }  // namespace ablate::flow
 
