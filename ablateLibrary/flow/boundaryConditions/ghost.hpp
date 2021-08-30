@@ -10,7 +10,7 @@ class Ghost : public BoundaryCondition {
 
    private:
     const std::string labelName;
-    const std::vector<int> labelIds;
+    const std::vector<PetscInt> labelIds;
     const UpdateFunction updateFunction;
     const void* updateContext;
 
