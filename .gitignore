@@ -51,3 +51,6 @@ cmake-build-*/
 ## Clion/JetBrains
 # User-specific stuff
 /.idea
+
+# Backup files
+*.bak

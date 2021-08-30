@@ -6,7 +6,7 @@
 std::filesystem::path ablate::utilities::FileUtility::LocateFile(std::string file, MPI_Comm com, std::vector<std::filesystem::path> searchPaths, std::filesystem::path remoteRelocatePath) {
     // check to see if the path exists
     if (std::filesystem::exists(file)) {
-        return file;
+        return std::filesystem::path(file);
     }
 
     // check to see if the file specified is really a url

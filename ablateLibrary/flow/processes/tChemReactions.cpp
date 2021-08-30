@@ -28,8 +28,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
       jacobian(nullptr),
       tchemScratch(nullptr),
       jacobianScratch(nullptr),
-      rows(nullptr),
-      chemSolveStage(0) {
+      rows(nullptr) {
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
         throw std::invalid_argument("ablate::flow::processes::TChemReactions::TChemReactions only accepts EOS of type eos::TChem");
@@ -74,12 +73,6 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
     TSSetMaxSNESFailures(ts, -1) >> checkError;             /* Retry step an unlimited number of times */
     TSSetFromOptions(ts) >> checkError;
     TSGetTimeStep(ts, &dtInit) >> checkError;
-
-    // register this chemistry stage
-    PetscLogStageGetId("TChemReactions", &chemSolveStage) >> checkError;
-    if (chemSolveStage < 0) {
-        PetscLogStageRegister("TChemReactions", &chemSolveStage) >> checkError;
-    }
 }
 ablate::flow::processes::TChemReactions::~TChemReactions() {
     if (fieldDm) {
@@ -211,8 +204,6 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStage(TS
     if (time != stagetime) {
         PetscFunctionReturn(0);
     }
-
-    PetscLogStagePush(chemSolveStage) >> checkError;
 
     IS cellIS;
     DM plex;
@@ -404,7 +395,6 @@ PetscErrorCode ablate::flow::processes::TChemReactions::ChemistryFlowPreStage(TS
     ierr = ISDestroy(&cellIS);
     CHKERRQ(ierr);
 
-    PetscLogStagePop() >> checkError;
     PetscFunctionReturn(0);
 }
 

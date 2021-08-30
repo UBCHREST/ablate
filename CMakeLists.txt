@@ -1,14 +1,23 @@
 cmake_minimum_required(VERSION 3.14)
 
-# Set the compilers based upon the PETSc package
 find_package(PkgConfig REQUIRED)
-pkg_get_variable(PETSC_C_COMPILER PETSc ccompiler)
-set(CMAKE_C_COMPILER ${PETSC_C_COMPILER})
-pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
-set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
+
+# Check if a C compiler is explicitly stated
+if(NOT DEFINED CMAKE_C_COMPILER)
+  # Set the compilers based upon the PETSc package
+  pkg_get_variable(PETSC_C_COMPILER PETSc ccompiler)
+  set(CMAKE_C_COMPILER ${PETSC_C_COMPILER})
+endif()
+
+# Check if a CXX compiler is explicitly stated
+if(NOT DEFINED CMAKE_CXX_COMPILER)
+  # Set the compilers based upon the PETSc package
+  pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
+  set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
+endif()
 
 # Set the project details
-project(ablateLibrary VERSION 0.5.4)
+project(ablateLibrary VERSION 0.5.9)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED PETSc)
@@ -30,12 +39,12 @@ endif()
 
 # Add required warnings for projects
 function(ablate_default_target_compile_options_c target)
-    target_compile_options(${target} PRIVATE $<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -fvisibility=hidden -Wno-unused-parameter>)
+    target_compile_options(${target} PRIVATE $<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wno-unused-parameter>)
     target_link_options(${target} PRIVATE $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Wl>)
 endfunction()
 function(ablate_default_target_compile_options_cxx target)
-    target_compile_options(${target} PRIVATE $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -fvisibility=hidden -Wsuggest-override -Wno-unused-parameter>)
-    target_compile_options(${target} PRIVATE $<$<CXX_COMPILER_ID:GNU>: -Wno-missing-field-initializers>)
+    target_compile_options(${target} PRIVATE $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wsuggest-override -Wno-unused-parameter >)
+    target_compile_options(${target} PRIVATE $<$<CXX_COMPILER_ID:GNU>: -Wno-missing-field-initializers -Wno-maybe-uninitialized>)
 endfunction()
 
 # Load in the subdirectories

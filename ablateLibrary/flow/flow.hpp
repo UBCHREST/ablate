@@ -36,7 +36,6 @@ class Flow : public solve::Solvable, public monitors::Viewable {
      */
     void RegisterField(FlowFieldDescriptor flowFieldDescription, DM dm);
 
-   protected:
     const std::string name;
 
     // holds non solution vector fields

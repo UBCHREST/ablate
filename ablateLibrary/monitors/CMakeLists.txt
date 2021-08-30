@@ -16,6 +16,8 @@ target_sources(ablateLibrary
         ignitionDelayTemperature.cpp
         curveMonitor.hpp
         curveMonitor.cpp
+        dmViewFromOptions.hpp
+        dmViewFromOptions.cpp
         )
 
 add_subdirectory(logs)
