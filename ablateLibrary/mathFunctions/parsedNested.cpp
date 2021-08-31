@@ -127,7 +127,7 @@ PetscErrorCode ablate::mathFunctions::ParsedNested::ParsedPetscNested(PetscInt d
         parser->coordinate[1] = 0;
         parser->coordinate[2] = 0;
 
-        for (auto i = 0; i < PetscMin(dim, 3); i++) {
+        for (PetscInt i = 0; i < PetscMin(dim, 3); i++) {
             parser->coordinate[i] = x[i];
         }
         parser->time = time;
