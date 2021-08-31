@@ -35,7 +35,7 @@ void ablate::monitors::CurveMonitor::Register(std::shared_ptr<Monitorable> monit
     VecGetDM(cellGeomVec, &dmCell) >> checkError;
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
-    PetscInt rank;
+    PetscMPIInt rank;
     MPI_Comm_rank((PetscObjectComm((PetscObject)flow->GetDM())), &rank) >> checkMpiError;
 
     PetscInt dim;

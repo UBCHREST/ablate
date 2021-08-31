@@ -13,8 +13,11 @@ PetscErrorCode ablate::flow::boundaryConditions::Essential::BoundaryTimeDerivati
 ablate::flow::boundaryConditions::Essential::Essential(std::string boundaryName, int labelId, std::shared_ptr<mathFunctions::FieldFunction> boundaryFunctionIn, std::string labelNameIn)
     : Essential(boundaryName, std::vector<int>{labelId}, boundaryFunctionIn, labelNameIn) {}
 
-ablate::flow::boundaryConditions::Essential::Essential(std::string boundaryName, std::vector<int> labelId, std::shared_ptr<mathFunctions::FieldFunction> boundaryFunctionIn, std::string labelNameIn)
-    : BoundaryCondition(boundaryName, boundaryFunctionIn->GetName()), labelName(labelNameIn.empty() ? "marker" : labelNameIn), labelIds(labelId), boundaryFunction(boundaryFunctionIn) {}
+ablate::flow::boundaryConditions::Essential::Essential(std::string boundaryName, std::vector<int> labelIdsIn, std::shared_ptr<mathFunctions::FieldFunction> boundaryFunctionIn, std::string labelNameIn)
+    : BoundaryCondition(boundaryName, boundaryFunctionIn->GetName()),
+      labelName(labelNameIn.empty() ? "marker" : labelNameIn),
+      labelIds(labelIdsIn.begin(), labelIdsIn.end()),
+      boundaryFunction(boundaryFunctionIn) {}
 
 ablate::mathFunctions::PetscFunction ablate::flow::boundaryConditions::Essential::GetBoundaryFunction() { return BoundaryValueFunction; }
 ablate::mathFunctions::PetscFunction ablate::flow::boundaryConditions::Essential::GetBoundaryTimeDerivativeFunction() { return BoundaryTimeDerivativeFunction; }

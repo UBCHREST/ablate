@@ -5,7 +5,7 @@ namespace ablateTesting::mathFunctions {
 
 TEST(FunctionFactoryTests, ShouldCreateFunctionForStatelessLambda) {
     // arrange
-    auto function = ablate::mathFunctions::Create([](int dim, double time, auto loc, int nf, auto u, auto ctx) {
+    auto function = ablate::mathFunctions::Create([](auto dim, auto time, auto loc, auto nf, auto u, auto ctx) {
         u[0] = loc[0] + loc[1] + loc[2] + time;
         return 0;
     });
@@ -18,7 +18,7 @@ TEST(FunctionFactoryTests, ShouldCreateFunctionForStatelessLambda) {
 TEST(FunctionFactoryTests, ShouldCreateFunctionForStatefullLambda) {
     // arrange
     double offset;
-    auto function = ablate::mathFunctions::Create([&offset](int dim, double time, auto loc, int nf, auto u, auto ctx) {
+    auto function = ablate::mathFunctions::Create([&offset](auto dim, auto time, auto loc, auto nf, auto u, auto ctx) {
         u[0] = loc[0] + loc[1] + loc[2] + time + offset;
         return 0;
     });

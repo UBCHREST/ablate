@@ -123,7 +123,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             PetscInt initialNx = GetParam().initialNx;
             auto mesh = std::make_shared<ablate::mesh::BoxMesh>("simpleMesh",
-                                                                std::vector<int>{initialNx, initialNx},
+                                                                std::vector<int>{(int)initialNx, (int)initialNx},
                                                                 std::vector<double>{0.0, 0.0},
                                                                 std::vector<double>{parameters.L, parameters.L},
                                                                 std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
