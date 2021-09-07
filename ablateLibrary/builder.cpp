@@ -1,6 +1,4 @@
 #include "builder.hpp"
-#include <petscviewerhdf5.h>
-#include <yaml-cpp/yaml.h>
 #include <utilities/petscError.hpp>
 #include "flow/flow.hpp"
 #include "monitors/monitor.hpp"
@@ -9,7 +7,7 @@
 #include "utilities/petscOptions.hpp"
 #include "version.h"
 
-void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser, YAML::Node& restartNode) {
+void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser, std::shared_ptr<ablate::parser::Factory> restart) {
     // get the global arguments
     auto globalArguments = parser->Get(parser::ArgumentIdentifier<std::map<std::string, std::string>>{.inputName = "arguments"});
     utilities::PetscOptionsUtils::Set(globalArguments);
@@ -47,31 +45,14 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser, YAML:
         }
     }
 
-    // run
-    timeStepper->SetupSolve(flow);
-
-    if (!restartNode.IsNull()) {
-        TSSetStepNumber(timeStepper->GetTS(), restartNode["steps"].as<int>());
-        TSSetTime(timeStepper->GetTS(), restartNode["time"].as<double>());
-        TSSetTimeStep(timeStepper->GetTS(), restartNode["dt"].as<double>());
-
-        PetscInt ranks;
-        MPI_Comm_size(PETSC_COMM_WORLD, &ranks);
-        std::cout << "size" << ranks << std::endl;
-
-        // Load the vec
-        auto vecPath = restartNode["solutionVec"].as<std::string>();
-        PetscViewer petscViewer = nullptr;
-        PetscViewerBinaryOpen(PETSC_COMM_WORLD, vecPath.c_str(), FILE_MODE_READ, &petscViewer) >> checkError;
-        //        PetscViewerHDF5Open(PETSC_COMM_WORLD, vecPath.c_str(), FILE_MODE_READ, &petscViewer) >> checkError;
-        VecLoad(flow->GetSolutionVector(), petscViewer) >> checkError;
-        PetscViewerDestroy(&petscViewer) >> checkError;
+    // If there was a restart specified, get the restart, time stepper parameters
+    std::shared_ptr<parameters::Parameters> restartParameters = nullptr;
+    if (restart) {
+        restartParameters = restart->GetByName<ablate::parameters::Parameters>("ts");
     }
-    PetscInt vecSize;
-    VecGetSize(flow->GetSolutionVector(), &vecSize);
-    std::cout << "VecSize: " << vecSize << std::endl;
 
-    timeStepper->Solve(flow);
+    // Restart the solve in the ts
+    timeStepper->Solve(flow, restartParameters);
 }
 
 void ablate::Builder::PrintVersion(std::ostream& stream) { stream << ABLATECORE_VERSION; }

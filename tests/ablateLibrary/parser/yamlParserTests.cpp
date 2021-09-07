@@ -803,6 +803,28 @@ TEST(YamlParserTests, ShouldReturnFactoryForScalarValues) {
     // assert
     ASSERT_EQ("22.3", factory1->Get(ArgumentIdentifier<std::string>{.inputName = {}}));
     ASSERT_EQ(22.3, factory1->Get(ArgumentIdentifier<double>{.inputName = {}}));
+    ASSERT_EQ("22.3", factory1->Get(ArgumentIdentifier<std::string>{.inputName = {}, .optional = true}));
+    ASSERT_EQ(22.3, factory1->Get(ArgumentIdentifier<double>{.inputName = {}, .optional = true}));
+    ASSERT_EQ("classType123", factory1->GetClassType());
+}
+
+TEST(YamlParserTests, ShouldNotErrorForEmptyScalarWhenOptional) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: !classType123 22.3" << std::endl;
+    std::string emptyString = {};
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto factory1 = yamlParser->GetFactory("item");
+
+    // assert
+    ASSERT_EQ("", factory1->Get(ArgumentIdentifier<std::string>{.inputName = "subItem1", .optional = true}));
+    ASSERT_EQ(0, factory1->Get(ArgumentIdentifier<int>{.inputName = "subItem1", .optional = true}));
+    ASSERT_THROW(factory1->Get(ArgumentIdentifier<std::string>{.inputName = "subItem1", .optional = false}), std::invalid_argument);
+    ASSERT_THROW(factory1->Get(ArgumentIdentifier<int>{.inputName = "subItem1", .optional = false}), std::invalid_argument);
     ASSERT_EQ("classType123", factory1->GetClassType());
 }
 

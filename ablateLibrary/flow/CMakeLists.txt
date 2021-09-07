@@ -14,8 +14,6 @@ target_sources(ablateLibrary
         compressibleFlow.hpp
         reactingCompressibleFlow.hpp
         reactingCompressibleFlow.cpp
-        reactingGlobCompressibleFlow.hpp
-        reactingGlobCompressibleFlow.cpp
         )
 
 add_subdirectory(boundaryConditions)

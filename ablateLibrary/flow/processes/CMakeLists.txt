@@ -9,6 +9,4 @@ target_sources(ablateLibrary
         tChemReactions.cpp
         speciesDiffusion.hpp
         speciesDiffusion.cpp
-        tChemReactionsGlob.hpp
-        tChemReactionsGlob.cpp
         )

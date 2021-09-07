@@ -3,6 +3,7 @@
 #include <petsc.h>
 #include <map>
 #include <memory>
+#include <parameters/parameters.hpp>
 #include <vector>
 #include "monitors/monitor.hpp"
 #include "solvable.hpp"
@@ -25,9 +26,7 @@ class TimeStepper {
 
     TS& GetTS() { return ts; }
 
-    void SetupSolve(std::shared_ptr<Solvable>);
-
-    void Solve(std::shared_ptr<Solvable>);
+    void Solve(std::shared_ptr<Solvable>, std::shared_ptr<parameters::Parameters> restartParameters = nullptr);
 
     void AddMonitor(std::shared_ptr<monitors::Monitor>);
 

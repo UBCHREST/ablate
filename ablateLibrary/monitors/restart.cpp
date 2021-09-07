@@ -9,6 +9,7 @@ PetscErrorCode ablate::monitors::Restart::OutputRestart(TS ts, PetscInt steps, P
 
     auto monitor = (ablate::monitors::Restart *)mctx;
     if (monitor->interval == 0 || (steps % monitor->interval == 0)) {
+        // By default save the ts restart parameters.  This code corresponds to the read in the time stepper
         PetscErrorCode ierr;
         // create the output file path
         auto outputFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.solution.bin";
@@ -30,16 +31,21 @@ PetscErrorCode ablate::monitors::Restart::OutputRestart(TS ts, PetscInt steps, P
         // output the restart information
         YAML::Emitter out;
         out << YAML::BeginMap;
+        out << YAML::Key << "inputPath";
+        out << YAML::Value << environment::RunEnvironment::Get().GetInputPath();
+
+        // Output the ts specific restart information
+        out << YAML::Key << "ts";
+        out << YAML::BeginMap;
         out << YAML::Key << "steps";
         out << YAML::Value << steps;
         out << YAML::Key << "time";
         out << YAML::Value << time;
         out << YAML::Key << "dt";
         out << YAML::Value << dt;
-        out << YAML::Key << "inputPath";
-        out << YAML::Value << environment::RunEnvironment::Get().GetInputPath();
         out << YAML::Key << "solutionVec";
         out << YAML::Value << outputFilePath;
+        out << YAML::EndMap;
         out << YAML::EndMap;
 
         // write to file if we are on the zero rank

@@ -50,7 +50,7 @@ int main(int argc, char** args) {
     PetscOptionsGetString(NULL, NULL, "--restart", restartFile, PETSC_MAX_PATH_LEN, &restartSpecified) >> checkError;
 
     std::filesystem::path filePath;
-    YAML::Node restartConfig;
+    std::shared_ptr<parser::YamlParser> restartParser = nullptr;
     if (restartSpecified) {
         // load the input file, assume it is the only yaml file in the restart directory
         std::filesystem::path restartPath(restartFile);
@@ -58,12 +58,12 @@ int main(int argc, char** args) {
             throw std::invalid_argument("the --restart must point to a restart file");
         }
 
-        // load in the yaml
-        restartConfig = YAML::LoadFile(restartPath);
-        filePath = restartConfig["inputPath"].as<std::string>();
+        // load in the restart file
+        restartParser = std::make_shared<parser::YamlParser>(restartPath);
+        filePath = restartParser->GetByName<std::string>("inputPath");
 
         if (filePath.empty()) {
-            throw std::invalid_argument("the --restart file does not contain a yaml file to restart");
+            throw std::invalid_argument("the --restart file does not contain a file to restart");
         }
 
     } else {
@@ -104,7 +104,7 @@ int main(int argc, char** args) {
         }
 
         // run with the parser
-        Builder::Run(parser, restartConfig);
+        Builder::Run(parser, restartParser);
 
         // check for unused parameters
         auto unusedValues = parser->GetUnusedValues();

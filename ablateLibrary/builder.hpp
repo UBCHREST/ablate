@@ -12,11 +12,7 @@ class Builder {
      * default run method for particles and flow
      * @param factory
      */
-    static void Run(std::shared_ptr<ablate::parser::Factory> factory, YAML::Node& restartNode);
-    static void Run(std::shared_ptr<ablate::parser::Factory> factory){
-        YAML::Node tmp;
-        Run(factory, tmp);
-    }
+    static void Run(std::shared_ptr<ablate::parser::Factory> factory, std::shared_ptr<ablate::parser::Factory> restart = nullptr);
 
     /**
      * print the version information for the ablate library

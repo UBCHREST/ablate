@@ -33,13 +33,30 @@ ablate::solve::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string
 
 ablate::solve::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
 
-void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
+void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable, std::shared_ptr<parameters::Parameters> restartParameters) {
     // Get the solution vector
     Vec solutionVec = solvable->GetSolutionVector();
+
+    // set the ts from options
+    TSSetFromOptions(ts) >> checkError;
 
     // reset the dm
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
+
+    // If there are restart parameters, update the ts
+    if (restartParameters) {
+        TSSetStepNumber(ts, restartParameters->GetExpect<PetscInt>("steps"));
+        TSSetTime(ts, restartParameters->GetExpect<PetscReal>("time"));
+        TSSetTimeStep(ts, restartParameters->GetExpect<PetscReal>("dt"));
+
+        // Load the saved vector
+        auto vecPath = restartParameters->GetExpect<std::string>("solutionVec");
+        PetscViewer petscViewer = nullptr;
+        PetscViewerBinaryOpen(PETSC_COMM_WORLD, vecPath.c_str(), FILE_MODE_READ, &petscViewer) >> checkError;
+        VecLoad(solutionVec, petscViewer) >> checkError;
+        PetscViewerDestroy(&petscViewer) >> checkError;
+    }
 
     TSViewFromOptions(ts, NULL, "-ts_view") >> checkError;
 
@@ -64,11 +81,6 @@ double ablate::solve::TimeStepper::GetTime() const {
     PetscReal time;
     TSGetTime(ts, &time) >> checkError;
     return (double)time;
-}
-
-void ablate::solve::TimeStepper::SetupSolve(std::shared_ptr<Solvable> solvable) {
-    // set the ts from options
-    TSSetFromOptions(ts) >> checkError;
 }
 
 PetscClassId ablate::solve::TimeStepper::GetPetscClassId() {
