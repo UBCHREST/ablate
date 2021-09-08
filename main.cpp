@@ -1,3 +1,4 @@
+#include <environment/yamlRestartManager.hpp>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -44,40 +45,17 @@ int main(int argc, char** args) {
         return 0;
     }
 
-    // check to see if we are restarting the problem
-    char restartFile[PETSC_MAX_PATH_LEN] = "";
-    PetscBool restartSpecified = PETSC_FALSE;
-    PetscOptionsGetString(NULL, NULL, "--restart", restartFile, PETSC_MAX_PATH_LEN, &restartSpecified) >> checkError;
-
     std::filesystem::path filePath;
-    std::shared_ptr<parser::YamlParser> restartParser = nullptr;
-    if (restartSpecified) {
-        // load the input file, assume it is the only yaml file in the restart directory
-        std::filesystem::path restartPath(restartFile);
-        if (!std::filesystem::exists(restartPath)) {
-            throw std::invalid_argument("the --restart must point to a restart file");
-        }
-
-        // load in the restart file
-        restartParser = std::make_shared<parser::YamlParser>(restartPath);
-        filePath = restartParser->GetByName<std::string>("inputPath");
-
-        if (filePath.empty()) {
-            throw std::invalid_argument("the --restart file does not contain a file to restart");
-        }
-
-    } else {
-        // check to see if we should print options
-        char filename[PETSC_MAX_PATH_LEN] = "";
-        PetscBool fileSpecified = PETSC_FALSE;
-        PetscOptionsGetString(NULL, NULL, "--input", filename, PETSC_MAX_PATH_LEN, &fileSpecified) >> checkError;
-        if (!fileSpecified) {
-            throw std::invalid_argument("the --input must be specified");
-        }
-
-        // locate or download the file
-        filePath = ablate::utilities::FileUtility::LocateFile(filename, PETSC_COMM_WORLD);
+    // check to see if we should print options
+    char filename[PETSC_MAX_PATH_LEN] = "";
+    PetscBool fileSpecified = PETSC_FALSE;
+    PetscOptionsGetString(NULL, NULL, "--input", filename, PETSC_MAX_PATH_LEN, &fileSpecified) >> checkError;
+    if (!fileSpecified) {
+        throw std::invalid_argument("the --input must be specified");
     }
+
+    // locate or download the file
+    filePath = ablate::utilities::FileUtility::LocateFile(filename, PETSC_COMM_WORLD);
 
     if (!std::filesystem::exists(filePath)) {
         throw std::invalid_argument("unable to locate input file: " + filePath.string());
@@ -104,7 +82,7 @@ int main(int argc, char** args) {
         }
 
         // run with the parser
-        Builder::Run(parser, restartParser);
+        Builder::Run(parser);
 
         // check for unused parameters
         auto unusedValues = parser->GetUnusedValues();

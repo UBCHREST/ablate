@@ -4,6 +4,7 @@
 #include <memory>
 #include <ostream>
 #include "parser/factory.hpp"
+#include "environment/restartManager.hpp"
 
 namespace ablate {
 class Builder {
@@ -12,7 +13,7 @@ class Builder {
      * default run method for particles and flow
      * @param factory
      */
-    static void Run(std::shared_ptr<ablate::parser::Factory> factory, std::shared_ptr<ablate::parser::Factory> restart = nullptr);
+    static void Run(std::shared_ptr<ablate::parser::Factory> factory);
 
     /**
      * print the version information for the ablate library

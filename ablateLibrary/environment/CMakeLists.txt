@@ -2,4 +2,11 @@ target_sources(ablateLibrary
         PUBLIC
         runEnvironment.hpp
         runEnvironment.cpp
+        restartManager.hpp
+        restartable.hpp
+        saveState.hpp
+        restoreState.hpp
+        yamlRestartManager.hpp
+        yamlRestartManager.cpp
+        saveStateDeterminer.hpp
         )

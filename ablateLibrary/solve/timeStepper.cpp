@@ -33,29 +33,23 @@ ablate::solve::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string
 
 ablate::solve::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
 
-void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable, std::shared_ptr<parameters::Parameters> restartParameters) {
+void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable, std::shared_ptr<ablate::environment::RestartManager> restartManagerIn) {
     // Get the solution vector
     Vec solutionVec = solvable->GetSolutionVector();
 
     // set the ts from options
     TSSetFromOptions(ts) >> checkError;
-
-    // reset the dm
-    DM dm;
-    TSGetDM(ts, &dm) >> checkError;
+    TSSetSolution(ts, solutionVec) >> checkError;
 
     // If there are restart parameters, update the ts
-    if (restartParameters) {
-        TSSetStepNumber(ts, restartParameters->GetExpect<PetscInt>("steps"));
-        TSSetTime(ts, restartParameters->GetExpect<PetscReal>("time"));
-        TSSetTimeStep(ts, restartParameters->GetExpect<PetscReal>("dt"));
+    if (restartManagerIn) {
+        restartManager = restartManagerIn;
 
-        // Load the saved vector
-        auto vecPath = restartParameters->GetExpect<std::string>("solutionVec");
-        PetscViewer petscViewer = nullptr;
-        PetscViewerBinaryOpen(PETSC_COMM_WORLD, vecPath.c_str(), FILE_MODE_READ, &petscViewer) >> checkError;
-        VecLoad(solutionVec, petscViewer) >> checkError;
-        PetscViewerDestroy(&petscViewer) >> checkError;
+        // register the restart with the ts
+        TSMonitorSet(ts, restartManager->GetTSFunction(), restartManager->GetContext(), NULL) >> checkError;
+
+        // pass a weak pointer ot the restart manager
+        restartManager->Register(shared_from_this());
     }
 
     TSViewFromOptions(ts, NULL, "-ts_view") >> checkError;
@@ -89,6 +83,36 @@ PetscClassId ablate::solve::TimeStepper::GetPetscClassId() {
         PetscClassIdRegister("ablate::solve::TimeStepper", &petscClassId) >> checkError;
     }
     return petscClassId;
+}
+
+void ablate::solve::TimeStepper::Save(environment::SaveState& saveState) const {
+    PetscReal time;
+    TSGetTime(ts, &time) >> checkError;
+    saveState.Save("time", time);
+
+    PetscReal dt;
+    TSGetTimeStep(ts, &dt) >> checkError;
+    saveState.Save("dt", dt);
+
+    PetscInt steps;
+    TSGetStepNumber(ts, &steps) >> checkError;
+    saveState.Save("steps", steps);
+
+    Vec solutionVec;
+    TSGetSolution(ts, &solutionVec )>> checkError;;
+    saveState.Save("solutionVec", solutionVec);
+}
+
+void ablate::solve::TimeStepper::Restore(const environment::RestoreState& restoreState) {
+
+    TSSetStepNumber(ts, restoreState.GetExpect<PetscInt>("steps"));
+    TSSetTime(ts, restoreState.GetExpect<PetscReal>("time"));
+    TSSetTimeStep(ts, restoreState.GetExpect<PetscReal>("dt"));
+
+    // Load the saved vector
+    Vec solutionVec;
+    TSGetSolution(ts, &solutionVec )>> checkError;;
+    restoreState.Get("solutionVec", solutionVec);
 }
 
 REGISTERDEFAULT(ablate::solve::TimeStepper, ablate::solve::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),

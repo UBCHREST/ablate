@@ -43,7 +43,7 @@
         ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description, __VA_ARGS__); \
     RESOLVE(interfaceTypeFullName, classFullName)
 
-#define REGISTER_WITHOUT_ARGUMENTS(interfaceTypeFullName, classFullName, description, ...)                             \
+#define REGISTER_WITHOUT_ARGUMENTS(interfaceTypeFullName, classFullName, description)                             \
     template <>                                                                                                        \
     bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                       \
         ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description); \
@@ -61,17 +61,6 @@
         ablate::parser::Registrar<interfaceTypeFullName>::RegisterWithFactoryFunction<classFullName>(true, #classFullName, description, function); \
     RESOLVE(interfaceTypeFullName, classFullName)
 
-#define REGISTER_WITH_HIDDEN_ARGUMENT(interfaceTypeFullName, classFullName, description, ...)                                       \
-    template <>                                                                                                                     \
-    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                    \
-        ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(false, #classFullName, description, __VA_ARGS__); \
-    RESOLVE(interfaceTypeFullName, classFullName)
-
-#define REGISTERDEFAULT_WITH_HIDDEN_ARGUMENT(interfaceTypeFullName, classFullName, description, ...)                               \
-    template <>                                                                                                                    \
-    bool ablate::parser::RegisteredInFactory<interfaceTypeFullName, classFullName>::Registered =                                   \
-        ablate::parser::Registrar<interfaceTypeFullName>::Register<classFullName>(true, #classFullName, description, __VA_ARGS__); \
-    RESOLVE(interfaceTypeFullName, classFullName)
 
 #define REGISTER_PASS_THROUGH(interfaceTypeFullName, classFullName, description, argumentType)                                                                             \
     template <>                                                                                                                                                            \

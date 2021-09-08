@@ -86,7 +86,7 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
         int rank;
         MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-        // precompute the resultDirectory directory so we can remove it if it here
+        // precompute the resultDirectory directory so we can remove it if it is here
         auto testName = GetParam().mpiTestParameter.getTestName();
         std::filesystem::path resultDirectory = std::filesystem::current_path() / testName;
         if (rank == 0) {
@@ -123,25 +123,23 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
             std::filesystem::path restartPath = resultDirectory / "restart.rst";
             ASSERT_TRUE(std::filesystem::exists(restartPath));
 
-            // load in the restart file
-            std::shared_ptr<ablate::parser::Factory> restartParser = std::make_shared<ablate::parser::YamlParser>(restartPath);
-
             // get the input path from the parser
-            std::filesystem::path inputPath = restartParser->GetByName<std::string>("inputPath");
-            ASSERT_EQ(inputPath, GetParam().mpiTestParameter.testName);
+            std::filesystem::path inputPath = GetParam().mpiTestParameter.testName;
 
             // Setup the run environment
             ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"outputDirectory", restartResultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // override some parameters
-            auto overrideParams = std::make_shared<ablate::parameters::MapParameters>(GetParam().restartOverrides);
+            auto overrideMap = GetParam().restartOverrides;
+            overrideMap["restart::restartFile"] = restartPath;
+            auto overrideParams = std::make_shared<ablate::parameters::MapParameters>(overrideMap);
 
             // load a yaml file
             std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath, false, overrideParams);
 
             // run with the parser
-            ablate::Builder::Run(parser, restartParser);
+            ablate::Builder::Run(parser);
         }
 
         // print all files in the directory so that they are compared with expected
@@ -188,7 +186,11 @@ INSTANTIATE_TEST_SUITE_P(
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(Tests, IntegrationRestartTestsSpecifier,
-                         testing::Values((IntegrationRestartTestsParameters){
-                             .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
-                             .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}}),
-                         [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
+                         testing::Values(
+                             (IntegrationRestartTestsParameters){
+                                 .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
+                                 .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
+                             (IntegrationRestartTestsParameters){
+                                 .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 2, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
+                                 .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}}),
+                         [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });

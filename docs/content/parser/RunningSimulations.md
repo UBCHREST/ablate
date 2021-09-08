@@ -56,7 +56,7 @@ Parameters within the yaml file can be overwritten using the command line using 
 1. Run or Debug ABLATE using the icons in the toolbar or under the Run menu.
 
 ## Restarting a Simulation
-ABLATE can restart/resume a simulation if the ablate::monitors::Restart monitor was specified in the original run.  To restart the simulation pass the --restart argument with the path to the .rst file.  The original input and result directory must be available.  Input parameters can be changed using the method outlined in [Running ABLATE from the Command Line](#running-ablate-from-the-command-line).
+ABLATE can restart/resume a simulation if the ablate::monitors::Restore monitor was specified in the original run.  To restart the simulation pass the --restart argument with the path to the .rst file.  The original input and result directory must be available.  Input parameters can be changed using the method outlined in [Running ABLATE from the Command Line](#running-ablate-from-the-command-line).
 
     ```bash
     mpirun -n 3 ./ablate --restart /path/to/the/restart.rst -yaml::timestepper::arguments::ts_max_steps 60

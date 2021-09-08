@@ -8,6 +8,8 @@ arguments:
   vel_petscspace_degree: 2
   pres_petscspace_degree: 1
   temp_petscspace_degree: 1
+restart:
+  interval: 5
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -71,8 +73,6 @@ flow: !ablate::flow::IncompressibleFlow
       boundaryValue: *temperatureField
   monitors:
     - !ablate::monitors::FieldErrorMonitor
-    - !ablate::monitors::Restart
-      interval: 5
 
 
     

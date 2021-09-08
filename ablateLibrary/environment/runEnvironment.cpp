@@ -5,8 +5,8 @@
 
 ablate::environment::RunEnvironment::RunEnvironment() : outputDirectory(), title("") {}
 
-ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters& parameters, std::filesystem::path inputPathIn)
-    : title(parameters.GetExpect<std::string>("title")), inputPath(inputPathIn) {
+ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters& parameters, std::filesystem::path inputPath)
+    : title(parameters.GetExpect<std::string>("title")){
     // check to see if the output directory is set
     auto specifiedOutputDirectory = parameters.Get<std::filesystem::path>("outputDirectory");
     outputDirectory = specifiedOutputDirectory.value_or((inputPath.empty() ? std::filesystem::current_path() : inputPath.parent_path()) / title);

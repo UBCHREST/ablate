@@ -7,7 +7,13 @@
 #include "utilities/petscOptions.hpp"
 #include "version.h"
 
-void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser, std::shared_ptr<ablate::parser::Factory> restart) {
+void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
+    // check to see if a restart manager was required
+    std::shared_ptr<ablate::environment::RestartManager> restartManager;
+    if(parser->Contains("restart")){
+        restartManager = parser->GetByName<ablate::environment::RestartManager>("restart");
+    }
+
     // get the global arguments
     auto globalArguments = parser->Get(parser::ArgumentIdentifier<std::map<std::string, std::string>>{.inputName = "arguments"});
     utilities::PetscOptionsUtils::Set(globalArguments);
@@ -45,14 +51,8 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser, std::
         }
     }
 
-    // If there was a restart specified, get the restart, time stepper parameters
-    std::shared_ptr<parameters::Parameters> restartParameters = nullptr;
-    if (restart) {
-        restartParameters = restart->GetByName<ablate::parameters::Parameters>("ts");
-    }
-
     // Restart the solve in the ts
-    timeStepper->Solve(flow, restartParameters);
+    timeStepper->Solve(flow, restartManager);
 }
 
 void ablate::Builder::PrintVersion(std::ostream& stream) { stream << ABLATECORE_VERSION; }

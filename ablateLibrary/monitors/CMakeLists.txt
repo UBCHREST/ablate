@@ -18,8 +18,6 @@ target_sources(ablateLibrary
         curveMonitor.cpp
         dmViewFromOptions.hpp
         dmViewFromOptions.cpp
-        restart.hpp
-        restart.cpp
         )
 
 add_subdirectory(logs)
