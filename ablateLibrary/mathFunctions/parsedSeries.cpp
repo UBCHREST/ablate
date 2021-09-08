@@ -122,7 +122,7 @@ PetscErrorCode ablate::mathFunctions::ParsedSeries::ParsedPetscSeries(PetscInt d
         parser->coordinate[1] = 0;
         parser->coordinate[2] = 0;
 
-        for (auto d = 0; d < std::min(dim, 3); d++) {
+        for (PetscInt d = 0; d < PetscMin(dim, 3); d++) {
             parser->coordinate[d] = x[d];
         }
         parser->time = time;

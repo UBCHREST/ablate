@@ -274,7 +274,7 @@ void ablate::flow::FVFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow) {
     }
 
     // take the min across all ranks
-    PetscInt rank;
+    PetscMPIInt rank;
     MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
 
     PetscReal dtMinGlobal;

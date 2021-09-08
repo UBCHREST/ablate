@@ -10,7 +10,7 @@ static std::shared_ptr<ablate::flow::FlowFieldDescriptor> FlowFieldDescriptorCre
         new ablate::flow::FlowFieldDescriptor{.solutionField = factory->GetByName<bool>("solutionField", true),
                                               .fieldName = factory->GetByName<std::string>("fieldName"),
                                               .fieldPrefix = factory->GetByName<std::string>("fieldPrefix"),
-                                              .components = factory->GetByName<PetscInt>("components"),
+                                              .components = factory->GetByName<int>("components"),
                                               .fieldType = factory->GetByName<ablate::parser::EnumWrapper<ablate::flow::FieldType>>("fieldType"),
                                               .componentNames = factory->GetByName<std::vector<std::string>>("componentNames", std::vector<std::string>{})});
 }

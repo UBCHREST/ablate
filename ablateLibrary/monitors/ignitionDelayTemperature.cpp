@@ -56,7 +56,7 @@ void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<Monito
     DMLocatePoints(flow->GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
     const PetscSFNode* cells;
     PetscInt numberFound;
-    PetscInt rank;
+    PetscMPIInt rank;
     MPI_Comm_rank((PetscObjectComm((PetscObject)flow->GetDM())), &rank) >> checkMpiError;
 
     PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError;

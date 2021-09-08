@@ -26,7 +26,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFile) {
             log.Initialize(PETSC_COMM_WORLD);
 
             // Get the current rank
-            PetscInt rank;
+            PetscMPIInt rank;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
             log.Print("Log Out Log\n");
@@ -60,7 +60,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
             log.Initialize(PETSC_COMM_WORLD);
 
             // Get the current rank
-            PetscInt rank;
+            PetscMPIInt rank;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
             log.Print("Log Out Log\n");

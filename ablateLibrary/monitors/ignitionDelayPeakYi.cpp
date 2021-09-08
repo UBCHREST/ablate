@@ -71,7 +71,7 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<Monitorable
     DMLocatePoints(flow->GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
     const PetscSFNode* cells;
     PetscInt numberFound;
-    PetscInt rank;
+    PetscMPIInt rank;
     MPI_Comm_rank((PetscObjectComm((PetscObject)flow->GetDM())), &rank) >> checkMpiError;
 
     PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError;

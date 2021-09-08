@@ -23,7 +23,7 @@ TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
             log.Initialize(PETSC_COMM_WORLD);
 
             // Get the current rank
-            PetscInt rank;
+            PetscMPIInt rank;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
             log.Print("Standard Out Log\n");

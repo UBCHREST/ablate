@@ -26,7 +26,7 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFile) {
             log->Initialize(PETSC_COMM_WORLD);
 
             // Get the current rank
-            PetscInt rank;
+            PetscMPIInt rank;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
             // pretend we are going over multiple iterations
@@ -68,7 +68,7 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFileInOutputDirectory) {
             log->Initialize(PETSC_COMM_WORLD);
 
             // Get the current rank
-            PetscInt rank;
+            PetscMPIInt rank;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
             // pretend we are going over multiple iterations

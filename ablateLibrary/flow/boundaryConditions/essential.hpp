@@ -12,7 +12,7 @@ namespace ablate::flow::boundaryConditions {
 class Essential : public BoundaryCondition {
    private:
     const std::string labelName;
-    const std::vector<int> labelIds;
+    const std::vector<PetscInt> labelIds;
     const std::shared_ptr<mathFunctions::FieldFunction> boundaryFunction;
 
    private:

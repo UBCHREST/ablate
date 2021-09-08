@@ -31,7 +31,9 @@ ablate::mesh::BoxMesh::BoxMesh(std::string name, std::vector<int> faces, std::ve
         }
     }
 
-    DMPlexCreateBoxMesh(PETSC_COMM_WORLD, dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &faces[0], &lower[0], &upper[0], &boundaryTypes[0], PETSC_TRUE, &dm) >> checkError;
+    // Make copy with PetscInt
+    std::vector<PetscInt> facesPetsc(faces.begin(), faces.end());
+    DMPlexCreateBoxMesh(PETSC_COMM_WORLD, dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &facesPetsc[0], &lower[0], &upper[0], &boundaryTypes[0], PETSC_TRUE, &dm) >> checkError;
     PetscObjectSetOptions((PetscObject)dm, petscOptions) >> checkError;
     DMSetFromOptions(dm) >> checkError;
 }

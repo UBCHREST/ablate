@@ -6,7 +6,7 @@ namespace ablateTesting::mathFunctions {
 
 TEST(FunctionPointerTests, ShouldEvalToScalarFromXYZ) {
     // arrange
-    auto function = ablate::mathFunctions::FunctionPointer([](int dim, double time, auto loc, int nf, auto u, auto ctx) {
+    auto function = ablate::mathFunctions::FunctionPointer([](auto dim, auto time, auto loc, auto nf, auto u, auto ctx) {
         u[0] = loc[0] + loc[1] + loc[2] + time;
         return 0;
     });
@@ -19,7 +19,7 @@ TEST(FunctionPointerTests, ShouldEvalToScalarFromXYZ) {
 
 TEST(FunctionPointerTests, ShouldEvalToScalarFromCoord) {
     // arrange
-    auto function = ablate::mathFunctions::FunctionPointer([](int dim, double time, auto loc, int nf, auto u, auto ctx) {
+    auto function = ablate::mathFunctions::FunctionPointer([](auto dim, auto time, auto loc, auto nf, auto u, auto ctx) {
         switch (dim) {
             case 3:
                 u[0] = loc[0] + loc[1] + loc[2] + time;
@@ -44,7 +44,7 @@ TEST(FunctionPointerTests, ShouldEvalToScalarFromCoord) {
 
 TEST(FunctionPointerTests, ShouldEvalToVectorFromXYZ) {
     // arrange
-    auto function = ablate::mathFunctions::FunctionPointer([](int dim, double time, auto loc, int nf, auto u, auto ctx) {
+    auto function = ablate::mathFunctions::FunctionPointer([](auto dim, auto time, auto loc, auto nf, auto u, auto ctx) {
         if (dim == 3 && nf >= 3) {
             u[0] = loc[0] + loc[1] + loc[2] + time;
             u[1] = loc[0] * loc[1] * loc[2];
@@ -70,7 +70,7 @@ TEST(FunctionPointerTests, ShouldEvalToVectorFromXYZ) {
 
 TEST(FunctionPointerTests, ShouldEvalToVectorFromCoord) {
     // arrange
-    auto function = ablate::mathFunctions::FunctionPointer([](int dim, double time, auto loc, int nf, auto u, auto ctx) {
+    auto function = ablate::mathFunctions::FunctionPointer([](auto dim, auto time, auto loc, auto nf, auto u, auto ctx) {
         if (dim == 3 && nf >= 3) {
             u[0] = loc[0] + loc[1] + loc[2] + time;
             u[1] = loc[0] * loc[1] * loc[2];
@@ -90,7 +90,7 @@ TEST(FunctionPointerTests, ShouldEvalToVectorFromCoord) {
 
 TEST(FunctionPointerTests, ShouldProvideAndFunctionWithPetscFunctionWhenSimpleFunction) {
     // arrange
-    auto function = ablate::mathFunctions::FunctionPointer([](int dim, double time, auto loc, int nf, auto u, auto ctx) {
+    auto function = ablate::mathFunctions::FunctionPointer([](auto dim, auto time, auto loc, auto nf, auto u, auto ctx) {
         u[0] = loc[0] + loc[1] + loc[2] + time;
         u[1] = loc[0] * loc[1] * loc[2];
         return 0;

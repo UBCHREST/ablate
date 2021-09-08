@@ -10,7 +10,7 @@ ablate::monitors::Hdf5Monitor::~Hdf5Monitor() {
     }
 
     // If this is the root process generate the xdmf file
-    int rank;
+    PetscMPIInt rank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     if (rank == 0 && !outputFilePath.empty() && std::filesystem::exists(outputFilePath)) {
         petscXdmfGenerator::Generate(outputFilePath);
