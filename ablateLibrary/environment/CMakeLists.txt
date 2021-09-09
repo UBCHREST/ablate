@@ -8,5 +8,4 @@ target_sources(ablateLibrary
         restoreState.hpp
         yamlRestartManager.hpp
         yamlRestartManager.cpp
-        saveStateDeterminer.hpp
         )

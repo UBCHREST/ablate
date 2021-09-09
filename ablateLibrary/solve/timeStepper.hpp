@@ -2,16 +2,17 @@
 #define ABLATELIBRARY_TIMESTEPPER_H
 #include <petsc.h>
 #include <environment/restartManager.hpp>
+#include <io/serializer.hpp>
 #include <map>
 #include <memory>
 #include <parameters/parameters.hpp>
 #include <vector>
+#include "environment/restartable.hpp"
 #include "monitors/monitor.hpp"
 #include "solvable.hpp"
-#include "environment/restartable.hpp"
 
 namespace ablate::solve {
-class TimeStepper: public std::enable_shared_from_this<TimeStepper>, public ablate::environment::Restartable {
+class TimeStepper: public std::enable_shared_from_this<TimeStepper>{
    private:
     TS ts;                                                    /** The PETSC time stepper**/
     std::string name;                                         /** the name for this time stepper **/
@@ -22,30 +23,29 @@ class TimeStepper: public std::enable_shared_from_this<TimeStepper>, public abla
 
     PetscLogEvent tsLogEvent;
 
-    // Store a pointer to the restartManager
-    std::shared_ptr<ablate::environment::RestartManager> restartManager;
+    // Store a pointer to the Serializer
+    const std::shared_ptr<io::Serializer> serializer;
 
    public:
-    TimeStepper(std::string name, std::map<std::string, std::string> arguments);
-    ~TimeStepper() override;
+    TimeStepper(std::string name, std::map<std::string, std::string> arguments, std::shared_ptr<io::Serializer> serializer = {});
+    ~TimeStepper();
 
     TS& GetTS() { return ts; }
 
-    void Solve(std::shared_ptr<Solvable>, std::shared_ptr<ablate::environment::RestartManager> restartManager = {});
+    void Solve(std::shared_ptr<Solvable>);
 
     void AddMonitor(std::shared_ptr<monitors::Monitor>);
+
+    void Register(std::weak_ptr<io::Serializable> serializable);
 
     double GetTime() const;
 
     static PetscClassId GetPetscClassId();
 
-    const std::string& GetName() const override{
+    const std::string& GetName() const{
         return name;
     }
 
-    void Save(environment::SaveState&) const override;
-
-    void Restore(const environment::RestoreState&) override;
 };
 }  // namespace ablate::solve
 

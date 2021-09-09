@@ -8,10 +8,10 @@ arguments:
   vel_petscspace_degree: 2
   pres_petscspace_degree: 1
   temp_petscspace_degree: 1
-restart:
-  interval: 5
 timestepper:
   name: theMainTimeStepper
+  io:
+    interval: 5
   arguments:
     ts_dt: .1
     ts_max_steps: 15

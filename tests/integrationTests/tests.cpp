@@ -110,29 +110,18 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
             ablate::Builder::Run(parser);
         }
 
-        // create a new result directory
-        auto restartResultDirectory = std::filesystem::current_path() / (testName + "_resume");
-        if (rank == 0) {
-            std::filesystem::remove_all(restartResultDirectory);
-        }
-        MPI_Barrier(PETSC_COMM_WORLD);
 
         // Restart the simulation
         {
-            // precompute the restart directory
-            std::filesystem::path restartPath = resultDirectory / "restart.rst";
-            ASSERT_TRUE(std::filesystem::exists(restartPath));
-
             // get the input path from the parser
             std::filesystem::path inputPath = GetParam().mpiTestParameter.testName;
 
             // Setup the run environment
-            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"outputDirectory", restartResultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
+            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"outputDirectory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // override some parameters
             auto overrideMap = GetParam().restartOverrides;
-            overrideMap["restart::restartFile"] = restartPath;
             auto overrideParams = std::make_shared<ablate::parameters::MapParameters>(overrideMap);
 
             // load a yaml file
@@ -151,17 +140,6 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
             // sort the names so that the output order is defined
             std::sort(resultFileInfo.begin(), resultFileInfo.end());
             std::cout << "ResultFiles:" << std::endl;
-            for (const auto& fileInfo : resultFileInfo) {
-                std::cout << fileInfo << std::endl;
-            }
-
-            resultFileInfo.clear();
-            for (const auto& entry : fs::directory_iterator(restartResultDirectory)) {
-                resultFileInfo.push_back(entry.path().filename());
-            }
-            // sort the names so that the output order is defined
-            std::sort(resultFileInfo.begin(), resultFileInfo.end());
-            std::cout << "RestartResultFiles:" << std::endl;
             for (const auto& fileInfo : resultFileInfo) {
                 std::cout << fileInfo << std::endl;
             }

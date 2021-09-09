@@ -10,6 +10,8 @@ arguments:
   temp_petscspace_degree: 1
 timestepper:
   name: theMainTimeStepper
+  io:
+    interval: 0
   arguments:
     ts_dt: .01
     ts_max_steps: 15
@@ -71,8 +73,6 @@ flow: !ablate::flow::IncompressibleFlow
       labelIds: [3, 1, 2, 4]
       boundaryValue: *temperatureField
   monitors:
-    - !ablate::monitors::Hdf5Monitor
-      interval: 0
     - !ablate::monitors::FieldErrorMonitor
 
 particles:
@@ -86,7 +86,4 @@ particles:
       upper: [0.75,0.75]
       particlesPerDim: 10
     exactSolution: "t + x + y"
-    monitors:
-      - !ablate::monitors::Hdf5Monitor
-        interval: 0
 

@@ -5,7 +5,8 @@
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
-ablate::solve::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string, std::string> arguments) : name(nameIn), tsLogEvent(-1) {
+ablate::solve::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string, std::string> arguments, std::shared_ptr<ablate::io::Serializer> serializerIn)
+    : name(nameIn), tsLogEvent(-1), serializer(serializerIn) {
     // create an instance of the ts
     TSCreate(PETSC_COMM_WORLD, &ts) >> checkError;
 
@@ -29,11 +30,16 @@ ablate::solve::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string
     if (tsLogEvent < 0) {
         PetscLogEventRegister(eventName.c_str(), GetPetscClassId(), &tsLogEvent) >> checkError;
     }
+
+    // register the serializer with the ts
+    if(serializer) {
+        TSMonitorSet(ts, serializer->GetSerializeFunction(), serializer->GetContext(), NULL) >> checkError;
+    }
 }
 
 ablate::solve::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
 
-void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable, std::shared_ptr<ablate::environment::RestartManager> restartManagerIn) {
+void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     // Get the solution vector
     Vec solutionVec = solvable->GetSolutionVector();
 
@@ -41,15 +47,9 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable, std::
     TSSetFromOptions(ts) >> checkError;
     TSSetSolution(ts, solutionVec) >> checkError;
 
-    // If there are restart parameters, update the ts
-    if (restartManagerIn) {
-        restartManager = restartManagerIn;
-
-        // register the restart with the ts
-        TSMonitorSet(ts, restartManager->GetTSFunction(), restartManager->GetContext(), NULL) >> checkError;
-
-        // pass a weak pointer ot the restart manager
-        restartManager->Register(shared_from_this());
+    // If there was a serializer, restore the ts
+    if(serializer) {
+        serializer->RestoreTS(ts);
     }
 
     TSViewFromOptions(ts, NULL, "-ts_view") >> checkError;
@@ -85,35 +85,12 @@ PetscClassId ablate::solve::TimeStepper::GetPetscClassId() {
     return petscClassId;
 }
 
-void ablate::solve::TimeStepper::Save(environment::SaveState& saveState) const {
-    PetscReal time;
-    TSGetTime(ts, &time) >> checkError;
-    saveState.Save("time", time);
-
-    PetscReal dt;
-    TSGetTimeStep(ts, &dt) >> checkError;
-    saveState.Save("dt", dt);
-
-    PetscInt steps;
-    TSGetStepNumber(ts, &steps) >> checkError;
-    saveState.Save("steps", steps);
-
-    Vec solutionVec;
-    TSGetSolution(ts, &solutionVec )>> checkError;;
-    saveState.Save("solutionVec", solutionVec);
-}
-
-void ablate::solve::TimeStepper::Restore(const environment::RestoreState& restoreState) {
-
-    TSSetStepNumber(ts, restoreState.GetExpect<PetscInt>("steps"));
-    TSSetTime(ts, restoreState.GetExpect<PetscReal>("time"));
-    TSSetTimeStep(ts, restoreState.GetExpect<PetscReal>("dt"));
-
-    // Load the saved vector
-    Vec solutionVec;
-    TSGetSolution(ts, &solutionVec )>> checkError;;
-    restoreState.Get("solutionVec", solutionVec);
+void ablate::solve::TimeStepper::Register(std::weak_ptr<io::Serializable> serializable) {
+    if(serializer){
+        serializer->Register(serializable);
+    }
 }
 
 REGISTERDEFAULT(ablate::solve::TimeStepper, ablate::solve::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
-                ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"));
+                ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
+                OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"));

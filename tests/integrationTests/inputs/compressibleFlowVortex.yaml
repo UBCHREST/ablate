@@ -5,6 +5,8 @@ environment:
 arguments: {}
 timestepper:
   name: theMainTimeStepper
+  io:
+    interval: 0
   arguments:
     ts_type: rk
     ts_adapt_type: none
@@ -35,8 +37,6 @@ flow: !ablate::flow::CompressibleFlow
         1.*(0. + 1028.869904770776*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + x))*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004)
       timeDerivative: "0.0, 0.0, 0.0, 0.0"
   monitors:
-    - !ablate::monitors::Hdf5Monitor
-      interval: 0
     - !ablate::monitors::TimeStepMonitor
 
   eos: !ablate::eos::PerfectGas

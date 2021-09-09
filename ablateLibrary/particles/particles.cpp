@@ -320,12 +320,12 @@ void ablate::particles::Particles::SwarmMigrate() {
     DMSwarmGetSize(dm, &newNumberGlobal) >> checkError;
 
     // Check to see if any of the ranks changed size after migration
-    PetscInt dmChanged = newNumberGlobal != numberGlobal || newNumberLocal != numberLocal;
+    PetscMPIInt dmChangedLocal = newNumberGlobal != numberGlobal || newNumberLocal != numberLocal;
     MPI_Comm comm;
     PetscObjectGetComm((PetscObject)particleTs, &comm) >> checkError;
-    PetscInt dmChangedAll = PETSC_FALSE;
-    MPIU_Allreduce(&dmChanged, &dmChangedAll, 1, MPIU_INT, MPIU_MAX, comm);
-    this->dmChanged = dmChangedAll == PETSC_TRUE;
+    PetscMPIInt dmChangedAll = PETSC_FALSE;
+    MPIU_Allreduce(&dmChangedLocal, &dmChangedAll, 1, MPIU_INT, MPIU_MAX, comm);
+    dmChanged = dmChangedAll == PETSC_TRUE;
 }
 
 /**
@@ -544,10 +544,8 @@ static PetscErrorCode DMSequenceViewTimeHDF5(DM dm, PetscViewer viewer) {
     PetscFunctionReturn(0);
 }
 
-void ablate::particles::Particles::View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const {
+void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, PetscReal time) const {
     DMSetOutputSequenceNumber(GetDM(), steps, time) >> checkError;
-
-    PetscFunctionBegin;
     Vec particleVector;
 
     for (auto const &field : particleFieldDescriptors) {
@@ -565,4 +563,8 @@ void ablate::particles::Particles::View(PetscViewer viewer, PetscInt steps, Pets
     if (ishdf5) {
         DMSequenceViewTimeHDF5(GetDM(), viewer) >> checkError;
     }
+}
+
+void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt steps, PetscReal time) {
+
 }

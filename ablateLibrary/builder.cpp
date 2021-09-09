@@ -1,4 +1,5 @@
 #include "builder.hpp"
+#include <io/serializer.hpp>
 #include <utilities/petscError.hpp>
 #include "flow/flow.hpp"
 #include "monitors/monitor.hpp"
@@ -8,12 +9,6 @@
 #include "version.h"
 
 void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
-    // check to see if a restart manager was required
-    std::shared_ptr<ablate::environment::RestartManager> restartManager;
-    if(parser->Contains("restart")){
-        restartManager = parser->GetByName<ablate::environment::RestartManager>("restart");
-    }
-
     // get the global arguments
     auto globalArguments = parser->Get(parser::ArgumentIdentifier<std::map<std::string, std::string>>{.inputName = "arguments"});
     utilities::PetscOptionsUtils::Set(globalArguments);
@@ -24,6 +19,7 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     // assume one flow field right now
     auto flow = parser->GetByName<flow::Flow>("flow");
     flow->SetupSolve(timeStepper->GetTS());
+    timeStepper->Register(flow);
 
     // get the monitors from the flow factory
     auto flowMonitors = parser->GetFactory("flow")->GetByName<std::vector<monitors::Monitor>>("monitors", std::vector<std::shared_ptr<monitors::Monitor>>());
@@ -48,11 +44,13 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
                 particleMonitor->Register(particle);
                 timeStepper->AddMonitor(particleMonitor);
             }
+            // Register with the serializer
+            timeStepper->Register(particle);
         }
     }
 
     // Restart the solve in the ts
-    timeStepper->Solve(flow, restartManager);
+    timeStepper->Solve(flow);
 }
 
 void ablate::Builder::PrintVersion(std::ostream& stream) { stream << ABLATECORE_VERSION; }

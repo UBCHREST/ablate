@@ -8,6 +8,8 @@ arguments:
   automaticTimeStepCalculator: off
 timestepper:
   name: theMainTimeStepper
+  io:
+    interval: 0
   arguments:
     ts_type: rk
     ts_max_time: 0.2
@@ -54,9 +56,6 @@ flow: !ablate::flow::ReactingCompressibleFlow
       boundaryValue: *densityYiField
   monitors:
     - !ablate::monitors::TimeStepMonitor
-    - !ablate::monitors::Hdf5Monitor
-      interval: 0
-
   eos: !ablate::eos::TChem
     mechFile: inputs/grimech30.dat
     thermoFile: inputs/thermo30.dat
