@@ -861,7 +861,7 @@ TEST_F(YamlParserTestsPetscTestFixture, ShouldDownloadAndRelocateFile) {
     std::stringstream yaml;
     yaml << "---" << std::endl;
     yaml << "environment:" << std::endl;
-    yaml << "  outputDirectory: " << outputDir << std::endl;
+    yaml << "  directory: " << outputDir << std::endl;
     yaml << "  title: test " << std::endl;
     yaml << "  tagDirectory: false" << std::endl;
     yaml << "fileName: " << REMOTE_URL << std::endl;
@@ -891,7 +891,7 @@ TEST_F(YamlParserTestsPetscTestFixture, ShouldNotDownloadAndRelocateFile) {
     std::stringstream yaml;
     yaml << "---" << std::endl;
     yaml << "environment:" << std::endl;
-    yaml << "  outputDirectory: " << outputDir << std::endl;
+    yaml << "  directory: " << outputDir << std::endl;
     yaml << "  title: test " << std::endl;
     yaml << "  tagDirectory: false" << std::endl;
     yaml << "fileName: " << REMOTE_URL << std::endl;

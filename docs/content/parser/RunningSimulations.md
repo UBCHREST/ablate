@@ -56,10 +56,10 @@ Parameters within the yaml file can be overwritten using the command line using 
 1. Run or Debug ABLATE using the icons in the toolbar or under the Run menu.
 
 ## Restarting a Simulation
-ABLATE can restart/resume a simulation if the ablate::monitors::Restore monitor was specified in the original run.  To restart the simulation pass the --restart argument with the path to the .rst file.  The original input and result directory must be available.  Input parameters can be changed using the method outlined in [Running ABLATE from the Command Line](#running-ablate-from-the-command-line).
+ABLATE can restart/resume a simulation if the TimeStepper IO  was specified in the original run.  To restart the simulation set the environment directory to the previous run.  This can be done in input file or command line. Input parameters can be changed using the method outlined in [Running ABLATE from the Command Line](#running-ablate-from-the-command-line).
 
     ```bash
-    mpirun -n 3 ./ablate --restart /path/to/the/restart.rst -yaml::timestepper::arguments::ts_max_steps 60
+    mpirun -n 3 ./ablate --input /path/to/the/inputfile.yaml -yaml::environment::directory /path/to/previous/run/directory -yaml::timestepper::arguments::ts_max_steps 60
     ```
 
 ## Parser Command Line Arguments
@@ -67,8 +67,8 @@ ABLATE can restart/resume a simulation if the ablate::monitors::Restore monitor 
 | Argument | Description |
 | --- | ----------- |
 | \-\-input | (required) The path to the Yaml input file |
-| \-\-restart | The path to the ABLATE restart (.rst) file.  When specified \-\-input is ignored.  |
 | \-version | Prints the combined ABLATE and PETSc version information |
 | \-\-version | Prints the ABLATE version information |
 | \-\-help | Prints all available arguments for the Yaml input file |
+| \-yaml:: | Prefix for changing input arguments. See [Running ABLATE from the Command Line](#running-ablate-from-the-command-line).|
 

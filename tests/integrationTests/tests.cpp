@@ -39,7 +39,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             std::filesystem::path inputPath = GetParam().testName;
 
             // Setup the run environment
-            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"outputDirectory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
+            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"directory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // load a yaml file
@@ -100,7 +100,7 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
             std::filesystem::path inputPath = GetParam().mpiTestParameter.testName;
 
             // Setup the run environment
-            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"outputDirectory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
+            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"directory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // load a yaml file
@@ -116,7 +116,7 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
             std::filesystem::path inputPath = GetParam().mpiTestParameter.testName;
 
             // Setup the run environment
-            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"outputDirectory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
+            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"directory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // override some parameters
@@ -169,7 +169,10 @@ INSTANTIATE_TEST_SUITE_P(Tests, IntegrationRestartTestsSpecifier,
                                  .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
                              (IntegrationRestartTestsParameters){
                                  .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 2, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
-                                 .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}}),
+                                 .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
+                             (IntegrationRestartTestsParameters){
+                                 .mpiTestParameter = {.testName = "inputs/tracerParticles2DRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles2DRestart.txt", .arguments = ""},
+                                 .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
                          [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) {
                              return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc);
                          });

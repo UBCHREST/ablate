@@ -1,5 +1,6 @@
 #include "particles.hpp"
 #include <petscviewerhdf5.h>
+#include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
@@ -470,7 +471,6 @@ void ablate::particles::Particles::AdvectParticles(TS flowTS) {
 
     // Get the position, velocity and Kinematics vector
     Vec solutionVector = GetPackedSolutionVector();
-
     // get the particle time step
     PetscReal dtInitial;
     TSGetTimeStep(particleTs, &dtInitial) >> checkError;
@@ -549,13 +549,32 @@ void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, Pets
     Vec particleVector;
 
     for (auto const &field : particleFieldDescriptors) {
-        if (field.type == PETSC_DOUBLE) {
+        if (field.type == PETSC_REAL) {
             DMSwarmCreateGlobalVectorFromField(GetDM(), field.fieldName.c_str(), &particleVector) >> checkError;
             PetscObjectSetName((PetscObject)particleVector, field.fieldName.c_str()) >> checkError;
             VecView(particleVector, viewer) >> checkError;
             DMSwarmDestroyGlobalVectorFromField(GetDM(), field.fieldName.c_str(), &particleVector) >> checkError;
         }
     }
+
+    // Get the particle info
+    int rank;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)GetDM()), &rank) >> checkMpiError;
+
+    // get the local number of particles
+    PetscInt localSize;
+    DMSwarmGetLocalSize(GetDM(), &localSize) >> checkMpiError;
+    ;
+
+    // record the number of particles per rank
+    Vec particlesPerRank;
+    VecCreateMPI(PETSC_COMM_WORLD, 1, PETSC_DECIDE, &particlesPerRank) >> checkError;
+    PetscObjectSetName((PetscObject)particlesPerRank, "particlesPerRank") >> checkError;
+    VecSetValue(particlesPerRank, rank, localSize, INSERT_VALUES) >> checkError;
+    VecAssemblyBegin(particlesPerRank) >> checkError;
+    VecAssemblyEnd(particlesPerRank) >> checkError;
+    VecView(particlesPerRank, viewer);
+    VecDestroy(&particlesPerRank) >> checkError;
 
     // if this is an hdf5Viewer
     PetscBool ishdf5;
@@ -565,4 +584,68 @@ void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, Pets
     }
 }
 
-void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt steps, PetscReal time) {}
+void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    DMSetOutputSequenceNumber(GetDM(), sequenceNumber, time) >> checkError;
+
+    // Update the ts with the current values
+    TSSetTime(particleTs, time) >> checkError;
+    timeInitial = time;
+
+    // There is not a hdf5 specific swarm vec load, so that needs to be in this code
+    PetscBool ishdf5;
+    PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> checkError;
+    if (ishdf5) {
+        PetscViewerHDF5SetTimestep(viewer, sequenceNumber) >> checkError;
+    }
+
+    // load in the particles per rank
+    Vec particlesPerRank;
+    VecCreateMPI(PETSC_COMM_WORLD, 1, PETSC_DECIDE, &particlesPerRank) >> checkError;
+    PetscObjectSetName((PetscObject)particlesPerRank, "particlesPerRank") >> checkError;
+    VecLoad(particlesPerRank, viewer) >> checkError;
+
+    // Get the particle info
+    int rank[1];
+    MPI_Comm_rank(PetscObjectComm((PetscObject)GetDM()), rank) >> checkMpiError;
+
+    // Set the local sizes
+    PetscReal localSize;
+    VecGetValues(particlesPerRank, 1, rank, &localSize) >> checkError;
+    DMSwarmSetLocalSizes(GetDM(), (PetscInt)localSize, 0) >> checkError;
+    VecDestroy(&particlesPerRank) >> checkError;
+
+    // Move in the hdf5 to the right group
+    if (ishdf5) {
+        PetscViewerHDF5PushGroup(viewer, "/particle_fields") >> checkError;
+        PetscViewerHDF5SetTimestep(viewer, sequenceNumber) >> checkError;
+    }
+
+    for (auto const &field : particleFieldDescriptors) {
+        if (field.type == PETSC_REAL) {
+            Vec particleVector;
+            Vec particleVectorLoad;
+            DMSwarmCreateGlobalVectorFromField(dm, field.fieldName.c_str(), &particleVector) >> checkError;
+
+            // A copy of this vector is needed, because vec load breaks the memory linkage between the swarm and vec
+            VecDuplicate(particleVector, &particleVectorLoad) >> checkError;
+
+            // Load the vector
+            PetscObjectSetName((PetscObject)particleVectorLoad, field.fieldName.c_str()) >> checkError;
+            VecLoad(particleVectorLoad, viewer) >> checkError;
+
+            // Copy the data over
+            VecCopy(particleVectorLoad, particleVector) >> checkError;
+
+            DMSwarmDestroyGlobalVectorFromField(dm, field.fieldName.c_str(), &particleVector) >> checkError;
+            VecDestroy(&particleVectorLoad) >> checkError;
+        }
+    }
+
+    if (ishdf5) {
+        PetscViewerHDF5PopGroup(viewer) >> checkError;
+    }
+
+    // Migrate any particles that have moved
+    DMSwarmMigrate(dm, PETSC_TRUE) >> checkError;
+    dmChanged = true;
+}

@@ -35,6 +35,11 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
     PetscFunctionBeginUser;
     Hdf5Serializer* hdf5Serializer = (Hdf5Serializer*)ctx;
 
+    // Make sure that the same timeStep is not output more than once (this can be from a restart)
+    if (steps <= hdf5Serializer->timeStep) {
+        PetscFunctionReturn(0);
+    }
+
     // Update all metadata
     hdf5Serializer->time = time;
     hdf5Serializer->timeStep = steps;
@@ -54,6 +59,7 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
     }
     PetscFunctionReturn(0);
 }
+
 void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
     YAML::Emitter out;
     out << YAML::BeginMap;
