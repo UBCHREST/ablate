@@ -4,7 +4,6 @@
 #include <memory>
 #include <ostream>
 #include "parser/factory.hpp"
-#include "environment/restartManager.hpp"
 
 namespace ablate {
 class Builder {

@@ -11,7 +11,7 @@
 
 namespace ablate::particles {
 
-class Particles : public io::Serializable, public monitors::Monitorable  {
+class Particles : public io::Serializable, public monitors::Monitorable {
    protected:
     // particle domain
     DM dm;

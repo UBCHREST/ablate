@@ -32,7 +32,7 @@ ablate::solve::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string
     }
 
     // register the serializer with the ts
-    if(serializer) {
+    if (serializer) {
         TSMonitorSet(ts, serializer->GetSerializeFunction(), serializer->GetContext(), NULL) >> checkError;
     }
 }
@@ -48,7 +48,7 @@ void ablate::solve::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
     TSSetSolution(ts, solutionVec) >> checkError;
 
     // If there was a serializer, restore the ts
-    if(serializer) {
+    if (serializer) {
         serializer->RestoreTS(ts);
     }
 
@@ -86,11 +86,10 @@ PetscClassId ablate::solve::TimeStepper::GetPetscClassId() {
 }
 
 void ablate::solve::TimeStepper::Register(std::weak_ptr<io::Serializable> serializable) {
-    if(serializer){
+    if (serializer) {
         serializer->Register(serializable);
     }
 }
 
 REGISTERDEFAULT(ablate::solve::TimeStepper, ablate::solve::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
-                ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
-                OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"));
+                ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"));

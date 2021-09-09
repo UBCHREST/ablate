@@ -1,4 +1,3 @@
-#include <environment/yamlRestartManager.hpp>
 #include <fstream>
 #include <iostream>
 #include <memory>

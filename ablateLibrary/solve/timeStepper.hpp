@@ -1,18 +1,16 @@
 #ifndef ABLATELIBRARY_TIMESTEPPER_H
 #define ABLATELIBRARY_TIMESTEPPER_H
 #include <petsc.h>
-#include <environment/restartManager.hpp>
 #include <io/serializer.hpp>
 #include <map>
 #include <memory>
 #include <parameters/parameters.hpp>
 #include <vector>
-#include "environment/restartable.hpp"
 #include "monitors/monitor.hpp"
 #include "solvable.hpp"
 
 namespace ablate::solve {
-class TimeStepper: public std::enable_shared_from_this<TimeStepper>{
+class TimeStepper : public std::enable_shared_from_this<TimeStepper> {
    private:
     TS ts;                                                    /** The PETSC time stepper**/
     std::string name;                                         /** the name for this time stepper **/
@@ -42,10 +40,7 @@ class TimeStepper: public std::enable_shared_from_this<TimeStepper>{
 
     static PetscClassId GetPetscClassId();
 
-    const std::string& GetName() const{
-        return name;
-    }
-
+    const std::string& GetName() const { return name; }
 };
 }  // namespace ablate::solve
 

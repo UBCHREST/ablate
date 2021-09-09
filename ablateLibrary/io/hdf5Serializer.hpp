@@ -2,21 +2,20 @@
 #define ABLATELIBRARY_HDF5SERIALIZER_HPP
 
 #include <petscviewer.h>
+#include <filesystem>
 #include <memory>
+#include <vector>
 #include "serializable.hpp"
 #include "serializer.hpp"
-#include <filesystem>
-#include <vector>
 
 namespace ablate::io {
 
 class Hdf5Serializer : public Serializer {
-
    private:
     /**
      * Private class to handle the serialization of each registered object
      */
-    class Hdf5ObjectSerializer{
+    class Hdf5ObjectSerializer {
        private:
         PetscViewer petscViewer = nullptr;
         const std::weak_ptr<Serializable> serializable;
@@ -37,7 +36,7 @@ class Hdf5Serializer : public Serializer {
     PetscInt sequenceNumber;
     PetscInt timeStep;
     bool resumed = false;
-    
+
     // Hold the pointer to each serializers;
     std::vector<std::unique_ptr<Hdf5ObjectSerializer>> serializers;
 
@@ -57,12 +56,10 @@ class Hdf5Serializer : public Serializer {
 
     // public functions to interface with the main TS
     void* GetContext() override { return this; }
-    PetscSerializeFunction GetSerializeFunction() override{
-        return Hdf5SerializerSaveStateFunction;
-    }
+    PetscSerializeFunction GetSerializeFunction() override { return Hdf5SerializerSaveStateFunction; }
 
     void RestoreTS(TS ts) override;
 };
-}
+}  // namespace ablate::io
 
 #endif  // ABLATELIBRARY_HDF5SERIALIZER_HPP

@@ -110,7 +110,6 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
             ablate::Builder::Run(parser);
         }
 
-
         // Restart the simulation
         {
             // get the input path from the parser
@@ -171,4 +170,6 @@ INSTANTIATE_TEST_SUITE_P(Tests, IntegrationRestartTestsSpecifier,
                              (IntegrationRestartTestsParameters){
                                  .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 2, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
                                  .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}}),
-                         [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
+                         [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) {
+                             return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc);
+                         });

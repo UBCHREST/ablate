@@ -565,6 +565,4 @@ void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, Pets
     }
 }
 
-void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt steps, PetscReal time) {
-
-}
+void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt steps, PetscReal time) {}

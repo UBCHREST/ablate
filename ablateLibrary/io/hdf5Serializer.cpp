@@ -11,14 +11,14 @@ ablate::io::Hdf5Serializer::Hdf5Serializer(int interval) {
     // Load the metadata from the file is available, otherwise set to 0
     auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
 
-    if(std::filesystem::exists(restartFilePath)){
+    if (std::filesystem::exists(restartFilePath)) {
         resumed = true;
         auto yaml = YAML::LoadFile(restartFilePath);
         time = yaml["time"].as<PetscReal>();
         dt = yaml["dt"].as<PetscReal>();
         timeStep = yaml["timeStep"].as<PetscInt>();
         sequenceNumber = yaml["sequenceNumber"].as<PetscInt>();
-    }else{
+    } else {
         resumed = false;
         time = NAN;
         dt = NAN;
@@ -41,12 +41,12 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
     hdf5Serializer->sequenceNumber++;
     TSGetTimeStep(ts, &(hdf5Serializer->dt)) >> checkError;
 
-    //Save this to a file
+    // Save this to a file
     hdf5Serializer->SaveMetadata(ts);
 
     try {
         // save each serializer
-        for(auto& serializer : hdf5Serializer->serializers){
+        for (auto& serializer : hdf5Serializer->serializers) {
             serializer->Save(hdf5Serializer->sequenceNumber, time);
         }
     } catch (std::exception& exception) {
@@ -55,7 +55,6 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
     PetscFunctionReturn(0);
 }
 void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
-
     YAML::Emitter out;
     out << YAML::BeginMap;
     out << YAML::Key << "time";
@@ -80,7 +79,7 @@ void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
 }
 
 void ablate::io::Hdf5Serializer::RestoreTS(TS ts) {
-    if(resumed){
+    if (resumed) {
         TSSetStepNumber(ts, timeStep);
         TSSetTime(ts, time);
         TSSetTimeStep(ts, dt);
@@ -88,21 +87,22 @@ void ablate::io::Hdf5Serializer::RestoreTS(TS ts) {
 }
 
 ////////////// Hdf5ObjectSerializer Implementation //////////////
-ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Hdf5ObjectSerializer(std::weak_ptr<Serializable> serializableIn, PetscInt sequenceNumber, PetscReal time, bool resume) : serializable(serializableIn) {
+ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Hdf5ObjectSerializer(std::weak_ptr<Serializable> serializableIn, PetscInt sequenceNumber, PetscReal time, bool resume)
+    : serializable(serializableIn) {
     if (auto serializableObject = serializable.lock()) {
         filePath = environment::RunEnvironment::Get().GetOutputDirectory() / (serializableObject->GetId() + extension);
 
         // Check to see if the viewer file exists
-        if(resume){
-            if(std::filesystem::exists(filePath)) {
+        if (resume) {
+            if (std::filesystem::exists(filePath)) {
                 PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> checkError;
 
                 // Restore the simulation
                 serializableObject->Restore(petscViewer, sequenceNumber, time);
-            }else{
+            } else {
                 throw std::runtime_error("Cannot resume simulation.  Unable to locate file: " + filePath.string());
             }
-        }else{
+        } else {
             PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;
         }
     }
@@ -128,4 +128,5 @@ void ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Save(PetscInt sn, PetscRe
 }
 
 #include "parser/registrar.hpp"
-REGISTERDEFAULT(ablate::io::Serializer, ablate::io::Hdf5Serializer, "default serializer for IO", OPT(int, "interval", "Path to an existing restart file.  If not provided the the system does not restart."));
+REGISTERDEFAULT(ablate::io::Serializer, ablate::io::Hdf5Serializer, "default serializer for IO",
+                OPT(int, "interval", "Path to an existing restart file.  If not provided the the system does not restart."));
