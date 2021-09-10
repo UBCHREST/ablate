@@ -30,6 +30,35 @@ TEST(FileUtilityTets, ShouldLocateFileInSearchPaths) {
     fs::remove_all(directory);
 }
 
+TEST(FileUtilityTets, ShouldLocateRelativeFileInSearchPaths) {
+    // arrange
+    std::filesystem::path directory = std::filesystem::temp_directory_path() / "tmpDir";
+    std::filesystem::remove_all(directory);
+    std::filesystem::create_directories(directory);
+    std::filesystem::path otherDirectory = std::filesystem::temp_directory_path() / "otherDir";
+    std::filesystem::remove_all(otherDirectory);
+    std::filesystem::create_directories(otherDirectory);
+
+    std::filesystem::path tmpFile = otherDirectory / "tempFile.txt";
+    {
+        std::ofstream ofs(tmpFile);
+        ofs << " tempFile" << std::endl;
+        ofs.close();
+    }
+
+    // act
+    auto computedFilePath = ablate::utilities::FileUtility::LocateFile("../otherDir/tempFile.txt", MPI_COMM_SELF, {directory});
+
+    // assert
+    ASSERT_TRUE(std::filesystem::exists(computedFilePath));
+    ASSERT_EQ(std::filesystem::canonical(computedFilePath), std::filesystem::canonical(tmpFile));
+
+    // cleanup
+    fs::remove(tmpFile);
+    fs::remove_all(directory);
+    std::filesystem::remove_all(otherDirectory);
+}
+
 class FileUtilityTestsTestFixture : public testingResources::PetscTestFixture {};
 
 TEST_F(FileUtilityTestsTestFixture, ShouldDownloadFile) {
