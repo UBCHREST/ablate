@@ -1,14 +1,16 @@
 #include "timeStepMonitor.hpp"
+#include <io/interval/fixedInterval.hpp>
 #include <monitors/logs/stdOut.hpp>
 
-ablate::monitors::TimeStepMonitor::TimeStepMonitor(std::shared_ptr<logs::Log> logIn, int interval) : log(logIn ? logIn : std::make_shared<logs::StdOut>()), interval(interval) {}
+ablate::monitors::TimeStepMonitor::TimeStepMonitor(std::shared_ptr<logs::Log> logIn, std::shared_ptr<io::interval::Interval> interval)
+    : log(logIn ? logIn : std::make_shared<logs::StdOut>()), interval(interval ? interval : std::make_shared<io::interval::FixedInterval>()) {}
 
 PetscErrorCode ablate::monitors::TimeStepMonitor::MonitorTimeStep(TS ts, PetscInt steps, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
     auto monitor = (ablate::monitors::TimeStepMonitor*)ctx;
 
-    if (steps == 0 || monitor->interval == 0 || (steps % monitor->interval == 0)) {
+    if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), steps, crtime)) {
         PetscReal dt;
         ierr = TSGetTimeStep(ts, &dt);
         CHKERRQ(ierr);
@@ -26,4 +28,4 @@ PetscErrorCode ablate::monitors::TimeStepMonitor::MonitorTimeStep(TS ts, PetscIn
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::TimeStepMonitor, "Reports the current step, time, and dt", OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"),
-         OPT(int, "interval", "output interval"));
+         OPT(io::interval::Interval, "interval", "report interval object, defaults to every"));

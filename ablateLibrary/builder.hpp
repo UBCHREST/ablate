@@ -1,6 +1,6 @@
 #ifndef ABLATELIBRARY_BUILDER_HPP
 #define ABLATELIBRARY_BUILDER_HPP
-#include <yaml-cpp/node/node.h>
+
 #include <memory>
 #include <ostream>
 #include "parser/factory.hpp"
