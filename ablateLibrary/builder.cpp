@@ -49,7 +49,6 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
         }
     }
 
-    // Restart the solve in the ts
     timeStepper->Solve(flow);
 }
 
