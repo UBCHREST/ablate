@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_SERIALIZER_HPP
 #define ABLATELIBRARY_SERIALIZER_HPP
 #include <petsc.h>
+#include <memory>
 #include "serializable.hpp"
 
 namespace ablate::io {
