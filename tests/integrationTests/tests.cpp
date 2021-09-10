@@ -162,17 +162,19 @@ INSTANTIATE_TEST_SUITE_P(
                     (MpiTestParameter){.testName = "inputs/dmViewFromOptions.yaml", .nproc = 1, .expectedOutputFile = "outputs/dmViewFromOptions.txt", .arguments = ""}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
-INSTANTIATE_TEST_SUITE_P(Tests, IntegrationRestartTestsSpecifier,
-                         testing::Values(
-                             (IntegrationRestartTestsParameters){
-                                 .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
-                                 .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
-                             (IntegrationRestartTestsParameters){
-                                 .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 2, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
-                                 .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
-                             (IntegrationRestartTestsParameters){
-                                 .mpiTestParameter = {.testName = "inputs/tracerParticles2DRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles2DRestart.txt", .arguments = ""},
-                                 .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
-                         [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) {
-                             return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc);
-                         });
+INSTANTIATE_TEST_SUITE_P(
+    Tests, IntegrationRestartTestsSpecifier,
+    testing::Values(
+        (IntegrationRestartTestsParameters){
+            .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
+            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
+        (IntegrationRestartTestsParameters){
+            .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 2, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
+            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
+        (IntegrationRestartTestsParameters){
+            .mpiTestParameter = {.testName = "inputs/tracerParticles2DRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles2DRestart.txt", .arguments = ""},
+            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}},
+        (IntegrationRestartTestsParameters){
+            .mpiTestParameter = {.testName = "inputs/incompressibleFlowIntervalRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlowIntervalRestart.txt", .arguments = ""},
+            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
+    [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });

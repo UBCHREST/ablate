@@ -5,3 +5,5 @@ target_sources(ablateLibrary
         hdf5Serializer.hpp
         hdf5Serializer.cpp
         )
+
+add_subdirectory(interval)

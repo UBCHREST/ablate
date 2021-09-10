@@ -22,7 +22,9 @@ TEST_P(FileLogTestFixture, ShouldPrintToFile) {
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // Create the fileLog
-            monitors::logs::FileLog log("logFile.txt");
+            auto logPath = std::filesystem::temp_directory_path() / "logFile.txt";
+            std::filesystem::remove_all(logPath);
+            monitors::logs::FileLog log(logPath);
             log.Initialize(PETSC_COMM_WORLD);
 
             // Get the current rank
@@ -36,7 +38,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFile) {
     EndWithMPI
 
     // Load the file
-    std::ifstream logFile("logFile.txt");
+    std::ifstream logFile(std::filesystem::temp_directory_path() / "logFile.txt");
     std::stringstream buffer;
     buffer << logFile.rdbuf();
 
@@ -52,7 +54,8 @@ TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
 
             // Set the global environment
             auto tempDir = std::filesystem::temp_directory_path() / "nameOfTestDir";
-            parameters::MapParameters parameters({{"outputDirectory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
+            std::filesystem::remove_all(tempDir);
+            parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
             environment::RunEnvironment::Setup(parameters);
 
             // Create the fileLog
@@ -76,6 +79,56 @@ TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
     buffer << logFile.rdbuf();
 
     ASSERT_EQ(buffer.str(), "Log Out Log\nrank: 0\n");
+}
+
+TEST_P(FileLogTestFixture, ShouldAppendToFileInOutputDirectory) {
+    StartWithMPI
+        {
+            // arrange
+            // initialize petsc and mpi
+            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+
+            // Set the global environment
+            auto tempDir = std::filesystem::temp_directory_path() / "nameOfTestDir";
+            std::filesystem::remove_all(tempDir);
+            parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
+            environment::RunEnvironment::Setup(parameters);
+
+            {
+                // Create the fileLog
+                monitors::logs::FileLog log("logFile.txt");
+                log.Initialize(PETSC_COMM_WORLD);
+
+                // Get the current rank
+                PetscMPIInt rank;
+                MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+                log.Print("Log Out Log\n");
+                log.Printf("rank: %d\n", rank);
+            }
+            {
+                // Create the fileLog
+                monitors::logs::FileLog log("logFile.txt");
+                log.Initialize(PETSC_COMM_WORLD);
+
+                // Get the current rank
+                PetscMPIInt rank;
+                MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+                log.Print("Log Out 2\n");
+                log.Printf("rank: %d\n", rank);
+            }
+        }
+        exit(PetscFinalize());
+    EndWithMPI
+
+    // Load the file
+    auto logFilePath = std::filesystem::temp_directory_path() / "nameOfTestDir" / "logFile.txt";
+    std::ifstream logFile(logFilePath);
+    std::stringstream buffer;
+    buffer << logFile.rdbuf();
+
+    ASSERT_EQ(buffer.str(), "Log Out Log\nrank: 0\nLog Out 2\nrank: 0\n");
 }
 
 INSTANTIATE_TEST_SUITE_P(LogTests, FileLogTestFixture,

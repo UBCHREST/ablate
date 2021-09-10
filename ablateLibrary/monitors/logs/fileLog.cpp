@@ -15,7 +15,7 @@ ablate::monitors::logs::FileLog::~FileLog() {
 void ablate::monitors::logs::FileLog::Initialize(MPI_Comm commIn) {
     Log::Initialize(commIn);
     comm = commIn;
-    PetscFOpen(comm, outputPath.c_str(), "w", &file) >> checkError;
+    PetscFOpen(comm, outputPath.c_str(), "a", &file) >> checkError;
 }
 
 void ablate::monitors::logs::FileLog::Printf(const char* format, ...) {

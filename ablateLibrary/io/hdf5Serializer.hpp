@@ -3,6 +3,7 @@
 
 #include <petscviewer.h>
 #include <filesystem>
+#include <io/interval/interval.hpp>
 #include <memory>
 #include <vector>
 #include "serializable.hpp"
@@ -30,6 +31,9 @@ class Hdf5Serializer : public Serializer {
         void Save(PetscInt sequenceNumber, PetscReal time);
     };
 
+    // Use the interval class to determine when to write to file
+    const std::shared_ptr<ablate::io::interval::Interval> interval;
+
     // keep track of time and increments
     PetscReal time;
     PetscReal dt;
@@ -47,7 +51,7 @@ class Hdf5Serializer : public Serializer {
     void SaveMetadata(TS ts);
 
    public:
-    Hdf5Serializer(int interval);
+    explicit Hdf5Serializer(std::shared_ptr<ablate::io::interval::Interval>);
 
     /**
      * Handles registering the object and restore if available.

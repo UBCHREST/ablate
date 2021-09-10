@@ -3,11 +3,12 @@
 #include <yaml-cpp/yaml.h>
 #include <environment/runEnvironment.hpp>
 #include <fstream>
+#include <io/interval/interval.hpp>
 #include <utilities/mpiError.hpp>
 #include "generators.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::io::Hdf5Serializer::Hdf5Serializer(int interval) {
+ablate::io::Hdf5Serializer::Hdf5Serializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(interval) {
     // Load the metadata from the file is available, otherwise set to 0
     auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
 
@@ -31,6 +32,7 @@ void ablate::io::Hdf5Serializer::Register(std::weak_ptr<Serializable> serializab
     // for each serializable object create a Hdf5ObjectSerializer
     serializers.push_back(std::make_unique<Hdf5ObjectSerializer>(serializable, sequenceNumber, time, resumed));
 }
+
 PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts, PetscInt steps, PetscReal time, Vec u, void* ctx) {
     PetscFunctionBeginUser;
     Hdf5Serializer* hdf5Serializer = (Hdf5Serializer*)ctx;
@@ -40,22 +42,24 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
         PetscFunctionReturn(0);
     }
 
-    // Update all metadata
-    hdf5Serializer->time = time;
-    hdf5Serializer->timeStep = steps;
-    hdf5Serializer->sequenceNumber++;
-    TSGetTimeStep(ts, &(hdf5Serializer->dt)) >> checkError;
+    if (hdf5Serializer->interval->Check(PetscObjectComm((PetscObject)ts), steps, time)) {
+        // Update all metadata
+        hdf5Serializer->time = time;
+        hdf5Serializer->timeStep = steps;
+        hdf5Serializer->sequenceNumber++;
+        TSGetTimeStep(ts, &(hdf5Serializer->dt)) >> checkError;
 
-    // Save this to a file
-    hdf5Serializer->SaveMetadata(ts);
+        // Save this to a file
+        hdf5Serializer->SaveMetadata(ts);
 
-    try {
-        // save each serializer
-        for (auto& serializer : hdf5Serializer->serializers) {
-            serializer->Save(hdf5Serializer->sequenceNumber, time);
+        try {
+            // save each serializer
+            for (auto& serializer : hdf5Serializer->serializers) {
+                serializer->Save(hdf5Serializer->sequenceNumber, time);
+            }
+        } catch (std::exception& exception) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
         }
-    } catch (std::exception& exception) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
     }
     PetscFunctionReturn(0);
 }
@@ -135,4 +139,4 @@ void ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Save(PetscInt sn, PetscRe
 
 #include "parser/registrar.hpp"
 REGISTERDEFAULT(ablate::io::Serializer, ablate::io::Hdf5Serializer, "default serializer for IO",
-                OPT(int, "interval", "Path to an existing restart file.  If not provided the the system does not restart."));
+                ARG(ablate::io::interval::Interval, "interval", "The interval object used to determine write interval."));
