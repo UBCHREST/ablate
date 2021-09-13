@@ -23,14 +23,14 @@ TEST(FileUtilityTets, ShouldLocateFileInSearchPaths) {
 
     // assert
     ASSERT_TRUE(std::filesystem::exists(computedFilePath));
-    ASSERT_EQ(computedFilePath, tmpFile);
+    ASSERT_EQ(computedFilePath, std::filesystem::canonical(tmpFile));
 
     // cleanup
     fs::remove(tmpFile);
     fs::remove_all(directory);
 }
 
-TEST(FileUtilityTets, ShouldLocateRelativeFileInSearchPaths) {
+TEST(FileUtilityTets, ShouldLocateRelativeFileInSearchPathsAndReturnCanonicalPath) {
     // arrange
     std::filesystem::path directory = std::filesystem::temp_directory_path() / "tmpDir";
     std::filesystem::remove_all(directory);
@@ -51,7 +51,7 @@ TEST(FileUtilityTets, ShouldLocateRelativeFileInSearchPaths) {
 
     // assert
     ASSERT_TRUE(std::filesystem::exists(computedFilePath));
-    ASSERT_EQ(std::filesystem::canonical(computedFilePath), std::filesystem::canonical(tmpFile));
+    ASSERT_EQ(computedFilePath, std::filesystem::canonical(tmpFile));
 
     // cleanup
     fs::remove(tmpFile);

@@ -648,7 +648,7 @@ TEST(YamlParserTests, ShouldLocateFileNextToInputFile) {
 
     // assert
     ASSERT_TRUE(std::filesystem::exists(computedFilePath));
-    ASSERT_EQ(computedFilePath, tmpFile);
+    ASSERT_EQ(computedFilePath, std::filesystem::canonical(tmpFile));
     ASSERT_EQ(tempYaml.parent_path(), tempYaml.parent_path());
 
     // cleanup
