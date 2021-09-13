@@ -3,7 +3,7 @@ layout: default
 title: Numerical Methods
 parent: Compressible Flow Formulation
 grand_parent: Flow Formulations
-nav_order: 3
+nav_order: 2
 ---
 
 ## Numerical Methods
