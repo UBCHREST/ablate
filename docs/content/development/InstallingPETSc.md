@@ -14,7 +14,6 @@ For the most recent development issues, notes, and workarounds for building PETS
    - Using the terminal, install the command line tools and accept the license
        ```bash
        sudo xcode-select --install 
-       sudo xcodebuild -license
        ```
 2. It is recommended to use a package manager to install other prerequisites.  The following directions will assume [Homebrew](https://brew.sh) has been installed, but alternative methods could be used.
 3. Install prerequisites
