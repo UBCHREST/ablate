@@ -71,8 +71,8 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
        ```
 3. Set up the environmental variables so that ABLATE can locate PETSc. The PETSC_DIR path should be the path to the downloaded PETSc files.  This value is reported in the output of the configure command.
     ```bash
-    Add the following environment variables where PETSC_DIR and PETSC_ARCH are replaced with specified values from the configure command.  On macOS this means putting the following in the ~/.zshrc or ~/.bashrc hidden file (depending on version).  On most Linux versions add the following to the ~/.bashrc file.
-    ```bash
+    # Add the following environment variables where PETSC_DIR and PETSC_ARCH are replaced with specified values from the configure command.  On macOS this means putting the following in the ~/.zshrc or ~/.bashrc hidden file (depending on version).  On most Linux versions add the following to the ~/.bashrc file.
+
     export PETSC_DIR="/path/to/petsc-install"
     export PETSC_ARCH="arch-ablate-debug" # arch-ablate-debug or arch-ablate-opt
     export PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
