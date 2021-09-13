@@ -10,13 +10,18 @@ nav_order: 2
 
 ### AUSM+up for All Speeds, Single Phase
 
+This algorithm is used to calculate the convective fluxes $$F_c$$ in the Governing Equations.
+
 $$M_{L/R} =  \frac{u_{L/R}}{a_{1/2}}$$
 
 where $$a_{1/2}$$ is an average of $$a_L$$ and $$a_R$$
 
-$$\begin{eqnarray}\bar{M}^2 = \frac{(u^2_L+u^2_R)}{2 a^2_{1/2}} \\
-M_o^2=\min(1,\max(\bar{M}^2,M_\infty^2))\\
-f_a = M_o(2-M_o)\\
+$$\bar{M}^2 = \frac{(u^2_L+u^2_R)}{2 a^2_{1/2}} \\
+M_o^2=\min(1,\max(\bar{M}^2,M_\infty^2))\\ $$
+
+where $$M_\infty \neq 0$$ and is a specified parameter describing the representative Mach number for the given problem.
+
+$$ \begin{eqnarray} f_a = M_o(2-M_o)\\
 \mathcal{M}_{(1)}^\pm (M) = \frac{1}{2} (M \pm |M|)\\
 \mathcal{M}_{(2)}^\pm (M) = \pm \frac{1}{4}(M \pm 1)^2\\
 \mathcal{M}_{(4)}^\pm (M)= \begin{cases}
@@ -51,7 +56,7 @@ P_u= -K_u \mathcal{P}_{(5)}^+ \mathcal{P}_{(5)}^- (\rho_L+\rho_R)(f_a a_{1/2})(u
 
 ### AUSM+up for two phases
 
-The below calculations are for gas-gas or liquid-liquid interfaces.  Gas-liquid or liquid-gas interfaces must use a Riemann solver.
+The below calculations are for gas-gas or liquid-liquid interfaces.  Gas-liquid or liquid-gas interfaces must use a Riemann solver.  Any definitions not listed in this section are the same as the single phase definitions.
 
 | Coefficient| Value  |
 | ---------- | ------ | 
