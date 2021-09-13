@@ -562,19 +562,18 @@ void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, Pets
     MPI_Comm_rank(PetscObjectComm((PetscObject)GetDM()), &rank) >> checkMpiError;
 
     // get the local number of particles
-    PetscInt localSize;
-    DMSwarmGetLocalSize(GetDM(), &localSize) >> checkMpiError;
-    ;
+    PetscInt globalSize;
+    DMSwarmGetSize(GetDM(), &globalSize) >> checkMpiError;
 
     // record the number of particles per rank
-    Vec particlesPerRank;
-    VecCreateMPI(PETSC_COMM_WORLD, 1, PETSC_DECIDE, &particlesPerRank) >> checkError;
-    PetscObjectSetName((PetscObject)particlesPerRank, "particlesPerRank") >> checkError;
-    VecSetValue(particlesPerRank, rank, localSize, INSERT_VALUES) >> checkError;
-    VecAssemblyBegin(particlesPerRank) >> checkError;
-    VecAssemblyEnd(particlesPerRank) >> checkError;
-    VecView(particlesPerRank, viewer);
-    VecDestroy(&particlesPerRank) >> checkError;
+    Vec particleCountVec;
+    VecCreateMPI(PetscObjectComm((PetscObject)GetDM()), PETSC_DECIDE, 1, &particleCountVec) >> checkError;
+    PetscObjectSetName((PetscObject)particleCountVec, "particleCount") >> checkError;
+    VecSetValue(particleCountVec, 0, globalSize, INSERT_VALUES) >> checkError;
+    VecAssemblyBegin(particleCountVec) >> checkError;
+    VecAssemblyEnd(particleCountVec) >> checkError;
+    VecView(particleCountVec, viewer);
+    VecDestroy(&particleCountVec) >> checkError;
 
     // if this is an hdf5Viewer
     PetscBool ishdf5;
@@ -598,21 +597,32 @@ void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequence
         PetscViewerHDF5SetTimestep(viewer, sequenceNumber) >> checkError;
     }
 
-    // load in the particles per rank
-    Vec particlesPerRank;
-    VecCreateMPI(PETSC_COMM_WORLD, 1, PETSC_DECIDE, &particlesPerRank) >> checkError;
-    PetscObjectSetName((PetscObject)particlesPerRank, "particlesPerRank") >> checkError;
-    VecLoad(particlesPerRank, viewer) >> checkError;
+    // load in the global particle size
+    Vec particleCountVec;
+    VecCreateSeq(PETSC_COMM_SELF, 1, &particleCountVec) >> checkError;
+    PetscObjectSetName((PetscObject)particleCountVec, "particleCount") >> checkError;
+    VecLoad(particleCountVec, viewer) >> checkError;
 
-    // Get the particle info
-    int rank[1];
-    MPI_Comm_rank(PetscObjectComm((PetscObject)GetDM()), rank) >> checkMpiError;
+    PetscReal globalSize;
+    int index[1] = {0};
+    VecGetValues(particleCountVec, 1, index, &globalSize) >> checkError;
+    VecDestroy(&particleCountVec) >> checkError;
 
-    // Set the local sizes
-    PetscReal localSize;
-    VecGetValues(particlesPerRank, 1, rank, &localSize) >> checkError;
-    DMSwarmSetLocalSizes(GetDM(), (PetscInt)localSize, 0) >> checkError;
-    VecDestroy(&particlesPerRank) >> checkError;
+    // Get the particle mpi, info
+    int rank, size;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)GetDM()), &rank) >> checkMpiError;
+    MPI_Comm_size(PetscObjectComm((PetscObject)GetDM()), &size) >> checkMpiError;
+
+    // distribute the number of particles across all ranks
+    PetscInt localSize = ((PetscInt)globalSize) / size;
+
+    // Use the first rank to hold any left over
+    if (rank == 0) {
+        localSize = globalSize - (localSize * (size - 1));
+    }
+
+    // Set the local swarm size
+    DMSwarmSetLocalSizes(GetDM(), localSize, 0) >> checkError;
 
     // Move in the hdf5 to the right group
     if (ishdf5) {
@@ -645,7 +655,7 @@ void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequence
         PetscViewerHDF5PopGroup(viewer) >> checkError;
     }
 
-    // Migrate any particles that have moved
+    // Migrate the particle to the correct rank for the dmPlex
     DMSwarmMigrate(dm, PETSC_TRUE) >> checkError;
     dmChanged = true;
 }
