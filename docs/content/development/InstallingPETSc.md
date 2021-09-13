@@ -9,21 +9,25 @@ For the most recent development issues, notes, and workarounds for building PETS
 
 ## Install System Specific Prerequisites
 ### macOS
-1. Install [Xcode](https://apps.apple.com/us/app/xcode/id497799835) using the Mac AppStore
-1. Using the terminal, install the command line tools and accept the license
-    ```bash
-    sudo xcode-select --install 
-    sudo xcodebuild -license
-    ```
-1. It is recommended to use a package manager to install other prerequisites.  The following directions will assume [Homebrew](https://brew.sh) has been installed, but alternative methods could be used.
-1. Install prerequisites ```brew install cmake autoconf automake libtool libpng gfortran pkg-config clang-format```
+1. Install macOS Development Tools.  This can be done one of two ways:
+   - Install [Xcode](https://apps.apple.com/us/app/xcode/id497799835) using the Mac AppStore
+   - Using the terminal, install the command line tools and accept the license
+       ```bash
+       sudo xcode-select --install 
+       sudo xcodebuild -license
+       ```
+2. It is recommended to use a package manager to install other prerequisites.  The following directions will assume [Homebrew](https://brew.sh) has been installed, but alternative methods could be used.
+3. Install prerequisites
+  ```bash
+  brew install cmake autoconf automake libtool libpng gfortran pkg-config clang-format
+  ```
 
 ### Ubuntu
 Using the terminal, install the required prerequisites
-    ```bash
-    sudo apt-get update
-    sudo apt-get install build-essential gfortran git cmake autoconf automake git python3-distutils libpng-dev libtool clang-format pkg-config
-    ```
+  ```bash
+  sudo apt-get update
+  sudo apt-get install build-essential gfortran git cmake autoconf automake git python3-distutils libpng-dev libtool clang-format pkg-config
+  ```
 
 ### Windows
 It is recommended that development on Windows uses the [Windows Subsystem for Linux 2 (WSL2)](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
