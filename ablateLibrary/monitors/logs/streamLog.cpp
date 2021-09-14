@@ -2,7 +2,7 @@
 #include <utilities/mpiError.hpp>
 ablate::monitors::logs::StreamLog::StreamLog(std::ostream& stream) : stream(stream) {}
 
-void ablate::monitors::logs::StreamLog::Initialize(MPI_Comm comm) {}
+void ablate::monitors::logs::StreamLog::Initialize(MPI_Comm comm) { Log::Initialize(comm); }
 
 void ablate::monitors::logs::StreamLog::Print(const char* value) { stream << value; }
 

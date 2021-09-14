@@ -17,6 +17,7 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     // assume one flow field right now
     auto flow = parser->GetByName<flow::Flow>("flow");
     flow->SetupSolve(timeStepper->GetTS());
+    timeStepper->Register(flow);
 
     // get the monitors from the flow factory
     auto flowMonitors = parser->GetFactory("flow")->GetByName<std::vector<monitors::Monitor>>("monitors", std::vector<std::shared_ptr<monitors::Monitor>>());
@@ -41,10 +42,11 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
                 particleMonitor->Register(particle);
                 timeStepper->AddMonitor(particleMonitor);
             }
+            // Register with the serializer
+            timeStepper->Register(particle);
         }
     }
 
-    // run
     timeStepper->Solve(flow);
 }
 

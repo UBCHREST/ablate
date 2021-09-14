@@ -18,6 +18,8 @@ class Ghost : public BoundaryCondition {
     // Store some field information
     PetscInt dim;
     PetscInt fieldSize;
+    // the field offset for the a_xI values;
+    PetscInt fieldOffset;
 
    public:
     Ghost(std::string fieldName, std::string boundaryName, std::vector<int> labelIds, UpdateFunction updateFunction, void* updateContext, std::string labelName = {});

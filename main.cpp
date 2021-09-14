@@ -2,7 +2,6 @@
 #include <iostream>
 #include <memory>
 #include <parameters/petscPrefixOptions.hpp>
-#include <utilities/demangler.hpp>
 #include <utilities/fileUtility.hpp>
 #include <utilities/mpiError.hpp>
 #include "builder.hpp"
@@ -45,6 +44,7 @@ int main(int argc, char** args) {
         return 0;
     }
 
+    std::filesystem::path filePath;
     // check to see if we should print options
     char filename[PETSC_MAX_PATH_LEN] = "";
     PetscBool fileSpecified = PETSC_FALSE;
@@ -54,7 +54,8 @@ int main(int argc, char** args) {
     }
 
     // locate or download the file
-    auto filePath = ablate::utilities::FileUtility::LocateFile(filename, PETSC_COMM_WORLD);
+    filePath = ablate::utilities::FileUtility::LocateFile(filename, PETSC_COMM_WORLD);
+
     if (!std::filesystem::exists(filePath)) {
         throw std::invalid_argument("unable to locate input file: " + filePath.string());
     }

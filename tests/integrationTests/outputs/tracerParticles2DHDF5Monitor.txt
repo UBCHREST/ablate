@@ -17,5 +17,6 @@ Timestep: 0015 time = 0.15     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1
 ResultFiles:
 flowTracerParticles.hdf5
 flowTracerParticles.xmf
+restart.rst
 theFlowField.hdf5
 theFlowField.xmf

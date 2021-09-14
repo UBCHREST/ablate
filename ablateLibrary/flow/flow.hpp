@@ -3,8 +3,8 @@
 
 #include <petsc.h>
 #include <functional>
+#include <io/serializable.hpp>
 #include <memory>
-#include <monitors/viewable.hpp>
 #include <optional>
 #include <parameters/parameters.hpp>
 #include <string>
@@ -13,11 +13,12 @@
 #include "flowFieldDescriptor.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "mesh/mesh.hpp"
+#include "monitors/monitorable.hpp"
 #include "solve/solvable.hpp"
 
 namespace ablate::flow {
 
-class Flow : public solve::Solvable, public monitors::Viewable {
+class Flow : public solve::Solvable, public io::Serializable, public monitors::Monitorable {
    protected:
     // descriptions to the fields on the dm
     std::vector<FlowFieldDescriptor> flowFieldDescriptors;
@@ -90,7 +91,16 @@ class Flow : public solve::Solvable, public monitors::Viewable {
      * @param time
      * @param u
      */
-    void View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const override;
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
+
+    /**
+     * provide interface for all flow restore
+     * @param viewer
+     * @param steps
+     * @param time
+     * @param u
+     */
+    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * Adds function to be called before each flow step
@@ -117,6 +127,8 @@ class Flow : public solve::Solvable, public monitors::Viewable {
     void RegisterPostEvaluate(std::function<void(TS ts, Flow&)> postEval) { this->postEvaluateFunctions.push_back(postEval); }
 
     const std::string& GetName() const override { return name; }
+
+    const std::string& GetId() const override { return name; }
 
     const DM& GetDM() const { return dm->GetDomain(); }
 

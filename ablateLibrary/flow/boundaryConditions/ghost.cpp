@@ -22,4 +22,5 @@ void ablate::flow::boundaryConditions::Ghost::SetupBoundary(PetscDS problem, Pet
     // extract some information about the flowField
     PetscDSGetFieldSize(problem, fieldId, &fieldSize) >> checkError;
     PetscDSGetCoordinateDimension(problem, &dim) >> checkError;
+    PetscDSGetFieldOffset(problem, fieldId, &fieldOffset) >> checkError;
 }

@@ -55,6 +55,13 @@ Parameters within the yaml file can be overwritten using the command line using 
     ![clion ablate configuration setup](assets/clion_ablate_configuration_setup.png)
 1. Run or Debug ABLATE using the icons in the toolbar or under the Run menu.
 
+## Restarting a Simulation
+ABLATE can restart/resume a simulation if the TimeStepper IO  was specified in the original run.  To restart the simulation set the environment directory to the previous run.  This can be done in input file or command line. Input parameters can be changed using the method outlined in [Running ABLATE from the Command Line](#running-ablate-from-the-command-line).
+
+    ```bash
+    mpirun -n 3 ./ablate --input /path/to/the/inputfile.yaml -yaml::environment::directory /path/to/previous/run/directory -yaml::timestepper::arguments::ts_max_steps 60
+    ```
+
 ## Parser Command Line Arguments
 
 | Argument | Description |
@@ -63,4 +70,5 @@ Parameters within the yaml file can be overwritten using the command line using 
 | \-version | Prints the combined ABLATE and PETSc version information |
 | \-\-version | Prints the ABLATE version information |
 | \-\-help | Prints all available arguments for the Yaml input file |
+| \-yaml:: | Prefix for changing input arguments. See [Running ABLATE from the Command Line](#running-ablate-from-the-command-line).|
 

@@ -40,7 +40,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldSetupDefaultEnviroment) {
     ablateTesting::parameters::MockParameters mockParameters;
     EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
     EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1));
-    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1));
 
     // act
     ablate::environment::RunEnvironment runEnvironment(mockParameters, tempInputFile);
@@ -60,7 +60,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldNotTagOutputDirectory) {
     ablateTesting::parameters::MockParameters mockParameters;
     EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
     EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("false"));
-    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1));
 
     // act
     ablate::environment::RunEnvironment runEnvironment(mockParameters, tempInputFile);
@@ -82,7 +82,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseAndTagSpecifiedOutputDirectory) {
     ablateTesting::parameters::MockParameters mockParameters;
     EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
     EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1));
-    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
 
     // act
     ablate::environment::RunEnvironment runEnvironment(mockParameters, tempInputFile);
@@ -104,7 +104,28 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirector
     ablateTesting::parameters::MockParameters mockParameters;
     EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
     EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("false"));
-    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
+
+    // act
+    ablate::environment::RunEnvironment runEnvironment(mockParameters, tempInputFile);
+
+    // assert
+    ASSERT_EQ(outputDirectory, runEnvironment.GetOutputDirectory()) << "the output directory should the one specified";
+    ASSERT_GT(runEnvironment.GetOutputDirectory().string().length(), uniqueTitle.length()) << "the output directory include additional date/time/info";
+
+    // cleanup
+    std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
+}
+
+TEST_F(RunEnvironmentTestFixture, ShouldDefaultToNotTaggingWhenDirectoryIsSpecified) {
+    // arrange
+    auto outputDirectory = std::filesystem::temp_directory_path() / ("specified_output_dir_" + std::to_string(rand()));
+
+    // setup the mock parameters
+    ablateTesting::parameters::MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
+    EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
 
     // act
     ablate::environment::RunEnvironment runEnvironment(mockParameters, tempInputFile);
@@ -123,7 +144,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldSetupDefaultWithoutInputFile) {
     ablateTesting::parameters::MockParameters mockParameters;
     EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
     EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1));
-    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1));
 
     // act
     ablate::environment::RunEnvironment runEnvironment(mockParameters);
@@ -143,7 +164,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldNotTagOutputDirectoryWithoutInputFile) {
     ablateTesting::parameters::MockParameters mockParameters;
     EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
     EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("false"));
-    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1));
 
     // act
     ablate::environment::RunEnvironment runEnvironment(mockParameters);
@@ -165,7 +186,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseAndTagSpecifiedOutputDirectoryWithout
     ablateTesting::parameters::MockParameters mockParameters;
     EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
     EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1));
-    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
 
     // act
     ablate::environment::RunEnvironment runEnvironment(mockParameters);
@@ -187,7 +208,7 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirector
     ablateTesting::parameters::MockParameters mockParameters;
     EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
     EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("false"));
-    EXPECT_CALL(mockParameters, GetString("outputDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
 
     // act
     ablate::environment::RunEnvironment runEnvironment(mockParameters);

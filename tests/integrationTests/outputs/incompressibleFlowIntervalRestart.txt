@@ -1,0 +1,18 @@
+Timestep: 0000 time = 0        	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-15 <1E-15 <1E-13
+Timestep: 0001 time = 0.1      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0002 time = 0.2      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0003 time = 0.3      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0004 time = 0.4      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0005 time = 0.5      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0006 time = 0.6      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0007 time = 0.7      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0005 time = 0.5      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0006 time = 0.6      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0007 time = 0.7      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0008 time = 0.8      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0009 time = 0.9      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+Timestep: 0010 time = 1        	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
+ResultFiles:
+restart.rst
+theFlowField.hdf5
+theFlowField.xmf

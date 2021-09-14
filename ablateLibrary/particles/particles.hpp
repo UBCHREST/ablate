@@ -5,14 +5,13 @@
 #include "flow/flow.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "mathFunctions/mathFunction.hpp"
-#include "monitors/viewable.hpp"
 #include "particles/initializers/initializer.hpp"
 #include "particles/particleFieldDescriptor.hpp"
 #include "solve/timeStepper.hpp"
 
 namespace ablate::particles {
 
-class Particles : public monitors::Viewable {
+class Particles : public io::Serializable, public monitors::Monitorable {
    protected:
     // particle domain
     DM dm;
@@ -100,6 +99,7 @@ class Particles : public monitors::Viewable {
     virtual ~Particles();
 
     const std::string& GetName() const override { return name; }
+    const std::string& GetId() const override { return name; }
     const DM& GetDM() const { return dm; }
     PetscReal GetInitialTime() const { return timeInitial; }
     PetscReal GetFinalTime() const { return timeFinal; }
@@ -116,7 +116,16 @@ class Particles : public monitors::Viewable {
      * @param time
      * @param u
      */
-    void View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const override;
+    void Save(PetscViewer viewer, PetscInt steps, PetscReal time) const override;
+
+    /**
+     * shared function to view all particles;
+     * @param viewer
+     * @param steps
+     * @param time
+     * @param u
+     */
+    void Restore(PetscViewer viewer, PetscInt steps, PetscReal time) override;
 
     /** common field names for particles **/
     inline static const char ParticleVelocity[] = "ParticleVelocity";

@@ -4,6 +4,7 @@
 #include <utilities/petscError.hpp>
 
 void ablate::monitors::logs::StdOut::Initialize(MPI_Comm comm) {
+    Log::Initialize(comm);
     int rank;
     MPI_Comm_rank(comm, &rank) >> checkMpiError;
     output = rank == 0;

@@ -372,7 +372,7 @@ void ablate::flow::Flow::UpdateAuxFields(TS ts, ablate::flow::Flow& flow) {
     DMProjectFunctionLocal(flow.auxDM, time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, flow.auxField) >> checkError;
 }
 
-void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time, Vec u) const {
+void ablate::flow::Flow::Save(PetscViewer viewer, PetscInt steps, PetscReal time) const {
     // If this is the first output, save the mesh
     if (steps == 0) {
         // Print the initial mesh
@@ -432,6 +432,12 @@ void ablate::flow::Flow::View(PetscViewer viewer, PetscInt steps, PetscReal time
         VecView(exactVec, viewer) >> checkError;
         DMRestoreGlobalVector(dm->GetDomain(), &exactVec) >> checkError;
     }
+}
+
+void ablate::flow::Flow::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    // The only item that needs to be explicitly restored is the flowField
+    DMSetOutputSequenceNumber(GetDM(), sequenceNumber, time) >> checkError;
+    VecLoad(flowField, viewer) >> checkError;
 }
 
 const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetFieldDescriptor(const std::string& fieldName) const {
