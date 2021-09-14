@@ -38,18 +38,27 @@ flow: !ablate::flow::FVFlow
       solutionField: false
   processes:
     - !ablate::flow::processes::TChemReactions
-      eos: !ablate::eos::TChem
-        mechFile: inputs/grimech30.dat
-        thermoFile: inputs/thermo30.dat
+      eos: &eos !ablate::eos::TChem
+        mechFile: grimech30.dat
+        thermoFile: thermo30.dat
   initialization:
-    - fieldName: "euler" #for euler all components are in a single field
-      field: >-
-        0.2806317906177915,
-        212565.75335864403,
-        0.0,
-        0.0
-    - fieldName: "densityYi" 
-      field: 0.        ,0.        ,0.        ,0.06177863,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.01548713,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.20336603,0.        ,0.        ,0.        ,0.        ,0.
+    - !ablate::flow::fieldFunctions::Euler
+      state: &initState
+        eos: *eos
+        temperature: 1200.0
+        pressure: 101325
+        velocity: "0.0, 5.0"
+        massFractions: !ablate::flow::fieldFunctions::MassFractions
+          eos: *eos
+          values:
+            - fieldName: O2
+              field: 0.22014124
+            - fieldName: CH4
+              field: 0.05518667
+            - fieldName: N2
+              field: 0.7246721
+    - !ablate::flow::fieldFunctions::DensityMassFractions
+      state: *initState
   boundaryConditions: []
   monitors:
     - !ablate::monitors::IgnitionDelayPeakYi
@@ -59,9 +68,7 @@ flow: !ablate::flow::FVFlow
       historyLog: !ablate::monitors::logs::CsvLog
         name: ignitionDelayPeakYi.csv
     - !ablate::monitors::IgnitionDelayTemperature
-      eos: !ablate::eos::TChem
-        mechFile: inputs/grimech30.dat
-        thermoFile: inputs/thermo30.dat
+      eos: *eos
       location: [0.5, 0.5]
       thresholdTemperature: 1500
       log: !ablate::monitors::logs::CsvLog

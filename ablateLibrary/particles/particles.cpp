@@ -604,7 +604,7 @@ void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequence
     VecLoad(particleCountVec, viewer) >> checkError;
 
     PetscReal globalSize;
-    int index[1] = {0};
+    PetscInt index[1] = {0};
     VecGetValues(particleCountVec, 1, index, &globalSize) >> checkError;
     VecDestroy(&particleCountVec) >> checkError;
 
