@@ -38,9 +38,9 @@ flow: !ablate::flow::FVFlow
       solutionField: false
   processes:
     - !ablate::flow::processes::TChemReactions
-      eos: !ablate::eos::TChem
-        mechFile: inputs/grimech30.dat
-        thermoFile: inputs/thermo30.dat
+      eos: &eos !ablate::eos::TChem
+        mechFile: grimech30.dat
+        thermoFile: thermo30.dat
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
       field: >-
@@ -48,7 +48,7 @@ flow: !ablate::flow::FVFlow
         212565.75335864403,
         0.0,
         0.0
-    - fieldName: "densityYi" 
+    - fieldName: "densityYi"
       field: 0.        ,0.        ,0.        ,0.06177863,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.01548713,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.        ,0.20336603,0.        ,0.        ,0.        ,0.        ,0.
   boundaryConditions: []
   monitors:
@@ -59,9 +59,7 @@ flow: !ablate::flow::FVFlow
       historyLog: !ablate::monitors::logs::CsvLog
         name: ignitionDelayPeakYi.csv
     - !ablate::monitors::IgnitionDelayTemperature
-      eos: !ablate::eos::TChem
-        mechFile: inputs/grimech30.dat
-        thermoFile: inputs/thermo30.dat
+      eos: *eos
       location: [0.5, 0.5]
       thresholdTemperature: 1500
       log: !ablate::monitors::logs::CsvLog

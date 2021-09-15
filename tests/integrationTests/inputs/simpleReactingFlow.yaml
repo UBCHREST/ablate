@@ -57,5 +57,5 @@ flow: !ablate::flow::ReactingCompressibleFlow
   monitors:
     - !ablate::monitors::TimeStepMonitor
   eos: !ablate::eos::TChem
-    mechFile: inputs/grimech30.dat
-    thermoFile: inputs/thermo30.dat
+    mechFile: grimech30.dat
+    thermoFile: thermo30.dat
