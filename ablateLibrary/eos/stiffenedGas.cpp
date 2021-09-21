@@ -93,6 +93,7 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpecificHeatConstan
     PetscFunctionBeginUser; // don't know how to calculate this at the moment
     Parameters *parameters = (Parameters *)ctx;
     (*specificHeat) = 6150.0; // parameters->gamma * parameters->rGas / (parameters->gamma - 1.0);
+            // maybe parameters->gamma * parameters->Cv ??? (does not add up to water props for ref state)
     PetscFunctionReturn(0);
 }
 
