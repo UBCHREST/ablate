@@ -92,8 +92,8 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSensibleInternalEne
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
     PetscFunctionBeginUser; // don't know how to calculate this at the moment
     Parameters *parameters = (Parameters *)ctx;
-    (*specificHeat) = 6150.0; // parameters->gamma * parameters->rGas / (parameters->gamma - 1.0);
-            // maybe parameters->gamma * parameters->Cv ??? (does not add up to water props for ref state)
+    (*specificHeat) = parameters->gamma * parameters->Cv; // parameters->gamma * parameters->rGas / (parameters->gamma - 1.0);
+            // maybe 6150.0  ??? (does not add up to water props for ref state)
     PetscFunctionReturn(0);
 }
 

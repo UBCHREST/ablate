@@ -13,7 +13,7 @@ The stiffened gas equation of state models liquids using assumptions of an ideal
 | $$Cv$$    | 3.03 kJ/kg/K  | -Cv      |
 | $$p^0$$   | $$10^7$$ Pa   | -p0      |
 | $$T^0$$   | 311.1 C       | -T0      |
-| $$e^0$$   | 1393 kJ/kg/K  | -e0      |
+| $$e^0$$   | 1393 kJ/kg    | -e0      |
 
 ### Decode State
 The decode state function computes the required values to compute fluxes from the Euler conserved variables.
