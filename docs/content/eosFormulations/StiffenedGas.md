@@ -12,7 +12,7 @@ The stiffened gas equation of state models liquids using assumptions of an ideal
 | $$\gamma$$| 2.4           | -gamma   |
 | $$Cv$$    | 3.03 kJ/kg/K  | -Cv      |
 | $$p^0$$   | $$10^7$$ Pa   | -p0      |
-| $$T^0$$   | 311.1 C       | -T0      |
+| $$T^0$$   | 584.25 K      | -T0      |
 | $$e^0$$   | 1393 kJ/kg    | -e0      |
 
 ### Decode State
