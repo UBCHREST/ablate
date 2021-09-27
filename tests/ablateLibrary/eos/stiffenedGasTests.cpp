@@ -80,22 +80,22 @@ TEST_P(StiffenedGasTestDecodeStateFixture, ShouldDecodeState) {
 }
 
 INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasTestDecodeStateFixture,
-                         testing::Values((EOSTestDecodeStateParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+                         testing::Values((EOSTestDecodeStateParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"},{"p0","1.0e7"},{"T0","584.25"},{"e0","1393000.0"}},
                                              .densityYiIn = {},
-                                             .densityIn = 1.2,
+                                             .densityIn = 998.7,
                                              .totalEnergyIn = 1E5,
                                              .velocityIn = {10, -20, 30},
                                              .expectedInternalEnergy = 99300,
-                                             .expectedSpeedOfSound = 235.8134856,
-                                             .expectedPressure = 47664},
-                                         (EOSTestDecodeStateParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}},
+                                             .expectedSpeedOfSound = 547.7264492,
+                                             .expectedPressure = 114839274},
+                                         (EOSTestDecodeStateParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0","654.32"}, {"e0","1482000.9"}},
                                              .densityYiIn = {},
-                                             .densityIn = .9,
-                                             .totalEnergyIn = 1.56E5,
+                                             .densityIn = 800,
+                                             .totalEnergyIn = 1.2E5,
                                              .velocityIn = {0.0},
-                                             .expectedInternalEnergy = 1.56E+05,
-                                             .expectedSpeedOfSound = 558.5696018,
-                                             .expectedPressure = 140400}),
+                                             .expectedInternalEnergy = 1.2E+05,
+                                             .expectedSpeedOfSound = 902.2194855,
+                                             .expectedPressure = 2e8}),
                          [](const testing::TestParamInfo<EOSTestDecodeStateParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -134,14 +134,14 @@ TEST_P(StiffenedGasTestTemperatureFixture, ShouldComputeTemperature) {
 
 INSTANTIATE_TEST_SUITE_P(
     StiffenedGasEOSTests, StiffenedGasTestTemperatureFixture,
-    testing::Values((EOSTestTemperatureParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+    testing::Values((EOSTestTemperatureParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"},{"p0","1.0e7"},{"T0","584.25"},{"e0","1393000.0"}},
                         .densityYiIn = {},
-                        .densityIn = 1.2,
-                        .totalEnergyIn = 1.50E+05,
-                        .massFluxIn = {1.2 * 10, -1.2 * 20, 1.2 * 30},
-                        .expectedTemperature = 208.0836237},
+                        .densityIn = 998.7,
+                        .totalEnergyIn = 1.5E+05,
+                        .massFluxIn = {998.7 * 10, -998.7 * 20, 998.7 * 30},
+                        .expectedTemperature = 173.7879538},
                     (EOSTestTemperatureParameters){
-                        .options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .densityYiIn = {}, .densityIn = .9, .totalEnergyIn = 1.56E5, .massFluxIn = {0.0}, .expectedTemperature = 39000}),
+                        .options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0","654.32"}, {"e0","1482000.9"}}, .densityYiIn = {}, .densityIn = 800, .totalEnergyIn = 2.56E5, .massFluxIn = {0.0}, .expectedTemperature = 209.0024752}),
     [](const testing::TestParamInfo<EOSTestTemperatureParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -226,8 +226,8 @@ TEST_P(StiffenedGasTestComputeDensityTestFixture, ShouldComputeCorrectTemperatur
 
 INSTANTIATE_TEST_SUITE_P(
     StiffenedGasEOSTests, StiffenedGasTestComputeDensityTestFixture,
-    testing::Values((StiffenedGasTestComputeDensityParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 300.0, .pressureIn = 101325.0, .expectedDensity = 1.17682},
-                    (StiffenedGasTestComputeDensityParameters){.options = {{"gamma", "1.4"}, {"Rgas", "487.0"}}, .temperatureIn = 1000.0, .pressureIn = 1013250.0, .expectedDensity = 2.08059}),
+    testing::Values((StiffenedGasTestComputeDensityParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"},{"p0","1.0e7"},{"T0","584.25"},{"e0","1393000.0"}}, .temperatureIn = 300.0, .pressureIn = 101325.0, .expectedDensity = 32.37634695},
+                    (StiffenedGasTestComputeDensityParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0","654.32"}, {"e0","1482000.9"}}, .temperatureIn = 1000.0, .pressureIn = 1013250.0, .expectedDensity = 3.660383784}),
     [](const testing::TestParamInfo<StiffenedGasTestComputeDensityParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -263,10 +263,10 @@ TEST_P(ComputeSensibleInternalEnergyTestFixture, ShouldComputeCorrectEnergy) {
 
 INSTANTIATE_TEST_SUITE_P(
     StiffenedGasEOSTests, ComputeSensibleInternalEnergyTestFixture,
-    testing::Values((ComputeSensibleInternalEnergyParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = 39000, .densityIn = .9, .expectedSensibleInternalEnergy = 1.56E5},
-                    (ComputeSensibleInternalEnergyParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 1.1, .expectedSensibleInternalEnergy = 251125.00},
+    testing::Values((ComputeSensibleInternalEnergyParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0","654.32"}, {"e0","1482000.9"}}, .temperatureIn = 39000, .densityIn = 800, .expectedSensibleInternalEnergy = 1.56E5},
+                    (ComputeSensibleInternalEnergyParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"},{"p0","1.0e7"},{"T0","584.25"},{"e0","1393000.0"}}, .temperatureIn = 350.0, .densityIn = 998.7, .expectedSensibleInternalEnergy = 683222.50},
                     (ComputeSensibleInternalEnergyParameters){
-                        .options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 20.1, .expectedSensibleInternalEnergy = 251125.00}),
+                        .options = {{"gamma", "2.4"}, {"Cv", "3030.0"},{"p0","1.0e7"},{"T0","584.25"},{"e0","1393000.0"}}, .temperatureIn = 350.0, .densityIn = 20.1, .expectedSensibleInternalEnergy = 683222.50}),
     [](const testing::TestParamInfo<ComputeSensibleInternalEnergyParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,7 +301,7 @@ TEST_P(ComputeSpecificHeatConstantPressureTestFixture, ShouldComputeCorrectEnerg
 }
 
 INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, ComputeSpecificHeatConstantPressureTestFixture,
-                         testing::Values((ComputeSpecificHeatConstantPressureParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 8.0},
+                         testing::Values((ComputeSpecificHeatConstantPressureParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0","654.32"}, {"e0","1482000.9"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 320.64},
                                          (ComputeSpecificHeatConstantPressureParameters){
-                                             .options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 1004.5}),
+                                             .options = {{"gamma", "2.4"}, {"Cv", "3030.0"},{"p0","1.0e7"},{"T0","584.25"},{"e0","1393000.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 7272.0}),
                          [](const testing::TestParamInfo<ComputeSpecificHeatConstantPressureParameters>& info) { return std::to_string(info.index); });
