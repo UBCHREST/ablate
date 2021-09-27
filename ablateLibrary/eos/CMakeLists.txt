@@ -5,6 +5,8 @@ target_sources(ablateLibrary
         perfectGas.cpp
         tChem.hpp
         tChem.cpp
+        stiffenedGas.hpp
+        stiffenedGas.cpp
         )
 
 add_subdirectory(transport)
