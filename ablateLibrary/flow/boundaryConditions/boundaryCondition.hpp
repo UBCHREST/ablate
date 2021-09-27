@@ -19,7 +19,7 @@ class BoundaryCondition {
     const std::string& GetFieldName() const { return fieldName; }
 
     virtual ~BoundaryCondition() = default;
-    virtual void SetupBoundary(PetscDS problem, PetscInt fieldId) = 0;
+    virtual void SetupBoundary(DM dm, PetscDS problem, PetscInt fieldId) = 0;
 };
 }  // namespace ablate::flow::boundaryConditions
 #endif  // ABLATELIBRARY_BOUNDARYCONDITION_HPP

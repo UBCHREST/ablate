@@ -253,7 +253,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
         }
 
         // Setup the boundary condition
-        boundary->SetupBoundary(prob, fieldId.value());
+        boundary->SetupBoundary(dm->GetDomain(), prob, fieldId.value());
     }
 
     // Setup the solve with the ts
@@ -267,8 +267,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
         DMCreateLocalVector(auxDM, &(auxField)) >> checkError;
 
         // attach this field as aux vector to the dm
-        PetscObjectCompose((PetscObject)dm->GetDomain(), "A", (PetscObject)auxField) >> checkError;
-        PetscObjectSetName((PetscObject)auxField, "auxField") >> checkError;
+        DMSetAuxiliaryVec(dm->GetDomain(),NULL, 0, auxField)  >> checkError;
     }
 
     // Check if any of the fields are fe
@@ -387,7 +386,7 @@ void ablate::flow::Flow::Save(PetscViewer viewer, PetscInt steps, PetscReal time
 
     // Always save the main flowField
     VecView(flowField, viewer) >> checkError;
-
+//    DMView(GetDM(), viewer) >> checkError;
     // If there is aux data output
     if (auxField) {
         // copy over the sequence data from the main dm

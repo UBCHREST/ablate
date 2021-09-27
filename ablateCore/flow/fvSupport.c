@@ -534,17 +534,14 @@ static PetscErrorCode ABLATE_FillGradientBoundary(DM dm, PetscFV auxFvm, Vec loc
         // extract the boundary information
         PetscInt                numids;
         const PetscInt         *ids;
-        const char *                 labelName;
+        DMLabel                 label;
+        const char * name;
         PetscInt boundaryField;
-        ierr = DMGetBoundary(dm, b, NULL, NULL, &labelName, &boundaryField, NULL, NULL, NULL, NULL, &numids, &ids, NULL);CHKERRQ(ierr);
+        ierr = PetscDSGetBoundary(prob, b, NULL, NULL, &name, &label, &numids, &ids, &boundaryField, NULL, NULL, NULL, NULL,  NULL);CHKERRQ(ierr);
 
         if (boundaryField != field){
             continue;
         }
-
-        // use the correct label for this boundary field
-        DMLabel label;
-        ierr = DMGetLabel(dm, labelName, &label);CHKERRQ(ierr);
 
         // get the correct boundary/ghost pattern
         PetscSF            sf;
@@ -656,7 +653,7 @@ PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescr
     ierr = PetscDSGetTotalDimension(ds, &totDim);CHKERRQ(ierr);
 
     // Check to see if the dm has an auxVec/auxDM associated with it.  If it does, extract it
-    ierr = PetscObjectQuery((PetscObject) dm, "A", (PetscObject *) &locA);CHKERRQ(ierr);
+    ierr = DMGetAuxiliaryVec(dm, NULL, 0, &locA);;CHKERRQ(ierr);
     if (locA) {
         PetscInt subcell;
         ierr = VecGetDM(locA, &dmAux);CHKERRQ(ierr);
@@ -1004,7 +1001,7 @@ PetscErrorCode ABLATE_DMPlexComputePointResidual_Internal(FVMRHSPointFunctionDes
     PetscInt totDimAux = 0;
     PetscInt naf = 0;
 
-    ierr = PetscObjectQuery((PetscObject) dm, "A", (PetscObject *) &locA);CHKERRQ(ierr);
+    DMGetAuxiliaryVec(dm, NULL, 0, &locA);CHKERRQ(ierr);
     if (locA) {
         PetscInt subcell;
         ierr = VecGetDM(locA, &dmAux);CHKERRQ(ierr);
