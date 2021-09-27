@@ -1,4 +1,4 @@
-add_executable(libraryTests "" eos/stiffenedGasTests.cpp)
+add_executable(libraryTests "")
 target_link_libraries(libraryTests PUBLIC gtest gmock ablateLibrary testingResources)
 
 target_sources(libraryTests

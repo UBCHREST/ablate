@@ -3,6 +3,7 @@ target_sources(libraryTests
         mockEOS.hpp
         perfectGasTests.cpp
         tChemTests.cpp
+        stiffenedGasTests.cpp
         )
 
 add_subdirectory(transport)

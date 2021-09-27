@@ -1,7 +1,3 @@
-//
-// Created by Mae Sementilli on 9/21/21.
-//
-
 #ifndef ABLATELIBRARY_STIFFENEDGAS_HPP
 #define ABLATELIBRARY_STIFFENEDGAS_HPP
 

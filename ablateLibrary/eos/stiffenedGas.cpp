@@ -1,7 +1,3 @@
-//
-// Created by Mae Sementilli on 9/21/21.
-//
-
 #include "stiffenedGas.hpp"
 
 ablate::eos::StiffenedGas::StiffenedGas(std::shared_ptr<ablate::parameters::Parameters> parametersIn, std::vector<std::string> species) : EOS("stiffenedGas"), species(species) {
@@ -43,7 +39,7 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasDecodeState(PetscInt dim, 
     ke *= 0.5;
 
     // assumed eos
-    (*internalEnergy) = (totalEnergy)-ke; // not correct maybe?
+    (*internalEnergy) = (totalEnergy)-ke;
     *p = (parameters->gamma - 1.0) * density * (*internalEnergy) - parameters->gamma * parameters->p0;
     *a = PetscSqrtReal(parameters->gamma * ((*p) + parameters->p0) / density);
     PetscFunctionReturn(0);
@@ -61,15 +57,15 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeTemperature(PetscIn
     }
 
     // assumed eos
-    PetscReal internalEnergy = (totalEnergy)-0.5 * speedSquare; // is this right?
-    PetscReal cv = parameters->Cv; // rGas / (parameters->gamma - 1.0);
+    PetscReal internalEnergy = (totalEnergy)-0.5 * speedSquare;
+    PetscReal cv = parameters->Cv;
 
     (*T) = (internalEnergy - parameters->e0) / cv + parameters->T0;
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpeciesSensibleEnthalpy(PetscReal temperature, PetscReal *hi, void *ctx) {
-    PetscFunctionBeginUser;  // do I need to make new one, or reuse perfectGas function ????
+    PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
     for (PetscInt s = 0; s < parameters->numberSpecies; s++) {
         hi[s] = 0.0;
@@ -85,15 +81,14 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeDensityFunctionFrom
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleInternalEnergy, void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
-    PetscReal cv = parameters->Cv; // rGas / (parameters->gamma - 1.0);
+    PetscReal cv = parameters->Cv;
     *sensibleInternalEnergy = (T - parameters->T0) * cv + parameters->e0;
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
-    PetscFunctionBeginUser; // don't know how to calculate this at the moment
+    PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
-    (*specificHeat) = parameters->gamma * parameters->Cv; // parameters->gamma * parameters->rGas / (parameters->gamma - 1.0);
-            // maybe 6150.0  ??? (does not add up to water props for ref state)
+    (*specificHeat) = parameters->gamma * parameters->Cv;
     PetscFunctionReturn(0);
 }
 
