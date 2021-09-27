@@ -20,8 +20,8 @@ class StiffenedGas : public EOS {
     };
     Parameters parameters;
 
-    static PetscErrorCode StiffenedGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
-                                                PetscReal* p, void* ctx);
+    static PetscErrorCode StiffenedGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy,
+                                                  PetscReal* a, PetscReal* p, void* ctx);
     static PetscErrorCode StiffenedGasComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
 
     static PetscErrorCode StiffenedGasComputeSpeciesSensibleEnthalpy(PetscReal T, PetscReal* hi, void* ctx);

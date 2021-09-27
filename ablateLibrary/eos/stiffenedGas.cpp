@@ -4,9 +4,9 @@ ablate::eos::StiffenedGas::StiffenedGas(std::shared_ptr<ablate::parameters::Para
     // set default values for options
     parameters.gamma = parametersIn->Get<PetscReal>("gamma", 2.4);
     parameters.Cv = parametersIn->Get<PetscReal>("Cv", 3030.0);
-    parameters.p0 = parametersIn->Get<PetscReal>("p0",1.0e7);
-    parameters.T0 = parametersIn->Get<PetscReal>("T0",584.25);
-    parameters.e0 = parametersIn->Get<PetscReal>("e0",1393000.0);
+    parameters.p0 = parametersIn->Get<PetscReal>("p0", 1.0e7);
+    parameters.T0 = parametersIn->Get<PetscReal>("T0", 584.25);
+    parameters.e0 = parametersIn->Get<PetscReal>("e0", 1393000.0);
     parameters.numberSpecies = species.size();
 }
 
@@ -26,8 +26,8 @@ void ablate::eos::StiffenedGas::View(std::ostream &stream) const {
     }
 }
 
-PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, const PetscReal densityYi[], PetscReal *internalEnergy,
-                                                              PetscReal *a, PetscReal *p, void *ctx) {
+PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, const PetscReal densityYi[],
+                                                                  PetscReal *internalEnergy, PetscReal *a, PetscReal *p, void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
 
@@ -46,7 +46,7 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasDecodeState(PetscInt dim, 
 }
 
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, const PetscReal densityYi[], PetscReal *T,
-                                                                     void *ctx) {
+                                                                         void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
 
@@ -75,7 +75,7 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpeciesSensibleEnth
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeDensityFunctionFromTemperaturePressure(PetscReal temperature, PetscReal pressure, const PetscReal *yi, PetscReal *density, void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
-    *density = (pressure + parameters->gamma * parameters->p0) / ((parameters->gamma - 1) * (parameters->Cv * (temperature - parameters->T0) + parameters->e0) );
+    *density = (pressure + parameters->gamma * parameters->p0) / ((parameters->gamma - 1) * (parameters->Cv * (temperature - parameters->T0) + parameters->e0));
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleInternalEnergy, void *ctx) {
