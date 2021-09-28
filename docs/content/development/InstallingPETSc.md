@@ -51,7 +51,7 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
             --download-ml --download-mumps --download-netcdf --download-p4est \
             --download-parmetis --download-pnetcdf --download-scalapack \
             --download-slepc --download-suitesparse --download-superlu_dist \
-            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem
+            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem --download-opencascade
     
        # Follow the on screen directions to make PETSc
        ```
@@ -64,7 +64,7 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
             --download-ml --download-mumps --download-netcdf --download-p4est \
             --download-parmetis --download-pnetcdf --download-scalapack \
             --download-slepc --download-suitesparse --download-superlu_dist \
-            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem --with-debugging=0 
+            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem --download-opencascade --with-debugging=0 
     
        # Follow the on screen directions to make PETSc
        ```
