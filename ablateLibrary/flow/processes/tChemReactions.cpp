@@ -41,7 +41,7 @@ ablate::flow::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS
     }
 
     // size up the scratch variables
-    PetscMalloc3(numberSpecies + 1, &tchemScratch, PetscSqr(numberSpecies + 1), &jacobianScratch, numberSpecies, &rows) >> checkError;
+    PetscMalloc3(numberSpecies + 1, &tchemScratch, PetscSqr(numberSpecies + 1), &jacobianScratch, numberSpecies + 1, &rows) >> checkError;
     // The rows will not change, so set them once
     for (std::size_t i = 0; i < numberSpecies + 1; i++) {
         rows[i] = i;
