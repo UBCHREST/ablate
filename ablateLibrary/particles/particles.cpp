@@ -551,10 +551,10 @@ void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, Pets
     // if this is an hdf5Viewer
     PetscBool ishdf5;
     PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> checkError;
-    if(ishdf5){
+    if (ishdf5) {
         PetscBool isInTimestepping;
-        PetscViewerHDF5IsTimestepping(viewer, &isInTimestepping)>> checkError;
-        if(!isInTimestepping) {
+        PetscViewerHDF5IsTimestepping(viewer, &isInTimestepping) >> checkError;
+        if (!isInTimestepping) {
             PetscViewerHDF5PushTimestepping(viewer) >> checkError;
         }
     }
@@ -585,7 +585,6 @@ void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, Pets
     VecAssemblyEnd(particleCountVec) >> checkError;
     VecView(particleCountVec, viewer);
     VecDestroy(&particleCountVec) >> checkError;
-
 
     if (ishdf5) {
         DMSequenceViewTimeHDF5(GetDM(), viewer) >> checkError;

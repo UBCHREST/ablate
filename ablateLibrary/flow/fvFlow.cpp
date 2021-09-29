@@ -132,7 +132,7 @@ void ablate::flow::FVFlow::CompleteProblemSetup(TS ts) {
             const PetscInt* ids;
 
             // Get the boundary
-            PetscDSGetBoundary(flowProblem, bc, NULL, &type, &name, &label,&numberIds, &ids, &field, NULL, NULL, NULL, NULL,  NULL) >> checkError;
+            PetscDSGetBoundary(flowProblem, bc, NULL, &type, &name, &label, &numberIds, &ids, &field, NULL, NULL, NULL, NULL, NULL) >> checkError;
 
             // If this is for euler and DM_BC_NATURAL_RIEMANN add it to the aux
             if (type == DM_BC_NATURAL_RIEMANN && field == 0) {

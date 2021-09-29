@@ -267,7 +267,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
         DMCreateLocalVector(auxDM, &(auxField)) >> checkError;
 
         // attach this field as aux vector to the dm
-        DMSetAuxiliaryVec(dm->GetDomain(),NULL, 0, auxField)  >> checkError;
+        DMSetAuxiliaryVec(dm->GetDomain(), NULL, 0, auxField) >> checkError;
     }
 
     // Check if any of the fields are fe
@@ -386,7 +386,7 @@ void ablate::flow::Flow::Save(PetscViewer viewer, PetscInt steps, PetscReal time
 
     // Always save the main flowField
     VecView(flowField, viewer) >> checkError;
-//    DMView(GetDM(), viewer) >> checkError;
+
     // If there is aux data output
     if (auxField) {
         // copy over the sequence data from the main dm

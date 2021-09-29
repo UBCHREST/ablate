@@ -36,6 +36,7 @@ flow: !ablate::flow::IncompressibleFlow
     lower: [ 0, 0]
     upper: [1, 1]
     options:
+      dm_distribute: ""
       dm_refine: 2
   options: {}
   parameters:

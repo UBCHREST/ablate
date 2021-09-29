@@ -653,7 +653,7 @@ PetscErrorCode ABLATE_DMPlexComputeFluxResidual_Internal(FVMRHSFluxFunctionDescr
     ierr = PetscDSGetTotalDimension(ds, &totDim);CHKERRQ(ierr);
 
     // Check to see if the dm has an auxVec/auxDM associated with it.  If it does, extract it
-    ierr = DMGetAuxiliaryVec(dm, NULL, 0, &locA);;CHKERRQ(ierr);
+    ierr = DMGetAuxiliaryVec(dm, NULL, 0, &locA);CHKERRQ(ierr);
     if (locA) {
         PetscInt subcell;
         ierr = VecGetDM(locA, &dmAux);CHKERRQ(ierr);

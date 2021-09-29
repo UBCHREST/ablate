@@ -122,8 +122,6 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowComputeE
         }
     }
 
-
-
     PetscFunctionReturn(0);
 }
 

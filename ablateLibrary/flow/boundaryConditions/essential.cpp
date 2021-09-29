@@ -36,8 +36,8 @@ void ablate::flow::boundaryConditions::Essential::SetupBoundary(DM dm, PetscDS p
                        fieldId,
                        0,
                        NULL,
-                       (void(*)(void))GetBoundaryFunction(),
-                       (void(*)(void))GetBoundaryTimeDerivativeFunction(),
+                       (void (*)(void))GetBoundaryFunction(),
+                       (void (*)(void))GetBoundaryTimeDerivativeFunction(),
                        GetContext(),
                        NULL) >>
         checkError;
