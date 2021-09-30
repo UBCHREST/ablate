@@ -602,6 +602,7 @@ void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequence
     PetscBool ishdf5;
     PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> checkError;
     if (ishdf5) {
+        PetscViewerHDF5PushTimestepping(viewer) >> checkError;
         PetscViewerHDF5SetTimestep(viewer, sequenceNumber) >> checkError;
     }
 
@@ -661,6 +662,7 @@ void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequence
 
     if (ishdf5) {
         PetscViewerHDF5PopGroup(viewer) >> checkError;
+        PetscViewerHDF5PopTimestepping(viewer) >> checkError;
     }
 
     // Migrate the particle to the correct rank for the dmPlex
