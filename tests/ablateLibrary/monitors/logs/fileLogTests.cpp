@@ -22,8 +22,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFile) {
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // Create the fileLog
-            auto logPath = std::filesystem::temp_directory_path() / "logFile.txt";
-            std::filesystem::remove_all(logPath);
+            auto logPath = MakeTemporaryPath("logFile.txt");
             monitors::logs::FileLog log(logPath);
             log.Initialize(PETSC_COMM_WORLD);
 
@@ -53,13 +52,12 @@ TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // Set the global environment
-            auto tempDir = std::filesystem::temp_directory_path() / "nameOfTestDir";
-            std::filesystem::remove_all(tempDir);
+            auto tempDir = MakeTemporaryPath("nameOfTestDir");
             parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
             environment::RunEnvironment::Setup(parameters);
 
             // Create the fileLog
-            monitors::logs::FileLog log("logFile2.txt");
+            monitors::logs::FileLog log("logFile.txt");
             log.Initialize(PETSC_COMM_WORLD);
 
             // Get the current rank
@@ -73,7 +71,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
     EndWithMPI
 
     // Load the file
-    auto logFilePath = std::filesystem::temp_directory_path() / "nameOfTestDir" / "logFile2.txt";
+    auto logFilePath = std::filesystem::temp_directory_path() / "nameOfTestDir" / "logFile.txt";
     std::ifstream logFile(logFilePath);
     std::stringstream buffer;
     buffer << logFile.rdbuf();
@@ -89,8 +87,7 @@ TEST_P(FileLogTestFixture, ShouldAppendToFileInOutputDirectory) {
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // Set the global environment
-            auto tempDir = std::filesystem::temp_directory_path() / "nameOfTestDirAppend";
-            std::filesystem::remove_all(tempDir);
+            auto tempDir = MakeTemporaryPath("nameOfTestDir");
             parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
             environment::RunEnvironment::Setup(parameters);
 
@@ -123,7 +120,7 @@ TEST_P(FileLogTestFixture, ShouldAppendToFileInOutputDirectory) {
     EndWithMPI
 
     // Load the file
-    auto logFilePath = std::filesystem::temp_directory_path() / "nameOfTestDirAppend" / "logFile.txt";
+    auto logFilePath = std::filesystem::temp_directory_path() / "nameOfTestDir" / "logFile.txt";
     std::ifstream logFile(logFilePath);
     std::stringstream buffer;
     buffer << logFile.rdbuf();

@@ -82,6 +82,22 @@ class MpiTestFixture : public ::testing::Test {
         return result;
     }
 
+    std::filesystem::path MakeTemporaryPath(std::string name) const {
+        auto path = std::filesystem::temp_directory_path() / name;
+        if (std::filesystem::exists(path)) {
+            std::filesystem::remove_all(path);
+        }
+        return path;
+    }
+
+    std::filesystem::path MakeTemporaryPath(std::string dir, std::string name) const {
+        auto path = std::filesystem::temp_directory_path() / dir / name;
+        if (std::filesystem::exists(path)) {
+            std::filesystem::remove_all(path);
+        }
+        return path;
+    }
+
    public:
     static bool InitializeTestingEnvironment(int* argc, char*** argv);
 };
