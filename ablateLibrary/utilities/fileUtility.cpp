@@ -44,7 +44,7 @@ std::filesystem::path ablate::utilities::FileUtility::LocateFile(std::string fil
         // build a test path
         auto testPath = directory / file;
         if (std::filesystem::exists(testPath)) {
-            return testPath;
+            return std::filesystem::canonical(testPath);
         }
     }
 

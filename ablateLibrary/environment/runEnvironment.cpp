@@ -7,11 +7,14 @@ ablate::environment::RunEnvironment::RunEnvironment() : outputDirectory(), title
 
 ablate::environment::RunEnvironment::RunEnvironment(const parameters::Parameters& parameters, std::filesystem::path inputPath) : title(parameters.GetExpect<std::string>("title")) {
     // check to see if the output directory is set
-    auto specifiedOutputDirectory = parameters.Get<std::filesystem::path>("outputDirectory");
+    auto specifiedOutputDirectory = parameters.Get<std::filesystem::path>("directory");
     outputDirectory = specifiedOutputDirectory.value_or((inputPath.empty() ? std::filesystem::current_path() : inputPath.parent_path()) / title);
 
-    // Append the current time set to tag directory
-    if (parameters.Get("tagDirectory", true)) {
+    // change the default value of tagDirectory, depending on if specifiedOutputDirectory was given
+    auto defaultTagDirectory = !specifiedOutputDirectory.has_value();
+
+    // Append the current time set to tag directory.
+    if (parameters.Get("tagDirectory", defaultTagDirectory)) {
         // get time in milliseconds
         auto unixTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
         long unixTimeLong = unixTime.count();

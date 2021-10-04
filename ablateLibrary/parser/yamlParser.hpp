@@ -33,10 +33,25 @@ class YamlParser : public Factory {
         }
     }
 
+    /***
+     * Helper Function to get the correct parameters
+     */
+    template <typename T>
+    inline YAML::Node GetParameter(const ArgumentIdentifier<T>& identifier) const {
+        // treat this yamlConfiguration as the item if the identifier is default
+        if (identifier.inputName.empty()) {
+            return yamlConfiguration;
+        } else if (yamlConfiguration.IsMap()) {
+            return yamlConfiguration[identifier.inputName];
+        } else {
+            return YAML::Node(YAML::NodeType::Undefined);
+        }
+    }
+
     template <typename T>
     inline T GetValueFromYaml(const ArgumentIdentifier<T>& identifier) const {
         // treat this yamlConfiguration as the item if the identifier is default
-        auto parameter = identifier.inputName.empty() ? yamlConfiguration : yamlConfiguration[identifier.inputName];
+        auto parameter = GetParameter(identifier);
         if (!parameter) {
             if (identifier.optional) {
                 return {};
@@ -75,7 +90,7 @@ class YamlParser : public Factory {
     /* return a string*/
     std::string Get(const ArgumentIdentifier<std::string>& identifier) const override {
         // treat this yamlConfiguration as the item if the identifier is default
-        auto parameter = identifier.inputName.empty() ? yamlConfiguration : yamlConfiguration[identifier.inputName];
+        auto parameter = GetParameter(identifier);
         if (!parameter) {
             if (identifier.optional) {
                 return {};

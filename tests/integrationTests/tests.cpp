@@ -39,7 +39,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             std::filesystem::path inputPath = GetParam().testName;
 
             // Setup the run environment
-            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"outputDirectory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
+            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"directory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // load a yaml file
@@ -67,6 +67,88 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
     EndWithMPI
 }
 
+struct IntegrationRestartTestsParameters {
+    testingResources::MpiTestParameter mpiTestParameter;
+    std::map<std::string, std::string> restartOverrides;
+};
+
+class IntegrationRestartTestsSpecifier : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<IntegrationRestartTestsParameters> {
+   public:
+    void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
+};
+
+TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
+    // First Run and setup
+    StartWithMPI
+        // initialize petsc and mpi
+        PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> testErrorChecker;
+        PetscInitialize(argc, argv, NULL, help) >> testErrorChecker;
+        int rank;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+        // precompute the resultDirectory directory so we can remove it if it is here
+        auto testName = GetParam().mpiTestParameter.getTestName();
+        std::filesystem::path resultDirectory = std::filesystem::current_path() / testName;
+        if (rank == 0) {
+            std::filesystem::remove_all(resultDirectory);
+        }
+        MPI_Barrier(PETSC_COMM_WORLD);
+
+        // Perform the initial run
+        {
+            // get the file
+            std::filesystem::path inputPath = GetParam().mpiTestParameter.testName;
+
+            // Setup the run environment
+            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"directory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
+            ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
+
+            // load a yaml file
+            std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath);
+
+            // run with the parser
+            ablate::Builder::Run(parser);
+        }
+
+        // Restart the simulation
+        {
+            // get the input path from the parser
+            std::filesystem::path inputPath = GetParam().mpiTestParameter.testName;
+
+            // Setup the run environment
+            ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"directory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
+            ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
+
+            // override some parameters
+            auto overrideMap = GetParam().restartOverrides;
+            auto overrideParams = std::make_shared<ablate::parameters::MapParameters>(overrideMap);
+
+            // load a yaml file
+            std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath, false, overrideParams);
+
+            // run with the parser
+            ablate::Builder::Run(parser);
+        }
+
+        // print all files in the directory so that they are compared with expected
+        if (rank == 0) {
+            std::vector<std::string> resultFileInfo;
+            for (const auto& entry : fs::directory_iterator(resultDirectory)) {
+                resultFileInfo.push_back(entry.path().filename());
+            }
+            // sort the names so that the output order is defined
+            std::sort(resultFileInfo.begin(), resultFileInfo.end());
+            std::cout << "ResultFiles:" << std::endl;
+            for (const auto& fileInfo : resultFileInfo) {
+                std::cout << fileInfo << std::endl;
+            }
+        }
+
+        PetscFinalize() >> testErrorChecker;
+        exit(0);
+    EndWithMPI
+}
+
 INSTANTIATE_TEST_SUITE_P(
     Tests, IntegrationTestsSpecifier,
     testing::Values((MpiTestParameter){.testName = "inputs/compressibleCouetteFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleCouetteFlow.txt", .arguments = ""},
@@ -79,3 +161,20 @@ INSTANTIATE_TEST_SUITE_P(
                     (MpiTestParameter){.testName = "inputs/ignitionDelayGriMech.yaml", .nproc = 1, .expectedOutputFile = "outputs/ignitionDelayGriMech.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/dmViewFromOptions.yaml", .nproc = 1, .expectedOutputFile = "outputs/dmViewFromOptions.txt", .arguments = ""}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
+
+INSTANTIATE_TEST_SUITE_P(
+    Tests, IntegrationRestartTestsSpecifier,
+    testing::Values(
+        (IntegrationRestartTestsParameters){
+            .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
+            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
+        (IntegrationRestartTestsParameters){
+            .mpiTestParameter = {.testName = "inputs/incompressibleFlowRestart.yaml", .nproc = 2, .expectedOutputFile = "outputs/incompressibleFlowRestart.txt", .arguments = ""},
+            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
+        (IntegrationRestartTestsParameters){
+            .mpiTestParameter = {.testName = "inputs/tracerParticles2DRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles2DRestart.txt", .arguments = ""},
+            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}},
+        (IntegrationRestartTestsParameters){
+            .mpiTestParameter = {.testName = "inputs/incompressibleFlowIntervalRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlowIntervalRestart.txt", .arguments = ""},
+            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
+    [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });

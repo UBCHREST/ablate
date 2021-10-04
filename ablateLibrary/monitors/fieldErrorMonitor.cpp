@@ -22,7 +22,7 @@ PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt
 
     FieldErrorMonitor *monitor = (FieldErrorMonitor *)ctx;
     // if this is the first time step init the log
-    if (step == 0) {
+    if (!monitor->log->Initialized()) {
         monitor->log->Initialize(PetscObjectComm((PetscObject)dm));
     }
 
