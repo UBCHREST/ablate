@@ -268,6 +268,7 @@ void ablate::flow::Flow::CompleteProblemSetup(TS ts) {
 
         // attach this field as aux vector to the dm
         DMSetAuxiliaryVec(dm->GetDomain(), NULL, 0, auxField) >> checkError;
+        PetscObjectSetName((PetscObject)auxField, "auxField") >> checkError;
     }
 
     // Check if any of the fields are fe
