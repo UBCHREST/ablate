@@ -42,7 +42,7 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
     if (pstar <= pL)  // expansion wave equation from Toto
     {
         f_L_0 = ((2. * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1.);
-        f_L_1 = (aL/pL/gamma)*PetscPowReal(pstar/pL,-0.5*gamp1/gamma);
+        f_L_1 = (aL / pL / gamma) * PetscPowReal(pstar / pL, -0.5 * gamp1 / gamma);
     } else  // shock equation from Toro
     {
         A = 2 / gamp1 / rhoL;
@@ -54,7 +54,7 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
     if (pstar <= pR)  // expansion wave equation from Toto
     {
         f_R_0 = ((2 * aR) / gamm1) * (PetscPowReal(pstar / pR, 0.5 * gamm1 / gamma) - 1);
-        f_R_1 = (aR/pR/gamma)*PetscPowReal(pstar/pR,-0.5*gamp1/gamma);
+        f_R_1 = (aR / pR / gamma) * PetscPowReal(pstar / pR, -0.5 * gamp1 / gamma);
     } else  // shock euqation from Toro
     {
         A = 2 / gamp1 / rhoR;
@@ -68,8 +68,9 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
     {
         pold = pstar;
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
-            if ((2 * PetscAbsReal(pstar - pold) / (pstar + pold) < err))   // not sure about this condition
+        if ((2 * PetscAbsReal(pstar - pold) / (pstar + pold) < err)){
             break;
+        }  // not sure about this condition
         else {
             if (pstar <= pL) {
                 f_L_0 = ((2 * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1);
