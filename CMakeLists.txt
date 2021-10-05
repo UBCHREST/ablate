@@ -20,7 +20,7 @@ endif()
 project(ablateLibrary VERSION 0.5.17)
 
 # Load the Required 3rd Party Libaries
-pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET PETSc)
+pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
 
 # Set the c/c++ Standards
 set(CMAKE_C_STANDARD 99)
