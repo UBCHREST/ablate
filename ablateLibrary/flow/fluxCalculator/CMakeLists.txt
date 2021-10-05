@@ -9,4 +9,6 @@ target_sources(ablateLibrary
         offFlux.cpp
         ausmpUp.hpp
         ausmpUp.cpp
+        rieman.cpp
+        rieman.hpp
         )
