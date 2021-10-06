@@ -63,15 +63,12 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
         f_R_0 = (pstar - pR) * sqterm;
         f_R_1 = sqterm * (1.0 - (0.5 * (pstar - pR) / (B + pstar)));
     }
+
     // iteration starts
-    while ((f_L_0 + f_R_0 + del_u) > err && i <= MAXIT)  // Newton's method
+    while (PetscAbsReal(f_L_0 + f_R_0 + del_u) > err && i <= MAXIT)  // Newton's method
     {
         pold = pstar;
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
-                                                                   // if ((2 * PetscAbsReal(pstar - pold) / (pstar + pold) < err)){
-        //     break;
-        // }  // not sure about this condition
-        // else {
         if (pstar <= pL)  // expansion wave equation from Toto
         {
             f_L_0 = ((2. * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1.);
