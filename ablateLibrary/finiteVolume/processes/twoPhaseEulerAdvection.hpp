@@ -26,7 +26,8 @@ class TwoPhaseEulerAdvection : public FlowProcess {
                                                            const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[],
                                                            const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* flux,
                                                            void* ctx);
-    static void DecodeTwoPhaseEulerState(ablate::flow::processes::TwoPhaseEulerAdvection, PetscInt dim, const PetscReal* conservedValues,
+   public:
+    static void DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim, const PetscReal* conservedValues,
                                          const PetscReal* normal, PetscReal* density, PetscReal* densityG, PetscReal* densityL, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* internalEnergyG, PetscReal* internalEnergyL, PetscReal* aG, PetscReal* aL, PetscReal* MG, PetscReal* ML, PetscReal* p, PetscReal* alpha);
 
     //           *** yaml example ***
