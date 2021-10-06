@@ -32,7 +32,7 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
     PetscReal gamm1 = gamma - 1.0, gamp1 = gamma + 1.0;
     PetscReal pold, pstar, ustar, rhostarR, rhostarL, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
     PetscReal pratio;
-    PetscReal A, B, sqterm, temp;
+    PetscReal A, B, sqterm;
 
     // Here is the initial guess for pstar - assuming two exapansion wave
     pstar = aL + aR - (0.5 * gamm1 * (uR - uL));
@@ -68,33 +68,35 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
     {
         pold = pstar;
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
-        if ((2 * PetscAbsReal(pstar - pold) / (pstar + pold) < err)){
-            break;
-        }  // not sure about this condition
-        else {
-            if (pstar <= pL) {
-                f_L_0 = ((2 * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1);
-                f_L_1 = (aL / pL / gamma) * PetscPowReal(pstar / pL, -0.5 * gamp1 / gamma);  // expansion wave equation from Toto
-            } else {
-                A = 2 / gamp1 / rhoL;
-                B = gamm1 * pL / gamp1;
-                sqterm = sqrt(A / (pstar + B));
-                f_L_0 = (pstar - pL) * sqterm,
-                f_L_1 = sqterm * (1.0 - (0.5 * (pstar - pL) / (B + pstar)));  // shock euqation from Toro
-            }
-            if (pstar <= pR) {
-                f_R_0 = ((2. * aR) / gamm1) * (PetscPowReal(pstar / pR, 0.5 * gamm1 / gamma) - 1.);
-                f_R_1 = (aR / pR / gamma) * PetscPowReal(pstar / pR, -0.5 * gamp1 / gamma);  // expansion wave equation from Toto
-            } else {
-                A = 2 / gamp1 / rhoR;
-                B = gamm1 * pR / gamp1;
-                sqterm = sqrt(A / (pstar + B));
-                f_R_0 = (pstar - pR) * sqterm,
-                f_R_1 = sqterm * (1.0 - (0.5 * (pstar - pR) / (B + pstar)));  // shock euqation from Toro
-            }
+                                                                   // if ((2 * PetscAbsReal(pstar - pold) / (pstar + pold) < err)){
+        //     break;
+        // }  // not sure about this condition
+        // else {
+        if (pstar <= pL)  // expansion wave equation from Toto
+        {
+            f_L_0 = ((2. * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1.);
+            f_L_1 = (aL / pL / gamma) * PetscPowReal(pstar / pL, -0.5 * gamp1 / gamma);
+        } else  // shock equation from Toro
+        {
+            A = 2 / gamp1 / rhoL;
+            B = gamm1 * pL / gamp1;
+            sqterm = sqrt(A / (pstar + B));
+            f_L_0 = (pstar - pL) * sqterm;
+            f_L_1 = sqterm * (1.0 - (0.5 * (pstar - pL) / (B + pstar)));
+        }
+        if (pstar <= pR)  // expansion wave equation from Toto
+        {
+            f_R_0 = ((2 * aR) / gamm1) * (PetscPowReal(pstar / pR, 0.5 * gamm1 / gamma) - 1);
+            f_R_1 = (aR / pR / gamma) * PetscPowReal(pstar / pR, -0.5 * gamp1 / gamma);
+        } else  // shock euqation from Toro
+        {
+            A = 2 / gamp1 / rhoR;
+            B = gamm1 * pR / gamp1;
+            sqterm = sqrt(A / (pstar + B));
+            f_R_0 = (pstar - pR) * sqterm;
+            f_R_1 = sqterm * (1.0 - (0.5 * (pstar - pR) / (B + pstar)));
         }
         i++;
-        temp = f_L_0 + f_R_0 + del_u;
     }
     if (i > MAXIT) {
         throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
