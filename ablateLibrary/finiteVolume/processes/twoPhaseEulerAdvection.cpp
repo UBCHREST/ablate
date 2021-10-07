@@ -106,7 +106,7 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
     PetscReal densityL;
     PetscReal densityG_L;
     PetscReal densityL_L;
-    PetscReal normalVelocityL;  // uniform velocity in cell?
+    PetscReal normalVelocityL;  // uniform velocity in cell
     PetscReal velocityL[3];
     PetscReal internalEnergyL;
     PetscReal internalEnergyG_L;
@@ -115,10 +115,10 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
     PetscReal aL_L;
     PetscReal MG_L;
     PetscReal ML_L;
-    PetscReal pL;  // pressure equilibrium?
+    PetscReal pL;  // pressure equilibrium
     PetscReal alphaL;
     DecodeTwoPhaseEulerState(twoPhaseEulerAdvection->eosGas,twoPhaseEulerAdvection->eosLiquid, dim, fieldL + uOff[EULER_FIELD], norm, &densityL, &densityG_L, &densityL_L, &normalVelocityL, velocityL, &internalEnergyL, &internalEnergyG_L, &internalEnergyL_L, &aG_L, &aL_L, &MG_L, &ML_L, &pL, &alphaL);
-    //   // returns density1/2, velocity?, normal velocity,  M1/2, total internal energy? (from eos) internal energy1/2, pressure,  speed of sound1/2
+
     PetscReal densityR;
     PetscReal densityG_R;
     PetscReal densityL_R;
@@ -139,11 +139,7 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
     PetscReal massFluxGG;
     PetscReal massFluxGL;
     PetscReal massFluxLL;
-    PetscReal p12;  // pressure equilibrium? ( might need to make sure they match)
-                    //
-                    //    /*void (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-                    //        PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-                    //        PetscReal * m12, PetscReal *p12);*/
+    PetscReal p12;  // pressure equilibrium ( might need to make sure they match)
 
     // call flux calculator 3 times, gas-gas, gas-liquid, liquid-liquid regions
     fluxCalculator::Direction directionG =
@@ -159,7 +155,7 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
             twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGL, &p12);
     } else {
         // no discontinuous region
-        massFluxGL=0;
+        massFluxGL=0.0;
     }
 
     // Calculate total flux
@@ -169,11 +165,19 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
 //        flux[RHO] = massFlux * areaMag;
         flux[0 + EULER_FIELD] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1-alphaMin));
         PetscReal velMagL = MagVector(dim, velocityL);
-        // do we split up enthalpy too? or just calculate one for total
         PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
         PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
-        PetscReal HGL_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L; // How to calculate ??
-
+        PetscReal HGL_L;
+        if (alphaL > alphaR) {
+            // gas on left
+            HGL_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
+        } else if (alphaL < alphaR) {
+            // liquid on left
+            HGL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
+        }else {
+            // no discontinuous region
+            HGL_L=0.0;
+        }
 //        flux[RHOE] = HL * massFlux * areaMag;
         flux[1 + EULER_FIELD] = (HG_L * massFluxGG * areaMag * alphaMin) + (HGL_L * massFluxGL * areaMag * alphaDif) + (HL_L * massFluxLL * areaMag * (1-alphaMin));
         for (PetscInt n = 0; n < dim; n++) {
@@ -186,7 +190,17 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
         PetscReal velMagR = MagVector(dim, velocityR);
         PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
         PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
-        PetscReal HGL_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R; // calculations for each H ????
+        PetscReal HGL_R;
+        if (alphaL > alphaR) {
+            // liquid on right
+            HGL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+        } else if (alphaL < alphaR) {
+            // gas on right
+            HGL_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
+        }else {
+            // no discontinuous region
+            HGL_R=0.0;
+        }
 //        flux[RHOE] = HR * massFlux * areaMag;
         flux[1 + EULER_FIELD] = (HG_R * massFluxGG * areaMag * alphaMin) + (HGL_R * massFluxGL * areaMag * alphaDif) + (HL_R * massFluxLL * areaMag * (1-alphaMin));
         for (PetscInt n = 0; n < dim; n++) {
@@ -197,16 +211,44 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
 //        flux[RHO] = massFlux * areaMag;
         flux[0 + EULER_FIELD] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1-alphaMin));
 
-//        PetscReal velMagL = MagVector(dim, velocityL);
+        PetscReal velMagL = MagVector(dim, velocityL);
 //        PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
+        PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
+        PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
+        PetscReal HGL_L;
+        if (alphaL > alphaR) {
+            // gas on left
+            HGL_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
+        } else if (alphaL < alphaR) {
+            // liquid on left
+            HGL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
+        }else {
+            // no discontinuous region
+            HGL_L=0.0;
+        }
 
-//        PetscReal velMagR = MagVector(dim, velocityR);
+        PetscReal velMagR = MagVector(dim, velocityR);
 //        PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
-
+        PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
+        PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+        PetscReal HGL_R;
+        if (alphaL > alphaR) {
+            // liquid on right
+            HGL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+        } else if (alphaL < alphaR) {
+            // gas on right
+            HGL_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
+        }else {
+            // no discontinuous region
+            HGL_R=0.0;
+        }
 //        flux[RHOE] = 0.5 * (HL + HR) * massFlux * areaMag;
-//        for (PetscInt n = 0; n < dim; n++) {
+        flux[1 + EULER_FIELD] = (0.5*(HG_L+HG_R) * massFluxGG * areaMag * alphaMin) + (0.5*(HGL_L+HGL_R) * massFluxGL * areaMag * alphaDif) + (0.5*(HL_L+HL_R) * massFluxLL * areaMag * (1-alphaMin));
+
+        for (PetscInt n = 0; n < dim; n++) {
 //            flux[RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * massFlux * areaMag + p12 * fg->normal[n];
-//        }
+            flux[2 + EULER_FIELD + n] = 0.5*(velocityL[n]+velocityR[n]) * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1-alphaMin)) + p12 * fg->normal[n];
+        }
     }
 
     PetscFunctionReturn(0);
@@ -229,7 +271,7 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
     PetscReal densityL;
     PetscReal densityG_L;
     PetscReal densityL_L;
-    PetscReal normalVelocityL;  // uniform velocity in cell?
+    PetscReal normalVelocityL;  // uniform velocity in cell
     PetscReal velocityL[3];
     PetscReal internalEnergyL;
     PetscReal internalEnergyG_L;
@@ -238,10 +280,10 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
     PetscReal aL_L;
     PetscReal MG_L;
     PetscReal ML_L;
-    PetscReal pL;  // pressure equilibrium?
+    PetscReal pL;  // pressure equilibrium
     PetscReal alphaL;
     DecodeTwoPhaseEulerState(twoPhaseEulerAdvection->eosGas,twoPhaseEulerAdvection->eosLiquid, dim, fieldR + uOff[EULER_FIELD], norm, &densityL, &densityG_L, &densityL_L, &normalVelocityL, velocityL, &internalEnergyL, &internalEnergyG_L, &internalEnergyL_L, &aG_L, &aL_L, &MG_L, &ML_L, &pL, &alphaL);
-    // returns density1/2, velocity?, normal velocity,  M1/2, total internal energy? (from eos) internal energy1/2, pressure,  speed of sound1/2
+
     PetscReal densityR;
     PetscReal densityG_R;
     PetscReal densityL_R;
@@ -260,11 +302,9 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
 
     // get the face values
     PetscReal massFlux;
+    PetscReal p12;
     // calculate gas sub-area of face (stratified flow model)
     PetscReal alpha = PetscMin(alphaR,alphaL);
-    /*void (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-    PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-    PetscReal * m12, PetscReal *p12);*/
 
     // how do I check that densityVF/dt is being integrated over Volume*alpha????? (can I get this to cancel out??)
     twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorFunction()(twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFlux, &p12);
