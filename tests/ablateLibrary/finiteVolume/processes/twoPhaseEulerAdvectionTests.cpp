@@ -93,23 +93,23 @@ TEST_P(TwoPhaseEulerAdvectionTestDecodeStateFixture, ShouldDecodeState) {
 }
 
 INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTestDecodeStateFixture,
-    testing::Values((TwoPhaseEulerAdvectionTestDecodeStateParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
-                        .conservedValuesIn = {0.5, 1.17, 3000.0, 0.0, 0.0, 0.0}, // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
-                        .normalIn = {1.0, 0.0, 0.0}, // x, y, z
-                        .expectedDensity = 1.2,
-                        .expectedDensityG = 1.2,
-                        .expectedDensityL = 1.2,
-                        .expectedNormalVelocity = 1.2,
-                        .expectedVelocity = {0, 0, 0},
-                        .expectedInternalEnergy = 99300,
-                        .expectedInternalEnergyG = 1.2,
-                        .expectedInternalEnergyL = 1.2,
-                        .expectedSoundSpeedG = 235.8134856,
-                        .expectedSoundSpeedL = 1.2,
-                        .expectedMG = 1.2,
-                        .expectedML = 1.2,
-                        .expectedPressure = 47664,
-                        .expectedAlpha = 0.5},
+    testing::Values((TwoPhaseEulerAdvectionTestDecodeStateParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"},{"gamma", "3.2"}, {"Rgas", "100.2"}},// g, l
+                        .conservedValuesIn = {0.8, 3.9, 936986.7, 39.0, -78.0, 117.0}, // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                        .normalIn = {0.5, 0.5, 0.7071}, // x, y, z
+                        .expectedDensity = 3.9,
+                        .expectedDensityG = 1.88229965,
+                        .expectedDensityL = 5.391417167,
+                        .expectedNormalVelocity = 33.72128712,
+                        .expectedVelocity = {10.0, -20.0, 30.0},
+                        .expectedInternalEnergy = 239553.0,
+                        .expectedInternalEnergyG = 153788.3742,
+                        .expectedInternalEnergyL = 9762.176166,
+                        .expectedSoundSpeedG = 293.4646308,
+                        .expectedSoundSpeedL = 262.1559091,
+                        .expectedMG = 0.1149075,
+                        .expectedML = 0.128630658,
+                        .expectedPressure = 115790.322,
+                        .expectedAlpha = 0.425012032},
                     (TwoPhaseEulerAdvectionTestDecodeStateParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}},
                         .conservedValuesIn = {0.5, 1.17, 3000.0, 0.0, 0.0, 0.0}, // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
                         .normalIn = {1.0, 0.0, 0.0}, // x, y, z
