@@ -44,7 +44,7 @@ The tests can be run locally using an IDE or cmake directly (ctest command).  Yo
 docker login ghcr.io
 
 # Build the docker testing image
-docker build -t testing_image -f DockerTestFile .
+docker build -t testing_image --build-arg PETSC_BUILD_ARCH=='arch-opt' -f DockerTestFile .
 
 # Run the built tests and view results
 docker run --rm testing_image 
