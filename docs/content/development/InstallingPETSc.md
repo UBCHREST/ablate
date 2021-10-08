@@ -42,6 +42,7 @@ It is recommended that development on Windows uses the [Windows Subsystem for Li
 PETSc can be built in two primary configurations, optimized/release and debug.  In short, the debug build makes it easier to debug but is slower.  The release/optimized build is faster to execute.  Microsoft provides a more detailed overview of the [differences](https://docs.microsoft.com/en-us/visualstudio/debugger/how-to-set-debug-and-release-configurations). The framework requires that PETSc be configured and built with additional options/modules.  Detailed instructions for installing PETSc are available at [petsc.org](https://petsc.org/release/install/), but an abbreviated guide is provided for convenience.  Check [petsc.org](https://petsc.org/release/install/) for additional configuration and compiler flags specific to your system.  
 1. Clone PETSc ```git clone https://gitlab.com/petsc/petsc.git ```
     - To checkout a specific version or commit ```git checkout release``` 
+    - The latest version of ABLATE has been tested against PETSc {% include generated/petscVersion.html %}
 2. Configure PETSc to be built in both debug and optimized configurations
    1. Configure PETSc with the following options from the petsc directory to build the debug configuration.  Run the following make command.
        ```bash
