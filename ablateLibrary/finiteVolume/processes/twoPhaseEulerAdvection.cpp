@@ -259,7 +259,7 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
                                                                                               const PetscScalar *gradAuxL, const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
     auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection*)ctx;
-    const int VF_FIELD = 0;
+//    const int VF_FIELD = 0;
     const int EULER_FIELD = 1;
 
     // Compute the norm
