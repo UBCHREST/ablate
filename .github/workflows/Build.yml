@@ -86,7 +86,7 @@ jobs:
           submodules: recursive
 
       - name: Build the docker image
-        run: docker build . --file DockerTestFile --tag framework-test-image
+        run: docker build . --file DockerTestFile --tag framework-test-image --env PETSC_ARCH='arch-opt'
 
       - name: Get the version from the build file
         run: docker run --rm framework-test-image ./ablate --version > docs/_includes/generated/version.html

@@ -82,19 +82,30 @@ class MpiTestFixture : public ::testing::Test {
         return result;
     }
 
-    std::filesystem::path MakeTemporaryPath(std::string name) const {
+    std::filesystem::path MakeTemporaryPath(std::string name, MPI_Comm comm = MPI_COMM_SELF) const {
+        PetscMPIInt rank = 0;
+        MPI_Comm_rank(comm, &rank);
+
         auto path = std::filesystem::temp_directory_path() / name;
-        if (std::filesystem::exists(path)) {
-            std::filesystem::remove_all(path);
+        if (rank == 0) {
+            if (std::filesystem::exists(path)) {
+                std::filesystem::remove_all(path);
+            }
         }
+
+        MPI_Barrier(comm);
         return path;
     }
 
-    std::filesystem::path MakeTemporaryPath(std::string dir, std::string name) const {
+    std::filesystem::path MakeTemporaryPath(std::string dir, std::string name, MPI_Comm comm = MPI_COMM_SELF) const {
+        PetscMPIInt rank = 0;
+        MPI_Comm_rank(comm, &rank);
+
         auto path = std::filesystem::temp_directory_path() / dir / name;
         if (std::filesystem::exists(path)) {
             std::filesystem::remove_all(path);
         }
+        MPI_Barrier(comm);
         return path;
     }
 

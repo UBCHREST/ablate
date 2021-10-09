@@ -52,7 +52,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // Set the global environment
-            auto tempDir = MakeTemporaryPath("nameOfTestDir");
+            auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
             parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
             environment::RunEnvironment::Setup(parameters);
 
@@ -87,7 +87,7 @@ TEST_P(FileLogTestFixture, ShouldAppendToFileInOutputDirectory) {
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // Set the global environment
-            auto tempDir = MakeTemporaryPath("nameOfTestDir");
+            auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
             parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
             environment::RunEnvironment::Setup(parameters);
 

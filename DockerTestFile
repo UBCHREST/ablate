@@ -20,4 +20,4 @@ run make -j $(nproc)
 
 # Specify Entry Point for tests
 CMD ["ctest"]
-CMD bash -c "echo "Running Tests for ${PETSC_ARCH}" && make format-check && ctest"
+CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest"
