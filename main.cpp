@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -28,6 +29,8 @@ int main(int argc, char** args) {
         Builder::PrintInfo(std::cout);
         std::cout << "----------------------------------------" << std::endl;
     }
+
+    sleep(40000);
 
     PetscBool printVersion = PETSC_FALSE;
     PetscOptionsGetBool(NULL, NULL, "--version", &printVersion, NULL) >> checkError;

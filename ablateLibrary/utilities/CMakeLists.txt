@@ -9,4 +9,5 @@ target_sources(ablateLibrary
         demangler.hpp
         fileUtility.hpp
         fileUtility.cpp
+        loggable.hpp
         )
