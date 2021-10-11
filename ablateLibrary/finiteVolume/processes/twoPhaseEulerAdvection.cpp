@@ -1,5 +1,4 @@
 #include "twoPhaseEulerAdvection.hpp"
-#include "petscsnes.h"
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out) {
     PetscReal mag = 0.0;
@@ -51,13 +50,15 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
     // additional equations:
     // 1/density = Yg/densityG + Yl/densityL;
     // internalEnergy = Yg*internalEnergyG + Yl*internalEnergyL;
-    PetscReal eG = (*internalEnergy);
+
+    PetscReal eG = (*internalEnergy); // limit, all gas
     PetscReal etG = eG + ke;
     PetscReal eL = ((*internalEnergy) - Yg*eG)/Yl;
     PetscReal etL = eL + ke;
-    PetscReal rhoG = Yg * (*density);
+    PetscReal rhoG = (*density); // limit, all gas
     PetscReal rhoL = Yl / (1/(*density) - Yg/rhoG);
-    // while (PetscAbs(delp) > PerrorTol){
+
+    // while (PetscAbs(delp) > PerrorTol){    //  #include "petscsnes.h"
     // guess new eG, rhoG; calculate new eL, rhoL
     // decode the state in the eos
     eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, internalEnergy, aG, &pG, eosGas->GetDecodeStateContext());
