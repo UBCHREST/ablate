@@ -325,7 +325,7 @@ void ablate::particles::Particles::SwarmMigrate() {
     MPI_Comm comm;
     PetscObjectGetComm((PetscObject)particleTs, &comm) >> checkError;
     PetscMPIInt dmChangedAll = PETSC_FALSE;
-    MPIU_Allreduce(&dmChangedLocal, &dmChangedAll, 1, MPIU_INT, MPIU_MAX, comm);
+    MPI_Allreduce(&dmChangedLocal, &dmChangedAll, 1, MPIU_INT, MPIU_MAX, comm) >> checkMpiError;
     dmChanged = dmChangedAll == PETSC_TRUE;
 }
 
@@ -548,6 +548,17 @@ void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, Pets
     DMSetOutputSequenceNumber(GetDM(), steps, time) >> checkError;
     Vec particleVector;
 
+    // if this is an hdf5Viewer
+    PetscBool ishdf5;
+    PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> checkError;
+    if (ishdf5) {
+        PetscBool isInTimestepping;
+        PetscViewerHDF5IsTimestepping(viewer, &isInTimestepping) >> checkError;
+        if (!isInTimestepping) {
+            PetscViewerHDF5PushTimestepping(viewer) >> checkError;
+        }
+    }
+
     for (auto const &field : particleFieldDescriptors) {
         if (field.type == PETSC_REAL) {
             DMSwarmCreateGlobalVectorFromField(GetDM(), field.fieldName.c_str(), &particleVector) >> checkError;
@@ -575,9 +586,6 @@ void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, Pets
     VecView(particleCountVec, viewer);
     VecDestroy(&particleCountVec) >> checkError;
 
-    // if this is an hdf5Viewer
-    PetscBool ishdf5;
-    PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> checkError;
     if (ishdf5) {
         DMSequenceViewTimeHDF5(GetDM(), viewer) >> checkError;
     }
@@ -594,6 +602,7 @@ void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequence
     PetscBool ishdf5;
     PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> checkError;
     if (ishdf5) {
+        PetscViewerHDF5PushTimestepping(viewer) >> checkError;
         PetscViewerHDF5SetTimestep(viewer, sequenceNumber) >> checkError;
     }
 
@@ -653,6 +662,7 @@ void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequence
 
     if (ishdf5) {
         PetscViewerHDF5PopGroup(viewer) >> checkError;
+        PetscViewerHDF5PopTimestepping(viewer) >> checkError;
     }
 
     // Migrate the particle to the correct rank for the dmPlex

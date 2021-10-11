@@ -67,6 +67,7 @@ PetscErrorCode ablate::flow::processes::EulerAdvection::CompressibleFlowComputeE
     PetscReal aL;
     PetscReal ML;
     PetscReal pL;
+
     const PetscReal* densityYiL = eulerAdvectionData->numberSpecies > 0 ? fieldL + uOff[YI_FIELD] : NULL;
     DecodeEulerState(eulerAdvectionData, dim, fieldL + uOff[EULER_FIELD], densityYiL, norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
 

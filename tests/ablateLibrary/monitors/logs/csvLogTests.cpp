@@ -22,8 +22,7 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFile) {
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // Create the fileLog
-            auto logPath = std::filesystem::temp_directory_path() / "logFile.csv";
-            std::filesystem::remove_all(logPath);
+            auto logPath = MakeTemporaryPath("logFile.csv", PETSC_COMM_WORLD);
             std::shared_ptr<monitors::logs::Log> log = std::make_shared<monitors::logs::CsvLog>(logPath);
             log->Initialize(PETSC_COMM_WORLD);
 
@@ -61,8 +60,7 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFileInOutputDirectory) {
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // Set the global environment
-            auto tempDir = std::filesystem::temp_directory_path() / "nameOfTestDir";
-            std::filesystem::remove_all(tempDir);
+            auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
             parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
             environment::RunEnvironment::Setup(parameters);
 
@@ -105,8 +103,7 @@ TEST_P(CsvLogTestFixture, ShouldAppendToFileInOutputDirectory) {
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // Set the global environment
-            auto tempDir = std::filesystem::temp_directory_path() / "nameOfTestDir";
-            std::filesystem::remove_all(tempDir);
+            auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
             parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
             environment::RunEnvironment::Setup(parameters);
 

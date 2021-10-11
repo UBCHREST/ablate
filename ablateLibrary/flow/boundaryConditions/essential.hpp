@@ -32,7 +32,7 @@ class Essential : public BoundaryCondition {
 
     const std::string& GetLabelName() const { return labelName; }
 
-    void SetupBoundary(PetscDS problem, PetscInt field) override;
+    void SetupBoundary(DM dm, PetscDS problem, PetscInt field) override;
 };
 
 }  // namespace ablate::flow::boundaryConditions

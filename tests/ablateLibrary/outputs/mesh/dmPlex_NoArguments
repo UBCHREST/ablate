@@ -1,5 +1,11 @@
-DM Object: dmPlex 1 MPI processes
+DM Object: box 1 MPI processes
   type: plex
-dmPlex in 0 dimensions:
+box in 2 dimensions:
+  0-cells: 9
+  1-cells: 16
+  2-cells: 8
 Labels:
-  celltype: 0 strata with value/size ()
+  celltype: 3 strata with value/size (0 (9), 3 (8), 1 (16))
+  depth: 3 strata with value/size (0 (9), 1 (16), 2 (8))
+  marker: 1 strata with value/size (1 (16))
+  Face Sets: 1 strata with value/size (1 (8))

@@ -26,7 +26,7 @@ TEST_P(WallTimeIntervalTestFixture, ShouldProvideCorrectValuesAtCheck) {
 
     // act/assert
     for (std::size_t i = 0; i < GetParam().expectedValues.size(); i++) {
-        ASSERT_EQ(GetParam().expectedValues[i], interval->Check(MPI_COMM_SELF, NAN, NAN)) << "at index " << i;
+        ASSERT_EQ(GetParam().expectedValues[i], interval->Check(MPI_COMM_SELF, -1, NAN)) << "at index " << i;
     }
 }
 

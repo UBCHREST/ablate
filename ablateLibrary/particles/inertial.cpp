@@ -87,7 +87,6 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
     PetscInt dim, Np;
     PetscErrorCode ierr;
 
-    PetscFunctionBeginUser;
     ierr = TSGetDM(ts, &sdm);
     CHKERRQ(ierr);
     ierr = DMSwarmGetCellDM(sdm, &dm);
