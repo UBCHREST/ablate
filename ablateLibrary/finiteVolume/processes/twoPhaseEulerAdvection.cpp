@@ -1,4 +1,5 @@
 #include "twoPhaseEulerAdvection.hpp"
+#include "petscsnes.h"
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out) {
     PetscReal mag = 0.0;
