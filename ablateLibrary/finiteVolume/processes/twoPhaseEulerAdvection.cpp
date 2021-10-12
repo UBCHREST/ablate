@@ -1,4 +1,5 @@
 #include "twoPhaseEulerAdvection.hpp"
+// #include <petscsnes.h>
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out) {
     PetscReal mag = 0.0;
@@ -58,11 +59,62 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
     PetscReal rhoG = (*density); // limit, all gas
     PetscReal rhoL = Yl / (1/(*density) - Yg/rhoG);
 
+    SNES snes; // nonlinear solver
+    Vec x, r; // solution, residual vectors
+    VecCreate(PETSC_COMM_SELF, &x);
+    VecSetSizes(x, PETSC_DECIDE, 2); // 2x1 vector
+    VecSetFromOptions(x);
+    VecSet(x, 1.0); // set initial guess [rho1, e1]= [1.0,1.0]
+//    VecSetValues(x, 2, [0,1],[1.0,1.0],INSERT_VALUES); // set each initial guess separately
+    VecDuplicate(x, &r);
+
+    SNESCreate(PETSC_COMM_SELF, &snes);
+    SNESSetFunction(snes,r,FormFunction,NULL);
+    SNESSetFromOptions(snes);
+    SNESSolve(snes,NULL,x);
+//    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
+    const PetscScalar *ax;
+    VecGetArrayRead(x,&ax)
+    *p=ax[0];
+    PetscReal T=ax[1]; //
+
+    eosGas->GetComputeDensityFunctionFromTemperaturePressureFunction()(T,*p,NULL,&rhoG,eosGas->GetComputeDensityFunctionFromTemperaturePressureContext());
+    eosGas->GetComputeSensibleInternalEnergyFunction()(T,rhoG,NULL,&eG,eosGas->GetComputeSensibleInternalEnergyContext());
+    eosLiquid->GetComputeDensityFunctionFromTemperaturePressureFunction()(T,*p,NULL,&rhoL,eosLiquid->GetComputeDensityFunctionFromTemperaturePressureContext());
+    eosLiquid->GetComputeSensibleInternalEnergyFunction()(T,rhoL,&eL,eosLiquid->GetComputeSensibleInternalEnergyContext());
+
+    SNESDestroy(&snes);
+    VecDestroy(&x);
+    VecDestroy(&r);
+
     // while (PetscAbs(delp) > PerrorTol){    //  #include "petscsnes.h"
     // guess new eG, rhoG; calculate new eL, rhoL
     // decode the state in the eos
-    eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, internalEnergy, aG, &pG, eosGas->GetDecodeStateContext());
-    eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, internalEnergy, aL, &pL, eosLiquid->GetDecodeStateContext());
+    PetscReal TG;
+    PetscReal TL;
+    PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
+        PetscReal *aF;
+        VecGetArrayRead(x,&ax);
+        // ax = [rhog, eg]
+        rhoG = ax[0]
+        etG = ax[1] + ke;
+        eL = ((*internalEnergy) - Yg*ax[1])/Yl;
+        etL = eL + ke;
+        rhoL = Yl / (1/(*density) - Yg/ax[0]);
+
+        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, internalEnergy, aG, &pG, eosGas->GetDecodeStateContext());
+        eosGas->GetComputeTemperatureFunction()(dim, rhoG, etG, NULL, NULL, &TG, eosGas->GetComputeTemperatureContext());
+        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, internalEnergy, aL, &pL, eosLiquid->GetDecodeStateContext());
+        eosLiquid->GetComputeTemperatureFunction()(dim, rhoL, etL, NULL, NULL, &TL, eosLiquid->GetComputeTemperatureContext());
+
+        VecGetArray(F,&aF);
+        aF[0] = pG - pL;
+        aF[1] = TG - TL;
+        VecRestoreArrayRead(x,&ax);
+        VecResetArray(F,&aF);
+        return 0;
+    }
+
     // guess et1, rho1; return e1, a1, p1 | guess et2, rho2; return e2, a2, p2
     // compare pG, pL
     //PetscReal delp = pG - pL
