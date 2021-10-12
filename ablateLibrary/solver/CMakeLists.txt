@@ -3,4 +3,6 @@ target_sources(ablateLibrary
         solvable.hpp
         timeStepper.hpp
         timeStepper.cpp
+        solver.hpp
+        solver.cpp
         )

@@ -1,13 +1,13 @@
-#include "flowFieldDescriptor.hpp"
 #include <map>
+#include "fieldDescriptor.hpp"
 #include "parser/registrar.hpp"
 
 static const std::map<std::string, ablate::flow::FieldType> stringToFieldType = {
     {"fe", ablate::flow::FieldType::FE}, {"FE", ablate::flow::FieldType::FE}, {"fv", ablate::flow::FieldType::FV}, {"FV", ablate::flow::FieldType::FV}};
 
-static std::shared_ptr<ablate::flow::FlowFieldDescriptor> FlowFieldDescriptorCreateFunction(std::shared_ptr<ablate::parser::Factory> factory) {
-    return std::shared_ptr<ablate::flow::FlowFieldDescriptor>(
-        new ablate::flow::FlowFieldDescriptor{.solutionField = factory->GetByName<bool>("solutionField", true),
+static std::shared_ptr<ablate::flow::FieldDescriptor> FlowFieldDescriptorCreateFunction(std::shared_ptr<ablate::parser::Factory> factory) {
+    return std::shared_ptr<ablate::flow::FieldDescriptor>(
+        new ablate::flow::FieldDescriptor{.solutionField = factory->GetByName<bool>("solutionField", true),
                                               .fieldName = factory->GetByName<std::string>("fieldName"),
                                               .fieldPrefix = factory->GetByName<std::string>("fieldPrefix"),
                                               .components = factory->GetByName<int>("components"),
@@ -23,4 +23,4 @@ std::istream& ablate::flow::operator>>(std::istream& is, ablate::flow::FieldType
     return is;
 }
 
-REGISTER_FACTORY_FUNCTION_DEFAULT(ablate::flow::FlowFieldDescriptor, ablate::flow::FlowFieldDescriptor, "flow field description", FlowFieldDescriptorCreateFunction);
+REGISTER_FACTORY_FUNCTION_DEFAULT(ablate::flow::FieldDescriptor, ablate::flow::FieldDescriptor, "flow field description", FlowFieldDescriptorCreateFunction);

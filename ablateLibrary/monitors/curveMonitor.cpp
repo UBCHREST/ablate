@@ -99,7 +99,7 @@ void ablate::monitors::CurveMonitor::Register(std::shared_ptr<Monitorable> monit
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 }
 
-static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIndex, const ablate::flow::FlowFieldDescriptor& fieldDescription, const std::vector<PetscInt>& indexLocations,
+static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIndex, const ablate::flow::FieldDescriptor& fieldDescription, const std::vector<PetscInt>& indexLocations,
                                           const std::vector<PetscReal> distanceAlongLine, PetscErrorCode(plexPointRead)(DM, PetscInt, PetscInt, const PetscScalar*, void*), Vec u) {
     // Open the array
     const PetscScalar* uArray;

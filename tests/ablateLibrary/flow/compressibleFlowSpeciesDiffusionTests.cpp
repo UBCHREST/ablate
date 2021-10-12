@@ -11,12 +11,11 @@
 #include <memory>
 #include <mesh/boxMesh.hpp>
 #include <monitors/solutionErrorMonitor.hpp>
-#include <solve/timeStepper.hpp>
+#include <solver/timeStepper.hpp>
 #include <utilities/petscOptions.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "eos/mockEOS.hpp"
 #include "flow/boundaryConditions/ghost.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
@@ -119,7 +118,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"automaticTimeStepCalculator", "off"}, {"petsclimiter_type", "none"}});
 
             // create a time stepper
-            auto timeStepper = ablate::solve::TimeStepper("timeStepper", {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
+            auto timeStepper = ablate::solver::TimeStepper("timeStepper", {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
 
             PetscInt initialNx = GetParam().initialNx;
             auto mesh = std::make_shared<ablate::mesh::BoxMesh>("simpleMesh",
@@ -170,7 +169,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 "testFlow",
                 mesh,
                 flowParameters,
-                std::vector<ablate::flow::FlowFieldDescriptor>{
+                std::vector<ablate::flow::FieldDescriptor>{
                     {.fieldName = "euler", .fieldPrefix = "euler", .components = 2 + mesh->GetDimensions(), .fieldType = ablate::flow::FieldType::FV},
                     {
                         .fieldName = "densityYi",

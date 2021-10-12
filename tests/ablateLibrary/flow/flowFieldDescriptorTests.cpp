@@ -1,4 +1,4 @@
-#include <flow/flowFieldDescriptor.hpp>
+#include <flow/fieldDescriptor.hpp>
 #include <memory>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -31,7 +31,7 @@ TEST(FlowFieldDescriptors, ShouldBeCreatedByFactoryFunction) {
     EXPECT_CALL(*mockFactory, GetFactory(std::string("input123"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
 
     // act
-    auto argument = ArgumentIdentifier<ablate::flow::FlowFieldDescriptor>{.inputName = "input123"};
+    auto argument = ArgumentIdentifier<ablate::flow::FieldDescriptor>{.inputName = "input123"};
     auto flowField = std::dynamic_pointer_cast<Factory>(mockFactory)->Get(argument);
 
     // assert

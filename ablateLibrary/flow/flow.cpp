@@ -68,7 +68,7 @@ std::optional<int> ablate::flow::Flow::GetAuxFieldId(const std::string& fieldNam
     return {};
 }
 
-void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription, DM dmAdd) {
+void ablate::flow::Flow::RegisterField(FieldDescriptor flowFieldDescription, DM dmAdd) {
     switch (flowFieldDescription.fieldType) {
         case FieldType::FE: {
             // determine if it a simplex element and the number of dimensions
@@ -130,7 +130,7 @@ void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription,
     }
 }
 
-void ablate::flow::Flow::RegisterField(FlowFieldDescriptor flowFieldDescription) {
+void ablate::flow::Flow::RegisterField(FieldDescriptor flowFieldDescription) {
     // add solution fields/aux fields
     if (flowFieldDescription.solutionField) {
         // Called the shared method to register
@@ -440,7 +440,7 @@ void ablate::flow::Flow::Restore(PetscViewer viewer, PetscInt sequenceNumber, Pe
     VecLoad(flowField, viewer) >> checkError;
 }
 
-const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetFieldDescriptor(const std::string& fieldName) const {
+const ablate::flow::FieldDescriptor& ablate::flow::Flow::GetFieldDescriptor(const std::string& fieldName) const {
     for (const auto& descriptor : flowFieldDescriptors) {
         if (descriptor.fieldName == fieldName) {
             return descriptor;
@@ -449,7 +449,7 @@ const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetFieldDescriptor(
     throw std::invalid_argument("Cannot locate field descriptor for " + fieldName);
 }
 
-const ablate::flow::FlowFieldDescriptor& ablate::flow::Flow::GetAuxFieldDescriptor(const std::string& fieldName) const {
+const ablate::flow::FieldDescriptor& ablate::flow::Flow::GetAuxFieldDescriptor(const std::string& fieldName) const {
     for (const auto& descriptor : auxFieldDescriptors) {
         if (descriptor.fieldName == fieldName) {
             return descriptor;

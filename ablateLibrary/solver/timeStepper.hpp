@@ -8,18 +8,14 @@
 #include <vector>
 #include "monitors/monitor.hpp"
 #include "solvable.hpp"
+#include "utilities/loggable.hpp"
 
-namespace ablate::solve {
-class TimeStepper : public std::enable_shared_from_this<TimeStepper> {
+namespace ablate::solver {
+class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private utilities::Loggable<TimeStepper> {
    private:
     TS ts;                                                    /** The PETSC time stepper**/
     std::string name;                                         /** the name for this time stepper **/
     std::vector<std::shared_ptr<monitors::Monitor>> monitors; /** the monitors **/
-
-    // Store a petsc class id used for flow used for logging
-    inline static PetscClassId petscClassId = 0;
-
-    PetscLogEvent tsLogEvent;
 
     // Store a pointer to the Serializer
     const std::shared_ptr<io::Serializer> serializer;
@@ -37,8 +33,6 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper> {
     void Register(std::weak_ptr<io::Serializable> serializable);
 
     double GetTime() const;
-
-    static PetscClassId GetPetscClassId();
 
     const std::string& GetName() const { return name; }
 };

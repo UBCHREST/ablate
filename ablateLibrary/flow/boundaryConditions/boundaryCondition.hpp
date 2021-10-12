@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_BOUNDARYCONDITION_HPP
 #include <memory>
 #include <string>
-#include "flow/flowFieldDescriptor.hpp"
+#include "flow/fieldDescriptor.hpp"
 #include "mathFunctions/mathFunction.hpp"
 
 namespace ablate::flow::boundaryConditions {

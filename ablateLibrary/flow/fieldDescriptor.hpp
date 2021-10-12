@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_FLOWFIELDDESCRIPTOR_HPP
-#define ABLATELIBRARY_FLOWFIELDDESCRIPTOR_HPP
+#ifndef ABLATELIBRARY_FIELDDESCRIPTOR_HPP
+#define ABLATELIBRARY_FIELDDESCRIPTOR_HPP
 
 #include <petsc.h>
 #include <parser/factory.hpp>
@@ -9,7 +9,7 @@ namespace ablate::flow {
 
 enum class FieldType { FE, FV };
 
-struct FlowFieldDescriptor {
+struct FieldDescriptor {
     const bool solutionField = true;
     const std::string fieldName;
     const std::string fieldPrefix;
@@ -21,4 +21,4 @@ struct FlowFieldDescriptor {
 std::istream& operator>>(std::istream& is, FieldType& v);
 
 }  // namespace ablate::flow
-#endif  // ABLATELIBRARY_FLOWFIELDDESCRIPTOR_HPP
+#endif  // ABLATELIBRARY_FIELDDESCRIPTOR_HPP

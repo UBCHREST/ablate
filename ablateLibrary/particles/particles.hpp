@@ -7,7 +7,7 @@
 #include "mathFunctions/mathFunction.hpp"
 #include "particles/initializers/initializer.hpp"
 #include "particles/particleFieldDescriptor.hpp"
-#include "solve/timeStepper.hpp"
+#include "solver/timeStepper.hpp"
 
 namespace ablate::particles {
 

@@ -9,22 +9,22 @@
 #include <parameters/parameters.hpp>
 #include <string>
 #include <vector>
+#include "fieldDescriptor.hpp"
 #include "flow/boundaryConditions/boundaryCondition.hpp"
-#include "flowFieldDescriptor.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "mesh/mesh.hpp"
 #include "monitors/monitorable.hpp"
-#include "solve/solvable.hpp"
+#include "solver/solvable.hpp"
 
 namespace ablate::flow {
 
-class Flow : public solve::Solvable, public io::Serializable, public monitors::Monitorable {
+class Flow : public solver::Solvable, public io::Serializable, public monitors::Monitorable {
    protected:
     // descriptions to the fields on the dm
-    std::vector<FlowFieldDescriptor> flowFieldDescriptors;
+    std::vector<FieldDescriptor> flowFieldDescriptors;
 
     // descriptions to the fields on the auxDM
-    std::vector<FlowFieldDescriptor> auxFieldDescriptors;
+    std::vector<FieldDescriptor> auxFieldDescriptors;
 
     static PetscErrorCode TSPreStageFunction(TS ts, PetscReal stagetime);
     static PetscErrorCode TSPreStepFunction(TS ts);
@@ -35,7 +35,7 @@ class Flow : public solve::Solvable, public io::Serializable, public monitors::M
      * Private method to add both flow and aux fields, depending upon what is passed in
      * @param flowFieldDescription
      */
-    void RegisterField(FlowFieldDescriptor flowFieldDescription, DM dm);
+    void RegisterField(FieldDescriptor flowFieldDescription, DM dm);
 
     const std::string name;
 
@@ -61,7 +61,7 @@ class Flow : public solve::Solvable, public io::Serializable, public monitors::M
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
     // Register the field
-    void RegisterField(FlowFieldDescriptor flowFieldDescription);
+    void RegisterField(FieldDescriptor flowFieldDescription);
     void FinalizeRegisterFields();
 
     // Quick reference to used properties,
@@ -144,9 +144,9 @@ class Flow : public solve::Solvable, public io::Serializable, public monitors::M
 
     std::optional<int> GetAuxFieldId(const std::string& fieldName) const;
 
-    const FlowFieldDescriptor& GetFieldDescriptor(const std::string& fieldName) const;
+    const FieldDescriptor& GetFieldDescriptor(const std::string& fieldName) const;
 
-    const FlowFieldDescriptor& GetAuxFieldDescriptor(const std::string& fieldName) const;
+    const FieldDescriptor& GetAuxFieldDescriptor(const std::string& fieldName) const;
 };
 }  // namespace ablate::flow
 

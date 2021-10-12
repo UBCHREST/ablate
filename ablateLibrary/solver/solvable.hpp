@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_SOLVABLE_HPP
 #define ABLATELIBRARY_SOLVABLE_HPP
 
-namespace ablate::solve {
+namespace ablate::solver {
 class Solvable {
    public:
     virtual void SetupSolve(TS& timeStepper) = 0;

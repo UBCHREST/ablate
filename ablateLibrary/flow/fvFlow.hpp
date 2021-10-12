@@ -38,11 +38,11 @@ class FVFlow : public Flow {
     static void ComputeTimeStep(TS, Flow&);
 
    public:
-    FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FlowFieldDescriptor> fieldDescriptors,
+    FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FieldDescriptor> fieldDescriptors,
            std::vector<std::shared_ptr<processes::FlowProcess>> flowProcesses, std::shared_ptr<parameters::Parameters> options,
            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
-    FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FlowFieldDescriptor>> fieldDescriptors,
+    FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
            std::vector<std::shared_ptr<processes::FlowProcess>> flowProcesses, std::shared_ptr<parameters::Parameters> options,
            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
