@@ -2,8 +2,6 @@ target_sources(ablateLibrary
         PUBLIC
         flow.hpp
         flow.cpp
-        ../solver/fieldDescriptor.hpp
-        ../solver/fieldDescriptor.cpp
         lowMachFlow.hpp
         lowMachFlow.cpp
         incompressibleFlow.hpp

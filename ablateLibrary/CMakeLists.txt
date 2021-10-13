@@ -72,7 +72,7 @@ target_sources(ablateLibrary
         )
 
 # Include the code in any subdirectory
-add_subdirectory(flow)
+add_subdirectory(finiteVolume)
 add_subdirectory(utilities)
 add_subdirectory(domain)
 add_subdirectory(parameters)

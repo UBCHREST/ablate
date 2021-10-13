@@ -3,7 +3,7 @@
 #include <memory>
 #include <string>
 #include "mathFunctions/mathFunction.hpp"
-#include "solver/fieldDescriptor.hpp"
+#include "domain/fieldDescriptor.hpp"
 
 namespace ablate::flow::boundaryConditions {
 class BoundaryCondition {

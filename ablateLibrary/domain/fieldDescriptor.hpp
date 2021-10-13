@@ -2,23 +2,21 @@
 #define ABLATELIBRARY_FIELDDESCRIPTOR_HPP
 
 #include <petsc.h>
-#include <parser/factory.hpp>
 #include <string>
 #include <vector>
-namespace ablate::flow {
+#include "field.hpp"
+#include "parser/factory.hpp"
 
-enum class FieldType { FE, FV };
+namespace ablate::domain {
 
 struct FieldDescriptor {
-    const bool solutionField = true;
     const std::string fieldName;
     const std::string fieldPrefix;
     const PetscInt components;
-    const enum FieldType fieldType;
     const std::vector<std::string> componentNames;
+    const enum FieldLocation fieldLocation = FieldLocation::SOL;
 };
 
-std::istream& operator>>(std::istream& is, FieldType& v);
 
-}  // namespace ablate::flow
+}  // namespace ablate::domain
 #endif  // ABLATELIBRARY_FIELDDESCRIPTOR_HPP

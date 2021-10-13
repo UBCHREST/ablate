@@ -2,6 +2,12 @@ target_sources(ablateLibrary
         PUBLIC
         domain.hpp
         domain.cpp
+        subDomain.hpp
+        subDomain.cpp
+        field.hpp
+        field.cpp
+        fieldDescriptor.hpp
+        fieldDescriptor.cpp
         boxMesh.hpp
         boxMesh.cpp
         dmWrapper.hpp

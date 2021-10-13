@@ -3,7 +3,7 @@
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 
-ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FieldDescriptor> fieldDescriptors,
+ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<domain::FieldDescriptor> fieldDescriptors,
                              std::vector<std::shared_ptr<processes::FlowProcess>> flowProcessesIn, std::shared_ptr<parameters::Parameters> options,
                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
@@ -53,14 +53,14 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<domain::Domain> m
     PetscDSSetFromOptions(prob) >> checkError;
 }
 
-ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
+ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
                              std::vector<std::shared_ptr<processes::FlowProcess>> flowProcessesIn, std::shared_ptr<parameters::Parameters> options,
                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : ablate::flow::FVFlow::FVFlow(
           name, mesh, parameters,
           [](auto fieldDescriptorsPtrs) {
-              auto vec = std::vector<FieldDescriptor>{};
+              auto vec = std::vector<domain::FieldDescriptor>{};
               for (auto ptr : fieldDescriptorsPtrs) {
                   vec.push_back(*ptr);
               }

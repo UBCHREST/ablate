@@ -1,24 +1,34 @@
 #ifndef ABLATELIBRARY_SOLVER_HPP
 #define ABLATELIBRARY_SOLVER_HPP
 
+#include <petscoptions.h>
+#include <domain/subDomain.hpp>
+#include <parameters/parameters.hpp>
+#include <string>
 #include <vector>
-#include "fieldDescriptor.hpp"
 
 namespace ablate::flow {
 
 class Solver {
    protected:
-    // descriptions to the fields for this solver
-    const std::vector<FieldDescriptor> flowFieldDescriptors;
-
+    // The name of this domain.  This will be used for the subdomain
     const std::string name;
 
-    Solver(std::vector<FieldDescriptor> flowFieldDescriptors);
-
-    // Petsc options specific to this solver. These may be null by default
+    // an optional petscOptions that is used for this solver
     PetscOptions petscOptions;
 
+    // use the subDomain to setup the problem
+    std::shared_ptr<ablate::domain::SubDomain> subDomain;
+
+    // The constructor to be call by any Solve implementation
+    Solver(std::string name, std::shared_ptr<parameters::Parameters> options = nullptr);
+
    public:
+    virtual ~Solver();
+
+    virtual void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain);
+
+
 
 };
 

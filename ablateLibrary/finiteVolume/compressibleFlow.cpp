@@ -10,17 +10,17 @@ ablate::flow::CompressibleFlow::CompressibleFlow(std::string name, std::shared_p
                                                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
     : FVFlow(name, mesh, parameters,
-             {{.fieldName = "euler", .fieldPrefix = "euler", .components = 2 + mesh->GetDimensions(), .fieldType = FieldType::FV},
+             {{.fieldName = "euler", .fieldPrefix = "euler", .components = 2 + mesh->GetDimensions(), .fieldType = solver::FieldType::FV},
               {
                   .fieldName = "densityYi",
                   .fieldPrefix = "densityYi",
                   .components = (PetscInt)eosIn->GetSpecies().size(),
-                  .fieldType = FieldType::FV,
+                  .fieldType = solver::FieldType::FV,
                   .componentNames = eosIn->GetSpecies(),
               },
-              {.solutionField = false, .fieldName = "T", .fieldPrefix = "T", .components = 1, .fieldType = FieldType::FV},
-              {.solutionField = false, .fieldName = "vel", .fieldPrefix = "vel", .components = mesh->GetDimensions(), .fieldType = FieldType::FV},
-              {.solutionField = false, .fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eosIn->GetSpecies().size(), .fieldType = FieldType::FV}},
+              {.solutionField = false, .fieldName = "T", .fieldPrefix = "T", .components = 1, .fieldType = solver::FieldType::FV},
+              {.solutionField = false, .fieldName = "vel", .fieldPrefix = "vel", .components = mesh->GetDimensions(), .fieldType = solver::FieldType::FV},
+              {.solutionField = false, .fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eosIn->GetSpecies().size(), .fieldType = solver::FieldType::FV}},
              {
                  // create assumed processes for compressible flow
                  std::make_shared<ablate::flow::processes::EulerAdvection>(parameters, eosIn, fluxCalculatorIn),

@@ -1,5 +1,51 @@
 #include "domain.hpp"
+#include <utilities/mpiError.hpp>
 #include "utilities/petscError.hpp"
+
+ablate::domain::Domain::Domain(std::string name) : name(name), auxDM(nullptr), solField(nullptr), auxField(nullptr){}
+
+ablate::domain::Domain::~Domain(){
+    if (auxDM) {
+        DMDestroy(&auxDM) >> checkError;
+    }
+    // clean up the petsc objects
+    if (solField) {
+        VecDestroy(&solField) >> checkError;
+    }
+    if (auxField) {
+        VecDestroy(&auxField) >> checkError;
+    }
+}
+
+void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptor& fieldDescriptor, PetscObject field, DMLabel label) {
+
+    // add solution fields/aux fields
+    switch(fieldDescriptor.fieldLocation){
+        case FieldLocation::SOL:{
+            // Called the shared method to register
+            DMAddField(dm, label, (PetscObject)field) >> checkError;
+            break;
+        }
+        case FieldLocation::AUX:{
+            // check to see if need to create an aux dm
+            if (auxDM == nullptr) {
+                /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
+                DM coordDM;
+                DMGetCoordinateDM(dm, &coordDM) >> checkError;
+                DMClone(dm, &auxDM) >> checkError;
+
+                // this is a hard coded "dmAux" that petsc looks for
+                PetscObjectCompose((PetscObject)dm, "dmAux", (PetscObject)auxDM) >> checkError;
+                DMSetCoordinateDM(auxDM, coordDM) >> checkError;
+            }
+            DMAddField(auxDM, label, (PetscObject)field) >> checkError;
+
+        }
+    }
+}
+
+void ablate::domain::Domain::FinalizeRegisterFields() { DMCreateDS(dm) >> checkError; }
+
 int ablate::domain::Domain::GetDimensions() const {
     PetscInt dim;
     DMGetDimension(dm, &dim) >> checkError;
