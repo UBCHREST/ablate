@@ -2,7 +2,7 @@
 #include <cmath>
 #include <flow/processes/eulerDiffusion.hpp>
 #include <memory>
-#include <mesh/dmWrapper.hpp>
+#include <domain/dmWrapper.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
@@ -217,7 +217,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             };
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
-                                                                               std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
+                                                                               std::make_shared<ablate::domain::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                flowParameters,
                                                                                transportModel,

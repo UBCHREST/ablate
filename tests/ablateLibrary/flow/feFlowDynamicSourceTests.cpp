@@ -3,10 +3,10 @@ static char help[] =
 
 #include <petsc.h>
 #include <mathFunctions/parsedFunction.hpp>
-#include <mesh/boxMesh.hpp>
-#include <mesh/dmWrapper.hpp>
 #include <parameters/petscOptionParameters.hpp>
 #include "MpiTestFixture.hpp"
+#include "domain/boxMesh.hpp"
+#include "domain/dmWrapper.hpp"
 #include "flow/boundaryConditions/essential.hpp"
 #include "flow/incompressibleFlow.hpp"
 #include "flow/lowMachFlow.hpp"
@@ -26,7 +26,7 @@ using namespace ablate::flow;
 
 struct FEFlowDynamicSourceMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
-    std::function<std::shared_ptr<ablate::flow::Flow>(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
+    std::function<std::shared_ptr<ablate::flow::Flow>(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters,
                                                       std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializationAndExact,
                                                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)>
@@ -125,7 +125,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
 
             // Create a simple test mesh
-            auto mesh = std::make_shared<mesh::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
 
             TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;

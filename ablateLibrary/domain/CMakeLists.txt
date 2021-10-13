@@ -1,7 +1,7 @@
 target_sources(ablateLibrary
         PUBLIC
-        mesh.hpp
-        mesh.cpp
+        domain.hpp
+        domain.cpp
         boxMesh.hpp
         boxMesh.cpp
         dmWrapper.hpp

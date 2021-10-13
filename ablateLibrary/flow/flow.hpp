@@ -9,11 +9,11 @@
 #include <parameters/parameters.hpp>
 #include <string>
 #include <vector>
-#include "fieldDescriptor.hpp"
 #include "flow/boundaryConditions/boundaryCondition.hpp"
 #include "mathFunctions/fieldFunction.hpp"
-#include "mesh/mesh.hpp"
+#include "domain/domain.hpp"
 #include "monitors/monitorable.hpp"
+#include "solver/fieldDescriptor.hpp"
 #include "solver/solvable.hpp"
 
 namespace ablate::flow {
@@ -40,7 +40,7 @@ class Flow : public solver::Solvable, public io::Serializable, public monitors::
     const std::string name;
 
     // holds non solution vector fields
-    std::shared_ptr<mesh::Mesh> dm;
+    std::shared_ptr<domain::Domain> dm;
     DM auxDM;
 
     // The solution to the flow
@@ -71,7 +71,7 @@ class Flow : public solver::Solvable, public io::Serializable, public monitors::
     PetscOptions petscOptions;
 
    public:
-    Flow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
+    Flow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
     virtual ~Flow();

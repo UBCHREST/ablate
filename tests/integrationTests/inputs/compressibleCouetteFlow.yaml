@@ -13,7 +13,7 @@ timestepper:
     ts_max_steps: 20
 flow: !ablate::flow::CompressibleFlow
   name: vortexFlowField
-  mesh: !ablate::mesh::BoxMesh
+  mesh: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 12, 12 ]
     lower: [ 0, 0]

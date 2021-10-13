@@ -3,7 +3,7 @@
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 
-ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FieldDescriptor> fieldDescriptors,
+ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<FieldDescriptor> fieldDescriptors,
                              std::vector<std::shared_ptr<processes::FlowProcess>> flowProcessesIn, std::shared_ptr<parameters::Parameters> options,
                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
@@ -53,7 +53,7 @@ ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh,
     PetscDSSetFromOptions(prob) >> checkError;
 }
 
-ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
+ablate::flow::FVFlow::FVFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
                              std::vector<std::shared_ptr<processes::FlowProcess>> flowProcessesIn, std::shared_ptr<parameters::Parameters> options,
                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
@@ -291,7 +291,7 @@ void ablate::flow::FVFlow::ComputeTimeStep(TS ts, ablate::flow::Flow& flow) {
 void ablate::flow::FVFlow::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.push_back(std::make_pair(function, ctx)); }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::Flow, ablate::flow::FVFlow, "finite volume flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the  mesh and discretization"),
+REGISTER(ablate::flow::Flow, ablate::flow::FVFlow, "finite volume flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::domain::Domain, "mesh", "the  mesh and discretization"),
          OPT(ablate::parameters::Parameters, "parameters", "the parameters used by the flow"), ARG(std::vector<ablate::flow::FieldDescriptor>, "fields", "field descriptions"),
          ARG(std::vector<ablate::flow::processes::FlowProcess>, "processes", "the processes used to describe the flow"),
          OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"), OPT(std::vector<mathFunctions::FieldFunction>, "initialization", "the flow field initialization"),

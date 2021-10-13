@@ -1,6 +1,6 @@
-#include "mesh.hpp"
+#include "domain.hpp"
 #include "utilities/petscError.hpp"
-int ablate::mesh::Mesh::GetDimensions() const {
+int ablate::domain::Domain::GetDimensions() const {
     PetscInt dim;
     DMGetDimension(dm, &dim) >> checkError;
     return (int)dim;

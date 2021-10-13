@@ -2,12 +2,12 @@
 #include <petsc.h>
 #include <flow/boundaryConditions/essential.hpp>
 #include <flow/incompressibleFlow.hpp>
-#include <mesh/boxMesh.hpp>
 #include <parameters/mapParameters.hpp>
 #include <parameters/petscOptionParameters.hpp>
 #include <parameters/petscPrefixOptions.hpp>
 #include <particles/initializers/boxInitializer.hpp>
 #include "MpiTestFixture.hpp"
+#include "domain/boxMesh.hpp"
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -199,7 +199,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            auto mesh = std::make_shared<ablate::mesh::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
 
             TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;

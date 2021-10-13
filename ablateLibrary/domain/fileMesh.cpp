@@ -1,7 +1,7 @@
 #include "fileMesh.hpp"
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
-ablate::mesh::FileMesh::FileMesh(std::string nameIn, std::filesystem::path pathIn, std::shared_ptr<parameters::Parameters> options) : Mesh(nameIn), path(pathIn), petscOptions(NULL) {
+ablate::domain::FileMesh::FileMesh(std::string nameIn, std::filesystem::path pathIn, std::shared_ptr<parameters::Parameters> options) : Domain(nameIn), path(pathIn), petscOptions(NULL) {
     // Set the options if provided
     if (options) {
         PetscOptionsCreate(&petscOptions) >> checkError;
@@ -14,7 +14,7 @@ ablate::mesh::FileMesh::FileMesh(std::string nameIn, std::filesystem::path pathI
     DMSetFromOptions(dm) >> checkError;
 }
 
-ablate::mesh::FileMesh::~FileMesh() {
+ablate::domain::FileMesh::~FileMesh() {
     if (dm) {
         DMDestroy(&dm);
     }
@@ -24,5 +24,5 @@ ablate::mesh::FileMesh::~FileMesh() {
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::mesh::Mesh, ablate::mesh::FileMesh, "read a DMPlex from a file", ARG(std::string, "name", "the name of the domain/mesh object"),
+REGISTER(ablate::domain::Domain, ablate::domain::FileMesh, "read a DMPlex from a file", ARG(std::string, "name", "the name of the domain/mesh object"),
          ARG(std::filesystem::path, "path", "the path to the mesh file"), OPT(ablate::parameters::Parameters, "options", "any PETSc options"));

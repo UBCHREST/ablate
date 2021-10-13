@@ -28,7 +28,7 @@ timestepper:
     fieldsplit_pressure_pc_type: jacobi
 flow: !ablate::flow::IncompressibleFlow
   name: theFlowField
-  mesh: !ablate::mesh::BoxMesh
+  mesh: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 2, 2 ]
     lower: [ 0, 0]

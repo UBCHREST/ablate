@@ -3,11 +3,11 @@
 
 #include <filesystem>
 #include <parameters/parameters.hpp>
-#include "mesh.hpp"
+#include "domain.hpp"
 
-namespace ablate::mesh {
+namespace ablate::domain {
 
-class FileMesh : public Mesh {
+class FileMesh : public Domain {
    private:
     const std::filesystem::path path;
     // Petsc options specific to the mesh. These may be null by default

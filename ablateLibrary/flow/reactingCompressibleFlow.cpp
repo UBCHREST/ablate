@@ -5,7 +5,7 @@
 #include <flow/processes/tChemReactions.hpp>
 #include <utilities/mpiError.hpp>
 
-ablate::flow::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<eos::EOS> eosIn,
+ablate::flow::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<eos::EOS> eosIn,
                                                                  std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::transport::TransportModel> transport,
                                                                  std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn, std::shared_ptr<parameters::Parameters> options,
                                                                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
@@ -35,7 +35,7 @@ ablate::flow::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string nam
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::flow::Flow, ablate::flow::ReactingCompressibleFlow, "reacting compressible finite volume flow", ARG(std::string, "name", "the name of the flow field"),
-         ARG(ablate::mesh::Mesh, "mesh", "the  mesh and discretization"), ARG(ablate::eos::EOS, "eos", "the TChem v1 equation of state used to describe the flow"),
+         ARG(ablate::domain::Domain, "mesh", "the  mesh and discretization"), ARG(ablate::eos::EOS, "eos", "the TChem v1 equation of state used to describe the flow"),
          ARG(ablate::parameters::Parameters, "parameters", "the compressible flow parameters cfl, gamma, etc."),
          OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model"),
          OPT(ablate::flow::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (defaults to AUSM)"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSc"),

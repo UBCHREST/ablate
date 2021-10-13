@@ -9,7 +9,7 @@
 #include <map>
 #include <mathFunctions/functionFactory.hpp>
 #include <memory>
-#include <mesh/boxMesh.hpp>
+#include <domain/boxMesh.hpp>
 #include <monitors/solutionErrorMonitor.hpp>
 #include <solver/timeStepper.hpp>
 #include <utilities/petscOptions.hpp>
@@ -121,7 +121,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             auto timeStepper = ablate::solver::TimeStepper("timeStepper", {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
 
             PetscInt initialNx = GetParam().initialNx;
-            auto mesh = std::make_shared<ablate::mesh::BoxMesh>("simpleMesh",
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                 std::vector<int>{(int)initialNx, (int)initialNx},
                                                                 std::vector<double>{0.0, 0.0},
                                                                 std::vector<double>{parameters.L, parameters.L},

@@ -2,13 +2,13 @@ static char help[] = "Compressible ShockTube 1D Tests";
 
 #include <petsc.h>
 #include <cmath>
-#include <flow/fluxCalculator/ausm.hpp>
-#include <flow/processes/eulerAdvection.hpp>
+#include "flow/fluxCalculator/ausm.hpp"
+#include "flow/processes/eulerAdvection.hpp"
 #include <memory>
-#include <mesh/dmWrapper.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "domain/dmWrapper.hpp"
 #include "eos/perfectGas.hpp"
 #include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
@@ -177,7 +177,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                 std::make_shared<flow::boundaryConditions::Ghost>("euler", "mirrorWall", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
-                                                                               std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
+                                                                               std::make_shared<ablate::domain::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                parameters,
                                                                                nullptr /*transportModel*/,

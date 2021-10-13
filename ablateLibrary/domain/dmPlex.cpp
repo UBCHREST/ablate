@@ -2,7 +2,7 @@
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
 
-ablate::mesh::DMPlex::DMPlex(std::string nameIn, std::shared_ptr<parameters::Parameters> options) : Mesh(nameIn), petscOptions(NULL) {
+ablate::domain::DMPlex::DMPlex(std::string nameIn, std::shared_ptr<parameters::Parameters> options) : Domain(nameIn), petscOptions(NULL) {
     // Set the options if provided
     if (options) {
         PetscOptionsCreate(&petscOptions) >> checkError;
@@ -16,7 +16,7 @@ ablate::mesh::DMPlex::DMPlex(std::string nameIn, std::shared_ptr<parameters::Par
     DMSetFromOptions(dm) >> checkError;
 }
 
-ablate::mesh::DMPlex::~DMPlex() {
+ablate::domain::DMPlex::~DMPlex() {
     if (dm) {
         DMDestroy(&dm);
     }
@@ -26,5 +26,5 @@ ablate::mesh::DMPlex::~DMPlex() {
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::mesh::Mesh, ablate::mesh::DMPlex, "DMPlex that can be set using PETSc options", ARG(std::string, "name", "the mesh dm name"),
+REGISTER(ablate::domain::Domain, ablate::domain::DMPlex, "DMPlex that can be set using PETSc options", ARG(std::string, "name", "the mesh dm name"),
          OPT(ablate::parameters::Parameters, "options", "options used to setup the DMPlex"));

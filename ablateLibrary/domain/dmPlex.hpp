@@ -3,11 +3,11 @@
 
 #include <memory>
 #include <parameters/parameters.hpp>
-#include "mesh.hpp"
+#include "domain.hpp"
 
-namespace ablate::mesh {
+namespace ablate::domain {
 
-class DMPlex : public Mesh {
+class DMPlex : public Domain {
    private:
     // Petsc options specific to the mesh. These may be null by default
     PetscOptions petscOptions;

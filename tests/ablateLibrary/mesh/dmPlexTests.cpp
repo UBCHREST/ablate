@@ -4,7 +4,7 @@
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "gtest/gtest.h"
-#include "mesh/dmPlex.hpp"
+#include "domain/dmPlex.hpp"
 
 using namespace ablate;
 
@@ -30,7 +30,7 @@ TEST_P(DMPlexTestFixture, ShouldCreateAndViewDMPlex) {
             auto &testingParam = GetParam();
 
             // act
-            auto dmPlex = std::make_shared<ablate::mesh::DMPlex>("dmPlex", testingParam.parameters);
+            auto dmPlex = std::make_shared<ablate::domain::DMPlex>("dmPlex", testingParam.parameters);
 
             // assert - print the dmPlex to standard out
             DMView(dmPlex->GetDomain(), PETSC_VIEWER_STDOUT_WORLD) >> testErrorChecker;

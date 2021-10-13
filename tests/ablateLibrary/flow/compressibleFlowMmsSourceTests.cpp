@@ -1,7 +1,7 @@
 #include <petsc.h>
 #include <eos/transport/constant.hpp>
 #include <flow/processes/eulerAdvection.hpp>
-#include <mesh/dmWrapper.hpp>
+#include <domain/dmWrapper.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "eos/perfectGas.hpp"
@@ -591,7 +591,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             };
 
             auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
-                                                                               std::make_shared<ablate::mesh::DMWrapper>(dmCreate),
+                                                                               std::make_shared<ablate::domain::DMWrapper>(dmCreate),
                                                                                eos,
                                                                                parameters,
                                                                                transportModel,

@@ -3,7 +3,7 @@
 #include "incompressibleFlow.h"
 #include "utilities/petscError.hpp"
 
-ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
+ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters,
                                                      std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
@@ -137,7 +137,7 @@ void ablate::flow::IncompressibleFlow::CompleteFlowInitialization(DM dm, Vec u) 
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible FE flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::mesh::Mesh, "mesh", "the mesh"),
+REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible FE flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::domain::Domain, "mesh", "the mesh"),
          ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(std::vector<mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),
          ARG(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),

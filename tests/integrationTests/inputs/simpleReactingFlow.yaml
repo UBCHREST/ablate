@@ -18,7 +18,7 @@ timestepper:
     ts_adapt_type: none
 flow: !ablate::flow::ReactingCompressibleFlow
   name: vortexFlowField
-  mesh: !ablate::mesh::BoxMesh
+  mesh: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 10, 10 ]
     lower: [ -0.1, -0.1]

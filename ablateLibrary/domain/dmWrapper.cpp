@@ -8,4 +8,4 @@ static std::string getPetscObjectName(DM dm) {
     return std::string(name);
 }
 
-ablate::mesh::DMWrapper::DMWrapper(DM dm) : ablate::mesh::Mesh(getPetscObjectName(dm)) { this->dm = dm; }
+ablate::domain::DMWrapper::DMWrapper(DM dm) : ablate::domain::Domain(getPetscObjectName(dm)) { this->dm = dm; }

@@ -8,17 +8,16 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include <flow/boundaryConditions/essential.hpp>
 #include <flow/incompressibleFlow.hpp>
 #include <memory>
-#include <mesh/boxMesh.hpp>
-#include <mesh/dmWrapper.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "domain/boxMesh.hpp"
+#include "domain/dmWrapper.hpp"
 #include "flow/boundaryConditions/ghost.hpp"
 #include "flow/compressibleFlow.hpp"
 #include "flow/lowMachFlow.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "mesh/dmWrapper.hpp"
 #include "parameters/mapParameters.hpp"
 #include "parameters/petscOptionParameters.hpp"
 
@@ -66,7 +65,7 @@ static IntegrandTestFunction f0_q_original;
 
 struct FEFlowMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
-    std::function<std::shared_ptr<ablate::flow::Flow>(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters,
+    std::function<std::shared_ptr<ablate::flow::Flow>(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters,
                                                       std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializationAndExact,
                                                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)>
@@ -576,7 +575,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            auto mesh = std::make_shared<mesh::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
             TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 

@@ -4,13 +4,13 @@
 #include <petsc.h>
 #include <string>
 #include "flow.hpp"
-#include "mesh/mesh.hpp"
+#include "domain/domain.hpp"
 #include "parameters/parameters.hpp"
 
 namespace ablate::flow {
 class IncompressibleFlow : public Flow {
    public:
-    IncompressibleFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
+    IncompressibleFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
 

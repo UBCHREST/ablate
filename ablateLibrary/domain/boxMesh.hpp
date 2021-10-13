@@ -4,10 +4,10 @@
 #include <memory>
 #include <parameters/parameters.hpp>
 #include <vector>
-#include "mesh.hpp"
+#include "domain.hpp"
 
-namespace ablate::mesh {
-class BoxMesh : public Mesh {
+namespace ablate::domain {
+class BoxMesh : public Domain {
    private:
     // Petsc options specific to the mesh. These may be null by default
     PetscOptions petscOptions;

@@ -5,14 +5,14 @@
 #include <map>
 #include <string>
 
-namespace ablate::mesh {
-class Mesh {
+namespace ablate::domain {
+class Domain {
    protected:
     std::string name;
     DM dm;
 
-    Mesh(std::string name) : name(name){};
-    virtual ~Mesh() = default;
+    Domain(std::string name) : name(name){};
+    virtual ~Domain() = default;
 
    public:
     std::string GetName() const { return name; }

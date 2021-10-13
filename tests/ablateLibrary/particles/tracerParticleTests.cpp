@@ -8,7 +8,7 @@
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "mesh/boxMesh.hpp"
+#include "domain/boxMesh.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "particles/tracer.hpp"
 
@@ -294,7 +294,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            auto mesh = std::make_shared<ablate::mesh::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
             TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 

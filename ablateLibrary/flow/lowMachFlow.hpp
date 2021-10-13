@@ -5,13 +5,13 @@
 #include <map>
 #include <string>
 #include "flow.hpp"
-#include "mesh/mesh.hpp"
+#include "domain/domain.hpp"
 #include "parameters/parameters.hpp"
 
 namespace ablate::flow {
 class LowMachFlow : public Flow {
    public:
-    LowMachFlow(std::string name, std::shared_ptr<mesh::Mesh> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
+    LowMachFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
     virtual ~LowMachFlow() = default;
