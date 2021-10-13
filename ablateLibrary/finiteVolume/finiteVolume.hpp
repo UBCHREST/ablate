@@ -1,23 +1,26 @@
-#ifndef ABLATELIBRARY_FVFLOW_HPP
-#define ABLATELIBRARY_FVFLOW_HPP
+#ifndef ABLATELIBRARY_FINITEVOLUME_HPP
+#define ABLATELIBRARY_FINITEVOLUME_HPP
 
-#include <fvSupport.h>
-#include <eos/eos.hpp>
+#include <solver/timeStepper.hpp>
 #include <string>
 #include <vector>
-#include "flow.hpp"
+#include "boundaryConditions/boundaryCondition.hpp"
+#include "eos/eos.hpp"
+#include "fvSupport.h"
+#include "mathFunctions/fieldFunction.hpp"
+#include "solver/solver.hpp"
 
-namespace ablate::flow {
+namespace ablate::finiteVolume {
 
 // forward declare the FlowProcesses
 namespace processes {
-class FlowProcess;
+class Process;
 }
 
-class FVFlow : public Flow {
+class FiniteVolume : public solver::Solver {
    public:
     using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx);
-    using ComputeTimeStepFunction = double (*)(TS ts, Flow&, void* ctx);
+    using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolume&, void* ctx);
 
    private:
     // hold the update functions for flux and point sources
@@ -32,24 +35,37 @@ class FVFlow : public Flow {
     std::vector<std::pair<ComputeTimeStepFunction, void*>> timeStepFunctions;
 
     // Hold the flow processes.  This is mostly just to hold a pointer to them
-    std::vector<std::shared_ptr<processes::FlowProcess>> flowProcesses;
+    std::vector<std::shared_ptr<processes::Process>> processes;
 
     // static function to update the flowfield
-    static void ComputeTimeStep(TS, Flow&);
+    static void ComputeTimeStep(TS, FiniteVolume&);
+
+    // helper function to register fv field
+    void RegisterFiniteVolumeField(const domain::FieldDescriptor&);
+
+    const std::vector<domain::FieldDescriptor> fieldDescriptors;
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
+    const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFieldsUpdaters;
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
-    FVFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<domain::FieldDescriptor> fieldDescriptors,
-           std::vector<std::shared_ptr<processes::FlowProcess>> flowProcesses, std::shared_ptr<parameters::Parameters> options,
-           std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-           std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
-    FVFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
-           std::vector<std::shared_ptr<processes::FlowProcess>> flowProcesses, std::shared_ptr<parameters::Parameters> options,
-           std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-           std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
+    FiniteVolume(std::string name, std::shared_ptr<parameters::Parameters> options,
+                 std::vector<domain::FieldDescriptor> fieldDescriptors,
+                 std::vector<std::shared_ptr<processes::Process>> flowProcesses,
+                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
-    ~FVFlow() override = default;
+    FiniteVolume(std::string name, std::shared_ptr<parameters::Parameters> options,
+                 std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
+                 std::vector<std::shared_ptr<processes::Process>> flowProcesses,
+                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
-    void CompleteProblemSetup(TS ts) override;
+
+    void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
+
+    void CompleteSetup(solver::TimeStepper& timeStepper) override;
 
     /**
      * Function passed into PETSc to compute the FV RHS
@@ -108,7 +124,8 @@ class FVFlow : public Flow {
      * @param auxFields
      */
     void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx);
-};
 
-}  // namespace ablate::flow
-#endif  // ABLATELIBRARY_FVFLOW_HPP
+};
+}
+
+#endif  // ABLATELIBRARY_FINITEVOLUME_HPP

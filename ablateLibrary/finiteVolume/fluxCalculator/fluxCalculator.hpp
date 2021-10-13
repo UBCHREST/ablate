@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_FLUXCALCULATOR_HPP
 #include <petsc.h>
 
-namespace ablate::flow::fluxCalculator {
+namespace ablate::finiteVolume::fluxCalculator {
 
 /**
  * This function returns the flow direction

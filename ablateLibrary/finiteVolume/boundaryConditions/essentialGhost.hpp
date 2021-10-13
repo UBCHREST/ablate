@@ -4,7 +4,7 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include "ghost.hpp"
 
-namespace ablate::flow::boundaryConditions {
+namespace ablate::finiteVolume::boundaryConditions {
 
 class EssentialGhost : public Ghost {
    private:

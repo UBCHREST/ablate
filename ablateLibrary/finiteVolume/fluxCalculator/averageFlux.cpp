@@ -1,5 +1,5 @@
 #include "averageFlux.hpp"
-ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::AverageFlux::AvgCalculatorFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
+ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::AverageFlux::AvgCalculatorFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
                                                                                                          PetscReal rhoR, PetscReal pR, PetscReal *massFlux, PetscReal *p12) {
     *massFlux = 0.5 * (uL * rhoL + uR * rhoR);
 
@@ -10,4 +10,4 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::AverageFlu
 }
 
 #include "parser/registrar.hpp"
-REGISTER_WITHOUT_ARGUMENTS(ablate::flow::fluxCalculator::FluxCalculator, ablate::flow::fluxCalculator::AverageFlux, "Takes the average of the left/right faces.  Only useful for debugging.");
+REGISTER_WITHOUT_ARGUMENTS(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::AverageFlux, "Takes the average of the left/right faces.  Only useful for debugging.");

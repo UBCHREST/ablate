@@ -10,7 +10,7 @@
 #include "domain/domain.hpp"
 #include "parameters/parameters.hpp"
 
-namespace ablate::flow {
+namespace ablate::finiteVolume {
 class CompressibleFlow : public FVFlow {
    public:
     CompressibleFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> parameters,

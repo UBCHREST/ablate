@@ -1,5 +1,5 @@
 #include "ausm.hpp"
-ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Ausm::AusmFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
+ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Ausm::AusmFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
                                                                                          PetscReal rhoR, PetscReal pR, PetscReal *massFlux, PetscReal *p12) {
     PetscReal Mm = uR / aR;
     PetscReal sMm, sPm;
@@ -43,5 +43,5 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Ausm::Ausm
 }
 
 #include "parser/registrar.hpp"
-REGISTER_WITHOUT_ARGUMENTS(ablate::flow::fluxCalculator::FluxCalculator, ablate::flow::fluxCalculator::Ausm,
+REGISTER_WITHOUT_ARGUMENTS(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Ausm,
                            "AUSM Flux Spliting: \"A New Flux Splitting Scheme\" Liou and Steffen, pg 26, Eqn (6), 1993");

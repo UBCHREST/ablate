@@ -1,9 +1,11 @@
 target_sources(ablateLibrary
         PUBLIC
-        finiteVolume.hpp
-        finiteVolume.cpp
         flow.hpp
         flow.cpp
+        lowMachFlow.hpp
+        lowMachFlow.cpp
+        incompressibleFlow.hpp
+        incompressibleFlow.cpp
         fvFlow.hpp
         fvFlow.cpp
         compressibleFlow.cpp

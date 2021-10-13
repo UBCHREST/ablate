@@ -28,6 +28,12 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::map<std::strin
     if (serializer) {
         TSMonitorSet(ts, serializer->GetSerializeFunction(), serializer->GetContext(), NULL) >> checkError;
     }
+
+    // Set the pre/post stage functions
+    TSSetPreStage(ts, TSPreStageFunction) >> checkError;
+    TSSetPreStep(ts, TSPreStepFunction) >> checkError;
+    TSSetPostStep(ts, TSPostStepFunction) >> checkError;
+    TSSetPostEvaluate(ts, TSPostEvaluateFunction) >> checkError;
 }
 
 ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
@@ -77,6 +83,75 @@ void ablate::solver::TimeStepper::Register(std::weak_ptr<io::Serializable> seria
     if (serializer) {
         serializer->Register(serializable);
     }
+}
+
+
+PetscErrorCode ablate::solver::TimeStepper::TSPreStepFunction(TS ts) {
+    PetscFunctionBeginUser;
+    ablate::solver::TimeStepper* timeStepper;
+    PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
+    CHKERRQ(ierr);
+
+    for (const auto& function : timeStepper->preStepFunctions) {
+        try {
+            function(ts);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::solver::TimeStepper::TSPreStageFunction(TS ts, PetscReal stagetime) {
+    PetscFunctionBeginUser;
+    ablate::solver::TimeStepper* timeStepper;
+    PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
+    CHKERRQ(ierr);
+
+    for (const auto& function : timeStepper->preStageFunctions) {
+        try {
+            function(ts, stagetime);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::solver::TimeStepper::TSPostStepFunction(TS ts) {
+    PetscFunctionBeginUser;
+    ablate::solver::TimeStepper* timeStepper;
+    PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
+    CHKERRQ(ierr);
+
+    for (const auto& function : timeStepper->postStepFunctions) {
+        try {
+            function(ts);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
+    }
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::solver::TimeStepper::TSPostEvaluateFunction(TS ts) {
+    PetscFunctionBeginUser;
+    ablate::solver::TimeStepper* timeStepper;
+    PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
+    CHKERRQ(ierr);
+
+    for (const auto& function : timeStepper->postEvaluateFunctions) {
+        try {
+            function(ts);
+        } catch (std::exception& exp) {
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        }
+    }
+
+    PetscFunctionReturn(0);
 }
 
 REGISTERDEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),

@@ -1,11 +1,11 @@
 #ifndef ABLATELIBRARY_EULERDIFFUSION_HPP
 #define ABLATELIBRARY_EULERDIFFUSION_HPP
 #include <eos/transport/transportModel.hpp>
-#include "flowProcess.hpp"
+#include "process.hpp"
 
-namespace ablate::flow::processes {
+namespace ablate::finiteVolume::processes {
 
-class EulerDiffusion : public FlowProcess {
+class EulerDiffusion : public Process {
    public:
     struct _EulerDiffusionData {
         /* thermal conductivity*/
@@ -34,7 +34,7 @@ class EulerDiffusion : public FlowProcess {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::flow::FVFlow& flow) override;
+    void Initialize(ablate::finiteVolume::FVFlow& flow) override;
 
     /**
      * static support function to compute the stress tensor

@@ -5,7 +5,7 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include <memory>
 #include <vector>
-namespace ablate::flow::fieldFunctions {
+namespace ablate::finiteVolume::fieldFunctions {
 
 class CompressibleFlowState {
    private:

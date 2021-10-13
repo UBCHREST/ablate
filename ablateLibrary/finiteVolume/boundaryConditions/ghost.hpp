@@ -3,7 +3,7 @@
 
 #include "boundaryCondition.hpp"
 
-namespace ablate::flow::boundaryConditions {
+namespace ablate::finiteVolume::boundaryConditions {
 
 class Ghost : public BoundaryCondition {
     typedef PetscErrorCode (*UpdateFunction)(PetscReal time, const PetscReal* c, const PetscReal* n, const PetscScalar* a_xI, PetscScalar* a_xG, void* ctx);

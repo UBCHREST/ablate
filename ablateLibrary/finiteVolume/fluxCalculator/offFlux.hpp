@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_OFFFLUX_HPP
 #define ABLATELIBRARY_OFFFLUX_HPP
 #include "fluxCalculator.hpp"
-namespace ablate::flow::fluxCalculator {
+namespace ablate::finiteVolume::fluxCalculator {
 
 /**
  * Turns off all flow through the flux calculator.  This is good for testing.

@@ -2,11 +2,11 @@
 #define ABLATELIBRARY_TCHEMREACTIONS_HPP
 
 #include <eos/tChem.hpp>
-#include "flowProcess.hpp"
+#include "process.hpp"
 
-namespace ablate::flow::processes {
+namespace ablate::finiteVolume::processes {
 
-class TChemReactions : public FlowProcess {
+class TChemReactions : public Process {
    private:
     DM fieldDm;
     Vec sourceVec;
@@ -58,7 +58,7 @@ class TChemReactions : public FlowProcess {
      * @param flow
      * @return
      */
-    PetscErrorCode ChemistryFlowPreStage(TS flowTs, ablate::flow::Flow &flow, PetscReal stagetime);
+    PetscErrorCode ChemistryFlowPreStage(TS flowTs, ablate::finiteVolume::Flow &flow, PetscReal stagetime);
 
     static PetscErrorCode AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
@@ -69,7 +69,7 @@ class TChemReactions : public FlowProcess {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::flow::FVFlow &flow) override;
+    void Initialize(ablate::finiteVolume::FVFlow &flow) override;
 };
 }  // namespace ablate::flow::processes
 #endif  // ABLATELIBRARY_TCHEMREACTIONS_HPP

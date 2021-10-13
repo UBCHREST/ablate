@@ -5,14 +5,14 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include "compressibleFlowState.hpp"
 
-namespace ablate::flow::fieldFunctions {
+namespace ablate::finiteVolume::fieldFunctions {
 
 class DensityMassFractions : public ablate::mathFunctions::FieldFunction {
    private:
-    const std::shared_ptr<ablate::flow::fieldFunctions::CompressibleFlowState> flowState;
+    const std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState;
 
    public:
-    explicit DensityMassFractions(std::shared_ptr<ablate::flow::fieldFunctions::CompressibleFlowState> flowState);
+    explicit DensityMassFractions(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState);
 };
 
 }  // namespace ablate::flow::fieldFunctions

@@ -1,6 +1,6 @@
 target_sources(ablateLibrary
         PUBLIC
-        flowProcess.hpp
+        process.hpp
         eulerAdvection.hpp
         eulerAdvection.cpp
         eulerDiffusion.hpp

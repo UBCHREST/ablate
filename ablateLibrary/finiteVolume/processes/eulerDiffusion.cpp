@@ -3,7 +3,7 @@
 #include "eulerAdvection.hpp"
 
 // When used, you must request euler, then densityYi
-PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
+PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
                                                                                   const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
@@ -21,7 +21,7 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxTemperatureFiel
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues,
+PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues,
                                                                                PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
@@ -33,7 +33,7 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::UpdateAuxVelocityField(P
     PetscFunctionReturn(0);
 }
 
-ablate::flow::processes::EulerDiffusion::EulerDiffusion(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn)
+ablate::finiteVolume::processes::EulerDiffusion::EulerDiffusion(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn)
     : eos(eosIn), transportModel(transportModelIn) {
     PetscNew(&eulerDiffusionData);
 
@@ -56,9 +56,9 @@ ablate::flow::processes::EulerDiffusion::EulerDiffusion(std::shared_ptr<eos::EOS
     eulerDiffusionData->yiScratch.resize(eulerDiffusionData->numberSpecies);
 }
 
-ablate::flow::processes::EulerDiffusion::~EulerDiffusion() { PetscFree(eulerDiffusionData); }
+ablate::finiteVolume::processes::EulerDiffusion::~EulerDiffusion() { PetscFree(eulerDiffusionData); }
 
-void ablate::flow::processes::EulerDiffusion::Initialize(ablate::flow::FVFlow &flow) {
+void ablate::finiteVolume::processes::EulerDiffusion::Initialize(ablate::finiteVolume::FVFlow &flow) {
     // if there are any coefficients for diffusion, compute diffusion
     if (eulerDiffusionData->kFunction || eulerDiffusionData->muFunction) {
         // Register the euler diffusion source terms
@@ -81,7 +81,7 @@ void ablate::flow::processes::EulerDiffusion::Initialize(ablate::flow::FVFlow &f
     }
 }
 
-PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
+PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
                                                                                        const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff,
                                                                                        const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
                                                                                        const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
@@ -157,7 +157,7 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowEulerDif
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal *gradVelL, const PetscReal *gradVelR, PetscReal *tau) {
+PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal *gradVelL, const PetscReal *gradVelR, PetscReal *tau) {
     PetscFunctionBeginUser;
     // pre compute the div of the velocity field
     PetscReal divVel = 0.0;
@@ -182,5 +182,5 @@ PetscErrorCode ablate::flow::processes::EulerDiffusion::CompressibleFlowComputeS
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::EulerDiffusion, "diffusion for the euler field",
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::EulerDiffusion, "diffusion for the euler field",
          ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"), OPT(ablate::eos::transport::TransportModel, "parameters", "the diffusion transport model"));

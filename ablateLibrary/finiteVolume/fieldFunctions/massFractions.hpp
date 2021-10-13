@@ -5,7 +5,7 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include "compressibleFlowState.hpp"
 
-namespace ablate::flow::fieldFunctions {
+namespace ablate::finiteVolume::fieldFunctions {
 
 /**
  * Class that allows you to under specify the yi and assume zero for all others

@@ -1,8 +1,8 @@
 #include "ausmpUp.hpp"
 
-ablate::flow::fluxCalculator::AusmpUp::AusmpUp(double mInf) : mInf(mInf) {}
+ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUp(double mInf) : mInf(mInf) {}
 
-ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::AusmpUp::AusmpUpFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
+ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUpFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
                                                                                                PetscReal rhoR, PetscReal pR, PetscReal* massFlux, PetscReal* p12) {
     // Compute the density at the interface
     PetscReal rho12 = (0.5) * (rhoL + rhoR);
@@ -47,28 +47,28 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::AusmpUp::A
     return direction;
 }
 
-PetscReal ablate::flow::fluxCalculator::AusmpUp::M1Plus(PetscReal m) { return 0.5 * (m + PetscAbs(m)); }
+PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::M1Plus(PetscReal m) { return 0.5 * (m + PetscAbs(m)); }
 
-PetscReal ablate::flow::fluxCalculator::AusmpUp::M2Plus(PetscReal m) { return 0.25 * PetscSqr(m + 1); }
+PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::M2Plus(PetscReal m) { return 0.25 * PetscSqr(m + 1); }
 
-PetscReal ablate::flow::fluxCalculator::AusmpUp::M1Minus(PetscReal m) { return 0.5 * (m - PetscAbs(m)); }
-PetscReal ablate::flow::fluxCalculator::AusmpUp::M2Minus(PetscReal m) { return -0.25 * PetscSqr(m - 1); }
+PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::M1Minus(PetscReal m) { return 0.5 * (m - PetscAbs(m)); }
+PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::M2Minus(PetscReal m) { return -0.25 * PetscSqr(m - 1); }
 
-PetscReal ablate::flow::fluxCalculator::AusmpUp::M4Plus(PetscReal m) {
+PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::M4Plus(PetscReal m) {
     if (PetscAbs(m) >= 1.0) {
         return M1Plus(m);
     } else {
         return M2Plus(m) * (1.0 - 16.0 * beta * M2Minus(m));
     }
 }
-PetscReal ablate::flow::fluxCalculator::AusmpUp::M4Minus(PetscReal m) {
+PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::M4Minus(PetscReal m) {
     if (PetscAbs(m) >= 1.0) {
         return M1Minus(m);
     } else {
         return M2Minus(m) * (1.0 + 16.0 * beta * M2Plus(m));
     }
 }
-PetscReal ablate::flow::fluxCalculator::AusmpUp::P5Plus(PetscReal m, double fa) {
+PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::P5Plus(PetscReal m, double fa) {
     if (PetscAbs(m) >= 1.0) {
         return (M1Plus(m) / (m + 1E-30));
     } else {
@@ -78,7 +78,7 @@ PetscReal ablate::flow::fluxCalculator::AusmpUp::P5Plus(PetscReal m, double fa) 
         return (M2Plus(m) * ((2.0 - m) - 16. * alpha * m * M2Minus(m)));
     }
 }
-PetscReal ablate::flow::fluxCalculator::AusmpUp::P5Minus(PetscReal m, double fa) {
+PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::P5Minus(PetscReal m, double fa) {
     if (PetscAbs(m) >= 1.0) {
         return (M1Minus(m) / (m + 1E-30));
     } else {
@@ -88,5 +88,5 @@ PetscReal ablate::flow::fluxCalculator::AusmpUp::P5Minus(PetscReal m, double fa)
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::fluxCalculator::FluxCalculator, ablate::flow::fluxCalculator::AusmpUp, "A sequel to AUSM, Part II: AUSM+-up for all speeds, Meng-Sing Liou, Pages 137-170, 2006",
+REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::AusmpUp, "A sequel to AUSM, Part II: AUSM+-up for all speeds, Meng-Sing Liou, Pages 137-170, 2006",
          ARG(double, "mInf", "the reference mach number"));

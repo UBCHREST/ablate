@@ -6,8 +6,9 @@
 #include <parameters/parameters.hpp>
 #include <string>
 #include <vector>
+#include "timeStepper.hpp"
 
-namespace ablate::flow {
+namespace ablate::solver {
 
 class Solver {
    protected:
@@ -21,12 +22,14 @@ class Solver {
     std::shared_ptr<ablate::domain::SubDomain> subDomain;
 
     // The constructor to be call by any Solve implementation
-    Solver(std::string name, std::shared_ptr<parameters::Parameters> options = nullptr);
+    explicit Solver(std::string name, std::shared_ptr<parameters::Parameters> options = nullptr);
 
    public:
     virtual ~Solver();
 
     virtual void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain);
+
+    virtual void CompleteSetup(solver::TimeStepper&) = 0;
 
 
 

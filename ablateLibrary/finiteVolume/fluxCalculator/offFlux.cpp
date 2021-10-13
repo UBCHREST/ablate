@@ -1,5 +1,5 @@
 #include "offFlux.hpp"
-ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::OffFlux::OffCalculatorFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
+ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::OffFlux::OffCalculatorFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
                                                                                                      PetscReal rhoR, PetscReal pR, PetscReal *massFlux, PetscReal *p12) {
     *massFlux = 0.0;
     if (p12) {
@@ -9,4 +9,4 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::OffFlux::O
 }
 
 #include "parser/registrar.hpp"
-REGISTER_WITHOUT_ARGUMENTS(ablate::flow::fluxCalculator::FluxCalculator, ablate::flow::fluxCalculator::OffFlux, "Turns of convective flux through the face.");
+REGISTER_WITHOUT_ARGUMENTS(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::OffFlux, "Turns of convective flux through the face.");

@@ -36,16 +36,19 @@ class Domain {
    public:
     std::string GetName() const { return name; }
 
-    DM& GetDomain() { return dm; }
+    DM& GetDM() { return dm; }
 
-    int GetDimensions() const;
+    DM GetAuxDM() { return auxDM; }
+
+    Vec GetSolutionVector() { return solField; }
+
+    Vec GetAuxVector() { return auxField; }
 
     void RegisterField(const FieldDescriptor& fieldDescriptor, PetscObject field, DMLabel label);
 
-    // TODO: Remove call
-    void FinalizeRegisterFields();
+    PetscInt GetDimensions() const;
 
-
+    void CompleteSetup(TS ts);
 };
 }  // namespace ablate::mesh
 #endif  // ABLATELIBRARY_DOMAIN_H

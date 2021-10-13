@@ -1,7 +1,7 @@
 #include "speciesDiffusion.hpp"
 #include "eulerAdvection.hpp"
 
-ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn)
+ablate::finiteVolume::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn)
     : eos(eosIn), transportModel(transportModelIn) {
     PetscNew(&speciesDiffusionData);
 
@@ -22,9 +22,9 @@ ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_ptr<eos:
     speciesDiffusionData->computeSpeciesSensibleEnthalpyContext = eos->GetComputeSpeciesSensibleEnthalpyContext();
     speciesDiffusionData->speciesSpeciesSensibleEnthalpy.resize(speciesDiffusionData->numberSpecies);
 }
-ablate::flow::processes::SpeciesDiffusion::~SpeciesDiffusion() { PetscFree(speciesDiffusionData); }
+ablate::finiteVolume::processes::SpeciesDiffusion::~SpeciesDiffusion() { PetscFree(speciesDiffusionData); }
 
-void ablate::flow::processes::SpeciesDiffusion::Initialize(ablate::flow::FVFlow &flow) {
+void ablate::finiteVolume::processes::SpeciesDiffusion::Initialize(ablate::finiteVolume::FVFlow &flow) {
     // if there are any coefficients for diffusion, compute diffusion
     if (speciesDiffusionData->numberSpecies > 0) {
         if (speciesDiffusionData->diffFunction) {
@@ -37,7 +37,7 @@ void ablate::flow::processes::SpeciesDiffusion::Initialize(ablate::flow::FVFlow 
     }
 }
 
-PetscErrorCode ablate::flow::processes::SpeciesDiffusion::UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
+PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
                                                                                      const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
@@ -51,7 +51,7 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::UpdateAuxMassFractionF
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
+PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::SpeciesDiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
                                                                                      const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff,
                                                                                      const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
                                                                                      const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
@@ -116,7 +116,7 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionEnergy
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
+PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::SpeciesDiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
                                                                                       const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff,
                                                                                       const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
                                                                                       const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
@@ -173,5 +173,5 @@ PetscErrorCode ablate::flow::processes::SpeciesDiffusion::SpeciesDiffusionSpecie
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::SpeciesDiffusion, "diffusion for the species yi field",
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SpeciesDiffusion, "diffusion for the species yi field",
          ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"), OPT(ablate::eos::transport::TransportModel, "parameters", "the diffusion transport model"));

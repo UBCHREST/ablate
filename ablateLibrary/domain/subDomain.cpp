@@ -20,3 +20,43 @@ ablate::domain::Field ablate::domain::SubDomain::RegisterField(const ablate::dom
 
     return newField;
 }
+
+DM& ablate::domain::SubDomain::GetDM() {
+    if (auto domainPtr = domain.lock()) {
+        return domainPtr->GetDM();
+    } else {
+        throw std::runtime_error("Cannot Get DM. Domain is expired.");
+    }
+}
+
+DM ablate::domain::SubDomain::GetAuxDM() {
+    if (auto domainPtr = domain.lock()) {
+        return domainPtr->GetAuxDM();
+    } else {
+        throw std::runtime_error("Cannot Get DM. Domain is expired.");
+    }
+}
+
+Vec ablate::domain::SubDomain::GetSolutionVector() {
+    if (auto domainPtr = domain.lock()) {
+        return domainPtr->GetSolutionVector();
+    } else {
+        throw std::runtime_error("Cannot Get DM. Domain is expired.");
+    }
+}
+
+Vec ablate::domain::SubDomain::GetAuxVector() {
+    if (auto domainPtr = domain.lock()) {
+        return domainPtr->GetAuxVector();
+    } else {
+        throw std::runtime_error("Cannot Get DM. Domain is expired.");
+    }
+}
+
+PetscInt ablate::domain::SubDomain::GetDimensions() const {
+    if (auto domainPtr = domain.lock()) {
+        return domainPtr->GetDimensions();
+    } else {
+        throw std::runtime_error("Cannot Get DM. Domain is expired.");
+    }
+}

@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_AUSM_HPP
 #include "fluxCalculator.hpp"
 
-namespace ablate::flow::fluxCalculator {
+namespace ablate::finiteVolume::fluxCalculator {
 
 /* Computes the min/plus values..
  * sPm: minus split pressure (P-), Capital script P in reference

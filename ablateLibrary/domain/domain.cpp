@@ -44,10 +44,28 @@ void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptor
     }
 }
 
-void ablate::domain::Domain::FinalizeRegisterFields() { DMCreateDS(dm) >> checkError; }
 
-int ablate::domain::Domain::GetDimensions() const {
+PetscInt ablate::domain::Domain::GetDimensions() const {
     PetscInt dim;
     DMGetDimension(dm, &dim) >> checkError;
-    return (int)dim;
+    return dim;
+}
+
+void ablate::domain::Domain::CompleteSetup(TS ts) {
+    DMCreateDS(dm) >> checkError;
+
+    // Setup the solve with the ts
+    DMPlexCreateClosureIndex(dm, NULL) >> checkError;
+    DMCreateGlobalVector(dm, &(solField)) >> checkError;
+    PetscObjectSetName((PetscObject)solField, "flowField") >> checkError;
+
+    if (auxDM) {
+        DMCreateDS(auxDM) >> checkError;
+        DMCreateLocalVector(auxDM, &(auxField)) >> checkError;
+
+        // attach this field as aux vector to the dm
+        DMSetAuxiliaryVec(dm, NULL, 0, auxField) >> checkError;
+        PetscObjectSetName((PetscObject)auxField, "auxField") >> checkError;
+    }
+
 }

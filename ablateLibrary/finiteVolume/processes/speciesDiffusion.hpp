@@ -2,11 +2,11 @@
 #define ABLATELIBRARY_SPECIESDIFFUSION_HPP
 
 #include <eos/transport/transportModel.hpp>
-#include "flowProcess.hpp"
+#include "process.hpp"
 
-namespace ablate::flow::processes {
+namespace ablate::finiteVolume::processes {
 
-class SpeciesDiffusion : public FlowProcess {
+class SpeciesDiffusion : public Process {
    public:
     struct _SpeciesDiffusionData {
         /* diffusivity */
@@ -34,7 +34,7 @@ class SpeciesDiffusion : public FlowProcess {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::flow::FVFlow& flow) override;
+    void Initialize(ablate::finiteVolume::FVFlow& flow) override;
 
    private:
     SpeciesDiffusionData speciesDiffusionData;

@@ -7,7 +7,7 @@
 #include "boundaryCondition.hpp"
 #include "mathFunctions/mathFunction.hpp"
 
-namespace ablate::flow::boundaryConditions {
+namespace ablate::finiteVolume::boundaryConditions {
 
 class Essential : public BoundaryCondition {
    private:

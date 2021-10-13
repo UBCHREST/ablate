@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_AUSMPUP_HPP
 
 #include "fluxCalculator.hpp"
-namespace ablate::flow::fluxCalculator {
+namespace ablate::finiteVolume::fluxCalculator {
 
 /**
  * A sequel to AUSM, Part II: AUSM+-up for all speeds

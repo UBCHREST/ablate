@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_AVERAGEFLUX_HPP
 #include "fluxCalculator.hpp"
 
-namespace ablate::flow::fluxCalculator {
+namespace ablate::finiteVolume::fluxCalculator {
 
 /*
  * Computes the average flux from each side.  This is useful for debugging.

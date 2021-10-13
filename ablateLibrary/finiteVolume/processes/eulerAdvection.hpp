@@ -3,11 +3,11 @@
 
 #include <petsc.h>
 #include "flow/fluxCalculator/fluxCalculator.hpp"
-#include "flowProcess.hpp"
+#include "process.hpp"
 
-namespace ablate::flow::processes {
+namespace ablate::finiteVolume::processes {
 
-class EulerAdvection : public FlowProcess {
+class EulerAdvection : public Process {
    public:
     typedef enum { RHO, RHOE, RHOU, RHOV, RHOW } Components;
 
@@ -17,7 +17,7 @@ class EulerAdvection : public FlowProcess {
         PetscReal cfl;
 
         /* store method used for flux calculator */
-        ablate::flow::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
+        ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
         void* fluxCalculatorCtx;
 
         // EOS function calls
@@ -38,7 +38,7 @@ class EulerAdvection : public FlowProcess {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::flow::FVFlow& flow) override;
+    void Initialize(ablate::finiteVolume::FVFlow& flow) override;
 
     /**
      * This Computes the Flow Euler flow for rho, rhoE, and rhoVel.
@@ -69,7 +69,7 @@ class EulerAdvection : public FlowProcess {
     std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
 
     // static function to compute time step for euler advection
-    static double ComputeTimeStep(TS ts, ablate::flow::Flow& flow, void* ctx);
+    static double ComputeTimeStep(TS ts, ablate::finiteVolume::Flow& flow, void* ctx);
 
     /**
      * Private function to decode the euler fields
@@ -86,7 +86,7 @@ class EulerAdvection : public FlowProcess {
      * @param M
      * @param p
      */
-    static void DecodeEulerState(ablate::flow::processes::EulerAdvection::EulerAdvectionData flowData, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi,
+    static void DecodeEulerState(ablate::finiteVolume::processes::EulerAdvection::EulerAdvectionData flowData, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi,
                                  const PetscReal* normal, PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p);
 };
 

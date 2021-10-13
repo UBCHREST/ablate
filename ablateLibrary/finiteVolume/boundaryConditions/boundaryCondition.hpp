@@ -5,7 +5,7 @@
 #include "mathFunctions/mathFunction.hpp"
 #include "domain/fieldDescriptor.hpp"
 
-namespace ablate::flow::boundaryConditions {
+namespace ablate::finiteVolume::boundaryConditions {
 class BoundaryCondition {
    private:
     const std::string boundaryName;
