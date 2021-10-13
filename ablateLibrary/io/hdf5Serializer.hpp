@@ -8,6 +8,7 @@
 #include <vector>
 #include "serializable.hpp"
 #include "serializer.hpp"
+#include "utilities/loggable.hpp"
 
 namespace ablate::io {
 
@@ -16,7 +17,7 @@ class Hdf5Serializer : public Serializer {
     /**
      * Private class to handle the serialization of each registered object
      */
-    class Hdf5ObjectSerializer {
+    class Hdf5ObjectSerializer : private utilities::Loggable<Hdf5Serializer> {
        private:
         PetscViewer petscViewer = nullptr;
         const std::weak_ptr<Serializable> serializable;

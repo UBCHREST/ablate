@@ -160,7 +160,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperatureInternal(int numSpec, doubl
             f2 = internalEnergyRef - e2;
             if (PetscAbs(f2) <= EPS_T_RHO_E) {
                 T = t2;
-                return 0;
+                PetscFunctionReturn(0);
             }
             t0 = t1;
             t1 = t2;

@@ -1,13 +1,14 @@
-FROM ghcr.io/ubchrest/petsc-docker/petsc-build:18e93c00
-
-# Setup the petsc env
-ENV PETSC_ARCH=arch-opt
-ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
-ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
+FROM ghcr.io/ubchrest/petsc-docker/petsc-build:latest
 
 # Install dependencies
 RUN apt-get update
 RUN apt-get install -y clang-format
+
+# Setup the petsc env
+ARG PETSC_BUILD_ARCH
+ENV PETSC_ARCH=$PETSC_BUILD_ARCH
+ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
+ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
 
 # Copy over the source
 COPY . /source
@@ -19,4 +20,4 @@ run make -j $(nproc)
 
 # Specify Entry Point for tests
 CMD ["ctest"]
-CMD bash -c "make format-check && ctest"
+CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest"

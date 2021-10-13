@@ -6,6 +6,7 @@
 #include <io/interval/interval.hpp>
 #include <utilities/mpiError.hpp>
 #include "generators.hpp"
+#include "utilities/loggable.hpp"
 #include "utilities/petscError.hpp"
 
 ablate::io::Hdf5Serializer::Hdf5Serializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(interval) {
@@ -105,10 +106,14 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Hdf5ObjectSerializer(std::weak
         // Check to see if the viewer file exists
         if (resume) {
             if (std::filesystem::exists(filePath)) {
+                StartEvent("PetscViewerHDF5Open");
                 PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> checkError;
+                EndEvent();
 
                 // Restore the simulation
+                StartEvent("Restore");
                 serializableObject->Restore(petscViewer, sequenceNumber, time);
+                EndEvent();
             } else {
                 throw std::runtime_error("Cannot resume simulation.  Unable to locate file: " + filePath.string());
             }

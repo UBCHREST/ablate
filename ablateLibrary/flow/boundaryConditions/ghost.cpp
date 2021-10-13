@@ -14,9 +14,11 @@ ablate::flow::boundaryConditions::Ghost::Ghost(std::string fieldName, std::strin
                                                void *updateContext, std::string labelName)
     : Ghost(fieldName, boundaryName, std::vector<int>{labelId}, updateFunction, updateContext, labelName) {}
 
-void ablate::flow::boundaryConditions::Ghost::SetupBoundary(PetscDS problem, PetscInt fieldId) {
+void ablate::flow::boundaryConditions::Ghost::SetupBoundary(DM dm, PetscDS problem, PetscInt fieldId) {
+    DMLabel label;
+    DMGetLabel(dm, labelName.c_str(), &label) >> checkError;
     PetscDSAddBoundary(
-        problem, DM_BC_NATURAL_RIEMANN, GetBoundaryName().c_str(), labelName.c_str(), fieldId, 0, NULL, (void (*)(void))updateFunction, NULL, labelIds.size(), &labelIds[0], (void *)updateContext) >>
+        problem, DM_BC_NATURAL_RIEMANN, GetBoundaryName().c_str(), label, labelIds.size(), &labelIds[0], fieldId, 0, NULL, (void (*)(void))updateFunction, NULL, (void *)updateContext, NULL) >>
         checkError;
 
     // extract some information about the flowField

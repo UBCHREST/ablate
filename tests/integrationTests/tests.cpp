@@ -22,6 +22,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             FAIL() << "Integration testing requires PETSC_LOG";
         }
         PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> testErrorChecker;
+        PetscOptionsSetValue(NULL, "-checkstack", "true") >> testErrorChecker;
         PetscInitialize(argc, argv, NULL, help) >> testErrorChecker;
         {
             int rank;
@@ -82,6 +83,7 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
     StartWithMPI
         // initialize petsc and mpi
         PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> testErrorChecker;
+        PetscOptionsSetValue(NULL, "-checkstack", "true") >> testErrorChecker;
         PetscInitialize(argc, argv, NULL, help) >> testErrorChecker;
         int rank;
         MPI_Comm_rank(PETSC_COMM_WORLD, &rank);

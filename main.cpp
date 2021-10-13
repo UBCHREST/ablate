@@ -36,6 +36,13 @@ int main(int argc, char** args) {
         return 0;
     }
 
+    PetscInt delay = -1;
+    PetscBool delaySpecified;
+    PetscOptionsGetInt(NULL, NULL, "--delay", &delay, &delaySpecified) >> checkError;
+    if (delaySpecified) {
+        PetscSleep(delay) >> checkError;
+    }
+
     // check to see if we should print options
     PetscBool printParserOptions = PETSC_FALSE;
     PetscOptionsGetBool(NULL, NULL, "--help", &printParserOptions, NULL) >> checkError;

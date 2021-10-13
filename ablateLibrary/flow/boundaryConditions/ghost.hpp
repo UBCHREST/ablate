@@ -28,7 +28,7 @@ class Ghost : public BoundaryCondition {
 
     virtual ~Ghost() override = default;
 
-    void SetupBoundary(PetscDS problem, PetscInt field) override;
+    void SetupBoundary(DM dm, PetscDS problem, PetscInt fieldId) override;
 };
 
 }  // namespace ablate::flow::boundaryConditions
