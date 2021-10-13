@@ -30,8 +30,7 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
     PetscReal gamma = *(PetscReal *)ctx;  // pass-in specific heat ratio from EOS
     // This is where Rieman solver lives.
     PetscReal gamm1 = gamma - 1.0, gamp1 = gamma + 1.0;
-    PetscReal pold, pstar, ustar, rhostarR, rhostarL, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
-    PetscReal pratio;
+    PetscReal pold, pstar, ustar, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
     PetscReal A, B, sqterm;
     PetscReal astar, STLR, SHLR, uX;
 
@@ -125,7 +124,8 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
                 }
             } else
             {
-                *massFlux = rhoL * PetscPowReal(pratio, 1.0 / gamma) * ustar;
+                auto pRatio = pstar/pL;
+                *massFlux = rhoL * PetscPowReal(pRatio, 1.0 / gamma) * ustar;
                 *p12 = pstar;
                 uX = ustar;
             }
@@ -141,7 +141,8 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
                 uX = uL;
             } else //negative wave speed
             {
-                *massFlux = rhoL * (pratio + (gamm1 / gamp1)) / (gamm1 * pratio / gamp1 + 1) * ustar;
+                auto pRatio = pstar/pL;
+                *massFlux = rhoL * (pRatio + (gamm1 / gamp1)) / (gamm1 * pRatio / gamp1 + 1) * ustar;
                 *p12 = pstar;
                 uX = ustar;
             }
@@ -158,7 +159,8 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
                 STLR = ustar + astar;
                 if (STLR >= 0) //positive tail wave
                 {
-                    *massFlux = rhoR * PetscPowReal(pratio, 1 / gamma) * ustar;
+                    auto pRatio = pstar/pR;
+                    *massFlux = rhoR * PetscPowReal(pRatio, 1 / gamma) * ustar;
                     *p12 = pstar;
                     uX = ustar;
                 } else //Eq. 4.56 negative tail wave
@@ -180,7 +182,8 @@ ablate::flow::fluxCalculator::Direction ablate::flow::fluxCalculator::Rieman::Ri
             STLR = uR + (aR * A); //shock wave speed
             if (STLR >= 0)
             {
-                *massFlux = rhoR * (pratio + (gamm1 / gamp1)) / (gamm1 * pratio / gamp1 + 1) * ustar;
+                auto pRatio = pstar/pR;
+                *massFlux = rhoR * (pRatio + (gamm1 / gamp1)) / (gamm1 * pRatio / gamp1 + 1) * ustar;
                 *p12 = pstar;
                 uX = ustar;
             } else //negative wave speed
