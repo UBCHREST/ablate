@@ -144,8 +144,8 @@ INSTANTIATE_TEST_SUITE_P(
             .aR = {1.05830052, 0.74833148, 0.1183216, 11.8321596, 3.28163145},  // gam=1.4 a = \gam * p / \rho
             .rhoR = {0.125, 1.0, 1.0, 1.0, 5.99242},
             .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
-            .expectedMassFlux = {0.32084669, 0, 64.41992213, -20.34729158, 196.9310249},  // 0.5 * (\rhoR* + \rho*L) * u*
-            .expectedInterfacePressure = {0.30313, 0.00189, 460.894, 46.0950, 1691.64},   // p*
+            .expectedMassFlux = {0.39539107, 0, 11.2697554, 0, 117.5701},  // 0.5 * (\rhoR* + \rho*L) * u*
+            .expectedInterfacePressure = {0.30313018, 0.00189387, 460.893787, 100, 460.894},   // p*
             .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                         // Upwind direction
         },
 
