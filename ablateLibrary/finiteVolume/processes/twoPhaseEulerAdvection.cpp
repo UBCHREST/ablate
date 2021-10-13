@@ -20,10 +20,35 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal* in) {
     return PetscSqrtReal(mag);
 }
 
+PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
+//    auto decodeTwoPhaseEulerState = (DecodeTwoPhaseEulerState *)ctx;
+    const PetscReal *ax;
+    PetscReal *aF;
+    VecGetArrayRead(x,&ax);
+    // ax = [rhog, eg]
+    rhoG = ax[0];
+    etG = ax[1] + ke;
+    eL = ((*internalEnergy) - Yg*ax[1])/Yl;
+    etL = eL + ke;
+    rhoL = Yl / (1/(*density) - Yg/ax[0]);
+
+    eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, internalEnergy, aG, &pG, eosGas->GetDecodeStateContext());
+    eosGas->GetComputeTemperatureFunction()(dim, rhoG, etG, NULL, NULL, &TG, eosGas->GetComputeTemperatureContext());
+    eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, internalEnergy, aL, &pL, eosLiquid->GetDecodeStateContext());
+    eosLiquid->GetComputeTemperatureFunction()(dim, rhoL, etL, NULL, NULL, &TL, eosLiquid->GetComputeTemperatureContext());
+
+    VecGetArray(F,&aF);
+    aF[0] = pG - pL;
+    aF[1] = TG - TL;
+    VecRestoreArrayRead(x,&ax);
+    VecResetArray(F,&aF);
+    return 0;
+}
+
 void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim, const PetscReal *conservedValues,
                                                                                const PetscReal *normal, PetscReal *density, PetscReal *densityG, PetscReal *densityL,
                                                                                PetscReal *normalVelocity, PetscReal *velocity, PetscReal *internalEnergy, PetscReal *internalEnergyG,
-                                                                               PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL, PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *alpha) {
+                                                                               PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL, PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *alpha, void *ctx) {
     const int EULER_FIELD = 1; // denstiyVF is [0] field
     // (densityVF, RHO, RHOE, RHOU, RHOV, RHOW)
     // decode
@@ -69,12 +94,13 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
     VecDuplicate(x, &r);
 
     SNESCreate(PETSC_COMM_SELF, &snes);
-    SNESSetFunction(snes,r,FormFunction,NULL);
+//    auto decodeDataStruct = (DecodeDataStruct *)ctx;
+    SNESSetFunction(snes,r,FormFunction,&decodeDataStruct);
     SNESSetFromOptions(snes);
     SNESSolve(snes,NULL,x);
 //    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
     const PetscScalar *ax;
-    VecGetArrayRead(x,&ax)
+    VecGetArrayRead(x,&ax);
     *p=ax[0];
     PetscReal T=ax[1]; //
 
@@ -92,28 +118,7 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
     // decode the state in the eos
     PetscReal TG;
     PetscReal TL;
-    PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
-        PetscReal *aF;
-        VecGetArrayRead(x,&ax);
-        // ax = [rhog, eg]
-        rhoG = ax[0]
-        etG = ax[1] + ke;
-        eL = ((*internalEnergy) - Yg*ax[1])/Yl;
-        etL = eL + ke;
-        rhoL = Yl / (1/(*density) - Yg/ax[0]);
 
-        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, internalEnergy, aG, &pG, eosGas->GetDecodeStateContext());
-        eosGas->GetComputeTemperatureFunction()(dim, rhoG, etG, NULL, NULL, &TG, eosGas->GetComputeTemperatureContext());
-        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, internalEnergy, aL, &pL, eosLiquid->GetDecodeStateContext());
-        eosLiquid->GetComputeTemperatureFunction()(dim, rhoL, etL, NULL, NULL, &TL, eosLiquid->GetComputeTemperatureContext());
-
-        VecGetArray(F,&aF);
-        aF[0] = pG - pL;
-        aF[1] = TG - TL;
-        VecRestoreArrayRead(x,&ax);
-        VecResetArray(F,&aF);
-        return 0;
-    }
 
     // guess et1, rho1; return e1, a1, p1 | guess et2, rho2; return e2, a2, p2
     // compare pG, pL
