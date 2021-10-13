@@ -149,22 +149,6 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                         // Upwind direction
         },
 
-//     (FluxCalculatorTestParameters){
-//            .testName = "RiemanFlux",
-//            .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Rieman>(
-//                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}))),
-//            .uL = {0.0},
-//            .aL = {0.1183216},  // gam=1.4 a = \gam * p / \rho
-//            .rhoL = {1.0},
-//            .pL = {0.01},
-//            .uR = {0.0},
-//            .aR = {11.8321596},  // gam=1.4 a = \gam * p / \rho
-//            .rhoR = {1.0},
-//            .pR = {100},
-//            .expectedMassFlux = {-20.34729158},  // 0.5 * (\rhoR* + \rho*L) * u*
-//            .expectedInterfacePressure = {46.0950},   // p*
-//            .expectedDirection = {RIGHT}                         // Upwind direction
-//        },
         (FluxCalculatorTestParameters){.testName = "OffFlux",
                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::OffFlux>(),
                                        .uL = {80, 168.5, -161.4, 76},
