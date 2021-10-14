@@ -43,6 +43,7 @@ class PerfectGas : public EOS {
     void* GetComputeSensibleInternalEnergyContext() override { return &parameters; }
     ComputeSpecificHeatConstantPressureFunction GetComputeSpecificHeatConstantPressureFunction() override { return PerfectGasComputeSpecificHeatConstantPressure; }
     void* GetComputeSpecificHeatConstantPressureContext() override { return &parameters; }
+    PetscReal GetSpecificHeatRatio() const { return parameters.gamma; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };

@@ -1,0 +1,17 @@
+DOF: 2
+Timestep: 0000 time = 0        dt = (.*)<expects> <5e-06
+Timestep: 0001 time = 1e-06    dt = (.*)<expects> <0.03
+Timestep: 0002 time = 0.02114  dt = (.*)<expects> <0.03
+Timestep: 0003 time = 0.03865  dt = (.*)<expects> <0.02
+Timestep: 0004 time = 0.05454  dt = (.*)<expects> <0.02
+Timestep: 0005 time = 0.06965  dt = (.*)<expects> <0.02
+Timestep: 0006 time = 0.0843   dt = (.*)<expects> <0.02
+Timestep: 0007 time = 0.09868  dt = (.*)<expects> <0.02
+Timestep: 0008 time = 0.1129   dt = (.*)<expects> <0.02
+Timestep: 0009 time = 0.1266   dt = (.*)<expects> <0.02
+Timestep: 0010 time = 0.14     dt = (.*)<expects> <0.02
+Timestep: 0011 time = 0.1532   dt = (.*)<expects> <0.02
+ResultFiles:
+SOD Problem.hdf5
+SOD Problem.xmf
+restart.rst

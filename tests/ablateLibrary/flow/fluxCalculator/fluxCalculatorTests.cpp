@@ -1,8 +1,11 @@
 #include <petsc.h>
+#include <eos/perfectGas.hpp>
+#include <parameters/mapParameters.hpp>
 #include <vector>
 #include "flow/fluxCalculator/ausm.hpp"
 #include "flow/fluxCalculator/averageFlux.hpp"
 #include "flow/fluxCalculator/offFlux.hpp"
+#include "flow/fluxCalculator/rieman.hpp"
 #include "gtest/gtest.h"
 
 using namespace ablate::flow::fluxCalculator;
@@ -128,6 +131,24 @@ INSTANTIATE_TEST_SUITE_P(
                                        .expectedDirection = {NA, NA, NA, NA}
 
         },
+        // Rieman flux testing
+        (FluxCalculatorTestParameters){
+            .testName = "RiemanFlux",
+            .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Rieman>(
+                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}))),
+            .uL = {0.0, -2.0, 0.0, 0.0, 19.5975},
+            .aL = {1.18321596, 0.74833148, 37.4165739, 0.1183216, 10.3708995},  // gam=1.4 a = \gam * p / \rho
+            .rhoL = {1.0, 1.0, 1.0, 1.0, 5.99924},
+            .pL = {1.0, 0.4, 1000.0, 0.01, 460.894},
+            .uR = {0.0, 2.0, 0.0, 0.0, -6.19633},
+            .aR = {1.05830052, 0.74833148, 0.1183216, 11.8321596, 3.28163145},  // gam=1.4 a = \gam * p / \rho
+            .rhoR = {0.125, 1.0, 1.0, 1.0, 5.99242},
+            .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
+            .expectedMassFlux = {0.39539107, 0, 11.2697554, -3.56358518796, 117.5701},           // status at x =0
+            .expectedInterfacePressure = {0.30313018, 0.00189387, 460.893787, 46.095, 460.894},  // pressure at x=0
+            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                // Upwind direction based on velocity at x = 0
+        },
+
         (FluxCalculatorTestParameters){.testName = "OffFlux",
                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::OffFlux>(),
                                        .uL = {80, 168.5, -161.4, 76},
