@@ -131,7 +131,7 @@ INSTANTIATE_TEST_SUITE_P(
                                        .expectedDirection = {NA, NA, NA, NA}
 
         },
-         //Rieman flux testing
+        // Rieman flux testing
         (FluxCalculatorTestParameters){
             .testName = "RiemanFlux",
             .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Rieman>(
@@ -144,12 +144,10 @@ INSTANTIATE_TEST_SUITE_P(
             .aR = {1.05830052, 0.74833148, 0.1183216, 11.8321596, 3.28163145},  // gam=1.4 a = \gam * p / \rho
             .rhoR = {0.125, 1.0, 1.0, 1.0, 5.99242},
             .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
-            .expectedMassFlux = {0.39539107, 0, 11.2697554, -3.56358518796, 117.5701},  // status at x =0
-            .expectedInterfacePressure = {0.30313018, 0.00189387, 460.893787, 46.095, 460.894},   // pressure at x=0
-            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                         // Upwind direction based on velocity at x = 0
+            .expectedMassFlux = {0.39539107, 0, 11.2697554, -3.56358518796, 117.5701},           // status at x =0
+            .expectedInterfacePressure = {0.30313018, 0.00189387, 460.893787, 46.095, 460.894},  // pressure at x=0
+            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                // Upwind direction based on velocity at x = 0
         },
-
-
 
         (FluxCalculatorTestParameters){.testName = "OffFlux",
                                        .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::OffFlux>(),

@@ -1,0 +1,56 @@
+---
+environment:
+  title: SOD_Problem
+  tagDirectory: false
+arguments: 
+  automaticTimeStepCalculator: on
+
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 0.1463
+    ts_dt: 1e-6
+    ts_max_steps: 100
+    ts_adapt_type: none
+  io: 
+    interval: 0
+flow: !ablate::flow::CompressibleFlow
+  name: SOD Problem
+  mesh: !ablate::mesh::BoxMesh
+    name: simpleBoxField
+    faces: [ 5, 5]
+    lower: [ 0, 0]
+    upper: [1, 1]
+    boundary: ['NONE', "PERIODIC"]
+    options:
+      dm_refine: 1
+  options:
+    eulerpetscfv_type: upwind
+    Tpetscfv_type: leastsquares
+    velpetscfv_type: leastsquares
+  parameters:
+    cfl: .25
+  eos: &eos 
+    !ablate::eos::PerfectGas
+    parameters:
+        gamma: 1.4
+        Rgas: 287
+  fluxCalculator: !ablate::flow::fluxCalculator::Rieman
+    eos: *eos
+  initialization:
+    - !ablate::flow::fieldFunctions::Euler
+      &eulerFlowFieldState
+      state: &flowFieldState
+        eos: *eos
+        temperature: "x < .5 ? 0.00348 : 0.00279"
+        pressure: "x < 0.5 ? 1 : 0.1"
+        velocity: "0, 0"     
+  boundaryConditions:
+    - !ablate::flow::boundaryConditions::EssentialGhost
+      boundaryName: "air walls euler"
+      labelIds: [2, 4]
+      boundaryValue: *eulerFlowFieldState
+  monitors:
+    - !ablate::monitors::TimeStepMonitor
+
