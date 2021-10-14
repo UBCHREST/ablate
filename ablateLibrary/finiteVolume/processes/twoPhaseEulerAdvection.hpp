@@ -30,14 +30,6 @@ class TwoPhaseEulerAdvection : public FlowProcess {
     static void DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim, const PetscReal* conservedValues,
                                          const PetscReal* normal, PetscReal* density, PetscReal* densityG, PetscReal* densityL, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* internalEnergyG, PetscReal* internalEnergyL, PetscReal* aG, PetscReal* aL, PetscReal* MG, PetscReal* ML, PetscReal* p, PetscReal* alpha, void *ctx);
 
-//    struct _DecodeDataStruct {
-//        PetscReal rhoG;
-//        PetscReal eG;
-//        PetscReal Yg;
-//        PetscReal Yl;
-//    };
-//    typedef struct _DecodeDataStruct* DecodeDataStruct;
-
 
     //           *** yaml example ***
 //      - !ablate::flow::processes::TwoPhaseEulerAdvection
