@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_RIEMAN_H
 #define ABLATELIBRARY_RIEMAN_H
 #include <eos/eos.hpp>
+#include <memory>
 #include "fluxCalculator.hpp"
 
 namespace ablate::flow::fluxCalculator {

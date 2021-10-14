@@ -275,9 +275,6 @@ double ablate::flow::processes::EulerAdvection::ComputeTimeStep(TS ts, ablate::f
 
             PetscReal u = xc[RHOU] / rho;
             PetscReal dt = eulerAdvectionData->cfl * dx / (a + PetscAbsReal(u));
-            if (PetscIsInfOrNanReal(dt)) {
-                puts("nan");
-            }
 
             dtMin = PetscMin(dtMin, dt);
         }
