@@ -1,19 +1,19 @@
 #include <petsc.h>
-#include <flow/incompressibleFlow.hpp>
+#include <finiteElement/incompressibleFlow.hpp>
+#include <finiteVolume/boundaryConditions/essential.hpp>
 #include <memory>
 #include <parameters/petscPrefixOptions.hpp>
 #include <particles/initializers/boxInitializer.hpp>
 #include "MpiTestFixture.hpp"
-#include "flow/boundaryConditions/essential.hpp"
+#include "domain/boxMesh.hpp"
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "domain/boxMesh.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "particles/tracer.hpp"
 
 using namespace ablate;
-using namespace ablate::flow;
+using namespace ablate::finiteVolume;
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -295,7 +295,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
-            TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
+            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Setup the flow data
@@ -309,31 +309,32 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto temperatureExact =
                 std::make_shared<mathFunctions::FieldFunction>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
 
-            auto flowObject = std::make_shared<ablate::flow::IncompressibleFlow>(
+            auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlow>(
                 "testFlow",
-                mesh,
                 parameters,
                 nullptr,
                 /* initialization functions */
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
-                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("right wall velocity", 2, velocityExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("left wall velocity", 4, velocityExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("top wall temp", 3, temperatureExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
-                                                                                    std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
+                std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{std::make_shared<finiteVolume::boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
+                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
+                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("right wall velocity", 2, velocityExact),
+                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("left wall velocity", 4, velocityExact),
+                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("top wall temp", 3, temperatureExact),
+                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact),
+                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
+                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
                 /* aux updates*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{},
                 /* exact solutions*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
+            flowObject->SetupDomain(mesh->GetSubDomain());
+
             // Override problem with source terms, boundary, and set the exact solution
             {
                 PetscDS prob;
-                DMGetDS(mesh->GetDomain(), &prob) >> testErrorChecker;
+                DMGetDS(mesh->GetDM(), &prob) >> testErrorChecker;
 
                 // V, W Test Function
                 IntegrandTestFunction tempFunctionPointer;
@@ -350,10 +351,10 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                     PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> testErrorChecker;
                 }
             }
-            flowObject->CompleteProblemSetup(ts);
+            flowObject->CompleteSetup(ts);
 
             // Check the convergence
-            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // Create the particle domain
             // pass all options with the particles prefix to the particle object
@@ -362,7 +363,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto particles = std::make_shared<ablate::particles::Tracer>("particle", 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact), particleOptions);
 
             // link the flow to the particles
-            particles->InitializeFlow(flowObject);
+            particles->Initialize(mesh->GetSubDomain());
 
             // setup the initial conditions for error computing, this is only used for tests
             TSSetComputeInitialCondition(particles->GetTS(), ablate::particles::Particles::ComputeParticleExactSolution) >> testErrorChecker;
@@ -372,10 +373,10 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             TSSetFromOptions(ts) >> testErrorChecker;
 
             // Solve the one way coupled system
-            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // Compare the actual vs expected values
-            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;

@@ -1,18 +1,15 @@
 #include <petsc.h>
-#include <eos/perfectGas.hpp>
-#include <parameters/mapParameters.hpp>
 #include <vector>
 #include "flow/fluxCalculator/ausm.hpp"
 #include "flow/fluxCalculator/averageFlux.hpp"
 #include "flow/fluxCalculator/offFlux.hpp"
-#include "flow/fluxCalculator/rieman.hpp"
 #include "gtest/gtest.h"
 
-using namespace ablate::flow::fluxCalculator;
+using namespace ablate::finiteVolume::fluxCalculator;
 
 struct FluxCalculatorTestParameters {
     std::string testName;
-    std::shared_ptr<ablate::flow::fluxCalculator::FluxCalculator> fluxCalculator;
+    std::shared_ptr<ablate::finiteVolume::fluxCalculator::FluxCalculator> fluxCalculator;
     std::vector<PetscReal> uL;
     std::vector<PetscReal> aL;
     std::vector<PetscReal> rhoL;
@@ -23,7 +20,7 @@ struct FluxCalculatorTestParameters {
     std::vector<PetscReal> pR;
     std::vector<PetscReal> expectedMassFlux;
     std::vector<PetscReal> expectedInterfacePressure;
-    std::vector<ablate::flow::fluxCalculator::Direction> expectedDirection;
+    std::vector<ablate::finiteVolume::fluxCalculator::Direction> expectedDirection;
 };
 
 class FluxCalculatorTestParametersTestFixture : public ::testing::TestWithParam<FluxCalculatorTestParameters> {};
@@ -54,7 +51,7 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         (FluxCalculatorTestParameters){
             .testName = "Ausm",
-            .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Ausm>(),
+            .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
             .uL = {-46.801376,  72.26622,    143.493328, -298.81582,  -7.23096,    -18.991384,  197.677272,  139.742053,  -594.589692, -290.53794, 428.43614,   -54.055332,  115.4032,
                    -392.340472, -41.287239,  154.19184,  -107.410149, 605.56822,   237.64508,   -322.95408,  -229.684257, 14.9085,     426.853071, -108.341724, -361.619038, -27.726526,
                    -194.035211, -128.021795, -51.42915,  -2.328389,   -207.126428, -170.092372, -109.112972, -17.289702,  -100.064006, -363.66779, 429.399216,  41.324511,   141.155896,
@@ -117,7 +114,7 @@ INSTANTIATE_TEST_SUITE_P(
 
         },
         (FluxCalculatorTestParameters){.testName = "AverageFlux",
-                                       .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::AverageFlux>(),
+                                       .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
                                        .uL = {80, 168.5, -161.4, 76},
                                        .aL = {80, 337, 269, 190},
                                        .rhoL = {2, 4, 4, 2},
@@ -134,7 +131,7 @@ INSTANTIATE_TEST_SUITE_P(
         // Rieman flux testing
         (FluxCalculatorTestParameters){
             .testName = "RiemanFlux",
-            .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::Rieman>(
+            .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Rieman>(
                 std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}))),
             .uL = {0.0, -2.0, 0.0, 0.0, 19.5975},
             .aL = {1.18321596, 0.74833148, 37.4165739, 0.1183216, 10.3708995},  // gam=1.4 a = \gam * p / \rho
@@ -150,7 +147,7 @@ INSTANTIATE_TEST_SUITE_P(
         },
 
         (FluxCalculatorTestParameters){.testName = "OffFlux",
-                                       .fluxCalculator = std::make_shared<ablate::flow::fluxCalculator::OffFlux>(),
+                                       .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::OffFlux>(),
                                        .uL = {80, 168.5, -161.4, 76},
                                        .aL = {80, 337, 269, 190},
                                        .rhoL = {2, 4, 4, 2},

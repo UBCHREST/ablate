@@ -45,7 +45,7 @@ ablate::particles::Particles::Particles(std::string name, int ndims, std::shared
     }
 }
 
-void ablate::particles::Particles::InitializeFlow(std::shared_ptr<flow::Flow> flow) {
+void ablate::particles::Particles::Initialize(std::shared_ptr<domain::SubDomain> flow) {
     // if more than one solution field is provided, create a new field to hold them packed together
     if (particleSolutionDescriptors.size() > 1) {
         auto packedSolutionComponentSize = 0;
@@ -72,7 +72,7 @@ void ablate::particles::Particles::InitializeFlow(std::shared_ptr<flow::Flow> fl
     flowFinal = flow->GetSolutionVector();
     VecDuplicate(flowFinal, &(flowInitial)) >> checkError;
     VecCopy(flow->GetSolutionVector(), flowInitial) >> checkError;
-    flowVelocityFieldIndex = flow->GetFieldId("velocity").value();
+    flowVelocityFieldIndex = flow->GetField("velocity").fieldId;
 
     // name the particle domain
     auto namePrefix = name + "_";

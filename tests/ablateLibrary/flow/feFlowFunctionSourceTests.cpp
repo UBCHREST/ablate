@@ -5,24 +5,24 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
 #include <cmath>
-#include <flow/boundaryConditions/essential.hpp>
-#include <flow/incompressibleFlow.hpp>
+#include <finiteVolume/boundaryConditions/essential.hpp>
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/dmWrapper.hpp"
-#include "flow/boundaryConditions/ghost.hpp"
-#include "flow/compressibleFlow.hpp"
-#include "flow/lowMachFlow.hpp"
+#include "finiteElement/incompressibleFlow.hpp"
+#include "finiteElement/lowMachFlow.hpp"
+#include "finiteVolume/boundaryConditions/ghost.hpp"
+#include "finiteVolume/compressibleFlow.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
 #include "parameters/petscOptionParameters.hpp"
 
 using namespace ablate;
-using namespace ablate::flow;
+using namespace ablate::finiteElement;
 // We can define them because they are the same between fe flows
 #define VTEST 0
 #define QTEST 1
@@ -65,9 +65,9 @@ static IntegrandTestFunction f0_q_original;
 
 struct FEFlowMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
-    std::function<std::shared_ptr<ablate::flow::Flow>(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters,
+    std::function<std::shared_ptr<ablate::finiteElement::FiniteElement>(std::string name, std::shared_ptr<parameters::Parameters> parameters,
                                                       std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializationAndExact,
-                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                      std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)>
         createMethod;
     ExactFunction uExact;
@@ -97,7 +97,7 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     CHKERRQ(ierr);
 
     // Get the flowData
-    ablate::flow::Flow *flow;
+    ablate::finiteElement::FiniteElement *flow;
     ierr = DMGetApplicationContext(dm, &flow);
     CHKERRQ(ierr);
 
@@ -576,7 +576,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
             auto mesh = std::make_shared<domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
-            TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
+            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // pull the parameters from the petsc options
@@ -587,17 +587,16 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>("temperature", mathFunctions::Create(testingParam.TExact), mathFunctions::Create(testingParam.T_tExact));
 
             // Create the flow object
-            std::shared_ptr<ablate::flow::Flow> flowObject =
+            std::shared_ptr<ablate::finiteElement::FiniteElement> flowObject =
                 testingParam.createMethod("testFlow",
-                                          mesh,
                                           parameters,
                                           nullptr,
                                           /* initialization functions */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                                           /* boundary conditions */
-                                          std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
-                                              std::make_shared<boundaryConditions::Essential>("velocity wall", std::vector<int>{3, 1, 2, 4}, velocityExact),
-                                              std::make_shared<boundaryConditions::Essential>("temp wall", std::vector<int>{3, 1, 2, 4}, temperatureExact),
+                                          std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
+                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("velocity wall", std::vector<int>{3, 1, 2, 4}, velocityExact),
+                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("temp wall", std::vector<int>{3, 1, 2, 4}, temperatureExact),
                                           },
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
@@ -605,7 +604,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             // Override problem with source terms, boundary, and set the exact solution
             {
                 PetscDS prob;
-                DMGetDS(flowObject->GetDM(), &prob) >> testErrorChecker;
+                DMGetDS(mesh->GetDM(), &prob) >> testErrorChecker;
 
                 // V, W Test Function
                 IntegrandTestFunction tempFunctionPointer;
@@ -623,7 +622,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                 }
             }
 
-            flowObject->CompleteProblemSetup(ts);
+            flowObject->CompleteSetup(ts);
 
             // Setup the TS
             TSSetFromOptions(ts) >> testErrorChecker;
@@ -632,15 +631,15 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             TSSetComputeInitialCondition(ts, SetInitialConditions) >> testErrorChecker; /* Must come after SetFromOptions() */
 
             TSGetTime(ts, &t) >> testErrorChecker;
-            DMSetOutputSequenceNumber(flowObject->GetDM(), 0, t) >> testErrorChecker;
-            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            DMSetOutputSequenceNumber(mesh->GetDM(), 0, t) >> testErrorChecker;
+            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
             TSMonitorSet(ts, MonitorError, NULL, NULL) >> testErrorChecker;
 
             // Solve in time
-            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // Compare the actual vs expected values
-            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
@@ -664,9 +663,9 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-dmts_check -1 -snes_linesearch_type basic "
                                                                 "-gravityDirection 1"},
                               .createMethod =
-                                  [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                                      return std::make_shared<ablate::flow::LowMachFlow>(
-                                          name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                                  [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                                      return std::make_shared<ablate::finiteElement::LowMachFlow>(
+                                          name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                                   },
                               .uExact = lowMach_quadratic_u,
                               .pExact = lowMach_quadratic_p,
@@ -690,9 +689,9 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
                                                                 "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
                               .createMethod =
-                                  [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                                      return std::make_shared<ablate::flow::LowMachFlow>(
-                                          name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                                  [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                                      return std::make_shared<ablate::finiteElement::LowMachFlow>(
+                                          name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                                   },
                               .uExact = lowMach_quadratic_u,
                               .pExact = lowMach_quadratic_p,
@@ -714,9 +713,9 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-dmts_check -1 -snes_linesearch_type basic "
                                                                 "-gravityDirection 1 "},
                               .createMethod =
-                                  [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                                      return std::make_shared<ablate::flow::LowMachFlow>(
-                                          name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                                  [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                                      return std::make_shared<ablate::finiteElement::LowMachFlow>(
+                                          name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                                   },
                               .uExact = lowMach_cubic_u,
                               .pExact = lowMach_cubic_p,
@@ -740,9 +739,9 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-pth 91282.5 -strouhal 0.00242007695844728 -reynolds 23126.2780617827 -froude 0.316227766016838 -peclet 16373.1785965753 "
                                                                 "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
                               .createMethod =
-                                  [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                                      return std::make_shared<ablate::flow::LowMachFlow>(
-                                          name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                                  [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                                      return std::make_shared<ablate::finiteElement::LowMachFlow>(
+                                          name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                                   },
                               .uExact = lowMach_cubic_u,
                               .pExact = lowMach_cubic_p,
@@ -764,8 +763,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
-                [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -787,8 +786,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
-                [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name,  parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -811,8 +810,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
-                [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_cubic_trig_u,
             .pExact = incompressible_cubic_trig_p,
@@ -835,8 +834,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
-                [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
@@ -859,8 +858,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_0_pc_type lu "
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
-                [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
@@ -884,8 +883,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-strouhal 0.00242007695844728 -reynolds 23126.2780617827  -peclet 16373.1785965753 "
                                               "-mu 1.1 -k 1.2 -cp 1.3 "},
             .createMethod =
-                [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -910,8 +909,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-strouhal 0.0024 -reynolds 23126.27 -peclet 16373.178 "
                                               "-mu 1.1 -k 1.2 -cp 1.3 "},
             .createMethod =
-                [](auto name, auto mesh, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::flow::IncompressibleFlow>(name, mesh, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,

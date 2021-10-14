@@ -10,9 +10,9 @@ ablate::particles::Tracer::Tracer(std::string name, int ndims, std::shared_ptr<p
 
 ablate::particles::Tracer::~Tracer() {}
 
-void ablate::particles::Tracer::InitializeFlow(std::shared_ptr<flow::Flow> flow) {
+void ablate::particles::Tracer::Initialize(std::shared_ptr<ablate::domain::SubDomain> flow) {
     // Call the base to initialize the flow
-    Particles::InitializeFlow(flow);
+    Particles::Initialize(flow);
 
     TSSetRHSFunction(particleTs, NULL, freeStreaming, this) >> checkError;
 
@@ -20,7 +20,7 @@ void ablate::particles::Tracer::InitializeFlow(std::shared_ptr<flow::Flow> flow)
     TSSetTime(particleTs, timeInitial) >> checkError;
 
     // link the solution with the flowTS
-    flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow &) { this->AdvectParticles(flowTs); });
+//    flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow &) { this->AdvectParticles(flowTs); });//TODO: putback
 }
 
 /* x_t = v

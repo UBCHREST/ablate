@@ -1,5 +1,5 @@
 #include "eulerAdvection.hpp"
-#include <flow/fluxCalculator/ausm.hpp>
+#include <finiteVolume/fluxCalculator/ausm.hpp>
 #include <utilities/petscError.hpp>
 
 static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out) {
@@ -203,7 +203,7 @@ ablate::finiteVolume::processes::EulerAdvection::EulerAdvection(std::shared_ptr<
 
 ablate::finiteVolume::processes::EulerAdvection::~EulerAdvection() { PetscFree(eulerAdvectionData); }
 
-void ablate::finiteVolume::processes::EulerAdvection::Initialize(ablate::finiteVolume::FVFlow& flow) {
+void ablate::finiteVolume::processes::EulerAdvection::Initialize(ablate::finiteVolume::FiniteVolume& flow) {
     // Register the euler source terms
     if (eos->GetSpecies().empty()) {
         flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, eulerAdvectionData, "euler", {"euler"}, {});
@@ -220,7 +220,7 @@ void ablate::finiteVolume::processes::EulerAdvection::Initialize(ablate::finiteV
     }
 }
 
-double ablate::finiteVolume::processes::EulerAdvection::ComputeTimeStep(TS ts, ablate::finiteVolume::Flow& flow, void* ctx) {
+double ablate::finiteVolume::processes::EulerAdvection::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolume& flow, void* ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
@@ -246,8 +246,8 @@ double ablate::finiteVolume::processes::EulerAdvection::ComputeTimeStep(TS ts, a
     const PetscReal dx = 2.0 * minCellRadius;
 
     // Get field location for euler and densityYi
-    auto eulerId = flow.GetFieldId("euler").value();
-    auto densityYiId = flow.GetFieldId("densityYi").value_or(-1);
+    auto eulerId = flow.GetSubDomain().GetField("euler").fieldId;
+    auto densityYiId = eulerAdvectionData->numberSpecies > 0 ? flow.GetSubDomain().GetField("densityYi").fieldId : -1;
 
     // March over each cell
     PetscReal dtMin = 1000.0;

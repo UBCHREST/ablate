@@ -58,7 +58,7 @@ ablate::finiteVolume::processes::EulerDiffusion::EulerDiffusion(std::shared_ptr<
 
 ablate::finiteVolume::processes::EulerDiffusion::~EulerDiffusion() { PetscFree(eulerDiffusionData); }
 
-void ablate::finiteVolume::processes::EulerDiffusion::Initialize(ablate::finiteVolume::FVFlow &flow) {
+void ablate::finiteVolume::processes::EulerDiffusion::Initialize(ablate::finiteVolume::FiniteVolume &flow) {
     // if there are any coefficients for diffusion, compute diffusion
     if (eulerDiffusionData->kFunction || eulerDiffusionData->muFunction) {
         // Register the euler diffusion source terms

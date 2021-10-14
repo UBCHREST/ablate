@@ -10,7 +10,7 @@
 #endif
 #include <TC_interface.h>
 #include <TC_params.h>
-#include <flow/processes/eulerAdvection.hpp>
+#include <finiteVolume/processes/eulerAdvection.hpp>
 #include <utilities/petscOptions.hpp>
 #else
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
@@ -96,11 +96,11 @@ ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {
     PetscFree3(tchemScratch, jacobianScratch, rows) >> checkError;
 }
 
-void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FVFlow& flow) {
+void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FiniteVolume& flow) {
     // Create a copy of the dm for the solver
     DM coordDM;
-    DMGetCoordinateDM(flow.GetDM(), &coordDM) >> checkError;
-    DMClone(flow.GetDM(), &fieldDm) >> checkError;
+    DMGetCoordinateDM(flow.GetSubDomain().GetDM(), &coordDM) >> checkError;
+    DMClone(flow.GetSubDomain().GetDM(), &fieldDm) >> checkError;
     DMSetCoordinateDM(fieldDm, coordDM) >> checkError;
     PetscInt dim;
     DMGetDimension(fieldDm, &dim) >> checkError;
@@ -118,8 +118,8 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     DMCreateLocalVector(fieldDm, &sourceVec) >> checkError;
 
     // Before each step, compute the source term over the entire dt
-    auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    flow.RegisterPreStage(chemistryPreStage);
+//    auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+//    flow.RegisterPreStage(chemistryPreStage);//TODO: Add back
 
     // Add the rhs point function for the source
     flow.RegisterRHSFunction(AddChemistrySourceToFlow, this);
@@ -192,7 +192,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage(TS flowTs, ablate::finiteVolume::Flow& flow, PetscReal stagetime) {
+PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage(TS flowTs, ablate::finiteVolume::FiniteVolume& flow, PetscReal stagetime) {
     PetscInt stepNumber;
     TSGetStepNumber(flowTs, &stepNumber);
     PetscReal time;
@@ -208,7 +208,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     IS cellIS;
     DM plex;
     PetscInt depth;
-    ierr = DMConvert(flow.GetDM(), DMPLEX, &plex);
+    ierr = DMConvert(flow.GetSubDomain().GetDM(), DMPLEX, &plex);
     CHKERRQ(ierr);
     ierr = DMPlexGetDepth(plex, &depth);
     CHKERRQ(ierr);
@@ -227,7 +227,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
 
     // get the dim
     PetscInt dim;
-    ierr = DMGetDimension(flow.GetDM(), &dim);
+    ierr = DMGetDimension(flow.GetSubDomain().GetDM(), &dim);
     CHKERRQ(ierr);
 
     // store the current dt
@@ -236,8 +236,8 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     CHKERRQ(ierr);
 
     // get access to the underlying data for the flow
-    PetscInt flowEulerId = flow.GetFieldId("euler").value();
-    PetscInt flowDensityYiId = flow.GetFieldId("densityYi").value();
+    PetscInt flowEulerId = flow.GetSubDomain().GetField("euler").fieldId;
+    PetscInt flowDensityYiId = flow.GetSubDomain().GetField("densityYi").fieldId;
 
     // get the flowSolution from the ts
     Vec globFlowVec;
@@ -267,9 +267,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
         // Get the current state variables for this cell
         const PetscScalar* euler;
         const PetscScalar* densityYi;
-        ierr = DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowEulerId, flowArray, &euler);
+        ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowEulerId, flowArray, &euler);
         CHKERRQ(ierr);
-        ierr = DMPlexPointGlobalFieldRead(flow.GetDM(), cell, flowDensityYiId, flowArray, &densityYi);
+        ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowDensityYiId, flowArray, &densityYi);
         CHKERRQ(ierr);
 
         // If a real cell (not ghost)

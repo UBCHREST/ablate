@@ -1,6 +1,6 @@
 #include <eos/tChem.hpp>
-#include <flow/fieldFunctions/compressibleFlowState.hpp>
-#include <flow/fieldFunctions/massFractions.hpp>
+#include <finiteVolume/fieldFunctions/compressibleFlowState.hpp>
+#include <finiteVolume/fieldFunctions/massFractions.hpp>
 #include <mathFunctions/fieldFunction.hpp>
 #include <mathFunctions/functionFactory.hpp>
 #include <mathFunctions/mathFunction.hpp>
@@ -31,8 +31,8 @@ TEST_P(CompressibleFlowStateTestFixture, ShouldComputeCorrectEuler) {
     const auto& params = GetParam();
     auto eos = params.eosFunction();
 
-    auto massFractionFieldFunction = std::make_shared<ablate::flow::fieldFunctions::MassFractions>(eos, params.massFractions);
-    flow::fieldFunctions::CompressibleFlowState flowState(eos, params.temperature, params.pressure, params.velocity, massFractionFieldFunction);
+    auto massFractionFieldFunction = std::make_shared<ablate::finiteVolume::fieldFunctions::MassFractions>(eos, params.massFractions);
+    finiteVolume::fieldFunctions::CompressibleFlowState flowState(eos, params.temperature, params.pressure, params.velocity, massFractionFieldFunction);
     const auto& location = params.location;
 
     // act
@@ -50,8 +50,8 @@ TEST_P(CompressibleFlowStateTestFixture, ShouldComputeCorrectMassFractions) {
     // arrange
     const auto& params = GetParam();
     auto eos = params.eosFunction();
-    auto massFractionFieldFunction = std::make_shared<ablate::flow::fieldFunctions::MassFractions>(eos, params.massFractions);
-    flow::fieldFunctions::CompressibleFlowState flowState(eos, params.temperature, params.pressure, params.velocity, massFractionFieldFunction);
+    auto massFractionFieldFunction = std::make_shared<ablate::finiteVolume::fieldFunctions::MassFractions>(eos, params.massFractions);
+    finiteVolume::fieldFunctions::CompressibleFlowState flowState(eos, params.temperature, params.pressure, params.velocity, massFractionFieldFunction);
     const auto& location = params.location;
 
     // act

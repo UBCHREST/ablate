@@ -34,7 +34,7 @@ class EulerDiffusion : public Process {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::finiteVolume::FVFlow& flow) override;
+    void Initialize(ablate::finiteVolume::FiniteVolume& flow) override;
 
     /**
      * static support function to compute the stress tensor

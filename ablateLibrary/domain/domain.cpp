@@ -1,6 +1,7 @@
 #include "domain.hpp"
 #include <utilities/mpiError.hpp>
 #include "utilities/petscError.hpp"
+#include "subDomain.hpp"
 
 ablate::domain::Domain::Domain(std::string name) : name(name), auxDM(nullptr), solField(nullptr), auxField(nullptr){}
 
@@ -67,5 +68,17 @@ void ablate::domain::Domain::CompleteSetup(TS ts) {
         DMSetAuxiliaryVec(dm, NULL, 0, auxField) >> checkError;
         PetscObjectSetName((PetscObject)auxField, "auxField") >> checkError;
     }
+}
 
+std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(const std::string& subDomainName){
+    if(subDomains.count(subDomainName) == 0){
+        subDomains[subDomainName] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), nullptr);
+    }
+    return subDomains[subDomainName];
+}
+std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain() {
+    if(subDomains.count("") == 0){
+        subDomains[""] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), nullptr);
+    }
+    return subDomains[""];
 }

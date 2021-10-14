@@ -1,20 +1,9 @@
 target_sources(ablateLibrary
         PUBLIC
-        flow.hpp
-        flow.cpp
+        finiteElement.hpp
+        finiteElement.cpp
         lowMachFlow.hpp
         lowMachFlow.cpp
         incompressibleFlow.hpp
         incompressibleFlow.cpp
-        fvFlow.hpp
-        fvFlow.cpp
-        compressibleFlow.cpp
-        compressibleFlow.hpp
-        reactingCompressibleFlow.hpp
-        reactingCompressibleFlow.cpp
         )
-
-add_subdirectory(boundaryConditions)
-add_subdirectory(fluxCalculator)
-add_subdirectory(processes)
-add_subdirectory(fieldFunctions)

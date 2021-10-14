@@ -4,19 +4,25 @@
 #include <petsc.h>
 #include <map>
 #include <string>
-#include "flow.hpp"
+#include "finiteElement.hpp"
 #include "domain/domain.hpp"
 #include "parameters/parameters.hpp"
+#include "finiteVolume/boundaryConditions/boundaryCondition.hpp"
 
-namespace ablate::flow {
-class LowMachFlow : public Flow {
+namespace ablate::finiteElement {
+class LowMachFlow : public FiniteElement {
+   private:
+    const std::shared_ptr<parameters::Parameters> parameters;
+
    public:
-    LowMachFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
+    LowMachFlow(std::string name, std::shared_ptr<parameters::Parameters> options = {}, std::shared_ptr<parameters::Parameters> parameters = {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
     virtual ~LowMachFlow() = default;
 
-    void CompleteProblemSetup(TS ts) override;
+    void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
+    void CompleteSetup(TS ts) override;
+
     void CompleteFlowInitialization(DM, Vec) override;
 
    private:

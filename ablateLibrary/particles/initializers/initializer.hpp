@@ -2,7 +2,8 @@
 #define ABLATELIBRARY_INITIALIZER_HPP
 #include <map>
 #include <string>
-#include "flow/flow.hpp"
+#include "solver/solver.hpp"
+#include <petsc.h>
 
 namespace ablate::particles::initializers {
 class Initializer {
@@ -13,7 +14,7 @@ class Initializer {
     Initializer() = default;
     virtual ~Initializer() = default;
 
-    virtual void Initialize(ablate::flow::Flow& flow, DM particleDM) = 0;
+    virtual void Initialize(ablate::domain::SubDomain& flow, DM particleDM) = 0;
 };
 }  // namespace ablate::particles::initializers
 

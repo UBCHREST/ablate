@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_CURVEMONITOR_HPP
 
 #include <petsc.h>
-#include <flow/fvFlow.hpp>
+#include "finiteVolume/finiteVolume.hpp"
 #include <vector>
 #include "monitor.hpp"
 namespace ablate::monitors {
@@ -23,7 +23,7 @@ class CurveMonitor : public Monitor {
     PetscInt outputIndex = 0; /*keep track of the local cell number we are outputting*/
     std::vector<PetscInt> indexLocations;
     std::vector<PetscReal> distanceAlongLine;
-    std::shared_ptr<ablate::flow::FVFlow> flow;
+    std::shared_ptr<ablate::finiteVolume::FiniteVolume> flow;
 
     static PetscErrorCode OutputCurve(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx);
 

@@ -1,6 +1,6 @@
 #include <petsc.h>
 #include <cmath>
-#include <flow/boundaryConditions/essentialGhost.hpp>
+#include <finiteVolume//boundaryConditions/essentialGhost.hpp>
 #include <memory>
 #include "domain/boxMesh.hpp"
 #include <monitors/solutionErrorMonitor.hpp>
@@ -8,8 +8,8 @@
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "eos/perfectGas.hpp"
-#include "flow/boundaryConditions/ghost.hpp"
-#include "flow/compressibleFlow.hpp"
+#include "finiteVolume/boundaryConditions/ghost.hpp"
+#include "finiteVolume/compressibleFlow.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
@@ -71,41 +71,41 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             auto exactEulerSolution = std::make_shared<mathFunctions::FieldFunction>("euler", GetParam().eulerExact);
             auto yiExactSolution = std::make_shared<mathFunctions::FieldFunction>("densityYi", GetParam().densityYiExact);
 
-            auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<flow::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, exactEulerSolution),
-                std::make_shared<flow::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, yiExactSolution)};
+            auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
+                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, exactEulerSolution),
+                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, yiExactSolution)};
 
-            auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
-                                                                               mesh,
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
+                                                                                       nullptr /*options*/,
                                                                                eos,
                                                                                parameters,
                                                                                nullptr /*transportModel*/,
                                                                                nullptr,
-                                                                               nullptr /*options*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution} /*initialization*/,
                                                                                boundaryConditions /*boundary conditions*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
 
+            flowObject->SetupDomain(mesh->GetSubDomain());
             // assume one flow field right now
-            flowObject->CompleteProblemSetup(ts);
+            flowObject->CompleteSetup(ts);
 
             // Name the flow field
-            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
+            PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
 
             // Setup the TS
             TSSetFromOptions(ts) >> testErrorChecker;
 
             // advance to the end time
-            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             PetscReal endTime;
             TSGetTime(ts, &endTime) >> testErrorChecker;
 
             // Get the L2 and LInf norms
             std::vector<PetscReal> l2Norm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::L2_NORM)
-                                                .ComputeError(ts, endTime, flowObject->GetSolutionVector());
+                                                .ComputeError(ts, endTime, mesh->GetSolutionVector());
             std::vector<PetscReal> lInfNorm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::LINF)
-                                                  .ComputeError(ts, endTime, flowObject->GetSolutionVector());
+                                                  .ComputeError(ts, endTime, mesh->GetSolutionVector());
 
             // print the results to help with debug
             auto l2String = PrintVector(l2Norm, "%2.3g");

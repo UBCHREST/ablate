@@ -46,7 +46,6 @@ class FiniteVolume : public solver::Solver {
     const std::vector<domain::FieldDescriptor> fieldDescriptors;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
-    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFieldsUpdaters;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
@@ -54,18 +53,18 @@ class FiniteVolume : public solver::Solver {
                  std::vector<domain::FieldDescriptor> fieldDescriptors,
                  std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
+                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
     FiniteVolume(std::string name, std::shared_ptr<parameters::Parameters> options,
                  std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
                  std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
+                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
 
     void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
 
-    void CompleteSetup(solver::TimeStepper& timeStepper) override;
+    void CompleteSetup(TS ts) override;
 
     /**
      * Function passed into PETSc to compute the FV RHS

@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_EULERADVECTION_HPP
 
 #include <petsc.h>
-#include "flow/fluxCalculator/fluxCalculator.hpp"
+#include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "process.hpp"
 
 namespace ablate::finiteVolume::processes {
@@ -38,7 +38,7 @@ class EulerAdvection : public Process {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::finiteVolume::FVFlow& flow) override;
+    void Initialize(ablate::finiteVolume::FiniteVolume& flow) override;
 
     /**
      * This Computes the Flow Euler flow for rho, rhoE, and rhoVel.
@@ -69,7 +69,7 @@ class EulerAdvection : public Process {
     std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
 
     // static function to compute time step for euler advection
-    static double ComputeTimeStep(TS ts, ablate::finiteVolume::Flow& flow, void* ctx);
+    static double ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolume& flow, void* ctx);
 
     /**
      * Private function to decode the euler fields

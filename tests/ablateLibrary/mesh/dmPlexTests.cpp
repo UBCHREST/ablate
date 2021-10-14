@@ -33,7 +33,7 @@ TEST_P(DMPlexTestFixture, ShouldCreateAndViewDMPlex) {
             auto dmPlex = std::make_shared<ablate::domain::DMPlex>("dmPlex", testingParam.parameters);
 
             // assert - print the dmPlex to standard out
-            DMView(dmPlex->GetDomain(), PETSC_VIEWER_STDOUT_WORLD) >> testErrorChecker;
+            DMView(dmPlex->GetDM(), PETSC_VIEWER_STDOUT_WORLD) >> testErrorChecker;
         }
         exit(PetscFinalize());
     EndWithMPI

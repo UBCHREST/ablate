@@ -11,7 +11,7 @@ namespace ablate::domain {
 // forward declare the subDomain
 class SubDomain;
 
-class Domain {
+class Domain : private std::enable_shared_from_this<Domain> {
    protected:
     Domain(std::string name);
     virtual ~Domain();
@@ -49,6 +49,10 @@ class Domain {
     PetscInt GetDimensions() const;
 
     void CompleteSetup(TS ts);
+
+    std::shared_ptr<SubDomain> GetSubDomain();
+
+    std::shared_ptr<SubDomain> GetSubDomain(const std::string& name);
 };
-}  // namespace ablate::mesh
+}  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H

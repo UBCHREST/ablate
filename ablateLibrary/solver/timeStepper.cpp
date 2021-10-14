@@ -5,8 +5,8 @@
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
-ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::map<std::string, std::string> arguments, std::shared_ptr<ablate::io::Serializer> serializerIn)
-    : name(nameIn), serializer(serializerIn) {
+ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments, std::shared_ptr<ablate::io::Serializer> serializerIn)
+    : name(nameIn), domain(domain), serializer(serializerIn){
     // create an instance of the ts
     TSCreate(PETSC_COMM_WORLD, &ts) >> checkError;
 
@@ -38,9 +38,9 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::map<std::strin
 
 ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
 
-void ablate::solver::TimeStepper::Solve(std::shared_ptr<Solvable> solvable) {
+void ablate::solver::TimeStepper::Solve() {
     // Get the solution vector
-    Vec solutionVec = solvable->GetSolutionVector();
+    Vec solutionVec = domain->GetSolutionVector();
 
     // set the ts from options
     TSSetFromOptions(ts) >> checkError;
@@ -79,10 +79,13 @@ double ablate::solver::TimeStepper::GetTime() const {
     return (double)time;
 }
 
-void ablate::solver::TimeStepper::Register(std::weak_ptr<io::Serializable> serializable) {
+void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solver> solver) {
     if (serializer) {
-        serializer->Register(serializable);
+        serializer->Register(solver);
     }
+
+    solvers.push_back(solver);
+    solver->SetupDomain(domain->GetSubDomain(solver->GetName()));
 }
 
 
@@ -92,9 +95,9 @@ PetscErrorCode ablate::solver::TimeStepper::TSPreStepFunction(TS ts) {
     PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
     CHKERRQ(ierr);
 
-    for (const auto& function : timeStepper->preStepFunctions) {
+    for (auto& solver : timeStepper->solvers) {
         try {
-            function(ts);
+            solver->PreStep(ts);
         } catch (std::exception& exp) {
             SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
         }
@@ -109,9 +112,9 @@ PetscErrorCode ablate::solver::TimeStepper::TSPreStageFunction(TS ts, PetscReal 
     PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
     CHKERRQ(ierr);
 
-    for (const auto& function : timeStepper->preStageFunctions) {
+    for (const auto& solver : timeStepper->solvers) {
         try {
-            function(ts, stagetime);
+            solver->PreStage(ts, stagetime);
         } catch (std::exception& exp) {
             SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
         }
@@ -126,9 +129,9 @@ PetscErrorCode ablate::solver::TimeStepper::TSPostStepFunction(TS ts) {
     PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
     CHKERRQ(ierr);
 
-    for (const auto& function : timeStepper->postStepFunctions) {
+    for (const auto& solver : timeStepper->solvers) {
         try {
-            function(ts);
+            solver->PostStep(ts);
         } catch (std::exception& exp) {
             SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
         }
@@ -143,9 +146,9 @@ PetscErrorCode ablate::solver::TimeStepper::TSPostEvaluateFunction(TS ts) {
     PetscErrorCode ierr = TSGetApplicationContext(ts, &timeStepper);
     CHKERRQ(ierr);
 
-    for (const auto& function : timeStepper->postEvaluateFunctions) {
+    for (const auto& solver : timeStepper->solvers) {
         try {
-            function(ts);
+            solver->PostEvaluate(ts);
         } catch (std::exception& exp) {
             SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
         }
@@ -155,4 +158,5 @@ PetscErrorCode ablate::solver::TimeStepper::TSPostEvaluateFunction(TS ts) {
 }
 
 REGISTERDEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
+                ARG(ablate::domain::Domain, "domain", "the mesh used for the simulation"),
                 ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"), OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"));

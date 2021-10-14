@@ -9,6 +9,8 @@
 
 namespace ablate::domain {
 
+const PetscInt NDIMS = -2;
+
 struct FieldDescriptor {
     const std::string fieldName;
     const std::string fieldPrefix;

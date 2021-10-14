@@ -1,5 +1,5 @@
 #include "builder.hpp"
-#include "flow/flow.hpp"
+#include "solver/solver.hpp"
 #include "monitors/monitor.hpp"
 #include "particles/particles.hpp"
 #include "solver/timeStepper.hpp"
@@ -15,8 +15,7 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     auto timeStepper = parser->Get(parser::ArgumentIdentifier<solver::TimeStepper>{.inputName = "timestepper"});
 
     // assume one flow field right now
-    auto flow = parser->GetByName<flow::Flow>("flow");
-    flow->SetupSolve(timeStepper->GetTS());
+    auto flow = parser->GetByName<solver::Solver>("flow");
     timeStepper->Register(flow);
 
     // get the monitors from the flow factory
@@ -27,27 +26,27 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     }
 
     // get any particles that may be in the flow
-    auto particleList = parser->GetByName<std::vector<particles::Particles>>("particles", std::vector<std::shared_ptr<particles::Particles>>());
-    if (!particleList.empty()) {
-        auto particleFactorySequence = parser->GetFactorySequence("particles");
+//    auto particleList = parser->GetByName<std::vector<particles::Particles>>("particles", std::vector<std::shared_ptr<particles::Particles>>());
+//    if (!particleList.empty()) {
+//        auto particleFactorySequence = parser->GetFactorySequence("particles");
+//
+//        // initialize the flow for each
+//        for (std::size_t particleIndex = 0; particleIndex < particleList.size(); particleIndex++) {
+//            auto particle = particleList[particleIndex];
+//            particle->Initialize(flow);
+//
+//            // Get any particle monitors
+//            auto particleMonitors = particleFactorySequence[particleIndex]->GetByName<std::vector<monitors::Monitor>>("monitors", std::vector<std::shared_ptr<monitors::Monitor>>());
+//            for (auto particleMonitor : particleMonitors) {
+//                particleMonitor->Register(particle);
+//                timeStepper->AddMonitor(particleMonitor);
+//            }
+//            // Register with the serializer
+//            timeStepper->Register(particle);
+//        }
+//    }
 
-        // initialize the flow for each
-        for (std::size_t particleIndex = 0; particleIndex < particleList.size(); particleIndex++) {
-            auto particle = particleList[particleIndex];
-            particle->InitializeFlow(flow);
-
-            // Get any particle monitors
-            auto particleMonitors = particleFactorySequence[particleIndex]->GetByName<std::vector<monitors::Monitor>>("monitors", std::vector<std::shared_ptr<monitors::Monitor>>());
-            for (auto particleMonitor : particleMonitors) {
-                particleMonitor->Register(particle);
-                timeStepper->AddMonitor(particleMonitor);
-            }
-            // Register with the serializer
-            timeStepper->Register(particle);
-        }
-    }
-
-    timeStepper->Solve(flow);
+    timeStepper->Solve();
 }
 
 void ablate::Builder::PrintVersion(std::ostream& stream) { stream << ABLATECORE_VERSION; }

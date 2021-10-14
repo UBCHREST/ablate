@@ -1,6 +1,5 @@
 #include "ignitionDelayTemperature.hpp"
-#include "flow/fvFlow.hpp"
-#include "flow/processes/eulerAdvection.hpp"
+#include "finiteVolume/processes/eulerAdvection.hpp"
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
@@ -20,44 +19,31 @@ ablate::monitors::IgnitionDelayTemperature::~IgnitionDelayTemperature() {
 
 void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<Monitorable> monitorableObject) {
     // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate
-    auto flow = std::dynamic_pointer_cast<ablate::flow::FVFlow>(monitorableObject);
+    auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolume>(monitorableObject);
     if (!flow) {
         throw std::invalid_argument("The IgnitionDelay monitor can only be used with ablate::flow::FVFlow");
     }
 
     // check the size
     int size;
-    MPI_Comm_size(PetscObjectComm((PetscObject)flow->GetDM()), &size) >> checkMpiError;
+    MPI_Comm_size(flow->GetSubDomain().GetComm(), &size) >> checkMpiError;
     if (size != 1) {
         throw std::runtime_error("The IgnitionDelay monitor only works with a single mpi rank");
     }
 
-    // determine the component offset
-    auto eulerIdValue = flow->GetFieldId("euler");
-    if (eulerIdValue) {
-        eulerId = eulerIdValue.value();
-    } else {
-        throw std::invalid_argument("The IgnitionDelay monitor expects to find euler in the ablate::flow::FVFlow");
-    }
-
-    auto densityYiIdValue = flow->GetFieldId("densityYi");
-    if (densityYiIdValue) {
-        yiId = densityYiIdValue.value();
-    } else {
-        throw std::invalid_argument("The IgnitionDelay monitor expects to find densityYi in the ablate::flow::FVFlow");
-    }
+//    //
 
     // Convert the location to a vec
     Vec locVec;
-    VecCreateSeqWithArray((PetscObjectComm((PetscObject)flow->GetDM())), location.size(), location.size(), &location[0], &locVec) >> checkError;
+    VecCreateSeqWithArray(flow->GetSubDomain().GetComm(), location.size(), location.size(), &location[0], &locVec) >> checkError;
 
     // Get all points still in this mesh
     PetscSF cellSF = NULL;
-    DMLocatePoints(flow->GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
+    DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
     const PetscSFNode* cells;
     PetscInt numberFound;
     PetscMPIInt rank;
-    MPI_Comm_rank((PetscObjectComm((PetscObject)flow->GetDM())), &rank) >> checkMpiError;
+    MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> checkMpiError;
 
     PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError;
     if (numberFound == 1) {
@@ -73,9 +59,9 @@ void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<Monito
     VecDestroy(&locVec) >> checkError;
 
     // init the log(s)
-    log->Initialize(PetscObjectComm((PetscObject)flow->GetDM()));
+    log->Initialize(flow->GetSubDomain().GetComm());
     if (historyLog) {
-        historyLog->Initialize(PetscObjectComm((PetscObject)flow->GetDM()));
+        historyLog->Initialize(flow->GetSubDomain().GetComm());
     }
 }
 PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
@@ -109,11 +95,11 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     // compute the temperature
     // using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
     double T;
-    const double density = eulerValues[ablate::flow::processes::EulerAdvection::RHO];
+    const double density = eulerValues[ablate::finiteVolume::processes::EulerAdvection::RHO];
     monitor->eos->GetComputeTemperatureFunction()(dim,
                                                   density,
-                                                  eulerValues[ablate::flow::processes::EulerAdvection::RHOE] / density,
-                                                  eulerValues + ablate::flow::processes::EulerAdvection::RHOU,
+                                                  eulerValues[ablate::finiteVolume::processes::EulerAdvection::RHOE] / density,
+                                                  eulerValues + ablate::finiteVolume::processes::EulerAdvection::RHOU,
                                                   densityYiValues,
                                                   &T,
                                                   monitor->eos->GetComputeTemperatureContext());

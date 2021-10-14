@@ -36,7 +36,7 @@ class Inertial : public Particles {
              std::shared_ptr<parameters::Parameters> options = {});
     ~Inertial() override;
 
-    void InitializeFlow(std::shared_ptr<flow::Flow> flow) override;
+    void Initialize(std::shared_ptr<domain::SubDomain> flow) override;
 
     inline static const char FluidVelocity[] = "FluidVelocity";
 };

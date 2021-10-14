@@ -3,44 +3,38 @@
 #include "incompressibleFlow.h"
 #include "utilities/petscError.hpp"
 
-ablate::flow::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<domain::Domain> mesh, std::shared_ptr<parameters::Parameters> parameters,
-                                                     std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
-                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : Flow(name, mesh, parameters, options, initialization, boundaryConditions, auxiliaryFields, exactSolutions) {
-    // Register each field, this order must match the order in LowMachFlowFields enum
-    RegisterField({.fieldName = "velocity", .fieldPrefix = "vel_", .components = dim, .fieldType = FieldType::FE});
-    RegisterField({.fieldName = "pressure", .fieldPrefix = "pres_", .components = 1, .fieldType = FieldType::FE});
-    RegisterField({.fieldName = "temperature", .fieldPrefix = "temp_", .components = 1, .fieldType = FieldType::FE});
+ablate::finiteElement::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<parameters::Parameters> parameters,
+                                                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
+                                                              std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
+                                                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
+    : FiniteElement(name, options,
+                    {
+                        {.fieldName = "velocity", .fieldPrefix = "vel_", .components = domain::NDIMS},
+                        {.fieldName = "pressure", .fieldPrefix = "pres_", .components = 1},
+                        {.fieldName = "temperature", .fieldPrefix = "temp_", .components = 1},
+                        {.fieldName = "momentum_source", .fieldPrefix = "momentum_source_", .components = auxiliaryFields.empty() ? 0 : domain::NDIMS, .fieldLocation = domain::FieldLocation::AUX},
+                        {.fieldName = "mass_source", .fieldPrefix = "mass_source_", .components = auxiliaryFields.empty() ? 0 : 1, .fieldLocation = domain::FieldLocation::AUX},
+                        {.fieldName = "energy_source", .fieldPrefix = "energy_source", .components = auxiliaryFields.empty() ? 0 : 1, .fieldLocation = domain::FieldLocation::AUX},
+                    },
+                    initialization, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {
 
-    FinalizeRegisterFields();
-
-    DM cdm = dm->GetDomain();
-    while (cdm) {
-        DMCopyDisc(dm->GetDomain(), cdm) >> checkError;
-        DMGetCoarseDM(cdm, &cdm) >> checkError;
-    }
+}
+void ablate::finiteElement::IncompressibleFlow::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+    FiniteElement::SetupDomain(subDomain);
 
     {
         PetscObject pressure;
         MatNullSpace nullspacePres;
 
-        DMGetField(dm->GetDomain(), PRES, NULL, &pressure) >> checkError;
+        DMGetField(subDomain->GetDM(), PRES, NULL, &pressure) >> checkError;
         MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
         PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres) >> checkError;
         MatNullSpaceDestroy(&nullspacePres) >> checkError;
     }
 
-    // Add in any aux fields the
-    if (!auxiliaryFields.empty()) {
-        RegisterField({.solutionField = false, .fieldName = "momentum_source", .fieldPrefix = "momentum_source_", .components = dim, .fieldType = FieldType::FE});
-        RegisterField({.solutionField = false, .fieldName = "mass_source", .fieldPrefix = "mass_source_", .components = 1, .fieldType = FieldType::FE});
-        RegisterField({.solutionField = false, .fieldName = "energy_source", .fieldPrefix = "energy_source_", .components = 1, .fieldType = FieldType::FE});
-    }
-
     PetscDS prob;
-    DMGetDS(dm->GetDomain(), &prob) >> checkError;
+    DMGetDS(subDomain->GetDM(), &prob) >> checkError;
 
     // V, W, Q Test Function
     PetscDSSetResidual(prob, VTEST, IncompressibleFlow_vIntegrandTestFunction, IncompressibleFlow_vIntegrandTestGradientFunction) >> checkError;
@@ -99,7 +93,7 @@ static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt n
 }
 
 /* Make the discrete pressure discretely divergence free */
-static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::flow::Flow &flow) {
+static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteElement::IncompressibleFlow &flow) {
     Vec u;
     PetscErrorCode ierr;
     DM dm;
@@ -119,16 +113,16 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::flow::F
     PetscFunctionReturn(0);
 }
 
-void ablate::flow::IncompressibleFlow::CompleteProblemSetup(TS ts) {
-    ablate::flow::Flow::CompleteProblemSetup(ts);
+void ablate::finiteElement::IncompressibleFlow::CompleteSetup(TS ts) {
+    ablate::finiteElement::FiniteElement::CompleteSetup(ts);
 
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
     DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace) >> checkError;
-    preStepFunctions.push_back(removeDiscretePressureNullspaceOnTs);
+    RegisterPreStep([&](TS ts, Solver&){removeDiscretePressureNullspaceOnTs(ts, *this);});
 }
 
-void ablate::flow::IncompressibleFlow::CompleteFlowInitialization(DM dm, Vec u) {
+void ablate::finiteElement::IncompressibleFlow::CompleteFlowInitialization(DM dm, Vec u) {
     MatNullSpace nullsp;
 
     createPressureNullSpace(dm, PRES, PRES, &nullsp) >> checkError;
@@ -137,9 +131,11 @@ void ablate::flow::IncompressibleFlow::CompleteFlowInitialization(DM dm, Vec u) 
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::Flow, ablate::flow::IncompressibleFlow, "incompressible FE flow", ARG(std::string, "name", "the name of the flow field"), ARG(ablate::domain::Domain, "mesh", "the mesh"),
-         ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
+REGISTER(ablate::solver::Solver, ablate::finiteElement::IncompressibleFlow, "incompressible FE flow",
+         ARG(std::string, "name", "the name of the flow field"),
+         OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
+         ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
          ARG(std::vector<mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),
-         ARG(std::vector<flow::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+         ARG(std::vector<finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          OPT(std::vector<mathFunctions::FieldFunction>, "auxFields", "enables and sets the update functions for the auxFields"),
          OPT(std::vector<mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

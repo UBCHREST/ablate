@@ -21,9 +21,9 @@ ablate::particles::Inertial::Inertial(std::string name, int ndims, std::shared_p
     }
 }
 ablate::particles::Inertial::~Inertial() {}
-void ablate::particles::Inertial::InitializeFlow(std::shared_ptr<flow::Flow> flow) {
+void ablate::particles::Inertial::Initialize(std::shared_ptr<domain::SubDomain> flow) {
     // Call the base to initialize the flow
-    Particles::InitializeFlow(flow);
+    Particles::Initialize(flow);
 
     TSSetRHSFunction(particleTs, NULL, RHSFunction, this) >> checkError;
 
@@ -31,7 +31,7 @@ void ablate::particles::Inertial::InitializeFlow(std::shared_ptr<flow::Flow> flo
     TSSetTime(particleTs, timeInitial) >> checkError;
 
     // link the solution with the flowTS
-    flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow &) { this->AdvectParticles(flowTs); });
+//    flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow &) { this->AdvectParticles(flowTs); });//TODO: putback
 }
 
 PetscErrorCode ablate::particles::Inertial::UnpackKinematics(TS ts, Vec kinematics, Vec position, Vec velocity) {

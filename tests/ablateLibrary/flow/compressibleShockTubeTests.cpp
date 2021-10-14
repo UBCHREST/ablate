@@ -2,16 +2,16 @@ static char help[] = "Compressible ShockTube 1D Tests";
 
 #include <petsc.h>
 #include <cmath>
-#include "flow/fluxCalculator/ausm.hpp"
-#include "flow/processes/eulerAdvection.hpp"
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "domain/dmWrapper.hpp"
 #include "eos/perfectGas.hpp"
-#include "flow/boundaryConditions/ghost.hpp"
-#include "flow/compressibleFlow.hpp"
+#include "finiteVolume/boundaryConditions/ghost.hpp"
+#include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/fluxCalculator/ausm.hpp"
+#include "finiteVolume/processes/eulerAdvection.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
@@ -32,7 +32,7 @@ typedef struct {
 struct CompressibleShockTubeParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     InitialConditions initialConditions;
-    std::shared_ptr<flow::fluxCalculator::FluxCalculator> fluxCalculator;
+    std::shared_ptr<finiteVolume::fluxCalculator::FluxCalculator> fluxCalculator;
     PetscInt nx;
     PetscReal maxTime;
     PetscReal cfl;
@@ -48,22 +48,22 @@ static PetscErrorCode SetInitialCondition(PetscInt dim, PetscReal time, const Pe
     InitialConditions *initialConditions = (InitialConditions *)ctx;
 
     if (x[0] < initialConditions->length / 2.0) {
-        u[ablate::flow::processes::EulerAdvection::RHO] = initialConditions->rhoL;
-        u[ablate::flow::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
-        u[ablate::flow::processes::EulerAdvection::RHOU + 1] = 0.0;
+        u[ablate::finiteVolume::processes::EulerAdvection::RHO] = initialConditions->rhoL;
+        u[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
+        u[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
-        u[ablate::flow::processes::EulerAdvection::RHOE] = et * initialConditions->rhoL;
+        u[ablate::finiteVolume::processes::EulerAdvection::RHOE] = et * initialConditions->rhoL;
 
     } else {
-        u[ablate::flow::processes::EulerAdvection::RHO] = initialConditions->rhoR;
-        u[ablate::flow::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
-        u[ablate::flow::processes::EulerAdvection::RHOU + 1] = 0.0;
+        u[ablate::finiteVolume::processes::EulerAdvection::RHO] = initialConditions->rhoR;
+        u[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
+        u[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
-        u[ablate::flow::processes::EulerAdvection::RHOE] = et * initialConditions->rhoR;
+        u[ablate::finiteVolume::processes::EulerAdvection::RHOE] = et * initialConditions->rhoR;
     }
 
     return 0;
@@ -96,11 +96,11 @@ static PetscErrorCode Extract1DPrimitives(DM dm, Vec v, std::map<std::string, st
         CHKERRQ(ierr);
         if (xc) {  // must be real cell and not ghost
             results["x"].push_back(cg->centroid[0]);
-            PetscReal rho = xc[ablate::flow::processes::EulerAdvection::RHO];
+            PetscReal rho = xc[ablate::finiteVolume::processes::EulerAdvection::RHO];
             results["rho"].push_back(rho);
-            PetscReal u = xc[ablate::flow::processes::EulerAdvection::RHOU] / rho;
+            PetscReal u = xc[ablate::finiteVolume::processes::EulerAdvection::RHOU] / rho;
             results["u"].push_back(u);
-            PetscReal e = (xc[ablate::flow::processes::EulerAdvection::RHOE] / rho) - 0.5 * u * u;
+            PetscReal e = (xc[ablate::finiteVolume::processes::EulerAdvection::RHOE] / rho) - 0.5 * u * u;
             results["e"].push_back(e);
         }
     }
@@ -116,23 +116,23 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     InitialConditions *initialConditions = (InitialConditions *)ctx;
 
     if (c[0] < initialConditions->length / 2.0) {
-        a_xG[ablate::flow::processes::EulerAdvection::RHO] = initialConditions->rhoL;
+        a_xG[ablate::finiteVolume::processes::EulerAdvection::RHO] = initialConditions->rhoL;
 
-        a_xG[ablate::flow::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
-        a_xG[ablate::flow::processes::EulerAdvection::RHOU + 1] = 0.0;
+        a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
+        a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
-        a_xG[ablate::flow::processes::EulerAdvection::RHOE] = et * initialConditions->rhoL;
+        a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOE] = et * initialConditions->rhoL;
     } else {
-        a_xG[ablate::flow::processes::EulerAdvection::RHO] = initialConditions->rhoR;
+        a_xG[ablate::finiteVolume::processes::EulerAdvection::RHO] = initialConditions->rhoR;
 
-        a_xG[ablate::flow::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
-        a_xG[ablate::flow::processes::EulerAdvection::RHOU + 1] = 0.0;
+        a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
+        a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
-        a_xG[ablate::flow::processes::EulerAdvection::RHOE] = et * initialConditions->rhoR;
+        a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOE] = et * initialConditions->rhoR;
     }
     return 0;
     PetscFunctionReturn(0);
@@ -171,34 +171,36 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
 
             auto initialCondition = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
 
-            auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "wall left", 4, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "right left", 2, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "mirrorWall", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
+            auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
+                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "wall left", 4, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
+                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "right left", 2, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
+                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "mirrorWall", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
 
-            auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
-                                                                               std::make_shared<ablate::domain::DMWrapper>(dmCreate),
-                                                                               eos,
-                                                                               parameters,
-                                                                               nullptr /*transportModel*/,
-                                                                               testingParam.fluxCalculator,
-                                                                               nullptr /*options*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition} /*initialization*/,
-                                                                               boundaryConditions /*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{} /*exactSolution*/);
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
+                                                                                       nullptr /*options*/,
+                                                                                       eos,
+                                                                                       parameters,
+                                                                                       nullptr /*transportModel*/,
+                                                                                       testingParam.fluxCalculator,
+                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition} /*initialization*/,
+                                                                                       boundaryConditions /*boundary conditions*/,
+                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{} /*exactSolution*/);
+
+            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
+            flowObject->SetupDomain(mesh->GetSubDomain());
 
             // Complete the problem setup
-            flowObject->CompleteProblemSetup(ts);
+            flowObject->CompleteSetup(ts);
 
             // Setup the TS
             TSSetFromOptions(ts) >> testErrorChecker;
             TSSetMaxTime(ts, testingParam.maxTime) >> testErrorChecker;
 
-            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // extract the results
             std::map<std::string, std::vector<PetscReal>> results;
-            Extract1DPrimitives(flowObject->GetDM(), flowObject->GetSolutionVector(), results) >> testErrorChecker;
+            Extract1DPrimitives(mesh->GetDM(), mesh->GetSolutionVector(), results) >> testErrorChecker;
 
             // Compare the expected values
             for (const auto &expectedResults : testingParam.expectedValues) {
@@ -225,7 +227,7 @@ INSTANTIATE_TEST_SUITE_P(
         (CompressibleShockTubeParameters){
             .mpiTestParameter = {.testName = "ausm case 1 sod problem", .nproc = 1, .arguments = ""},
             .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = 0.0, .pL = 1.0, .rhoR = 0.125, .uR = 0.0, .pR = .1},
-            .fluxCalculator = std::make_shared<flow::fluxCalculator::Ausm>(),
+            .fluxCalculator = std::make_shared<finiteVolume::fluxCalculator::Ausm>(),
             .nx = 100,
             .maxTime = 0.25,
             .cfl = 0.5,
@@ -257,7 +259,7 @@ INSTANTIATE_TEST_SUITE_P(
         (CompressibleShockTubeParameters){
             .mpiTestParameter = {.testName = "case 2 expansion left and expansion right", .nproc = 1, .arguments = ""},
             .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 1.0, .uL = -2.0, .pL = 0.4, .rhoR = 1.0, .uR = 2.0, .pR = 0.4},
-            .fluxCalculator = std::make_shared<flow::fluxCalculator::Ausm>(),
+            .fluxCalculator = std::make_shared<finiteVolume::fluxCalculator::Ausm>(),
             .nx = 100,
             .maxTime = 0.15,
             .cfl = 0.5,
@@ -290,7 +292,7 @@ INSTANTIATE_TEST_SUITE_P(
         (CompressibleShockTubeParameters){
             .mpiTestParameter = {.testName = "case 5 shock collision shock left and shock right", .nproc = 1, .arguments = ""},
             .initialConditions = {.gamma = 1.4, .length = 1.0, .rhoL = 5.99924, .uL = 19.5975, .pL = 460.894, .rhoR = 5.99242, .uR = -6.19633, .pR = 46.0950},
-            .fluxCalculator = std::make_shared<flow::fluxCalculator::Ausm>(),
+            .fluxCalculator = std::make_shared<finiteVolume::fluxCalculator::Ausm>(),
             .nx = 100,
             .maxTime = 0.035,
             .cfl = 0.5,

@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_SUBDOMAIN_HPP
 #define ABLATELIBRARY_SUBDOMAIN_HPP
 
+#include <petsc.h>
 #include <map>
 #include <memory>
 #include <string>
@@ -24,6 +25,8 @@ class SubDomain {
     std::string name;
 
    public:
+    SubDomain(std::weak_ptr<Domain> domain, DMLabel label);
+
     Field RegisterField(const FieldDescriptor& fieldDescriptor, PetscObject field);
 
     inline const Field& GetField(const std::string& fieldName) const {
@@ -44,6 +47,9 @@ class SubDomain {
     Vec GetAuxVector();
 
     PetscInt GetDimensions() const;
+    inline PetscInt GetNumberFields() const { return fields.size(); }
+
+    inline MPI_Comm GetComm() { return PetscObjectComm((PetscObject)GetDM()); }
 };
 
 }  // namespace ablate::domain

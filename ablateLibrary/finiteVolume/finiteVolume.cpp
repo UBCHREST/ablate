@@ -6,20 +6,18 @@
 
 ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string name, std::shared_ptr<parameters::Parameters> options, std::vector<ablate::domain::FieldDescriptor> fieldDescriptors,
                                                  std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
+                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : Solver(name, options),
       processes(processes),
       fieldDescriptors(fieldDescriptors),
       initialization(initialization),
       boundaryConditions(boundaryConditions),
-      auxiliaryFieldsUpdaters(auxiliaryFields),
       exactSolutions(exactSolution) {}
 
 ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string name, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
                                                  std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
+                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : ablate::finiteVolume::FiniteVolume::FiniteVolume(
           name, options,
           [](auto fieldDescriptorsPtrs) {
@@ -29,7 +27,7 @@ ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string name, std::shared_p
               }
               return vec;
           }(fieldDescriptors),
-          processes, initialization, boundaryConditions, auxiliaryFields, exactSolution) {}
+          processes, initialization, boundaryConditions, exactSolution) {}
 
 void ablate::finiteVolume::FiniteVolume::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     Solver::SetupDomain(subDomain);
@@ -75,7 +73,7 @@ void ablate::finiteVolume::FiniteVolume::SetupDomain(std::shared_ptr<ablate::dom
     PetscDSSetFromOptions(prob) >> checkError;
 }
 
-void ablate::finiteVolume::FiniteVolume::CompleteSetup(solver::TimeStepper& timeStepper) {
+void ablate::finiteVolume::FiniteVolume::CompleteSetup(TS ts) {
     // Apply any boundary conditions
     PetscDS prob;
     DMGetDS(subDomain->GetDM(), &prob) >> checkError;
@@ -154,11 +152,6 @@ void ablate::finiteVolume::FiniteVolume::CompleteSetup(solver::TimeStepper& time
                 }
             }
         }
-    }
-
-    if (!timeStepFunctions.empty()) {
-        timeStepper.RegisterPreStep([&](TS ts){
-            ComputeTimeStep(ts, *this);};
     }
 }
 
@@ -350,5 +343,4 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolume, "finite vol
          ARG(std::vector<ablate::finiteVolume::processes::Process>, "processes", "the processes used to describe the flow"),
          OPT(std::vector<mathFunctions::FieldFunction>, "initialization", "the flow field initialization"),
          OPT(std::vector<finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         OPT(std::vector<mathFunctions::FieldFunction>, "auxiliaryFields", "the aux flow field initialization"),
          OPT(std::vector<mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

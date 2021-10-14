@@ -24,7 +24,7 @@ ablate::finiteVolume::processes::SpeciesDiffusion::SpeciesDiffusion(std::shared_
 }
 ablate::finiteVolume::processes::SpeciesDiffusion::~SpeciesDiffusion() { PetscFree(speciesDiffusionData); }
 
-void ablate::finiteVolume::processes::SpeciesDiffusion::Initialize(ablate::finiteVolume::FVFlow &flow) {
+void ablate::finiteVolume::processes::SpeciesDiffusion::Initialize(ablate::finiteVolume::FiniteVolume &flow) {
     // if there are any coefficients for diffusion, compute diffusion
     if (speciesDiffusionData->numberSpecies > 0) {
         if (speciesDiffusionData->diffFunction) {

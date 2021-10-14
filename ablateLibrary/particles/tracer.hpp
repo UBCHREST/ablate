@@ -9,7 +9,7 @@ class Tracer : public Particles {
            std::shared_ptr<parameters::Parameters> options = {});
     ~Tracer() override;
 
-    void InitializeFlow(std::shared_ptr<flow::Flow> flow) override;
+    void Initialize(std::shared_ptr<domain::SubDomain> flow) override;
 
    private:
     static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void* ctx);

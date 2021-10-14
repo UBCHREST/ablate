@@ -1,17 +1,17 @@
 #include <petsc.h>
 #include <cmath>
-#include <flow/processes/eulerDiffusion.hpp>
-#include <memory>
 #include <domain/dmWrapper.hpp>
+#include <finiteVolume/processes/eulerDiffusion.hpp>
+#include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
-#include "flow/boundaryConditions/ghost.hpp"
-#include "flow/compressibleFlow.hpp"
-#include "flow/fluxCalculator/offFlux.hpp"
-#include "flow/processes/eulerAdvection.hpp"
+#include "finiteVolume/boundaryConditions/ghost.hpp"
+#include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/fluxCalculator/offFlux.hpp"
+#include "finiteVolume/processes/eulerAdvection.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
@@ -75,10 +75,10 @@ static PetscErrorCode EulerExact(PetscInt dim, PetscReal time, const PetscReal x
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    node[ablate::flow::processes::EulerAdvection::RHO] = parameters->rho;
-    node[ablate::flow::processes::EulerAdvection::RHOE] = parameters->rho * eT;
-    node[ablate::flow::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
-    node[ablate::flow::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
+    node[ablate::finiteVolume::processes::EulerAdvection::RHO] = parameters->rho;
+    node[ablate::finiteVolume::processes::EulerAdvection::RHOE] = parameters->rho * eT;
+    node[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
+    node[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -94,10 +94,10 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    a_xG[ablate::flow::processes::EulerAdvection::RHO] = parameters->rho;
-    a_xG[ablate::flow::processes::EulerAdvection::RHOE] = parameters->rho * eT;
-    a_xG[ablate::flow::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
-    a_xG[ablate::flow::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
+    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHO] = parameters->rho;
+    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOE] = parameters->rho * eT;
+    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
+    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -107,17 +107,17 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
     InputParameters *constants = (InputParameters *)ctx;
 
     // Offset the calc assuming the cells are square
-    for (PetscInt f = 0; f < ablate::flow::processes::EulerAdvection::RHOU + constants->dim; f++) {
+    for (PetscInt f = 0; f < ablate::finiteVolume::processes::EulerAdvection::RHOU + constants->dim; f++) {
         a_xG[f] = a_xI[f];
     }
     PetscFunctionReturn(0);
 }
 
-static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::flow::CompressibleFlow> flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf,
+static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::finiteVolume::CompressibleFlow> flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf,
                               InputParameters *parameters, PetscTestErrorChecker &errorChecker) {
     // Compute the error
     PetscDS ds;
-    DMGetDS(flowData->GetDM(), &ds) >> errorChecker;
+    DMGetDS(flowData->GetSubDomain().GetDM(), &ds) >> errorChecker;
 
     // Get the current time
     PetscReal time;
@@ -130,7 +130,7 @@ static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::flow::CompressibleF
 
     // get the fvm and the number of fields
     PetscFV fvm;
-    DMGetField(flowData->GetDM(), 0, NULL, (PetscObject *)&fvm) >> errorChecker;
+    DMGetField(flowData->GetSubDomain().GetDM(), 0, NULL, (PetscObject *)&fvm) >> errorChecker;
     PetscInt components;
     PetscFVGetNumComponents(fvm, &components) >> errorChecker;
 
@@ -140,12 +140,12 @@ static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::flow::CompressibleF
 
     // Create an vector to hold the exact solution
     Vec exactVec;
-    VecDuplicate(flowData->GetSolutionVector(), &exactVec) >> errorChecker;
-    DMProjectFunction(flowData->GetDM(), time, exactFuncs, exactCtxs, INSERT_ALL_VALUES, exactVec) >> errorChecker;
+    VecDuplicate(flowData->GetSubDomain().GetSolutionVector(), &exactVec) >> errorChecker;
+    DMProjectFunction(flowData->GetSubDomain().GetDM(), time, exactFuncs, exactCtxs, INSERT_ALL_VALUES, exactVec) >> errorChecker;
     PetscObjectSetName((PetscObject)exactVec, "exact") >> errorChecker;
 
     // Compute the error
-    VecAXPY(exactVec, -1.0, flowData->GetSolutionVector()) >> errorChecker;
+    VecAXPY(exactVec, -1.0, flowData->GetSubDomain().GetSolutionVector()) >> errorChecker;
     VecSetBlockSize(exactVec, components);
     PetscInt size;
     VecGetSize(exactVec, &size) >> errorChecker;
@@ -211,32 +211,34 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &parameters));
 
-            auto boundaryConditions = std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "wall left/right", std::vector<int>{2, 4}, PhysicsBoundary_Euler, &parameters),
-                std::make_shared<flow::boundaryConditions::Ghost>("euler", "top/bottom", std::vector<int>{1, 3}, PhysicsBoundary_Mirror, &parameters),
+            auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
+                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "wall left/right", std::vector<int>{2, 4}, PhysicsBoundary_Euler, &parameters),
+                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "top/bottom", std::vector<int>{1, 3}, PhysicsBoundary_Mirror, &parameters),
             };
 
-            auto flowObject = std::make_shared<ablate::flow::CompressibleFlow>("testFlow",
-                                                                               std::make_shared<ablate::domain::DMWrapper>(dmCreate),
-                                                                               eos,
-                                                                               flowParameters,
-                                                                               transportModel,
-                                                                               std::make_shared<flow::fluxCalculator::OffFlux>(),
-                                                                               nullptr /*options*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
-                                                                               boundaryConditions /*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
+            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
 
-            flowObject->CompleteProblemSetup(ts);
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
+                                                                                       nullptr /*options*/,
+                                                                                       eos,
+                                                                                       flowParameters,
+                                                                                       transportModel,
+                                                                                       std::make_shared<finiteVolume::fluxCalculator::OffFlux>(),
+                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
+                                                                                       boundaryConditions /*boundary conditions*/,
+                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
+
+            flowObject->SetupDomain(mesh->GetSubDomain());
+            flowObject->CompleteSetup(ts);
 
             // Name the flow field
-            PetscObjectSetName(((PetscObject)flowObject->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
+            PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
 
             // Setup the TS
             TSSetFromOptions(ts) >> testErrorChecker;
 
             // advance to the end time
-            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // Get the L2 and LInf norms
             std::vector<PetscReal> l2Norm;
@@ -330,7 +332,7 @@ TEST_P(StressTensorTestFixture, ShouldComputeTheCorrectStressTensor) {
     const auto &params = GetParam();
 
     // act
-    PetscErrorCode ierr = ablate::flow::processes::EulerDiffusion::CompressibleFlowComputeStressTensor(params.dim, params.mu, &params.gradVelL[0], &params.gradVelR[0], computedTau);
+    PetscErrorCode ierr = ablate::finiteVolume::processes::EulerDiffusion::CompressibleFlowComputeStressTensor(params.dim, params.mu, &params.gradVelL[0], &params.gradVelR[0], computedTau);
 
     // assert
     ASSERT_EQ(0, ierr);

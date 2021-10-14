@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_PARTICLES_HPP
 
 #include <memory>
-#include "flow/flow.hpp"
+#include "solver/solver.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "mathFunctions/mathFunction.hpp"
 #include "particles/initializers/initializer.hpp"
@@ -105,7 +105,7 @@ class Particles : public io::Serializable, public monitors::Monitorable {
     PetscReal GetFinalTime() const { return timeFinal; }
     TS GetTS() const { return particleTs; }
 
-    virtual void InitializeFlow(std::shared_ptr<flow::Flow> flow);
+    virtual void Initialize(std::shared_ptr<domain::SubDomain> flow);
 
     void ProjectFunction(const std::string& field, ablate::mathFunctions::MathFunction& mathFunction);
 

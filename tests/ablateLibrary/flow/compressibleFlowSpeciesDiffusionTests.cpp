@@ -3,9 +3,9 @@
 #include <convergenceTester.hpp>
 #include <eos/mockEOS.hpp>
 #include <eos/transport/constant.hpp>
-#include <flow/boundaryConditions/essentialGhost.hpp>
-#include <flow/processes/eulerDiffusion.hpp>
-#include <flow/processes/speciesDiffusion.hpp>
+#include <finiteVolume/boundaryConditions/essentialGhost.hpp>
+#include <finiteVolume/processes/eulerDiffusion.hpp>
+#include <finiteVolume/processes/speciesDiffusion.hpp>
 #include <map>
 #include <mathFunctions/functionFactory.hpp>
 #include <memory>
@@ -16,7 +16,7 @@
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "flow/boundaryConditions/ghost.hpp"
+#include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
 
@@ -117,23 +117,22 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             // setup any global arguments
             ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"automaticTimeStepCalculator", "off"}, {"petsclimiter_type", "none"}});
 
-            // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper("timeStepper", {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
-
             PetscInt initialNx = GetParam().initialNx;
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
-                                                                std::vector<int>{(int)initialNx, (int)initialNx},
-                                                                std::vector<double>{0.0, 0.0},
-                                                                std::vector<double>{parameters.L, parameters.L},
-                                                                std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
-                                                                false /*simplex*/,
-                                                                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-                                                                    {"dm_refine", std::to_string(l)},
-                                                                    {"dm_distribute", ""},
-                                                                }));
+                                                                  std::vector<int>{(int)initialNx, (int)initialNx},
+                                                                  std::vector<double>{0.0, 0.0},
+                                                                  std::vector<double>{parameters.L, parameters.L},
+                                                                  std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
+                                                                  false /*simplex*/,
+                                                                  std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                                                                      {"dm_refine", std::to_string(l)},
+                                                                      {"dm_distribute", ""},
+                                                                  }));
+
+            // create a time stepper
+            auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
 
             // setup a flow parameters
-            auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{});
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(0.0, 0.0, parameters.diff);
             auto petscFlowOptions = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"yipetscfv_type", "leastsquares"}});
 
@@ -157,45 +156,41 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             auto yiExactField = std::make_shared<mathFunctions::FieldFunction>("densityYi", yiExact);
 
             auto boundaryConditions =
-                std::vector<std::shared_ptr<flow::boundaryConditions::BoundaryCondition>>{std::make_shared<flow::boundaryConditions::EssentialGhost>("walls", std::vector<int>{4, 2}, eulerExactField),
-                                                                                          std::make_shared<flow::boundaryConditions::EssentialGhost>("left", std::vector<int>{4}, yiExactField),
-                                                                                          std::make_shared<flow::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, yiExactField)};
+                std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{4, 2}, eulerExactField),
+                                                                                          std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("left", std::vector<int>{4}, yiExactField),
+                                                                                          std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, yiExactField)};
 
-            auto flowProcesses = std::vector<std::shared_ptr<ablate::flow::processes::FlowProcess>>{
-                std::make_shared<ablate::flow::processes::SpeciesDiffusion>(eos, transportModel),
+            auto flowProcesses = std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{
+                std::make_shared<ablate::finiteVolume::processes::SpeciesDiffusion>(eos, transportModel),
             };
 
-            auto flowObject = std::make_shared<ablate::flow::FVFlow>(
+            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolume>(
                 "testFlow",
-                mesh,
-                flowParameters,
-                std::vector<ablate::flow::FieldDescriptor>{
-                    {.fieldName = "euler", .fieldPrefix = "euler", .components = 2 + mesh->GetDimensions(), .fieldType = ablate::flow::FieldType::FV},
+                petscFlowOptions /*options*/,
+                std::vector<ablate::domain::FieldDescriptor>{
+                    {.fieldName = "euler", .fieldPrefix = "euler", .components = 2 + mesh->GetDimensions()},
                     {
                         .fieldName = "densityYi",
                         .fieldPrefix = "densityYi",
                         .components = (PetscInt)eos->GetSpecies().size(),
-                        .fieldType = ablate::flow::FieldType::FV,
                         .componentNames = eos->GetSpecies(),
                     },
-                    {.solutionField = false, .fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eos->GetSpecies().size(), .fieldType = ablate::flow::FieldType::FV}},
+                    {.fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eos->GetSpecies().size(), .fieldLocation = ablate::domain::FieldLocation::SOL}},
                 flowProcesses,
-                petscFlowOptions /*options*/,
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
                 boundaryConditions /*boundary conditions*/,
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
 
-            flowObject->SetupSolve(timeStepper.GetTS());
+            timeStepper.Register(flowObject);
 
             // run
-            timeStepper.Solve(flowObject);
+            timeStepper.Solve();
 
             // Get the L2 and LInf norms
             std::vector<PetscReal> l2Norm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::L2_NORM)
-                                                .ComputeError(timeStepper.GetTS(), timeStepper.GetTime(), flowObject->GetSolutionVector());
+                                                .ComputeError(timeStepper.GetTS(), timeStepper.GetTime(), mesh->GetSolutionVector());
             std::vector<PetscReal> lInfNorm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::LINF)
-                                                  .ComputeError(timeStepper.GetTS(), timeStepper.GetTime(), flowObject->GetSolutionVector());
+                                                  .ComputeError(timeStepper.GetTS(), timeStepper.GetTime(), mesh->GetSolutionVector());
 
             // print the results to help with debug
             const PetscReal h = parameters.L / (initialNx * PetscPowInt(2.0, l));

@@ -34,7 +34,7 @@ class SpeciesDiffusion : public Process {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::finiteVolume::FVFlow& flow) override;
+    void Initialize(ablate::finiteVolume::FiniteVolume& flow) override;
 
    private:
     SpeciesDiffusionData speciesDiffusionData;
