@@ -18,18 +18,23 @@ ablate::finiteElement::FiniteElement::FiniteElement(std::string name, std::share
 void ablate::finiteElement::FiniteElement::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     Solver::SetupDomain(subDomain);
 
+    // initialize each field
+    for (const auto& field : fieldDescriptors) {
+        if (!field.components.empty()) {
+            RegisterFiniteElementField(field);
+        }
+    }
+
+    // TODO: Move
+    DMCreateDS(subDomain->GetDM()) >> checkError;
+
     DM cdm = subDomain->GetDM();
     while (cdm) {
         DMCopyDisc(subDomain->GetDM(), cdm) >> checkError;
         DMGetCoarseDM(cdm, &cdm) >> checkError;
     }
 
-    // initialize each field
-    for (const auto& field : fieldDescriptors) {
-        if (field.components != 0) {
-            RegisterFiniteElementField(field);
-        }
-    }
+
 
 }
 

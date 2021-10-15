@@ -7,17 +7,17 @@
 
 namespace ablate::domain {
 
-enum class FieldLocation { SOL, AUX };
+enum class FieldType { SOL, AUX };
 
 struct Field {
-    std::string fieldName;
-    PetscInt components;
+    std::string name;
+    PetscInt numberComponents;
     std::vector<std::string> componentNames;
     PetscInt fieldId;
-    enum FieldLocation fieldLocation = FieldLocation::SOL;
+    enum FieldType fieldLocation = FieldType::SOL;
 };
 
-std::istream& operator>>(std::istream& is, FieldLocation& v);
+std::istream& operator>>(std::istream& is, FieldType& v);
 
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_FIELD_HPP

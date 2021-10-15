@@ -22,12 +22,12 @@ void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptor
 
     // add solution fields/aux fields
     switch(fieldDescriptor.fieldLocation){
-        case FieldLocation::SOL:{
+        case FieldType::SOL:{
             // Called the shared method to register
             DMAddField(dm, label, (PetscObject)field) >> checkError;
             break;
         }
-        case FieldLocation::AUX:{
+        case FieldType::AUX:{
             // check to see if need to create an aux dm
             if (auxDM == nullptr) {
                 /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
@@ -76,6 +76,7 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     }
     return subDomains[subDomainName];
 }
+
 std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain() {
     if(subDomains.count("") == 0){
         subDomains[""] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), nullptr);

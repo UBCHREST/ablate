@@ -2,10 +2,10 @@
 #include <map>
 
 
-static const std::map<std::string, ablate::domain::FieldLocation> stringToFieldLocation = {
-    {"sol", ablate::domain::FieldLocation::SOL}, {"SOL", ablate::domain::FieldLocation::SOL}, {"AUX", ablate::domain::FieldLocation::AUX}, {"aux", ablate::domain::FieldLocation::AUX}};
+static const std::map<std::string, ablate::domain::FieldType> stringToFieldLocation = {
+    {"sol", ablate::domain::FieldType::SOL}, {"SOL", ablate::domain::FieldType::SOL}, {"AUX", ablate::domain::FieldType::AUX}, {"aux", ablate::domain::FieldType::AUX}};
 
-std::istream& ablate::domain::operator>>(std::istream& is, ablate::domain::FieldLocation& v) {
+std::istream& ablate::domain::operator>>(std::istream& is, ablate::domain::FieldType& v) {
     // get the key string
     std::string enumString;
     is >> enumString;

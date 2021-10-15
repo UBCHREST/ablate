@@ -34,7 +34,7 @@ TEST(FlowFieldDescriptors, ShouldBeCreatedByFactoryFunction) {
     auto flowField = std::dynamic_pointer_cast<Factory>(mockFactory)->Get(argument);
 
     // assert
-    ASSERT_EQ(flowField->fieldLocation, ablate::domain::FieldLocation::AUX);
+    ASSERT_EQ(flowField->fieldLocation, ablate::domain::FieldType::AUX);
     ASSERT_EQ(flowField->fieldName, "name1");
     ASSERT_EQ(flowField->fieldPrefix, "prefix1");
     ASSERT_EQ(flowField->components, 3);

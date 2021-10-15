@@ -111,8 +111,9 @@ static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIn
     CHKERRQ(ierr);
 
     // Output each component
-    for (PetscInt c = 0; c < fieldDescription.components; c++) {
-        stream << "#" << fieldDescription.fieldName << (fieldDescription.components > 1 ? "_" + (fieldDescription.componentNames.empty() ? std::to_string(c) : fieldDescription.componentNames[c]) : "")
+    for (PetscInt c = 0; c < fieldDescription.numberComponents; c++) {
+        stream << "#" << fieldDescription.name
+               << (fieldDescription.numberComponents > 1 ? "_" + (fieldDescription.componentNames.empty() ? std::to_string(c) : fieldDescription.componentNames[c]) : "")
                << std::endl;
 
         // Output each cell

@@ -175,7 +175,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                         .components = (PetscInt)eos->GetSpecies().size(),
                         .componentNames = eos->GetSpecies(),
                     },
-                    {.fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eos->GetSpecies().size(), .fieldLocation = ablate::domain::FieldLocation::SOL}},
+                    {.fieldName = "yi", .fieldPrefix = "yi", .components = (PetscInt)eos->GetSpecies().size(), .fieldLocation = ablate::domain::FieldType::SOL}},
                 flowProcesses,
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
                 boundaryConditions /*boundary conditions*/,

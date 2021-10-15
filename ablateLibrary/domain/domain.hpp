@@ -11,7 +11,7 @@ namespace ablate::domain {
 // forward declare the subDomain
 class SubDomain;
 
-class Domain : private std::enable_shared_from_this<Domain> {
+class Domain : public std::enable_shared_from_this<Domain> {
    protected:
     Domain(std::string name);
     virtual ~Domain();

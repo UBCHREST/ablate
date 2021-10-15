@@ -13,9 +13,9 @@ ablate::finiteElement::IncompressibleFlow::IncompressibleFlow(std::string name, 
                         {.fieldName = "velocity", .fieldPrefix = "vel_", .components = domain::NDIMS},
                         {.fieldName = "pressure", .fieldPrefix = "pres_", .components = 1},
                         {.fieldName = "temperature", .fieldPrefix = "temp_", .components = 1},
-                        {.fieldName = "momentum_source", .fieldPrefix = "momentum_source_", .components = auxiliaryFields.empty() ? 0 : domain::NDIMS, .fieldLocation = domain::FieldLocation::AUX},
-                        {.fieldName = "mass_source", .fieldPrefix = "mass_source_", .components = auxiliaryFields.empty() ? 0 : 1, .fieldLocation = domain::FieldLocation::AUX},
-                        {.fieldName = "energy_source", .fieldPrefix = "energy_source", .components = auxiliaryFields.empty() ? 0 : 1, .fieldLocation = domain::FieldLocation::AUX},
+                        {.fieldName = "momentum_source", .fieldPrefix = "momentum_source_", .components = auxiliaryFields.empty() ? 0 : domain::NDIMS, .fieldLocation = domain::FieldType::AUX},
+                        {.fieldName = "mass_source", .fieldPrefix = "mass_source_", .components = auxiliaryFields.empty() ? 0 : 1, .fieldLocation = domain::FieldType::AUX},
+                        {.fieldName = "energy_source", .fieldPrefix = "energy_source", .components = auxiliaryFields.empty() ? 0 : 1, .fieldLocation = domain::FieldType::AUX},
                     },
                     initialization, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {
 

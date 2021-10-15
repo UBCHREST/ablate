@@ -601,6 +601,9 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
 
+
+            flowObject->SetupDomain(mesh->GetSubDomain());
+
             // Override problem with source terms, boundary, and set the exact solution
             {
                 PetscDS prob;
