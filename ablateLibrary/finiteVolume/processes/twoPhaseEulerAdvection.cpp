@@ -20,7 +20,7 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal* in) {
     return PetscSqrtReal(mag);
 }
 
-static struct DecodeDataStruct {
+struct DecodeDataStruct{
     std::shared_ptr<ablate::eos::EOS> eosGas;
     std::shared_ptr<ablate::eos::EOS> eosLiquid;
     PetscReal ke;
@@ -29,10 +29,8 @@ static struct DecodeDataStruct {
     PetscReal Yg;
     PetscReal Yl;
     PetscInt dim;
-    std::vector<PetscReal> vel;
+    const PetscReal* vel;
     };
-
-
 
 PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
     auto decodeDataStruct = (DecodeDataStruct *)ctx;
@@ -46,29 +44,28 @@ PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
     PetscReal eL = (decodeDataStruct->e - decodeDataStruct->Yg*ax[1])/decodeDataStruct->Yl;
     PetscReal etL = eL + decodeDataStruct->ke;
     PetscReal rhoL = decodeDataStruct->Yl / (1/decodeDataStruct->rho - decodeDataStruct->Yg/ax[0]);
-    const PetscReal* velocity = decodeDataStruct->vel;
 
     PetscReal pG;
     PetscReal pL;
     PetscReal TG;
     PetscReal TL;
-    decodeDataStruct->eosGas->GetDecodeStateFunction()(decodeDataStruct->dim, rhoG, etG, velocity, NULL, NULL, NULL, &pG, decodeDataStruct->eosGas->GetDecodeStateContext());
+    decodeDataStruct->eosGas->GetDecodeStateFunction()(decodeDataStruct->dim, rhoG, etG, decodeDataStruct->vel, NULL, NULL, NULL, &pG, decodeDataStruct->eosGas->GetDecodeStateContext());
     decodeDataStruct->eosGas->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoG, etG, NULL, NULL, &TG, decodeDataStruct->eosGas->GetComputeTemperatureContext());
-    decodeDataStruct->eosLiquid->GetDecodeStateFunction()(decodeDataStruct->dim, rhoL, etL, velocity, NULL, NULL, NULL, &pL, decodeDataStruct->eosLiquid->GetDecodeStateContext());
+    decodeDataStruct->eosLiquid->GetDecodeStateFunction()(decodeDataStruct->dim, rhoL, etL, decodeDataStruct->vel, NULL, NULL, NULL, &pL, decodeDataStruct->eosLiquid->GetDecodeStateContext());
     decodeDataStruct->eosLiquid->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoL, etL, NULL, NULL, &TL, decodeDataStruct->eosLiquid->GetComputeTemperatureContext());
 
     VecGetArray(F,&aF);
     aF[0] = pG - pL;
     aF[1] = TG - TL;
     VecRestoreArrayRead(x,&ax);
-    VecResetArray(F,&aF);
+    VecRestoreArray(F,&aF);
     return 0;
 }
 
 void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim, const PetscReal *conservedValues,
                                                                                const PetscReal *normal, PetscReal *density, PetscReal *densityG, PetscReal *densityL,
                                                                                PetscReal *normalVelocity, PetscReal *velocity, PetscReal *internalEnergy, PetscReal *internalEnergyG,
-                                                                               PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL, PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *alpha, void *ctx) {
+                                                                               PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL, PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *alpha) {
     const int EULER_FIELD = 1; // denstiyVF is [0] field
     // (densityVF, RHO, RHOE, RHOU, RHOV, RHOW)
     // decode
@@ -86,9 +83,10 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
     }
     ke *= 0.5;
     (*internalEnergy) = (totalEnergy)-ke;
+    // mass fractions
+    PetscReal Yg = densityVF / (*density);
+    PetscReal Yl = ((*density) - densityVF) / (*density);
 
-    PetscReal pG;
-    PetscReal pL;
     // additional equations:
     // 1/density = Yg/densityG + Yl/densityL;
     // internalEnergy = Yg*internalEnergyG + Yl*internalEnergyL;
@@ -120,45 +118,39 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
 //    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
     const PetscScalar *ax;
     VecGetArrayRead(x,&ax);
-    *p=ax[0];
-    PetscReal T=ax[1]; //
 
-    PetscReal eG = (*internalEnergy); // limit, all gas
+    // guess et1, rho1; calculate p, T from EOS and
+    // set of equations
+    //      pG-pl = 0
+    //      Tg-Tl = 0
+
+//  ax = [rhog, eg]
+    PetscReal eG = ax[1];
     PetscReal etG = eG + ke;
     PetscReal eL = ((*internalEnergy) - Yg*eG)/Yl;
     PetscReal etL = eL + ke;
-    PetscReal rhoG = (*density); // limit, all gas
+    PetscReal rhoG = ax[0];
     PetscReal rhoL = Yl / (1/(*density) - Yg/rhoG);
-
-    eosGas->GetComputeDensityFunctionFromTemperaturePressureFunction()(T,*p,NULL,&rhoG,eosGas->GetComputeDensityFunctionFromTemperaturePressureContext());
-    eosGas->GetComputeSensibleInternalEnergyFunction()(T,rhoG,NULL,&eG,eosGas->GetComputeSensibleInternalEnergyContext());
-    eosLiquid->GetComputeDensityFunctionFromTemperaturePressureFunction()(T,*p,NULL,&rhoL,eosLiquid->GetComputeDensityFunctionFromTemperaturePressureContext());
-    eosLiquid->GetComputeSensibleInternalEnergyFunction()(T,rhoL,NULL,&eL,eosLiquid->GetComputeSensibleInternalEnergyContext());
+    // define output variables
+    PetscReal pG;
+    PetscReal pL;
+    PetscReal a1;
+    PetscReal a2;
+    eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, NULL, &a1, &pG, eosGas->GetDecodeStateContext());
+    eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, NULL, &a2, &pL, eosLiquid->GetDecodeStateContext());
 
     SNESDestroy(&snes);
     VecDestroy(&x);
     VecDestroy(&r);
-
-    // while (PetscAbs(delp) > PerrorTol){    //  #include "petscsnes.h"
-    // guess new eG, rhoG; calculate new eL, rhoL
-    // decode the state in the eos
-    PetscReal TG;
-    PetscReal TL;
-
-
-    // guess et1, rho1; return e1, a1, p1 | guess et2, rho2; return e2, a2, p2
-    // compare pG, pL
-    //PetscReal delp = pG - pL
-    // if delp >0; choose new eG, rhoG this way
-    // elseif delp <0: choose new eG, rhoG some other way
-    // iterate result: densityG, densityL, internalEnergyG, internalEnergyL, p, T
 
     // once state defined
     *densityG = rhoG;
     *densityL = rhoL;
     *internalEnergyG = eG;
     *internalEnergyL = eL;
-//    *p = pG;
+    *p = pG;
+    *aG = a1;
+    *aL = a2;
     *MG = (*normalVelocity) / (*aG);
     *ML = (*normalVelocity) / (*aL);
     *alpha = densityVF / (*densityG);
