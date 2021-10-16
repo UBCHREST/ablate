@@ -39,6 +39,10 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
 ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
 
 void ablate::solver::TimeStepper::Solve() {
+    if(solvers.empty()){
+        throw std::runtime_error("No solvers have been set.");
+    }
+
     TSSetDM(ts, domain->GetDM()) >> checkError;
     domain->CompleteSetup();
     for(auto& solver: solvers){
@@ -71,27 +75,32 @@ void ablate::solver::TimeStepper::Solve() {
     PetscLogEventEnd(logEvent, 0, 0, 0, 0);
 }
 
-void ablate::solver::TimeStepper::AddMonitor(std::shared_ptr<monitors::Monitor> monitor) {
-    // store a reference to the monitor
-    monitors.push_back(monitor);
-
-    // register the monitor with the ts
-    TSMonitorSet(ts, monitor->GetPetscFunction(), monitor->GetContext(), NULL) >> checkError;
-}
-
 double ablate::solver::TimeStepper::GetTime() const {
     PetscReal time;
     TSGetTime(ts, &time) >> checkError;
     return (double)time;
 }
 
-void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solver> solver) {
+void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solver> solver, std::vector<std::shared_ptr<monitors::Monitor>> solverMonitors) {
     if (serializer) {
         serializer->Register(solver);
     }
 
+    // Save the solver and setup the domain
     solvers.push_back(solver);
     solver->SetupDomain(domain->GetSubDomain(solver->GetName()));
+
+    // Register the monitors
+    for(auto& monitor : solverMonitors){
+        // Register the solver with the monitor
+        monitor->Register(solver);
+
+        // store a reference to the monitor
+        monitors.push_back(monitor);
+
+        // register the monitor with the ts
+        TSMonitorSet(ts, monitor->GetPetscFunction(), monitor->GetContext(), NULL) >> checkError;
+    }
 }
 
 

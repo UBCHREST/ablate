@@ -2,7 +2,7 @@
 #include <monitors/logs/stdOut.hpp>
 
 ablate::monitors::ParticleAverage::ParticleAverage(int interval, std::shared_ptr<logs::Log> logIn) : interval(interval), log(logIn ? logIn : std::make_shared<logs::StdOut>()) {}
-void ablate::monitors::ParticleAverage::Register(std::shared_ptr<Monitorable> monitorableObject) {
+void ablate::monitors::ParticleAverage::Register(std::shared_ptr<solver::Solver> monitorableObject) {
     particles = std::dynamic_pointer_cast<particles::Particles>(monitorableObject);
     if (!particles) {
         throw std::invalid_argument("The ParticleAverage monitor can only be used with ablate::particles::Particles");

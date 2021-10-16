@@ -20,13 +20,13 @@ ablate::monitors::DmViewFromOptions::~DmViewFromOptions() {
         ablate::utilities::PetscOptionsDestroyAndCheck("DmViewFromOptions", &petscOptions);
     }
 }
-void ablate::monitors::DmViewFromOptions::Register(std::shared_ptr<Monitorable> monitorableObject) {
+void ablate::monitors::DmViewFromOptions::Register(std::shared_ptr<solver::Solver> monitorableObject) {
     if (scope == Scope::INITIAL) {
         // if the scope is initial, dm plex only once during register
         // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate
         auto flow = std::dynamic_pointer_cast<ablate::solver::Solver>(monitorableObject);
         if (!flow) {
-            throw std::invalid_argument("The DmViewFromOptions monitor can only be used with ablate::flow::Flow");
+            throw std::invalid_argument("The DmViewFromOptions monitor can only be used with ablate::solver::Solver");
         }
 
         DMViewFromOptions(flow->GetSubDomain().GetDM()) >> checkError;

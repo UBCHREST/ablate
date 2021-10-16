@@ -35,7 +35,7 @@ class IgnitionDelayTemperature : public Monitor {
                                       std::shared_ptr<logs::Log> historyLog = {});
     ~IgnitionDelayTemperature() override;
 
-    void Register(std::shared_ptr<Monitorable>) override;
+    void Register(std::shared_ptr<solver::Solver>) override;
     PetscMonitorFunction GetPetscFunction() override { return MonitorIgnition; }
 };
 }  // namespace ablate::monitors

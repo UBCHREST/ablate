@@ -2,7 +2,6 @@
 #define ABLATELIBRARY_SOLVER_HPP
 
 #include <domain/subDomain.hpp>
-#include <monitors/monitorable.hpp>
 #include <parameters/parameters.hpp>
 #include <string>
 #include <vector>
@@ -12,7 +11,7 @@ namespace ablate::solver {
 
 class TimeStepper;
 
-class Solver : public io::Serializable, public monitors::Monitorable {
+class Solver : public io::Serializable{
    private:
     // pre and post step functions for the flow
     std::vector<std::function<void(TS ts, Solver&)>> preStepFunctions;
@@ -45,7 +44,7 @@ class Solver : public io::Serializable, public monitors::Monitorable {
 
     inline ablate::domain::SubDomain& GetSubDomain() { return *subDomain; }
 
-    inline const std::string& GetName() const override { return name; }
+    inline const std::string& GetName() const { return name; }
 
     inline const std::string& GetId() const override { return name; }
 
@@ -79,9 +78,8 @@ class Solver : public io::Serializable, public monitors::Monitorable {
      */
     inline void RegisterPostEvaluate(std::function<void(TS ts, Solver&)> postEval) { this->postEvaluateFunctions.push_back(postEval); }
 
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override {/*TODO: implement*/}
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override  {/*TODO: implement*/}
-
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
+    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 
 }  // namespace ablate::solver

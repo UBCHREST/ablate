@@ -6,7 +6,6 @@
 #include <io/interval/interval.hpp>
 #include <utilities/mpiError.hpp>
 #include "generators.hpp"
-#include "utilities/loggable.hpp"
 #include "utilities/petscError.hpp"
 
 ablate::io::Hdf5Serializer::Hdf5Serializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(interval) {

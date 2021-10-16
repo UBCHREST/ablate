@@ -30,7 +30,7 @@ class CurveMonitor : public Monitor {
    public:
     CurveMonitor(int interval, std::string prefix, std::vector<double> start, std::vector<double> end, std::vector<std::string> outputFields, const std::vector<std::string> outputAuxFields);
 
-    void Register(std::shared_ptr<Monitorable>) override;
+    void Register(std::shared_ptr<solver::Solver>) override;
     PetscMonitorFunction GetPetscFunction() override { return OutputCurve; }
 };
 

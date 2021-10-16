@@ -11,7 +11,7 @@
 
 namespace ablate::particles {
 
-class Particles : public io::Serializable, public monitors::Monitorable {
+class Particles : public io::Serializable {
    protected:
     // particle domain
     DM dm;
@@ -98,7 +98,7 @@ class Particles : public io::Serializable, public monitors::Monitorable {
                        std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options);
     virtual ~Particles();
 
-    const std::string& GetName() const override { return name; }
+    const std::string& GetName() const { return name; }
     const std::string& GetId() const override { return name; }
     const DM& GetDM() const { return dm; }
     PetscReal GetInitialTime() const { return timeInitial; }

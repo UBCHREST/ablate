@@ -42,14 +42,12 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
 
     void Solve();
 
-    void AddMonitor(std::shared_ptr<monitors::Monitor>);
-
-    void Register(std::shared_ptr<ablate::solver::Solver> solver);
+    void Register(std::shared_ptr<ablate::solver::Solver> solver, std::vector<std::shared_ptr<monitors::Monitor>> = {});
 
     double GetTime() const;
 
     const std::string& GetName() const { return name; }
 };
-}  // namespace ablate::solve
+}  // namespace ablate::solver
 
 #endif  // ABLATELIBRARY_TIMESTEPPER_H

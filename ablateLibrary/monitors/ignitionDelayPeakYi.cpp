@@ -21,7 +21,7 @@ ablate::monitors::IgnitionDelayPeakYi::~IgnitionDelayPeakYi() {
     log->Printf("Computed Ignition Delay (%s): %g\n", species.c_str(), timeHistory[loc]);
 }
 
-void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<Monitorable> monitorableObject) {
+void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<solver::Solver> monitorableObject) {
     // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate
     auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolume>(monitorableObject);
     if (!flow) {
@@ -36,6 +36,9 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<Monitorable
     }
 
     // determine the component offset
+    eulerId = flow->GetSubDomain().GetField("euler").id;
+    yiId = flow->GetSubDomain().GetField("densityYi").id;
+
     const auto& densityYi = flow->GetSubDomain().GetField("densityYi");
     const auto& speciesList = densityYi.components;
     yiOffset = -1;

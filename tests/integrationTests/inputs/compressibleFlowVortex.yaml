@@ -11,17 +11,17 @@ timestepper:
     ts_type: rk
     ts_adapt_type: none
     ts_max_steps: 25
-flow: !ablate::flow::CompressibleFlow
-  name: vortexFlowField
-  mesh: !ablate::domain::BoxMesh
+  domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 6, 6 ]
-    lower: [ 0, 0]
-    upper: [1, 1]
-    boundary: ["PERIODIC", "PERIODIC"]
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
+    boundary: [ "PERIODIC", "PERIODIC" ]
     simplex: false
     options:
       dm_refine: 1
+solver: !ablate::finiteVolume::CompressibleFlow
+  name: vortexFlowField
   options:
     eulerpetscfv_type: leastsquares
   parameters:

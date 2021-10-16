@@ -11,17 +11,17 @@ timestepper:
     ts_type: rk
     ts_adapt_type: none
     ts_max_steps: 20
-flow: !ablate::flow::CompressibleFlow
-  name: vortexFlowField
-  mesh: !ablate::domain::BoxMesh
+  domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 12, 12 ]
-    lower: [ 0, 0]
-    upper: [1, 1]
-    boundary: ["PERIODIC", "NONE"]
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
+    boundary: [ "PERIODIC", "NONE" ]
     simplex: false
     options:
       dm_refine: 0
+solver: !ablate::finiteVolume::CompressibleFlow
+  name: vortexFlowField
   options:
     eulerpetscfv_type: leastsquares
     Tpetscfv_type: leastsquares
@@ -48,13 +48,13 @@ flow: !ablate::flow::CompressibleFlow
           1.0 * 0.0
       timeDerivative: "0.0, 0.0, 0.0, 0.0"
   boundaryConditions:
-    - !ablate::flow::boundaryConditions::EssentialGhost
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"
       labelIds: [1]
       boundaryValue:
         fieldName: euler
         field: "1.0, 215250.0, 0.0, 0.0"
-    - !ablate::flow::boundaryConditions::EssentialGhost
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"
       labelIds: [3]
       boundaryValue:
