@@ -19,8 +19,8 @@ ablate::finiteElement::LowMachFlow::LowMachFlow(std::string name, std::shared_pt
 
 }
 
-void ablate::finiteElement::LowMachFlow::SetupElementDomain() {
-
+void ablate::finiteElement::LowMachFlow::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+    FiniteElement::SetupDomain(subDomain);
     {
         PetscObject pressure;
         MatNullSpace nullspacePres;

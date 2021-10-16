@@ -20,7 +20,10 @@ ablate::finiteElement::IncompressibleFlow::IncompressibleFlow(std::string name, 
                     initialization, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {
 
 }
-void ablate::finiteElement::IncompressibleFlow::SetupElementDomain(){
+
+void ablate::finiteElement::IncompressibleFlow::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+    FiniteElement::SetupDomain(subDomain);
+
     {
         PetscObject pressure;
         MatNullSpace nullspacePres;

@@ -34,8 +34,6 @@ void ablate::finiteElement::FiniteElement::SetupDomain(std::shared_ptr<ablate::d
         DMGetCoarseDM(cdm, &cdm) >> checkError;
     }
 
-    SetupElementDomain();
-
     // Register the aux fields updater if specified
     if (!auxiliaryFieldsUpdaters.empty()) {
         RegisterPreStep([&](TS ts, Solver&){
@@ -53,7 +51,6 @@ void ablate::finiteElement::FiniteElement::SetupDomain(std::shared_ptr<ablate::d
         // Setup the boundary condition
         boundary->SetupBoundary(subDomain->GetDM(), prob, fieldId.id);
     }
-
 }
 
 void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElement& fe) {
