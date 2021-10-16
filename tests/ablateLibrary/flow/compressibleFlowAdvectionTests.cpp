@@ -1,12 +1,13 @@
 #include <petsc.h>
 #include <cmath>
-#include <finiteVolume//boundaryConditions/essentialGhost.hpp>
+#include <finiteVolume/boundaryConditions/essentialGhost.hpp>
 #include <memory>
-#include "domain/boxMesh.hpp"
 #include <monitors/solutionErrorMonitor.hpp>
+#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "domain/boxMesh.hpp"
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlow.hpp"
@@ -86,8 +87,12 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
 
             flowObject->SetupDomain(mesh->GetSubDomain());
+            mesh->CompleteSetup();
             // assume one flow field right now
             flowObject->CompleteSetup(ts);
+            DMSetApplicationContext(mesh->GetDM(), flowObject.get());
+            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
+
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;

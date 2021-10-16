@@ -7,6 +7,7 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include <cmath>
 #include <finiteVolume/boundaryConditions/essential.hpp>
 #include <memory>
+#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
@@ -628,15 +629,8 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             mesh->CompleteSetup();
             flowObject->CompleteSetup(ts);
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
+            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
 
-            auto preStepFunction= [](TS ts){
-                ablate::finiteElement::FiniteElement* solver;
-                TSGetApplicationContext(ts, &solver);
-                solver->PreStep(ts);
-                return 0;
-            };
-
-            TSSetPreStep(ts, preStepFunction);
             TSSetApplicationContext(ts, flowObject.get());
 
             // Setup the TS

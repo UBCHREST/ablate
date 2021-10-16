@@ -60,6 +60,8 @@ void ablate::finiteVolume::FiniteVolume::SetupDomain(std::shared_ptr<ablate::dom
             RegisterFiniteVolumeField(field);
         }
     }
+    // TODO: Move
+    DMCreateDS(dm) >> checkError;
 
     // march over process and link to the flow
     for (const auto& process : processes) {
@@ -153,6 +155,9 @@ void ablate::finiteVolume::FiniteVolume::CompleteSetup(TS ts) {
                 }
             }
         }
+    }
+    if (!timeStepFunctions.empty()) {
+        RegisterPreStep(ComputeTimeStep);
     }
 }
 
@@ -305,7 +310,8 @@ void ablate::finiteVolume::FiniteVolume::RegisterAuxFieldUpdate(FVAuxFieldUpdate
     auxFieldUpdateFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::finiteVolume::FiniteVolume::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolume& flowFV) {
+void ablate::finiteVolume::FiniteVolume::ComputeTimeStep(TS ts, ablate::solver::Solver& solver) {
+    auto& flowFV  = static_cast<ablate::finiteVolume::FiniteVolume&>(solver);
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;

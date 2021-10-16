@@ -38,7 +38,7 @@ class FiniteVolume : public solver::Solver {
     std::vector<std::shared_ptr<processes::Process>> processes;
 
     // static function to update the flowfield
-    static void ComputeTimeStep(TS, FiniteVolume&);
+    static void ComputeTimeStep(TS, ablate::solver::Solver&);
 
     // helper function to register fv field
     void RegisterFiniteVolumeField(const domain::FieldDescriptor&);

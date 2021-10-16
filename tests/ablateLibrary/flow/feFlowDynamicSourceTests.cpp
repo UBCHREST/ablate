@@ -4,12 +4,13 @@ static char help[] =
 #include <petsc.h>
 #include <mathFunctions/parsedFunction.hpp>
 #include <parameters/petscOptionParameters.hpp>
+#include <solver/directSolverTsInterface.hpp>
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/dmWrapper.hpp"
-#include "finiteVolume/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlow.hpp"
 #include "finiteElement/lowMachFlow.hpp"
+#include "finiteVolume/boundaryConditions/essential.hpp"
 #include "gtest/gtest.h"
 
 // We can define them because they are the same between fe flows
@@ -167,16 +168,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             flowObject->SetupDomain(mesh->GetSubDomain());
             mesh->CompleteSetup();
             flowObject->CompleteSetup(ts);
-
-            auto preStepFunction= [](TS ts){
-                ablate::finiteElement::FiniteElement* solver;
-                TSGetApplicationContext(ts, &solver);
-                solver->PreStep(ts);
-                return 0;
-            };
-
-            TSSetPreStep(ts, preStepFunction);
-            TSSetApplicationContext(ts, flowObject.get());
+            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
 
             // Name the flow field
             PetscObjectSetName((PetscObject)mesh->GetDM(), "Numerical Solution") >> testErrorChecker;

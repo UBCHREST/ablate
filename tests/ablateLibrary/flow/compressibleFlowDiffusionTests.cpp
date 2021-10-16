@@ -3,6 +3,7 @@
 #include <domain/dmWrapper.hpp>
 #include <finiteVolume/processes/eulerDiffusion.hpp>
 #include <memory>
+#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
@@ -229,12 +230,15 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
             flowObject->SetupDomain(mesh->GetSubDomain());
+            mesh->CompleteSetup();
             flowObject->CompleteSetup(ts);
+            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
 
             // Setup the TS
+            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetFromOptions(ts) >> testErrorChecker;
 
             // advance to the end time

@@ -4,4 +4,6 @@ target_sources(ablateLibrary
         timeStepper.cpp
         solver.hpp
         solver.cpp
+        directSolverTsInterface.hpp
+        directSolverTsInterface.cpp
         )

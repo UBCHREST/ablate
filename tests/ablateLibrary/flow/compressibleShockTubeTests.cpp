@@ -3,6 +3,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include <petsc.h>
 #include <cmath>
 #include <memory>
+#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
@@ -188,11 +189,12 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
 
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
             flowObject->SetupDomain(mesh->GetSubDomain());
-
-            // Complete the problem setup
+            mesh->CompleteSetup();
             flowObject->CompleteSetup(ts);
+            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
 
             // Setup the TS
+            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetFromOptions(ts) >> testErrorChecker;
             TSSetMaxTime(ts, testingParam.maxTime) >> testErrorChecker;
 

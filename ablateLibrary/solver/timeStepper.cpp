@@ -39,6 +39,12 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
 ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
 
 void ablate::solver::TimeStepper::Solve() {
+    TSSetDM(ts, domain->GetDM()) >> checkError;
+    domain->CompleteSetup();
+    for(auto& solver: solvers){
+        solver->CompleteSetup(ts);
+    }
+
     // Get the solution vector
     Vec solutionVec = domain->GetSolutionVector();
 

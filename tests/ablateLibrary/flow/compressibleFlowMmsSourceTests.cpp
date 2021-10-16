@@ -2,6 +2,7 @@
 #include <domain/dmWrapper.hpp>
 #include <eos/transport/constant.hpp>
 #include <finiteVolume/processes/eulerAdvection.hpp>
+#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "eos/perfectGas.hpp"
@@ -609,6 +610,9 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 
             // Complete the problem setup
             flowObject->SetupDomain(mesh->GetSubDomain());
+            mesh->CompleteSetup();
+            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
+
             flowObject->CompleteSetup(ts);
 
             // Add a point wise function that adds fluxes to euler.  It requires no input fields
