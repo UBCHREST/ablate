@@ -7,13 +7,14 @@ ablate::domain::SubDomain::SubDomain(std::weak_ptr<Domain> domain, DMLabel label
 ablate::domain::Field ablate::domain::SubDomain::RegisterField(const ablate::domain::FieldDescriptor& fieldDescriptor, PetscObject field) {
     // Create a field with this information
     Field newField{.name = fieldDescriptor.name,
-                   .numberComponents = fieldDescriptor.components,
-                   .componentNames = fieldDescriptor.componentNames,
-                   .fieldId = -1,
-                   .fieldLocation = fieldDescriptor.fieldLocation};
+                   .numberComponents = (PetscInt)fieldDescriptor.components.size(),
+                   .components = fieldDescriptor.components,
+                   .id = -1,
+                   .type = fieldDescriptor.type};
 
     // Store the location in this subdomain
-    newField.fieldId = fields.size();
+    auto type = fieldDescriptor.type;
+    newField.id = std::count_if(fields.begin(), fields.end(), [type](auto pair) { return pair.second.type == type;});
     fields[newField.name] = newField;
 
     if (auto domainPtr = domain.lock()) {

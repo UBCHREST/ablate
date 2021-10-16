@@ -43,7 +43,7 @@ class FiniteVolume : public solver::Solver {
     // helper function to register fv field
     void RegisterFiniteVolumeField(const domain::FieldDescriptor&);
 
-    const std::vector<domain::FieldDescriptor> fieldDescriptors;
+    std::vector<domain::FieldDescriptor> fieldDescriptors;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;

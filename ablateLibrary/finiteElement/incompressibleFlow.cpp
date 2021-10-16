@@ -10,19 +10,17 @@ ablate::finiteElement::IncompressibleFlow::IncompressibleFlow(std::string name, 
                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
     : FiniteElement(name, options,
                     {
-                        {.fieldName = "velocity", .fieldPrefix = "vel_", .components = domain::NDIMS},
-                        {.fieldName = "pressure", .fieldPrefix = "pres_", .components = 1},
-                        {.fieldName = "temperature", .fieldPrefix = "temp_", .components = 1},
-                        {.fieldName = "momentum_source", .fieldPrefix = "momentum_source_", .components = auxiliaryFields.empty() ? 0 : domain::NDIMS, .fieldLocation = domain::FieldType::AUX},
-                        {.fieldName = "mass_source", .fieldPrefix = "mass_source_", .components = auxiliaryFields.empty() ? 0 : 1, .fieldLocation = domain::FieldType::AUX},
-                        {.fieldName = "energy_source", .fieldPrefix = "energy_source", .components = auxiliaryFields.empty() ? 0 : 1, .fieldLocation = domain::FieldType::AUX},
+                        {.name = "velocity", .prefix = "vel_", .components = {"vel" + domain::FieldDescriptor::DIMENSION}},
+                        {.name = "pressure", .prefix = "pres_"},
+                        {.name = "temperature", .prefix = "temp_"},
+                        {.name = "momentum_source", .prefix = "momentum_source_", .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mom" + domain::FieldDescriptor::DIMENSION}, .type = domain::FieldType::AUX},
+                        {.name = "mass_source", .prefix = "mass_source_", .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mass"}, .type = domain::FieldType::AUX},
+                        {.name = "energy_source", .prefix = "energy_source_", .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"ener"}, .type = domain::FieldType::AUX},
                     },
                     initialization, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {
 
 }
-void ablate::finiteElement::IncompressibleFlow::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
-    FiniteElement::SetupDomain(subDomain);
-
+void ablate::finiteElement::IncompressibleFlow::SetupElementDomain(){
     {
         PetscObject pressure;
         MatNullSpace nullspacePres;
@@ -116,9 +114,7 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteE
 void ablate::finiteElement::IncompressibleFlow::CompleteSetup(TS ts) {
     ablate::finiteElement::FiniteElement::CompleteSetup(ts);
 
-    DM dm;
-    TSGetDM(ts, &dm) >> checkError;
-    DMSetNullSpaceConstructor(dm, PRES, createPressureNullSpace) >> checkError;
+    DMSetNullSpaceConstructor(subDomain->GetDM(), PRES, createPressureNullSpace) >> checkError;
     RegisterPreStep([&](TS ts, Solver&){removeDiscretePressureNullspaceOnTs(ts, *this);});
 }
 

@@ -33,6 +33,8 @@ class Solver : public io::Serializable, public monitors::Monitorable {
     // The constructor to be call by any Solve implementation
     explicit Solver(std::string name, std::shared_ptr<parameters::Parameters> options = nullptr);
 
+    // function to decompress FieldDescriptors
+    void DecompressFieldFieldDescriptor(std::vector<ablate::domain::FieldDescriptor>& FieldDescriptors);
 
    public:
     virtual ~Solver();
@@ -48,10 +50,10 @@ class Solver : public io::Serializable, public monitors::Monitorable {
     inline const std::string& GetId() const override { return name; }
 
     // Support for timestepping calls
-    void PreStage(TS ts, PetscReal stagetime) {}
-    void PreStep(TS ts) {}
-    void PostStep(TS ts) {}
-    void PostEvaluate(TS ts) {}
+    void PreStage(TS ts, PetscReal stagetime);
+    void PreStep(TS ts);
+    void PostStep(TS ts);
+    void PostEvaluate(TS ts);
 
     /**
      * Adds function to be called before each flow step

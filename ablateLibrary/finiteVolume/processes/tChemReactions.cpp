@@ -236,8 +236,8 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     CHKERRQ(ierr);
 
     // get access to the underlying data for the flow
-    PetscInt flowEulerId = flow.GetSubDomain().GetField("euler").fieldId;
-    PetscInt flowDensityYiId = flow.GetSubDomain().GetField("densityYi").fieldId;
+    PetscInt flowEulerId = flow.GetSubDomain().GetField("euler").id;
+    PetscInt flowDensityYiId = flow.GetSubDomain().GetField("densityYi").id;
 
     // get the flowSolution from the ts
     Vec globFlowVec;

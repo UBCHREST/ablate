@@ -17,7 +17,7 @@ ablate::finiteElement::FiniteElement::FiniteElement(std::string name, std::share
 
 void ablate::finiteElement::FiniteElement::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     Solver::SetupDomain(subDomain);
-
+    Solver::DecompressFieldFieldDescriptor(fieldDescriptors);
     // initialize each field
     for (const auto& field : fieldDescriptors) {
         if (!field.components.empty()) {
@@ -34,36 +34,8 @@ void ablate::finiteElement::FiniteElement::SetupDomain(std::shared_ptr<ablate::d
         DMGetCoarseDM(cdm, &cdm) >> checkError;
     }
 
+    SetupElementDomain();
 
-
-}
-
-void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElement& fe) {
-    PetscInt numberAuxFields;
-    DMGetNumFields(fe.subDomain->GetAuxDM(), &numberAuxFields) >> checkError;
-
-    // size up the update and context functions
-    std::vector<mathFunctions::PetscFunction> auxiliaryFieldFunctions(numberAuxFields, NULL);
-    std::vector<void*> auxiliaryFieldContexts(numberAuxFields, NULL);
-
-    // for each given aux field
-    for (auto auxFieldDescription : fe.auxiliaryFieldsUpdaters) {
-        auto fieldId = fe.subDomain->GetField(auxFieldDescription->GetName());
-        auxiliaryFieldContexts[fieldId.fieldId] = auxFieldDescription->GetSolutionField().GetContext();
-        auxiliaryFieldFunctions[fieldId.fieldId] = auxFieldDescription->GetSolutionField().GetPetscFunction();
-    }
-
-    // get the time at the end of the time step
-    PetscReal time = 0;
-    PetscReal dt = 0;
-    TSGetTime(ts, &time) >> checkError;
-    TSGetTimeStep(ts, &dt) >> checkError;
-
-    // Update the source terms
-    DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> checkError;
-}
-
-void ablate::finiteElement::FiniteElement::CompleteSetup(TS ts) {
     // Register the aux fields updater if specified
     if (!auxiliaryFieldsUpdaters.empty()) {
         RegisterPreStep([&](TS ts, Solver&){
@@ -79,8 +51,40 @@ void ablate::finiteElement::FiniteElement::CompleteSetup(TS ts) {
         const auto& fieldId = subDomain->GetField(boundary->GetFieldName());
 
         // Setup the boundary condition
-        boundary->SetupBoundary(subDomain->GetDM(), prob, fieldId.fieldId);
+        boundary->SetupBoundary(subDomain->GetDM(), prob, fieldId.id);
     }
+
+}
+
+void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElement& fe) {
+    PetscInt numberAuxFields;
+    DMGetNumFields(fe.subDomain->GetAuxDM(), &numberAuxFields) >> checkError;
+
+    // size up the update and context functions
+    std::vector<mathFunctions::PetscFunction> auxiliaryFieldFunctions(numberAuxFields, NULL);
+    std::vector<void*> auxiliaryFieldContexts(numberAuxFields, NULL);
+
+    // for each given aux field
+    for (auto auxFieldDescription : fe.auxiliaryFieldsUpdaters) {
+        auto fieldId = fe.subDomain->GetField(auxFieldDescription->GetName());
+        auxiliaryFieldContexts[fieldId.id] = auxFieldDescription->GetSolutionField().GetContext();
+        auxiliaryFieldFunctions[fieldId.id] = auxFieldDescription->GetSolutionField().GetPetscFunction();
+    }
+
+    // get the time at the end of the time step
+    PetscReal time = 0;
+    PetscReal dt = 0;
+    TSGetTime(ts, &time) >> checkError;
+    TSGetTimeStep(ts, &dt) >> checkError;
+
+    // Update the source terms
+    DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> checkError;
+}
+
+void ablate::finiteElement::FiniteElement::CompleteSetup(TS ts) {
+    // Apply any boundary conditions
+    PetscDS prob;
+    DMGetDS(subDomain->GetDM(), &prob) >> checkError;
 
     // Initialize the flow field if provided
     if (!initialization.empty()) {
@@ -94,11 +98,12 @@ void ablate::finiteElement::FiniteElement::CompleteSetup(TS ts) {
         for (auto fieldInitialization : initialization) {
             auto fieldId = subDomain->GetField(fieldInitialization->GetName());
 
-            fieldContexts[fieldId.fieldId] = fieldInitialization->GetSolutionField().GetContext();
-            fieldFunctions[fieldId.fieldId] = fieldInitialization->GetSolutionField().GetPetscFunction();
+            fieldContexts[fieldId.id] = fieldInitialization->GetSolutionField().GetContext();
+            fieldFunctions[fieldId.id] = fieldInitialization->GetSolutionField().GetPetscFunction();
         }
 
         DMProjectFunction(subDomain->GetDM(), 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, subDomain->GetSolutionVector()) >> checkError;
+        this->CompleteFlowInitialization(subDomain->GetDM(),  subDomain->GetSolutionVector());
     }
 
     // if an exact solution has been provided register it
@@ -107,10 +112,10 @@ void ablate::finiteElement::FiniteElement::CompleteSetup(TS ts) {
 
         // Get the current field type
         if (exactSolution->HasSolutionField()) {
-            PetscDSSetExactSolution(prob, fieldId.fieldId, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
+            PetscDSSetExactSolution(prob, fieldId.id, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
         }
         if (exactSolution->HasTimeDerivative()) {
-            PetscDSSetExactSolutionTimeDerivative(prob, fieldId.fieldId, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >> checkError;
+            PetscDSSetExactSolutionTimeDerivative(prob, fieldId.id, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >> checkError;
         }
     }
 
@@ -166,20 +171,17 @@ void ablate::finiteElement::FiniteElement::RegisterFiniteElementField(const abla
     // create a petsc fe
     PetscFE petscFE;
     PetscFECreateDefault(
-        PetscObjectComm((PetscObject)subDomain->GetDM()), subDomain->GetDimensions(), fieldDescriptor.components, simplexGlobal ? PETSC_TRUE : PETSC_FALSE, fieldDescriptor.fieldPrefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+        PetscObjectComm((PetscObject)subDomain->GetDM()), subDomain->GetDimensions(), fieldDescriptor.components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, fieldDescriptor.prefix.c_str(), PETSC_DEFAULT, &petscFE) >>
         checkError;
-    PetscObjectSetName((PetscObject)petscFE, fieldDescriptor.fieldName.c_str()) >> checkError;
+    PetscObjectSetName((PetscObject)petscFE, fieldDescriptor.name.c_str()) >> checkError;
     PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;
 
     // If this is not the first field, copy the quadrature locations
-    if (!subDomain->GetNumberFields()) {
+    if (subDomain->GetNumberFields() > 0) {
         PetscFE referencePetscFE;
         DMGetField(subDomain->GetDM(), 0, NULL, (PetscObject*)&referencePetscFE) >> checkError;
         PetscFECopyQuadrature(referencePetscFE, petscFE) >> checkError;
     }
-
-    // Store the field and destroy copy
-    PetscFEDestroy(&petscFE) >> checkError;
 
     // Register the field with the subDomain
     subDomain->RegisterField(fieldDescriptor, (PetscObject)petscFE);

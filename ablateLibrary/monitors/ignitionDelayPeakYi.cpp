@@ -37,7 +37,7 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<Monitorable
 
     // determine the component offset
     const auto& densityYi = flow->GetSubDomain().GetField("densityYi");
-    const auto& speciesList = densityYi.componentNames;
+    const auto& speciesList = densityYi.components;
     yiOffset = -1;
     for (std::size_t sp = 0; sp < speciesList.size(); sp++) {
         if (speciesList[sp] == species) {

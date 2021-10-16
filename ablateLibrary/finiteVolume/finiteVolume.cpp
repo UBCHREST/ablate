@@ -31,6 +31,7 @@ ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string name, std::shared_p
 
 void ablate::finiteVolume::FiniteVolume::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     Solver::SetupDomain(subDomain);
+    Solver::DecompressFieldFieldDescriptor(fieldDescriptors);
 
     // make sure that the dm works with fv
     const PetscInt ghostCellDepth = 1;
@@ -55,7 +56,7 @@ void ablate::finiteVolume::FiniteVolume::SetupDomain(std::shared_ptr<ablate::dom
 
     // initialize each field
     for (const auto& field : fieldDescriptors) {
-        if (field.components != 0) {
+        if (!field.components.empty()) {
             RegisterFiniteVolumeField(field);
         }
     }
@@ -83,7 +84,7 @@ void ablate::finiteVolume::FiniteVolume::CompleteSetup(TS ts) {
         const auto& fieldId = subDomain->GetField(boundary->GetFieldName());
 
         // Setup the boundary condition
-        boundary->SetupBoundary(subDomain->GetDM(), prob, fieldId.fieldId);
+        boundary->SetupBoundary(subDomain->GetDM(), prob, fieldId.id);
     }
 
     // Initialize the flow field if provided
@@ -98,8 +99,8 @@ void ablate::finiteVolume::FiniteVolume::CompleteSetup(TS ts) {
         for (auto fieldInitialization : initialization) {
             auto fieldId = subDomain->GetField(fieldInitialization->GetName());
 
-            fieldContexts[fieldId.fieldId] = fieldInitialization->GetSolutionField().GetContext();
-            fieldFunctions[fieldId.fieldId] = fieldInitialization->GetSolutionField().GetPetscFunction();
+            fieldContexts[fieldId.id] = fieldInitialization->GetSolutionField().GetContext();
+            fieldFunctions[fieldId.id] = fieldInitialization->GetSolutionField().GetPetscFunction();
         }
 
         DMProjectFunction(subDomain->GetDM(), 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, subDomain->GetSolutionVector()) >> checkError;
@@ -111,10 +112,10 @@ void ablate::finiteVolume::FiniteVolume::CompleteSetup(TS ts) {
 
         // Get the current field type
         if (exactSolution->HasSolutionField()) {
-            PetscDSSetExactSolution(prob, fieldId.fieldId, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
+            PetscDSSetExactSolution(prob, fieldId.id, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
         }
         if (exactSolution->HasTimeDerivative()) {
-            PetscDSSetExactSolutionTimeDerivative(prob, fieldId.fieldId, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >> checkError;
+            PetscDSSetExactSolutionTimeDerivative(prob, fieldId.id, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >> checkError;
         }
     }
 
@@ -158,17 +159,17 @@ void ablate::finiteVolume::FiniteVolume::CompleteSetup(TS ts) {
 void ablate::finiteVolume::FiniteVolume::RegisterFiniteVolumeField(const ablate::domain::FieldDescriptor& fieldDescriptor) {
     PetscFV fvm;
     PetscFVCreate(PetscObjectComm((PetscObject)subDomain->GetDM()), &fvm) >> checkError;
-    PetscObjectSetOptionsPrefix((PetscObject)fvm, fieldDescriptor.fieldPrefix.c_str()) >> checkError;
-    PetscObjectSetName((PetscObject)fvm, fieldDescriptor.fieldName.c_str()) >> checkError;
+    PetscObjectSetOptionsPrefix((PetscObject)fvm, fieldDescriptor.prefix.c_str()) >> checkError;
+    PetscObjectSetName((PetscObject)fvm, fieldDescriptor.name.c_str()) >> checkError;
     PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;
 
     PetscFVSetFromOptions(fvm) >> checkError;
-    PetscFVSetNumComponents(fvm, fieldDescriptor.components) >> checkError;
+    PetscFVSetNumComponents(fvm, fieldDescriptor.components.size()) >> checkError;
     PetscFVSetSpatialDimension(fvm, subDomain->GetDimensions()) >> checkError;
 
     // If there are any names provided, name each component in this field this is used by some of the output fields
-    for (std::size_t c = 0; c < fieldDescriptor.componentNames.size(); c++) {
-        PetscFVSetComponentName(fvm, c, fieldDescriptor.componentNames[c].c_str()) >> checkError;
+    for (std::size_t c = 0; c < fieldDescriptor.components.size(); c++) {
+        PetscFVSetComponentName(fvm, c, fieldDescriptor.components[c].c_str()) >> checkError;
     }
 
     // Register the field with the subDomain
@@ -227,7 +228,7 @@ void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(FVMRHSFluxFunction 
     // Create the FVMRHS Function
     FVMRHSFluxFunctionDescription functionDescription{.function = function,
                                                       .context = context,
-                                                      .field = fieldId.fieldId,
+                                                      .field = fieldId.id,
                                                       .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
                                                       .numberInputFields = (PetscInt)inputFields.size(),
                                                       .auxFields = {-1, -1, -1, -1}, /**default to empty**/
@@ -239,12 +240,12 @@ void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(FVMRHSFluxFunction 
 
     for (std::size_t i = 0; i < inputFields.size(); i++) {
         auto& inputFieldId = subDomain->GetField(inputFields[i]);
-        functionDescription.inputFields[i] = inputFieldId.fieldId;
+        functionDescription.inputFields[i] = inputFieldId.id;
     }
 
     for (std::size_t i = 0; i < auxFields.size(); i++) {
         auto& auxFieldId = subDomain->GetField(auxFields[i]);
-        functionDescription.auxFields[i] = auxFieldId.fieldId;
+        functionDescription.auxFields[i] = auxFieldId.id;
     }
 
     rhsFluxFunctionDescriptions.push_back(functionDescription);
@@ -268,17 +269,17 @@ void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(FVMRHSPointFunction
 
     for (std::size_t i = 0; i < fields.size(); i++) {
         auto& fieldId = subDomain->GetField(fields[i]);
-        functionDescription.fields[i] = fieldId.fieldId;
+        functionDescription.fields[i] = fieldId.id;
     }
 
     for (std::size_t i = 0; i < inputFields.size(); i++) {
         auto& fieldId = subDomain->GetField(inputFields[i]);
-        functionDescription.inputFields[i] = fieldId.fieldId;
+        functionDescription.inputFields[i] = fieldId.id;
     }
 
     for (std::size_t i = 0; i < auxFields.size(); i++) {
         auto& fieldId = subDomain->GetField(auxFields[i]);
-        functionDescription.auxFields[i] = fieldId.fieldId;
+        functionDescription.auxFields[i] = fieldId.id;
     }
 
     rhsPointFunctionDescriptions.push_back(functionDescription);
@@ -294,11 +295,11 @@ void ablate::finiteVolume::FiniteVolume::RegisterAuxFieldUpdate(FVAuxFieldUpdate
                                                             .context = context,
                                                             .inputFields = {-1, -1, -1, -1}, /**default to empty.**/
                                                             .numberInputFields = (PetscInt)inputFields.size(),
-                                                            .auxField = auxFieldLocation.fieldId};
+                                                            .auxField = auxFieldLocation.id};
 
     for (std::size_t i = 0; i < inputFields.size(); i++) {
         auto fieldId = subDomain->GetField(inputFields[i]);
-        functionDescription.inputFields[i] = fieldId.fieldId;
+        functionDescription.inputFields[i] = fieldId.id;
     }
 
     auxFieldUpdateFunctionDescriptions.push_back(functionDescription);

@@ -20,7 +20,7 @@ class IncompressibleFlow : public FiniteElement {
                        std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions = {},
                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
 
-    void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
+    void SetupElementDomain() override;
     void CompleteSetup(TS ts) override;
 
     void CompleteFlowInitialization(DM, Vec) override;

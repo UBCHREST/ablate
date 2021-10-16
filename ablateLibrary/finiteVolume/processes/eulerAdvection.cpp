@@ -246,8 +246,8 @@ double ablate::finiteVolume::processes::EulerAdvection::ComputeTimeStep(TS ts, a
     const PetscReal dx = 2.0 * minCellRadius;
 
     // Get field location for euler and densityYi
-    auto eulerId = flow.GetSubDomain().GetField("euler").fieldId;
-    auto densityYiId = eulerAdvectionData->numberSpecies > 0 ? flow.GetSubDomain().GetField("densityYi").fieldId : -1;
+    auto eulerId = flow.GetSubDomain().GetField("euler").id;
+    auto densityYiId = eulerAdvectionData->numberSpecies > 0 ? flow.GetSubDomain().GetField("densityYi").id : -1;
 
     // March over each cell
     PetscReal dtMin = 1000.0;

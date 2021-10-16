@@ -21,7 +21,7 @@ ablate::domain::Domain::~Domain(){
 void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptor& fieldDescriptor, PetscObject field, DMLabel label) {
 
     // add solution fields/aux fields
-    switch(fieldDescriptor.fieldLocation){
+    switch(fieldDescriptor.type){
         case FieldType::SOL:{
             // Called the shared method to register
             DMAddField(dm, label, (PetscObject)field) >> checkError;
@@ -52,7 +52,7 @@ PetscInt ablate::domain::Domain::GetDimensions() const {
     return dim;
 }
 
-void ablate::domain::Domain::CompleteSetup(TS ts) {
+void ablate::domain::Domain::CompleteSetup() {
     DMCreateDS(dm) >> checkError;
 
     // Setup the solve with the ts

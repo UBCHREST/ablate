@@ -113,7 +113,7 @@ static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIn
     // Output each component
     for (PetscInt c = 0; c < fieldDescription.numberComponents; c++) {
         stream << "#" << fieldDescription.name
-               << (fieldDescription.numberComponents > 1 ? "_" + (fieldDescription.componentNames.empty() ? std::to_string(c) : fieldDescription.componentNames[c]) : "")
+               << (fieldDescription.numberComponents > 1 ? "_" + (fieldDescription.components.empty() ? std::to_string(c) : fieldDescription.components[c]) : "")
                << std::endl;
 
         // Output each cell
@@ -162,7 +162,7 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
 
         // output each solution variable
         for (const auto& fieldName : monitor->outputFields) {
-            auto fieldIndex = flow->GetSubDomain().GetField(fieldName).fieldId;
+            auto fieldIndex = flow->GetSubDomain().GetField(fieldName).id;
             const auto& fieldDescription = flow->GetSubDomain().GetField(fieldName);
 
             ierr = OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointGlobalFieldRead, u);
@@ -171,7 +171,7 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
 
         // output each aux variable
         for (const auto& fieldName : monitor->outputAuxFields) {
-            auto fieldIndex = flow->GetSubDomain().GetField(fieldName).fieldId;
+            auto fieldIndex = flow->GetSubDomain().GetField(fieldName).id;
             const auto& fieldDescription = flow->GetSubDomain().GetField(fieldName);
 
             ierr = OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointLocalFieldRead, flow->GetSubDomain().GetAuxVector());

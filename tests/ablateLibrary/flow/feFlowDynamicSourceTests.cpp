@@ -122,8 +122,6 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             PetscInitialize(argc, argv, NULL, help) >> testErrorChecker;
 
             // setup the ts
-
-
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
 
             // Create a simple test mesh
@@ -146,8 +144,8 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             // Create the flow object
             std::shared_ptr<ablate::finiteElement::FiniteElement> flowObject =
                 testingParam.createMethod("testFlow",
-                                          parameters,
                                           nullptr,
+                                          parameters,
                                           /* initialization functions */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                                           /* boundary conditions */
@@ -165,7 +163,20 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                                               std::make_shared<mathFunctions::FieldFunction>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
                                               std::make_shared<mathFunctions::FieldFunction>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
 
+            DMSetApplicationContext(mesh->GetDM(), flowObject.get())  >> testErrorChecker;
+            flowObject->SetupDomain(mesh->GetSubDomain());
+            mesh->CompleteSetup();
             flowObject->CompleteSetup(ts);
+
+            auto preStepFunction= [](TS ts){
+                ablate::finiteElement::FiniteElement* solver;
+                TSGetApplicationContext(ts, &solver);
+                solver->PreStep(ts);
+                return 0;
+            };
+
+            TSSetPreStep(ts, preStepFunction);
+            TSSetApplicationContext(ts, flowObject.get());
 
             // Name the flow field
             PetscObjectSetName((PetscObject)mesh->GetDM(), "Numerical Solution") >> testErrorChecker;

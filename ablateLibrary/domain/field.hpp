@@ -12,9 +12,9 @@ enum class FieldType { SOL, AUX };
 struct Field {
     std::string name;
     PetscInt numberComponents;
-    std::vector<std::string> componentNames;
-    PetscInt fieldId;
-    enum FieldType fieldLocation = FieldType::SOL;
+    std::vector<std::string> components;
+    PetscInt id;
+    enum FieldType type = FieldType::SOL;
 };
 
 std::istream& operator>>(std::istream& is, FieldType& v);

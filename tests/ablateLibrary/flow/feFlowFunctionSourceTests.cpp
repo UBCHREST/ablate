@@ -589,8 +589,8 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             // Create the flow object
             std::shared_ptr<ablate::finiteElement::FiniteElement> flowObject =
                 testingParam.createMethod("testFlow",
-                                          parameters,
                                           nullptr,
+                                          parameters,
                                           /* initialization functions */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                                           /* boundary conditions */
@@ -625,7 +625,19 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                 }
             }
 
+            mesh->CompleteSetup();
             flowObject->CompleteSetup(ts);
+            DMSetApplicationContext(mesh->GetDM(), flowObject.get());
+
+            auto preStepFunction= [](TS ts){
+                ablate::finiteElement::FiniteElement* solver;
+                TSGetApplicationContext(ts, &solver);
+                solver->PreStep(ts);
+                return 0;
+            };
+
+            TSSetPreStep(ts, preStepFunction);
+            TSSetApplicationContext(ts, flowObject.get());
 
             // Setup the TS
             TSSetFromOptions(ts) >> testErrorChecker;

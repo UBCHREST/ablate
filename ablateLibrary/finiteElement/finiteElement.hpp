@@ -18,7 +18,7 @@ class FiniteElement : public solver::Solver {
     // helper function to register fv field
     void RegisterFiniteElementField(const domain::FieldDescriptor&);
 
-    const std::vector<domain::FieldDescriptor> fieldDescriptors;
+    std::vector<domain::FieldDescriptor> fieldDescriptors;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFieldsUpdaters;
@@ -31,7 +31,7 @@ class FiniteElement : public solver::Solver {
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
     void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
-
+    virtual void SetupElementDomain() = 0;
     void CompleteSetup(TS ts) override;
 
     virtual void CompleteFlowInitialization(DM, Vec) =0;

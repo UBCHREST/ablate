@@ -51,7 +51,7 @@ void ablate::particles::Particles::Initialize(std::shared_ptr<domain::SubDomain>
         auto packedSolutionComponentSize = 0;
 
         for (const auto &solution : particleSolutionDescriptors) {
-            packedSolutionComponentSize += solution.numberComponents;
+            packedSolutionComponentSize += solution.components;
         }
 
         // Compute the size of the exact solution (each component added up)
@@ -72,7 +72,7 @@ void ablate::particles::Particles::Initialize(std::shared_ptr<domain::SubDomain>
     flowFinal = flow->GetSolutionVector();
     VecDuplicate(flowFinal, &(flowInitial)) >> checkError;
     VecCopy(flow->GetSolutionVector(), flowInitial) >> checkError;
-    flowVelocityFieldIndex = flow->GetField("velocity").fieldId;
+    flowVelocityFieldIndex = flow->GetField("velocity").id;
 
     // name the particle domain
     auto namePrefix = name + "_";
@@ -178,7 +178,7 @@ PetscErrorCode ablate::particles::Particles::ComputeParticleExactSolution(TS par
     // Calculate the size of solution field
     PetscInt solutionFieldSize = 0;
     for (const auto &field : particles->particleSolutionDescriptors) {
-        solutionFieldSize += field.numberComponents;
+        solutionFieldSize += field.components;
     }
 
     // get the initial location array
@@ -239,7 +239,7 @@ PetscErrorCode ablate::particles::Particles::ComputeParticleError(TS particleTS,
     // Calculate the size of solution field
     PetscInt solutionFieldSize = 0;
     for (const auto &field : particles->particleSolutionDescriptors) {
-        solutionFieldSize += field.numberComponents;
+        solutionFieldSize += field.components;
     }
 
     // get the initial location array
@@ -387,7 +387,7 @@ Vec ablate::particles::Particles::GetPackedSolutionVector() {
 
         // get raw access to each array
         for (auto f = 0; f < nf; f++) {
-            DMSwarmGetField(dm, particleSolutionDescriptors[f].name.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
+            DMSwarmGetField(dm, particleSolutionDescriptors[f].fieldName.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
         }
 
         // and raw access to the combined array
@@ -407,7 +407,7 @@ Vec ablate::particles::Particles::GetPackedSolutionVector() {
 
         // return raw access
         for (auto f = 0; f < nf; f++) {
-            DMSwarmRestoreField(dm, particleSolutionDescriptors[f].name.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
+            DMSwarmRestoreField(dm, particleSolutionDescriptors[f].fieldName.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
         }
         DMSwarmRestoreField(dm, PackedSolution, NULL, NULL, (void **)&solutionFieldData) >> checkError;
     }
@@ -434,7 +434,7 @@ void ablate::particles::Particles::RestorePackedSolutionVector(Vec solutionVecto
 
         // get raw access to each array
         for (auto f = 0; f < nf; f++) {
-            DMSwarmGetField(dm, particleSolutionDescriptors[f].name.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
+            DMSwarmGetField(dm, particleSolutionDescriptors[f].fieldName.c_str(), &fieldSizes[f], NULL, (void **)&fieldDatas[f]) >> checkError;
         }
 
         // and raw access to the combined array
@@ -454,7 +454,7 @@ void ablate::particles::Particles::RestorePackedSolutionVector(Vec solutionVecto
 
         // return raw access
         for (auto f = 0; f < nf; f++) {
-            DMSwarmRestoreField(dm, particleSolutionDescriptors[f].name.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
+            DMSwarmRestoreField(dm, particleSolutionDescriptors[f].fieldName.c_str(), NULL, NULL, (void **)&fieldDatas[f]) >> checkError;
         }
         DMSwarmRestoreField(dm, PackedSolution, NULL, NULL, (void **)&solutionFieldData) >> checkError;
     }
@@ -561,10 +561,10 @@ void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, Pets
 
     for (auto const &field : particleFieldDescriptors) {
         if (field.type == PETSC_REAL) {
-            DMSwarmCreateGlobalVectorFromField(GetDM(), field.name.c_str(), &particleVector) >> checkError;
-            PetscObjectSetName((PetscObject)particleVector, field.name.c_str()) >> checkError;
+            DMSwarmCreateGlobalVectorFromField(GetDM(), field.fieldName.c_str(), &particleVector) >> checkError;
+            PetscObjectSetName((PetscObject)particleVector, field.fieldName.c_str()) >> checkError;
             VecView(particleVector, viewer) >> checkError;
-            DMSwarmDestroyGlobalVectorFromField(GetDM(), field.name.c_str(), &particleVector) >> checkError;
+            DMSwarmDestroyGlobalVectorFromField(GetDM(), field.fieldName.c_str(), &particleVector) >> checkError;
         }
     }
 
@@ -643,19 +643,19 @@ void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequence
         if (field.type == PETSC_REAL) {
             Vec particleVector;
             Vec particleVectorLoad;
-            DMSwarmCreateGlobalVectorFromField(dm, field.name.c_str(), &particleVector) >> checkError;
+            DMSwarmCreateGlobalVectorFromField(dm, field.fieldName.c_str(), &particleVector) >> checkError;
 
             // A copy of this vector is needed, because vec load breaks the memory linkage between the swarm and vec
             VecDuplicate(particleVector, &particleVectorLoad) >> checkError;
 
             // Load the vector
-            PetscObjectSetName((PetscObject)particleVectorLoad, field.name.c_str()) >> checkError;
+            PetscObjectSetName((PetscObject)particleVectorLoad, field.fieldName.c_str()) >> checkError;
             VecLoad(particleVectorLoad, viewer) >> checkError;
 
             // Copy the data over
             VecCopy(particleVectorLoad, particleVector) >> checkError;
 
-            DMSwarmDestroyGlobalVectorFromField(dm, field.name.c_str(), &particleVector) >> checkError;
+            DMSwarmDestroyGlobalVectorFromField(dm, field.fieldName.c_str(), &particleVector) >> checkError;
             VecDestroy(&particleVectorLoad) >> checkError;
         }
     }

@@ -48,7 +48,7 @@ class Domain : public std::enable_shared_from_this<Domain> {
 
     PetscInt GetDimensions() const;
 
-    void CompleteSetup(TS ts);
+    void CompleteSetup();
 
     std::shared_ptr<SubDomain> GetSubDomain();
 
