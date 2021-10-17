@@ -206,7 +206,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowDynamicSourceMMSParameters){
             .mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/lowMach_dynamicSource_2d_tri_p3_p2_p2",
+                                 .expectedOutputFile = "outputs/finiteElement/lowMach_dynamicSource_2d_tri_p3_p2_p2",
                                  .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
@@ -234,7 +234,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowDynamicSourceMMSParameters){
             .mpiTestParameter = {.testName = "lowMach 2d cubic tri_p3_p2_p2",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/lowMach_dynamicSource_2d_cubic_tri_p3_p2_p2",
+                                 .expectedOutputFile = "outputs/finiteElement/lowMach_dynamicSource_2d_cubic_tri_p3_p2_p2",
                                  .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
@@ -264,7 +264,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowDynamicSourceMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p2_p1_p1",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
@@ -290,7 +290,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowDynamicSourceMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
                                  .nproc = 4,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p2_p1_p1_nproc4",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_nproc4",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
@@ -316,7 +316,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowDynamicSourceMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p3_p2_p2",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "

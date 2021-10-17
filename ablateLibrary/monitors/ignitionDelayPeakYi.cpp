@@ -17,15 +17,16 @@ ablate::monitors::IgnitionDelayPeakYi::~IgnitionDelayPeakYi() {
             loc = i;
         }
     }
-
-    log->Printf("Computed Ignition Delay (%s): %g\n", species.c_str(), timeHistory[loc]);
+    if(!yiHistory.empty()) {
+        log->Printf("Computed Ignition Delay (%s): %g\n", species.c_str(), timeHistory[loc]);
+    }
 }
 
 void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<solver::Solver> monitorableObject) {
     // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate
     auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolume>(monitorableObject);
     if (!flow) {
-        throw std::invalid_argument("The IgnitionDelay monitor can only be used with ablate::flow::FVFlow");
+        throw std::invalid_argument("The IgnitionDelay monitor can only be used with ablate::finiteVolume::FiniteVolume");
     }
 
     // check the size

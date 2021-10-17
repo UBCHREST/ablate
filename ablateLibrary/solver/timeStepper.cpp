@@ -46,6 +46,15 @@ void ablate::solver::TimeStepper::Solve() {
     domain->InitializeSubDomains(solvers);
     TSSetDM(ts, domain->GetDM()) >> checkError;
 
+    // Register the monitors
+    for(auto& solver: solvers){
+        // Get any monitors
+        auto& monitorsList = monitors[solver->GetId()];
+        for(auto& monitor: monitorsList){
+            monitor->Register(solver);
+        }
+    }
+
     // Get the solution vector
     Vec solutionVec = domain->GetSolutionVector();
 
@@ -88,11 +97,8 @@ void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solve
 
     // Register the monitors
     for(auto& monitor : solverMonitors){
-        // Register the solver with the monitor
-        monitor->Register(solver);
-
         // store a reference to the monitor
-        monitors.push_back(monitor);
+        monitors[solver->GetId()].push_back(monitor);
 
         // register the monitor with the ts
         TSMonitorSet(ts, monitor->GetPetscFunction(), monitor->GetContext(), NULL) >> checkError;

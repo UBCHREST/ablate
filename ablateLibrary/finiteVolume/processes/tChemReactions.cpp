@@ -31,7 +31,7 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
       rows(nullptr) {
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
-        throw std::invalid_argument("ablate::flow::processes::TChemReactions::TChemReactions only accepts EOS of type eos::TChem");
+        throw std::invalid_argument("ablate::finiteVolume::processes::TChemReactions only accepts EOS of type eos::TChem");
     }
 
     // Set the options if provided
