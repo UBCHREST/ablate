@@ -7,3 +7,5 @@ target_sources(ablateLibrary
         incompressibleFlow.hpp
         incompressibleFlow.cpp
         )
+
+add_subdirectory(boundaryConditions)

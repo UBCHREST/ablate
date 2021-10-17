@@ -3,10 +3,11 @@
 #include "parser/registrar.hpp"
 
 static std::shared_ptr<ablate::domain::FieldDescriptor> FlowFieldDescriptorCreateFunction(std::shared_ptr<ablate::parser::Factory> factory) {
+    auto name = factory->GetByName<std::string>("name");
     return std::shared_ptr<ablate::domain::FieldDescriptor>(
-        new ablate::domain::FieldDescriptor{.name = factory->GetByName<std::string>("name"),
-                                            .prefix = factory->Contains("prefix") ? factory->GetByName<std::string>("prefix") : factory->GetByName<std::string>("name"),
-                                            .components= factory->GetByName<std::vector<std::string>>("components", std::vector<std::string>{"_"}),
+        new ablate::domain::FieldDescriptor{.name = name,
+                                            .prefix = factory->Contains("prefix") ? factory->GetByName<std::string>("prefix") : name,
+                                            .components = factory->GetByName<std::vector<std::string>>("components", std::vector<std::string>{"_"}),
                                             .type = factory->GetByName<ablate::parser::EnumWrapper<ablate::domain::FieldType>>("type", ablate::domain::FieldType::SOL)});
 }
 

@@ -4,7 +4,7 @@
 #include <solver/timeStepper.hpp>
 #include <string>
 #include <vector>
-#include "finiteVolume/boundaryConditions/boundaryCondition.hpp"
+#include "boundaryConditions/boundaryCondition.hpp"
 #include "eos/eos.hpp"
 #include "fvSupport.h"
 #include "mathFunctions/fieldFunction.hpp"
@@ -20,14 +20,14 @@ class FiniteElement : public solver::Solver {
 
     std::vector<domain::FieldDescriptor> fieldDescriptors;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
-    const std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions;
+    const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFieldsUpdaters;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
     FiniteElement(std::string name, std::shared_ptr<parameters::Parameters> options,
                  std::vector<domain::FieldDescriptor> fieldDescriptors,
-                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions,
+                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
     void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;

@@ -5,7 +5,7 @@
 
 ablate::finiteElement::IncompressibleFlow::IncompressibleFlow(std::string name, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<parameters::Parameters> parameters,
                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                              std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                              std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
     : FiniteElement(name, options,
@@ -135,6 +135,6 @@ REGISTER(ablate::solver::Solver, ablate::finiteElement::IncompressibleFlow, "inc
          OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
          ARG(std::vector<mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),
-         ARG(std::vector<finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+         ARG(std::vector<finiteElement::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          OPT(std::vector<mathFunctions::FieldFunction>, "auxFields", "enables and sets the update functions for the auxFields"),
          OPT(std::vector<mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

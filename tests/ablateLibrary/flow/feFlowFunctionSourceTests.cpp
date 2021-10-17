@@ -5,21 +5,18 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
 #include <cmath>
-#include <finiteVolume/boundaryConditions/essential.hpp>
+#include <finiteElement/boundaryConditions/essential.hpp>
 #include <memory>
 #include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "domain/boxMesh.hpp"
-#include "domain/dmWrapper.hpp"
 #include "finiteElement/incompressibleFlow.hpp"
 #include "finiteElement/lowMachFlow.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
-#include "finiteVolume/compressibleFlow.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "parameters/mapParameters.hpp"
 #include "parameters/petscOptionParameters.hpp"
 
 using namespace ablate;
@@ -68,7 +65,7 @@ struct FEFlowMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
     std::function<std::shared_ptr<ablate::finiteElement::FiniteElement>(std::string name, std::shared_ptr<parameters::Parameters> parameters,
                                                       std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializationAndExact,
-                                                      std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)>
         createMethod;
     ExactFunction uExact;
@@ -595,9 +592,9 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
                                           /* initialization functions */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                                           /* boundary conditions */
-                                          std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
-                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("velocity wall", std::vector<int>{3, 1, 2, 4}, velocityExact),
-                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("temp wall", std::vector<int>{3, 1, 2, 4}, temperatureExact),
+                                          std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{
+                                              std::make_shared<boundaryConditions::Essential>("velocity wall", std::vector<int>{3, 1, 2, 4}, velocityExact),
+                                              std::make_shared<boundaryConditions::Essential>("temp wall", std::vector<int>{3, 1, 2, 4}, temperatureExact),
                                           },
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});

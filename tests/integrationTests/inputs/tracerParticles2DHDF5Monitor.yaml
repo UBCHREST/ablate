@@ -64,11 +64,11 @@ flow: !ablate::flow::IncompressibleFlow
     - *pressureField
     - *temperatureField
   boundaryConditions:
-    - !ablate::flow::boundaryConditions::Essential
+    - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall velocity"
       labelIds: [3, 1, 2, 4]
       boundaryValue: *velocityField
-    - !ablate::flow::boundaryConditions::Essential
+    - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall temp"
       labelIds: [3, 1, 2, 4]
       boundaryValue: *temperatureField

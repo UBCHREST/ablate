@@ -5,7 +5,7 @@
 
 ablate::finiteElement::FiniteElement::FiniteElement(std::string name, std::shared_ptr<parameters::Parameters> options, std::vector<ablate::domain::FieldDescriptor> fieldDescriptors,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                    std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                    std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : Solver(name, options),

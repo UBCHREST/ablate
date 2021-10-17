@@ -56,11 +56,11 @@ flow: !ablate::flow::IncompressibleFlow
       field: "t + x + y + z"
       timeDerivative: "1.0"
   boundaryConditions:
-    - !ablate::flow::boundaryConditions::Essential
+    - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "velocity"
       labelIds: [1]
       boundaryValue: *velocityField
-    - !ablate::flow::boundaryConditions::Essential
+    - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall temp"
       labelIds: [1]
       boundaryValue: *temperatureField

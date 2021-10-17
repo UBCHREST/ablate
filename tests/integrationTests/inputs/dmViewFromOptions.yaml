@@ -61,11 +61,11 @@ solver: !ablate::finiteElement::IncompressibleFlow
     - *pressureField
     - *temperatureField
   boundaryConditions:
-    - !ablate::finiteVolume::boundaryConditions::Essential
+    - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall velocity"
       labelIds: [3, 1, 2, 4]
       boundaryValue: *velocityField
-    - !ablate::finiteVolume::boundaryConditions::Essential
+    - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall temp"
       labelIds: [3, 1, 2, 4]
       boundaryValue: *temperatureField

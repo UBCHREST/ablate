@@ -1,6 +1,6 @@
 #include <petsc.h>
 #include <finiteElement/incompressibleFlow.hpp>
-#include <finiteVolume/boundaryConditions/essential.hpp>
+#include <finiteElement/boundaryConditions/essential.hpp>
 #include <memory>
 #include <parameters/petscPrefixOptions.hpp>
 #include <particles/initializers/boxInitializer.hpp>
@@ -13,7 +13,7 @@
 #include "particles/tracer.hpp"
 
 using namespace ablate;
-using namespace ablate::finiteVolume;
+using namespace ablate::finiteElement;
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -316,14 +316,14 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                 /* initialization functions */
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
-                std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{std::make_shared<finiteVolume::boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
-                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
-                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("right wall velocity", 2, velocityExact),
-                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("left wall velocity", 4, velocityExact),
-                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("top wall temp", 3, temperatureExact),
-                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact),
-                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
-                                                                                    std::make_shared<finiteVolume::boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
+                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("right wall velocity", 2, velocityExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("left wall velocity", 4, velocityExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("top wall temp", 3, temperatureExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
+                                                                                    std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
                 /* aux updates*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{},
                 /* exact solutions*/

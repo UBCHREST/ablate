@@ -8,9 +8,9 @@ static char help[] =
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/dmWrapper.hpp"
+#include "finiteElement/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlow.hpp"
 #include "finiteElement/lowMachFlow.hpp"
-#include "finiteVolume/boundaryConditions/essential.hpp"
 #include "gtest/gtest.h"
 
 // We can define them because they are the same between fe flows
@@ -27,10 +27,10 @@ using namespace ablate::finiteElement;
 
 struct FEFlowDynamicSourceMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
-    std::function<std::shared_ptr<ablate::finiteElement::FiniteElement>(std::string name, std::shared_ptr<parameters::Parameters> parameters,
-                                                      std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializationAndExact,
-                                                      std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)>
+    std::function<std::shared_ptr<ablate::finiteElement::FiniteElement>(std::string name, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
+                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializationAndExact,
+                                                                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)>
         createMethod;
     std::string uExact;
     std::string uDerivativeExact;
@@ -150,21 +150,21 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                                           /* initialization functions */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                                           /* boundary conditions */
-                                          std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{std::make_shared<finiteVolume::boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
-                                                                                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
-                                                                                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("right wall velocity", 2, velocityExact),
-                                                                                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("left wall velocity", 4, velocityExact),
-                                                                                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("top wall temp", 3, temperatureExact),
-                                                                                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact),
-                                                                                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
-                                                                                                              std::make_shared<finiteVolume::boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
+                                          std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("right wall velocity", 2, velocityExact),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("left wall velocity", 4, velocityExact),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("top wall temp", 3, temperatureExact),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("bottom wall temp", 1, temperatureExact),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
+                                                                                                              std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{
                                               std::make_shared<mathFunctions::FieldFunction>("momentum_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.vSource)),
                                               std::make_shared<mathFunctions::FieldFunction>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
                                               std::make_shared<mathFunctions::FieldFunction>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
 
-            DMSetApplicationContext(mesh->GetDM(), flowObject.get())  >> testErrorChecker;
+            DMSetApplicationContext(mesh->GetDM(), flowObject.get()) >> testErrorChecker;
             flowObject->SetupDomain(mesh->GetSubDomain());
             mesh->CompleteSetup();
             flowObject->CompleteSetup(ts);
