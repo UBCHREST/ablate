@@ -8,6 +8,6 @@ class DMWrapper : public ablate::domain::Domain {
     explicit DMWrapper(DM dm);
     ~DMWrapper() = default;
 };
-}  // namespace ablate::mesh
+}  // namespace ablate::domain
 
 #endif  // ABLATELIBRARY_DMREFERENCE_HPP

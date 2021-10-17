@@ -15,5 +15,5 @@ class Euler : public ablate::mathFunctions::FieldFunction {
     explicit Euler(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState);
 };
 
-}  // namespace ablate::flow::fieldFunctions
+}  // namespace ablate::finiteVolume::fieldFunctions
 #endif  // ABLATELIBRARY_FIELD_SOLUTION_EULER_HPP

@@ -22,5 +22,5 @@ class FluxCalculator {
     virtual FluxCalculatorFunction GetFluxCalculatorFunction() = 0;
     virtual void* GetFluxCalculatorContext() { return nullptr; }
 };
-}  // namespace ablate::flow::fluxCalculator
+}  // namespace ablate::finiteVolume::fluxCalculator
 #endif  // ABLATELIBRARY_FLUXCALCULATOR_HPP

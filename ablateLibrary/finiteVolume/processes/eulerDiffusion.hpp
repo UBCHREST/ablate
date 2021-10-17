@@ -73,5 +73,5 @@ class EulerDiffusion : public Process {
                                                  void* ctx);
 };
 
-}  // namespace ablate::flow::processes
+}  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_EULERDIFFUSION_HPP

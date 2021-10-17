@@ -43,5 +43,5 @@ class AusmpUp : public fluxCalculator::FluxCalculator {
     static PetscReal P5Minus(PetscReal m, double fa);
 };
 
-}  // namespace ablate::flow::fluxCalculator
+}  // namespace ablate::finiteVolume::fluxCalculator
 #endif  // ABLATELIBRARY_AUSMPUP_HPP

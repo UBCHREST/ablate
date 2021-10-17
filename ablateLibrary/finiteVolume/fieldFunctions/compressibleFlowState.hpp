@@ -24,5 +24,5 @@ class CompressibleFlowState {
     static PetscErrorCode ComputeDensityYiFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 };
 
-}  // namespace ablate::flow::fieldFunctions
+}  // namespace ablate::finiteVolume::fieldFunctions
 #endif  // ABLATELIBRARY_COMPRESSIBLEFLOWSTATE_HPP

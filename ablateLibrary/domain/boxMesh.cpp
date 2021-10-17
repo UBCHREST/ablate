@@ -5,7 +5,7 @@
 #include "utilities/petscError.hpp"
 
 ablate::domain::BoxMesh::BoxMesh(std::string name, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary, bool simplex,
-                               std::shared_ptr<parameters::Parameters> options)
+                                 std::shared_ptr<parameters::Parameters> options)
     : Domain(name), petscOptions(NULL) {
     // Set the options
     if (options) {

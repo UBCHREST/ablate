@@ -4,7 +4,7 @@
 
 ablate::particles::initializers::CellInitializer::CellInitializer(int particlesPerCellPerDim) : particlesPerCell(particlesPerCellPerDim) {}
 
-void ablate::particles::initializers::CellInitializer::Initialize(ablate::domain::SubDomain& flow, DM particleDm) {
+void ablate::particles::initializers::CellInitializer::Initialize(ablate::domain::SubDomain &flow, DM particleDm) {
     PetscInt particlesPerCellLocal = (PetscInt)this->particlesPerCell;
 
     PetscInt cStart, cEnd;

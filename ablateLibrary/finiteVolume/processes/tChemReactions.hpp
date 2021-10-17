@@ -58,7 +58,7 @@ class TChemReactions : public Process {
      * @param flow
      * @return
      */
-    PetscErrorCode ChemistryFlowPreStage(TS flowTs, ablate::finiteVolume::FiniteVolume &flow, PetscReal stagetime);
+    PetscErrorCode ChemistryFlowPreStage(TS flowTs, ablate::solver::Solver &flow, PetscReal stagetime);
 
     static PetscErrorCode AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
@@ -71,5 +71,5 @@ class TChemReactions : public Process {
      */
     void Initialize(ablate::finiteVolume::FiniteVolume &flow) override;
 };
-}  // namespace ablate::flow::processes
+}  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_TCHEMREACTIONS_HPP

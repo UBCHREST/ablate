@@ -4,7 +4,7 @@
 
 // When used, you must request euler, then densityYi
 PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
-                                                                                  const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
+                                                                                          const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
     PetscReal totalEnergy = conservedValues[uOff[0] + EulerAdvection::RHOE] / density;
@@ -21,8 +21,8 @@ PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::UpdateAuxTempera
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *conservedValues,
-                                                                               PetscScalar *auxField, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
+                                                                                       const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
 
@@ -81,10 +81,10 @@ void ablate::finiteVolume::processes::EulerDiffusion::Initialize(ablate::finiteV
     }
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
-                                                                                       const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff,
-                                                                                       const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
-                                                                                       const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::EulerDiffusion::CompressibleFlowEulerDiffusion(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
+                                                                                               const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR,
+                                                                                               const PetscInt *aOff, const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR,
+                                                                                               const PetscScalar *gradAuxL, const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int T = 0;

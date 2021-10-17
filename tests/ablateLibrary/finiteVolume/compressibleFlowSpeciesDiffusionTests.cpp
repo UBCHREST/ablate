@@ -1,6 +1,7 @@
 #include <petsc.h>
 #include <cmath>
 #include <convergenceTester.hpp>
+#include <domain/boxMesh.hpp>
 #include <eos/mockEOS.hpp>
 #include <eos/transport/constant.hpp>
 #include <finiteVolume/boundaryConditions/essentialGhost.hpp>
@@ -9,7 +10,6 @@
 #include <map>
 #include <mathFunctions/functionFactory.hpp>
 #include <memory>
-#include <domain/boxMesh.hpp>
 #include <monitors/solutionErrorMonitor.hpp>
 #include <solver/timeStepper.hpp>
 #include <utilities/petscOptions.hpp>
@@ -155,10 +155,10 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             auto yiExact = ablate::mathFunctions::Create(ComputeDensityYiExact, &parameters);
             auto yiExactField = std::make_shared<mathFunctions::FieldFunction>("densityYi", yiExact);
 
-            auto boundaryConditions =
-                std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{4, 2}, eulerExactField),
-                                                                                          std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("left", std::vector<int>{4}, yiExactField),
-                                                                                          std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, yiExactField)};
+            auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
+                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{4, 2}, eulerExactField),
+                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("left", std::vector<int>{4}, yiExactField),
+                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, yiExactField)};
 
             auto flowProcesses = std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{
                 std::make_shared<ablate::finiteVolume::processes::SpeciesDiffusion>(eos, transportModel),
@@ -168,14 +168,13 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 "testFlow",
                 domain::Domain::ENTIREDOMAIN,
                 petscFlowOptions /*options*/,
-                std::vector<ablate::domain::FieldDescriptor>{
-                    {.name = "euler", .prefix = "euler", .components = {"rho", "rhoE", "rhoVel" + domain::FieldDescriptor::DIMENSION}},
-                    {
-                        .name = "densityYi",
-                        .prefix = "densityYi",
-                        .components = eos->GetSpecies(),
-                    },
-                    {.name = "yi", .prefix = "yi", .components = eos->GetSpecies(), .type = ablate::domain::FieldType::AUX}},
+                std::vector<ablate::domain::FieldDescriptor>{{.name = "euler", .prefix = "euler", .components = {"rho", "rhoE", "rhoVel" + domain::FieldDescriptor::DIMENSION}},
+                                                             {
+                                                                 .name = "densityYi",
+                                                                 .prefix = "densityYi",
+                                                                 .components = eos->GetSpecies(),
+                                                             },
+                                                             {.name = "yi", .prefix = "yi", .components = eos->GetSpecies(), .type = ablate::domain::FieldType::AUX}},
                 flowProcesses,
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
                 boundaryConditions /*boundary conditions*/,

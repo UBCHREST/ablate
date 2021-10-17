@@ -90,5 +90,5 @@ class EulerAdvection : public Process {
                                  const PetscReal* normal, PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p);
 };
 
-}  // namespace ablate::flow::processes
+}  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_EULERADVECTION_HPP

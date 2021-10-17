@@ -118,8 +118,8 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     DMCreateLocalVector(fieldDm, &sourceVec) >> checkError;
 
     // Before each step, compute the source term over the entire dt
-//    auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-//    flow.RegisterPreStage(chemistryPreStage);//TODO: Add back
+    auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    flow.RegisterPreStage(chemistryPreStage);
 
     // Add the rhs point function for the source
     flow.RegisterRHSFunction(AddChemistrySourceToFlow, this);
@@ -192,7 +192,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage(TS flowTs, ablate::finiteVolume::FiniteVolume& flow, PetscReal stagetime) {
+PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage(TS flowTs, ablate::solver::Solver& flow, PetscReal stagetime) {
     PetscInt stepNumber;
     TSGetStepNumber(flowTs, &stepNumber);
     PetscReal time;

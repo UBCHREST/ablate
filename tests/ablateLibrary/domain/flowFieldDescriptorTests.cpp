@@ -1,5 +1,5 @@
-#include <memory>
 #include <domain/fieldDescriptor.hpp>
+#include <memory>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "parser/mockFactory.hpp"

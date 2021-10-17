@@ -14,6 +14,6 @@ class OffFlux : public fluxCalculator::FluxCalculator {
    public:
     FluxCalculatorFunction GetFluxCalculatorFunction() override { return OffCalculatorFunction; }
 };
-}  // namespace ablate::flow::fluxCalculator
+}  // namespace ablate::finiteVolume::fluxCalculator
 
 #endif  // ABLATELIBRARY_OFFFLUX_HPP

@@ -3,7 +3,6 @@
 #include <finiteVolume/processes/eulerDiffusion.hpp>
 #include <finiteVolume/processes/speciesDiffusion.hpp>
 #include <finiteVolume/processes/tChemReactions.hpp>
-#include <utilities/mpiError.hpp>
 
 ablate::finiteVolume::ReactingCompressibleFlow::ReactingCompressibleFlow(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<eos::EOS> eosIn,
                                                                          std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::transport::TransportModel> transport,
@@ -28,10 +27,9 @@ ablate::finiteVolume::ReactingCompressibleFlow::ReactingCompressibleFlow(std::st
                    initialization, boundaryConditions, exactSolutions) {}
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::finiteVolume::ReactingCompressibleFlow, "reacting compressible finite volume flow",
-         ARG(std::string, "id", "the name of the flow field"),
-         OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"),
-         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSc"), ARG(ablate::eos::EOS, "eos", "the TChem v1 equation of state used to describe the flow"),
+REGISTER(ablate::solver::Solver, ablate::finiteVolume::ReactingCompressibleFlow, "reacting compressible finite volume flow", ARG(std::string, "id", "the name of the flow field"),
+         OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSc"),
+         ARG(ablate::eos::EOS, "eos", "the TChem v1 equation of state used to describe the flow"),
          ARG(ablate::parameters::Parameters, "parameters", "the compressible flow parameters cfl, gamma, etc."),
          OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (defaults to AUSM)"),

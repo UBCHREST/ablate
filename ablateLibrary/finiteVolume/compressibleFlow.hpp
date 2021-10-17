@@ -4,11 +4,11 @@
 #include <petsc.h>
 #include <eos/transport/transportModel.hpp>
 #include <string>
-#include "eos/eos.hpp"
-#include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "domain/domain.hpp"
-#include "parameters/parameters.hpp"
+#include "eos/eos.hpp"
 #include "finiteVolume/finiteVolume.hpp"
+#include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
+#include "parameters/parameters.hpp"
 
 namespace ablate::finiteVolume {
 class CompressibleFlow : public FiniteVolume {
@@ -19,6 +19,6 @@ class CompressibleFlow : public FiniteVolume {
                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
     ~CompressibleFlow() override = default;
 };
-}  // namespace ablate::flow
+}  // namespace ablate::finiteVolume
 
 #endif  // ABLATELIBRARY_COMPRESSIBLEFLOW_H

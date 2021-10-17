@@ -276,7 +276,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 std::make_shared<ablate::particles::Inertial>("particle", 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction, particleOptions);
 
             // link the flow to the particles
-//            particles->Initialize(mesh->GetSubDomain());//TODO: restore particles
+            //            particles->Initialize(mesh->GetSubDomain());//TODO: restore particles
 
             TSSetComputeInitialCondition(particles->GetTS(), ablate::particles::Particles::ComputeParticleExactSolution) >> testErrorChecker;
 

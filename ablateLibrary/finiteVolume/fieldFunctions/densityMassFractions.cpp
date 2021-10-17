@@ -2,8 +2,8 @@
 #include <mathFunctions/functionPointer.hpp>
 
 ablate::finiteVolume::fieldFunctions::DensityMassFractions::DensityMassFractions(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowStateIn)
-    : ablate::mathFunctions::FieldFunction("densityYi",
-                                           std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeDensityYiFromState, flowStateIn.get())),
+    : ablate::mathFunctions::FieldFunction(
+          "densityYi", std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeDensityYiFromState, flowStateIn.get())),
       flowState(flowStateIn) {}
 
 #include "parser/registrar.hpp"

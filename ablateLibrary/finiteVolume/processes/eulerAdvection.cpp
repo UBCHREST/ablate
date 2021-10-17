@@ -26,8 +26,8 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal* in) {
  * @return
  */
 void ablate::finiteVolume::processes::EulerAdvection::DecodeEulerState(ablate::finiteVolume::processes::EulerAdvection::EulerAdvectionData flowData, PetscInt dim, const PetscReal* conservedValues,
-                                                               const PetscReal* densityYi, const PetscReal* normal, PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity,
-                                                               PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p) {
+                                                                       const PetscReal* densityYi, const PetscReal* normal, PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity,
+                                                                       PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p) {
     // decode
     *density = conservedValues[RHO];
     PetscReal totalEnergy = conservedValues[RHOE] / (*density);
@@ -45,9 +45,10 @@ void ablate::finiteVolume::processes::EulerAdvection::DecodeEulerState(ablate::f
 }
 
 PetscErrorCode ablate::finiteVolume::processes::EulerAdvection::CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscInt* uOff_x,
-                                                                                         const PetscScalar* fieldL, const PetscScalar* fieldR, const PetscScalar* gradL, const PetscScalar* gradR,
-                                                                                         const PetscInt* aOff, const PetscInt* aOff_x, const PetscScalar* auxL, const PetscScalar* auxR,
-                                                                                         const PetscScalar* gradAuxL, const PetscScalar* gradAuxR, PetscScalar* flux, void* ctx) {
+                                                                                                 const PetscScalar* fieldL, const PetscScalar* fieldR, const PetscScalar* gradL,
+                                                                                                 const PetscScalar* gradR, const PetscInt* aOff, const PetscInt* aOff_x, const PetscScalar* auxL,
+                                                                                                 const PetscScalar* auxR, const PetscScalar* gradAuxL, const PetscScalar* gradAuxR, PetscScalar* flux,
+                                                                                                 void* ctx) {
     EulerAdvectionData eulerAdvectionData = (EulerAdvectionData)ctx;
     PetscFunctionBeginUser;
 
@@ -126,9 +127,10 @@ PetscErrorCode ablate::finiteVolume::processes::EulerAdvection::CompressibleFlow
 }
 
 PetscErrorCode ablate::finiteVolume::processes::EulerAdvection::CompressibleFlowSpeciesAdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscInt* uOff_x,
-                                                                                             const PetscScalar* fieldL, const PetscScalar* fieldR, const PetscScalar* gradL, const PetscScalar* gradR,
-                                                                                             const PetscInt* aOff, const PetscInt* aOff_x, const PetscScalar* auxL, const PetscScalar* auxR,
-                                                                                             const PetscScalar* gradAuxL, const PetscScalar* gradAuxR, PetscScalar* flux, void* ctx) {
+                                                                                                     const PetscScalar* fieldL, const PetscScalar* fieldR, const PetscScalar* gradL,
+                                                                                                     const PetscScalar* gradR, const PetscInt* aOff, const PetscInt* aOff_x, const PetscScalar* auxL,
+                                                                                                     const PetscScalar* auxR, const PetscScalar* gradAuxL, const PetscScalar* gradAuxR,
+                                                                                                     PetscScalar* flux, void* ctx) {
     EulerAdvectionData eulerAdvectionData = (EulerAdvectionData)ctx;
     PetscFunctionBeginUser;
 
@@ -184,7 +186,8 @@ PetscErrorCode ablate::finiteVolume::processes::EulerAdvection::CompressibleFlow
     PetscFunctionReturn(0);
 }
 
-ablate::finiteVolume::processes::EulerAdvection::EulerAdvection(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn)
+ablate::finiteVolume::processes::EulerAdvection::EulerAdvection(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eosIn,
+                                                                std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn)
     : eos(eosIn), fluxCalculator(fluxCalcIn == nullptr ? std::make_shared<fluxCalculator::Ausm>() : fluxCalcIn) {
     PetscNew(&eulerAdvectionData);
 

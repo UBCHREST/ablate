@@ -17,7 +17,7 @@ ablate::monitors::IgnitionDelayPeakYi::~IgnitionDelayPeakYi() {
             loc = i;
         }
     }
-    if(!yiHistory.empty()) {
+    if (!yiHistory.empty()) {
         log->Printf("Computed Ignition Delay (%s): %g\n", species.c_str(), timeHistory[loc]);
     }
 }

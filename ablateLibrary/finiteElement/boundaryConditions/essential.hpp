@@ -35,5 +35,5 @@ class Essential : public BoundaryCondition {
     void SetupBoundary(DM dm, PetscDS problem, PetscInt field) override;
 };
 
-}  // namespace ablate::flow::boundaryConditions
+}  // namespace ablate::finiteElement::boundaryConditions
 #endif  // ABLATELIBRARY_ESSENTIAL_HPP

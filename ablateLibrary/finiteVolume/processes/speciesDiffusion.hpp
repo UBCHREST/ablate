@@ -71,5 +71,5 @@ class SpeciesDiffusion : public Process {
                                                       const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* fL, void* ctx);
 };
 
-}  // namespace ablate::flow::processes
+}  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_SPECIESDIFFUSION_HPP

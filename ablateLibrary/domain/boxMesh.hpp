@@ -18,6 +18,6 @@ class BoxMesh : public Domain {
 
     ~BoxMesh();
 };
-}  // namespace ablate::mesh
+}  // namespace ablate::domain
 
 #endif  // ABLATELIBRARY_BOXMESH_HPP

@@ -10,7 +10,6 @@
 namespace ablate::domain {
 
 struct FieldDescriptor {
-
     // Helper variable, replaces any components with this value with one for each dimension
     inline const static std::string DIMENSION = "_DIMENSION_";
 
@@ -19,7 +18,6 @@ struct FieldDescriptor {
     std::vector<std::string> components = {"_"};
     enum FieldType type = FieldType::SOL;
 };
-
 
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_FIELDDESCRIPTOR_HPP

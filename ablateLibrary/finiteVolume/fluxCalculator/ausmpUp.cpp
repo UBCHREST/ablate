@@ -2,8 +2,8 @@
 
 ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUp(double mInf) : mInf(mInf) {}
 
-ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUpFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
-                                                                                               PetscReal rhoR, PetscReal pR, PetscReal* massFlux, PetscReal* p12) {
+ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUpFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
+                                                                                                               PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal* massFlux, PetscReal* p12) {
     // Compute the density at the interface
     PetscReal rho12 = (0.5) * (rhoL + rhoR);
 

@@ -3,8 +3,8 @@
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 
-ablate::finiteElement::FiniteElement::FiniteElement(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, std::vector<ablate::domain::FieldDescriptor> fieldDescriptors,
-                                                    std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
+ablate::finiteElement::FiniteElement::FiniteElement(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options,
+                                                    std::vector<ablate::domain::FieldDescriptor> fieldDescriptors, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
@@ -36,8 +36,7 @@ void ablate::finiteElement::FiniteElement::Setup() {
 
     // Register the aux fields updater if specified
     if (!auxiliaryFieldsUpdaters.empty()) {
-        RegisterPreStep([&](TS ts, Solver&){
-            UpdateAuxFields(ts, *this);});
+        RegisterPreStep([&](TS ts, Solver&) { UpdateAuxFields(ts, *this); });
     }
 
     // Apply any boundary conditions
@@ -52,7 +51,6 @@ void ablate::finiteElement::FiniteElement::Setup() {
         boundary->SetupBoundary(subDomain->GetDM(), prob, fieldId.id);
     }
 }
-
 
 void ablate::finiteElement::FiniteElement::Initialize() {
     // Apply any boundary conditions
@@ -76,7 +74,7 @@ void ablate::finiteElement::FiniteElement::Initialize() {
         }
 
         DMProjectFunction(subDomain->GetDM(), 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, subDomain->GetSolutionVector()) >> checkError;
-        this->CompleteFlowInitialization(subDomain->GetDM(),  subDomain->GetSolutionVector());
+        this->CompleteFlowInitialization(subDomain->GetDM(), subDomain->GetSolutionVector());
     }
 
     // if an exact solution has been provided register it
@@ -168,8 +166,13 @@ void ablate::finiteElement::FiniteElement::RegisterFiniteElementField(const abla
     MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, subDomain->GetComm()) >> checkMpiError;
     // create a petsc fe
     PetscFE petscFE;
-    PetscFECreateDefault(
-        PetscObjectComm((PetscObject)subDomain->GetDM()), subDomain->GetDimensions(), fieldDescriptor.components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, fieldDescriptor.prefix.c_str(), PETSC_DEFAULT, &petscFE) >>
+    PetscFECreateDefault(PetscObjectComm((PetscObject)subDomain->GetDM()),
+                         subDomain->GetDimensions(),
+                         fieldDescriptor.components.size(),
+                         simplexGlobal ? PETSC_TRUE : PETSC_FALSE,
+                         fieldDescriptor.prefix.c_str(),
+                         PETSC_DEFAULT,
+                         &petscFE) >>
         checkError;
     PetscObjectSetName((PetscObject)petscFE, fieldDescriptor.name.c_str()) >> checkError;
     PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;

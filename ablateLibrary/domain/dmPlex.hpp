@@ -16,6 +16,6 @@ class DMPlex : public Domain {
     DMPlex(std::string name = "dmplex", std::shared_ptr<parameters::Parameters> options = {});
     ~DMPlex() override;
 };
-}  // namespace ablate::mesh
+}  // namespace ablate::domain
 
 #endif  // ABLATELIBRARY_DMPLEX_HPP

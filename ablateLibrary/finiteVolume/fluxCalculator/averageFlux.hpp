@@ -15,6 +15,6 @@ class AverageFlux : public fluxCalculator::FluxCalculator {
    public:
     FluxCalculatorFunction GetFluxCalculatorFunction() override { return AvgCalculatorFunction; }
 };
-}  // namespace ablate::flow::fluxCalculator
+}  // namespace ablate::finiteVolume::fluxCalculator
 
 #endif  // ABLATELIBRARY_AVERAGEFLUX_HPP

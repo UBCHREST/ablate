@@ -1,9 +1,9 @@
 #ifndef ABLATELIBRARY_INITIALIZER_HPP
 #define ABLATELIBRARY_INITIALIZER_HPP
+#include <petsc.h>
 #include <map>
 #include <string>
 #include "solver/solver.hpp"
-#include <petsc.h>
 
 namespace ablate::particles::initializers {
 class Initializer {

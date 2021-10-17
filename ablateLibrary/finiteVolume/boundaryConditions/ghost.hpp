@@ -31,6 +31,6 @@ class Ghost : public BoundaryCondition {
     void SetupBoundary(DM dm, PetscDS problem, PetscInt fieldId) override;
 };
 
-}  // namespace ablate::flow::boundaryConditions
+}  // namespace ablate::finiteVolume::boundaryConditions
 
 #endif  // ABLATELIBRARY_GHOST_HPP

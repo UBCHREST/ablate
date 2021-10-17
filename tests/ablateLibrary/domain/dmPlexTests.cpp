@@ -3,8 +3,8 @@
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "gtest/gtest.h"
 #include "domain/dmPlex.hpp"
+#include "gtest/gtest.h"
 
 using namespace ablate;
 

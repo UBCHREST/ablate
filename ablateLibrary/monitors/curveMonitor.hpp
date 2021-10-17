@@ -2,8 +2,8 @@
 #define ABLATELIBRARY_CURVEMONITOR_HPP
 
 #include <petsc.h>
-#include "finiteVolume/finiteVolume.hpp"
 #include <vector>
+#include "finiteVolume/finiteVolume.hpp"
 #include "monitor.hpp"
 namespace ablate::monitors {
 

@@ -1,12 +1,12 @@
 #include "domain.hpp"
 #include <utilities/mpiError.hpp>
-#include "utilities/petscError.hpp"
-#include "subDomain.hpp"
 #include "solver/solver.hpp"
+#include "subDomain.hpp"
+#include "utilities/petscError.hpp"
 
-ablate::domain::Domain::Domain(std::string name) : name(name), auxDM(nullptr), solField(nullptr), auxField(nullptr){}
+ablate::domain::Domain::Domain(std::string name) : name(name), auxDM(nullptr), solField(nullptr), auxField(nullptr) {}
 
-ablate::domain::Domain::~Domain(){
+ablate::domain::Domain::~Domain() {
     if (auxDM) {
         DMDestroy(&auxDM) >> checkError;
     }
@@ -20,15 +20,14 @@ ablate::domain::Domain::~Domain(){
 }
 
 void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptor& fieldDescriptor, PetscObject field, DMLabel label) {
-
     // add solution fields/aux fields
-    switch(fieldDescriptor.type){
-        case FieldType::SOL:{
+    switch (fieldDescriptor.type) {
+        case FieldType::SOL: {
             // Called the shared method to register
             DMAddField(dm, label, (PetscObject)field) >> checkError;
             break;
         }
-        case FieldType::AUX:{
+        case FieldType::AUX: {
             // check to see if need to create an aux dm
             if (auxDM == nullptr) {
                 /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
@@ -41,11 +40,9 @@ void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptor
                 DMSetCoordinateDM(auxDM, coordDM) >> checkError;
             }
             DMAddField(auxDM, label, (PetscObject)field) >> checkError;
-
         }
     }
 }
-
 
 PetscInt ablate::domain::Domain::GetDimensions() const {
     PetscInt dim;
@@ -69,16 +66,16 @@ void ablate::domain::Domain::CreateGlobalStructures() {
     }
 }
 
-std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(const std::string& subDomainName){
-    if(subDomains.count(subDomainName) == 0){
+std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(const std::string& subDomainName) {
+    if (subDomains.count(subDomainName) == 0) {
         subDomains[subDomainName] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), nullptr);
     }
     return subDomains[subDomainName];
 }
 
-void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers){
+void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers) {
     // determine the number of fields
-    for(auto& solver : solvers){
+    for (auto& solver : solvers) {
         solver->Register(GetSubDomain(solver->GetRegion()));
     }
 
@@ -86,7 +83,7 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
     DMCreateDS(dm) >> checkError;
 
     // Setup each of the fields
-    for(auto& solver : solvers){
+    for (auto& solver : solvers) {
         solver->Setup();
     }
 
@@ -94,8 +91,7 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
     CreateGlobalStructures();
 
     // Initialize each solver
-    for(auto& solver : solvers){
+    for (auto& solver : solvers) {
         solver->Initialize();
     }
 }
-

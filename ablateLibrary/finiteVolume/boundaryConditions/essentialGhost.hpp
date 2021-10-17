@@ -15,5 +15,5 @@ class EssentialGhost : public Ghost {
    public:
     EssentialGhost(std::string boundaryName, std::vector<int> labelId, std::shared_ptr<ablate::mathFunctions::FieldFunction> boundaryFunction, std::string labelName = {});
 };
-}  // namespace ablate::flow::boundaryConditions
+}  // namespace ablate::finiteVolume::boundaryConditions
 #endif  // ABLATELIBRARY_ESSENTIALGHOST_HPP

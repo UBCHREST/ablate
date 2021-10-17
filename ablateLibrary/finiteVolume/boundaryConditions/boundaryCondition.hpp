@@ -2,8 +2,8 @@
 #define ABLATELIBRARY_FINITEVOLUME_BOUNDARYCONDITION_HPP
 #include <memory>
 #include <string>
-#include "mathFunctions/mathFunction.hpp"
 #include "domain/fieldDescriptor.hpp"
+#include "mathFunctions/mathFunction.hpp"
 
 namespace ablate::finiteVolume::boundaryConditions {
 class BoundaryCondition {
@@ -21,5 +21,5 @@ class BoundaryCondition {
     virtual ~BoundaryCondition() = default;
     virtual void SetupBoundary(DM dm, PetscDS problem, PetscInt fieldId) = 0;
 };
-}  // namespace ablate::flow::boundaryConditions
+}  // namespace ablate::finiteVolume::boundaryConditions
 #endif  // ABLATELIBRARY_BOUNDARYCONDITION_HPP

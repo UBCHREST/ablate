@@ -38,7 +38,7 @@ void ablate::finiteVolume::processes::SpeciesDiffusion::Initialize(ablate::finit
 }
 
 PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
-                                                                                     const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
+                                                                                             const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
 
@@ -51,10 +51,10 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::UpdateAuxMassF
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::SpeciesDiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
-                                                                                     const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff,
-                                                                                     const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
-                                                                                     const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::SpeciesDiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
+                                                                                             const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR,
+                                                                                             const PetscInt *aOff, const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR,
+                                                                                             const PetscScalar *gradAuxL, const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;
@@ -116,10 +116,10 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::SpeciesDiffusi
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::SpeciesDiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
-                                                                                      const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff,
-                                                                                      const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
-                                                                                      const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::SpeciesDiffusion::SpeciesDiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
+                                                                                              const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR,
+                                                                                              const PetscInt *aOff, const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR,
+                                                                                              const PetscScalar *gradAuxL, const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;

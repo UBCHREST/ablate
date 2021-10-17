@@ -31,7 +31,7 @@ void ablate::particles::Inertial::Initialize(std::shared_ptr<domain::SubDomain> 
     TSSetTime(particleTs, timeInitial) >> checkError;
 
     // link the solution with the flowTS
-//    flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow &) { this->AdvectParticles(flowTs); });//TODO: putback
+    //    flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow &) { this->AdvectParticles(flowTs); });//TODO: putback
 }
 
 PetscErrorCode ablate::particles::Inertial::UnpackKinematics(TS ts, Vec kinematics, Vec position, Vec velocity) {

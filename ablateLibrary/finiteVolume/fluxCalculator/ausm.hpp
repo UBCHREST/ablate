@@ -22,5 +22,5 @@ class Ausm : public fluxCalculator::FluxCalculator {
 
     FluxCalculatorFunction GetFluxCalculatorFunction() override { return AusmFunction; }
 };
-}  // namespace ablate::flow::fluxCalculator
+}  // namespace ablate::finiteVolume::fluxCalculator
 #endif  // ABLATELIBRARY_AUSM_HPP

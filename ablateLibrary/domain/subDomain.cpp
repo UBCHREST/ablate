@@ -1,20 +1,14 @@
 #include "subDomain.hpp"
 
-
-ablate::domain::SubDomain::SubDomain(std::weak_ptr<Domain> domain, DMLabel label): domain(domain), label(label) {}
-
+ablate::domain::SubDomain::SubDomain(std::weak_ptr<Domain> domain, DMLabel label) : domain(domain), label(label) {}
 
 ablate::domain::Field ablate::domain::SubDomain::RegisterField(const ablate::domain::FieldDescriptor& fieldDescriptor, PetscObject field) {
     // Create a field with this information
-    Field newField{.name = fieldDescriptor.name,
-                   .numberComponents = (PetscInt)fieldDescriptor.components.size(),
-                   .components = fieldDescriptor.components,
-                   .id = -1,
-                   .type = fieldDescriptor.type};
+    Field newField{.name = fieldDescriptor.name, .numberComponents = (PetscInt)fieldDescriptor.components.size(), .components = fieldDescriptor.components, .id = -1, .type = fieldDescriptor.type};
 
     // Store the location in this subdomain
     auto type = fieldDescriptor.type;
-    newField.id = std::count_if(fields.begin(), fields.end(), [type](auto pair) { return pair.second.type == type;});
+    newField.id = std::count_if(fields.begin(), fields.end(), [type](auto pair) { return pair.second.type == type; });
     fields[newField.name] = newField;
 
     if (auto domainPtr = domain.lock()) {

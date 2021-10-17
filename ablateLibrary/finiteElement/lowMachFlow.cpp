@@ -4,20 +4,26 @@
 
 ablate::finiteElement::LowMachFlow::LowMachFlow(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<parameters::Parameters> parameters,
                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : FiniteElement(solverId, region, options,
-                    {
-                        {.name = "velocity", .prefix = "vel_", .components = {"vel" + domain::FieldDescriptor::DIMENSION}},
-                        {.name = "pressure", .prefix = "pres_"},
-                        {.name = "temperature", .prefix = "temp_"},
-                        {.name = "momentum_source", .prefix = "momentum_source_", .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mom" + domain::FieldDescriptor::DIMENSION}, .type = domain::FieldType::AUX},
-                        {.name = "mass_source", .prefix = "mass_source_", .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mass"}, .type = domain::FieldType::AUX},
-                        {.name = "energy_source", .prefix = "energy_source_", .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"ener"}, .type = domain::FieldType::AUX},
-                    },
-                    initialization, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {
-
-}
+                                                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
+    : FiniteElement(
+          solverId, region, options,
+          {
+              {.name = "velocity", .prefix = "vel_", .components = {"vel" + domain::FieldDescriptor::DIMENSION}},
+              {.name = "pressure", .prefix = "pres_"},
+              {.name = "temperature", .prefix = "temp_"},
+              {.name = "momentum_source",
+               .prefix = "momentum_source_",
+               .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mom" + domain::FieldDescriptor::DIMENSION},
+               .type = domain::FieldType::AUX},
+              {.name = "mass_source", .prefix = "mass_source_", .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mass"}, .type = domain::FieldType::AUX},
+              {.name = "energy_source",
+               .prefix = "energy_source_",
+               .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"ener"},
+               .type = domain::FieldType::AUX},
+          },
+          initialization, boundaryConditions, auxiliaryFields, exactSolutions),
+      parameters(parameters) {}
 
 void ablate::finiteElement::LowMachFlow::Setup() {
     FiniteElement::Setup();
@@ -116,7 +122,7 @@ void ablate::finiteElement::LowMachFlow::Initialize() {
     ablate::finiteElement::FiniteElement::Initialize();
 
     DMSetNullSpaceConstructor(subDomain->GetDM(), PRES, createPressureNullSpace) >> checkError;
-    RegisterPreStep([&](TS ts, Solver&){removeDiscretePressureNullspaceOnTs(ts, *this);});
+    RegisterPreStep([&](TS ts, Solver &) { removeDiscretePressureNullspaceOnTs(ts, *this); });
 }
 
 void ablate::finiteElement::LowMachFlow::CompleteFlowInitialization(DM dm, Vec u) {
@@ -128,10 +134,8 @@ void ablate::finiteElement::LowMachFlow::CompleteFlowInitialization(DM dm, Vec u
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::finiteElement::LowMachFlow, "incompressible FE flow",
-         ARG(std::string, "id", "the name of the flow field"),
-         OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"),
-         OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
+REGISTER(ablate::solver::Solver, ablate::finiteElement::LowMachFlow, "incompressible FE flow", ARG(std::string, "id", "the name of the flow field"),
+         OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
          ARG(std::vector<mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),
          ARG(std::vector<finiteElement::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),

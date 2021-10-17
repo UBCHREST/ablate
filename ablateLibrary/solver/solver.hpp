@@ -11,7 +11,7 @@ namespace ablate::solver {
 
 class TimeStepper;
 
-class Solver : public io::Serializable{
+class Solver : public io::Serializable {
    private:
     // pre and post step functions for the flow
     std::vector<std::function<void(TS ts, Solver&)>> preStepFunctions;

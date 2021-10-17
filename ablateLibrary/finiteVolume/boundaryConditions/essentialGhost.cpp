@@ -1,8 +1,9 @@
 #include "essentialGhost.hpp"
 ablate::finiteVolume::boundaryConditions::EssentialGhost::EssentialGhost(std::string boundaryName, std::vector<int> labelIds, std::shared_ptr<ablate::mathFunctions::FieldFunction> boundaryFunction,
-                                                                 std::string labelName)
+                                                                         std::string labelName)
     : Ghost(boundaryFunction->GetName(), boundaryName, labelIds, EssentialGhostUpdate, this, labelName), boundaryFunction(boundaryFunction) {}
-PetscErrorCode ablate::finiteVolume::boundaryConditions::EssentialGhost::EssentialGhostUpdate(PetscReal time, const PetscReal *c, const PetscReal *n, const PetscScalar *a_xI, PetscScalar *a_xG, void *ctx) {
+PetscErrorCode ablate::finiteVolume::boundaryConditions::EssentialGhost::EssentialGhostUpdate(PetscReal time, const PetscReal *c, const PetscReal *n, const PetscScalar *a_xI, PetscScalar *a_xG,
+                                                                                              void *ctx) {
     // cast the pointer back to a math function
     ablate::finiteVolume::boundaryConditions::EssentialGhost *essentialGhost = (ablate::finiteVolume::boundaryConditions::EssentialGhost *)ctx;
 

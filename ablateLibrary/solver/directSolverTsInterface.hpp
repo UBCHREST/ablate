@@ -19,5 +19,5 @@ class DirectSolverTsInterface {
     static PetscErrorCode SetupSolverTS(std::shared_ptr<Solver> solver, TS ts);
 };
 
-}
+}  // namespace ablate::solver
 #endif  // ABLATELIBRARY_DIRECTSOLVERTSINTERFACE_HPP

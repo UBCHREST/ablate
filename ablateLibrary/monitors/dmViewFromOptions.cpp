@@ -1,7 +1,7 @@
 #include "dmViewFromOptions.hpp"
-#include "solver/solver.hpp"
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
+#include "solver/solver.hpp"
 
 ablate::monitors::DmViewFromOptions::DmViewFromOptions(Scope scope, std::string options, std::string optionNameIn)
     : petscOptions(nullptr), optionName(optionNameIn.empty() ? "-CallDmViewFromOptions" : optionNameIn), scope(scope) {

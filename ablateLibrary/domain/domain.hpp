@@ -7,10 +7,10 @@
 #include <string>
 #include "fieldDescriptor.hpp"
 
-namespace ablate::solver{
+namespace ablate::solver {
 // forward declare the Solver
 class Solver;
-}
+}  // namespace ablate::solver
 
 namespace ablate::domain {
 // forward declare the subDomain

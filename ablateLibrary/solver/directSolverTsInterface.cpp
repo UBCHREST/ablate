@@ -51,7 +51,7 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::SetupSolverTS(std::share
     PetscErrorCode ierr = TSGetApplicationContext(ts, &test);
     CHKERRQ(ierr);
 
-    if(test != nullptr){
+    if (test != nullptr) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "The SetupSolverTS can only be used with one solver. Please use a ablate::solver::TimeStepper");
     }
 

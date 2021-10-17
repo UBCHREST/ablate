@@ -1,10 +1,10 @@
 #include "compressibleFlowState.hpp"
-#include <finiteVolume//processes/eulerAdvection.hpp>
+#include <finiteVolume  //processes/eulerAdvection.hpp>
 
 ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<mathFunctions::MathFunction> temperatureFunctionIn,
-                                                                           std::shared_ptr<mathFunctions::MathFunction> pressureFunctionIn,
-                                                                           std::shared_ptr<mathFunctions::MathFunction> velocityFunctionIn,
-                                                                           std::shared_ptr<mathFunctions::FieldFunction> massFractionFunctionIn)
+                                                                                   std::shared_ptr<mathFunctions::MathFunction> pressureFunctionIn,
+                                                                                   std::shared_ptr<mathFunctions::MathFunction> velocityFunctionIn,
+                                                                                   std::shared_ptr<mathFunctions::FieldFunction> massFractionFunctionIn)
     : eos(eosIn), temperatureFunction(temperatureFunctionIn), pressureFunction(pressureFunctionIn), velocityFunction(velocityFunctionIn), massFractionFunction(massFractionFunctionIn) {
     // error checking
     // right now temperature and pressure are assumed, but this should be expended to handle any combination of primitive variables

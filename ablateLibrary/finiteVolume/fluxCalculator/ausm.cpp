@@ -1,6 +1,6 @@
 #include "ausm.hpp"
-ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Ausm::AusmFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR,
-                                                                                         PetscReal rhoR, PetscReal pR, PetscReal *massFlux, PetscReal *p12) {
+ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Ausm::AusmFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
+                                                                                                         PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux, PetscReal *p12) {
     PetscReal Mm = uR / aR;
     PetscReal sMm, sPm;
     if (PetscAbsReal(Mm) <= 1.) {

@@ -1,6 +1,6 @@
 #include <petsc.h>
-#include <finiteElement/incompressibleFlow.hpp>
 #include <finiteElement/boundaryConditions/essential.hpp>
+#include <finiteElement/incompressibleFlow.hpp>
 #include <memory>
 #include <parameters/petscPrefixOptions.hpp>
 #include <particles/initializers/boxInitializer.hpp>
@@ -364,7 +364,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto particles = std::make_shared<ablate::particles::Tracer>("particle", 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact), particleOptions);
 
             // link the flow to the particles
-//            particles->Initialize(mesh->GetSubDomain());//TODO: replace
+            //            particles->Initialize(mesh->GetSubDomain());//TODO: replace
 
             // setup the initial conditions for error computing, this is only used for tests
             TSSetComputeInitialCondition(particles->GetTS(), ablate::particles::Particles::ComputeParticleExactSolution) >> testErrorChecker;

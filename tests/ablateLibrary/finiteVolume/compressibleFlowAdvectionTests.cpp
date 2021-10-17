@@ -76,20 +76,21 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, exactEulerSolution),
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, yiExactSolution)};
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow", ablate::domain::Domain::ENTIREDOMAIN,
-                                                                                       nullptr /*options*/,
-                                                                               eos,
-                                                                               parameters,
-                                                                               nullptr /*transportModel*/,
-                                                                               nullptr,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution} /*initialization*/,
-                                                                               boundaryConditions /*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
+            auto flowObject =
+                std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
+                                                                         ablate::domain::Domain::ENTIREDOMAIN,
+                                                                         nullptr /*options*/,
+                                                                         eos,
+                                                                         parameters,
+                                                                         nullptr /*transportModel*/,
+                                                                         nullptr,
+                                                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution} /*initialization*/,
+                                                                         boundaryConditions /*boundary conditions*/,
+                                                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
 
             mesh->InitializeSubDomains({flowObject});
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
             ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
-
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;

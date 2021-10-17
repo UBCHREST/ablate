@@ -10,11 +10,10 @@
 #include "mathFunctions/fieldFunction.hpp"
 #include "solver/solver.hpp"
 
-namespace ablate::finiteElement{
+namespace ablate::finiteElement {
 
 class FiniteElement : public solver::Solver {
    private:
-
     // helper function to register fv field
     void RegisterFiniteElementField(const domain::FieldDescriptor&);
 
@@ -25,17 +24,16 @@ class FiniteElement : public solver::Solver {
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
-    FiniteElement(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options,
-                 std::vector<domain::FieldDescriptor> fieldDescriptors,
-                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
+    FiniteElement(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, std::vector<domain::FieldDescriptor> fieldDescriptors,
+                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
     /** SubDomain Register and Setup **/
     void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
     void Setup() override;
     void Initialize() override;
 
-    virtual void CompleteFlowInitialization(DM, Vec) =0;
+    virtual void CompleteFlowInitialization(DM, Vec) = 0;
 
     /**
      * function to update the aux fields.
@@ -44,6 +42,6 @@ class FiniteElement : public solver::Solver {
 
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
 };
-}
+}  // namespace ablate::finiteElement
 
 #endif  // ABLATELIBRARY_FINITEVOLUME_HPP

@@ -17,5 +17,5 @@ class FileMesh : public Domain {
     explicit FileMesh(std::string nameIn, std::filesystem::path path, std::shared_ptr<parameters::Parameters> options = {});
     ~FileMesh() override;
 };
-};      // namespace ablate::mesh
+};      // namespace ablate::domain
 #endif  // ABLATELIBRARY_FILEMESH_HPP

@@ -4,10 +4,10 @@
 #include <petsc.h>
 #include <map>
 #include <string>
-#include "finiteElement.hpp"
 #include "domain/domain.hpp"
-#include "parameters/parameters.hpp"
+#include "finiteElement.hpp"
 #include "finiteVolume/boundaryConditions/boundaryCondition.hpp"
+#include "parameters/parameters.hpp"
 
 namespace ablate::finiteElement {
 class LowMachFlow : public FiniteElement {
@@ -41,6 +41,6 @@ class LowMachFlow : public FiniteElement {
                                                                      {"beta", 1.0},
                                                                      {"gravityDirection", 0}};
 };
-}  // namespace ablate::flow
+}  // namespace ablate::finiteElement
 
 #endif  // ABLATELIBRARY_LOWMACHFLOW_H

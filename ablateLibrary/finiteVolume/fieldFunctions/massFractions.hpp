@@ -21,5 +21,5 @@ class MassFractions : public ablate::mathFunctions::FieldFunction {
     explicit MassFractions(std::shared_ptr<ablate::eos::EOS> eos, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> massFractionFunctions);
 };
 
-}  // namespace ablate::flow::fieldFunctions
+}  // namespace ablate::finiteVolume::fieldFunctions
 #endif  // ABLATELIBRARY_FIELD_SOLUTION_EULER_HPP

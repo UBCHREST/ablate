@@ -2,8 +2,8 @@
 #include <mathFunctions/functionPointer.hpp>
 
 ablate::finiteVolume::fieldFunctions::Euler::Euler(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowStateIn)
-    : ablate::mathFunctions::FieldFunction("euler",
-                                           std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeEulerFromState, flowStateIn.get())),
+    : ablate::mathFunctions::FieldFunction(
+          "euler", std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeEulerFromState, flowStateIn.get())),
       flowState(flowStateIn) {}
 
 #include "parser/registrar.hpp"

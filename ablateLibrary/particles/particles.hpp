@@ -2,11 +2,11 @@
 #define ABLATELIBRARY_PARTICLES_HPP
 
 #include <memory>
-#include "solver/solver.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "mathFunctions/mathFunction.hpp"
 #include "particles/initializers/initializer.hpp"
 #include "particles/particleFieldDescriptor.hpp"
+#include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
 
 namespace ablate::particles {

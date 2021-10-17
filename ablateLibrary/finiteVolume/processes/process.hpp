@@ -10,6 +10,6 @@ class Process {
     virtual void Initialize(ablate::finiteVolume::FiniteVolume& fv) = 0;
 };
 
-}  // namespace ablate::flow::processes
+}  // namespace ablate::finiteVolume::processes
 
 #endif  // ABLATELIBRARY_PROCESS_HPP
