@@ -185,3 +185,32 @@ void ablate::finiteElement::FiniteElement::RegisterFiniteElementField(const abla
 
     PetscFEDestroy(&petscFE) >> checkError;
 }
+
+void ablate::finiteElement::FiniteElement::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
+    Solver::Save(viewer, sequenceNumber, time);
+
+    if (!exactSolutions.empty()) {
+        Vec exactVec;
+        DMGetGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
+
+        // Get the number of fields
+        PetscDS ds;
+        DMGetDS(subDomain->GetDM(), &ds) >> checkError;
+        PetscInt numberOfFields;
+        PetscDSGetNumFields(ds, &numberOfFields) >> checkError;
+        std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields);
+        std::vector<void*> exactCtxs(numberOfFields);
+        for (auto f = 0; f < numberOfFields; ++f) {
+            PetscDSGetExactSolution(ds, f, &exactFuncs[f], &exactCtxs[f]) >> checkError;
+            if (!exactFuncs[f]) {
+                throw std::invalid_argument("The exact solution has not set");
+            }
+        }
+
+        DMProjectFunction(subDomain->GetDM(), time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> checkError;
+
+        PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
+        VecView(exactVec, viewer) >> checkError;
+        DMRestoreGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
+    }
+}

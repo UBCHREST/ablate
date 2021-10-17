@@ -40,6 +40,7 @@ class FiniteElement : public solver::Solver {
      */
     static void UpdateAuxFields(TS ts, FiniteElement& fe);
 
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
 };
 }
 

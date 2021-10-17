@@ -124,6 +124,7 @@ class FiniteVolume : public solver::Solver {
      */
     void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx);
 
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
 };
 }
 

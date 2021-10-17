@@ -6,13 +6,9 @@
 
 ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string name, std::shared_ptr<parameters::Parameters> options, std::vector<ablate::domain::FieldDescriptor> fieldDescriptors,
                                                  std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
-    : Solver(name, options),
-      processes(processes),
-      fieldDescriptors(fieldDescriptors),
-      initialization(initialization),
-      boundaryConditions(boundaryConditions),
-      exactSolutions(exactSolution) {}
+                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
+    : Solver(name, options), processes(processes), fieldDescriptors(fieldDescriptors), initialization(initialization), boundaryConditions(boundaryConditions), exactSolutions(exactSolution) {}
 
 ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string name, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
                                                  std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
@@ -311,7 +307,7 @@ void ablate::finiteVolume::FiniteVolume::RegisterAuxFieldUpdate(FVAuxFieldUpdate
 }
 
 void ablate::finiteVolume::FiniteVolume::ComputeTimeStep(TS ts, ablate::solver::Solver& solver) {
-    auto& flowFV  = static_cast<ablate::finiteVolume::FiniteVolume&>(solver);
+    auto& flowFV = static_cast<ablate::finiteVolume::FiniteVolume&>(solver);
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
@@ -343,6 +339,34 @@ void ablate::finiteVolume::FiniteVolume::ComputeTimeStep(TS ts, ablate::solver::
 }
 
 void ablate::finiteVolume::FiniteVolume::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.push_back(std::make_pair(function, ctx)); }
+void ablate::finiteVolume::FiniteVolume::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
+    Solver::Save(viewer, sequenceNumber, time);
+
+    if (!exactSolutions.empty()) {
+        Vec exactVec;
+        DMGetGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
+
+        // Get the number of fields
+        PetscDS ds;
+        DMGetDS(subDomain->GetDM(), &ds) >> checkError;
+        PetscInt numberOfFields;
+        PetscDSGetNumFields(ds, &numberOfFields) >> checkError;
+        std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields);
+        std::vector<void*> exactCtxs(numberOfFields);
+        for (auto f = 0; f < numberOfFields; ++f) {
+            PetscDSGetExactSolution(ds, f, &exactFuncs[f], &exactCtxs[f]) >> checkError;
+            if (!exactFuncs[f]) {
+                throw std::invalid_argument("The exact solution has not set");
+            }
+        }
+
+        DMProjectFunction(subDomain->GetDM(), time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> checkError;
+
+        PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
+        VecView(exactVec, viewer) >> checkError;
+        DMRestoreGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
+    }
+}
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolume, "finite volume solver", ARG(std::string, "name", "the name of the flow field"),
