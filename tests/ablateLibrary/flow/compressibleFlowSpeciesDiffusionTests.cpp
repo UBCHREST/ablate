@@ -166,6 +166,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolume>(
                 "testFlow",
+                domain::Domain::ENTIREDOMAIN,
                 petscFlowOptions /*options*/,
                 std::vector<ablate::domain::FieldDescriptor>{
                     {.name = "euler", .prefix = "euler", .components = {"rho", "rhoE", "rhoVel" + domain::FieldDescriptor::DIMENSION}},

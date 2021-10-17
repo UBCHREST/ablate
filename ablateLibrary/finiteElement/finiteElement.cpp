@@ -3,31 +3,31 @@
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 
-ablate::finiteElement::FiniteElement::FiniteElement(std::string name, std::shared_ptr<parameters::Parameters> options, std::vector<ablate::domain::FieldDescriptor> fieldDescriptors,
+ablate::finiteElement::FiniteElement::FiniteElement(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, std::vector<ablate::domain::FieldDescriptor> fieldDescriptors,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
-    : Solver(name, options),
+    : Solver(solverId, region, options),
       fieldDescriptors(fieldDescriptors),
       initialization(initialization),
       boundaryConditions(boundaryConditions),
       auxiliaryFieldsUpdaters(auxiliaryFields),
       exactSolutions(exactSolution) {}
 
-void ablate::finiteElement::FiniteElement::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
-    Solver::SetupDomain(subDomain);
+void ablate::finiteElement::FiniteElement::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
+    Solver::Register(subDomain);
     Solver::DecompressFieldFieldDescriptor(fieldDescriptors);
+
     // initialize each field
     for (const auto& field : fieldDescriptors) {
         if (!field.components.empty()) {
             RegisterFiniteElementField(field);
         }
     }
+}
 
-    // TODO: Move
-    DMCreateDS(subDomain->GetDM()) >> checkError;
-
+void ablate::finiteElement::FiniteElement::Setup() {
     DM cdm = subDomain->GetDM();
     while (cdm) {
         DMCopyDisc(subDomain->GetDM(), cdm) >> checkError;
@@ -53,32 +53,8 @@ void ablate::finiteElement::FiniteElement::SetupDomain(std::shared_ptr<ablate::d
     }
 }
 
-void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElement& fe) {
-    PetscInt numberAuxFields;
-    DMGetNumFields(fe.subDomain->GetAuxDM(), &numberAuxFields) >> checkError;
 
-    // size up the update and context functions
-    std::vector<mathFunctions::PetscFunction> auxiliaryFieldFunctions(numberAuxFields, NULL);
-    std::vector<void*> auxiliaryFieldContexts(numberAuxFields, NULL);
-
-    // for each given aux field
-    for (auto auxFieldDescription : fe.auxiliaryFieldsUpdaters) {
-        auto fieldId = fe.subDomain->GetField(auxFieldDescription->GetName());
-        auxiliaryFieldContexts[fieldId.id] = auxFieldDescription->GetSolutionField().GetContext();
-        auxiliaryFieldFunctions[fieldId.id] = auxFieldDescription->GetSolutionField().GetPetscFunction();
-    }
-
-    // get the time at the end of the time step
-    PetscReal time = 0;
-    PetscReal dt = 0;
-    TSGetTime(ts, &time) >> checkError;
-    TSGetTimeStep(ts, &dt) >> checkError;
-
-    // Update the source terms
-    DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> checkError;
-}
-
-void ablate::finiteElement::FiniteElement::CompleteSetup(TS ts) {
+void ablate::finiteElement::FiniteElement::Initialize() {
     // Apply any boundary conditions
     PetscDS prob;
     DMGetDS(subDomain->GetDM(), &prob) >> checkError;
@@ -152,6 +128,31 @@ void ablate::finiteElement::FiniteElement::CompleteSetup(TS ts) {
             }
         }
     }
+}
+
+void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElement& fe) {
+    PetscInt numberAuxFields;
+    DMGetNumFields(fe.subDomain->GetAuxDM(), &numberAuxFields) >> checkError;
+
+    // size up the update and context functions
+    std::vector<mathFunctions::PetscFunction> auxiliaryFieldFunctions(numberAuxFields, NULL);
+    std::vector<void*> auxiliaryFieldContexts(numberAuxFields, NULL);
+
+    // for each given aux field
+    for (auto auxFieldDescription : fe.auxiliaryFieldsUpdaters) {
+        auto fieldId = fe.subDomain->GetField(auxFieldDescription->GetName());
+        auxiliaryFieldContexts[fieldId.id] = auxFieldDescription->GetSolutionField().GetContext();
+        auxiliaryFieldFunctions[fieldId.id] = auxFieldDescription->GetSolutionField().GetPetscFunction();
+    }
+
+    // get the time at the end of the time step
+    PetscReal time = 0;
+    PetscReal dt = 0;
+    TSGetTime(ts, &time) >> checkError;
+    TSGetTimeStep(ts, &dt) >> checkError;
+
+    // Update the source terms
+    DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> checkError;
 }
 
 void ablate::finiteElement::FiniteElement::RegisterFiniteElementField(const ablate::domain::FieldDescriptor& fieldDescriptor) {

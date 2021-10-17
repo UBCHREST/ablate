@@ -34,7 +34,7 @@ timestepper:
     options:
       dm_refine: 2
 solver: !ablate::finiteElement::IncompressibleFlow
-  name: theFlowField
+  id: theFlowField
   options: {}
   parameters:
     strouhal: 1.0

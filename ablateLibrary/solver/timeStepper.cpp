@@ -43,11 +43,8 @@ void ablate::solver::TimeStepper::Solve() {
         throw std::runtime_error("No solvers have been set.");
     }
 
+    domain->InitializeSubDomains(solvers);
     TSSetDM(ts, domain->GetDM()) >> checkError;
-    domain->CompleteSetup();
-    for(auto& solver: solvers){
-        solver->CompleteSetup(ts);
-    }
 
     // Get the solution vector
     Vec solutionVec = domain->GetSolutionVector();
@@ -88,7 +85,6 @@ void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solve
 
     // Save the solver and setup the domain
     solvers.push_back(solver);
-    solver->SetupDomain(domain->GetSubDomain(solver->GetName()));
 
     // Register the monitors
     for(auto& monitor : solverMonitors){

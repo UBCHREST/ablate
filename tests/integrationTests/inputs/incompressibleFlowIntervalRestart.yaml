@@ -36,7 +36,7 @@ timestepper:
     options:
       dm_refine: 2
 flow: !ablate::finiteElement::IncompressibleFlow
-  name: theFlowField
+  id: theFlowField
   options: {}
   parameters:
     strouhal: 1.0

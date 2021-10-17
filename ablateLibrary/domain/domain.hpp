@@ -7,11 +7,19 @@
 #include <string>
 #include "fieldDescriptor.hpp"
 
+namespace ablate::solver{
+// forward declare the Solver
+class Solver;
+}
+
 namespace ablate::domain {
 // forward declare the subDomain
 class SubDomain;
 
 class Domain : public std::enable_shared_from_this<Domain> {
+   public:
+    inline const static std::string ENTIREDOMAIN;
+
    protected:
     Domain(std::string name);
     virtual ~Domain();
@@ -33,6 +41,10 @@ class Domain : public std::enable_shared_from_this<Domain> {
     // The aux field to the flow
     Vec auxField;
 
+    void CreateGlobalStructures();
+
+    std::shared_ptr<SubDomain> GetSubDomain(const std::string& name);
+
    public:
     std::string GetName() const { return name; }
 
@@ -48,11 +60,7 @@ class Domain : public std::enable_shared_from_this<Domain> {
 
     PetscInt GetDimensions() const;
 
-    void CompleteSetup();
-
-    std::shared_ptr<SubDomain> GetSubDomain();
-
-    std::shared_ptr<SubDomain> GetSubDomain(const std::string& name);
+    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers);
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H

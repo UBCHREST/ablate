@@ -13,7 +13,7 @@
 namespace ablate::finiteVolume {
 class CompressibleFlow : public FiniteVolume {
    public:
-    CompressibleFlow(std::string name, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> parameters,
+    CompressibleFlow(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> parameters,
                      std::shared_ptr<eos::transport::TransportModel> transport, std::shared_ptr<fluxCalculator::FluxCalculator> = {},
                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});

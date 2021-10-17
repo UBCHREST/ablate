@@ -594,6 +594,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
+                                                                                       domain::Domain::ENTIREDOMAIN,
                                                                                        nullptr /*options*/,
                                                                                        eos,
                                                                                        parameters,
@@ -609,11 +610,8 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             problemSetup.constants = constants;
 
             // Complete the problem setup
-            flowObject->SetupDomain(mesh->GetSubDomain());
-            mesh->CompleteSetup();
+            mesh->InitializeSubDomains({flowObject});
             ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
-
-            flowObject->CompleteSetup(ts);
 
             // Add a point wise function that adds fluxes to euler.  It requires no input fields
             flowObject->RegisterRHSFunction(SourceMMS, &problemSetup, {"euler"}, {}, {});

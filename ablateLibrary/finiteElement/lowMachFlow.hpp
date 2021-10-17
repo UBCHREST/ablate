@@ -15,14 +15,16 @@ class LowMachFlow : public FiniteElement {
     const std::shared_ptr<parameters::Parameters> parameters;
 
    public:
-    LowMachFlow(std::string name, std::shared_ptr<parameters::Parameters> options = {}, std::shared_ptr<parameters::Parameters> parameters = {},
+    LowMachFlow(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options = {}, std::shared_ptr<parameters::Parameters> parameters = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
     virtual ~LowMachFlow() = default;
 
-    void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
-    void CompleteSetup(TS ts) override;
+    /** SubDomain Register and Setup **/
+    void Setup() override;
+    void Initialize() override;
 
+    /** A finite element complete function **/
     void CompleteFlowInitialization(DM, Vec) override;
 
    private:

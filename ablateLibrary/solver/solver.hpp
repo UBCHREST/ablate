@@ -19,10 +19,13 @@ class Solver : public io::Serializable{
     std::vector<std::function<void(TS ts, Solver&)>> postStepFunctions;
     std::vector<std::function<void(TS ts, Solver&)>> postEvaluateFunctions;
 
-   protected:
-    // The name of this domain.  This will be used for the subdomain
-    const std::string name;
+    // The name of this solver
+    const std::string solverId;
 
+    // The region of this solver.
+    const std::string region;
+
+   protected:
     // an optional petscOptions that is used for this solver
     PetscOptions petscOptions;
 
@@ -30,7 +33,7 @@ class Solver : public io::Serializable{
     std::shared_ptr<ablate::domain::SubDomain> subDomain;
 
     // The constructor to be call by any Solve implementation
-    explicit Solver(std::string name, std::shared_ptr<parameters::Parameters> options = nullptr);
+    explicit Solver(std::string solverId, std::string region = "", std::shared_ptr<parameters::Parameters> options = nullptr);
 
     // function to decompress FieldDescriptors
     void DecompressFieldFieldDescriptor(std::vector<ablate::domain::FieldDescriptor>& FieldDescriptors);
@@ -38,15 +41,20 @@ class Solver : public io::Serializable{
    public:
     virtual ~Solver();
 
-    virtual void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain);
+    /** Register all needed fields with the subDomain **/
+    virtual void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain);
 
-    virtual void CompleteSetup(TS ts) = 0;
+    /** Setup and size the subDomain with the subDomain **/
+    virtual void Setup() = 0;
+
+    /** Finalize the Setup of the subDomain before running **/
+    virtual void Initialize() = 0;
 
     inline ablate::domain::SubDomain& GetSubDomain() { return *subDomain; }
 
-    inline const std::string& GetName() const { return name; }
+    inline const std::string& GetRegion() const { return region; }
 
-    inline const std::string& GetId() const override { return name; }
+    inline const std::string& GetId() const override { return solverId; }
 
     // Support for timestepping calls
     void PreStage(TS ts, PetscReal stagetime);

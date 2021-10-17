@@ -49,22 +49,23 @@ class FiniteVolume : public solver::Solver {
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
-    FiniteVolume(std::string name, std::shared_ptr<parameters::Parameters> options,
+    FiniteVolume(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options,
                  std::vector<domain::FieldDescriptor> fieldDescriptors,
                  std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
-    FiniteVolume(std::string name, std::shared_ptr<parameters::Parameters> options,
+    FiniteVolume(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options,
                  std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
                  std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
 
-    void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
-
-    void CompleteSetup(TS ts) override;
+    /** SubDomain Register and Setup **/
+    void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
+    void Setup() override;
+    void Initialize() override;
 
     /**
      * Function passed into PETSc to compute the FV RHS

@@ -3,7 +3,7 @@
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
 
-ablate::solver::Solver::Solver(std::string name, std::shared_ptr<parameters::Parameters> options) : name(name), petscOptions(nullptr) {
+ablate::solver::Solver::Solver(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options) : solverId(solverId), region(region), petscOptions(nullptr) {
     // Set the options
     if (options) {
         PetscOptionsCreate(&petscOptions) >> checkError;
@@ -13,11 +13,11 @@ ablate::solver::Solver::Solver(std::string name, std::shared_ptr<parameters::Par
 
 ablate::solver::Solver::~Solver() {
     if (petscOptions) {
-        ablate::utilities::PetscOptionsDestroyAndCheck(name, &petscOptions);
+        ablate::utilities::PetscOptionsDestroyAndCheck(region, &petscOptions);
     }
 }
 
-void ablate::solver::Solver::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = subDomainIn; }
+void ablate::solver::Solver::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = subDomainIn; }
 
 void ablate::solver::Solver::DecompressFieldFieldDescriptor(std::vector<ablate::domain::FieldDescriptor>& fieldDescriptors) {
     for (auto& field : fieldDescriptors) {

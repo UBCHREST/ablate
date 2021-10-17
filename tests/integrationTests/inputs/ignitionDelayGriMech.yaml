@@ -18,7 +18,7 @@ timestepper:
     options:
       dm_refine: 0
 solver: !ablate::finiteVolume::FiniteVolume
-  name: reactingFlowODE
+  id: reactingFlowODE
   options: {}
   parameters: {}
   fields:

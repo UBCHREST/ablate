@@ -215,6 +215,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
             auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlow>(
                 "testFlow",
+                domain::Domain::ENTIREDOMAIN,
                 nullptr,
                 parameters,
                 /* initialization functions */
@@ -227,7 +228,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 /* exact solutions*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
-            flowObject->SetupDomain(mesh->GetSubDomain());
+            mesh->InitializeSubDomains({flowObject});
             // Override problem with source terms, boundary, and set the exact solution
             {
                 PetscDS prob;
@@ -248,7 +249,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                     PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> testErrorChecker;
                 }
             }
-            flowObject->CompleteSetup(ts);
+            flowObject->Initialize();
 
             // Check the convergence
             DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
@@ -275,7 +276,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 std::make_shared<ablate::particles::Inertial>("particle", 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction, particleOptions);
 
             // link the flow to the particles
-            particles->Initialize(mesh->GetSubDomain());
+//            particles->Initialize(mesh->GetSubDomain());//TODO: restore particles
 
             TSSetComputeInitialCondition(particles->GetTS(), ablate::particles::Particles::ComputeParticleExactSolution) >> testErrorChecker;
 

@@ -25,13 +25,15 @@ class FiniteElement : public solver::Solver {
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
-    FiniteElement(std::string name, std::shared_ptr<parameters::Parameters> options,
+    FiniteElement(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options,
                  std::vector<domain::FieldDescriptor> fieldDescriptors,
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
-    void SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
-    void CompleteSetup(TS ts) override;
+    /** SubDomain Register and Setup **/
+    void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
+    void Setup() override;
+    void Initialize() override;
 
     virtual void CompleteFlowInitialization(DM, Vec) =0;
 

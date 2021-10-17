@@ -76,7 +76,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, exactEulerSolution),
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, yiExactSolution)};
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow", ablate::domain::Domain::ENTIREDOMAIN,
                                                                                        nullptr /*options*/,
                                                                                eos,
                                                                                parameters,
@@ -86,10 +86,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                                boundaryConditions /*boundary conditions*/,
                                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
 
-            flowObject->SetupDomain(mesh->GetSubDomain());
-            mesh->CompleteSetup();
-            // assume one flow field right now
-            flowObject->CompleteSetup(ts);
+            mesh->InitializeSubDomains({flowObject});
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
             ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
 

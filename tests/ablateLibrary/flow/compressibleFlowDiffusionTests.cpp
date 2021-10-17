@@ -220,6 +220,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
+                                                                                       ablate::domain::Domain::ENTIREDOMAIN,
                                                                                        nullptr /*options*/,
                                                                                        eos,
                                                                                        flowParameters,
@@ -229,9 +230,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                        boundaryConditions /*boundary conditions*/,
                                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
-            flowObject->SetupDomain(mesh->GetSubDomain());
-            mesh->CompleteSetup();
-            flowObject->CompleteSetup(ts);
+            mesh->InitializeSubDomains({flowObject});
             ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
 
             // Name the flow field

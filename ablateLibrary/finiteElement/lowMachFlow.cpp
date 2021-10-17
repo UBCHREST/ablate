@@ -2,11 +2,11 @@
 #include "lowMachFlow.h"
 #include "utilities/petscError.hpp"
 
-ablate::finiteElement::LowMachFlow::LowMachFlow(std::string name, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<parameters::Parameters> parameters,
+ablate::finiteElement::LowMachFlow::LowMachFlow(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<parameters::Parameters> parameters,
                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : FiniteElement(name, options,
+    : FiniteElement(solverId, region, options,
                     {
                         {.name = "velocity", .prefix = "vel_", .components = {"vel" + domain::FieldDescriptor::DIMENSION}},
                         {.name = "pressure", .prefix = "pres_"},
@@ -19,8 +19,8 @@ ablate::finiteElement::LowMachFlow::LowMachFlow(std::string name, std::shared_pt
 
 }
 
-void ablate::finiteElement::LowMachFlow::SetupDomain(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
-    FiniteElement::SetupDomain(subDomain);
+void ablate::finiteElement::LowMachFlow::Setup() {
+    FiniteElement::Setup();
     {
         PetscObject pressure;
         MatNullSpace nullspacePres;
@@ -112,8 +112,8 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteE
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteElement::LowMachFlow::CompleteSetup(TS ts) {
-    ablate::finiteElement::FiniteElement::CompleteSetup(ts);
+void ablate::finiteElement::LowMachFlow::Initialize() {
+    ablate::finiteElement::FiniteElement::Initialize();
 
     DMSetNullSpaceConstructor(subDomain->GetDM(), PRES, createPressureNullSpace) >> checkError;
     RegisterPreStep([&](TS ts, Solver&){removeDiscretePressureNullspaceOnTs(ts, *this);});
@@ -129,7 +129,8 @@ void ablate::finiteElement::LowMachFlow::CompleteFlowInitialization(DM dm, Vec u
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteElement::LowMachFlow, "incompressible FE flow",
-         ARG(std::string, "name", "the name of the flow field"),
+         ARG(std::string, "id", "the name of the flow field"),
+         OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"),
          OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
          ARG(std::vector<mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),

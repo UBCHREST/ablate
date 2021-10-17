@@ -21,7 +21,7 @@ timestepper:
     options:
       dm_refine: 0
 solver: !ablate::finiteVolume::CompressibleFlow
-  name: vortexFlowField
+  id: vortexFlowField
   options:
     eulerpetscfv_type: leastsquares
     Tpetscfv_type: leastsquares

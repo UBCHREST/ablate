@@ -311,6 +311,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
 
             auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlow>(
                 "testFlow",
+                domain::Domain::ENTIREDOMAIN,
                 parameters,
                 nullptr,
                 /* initialization functions */
@@ -329,7 +330,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                 /* exact solutions*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
-            flowObject->SetupDomain(mesh->GetSubDomain());
+            mesh->InitializeSubDomains({flowObject});
 
             // Override problem with source terms, boundary, and set the exact solution
             {
@@ -351,7 +352,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                     PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> testErrorChecker;
                 }
             }
-            flowObject->CompleteSetup(ts);
+            flowObject->Initialize();
 
             // Check the convergence
             DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
@@ -363,7 +364,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto particles = std::make_shared<ablate::particles::Tracer>("particle", 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact), particleOptions);
 
             // link the flow to the particles
-            particles->Initialize(mesh->GetSubDomain());
+//            particles->Initialize(mesh->GetSubDomain());//TODO: replace
 
             // setup the initial conditions for error computing, this is only used for tests
             TSSetComputeInitialCondition(particles->GetTS(), ablate::particles::Particles::ComputeParticleExactSolution) >> testErrorChecker;

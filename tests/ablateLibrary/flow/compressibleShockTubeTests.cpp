@@ -178,6 +178,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "mirrorWall", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
+                                                                                       ablate::domain::Domain::ENTIREDOMAIN,
                                                                                        nullptr /*options*/,
                                                                                        eos,
                                                                                        parameters,
@@ -188,9 +189,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{} /*exactSolution*/);
 
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
-            flowObject->SetupDomain(mesh->GetSubDomain());
-            mesh->CompleteSetup();
-            flowObject->CompleteSetup(ts);
+            mesh->InitializeSubDomains({flowObject});
             ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
 
             // Setup the TS

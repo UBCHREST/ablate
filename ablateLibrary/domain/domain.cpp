@@ -2,6 +2,7 @@
 #include <utilities/mpiError.hpp>
 #include "utilities/petscError.hpp"
 #include "subDomain.hpp"
+#include "solver/solver.hpp"
 
 ablate::domain::Domain::Domain(std::string name) : name(name), auxDM(nullptr), solField(nullptr), auxField(nullptr){}
 
@@ -52,9 +53,7 @@ PetscInt ablate::domain::Domain::GetDimensions() const {
     return dim;
 }
 
-void ablate::domain::Domain::CompleteSetup() {
-    DMCreateDS(dm) >> checkError;
-
+void ablate::domain::Domain::CreateGlobalStructures() {
     // Setup the solve with the ts
     DMPlexCreateClosureIndex(dm, NULL) >> checkError;
     DMCreateGlobalVector(dm, &(solField)) >> checkError;
@@ -77,9 +76,26 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     return subDomains[subDomainName];
 }
 
-std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain() {
-    if(subDomains.count("") == 0){
-        subDomains[""] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), nullptr);
+void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers){
+    // determine the number of fields
+    for(auto& solver : solvers){
+        solver->Register(GetSubDomain(solver->GetRegion()));
     }
-    return subDomains[""];
+
+    // Set up the global DS
+    DMCreateDS(dm) >> checkError;
+
+    // Setup each of the fields
+    for(auto& solver : solvers){
+        solver->Setup();
+    }
+
+    // Create the global structures
+    CreateGlobalStructures();
+
+    // Initialize each solver
+    for(auto& solver : solvers){
+        solver->Initialize();
+    }
 }
+

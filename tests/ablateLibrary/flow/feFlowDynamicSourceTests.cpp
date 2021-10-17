@@ -165,9 +165,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                                               std::make_shared<mathFunctions::FieldFunction>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
 
             DMSetApplicationContext(mesh->GetDM(), flowObject.get()) >> testErrorChecker;
-            flowObject->SetupDomain(mesh->GetSubDomain());
-            mesh->CompleteSetup();
-            flowObject->CompleteSetup(ts);
+            mesh->InitializeSubDomains({flowObject});
             ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
 
             // Name the flow field
@@ -220,7 +218,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::LowMachFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::LowMachFlow>(
+                        name, ablate::domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^2 + y^2, t + 2*x^2 + 2*x*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -247,7 +246,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::LowMachFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::LowMachFlow>(
+                        name, ablate::domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^3 + y^3, t + 2*x^3 + 3*x^2*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -275,7 +275,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
+                        name, ablate::domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -300,7 +301,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
+                        name, ablate::domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -326,7 +328,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 5 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 5"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(name, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
+                        name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y",
             .uDerivativeExact = "1.0, 1.0",
