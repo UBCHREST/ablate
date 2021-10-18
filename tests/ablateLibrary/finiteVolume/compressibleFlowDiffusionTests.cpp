@@ -231,7 +231,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
             mesh->InitializeSubDomains({flowObject});
-            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
+            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;

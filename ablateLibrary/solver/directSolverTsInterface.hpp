@@ -8,7 +8,7 @@ namespace ablate::solver {
 /** This static class helps setup a single solver to be used by a ts directly **/
 class DirectSolverTsInterface {
    private:
-    DirectSolverTsInterface() = delete;
+    const std::vector<std::shared_ptr<Solver>> solvers;
 
     static PetscErrorCode PreStage(TS ts, PetscReal stagetime);
     static PetscErrorCode PreStep(TS ts);
@@ -16,7 +16,8 @@ class DirectSolverTsInterface {
     static PetscErrorCode PostEvaluate(TS ts);
 
    public:
-    static PetscErrorCode SetupSolverTS(std::shared_ptr<Solver> solver, TS ts);
+    DirectSolverTsInterface(TS ts, std::vector<std::shared_ptr<Solver>> solvers);
+    DirectSolverTsInterface(TS ts, std::shared_ptr<Solver> solver);
 };
 
 }  // namespace ablate::solver

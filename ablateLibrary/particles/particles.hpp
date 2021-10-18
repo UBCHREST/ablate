@@ -5,20 +5,17 @@
 #include "mathFunctions/fieldFunction.hpp"
 #include "mathFunctions/mathFunction.hpp"
 #include "particles/initializers/initializer.hpp"
-#include "particles/particleFieldDescriptor.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
+#include "particleField.hpp"
 
 namespace ablate::particles {
 
-class Particles : public io::Serializable {
+class Particles : public solver::Solver {
    protected:
     // particle domain
-    DM dm;
+    DM swarmDm;
     const PetscInt ndims;
-
-    // particle name
-    const std::string name;
 
     // time integration data
     TS particleTs = NULL;
@@ -26,31 +23,16 @@ class Particles : public io::Serializable {
     PetscReal timeFinal;   /* The time for uf, at the end of the advection solve */
 
     // flow coupling data
-    PetscInt flowVelocityFieldIndex;
+    domain::Field flowVelocityField;
     Vec flowInitial; /* The PDE solution field at ti */
     Vec flowFinal;   /* The PDE solution field at tf */
 
     // all fields stored in the particle domain
-    std::vector<particles::ParticleFieldDescriptor> particleFieldDescriptors;
-    std::vector<particles::ParticleFieldDescriptor> particleSolutionDescriptors;
+    std::vector<ParticleField> particleFieldDescriptors;
+    std::vector<ParticleField> particleSolutionFieldDescriptors;
 
     // store the exact solution if provided
     const std::shared_ptr<mathFunctions::MathFunction> exactSolution;
-
-    /**
-     * The register fields adds the field to the swarm
-     * @param fieldDescriptor
-     */
-    void RegisterField(ParticleFieldDescriptor fieldDescriptor);
-
-    /**
-     * The register solution fields adds the field to the swarm and includes the value in the pack/unpack solution
-     * @param fieldDescriptor
-     */
-    void RegisterSolutionField(ParticleFieldDescriptor fieldDescriptor);
-
-    // Petsc options specific to these particles. These may be null by default
-    PetscOptions petscOptions;
 
     // store a boolean to state if a dmChanged (number of particles local/global changed)
     bool dmChanged;
@@ -84,7 +66,13 @@ class Particles : public io::Serializable {
     /**
      * Get the name of the solution vector
      */
-    inline const char* GetSolutionVectorName() { return particleSolutionDescriptors.size() == 1 ? DMSwarmPICField_coor : PackedSolution; }
+    inline const char* GetSolutionVectorName() { return particleSolutionFieldDescriptors.size() == 1 ? DMSwarmPICField_coor : PackedSolution; }
+
+
+    /**
+     * Support function to create a vector of strings
+     */
+    static std::vector<std::string> CreateDimensionVector(const std::string& prefix, int dim);
 
    private:
     inline static const char PackedSolution[] = "PackedSolution";
@@ -93,19 +81,27 @@ class Particles : public io::Serializable {
     void StoreInitialParticleLocations();
     static PetscErrorCode ComputeParticleError(TS particleTS, Vec u, Vec e);
 
+    /**
+     * The register fields adds the field to the swarm
+     * @param fieldDescriptor
+     */
+    void RegisterParticleField(const ParticleField& fieldDescriptor);
+
    public:
-    explicit Particles(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
-                       std::shared_ptr<mathFunctions::MathFunction> exactSolution, std::shared_ptr<parameters::Parameters> options);
+    explicit Particles(std::string solverId, std::string region,std::shared_ptr<parameters::Parameters> options, int ndims,std::vector<ParticleField> fields, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
+                       std::shared_ptr<mathFunctions::MathFunction> exactSolution);
     virtual ~Particles();
 
-    const std::string& GetName() const { return name; }
-    const std::string& GetId() const override { return name; }
-    const DM& GetDM() const { return dm; }
+    const DM& GetParticleDM() const { return swarmDm; }
     PetscReal GetInitialTime() const { return timeInitial; }
     PetscReal GetFinalTime() const { return timeFinal; }
     TS GetTS() const { return particleTs; }
 
-    virtual void Initialize(std::shared_ptr<domain::SubDomain> flow);
+    /** Setup and size the subDomain with the subDomain **/
+    virtual void Setup() override;
+
+    /** Finalize the Setup of the subDomain before running **/
+    virtual void Initialize() override;
 
     void ProjectFunction(const std::string& field, ablate::mathFunctions::MathFunction& mathFunction);
 

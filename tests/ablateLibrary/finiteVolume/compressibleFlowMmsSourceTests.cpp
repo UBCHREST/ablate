@@ -611,7 +611,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 
             // Complete the problem setup
             mesh->InitializeSubDomains({flowObject});
-            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
+            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Add a point wise function that adds fluxes to euler.  It requires no input fields
             flowObject->RegisterRHSFunction(SourceMMS, &problemSetup, {"euler"}, {}, {});

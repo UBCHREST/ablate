@@ -6,6 +6,7 @@
 #include <parameters/petscOptionParameters.hpp>
 #include <parameters/petscPrefixOptions.hpp>
 #include <particles/initializers/boxInitializer.hpp>
+#include <solver/directSolverTsInterface.hpp>
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
 #include "gtest/gtest.h"
@@ -155,21 +156,21 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     // get the particle data from the context
     ablate::particles::Inertial *tracerParticles = (ablate::particles::Inertial *)ctx;
     PetscInt particleCount;
-    ierr = DMSwarmGetSize(tracerParticles->GetDM(), &particleCount);
+    ierr = DMSwarmGetSize(tracerParticles->GetParticleDM(), &particleCount);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
     // compute the average particle location
     const PetscReal *coords;
     PetscInt dims;
     PetscReal avg[3] = {0.0, 0.0, 0.0};
-    ierr = DMSwarmGetField(tracerParticles->GetDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
+    ierr = DMSwarmGetField(tracerParticles->GetParticleDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     for (PetscInt n = 0; n < dims; n++) {
         for (PetscInt p = 0; p < particleCount; p++) {
             avg[n] += coords[p * dims + n] / PetscReal(particleCount);
         }
     }
-    ierr = DMSwarmRestoreField(tracerParticles->GetDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
+    ierr = DMSwarmRestoreField(tracerParticles->GetParticleDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
     ierr = PetscPrintf(PETSC_COMM_WORLD,
@@ -228,31 +229,6 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 /* exact solutions*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
-            mesh->InitializeSubDomains({flowObject});
-            // Override problem with source terms, boundary, and set the exact solution
-            {
-                PetscDS prob;
-                DMGetDS(mesh->GetDM(), &prob) >> testErrorChecker;
-
-                // V, W Test Function
-                IntegrandTestFunction tempFunctionPointer;
-                if (testingParam.f0_v) {
-                    PetscDSGetResidual(prob, VTEST, &f0_v_original, &tempFunctionPointer) >> testErrorChecker;
-                    PetscDSSetResidual(prob, VTEST, testingParam.f0_v, tempFunctionPointer) >> testErrorChecker;
-                }
-                if (testingParam.f0_w) {
-                    PetscDSGetResidual(prob, WTEST, &f0_w_original, &tempFunctionPointer) >> testErrorChecker;
-                    PetscDSSetResidual(prob, WTEST, testingParam.f0_w, tempFunctionPointer) >> testErrorChecker;
-                }
-                if (testingParam.f0_q) {
-                    PetscDSGetResidual(prob, QTEST, &f0_q_original, &tempFunctionPointer) >> testErrorChecker;
-                    PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> testErrorChecker;
-                }
-            }
-            flowObject->Initialize();
-
-            // Check the convergence
-            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             auto particleParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"fluidDensity", std::to_string(testingParam.parameters.rhoF)},
                                                                                                                              {"fluidViscosity", std::to_string(testingParam.parameters.muF)},
@@ -273,10 +249,34 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
             // Create an inertial particle object
             auto particles =
-                std::make_shared<ablate::particles::Inertial>("particle", 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction, particleOptions);
+                std::make_shared<ablate::particles::Inertial>("particle", ablate::domain::BoxMesh::ENTIREDOMAIN,particleOptions, 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction);
 
-            // link the flow to the particles
-            //            particles->Initialize(mesh->GetSubDomain());//TODO: restore particles
+            mesh->InitializeSubDomains({flowObject, particles});
+            solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});
+
+            // Override problem with source terms, boundary, and set the exact solution
+            {
+                PetscDS prob;
+                DMGetDS(mesh->GetDM(), &prob) >> testErrorChecker;
+
+                // V, W Test Function
+                IntegrandTestFunction tempFunctionPointer;
+                if (testingParam.f0_v) {
+                    PetscDSGetResidual(prob, VTEST, &f0_v_original, &tempFunctionPointer) >> testErrorChecker;
+                    PetscDSSetResidual(prob, VTEST, testingParam.f0_v, tempFunctionPointer) >> testErrorChecker;
+                }
+                if (testingParam.f0_w) {
+                    PetscDSGetResidual(prob, WTEST, &f0_w_original, &tempFunctionPointer) >> testErrorChecker;
+                    PetscDSSetResidual(prob, WTEST, testingParam.f0_w, tempFunctionPointer) >> testErrorChecker;
+                }
+                if (testingParam.f0_q) {
+                    PetscDSGetResidual(prob, QTEST, &f0_q_original, &tempFunctionPointer) >> testErrorChecker;
+                    PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> testErrorChecker;
+                }
+            }
+
+            // Check the convergence
+            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             TSSetComputeInitialCondition(particles->GetTS(), ablate::particles::Particles::ComputeParticleExactSolution) >> testErrorChecker;
 

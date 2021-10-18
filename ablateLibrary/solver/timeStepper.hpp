@@ -35,7 +35,7 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     static PetscErrorCode TSPostEvaluateFunction(TS ts);
 
    public:
-    TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments, std::shared_ptr<io::Serializer> serializer = {});
+    TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments = {}, std::shared_ptr<io::Serializer> serializer = {});
     ~TimeStepper();
 
     TS& GetTS() { return ts; }

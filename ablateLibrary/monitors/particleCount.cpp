@@ -20,10 +20,10 @@ PetscErrorCode ablate::monitors::ParticleCount::OutputParticleCount(TS ts, Petsc
         }
 
         PetscInt particleCount;
-        ierr = DMSwarmGetSize(monitor->particles->GetDM(), &particleCount);
+        ierr = DMSwarmGetSize(monitor->particles->GetParticleDM(), &particleCount);
         CHKERRQ(ierr);
 
-        monitor->log->Printf("%s Count: %d\n", monitor->particles->GetName().c_str(), (int)particleCount);
+        monitor->log->Printf("%s Count: %d\n", monitor->particles->GetId().c_str(), (int)particleCount);
     }
     PetscFunctionReturn(0);
 }

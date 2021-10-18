@@ -190,7 +190,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
 
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
             mesh->InitializeSubDomains({flowObject});
-            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
+            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Setup the TS
             TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;

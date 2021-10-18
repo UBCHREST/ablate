@@ -90,7 +90,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
 
             mesh->InitializeSubDomains({flowObject});
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
-            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
+            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;

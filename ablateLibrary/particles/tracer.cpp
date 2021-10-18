@@ -2,17 +2,17 @@
 #include "solver/timeStepper.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::particles::Tracer::Tracer(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution,
-                                  std::shared_ptr<parameters::Parameters> options)
-    : Particles(name, ndims, initializer, {}, exactSolution, options) {
-    RegisterField(ParticleFieldDescriptor{.fieldName = ParticleVelocity, .components = ndims, .type = PETSC_REAL});
+ablate::particles::Tracer::Tracer(std::string solverId, std::string region,std::shared_ptr<parameters::Parameters> options, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution)
+    : Particles(solverId, region, options, ndims,
+          {ParticleField{.name = ParticleVelocity, .components = CreateDimensionVector("VEL_", ndims), .type = domain::FieldType::AUX, .dataType = PETSC_REAL}},
+                initializer, {}, exactSolution) {
 }
 
 ablate::particles::Tracer::~Tracer() {}
 
-void ablate::particles::Tracer::Initialize(std::shared_ptr<ablate::domain::SubDomain> flow) {
+void ablate::particles::Tracer::Initialize() {
     // Call the base to initialize the flow
-    Particles::Initialize(flow);
+    Particles::Initialize();
 
     TSSetRHSFunction(particleTs, NULL, freeStreaming, this) >> checkError;
 
@@ -20,7 +20,7 @@ void ablate::particles::Tracer::Initialize(std::shared_ptr<ablate::domain::SubDo
     TSSetTime(particleTs, timeInitial) >> checkError;
 
     // link the solution with the flowTS
-    //    flow->RegisterPostStep([this](TS flowTs, ablate::flow::Flow &) { this->AdvectParticles(flowTs); });//TODO: putback
+    RegisterPostStep([this](TS flowTs, ablate::solver::Solver &) { this->AdvectParticles(flowTs); });
 }
 
 /* x_t = v
@@ -38,7 +38,7 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
     DMInterpolationInfo ictx;
     const PetscScalar *coords, *v;
     PetscScalar *f;
-    PetscInt vf[1] = {particles->flowVelocityFieldIndex};
+    PetscInt vf[1] = {particles->flowVelocityField.id};
     PetscInt dim, Np;
     PetscErrorCode ierr;
 
@@ -120,6 +120,10 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::particles::Particles, ablate::particles::Tracer, "massless particles that advect with the flow", ARG(std::string, "name", "the name of the particle group"),
+REGISTER(ablate::particles::Particles, ablate::particles::Tracer,
+         "massless particles that advect with the flow",
+         ARG(std::string, "id", "the name of this particle solver"),
+         OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"),
+         OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(int, "ndims", "the number of dimensions for the particle"), ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
-         OPT(mathFunctions::MathFunction, "exactSolution", "the particle location exact solution"), ARG(parameters::Parameters, "options", "options to be passed to petsc"));
+         OPT(mathFunctions::MathFunction, "exactSolution", "the particle location exact solution"));
