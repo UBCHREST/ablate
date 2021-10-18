@@ -4,6 +4,7 @@
 #include <petsc.h>
 #include <string>
 #include <vector>
+#include "domain/field.hpp"
 
 namespace ablate::particles {
 
