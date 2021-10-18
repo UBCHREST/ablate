@@ -29,7 +29,7 @@ struct DecodeDataStruct{
     PetscReal Yg;
     PetscReal Yl;
     PetscInt dim;
-    const PetscReal* vel;
+    PetscReal *vel;
     };
 
 PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
@@ -39,7 +39,7 @@ PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
     VecGetArrayRead(x,&ax);
     // ax = [rhog, eg]
     PetscReal rhoG = ax[0];
-//    PetscReal eG = ax[1];
+    PetscReal eG = ax[1];
     PetscReal etG = ax[1] + decodeDataStruct->ke;
     PetscReal eL = (decodeDataStruct->e - decodeDataStruct->Yg*ax[1])/decodeDataStruct->Yl;
     PetscReal etL = eL + decodeDataStruct->ke;
@@ -49,10 +49,14 @@ PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
     PetscReal pL;
     PetscReal TG;
     PetscReal TL;
-    decodeDataStruct->eosGas->GetDecodeStateFunction()(decodeDataStruct->dim, rhoG, etG, decodeDataStruct->vel, NULL, NULL, NULL, &pG, decodeDataStruct->eosGas->GetDecodeStateContext());
-    decodeDataStruct->eosGas->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoG, etG, NULL, NULL, &TG, decodeDataStruct->eosGas->GetComputeTemperatureContext());
-    decodeDataStruct->eosLiquid->GetDecodeStateFunction()(decodeDataStruct->dim, rhoL, etL, decodeDataStruct->vel, NULL, NULL, NULL, &pL, decodeDataStruct->eosLiquid->GetDecodeStateContext());
-    decodeDataStruct->eosLiquid->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoL, etL, NULL, NULL, &TL, decodeDataStruct->eosLiquid->GetComputeTemperatureContext());
+    PetscReal aG;
+    PetscReal aL;
+    PetscReal massfluxG;
+    PetscReal massfluxL;
+    decodeDataStruct->eosGas->GetDecodeStateFunction()(decodeDataStruct->dim, rhoG, etG, decodeDataStruct->vel, NULL, &eG, &aG, &pG, decodeDataStruct->eosGas->GetDecodeStateContext());
+    decodeDataStruct->eosGas->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoG, etG, &massfluxG, NULL, &TG, decodeDataStruct->eosGas->GetComputeTemperatureContext());
+    decodeDataStruct->eosLiquid->GetDecodeStateFunction()(decodeDataStruct->dim, rhoL, etL, decodeDataStruct->vel, NULL, &eL, &aL, &pL, decodeDataStruct->eosLiquid->GetDecodeStateContext());
+    decodeDataStruct->eosLiquid->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoL, etL, &massfluxL, NULL, &TL, decodeDataStruct->eosLiquid->GetComputeTemperatureContext());
 
     VecGetArray(F,&aF);
     aF[0] = pG - pL;
@@ -115,7 +119,7 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
     SNESSetFunction(snes,r,FormFunction,&decodeDataStruct);
     SNESSetFromOptions(snes);
     SNESSolve(snes,NULL,x);
-//    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
+    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
     const PetscScalar *ax;
     VecGetArrayRead(x,&ax);
 
@@ -136,8 +140,8 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
     PetscReal pL;
     PetscReal a1;
     PetscReal a2;
-    eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, NULL, &a1, &pG, eosGas->GetDecodeStateContext());
-    eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, NULL, &a2, &pL, eosLiquid->GetDecodeStateContext());
+    eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, &eG, &a1, &pG, eosGas->GetDecodeStateContext());
+    eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, &eL, &a2, &pL, eosLiquid->GetDecodeStateContext());
 
     SNESDestroy(&snes);
     VecDestroy(&x);

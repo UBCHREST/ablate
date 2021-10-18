@@ -56,7 +56,7 @@ TEST_P(TwoPhaseEulerAdvectionTestDecodeStateFixture, ShouldDecodeState) {
     PetscReal densityG;
     PetscReal densityL;
     PetscReal normalVelocity;
-    std::vector<PetscReal> velocity;
+    std::vector<PetscReal> velocity(3);
     PetscReal internalEnergy;
     PetscReal internalEnergyG;
     PetscReal internalEnergyL;
