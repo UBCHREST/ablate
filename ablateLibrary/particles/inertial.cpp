@@ -227,7 +227,7 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::particles::Particles, ablate::particles::Inertial, "particles (with mass) that advect with the flow",
+REGISTER(ablate::solver::Solver, ablate::particles::Inertial, "particles (with mass) that advect with the flow",
          ARG(std::string, "id", "the name of this particle solver"),
          OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"),
          OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),

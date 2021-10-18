@@ -22,12 +22,13 @@ void ablate::Builder::Run(std::shared_ptr<ablate::parser::Factory> parser) {
     }
 
     // Add in other solvers
-    if (parser->Contains("solvers")) {
+    auto solverList = parser->GetByName<std::vector<solver::Solver>>("solvers", std::vector<std::shared_ptr<solver::Solver>>());
+    if (!solverList.empty()) {
         auto solverFactorySequence = parser->GetFactorySequence("solvers");
 
         // initialize the flow for each
         for (std::size_t i = 0; i < solverFactorySequence.size(); i++) {
-            auto solver = solverFactorySequence[i]->GetByName<solver::Solver>("");
+            auto& solver = solverList[i];
             auto solverMonitors = solverFactorySequence[i]->GetByName<std::vector<monitors::Monitor>>("monitors", std::vector<std::shared_ptr<monitors::Monitor>>());
             timeStepper->Register(solver, solverMonitors);
         }

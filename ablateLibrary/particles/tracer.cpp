@@ -120,7 +120,7 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::particles::Particles, ablate::particles::Tracer,
+REGISTER(ablate::solver::Solver, ablate::particles::Tracer,
          "massless particles that advect with the flow",
          ARG(std::string, "id", "the name of this particle solver"),
          OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"),
