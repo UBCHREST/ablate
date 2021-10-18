@@ -1,0 +1,88 @@
+---
+# example incompressible flow with tracer particles and hdf5 output
+environment:
+  title: 2DTracerParticles
+  tagDirectory: false
+arguments:
+  dm_plex_separate_marker: ""
+  vel_petscspace_degree: 2
+  pres_petscspace_degree: 1
+  temp_petscspace_degree: 1
+timestepper:
+  name: theMainTimeStepper
+  io:
+    interval: 0
+  arguments:
+    ts_dt: .01
+    ts_max_steps: 15
+    ksp_type: fgmres
+    ksp_gmres_restart: 10
+    ksp_rtol: 1.0e-9
+    ksp_atol: 1.0e-14
+    ksp_error_if_not_converged: ""
+    pc_type: fieldsplit
+    pc_fieldsplit_0_fields: 0,2
+    pc_fieldsplit_1_fields: 1
+    pc_fieldsplit_type: schur
+    pc_fieldsplit_schur_factorization_type: "full"
+    fieldsplit_0_pc_type: lu
+    fieldsplit_pressure_ksp_rtol: 1E-10
+    fieldsplit_pressure_pc_type: jacobi
+  domain: !ablate::mesh::BoxMesh
+    name: simpleBoxField
+    faces: [ 4, 4 ]
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
+    options:
+      dm_refine: 0
+      dm_distribute: true
+solver:
+  - !ablate::finiteElement::IncompressibleFlow
+    id: theFlowField
+    options: { }
+    parameters:
+      strouhal: 1.0
+      reynolds: 1.0
+      peclet: 1.0
+      mu: 1.0
+      k: 1.0
+      cp: 1.0
+    initialization:
+      - &velocityField
+        fieldName: "velocity"
+        field: "t + x^2 + y^2, t + 2*x^2 - 2*x*y"
+        timeDerivative: "1.0, 1.0"
+      - &pressureField
+        fieldName: "pressure"
+        field: "x + y - 1"
+        timeDerivative: "0.0"
+      - &temperatureField
+        fieldName: "temperature"
+        field: "t + x + y"
+        timeDerivative:  "1.0"
+    exactSolution:
+      - *velocityField
+      - *pressureField
+      - *temperatureField
+    boundaryConditions:
+      - !ablate::finiteElement::boundaryConditions::Essential
+        boundaryName: "wall velocity"
+        labelIds: [3, 1, 2, 4]
+        boundaryValue: *velocityField
+      - !ablate::finiteElement::boundaryConditions::Essential
+        boundaryName: "wall temp"
+        labelIds: [3, 1, 2, 4]
+        boundaryValue: *temperatureField
+    monitors:
+      - !ablate::monitors::FieldErrorMonitor
+  - !ablate::particles::Tracer
+    name: flowTracerParticles
+    ndims: 2
+    options:
+      ts_dt: 0.005
+    initializer: !ablate::particles::initializers::BoxInitializer
+      lower: [0.25,0.25]
+      upper: [0.75,0.75]
+      particlesPerDim: 10
+    exactSolution: "t + x + y"
+
