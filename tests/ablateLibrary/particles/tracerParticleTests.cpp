@@ -331,7 +331,6 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                 /* exact solutions*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
-
             // Create the particle domain
             // pass all options with the particles prefix to the particle object
             auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");

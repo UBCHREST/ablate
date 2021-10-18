@@ -4,10 +4,10 @@
 #include <memory>
 #include "mathFunctions/fieldFunction.hpp"
 #include "mathFunctions/mathFunction.hpp"
+#include "particleField.hpp"
 #include "particles/initializers/initializer.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
-#include "particleField.hpp"
 
 namespace ablate::particles {
 
@@ -68,7 +68,6 @@ class Particles : public solver::Solver {
      */
     inline const char* GetSolutionVectorName() { return particleSolutionFieldDescriptors.size() == 1 ? DMSwarmPICField_coor : PackedSolution; }
 
-
     /**
      * Support function to create a vector of strings
      */
@@ -88,7 +87,8 @@ class Particles : public solver::Solver {
     void RegisterParticleField(const ParticleField& fieldDescriptor);
 
    public:
-    explicit Particles(std::string solverId, std::string region,std::shared_ptr<parameters::Parameters> options, int ndims,std::vector<ParticleField> fields, std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
+    explicit Particles(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, int ndims, std::vector<ParticleField> fields,
+                       std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
                        std::shared_ptr<mathFunctions::MathFunction> exactSolution);
     virtual ~Particles();
 

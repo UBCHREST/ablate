@@ -1,9 +1,9 @@
 #include "particles.hpp"
 #include <petscviewerhdf5.h>
+#include <vector>
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
-#include <vector>
 
 ablate::particles::Particles::Particles(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, int ndims, std::vector<ParticleField> fields,
                                         std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
@@ -51,7 +51,7 @@ ablate::particles::Particles::Particles(std::string solverId, std::string region
     }
 
     // register each field
-    for(auto& field : fields){
+    for (auto &field : fields) {
         RegisterParticleField(field);
     }
 }
@@ -68,12 +68,7 @@ void ablate::particles::Particles::Initialize() {
         }
 
         // Compute the size of the exact solution (each component added up)
-        RegisterParticleField(ParticleField{
-            .name = PackedSolution,
-            .components = std::vector<std::string>(packedSolutionComponentSize,"_"),
-            .type = domain::FieldType::AUX,
-            .dataType = PETSC_REAL
-        });
+        RegisterParticleField(ParticleField{.name = PackedSolution, .components = std::vector<std::string>(packedSolutionComponentSize, "_"), .type = domain::FieldType::AUX, .dataType = PETSC_REAL});
     }
 
     // before setting up the flow finalize the fields
@@ -137,13 +132,13 @@ ablate::particles::Particles::~Particles() {
     }
 }
 
-void ablate::particles::Particles::RegisterParticleField(const ParticleField& field) {
+void ablate::particles::Particles::RegisterParticleField(const ParticleField &field) {
     // add the value to the field
     DMSwarmRegisterPetscDatatypeField(swarmDm, field.name.c_str(), field.components.size(), field.dataType) >> checkError;
 
     // store the field
     particleFieldDescriptors.push_back(field);
-    if(field.type == domain::FieldType::SOL){
+    if (field.type == domain::FieldType::SOL) {
         particleSolutionFieldDescriptors.push_back(field);
     }
 }
@@ -683,7 +678,7 @@ void ablate::particles::Particles::Restore(PetscViewer viewer, PetscInt sequence
 std::vector<std::string> ablate::particles::Particles::CreateDimensionVector(const std::string &prefix, int dim) {
     std::vector<std::string> vector;
 
-    for(int i =0; i < dim; i++){
+    for (int i = 0; i < dim; i++) {
         vector.emplace_back(prefix + std::to_string(dim));
     }
 

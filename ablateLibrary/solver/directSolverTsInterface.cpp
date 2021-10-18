@@ -1,8 +1,7 @@
 #include "directSolverTsInterface.hpp"
 #include <utilities/petscError.hpp>
 
-ablate::solver::DirectSolverTsInterface::DirectSolverTsInterface(TS ts, std::vector<std::shared_ptr<Solver>> solvers): solvers(solvers){
-
+ablate::solver::DirectSolverTsInterface::DirectSolverTsInterface(TS ts, std::vector<std::shared_ptr<Solver>> solvers) : solvers(solvers) {
     void* test = NULL;
     TSGetApplicationContext(ts, &test) >> checkError;
 
@@ -18,14 +17,14 @@ ablate::solver::DirectSolverTsInterface::DirectSolverTsInterface(TS ts, std::vec
     TSSetPostEvaluate(ts, PostEvaluate);
 }
 
-ablate::solver::DirectSolverTsInterface::DirectSolverTsInterface(TS ts, std::shared_ptr<Solver> solver) : DirectSolverTsInterface(ts, std::vector<std::shared_ptr<Solver>>{solver}){}
+ablate::solver::DirectSolverTsInterface::DirectSolverTsInterface(TS ts, std::shared_ptr<Solver> solver) : DirectSolverTsInterface(ts, std::vector<std::shared_ptr<Solver>>{solver}) {}
 
 PetscErrorCode ablate::solver::DirectSolverTsInterface::PreStage(TS ts, PetscReal stagetime) {
     PetscFunctionBeginUser;
     ablate::solver::DirectSolverTsInterface* interface;
     TSGetApplicationContext(ts, &interface);
     try {
-        for(auto& solver: interface->solvers) {
+        for (auto& solver : interface->solvers) {
             solver->PreStage(ts, stagetime);
         }
     } catch (std::exception& exp) {
@@ -38,7 +37,7 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::PreStep(TS ts) {
     ablate::solver::DirectSolverTsInterface* interface;
     TSGetApplicationContext(ts, &interface);
     try {
-        for(auto& solver: interface->solvers) {
+        for (auto& solver : interface->solvers) {
             solver->PreStep(ts);
         }
     } catch (std::exception& exp) {
@@ -51,7 +50,7 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::PostStep(TS ts) {
     ablate::solver::DirectSolverTsInterface* interface;
     TSGetApplicationContext(ts, &interface);
     try {
-        for(auto& solver: interface->solvers) {
+        for (auto& solver : interface->solvers) {
             solver->PostStep(ts);
         }
     } catch (std::exception& exp) {
@@ -64,7 +63,7 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::PostEvaluate(TS ts) {
     ablate::solver::DirectSolverTsInterface* interface;
     TSGetApplicationContext(ts, &interface);
     try {
-        for(auto& solver: interface->solvers) {
+        for (auto& solver : interface->solvers) {
             solver->PostEvaluate(ts);
         }
     } catch (std::exception& exp) {

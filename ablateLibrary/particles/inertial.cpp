@@ -3,17 +3,17 @@
 
 enum InertialParticleFields { Position, Velocity, TotalParticleField };
 
-ablate::particles::Inertial::Inertial(std::string solverId, std::string region,std::shared_ptr<parameters::Parameters> options, int ndims, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<particles::initializers::Initializer> initializer,
-                                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution)
+ablate::particles::Inertial::Inertial(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, int ndims, std::shared_ptr<parameters::Parameters> parameters,
+                                      std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
+                                      std::shared_ptr<mathFunctions::MathFunction> exactSolution)
     : Particles(solverId, region, options, ndims,
-          {
+                {
                     ParticleField{.name = ParticleVelocity, .components = CreateDimensionVector("VEL_", ndims), .type = domain::FieldType::SOL, .dataType = PETSC_REAL},
                     ParticleField{.name = FluidVelocity, .components = CreateDimensionVector("FLUID_VEL_", ndims), .type = domain::FieldType::AUX, .dataType = PETSC_REAL},
                     ParticleField{.name = ParticleDiameter, .type = domain::FieldType::AUX, .dataType = PETSC_REAL},
                     ParticleField{.name = ParticleDensity, .type = domain::FieldType::AUX, .dataType = PETSC_REAL},
                 },
                 initializer, fieldInitialization, exactSolution) {
-
     // initialize the constant values
     fluidDensity = parameters->GetExpect<PetscReal>("fluidDensity");
     fluidViscosity = parameters->GetExpect<PetscReal>("fluidViscosity");
@@ -227,10 +227,8 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::particles::Inertial, "particles (with mass) that advect with the flow",
-         ARG(std::string, "id", "the name of this particle solver"),
-         OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"),
-         OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
+REGISTER(ablate::solver::Solver, ablate::particles::Inertial, "particles (with mass) that advect with the flow", ARG(std::string, "id", "the name of this particle solver"),
+         OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(int, "ndims", "the number of dimensions for the particle"), ARG(parameters::Parameters, "parameters", "fluid parameters for the particles (fluidDensity, fluidViscosity, gravityField)"),
          ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
          ARG(std::vector<mathFunctions::FieldFunction>, "fieldInitialization", "the initial particle fields setup methods"),

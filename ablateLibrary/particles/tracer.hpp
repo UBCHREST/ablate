@@ -5,7 +5,8 @@
 namespace ablate::particles {
 class Tracer : public Particles {
    public:
-    Tracer(std::string solverId, std::string region,std::shared_ptr<parameters::Parameters> options, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution);
+    Tracer(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer,
+           std::shared_ptr<mathFunctions::MathFunction> exactSolution);
     ~Tracer() override;
 
     void Initialize() override;
