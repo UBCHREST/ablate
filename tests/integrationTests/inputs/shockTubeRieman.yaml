@@ -15,16 +15,16 @@ timestepper:
     ts_adapt_type: none
   io: 
     interval: 0
-flow: !ablate::flow::CompressibleFlow
-  name: SOD Problem
-  mesh: !ablate::mesh::BoxMesh
+  domain: !ablate::domain::BoxMesh
     name: simpleBoxField
-    faces: [ 5, 5]
-    lower: [ 0, 0]
-    upper: [1, 1]
-    boundary: ['NONE', "PERIODIC"]
+    faces: [ 5, 5 ]
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
+    boundary: [ 'NONE', "PERIODIC" ]
     options:
       dm_refine: 1
+solver: !ablate::finiteVolume::CompressibleFlow
+  id: SOD Problem
   options:
     eulerpetscfv_type: upwind
     Tpetscfv_type: leastsquares
@@ -36,10 +36,10 @@ flow: !ablate::flow::CompressibleFlow
     parameters:
         gamma: 1.4
         Rgas: 287
-  fluxCalculator: !ablate::flow::fluxCalculator::Rieman
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
     eos: *eos
   initialization:
-    - !ablate::flow::fieldFunctions::Euler
+    - !ablate::finiteVolume::fieldFunctions::Euler
       &eulerFlowFieldState
       state: &flowFieldState
         eos: *eos
@@ -47,7 +47,7 @@ flow: !ablate::flow::CompressibleFlow
         pressure: "x < 0.5 ? 1 : 0.1"
         velocity: "0, 0"     
   boundaryConditions:
-    - !ablate::flow::boundaryConditions::EssentialGhost
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "air walls euler"
       labelIds: [2, 4]
       boundaryValue: *eulerFlowFieldState

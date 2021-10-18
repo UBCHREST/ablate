@@ -4,7 +4,7 @@
 #include <memory>
 #include "fluxCalculator.hpp"
 
-namespace ablate::flow::fluxCalculator {
+namespace ablate::finiteVolume::fluxCalculator {
 
 /*
  * Computes the flux by treating all surfaces as Rieman problems.
@@ -20,6 +20,6 @@ class Rieman : public fluxCalculator::FluxCalculator {
     void *GetFluxCalculatorContext() override { return (void *)&gamma; }
     explicit Rieman(std::shared_ptr<eos::EOS> eos);
 };
-}  // namespace ablate::flow::fluxCalculator
+}  // namespace ablate::finiteVolume::fluxCalculator
 
 #endif  // ABLATELIBRARY_RIEMAN_H

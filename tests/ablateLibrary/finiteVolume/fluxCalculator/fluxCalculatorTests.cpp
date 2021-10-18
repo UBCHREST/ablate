@@ -1,9 +1,12 @@
 #include <petsc.h>
 #include <vector>
-#include "flow/fluxCalculator/ausm.hpp"
-#include "flow/fluxCalculator/averageFlux.hpp"
-#include "flow/fluxCalculator/offFlux.hpp"
+#include "eos/perfectGas.hpp"
+#include "finiteVolume/fluxCalculator/ausm.hpp"
+#include "finiteVolume/fluxCalculator/averageFlux.hpp"
+#include "finiteVolume/fluxCalculator/offFlux.hpp"
+#include "finiteVolume/fluxCalculator/rieman.hpp"
 #include "gtest/gtest.h"
+#include "parameters/mapParameters.hpp"
 
 using namespace ablate::finiteVolume::fluxCalculator;
 
