@@ -55,6 +55,12 @@ void ablate::solver::TimeStepper::Solve() {
             monitor->Register(solver);
         }
     }
+    // Register the solver with the serializer
+    if (serializer) {
+        for (auto& solver : solvers) {
+            serializer->Register(solver);
+        }
+    }
 
     // Get the solution vector
     Vec solutionVec = domain->GetSolutionVector();
@@ -89,10 +95,6 @@ double ablate::solver::TimeStepper::GetTime() const {
 }
 
 void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solver> solver, std::vector<std::shared_ptr<monitors::Monitor>> solverMonitors) {
-    if (serializer) {
-        serializer->Register(solver);
-    }
-
     // Save the solver and setup the domain
     solvers.push_back(solver);
 

@@ -35,7 +35,7 @@ timestepper:
     upper: [ 1, 1 ]
     options:
       dm_refine: 2
-flow: !ablate::finiteElement::IncompressibleFlow
+solver: !ablate::finiteElement::IncompressibleFlow
   id: theFlowField
   options: {}
   parameters:
