@@ -117,8 +117,16 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
         .vel = velocity
     };
     SNESSetFunction(snes,r,FormFunction,&decodeDataStruct);
+    // default Newton's method, SNESSetType(SNES snes, SNESType method);
+//    SNESSetTolerances(SNES snes,PetscReal atol,PetscReal rtol,PetscReal stol, PetscInt its,PetscInt fcts);
+//    SNESSetTolerances(snes,1E-17,1E-16,1E-17,100000,100000);
+    // default rtol=10e-8
+    // snes_fd : use FD Jacobian - SNESComputeJacobianDefault()
+    // snes_monitor : view residuals for each iteration
     SNESSetFromOptions(snes);
-    SNESSolve(snes,NULL,x);
+//    SNESMonitorSet(SNES snes,PetscErrorCode (*mon)(SNES,PetscInt its,PetscReal norm,void* mctx),void *mctx,PetscErrorCode (*monitordestroy)(void**));
+
+    SNESSolve(snes,NULL,x); // getting 1.93116, 928993; want 1.88229965, 937273
     VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
     const PetscScalar *ax;
     VecGetArrayRead(x,&ax);
