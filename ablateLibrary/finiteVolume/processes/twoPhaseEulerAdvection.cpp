@@ -30,6 +30,7 @@ struct DecodeDataStruct{
     PetscReal Yl;
     PetscInt dim;
     PetscReal *vel;
+    PetscReal *massflux;
     };
 
 PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
@@ -51,12 +52,11 @@ PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx){
     PetscReal TL;
     PetscReal aG;
     PetscReal aL;
-    PetscReal massfluxG;
-    PetscReal massfluxL;
+
     decodeDataStruct->eosGas->GetDecodeStateFunction()(decodeDataStruct->dim, rhoG, etG, decodeDataStruct->vel, NULL, &eG, &aG, &pG, decodeDataStruct->eosGas->GetDecodeStateContext());
-    decodeDataStruct->eosGas->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoG, etG, &massfluxG, NULL, &TG, decodeDataStruct->eosGas->GetComputeTemperatureContext());
+    decodeDataStruct->eosGas->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoG, etG, decodeDataStruct->massflux, NULL, &TG, decodeDataStruct->eosGas->GetComputeTemperatureContext());
     decodeDataStruct->eosLiquid->GetDecodeStateFunction()(decodeDataStruct->dim, rhoL, etL, decodeDataStruct->vel, NULL, &eL, &aL, &pL, decodeDataStruct->eosLiquid->GetDecodeStateContext());
-    decodeDataStruct->eosLiquid->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoL, etL, &massfluxL, NULL, &TL, decodeDataStruct->eosLiquid->GetComputeTemperatureContext());
+    decodeDataStruct->eosLiquid->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoL, etL, decodeDataStruct->massflux, NULL, &TL, decodeDataStruct->eosLiquid->GetComputeTemperatureContext());
 
     VecGetArray(F,&aF);
     aF[0] = pG - pL;
@@ -80,7 +80,9 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
     // Get the velocity in this direction, and kinetic energy
     (*normalVelocity) = 0.0;
     PetscReal ke = 0.0;
+    PetscReal mf[3];
     for (PetscInt d = 0; d < dim; d++) {
+        mf[d] = conservedValues[2 + EULER_FIELD + d];
         velocity[d] = conservedValues[2 + EULER_FIELD + d] / (*density);
         (*normalVelocity) += velocity[d] * normal[d];
         ke += PetscSqr(velocity[d]);
@@ -114,19 +116,24 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
         .Yg = densityVF / (*density), // mass fractions
         .Yl = ((*density) - densityVF) / (*density),
         .dim = dim,
-        .vel = velocity
+        .vel = velocity,
+        .massflux = mf
     };
     SNESSetFunction(snes,r,FormFunction,&decodeDataStruct);
     // default Newton's method, SNESSetType(SNES snes, SNESType method);
 //    SNESSetTolerances(SNES snes,PetscReal atol,PetscReal rtol,PetscReal stol, PetscInt its,PetscInt fcts);
-//    SNESSetTolerances(snes,1E-17,1E-16,1E-17,100000,100000);
+    SNESSetTolerances(snes,1E-17,1E-10,1E-17,100000,100000);
     // default rtol=10e-8
     // snes_fd : use FD Jacobian - SNESComputeJacobianDefault()
     // snes_monitor : view residuals for each iteration
+    PetscOptionsSetValue(NULL,"-snes_monitor",NULL);
+    PetscOptionsSetValue(NULL,"-snes_converged_reason",NULL);
     SNESSetFromOptions(snes);
 //    SNESMonitorSet(SNES snes,PetscErrorCode (*mon)(SNES,PetscInt its,PetscReal norm,void* mctx),void *mctx,PetscErrorCode (*monitordestroy)(void**));
 
-    SNESSolve(snes,NULL,x); // getting 1.93116, 928993; want 1.88229965, 937273
+    SNESSolve(snes,NULL,x); // getting 1.93116, 928993
+                            // fixed mf, 1.8735, 938779
+                            // want 1.88229965, 937273
     VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
     const PetscScalar *ax;
     VecGetArrayRead(x,&ax);
