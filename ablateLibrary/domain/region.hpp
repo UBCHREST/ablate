@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_REGION_HPP
 #define ABLATELIBRARY_REGION_HPP
 
+#include <memory>
 #include <string>
 #include <vector>
 
