@@ -216,7 +216,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
             auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlow>(
                 "testFlow",
-                domain::Domain::ENTIREDOMAIN,
+                domain::Region::ENTIREDOMAIN,
                 nullptr,
                 parameters,
                 /* initialization functions */
@@ -248,7 +248,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
             // Create an inertial particle object
             auto particles = std::make_shared<ablate::particles::Inertial>(
-                "particle", ablate::domain::BoxMesh::ENTIREDOMAIN, particleOptions, 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction);
+                "particle", ablate::domain::Region::ENTIREDOMAIN, particleOptions, 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction);
 
             mesh->InitializeSubDomains({flowObject, particles});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});

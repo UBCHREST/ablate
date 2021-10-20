@@ -66,11 +66,12 @@ void ablate::domain::Domain::CreateGlobalStructures() {
     }
 }
 
-std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(const std::string& subDomainName) {
-    if (subDomains.count(subDomainName) == 0) {
-        subDomains[subDomainName] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), nullptr);
+std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(std::shared_ptr<domain::Region> region) {
+    std::size_t regionHash = region ? region->GetId() : 0;
+    if (subDomains.count(regionHash) == 0) {
+        subDomains[regionHash] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), nullptr);
     }
-    return subDomains[subDomainName];
+    return subDomains[regionHash];
 }
 
 void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers) {

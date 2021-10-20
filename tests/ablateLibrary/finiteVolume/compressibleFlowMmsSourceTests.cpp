@@ -594,7 +594,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       domain::Domain::ENTIREDOMAIN,
+                                                                                       domain::Region::ENTIREDOMAIN,
                                                                                        nullptr /*options*/,
                                                                                        eos,
                                                                                        parameters,

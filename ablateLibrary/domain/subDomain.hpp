@@ -15,6 +15,9 @@ class SubDomain {
     // const pointer to the parent domain/dm
     const std::weak_ptr<Domain> domain;
 
+    // store the region used to define this subDomain
+    const std::shared_ptr<domain::Region> region;
+
     // The label used to describe this subDomain
     DMLabel label;
 
@@ -25,7 +28,7 @@ class SubDomain {
     std::string name;
 
    public:
-    SubDomain(std::weak_ptr<Domain> domain, DMLabel label);
+    SubDomain(std::weak_ptr<Domain> domain, std::shared_ptr<domain::Region>);
 
     Field RegisterField(const FieldDescriptor& fieldDescriptor, PetscObject field);
 

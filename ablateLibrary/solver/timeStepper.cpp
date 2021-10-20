@@ -1,7 +1,6 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
 #include <mathFunctions/mathFunction.hpp>
-#include "parser/registrar.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
@@ -176,6 +175,7 @@ PetscErrorCode ablate::solver::TimeStepper::TSPostEvaluateFunction(TS ts) {
     PetscFunctionReturn(0);
 }
 
+#include "parser/registrar.hpp"
 REGISTERDEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
                 ARG(ablate::domain::Domain, "domain", "the mesh used for the simulation"), ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
                 OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"));

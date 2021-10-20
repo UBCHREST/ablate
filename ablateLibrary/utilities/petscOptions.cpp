@@ -22,7 +22,7 @@ void ablate::utilities::PetscOptionsUtils::Set(PetscOptions petscOptions, const 
     }
 }
 
-void ablate::utilities::PetscOptionsDestroyAndCheck(std::string name, PetscOptions* options) {
+void ablate::utilities::PetscOptionsDestroyAndCheck(const std::string& name, PetscOptions* options) {
     PetscInt nopt;
     PetscOptionsAllUsed(*options, &nopt) >> ablate::checkError;
     if (nopt) {

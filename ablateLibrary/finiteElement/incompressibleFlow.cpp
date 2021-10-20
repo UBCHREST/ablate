@@ -3,7 +3,7 @@
 #include "incompressibleFlow.h"
 #include "utilities/petscError.hpp"
 
-ablate::finiteElement::IncompressibleFlow::IncompressibleFlow(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options,
+ablate::finiteElement::IncompressibleFlow::IncompressibleFlow(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                               std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                               std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
@@ -137,7 +137,7 @@ void ablate::finiteElement::IncompressibleFlow::CompleteFlowInitialization(DM dm
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteElement::IncompressibleFlow, "incompressible FE flow", ARG(std::string, "id", "the name of the flow field"),
-         OPT(std::string, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
+         OPT(domain::Region, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
          ARG(std::vector<mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),
          ARG(std::vector<finiteElement::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),

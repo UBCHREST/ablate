@@ -3,7 +3,8 @@
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
 
-ablate::solver::Solver::Solver(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options) : solverId(solverId), region(region), petscOptions(nullptr) {
+ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
+    : solverId(solverId), region(region), petscOptions(nullptr) {
     // Set the options
     if (options) {
         PetscOptionsCreate(&petscOptions) >> checkError;
@@ -13,7 +14,7 @@ ablate::solver::Solver::Solver(std::string solverId, std::string region, std::sh
 
 ablate::solver::Solver::~Solver() {
     if (petscOptions) {
-        ablate::utilities::PetscOptionsDestroyAndCheck(region, &petscOptions);
+        ablate::utilities::PetscOptionsDestroyAndCheck(GetId(), &petscOptions);
     }
 }
 

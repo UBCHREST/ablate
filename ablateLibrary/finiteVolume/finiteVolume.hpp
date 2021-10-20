@@ -49,11 +49,11 @@ class FiniteVolume : public solver::Solver {
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
-    FiniteVolume(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, std::vector<domain::FieldDescriptor> fieldDescriptors,
+    FiniteVolume(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<domain::FieldDescriptor> fieldDescriptors,
                  std::vector<std::shared_ptr<processes::Process>> flowProcesses, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
-    FiniteVolume(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
+    FiniteVolume(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
                  std::vector<std::shared_ptr<processes::Process>> flowProcesses, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 

@@ -78,7 +78,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
 
             auto flowObject =
                 std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                         ablate::domain::Domain::ENTIREDOMAIN,
+                                                                         ablate::domain::Region::ENTIREDOMAIN,
                                                                          nullptr /*options*/,
                                                                          eos,
                                                                          parameters,

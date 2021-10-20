@@ -3,7 +3,7 @@
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 
-ablate::finiteElement::FiniteElement::FiniteElement(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options,
+ablate::finiteElement::FiniteElement::FiniteElement(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                     std::vector<ablate::domain::FieldDescriptor> fieldDescriptors, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,

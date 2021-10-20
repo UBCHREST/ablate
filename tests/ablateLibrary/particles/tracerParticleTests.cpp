@@ -312,7 +312,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
 
             auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlow>(
                 "testFlow",
-                domain::Domain::ENTIREDOMAIN,
+                domain::Region::ENTIREDOMAIN,
                 nullptr,
                 parameters,
                 /* initialization functions */
@@ -336,7 +336,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
             auto initializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.25, 0.25}, std::vector<double>{.75, .75}, 5);
             auto particles = std::make_shared<ablate::particles::Tracer>(
-                "particle", ablate::domain::BoxMesh::ENTIREDOMAIN, particleOptions, 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact));
+                "particle", ablate::domain::Region::ENTIREDOMAIN, particleOptions, 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact));
 
             mesh->InitializeSubDomains({flowObject, particles});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});

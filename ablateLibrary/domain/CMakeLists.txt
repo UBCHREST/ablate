@@ -16,4 +16,6 @@ target_sources(ablateLibrary
         dmPlex.cpp
         fileMesh.hpp
         fileMesh.cpp
+        region.hpp
+        region.cpp
         )

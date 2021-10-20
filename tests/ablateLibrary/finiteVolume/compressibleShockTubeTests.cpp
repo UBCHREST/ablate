@@ -178,7 +178,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "mirrorWall", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       ablate::domain::Domain::ENTIREDOMAIN,
+                                                                                       ablate::domain::Region::ENTIREDOMAIN,
                                                                                        nullptr /*options*/,
                                                                                        eos,
                                                                                        parameters,

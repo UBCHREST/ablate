@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_SOLVER_HPP
 #define ABLATELIBRARY_SOLVER_HPP
 
+#include <domain/region.hpp>
 #include <domain/subDomain.hpp>
 #include <parameters/parameters.hpp>
 #include <string>
@@ -23,7 +24,7 @@ class Solver : public io::Serializable {
     const std::string solverId;
 
     // The region of this solver.
-    const std::string region;
+    const std::shared_ptr<domain::Region> region;
 
    protected:
     // an optional petscOptions that is used for this solver
@@ -33,7 +34,7 @@ class Solver : public io::Serializable {
     std::shared_ptr<ablate::domain::SubDomain> subDomain;
 
     // The constructor to be call by any Solve implementation
-    explicit Solver(std::string solverId, std::string region = "", std::shared_ptr<parameters::Parameters> options = nullptr);
+    explicit Solver(std::string solverId, std::shared_ptr<domain::Region> = {}, std::shared_ptr<parameters::Parameters> options = nullptr);
 
     // function to decompress FieldDescriptors
     void DecompressFieldFieldDescriptor(std::vector<ablate::domain::FieldDescriptor>& FieldDescriptors);
@@ -52,7 +53,7 @@ class Solver : public io::Serializable {
 
     inline ablate::domain::SubDomain& GetSubDomain() { return *subDomain; }
 
-    inline const std::string& GetRegion() const { return region; }
+    inline std::shared_ptr<domain::Region> GetRegion() const { return region; }
 
     inline const std::string& GetId() const override { return solverId; }
 

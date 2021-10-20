@@ -1,6 +1,15 @@
 #include "subDomain.hpp"
+#include <utilities/petscError.hpp>
 
-ablate::domain::SubDomain::SubDomain(std::weak_ptr<Domain> domain, DMLabel label) : domain(domain), label(label) {}
+ablate::domain::SubDomain::SubDomain(std::weak_ptr<Domain> domain, std::shared_ptr<domain::Region> region) : domain(domain), region(region), label(NULL) {
+    if (region) {
+        if (auto domainPtr = domain.lock()) {
+            DMGetLabel(domainPtr->GetDM(), region->GetName().c_str(), &label) >> checkError;
+        } else {
+            throw std::runtime_error("Cannot Locate Field in DM. DM is NULL");
+        }
+    }
+}
 
 ablate::domain::Field ablate::domain::SubDomain::RegisterField(const ablate::domain::FieldDescriptor& fieldDescriptor, PetscObject field) {
     // Create a field with this information

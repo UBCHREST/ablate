@@ -220,7 +220,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       ablate::domain::Domain::ENTIREDOMAIN,
+                                                                                       ablate::domain::Region::ENTIREDOMAIN,
                                                                                        nullptr /*options*/,
                                                                                        eos,
                                                                                        flowParameters,

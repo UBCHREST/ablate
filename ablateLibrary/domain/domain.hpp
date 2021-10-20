@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include "fieldDescriptor.hpp"
+#include "region.hpp"
 
 namespace ablate::solver {
 // forward declare the Solver
@@ -17,9 +18,6 @@ namespace ablate::domain {
 class SubDomain;
 
 class Domain : public std::enable_shared_from_this<Domain> {
-   public:
-    inline const static std::string ENTIREDOMAIN;
-
    protected:
     Domain(std::string name);
     virtual ~Domain();
@@ -30,7 +28,7 @@ class Domain : public std::enable_shared_from_this<Domain> {
 
    private:
     // This domain can be partitions into multiple subdomains
-    std::map<std::string, std::shared_ptr<SubDomain>> subDomains;
+    std::map<std::size_t, std::shared_ptr<SubDomain>> subDomains;
 
     // The aux vector DM
     DM auxDM;
@@ -43,7 +41,7 @@ class Domain : public std::enable_shared_from_this<Domain> {
 
     void CreateGlobalStructures();
 
-    std::shared_ptr<SubDomain> GetSubDomain(const std::string& name);
+    std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
 
    public:
     std::string GetName() const { return name; }

@@ -5,7 +5,7 @@
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
-ablate::particles::Particles::Particles(std::string solverId, std::string region, std::shared_ptr<parameters::Parameters> options, int ndims, std::vector<ParticleField> fields,
+ablate::particles::Particles::Particles(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, int ndims, std::vector<ParticleField> fields,
                                         std::shared_ptr<particles::initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
                                         std::shared_ptr<mathFunctions::MathFunction> exactSolution)
     : Solver(solverId, region, options),
