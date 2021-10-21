@@ -2,7 +2,7 @@
 layout: default
 title: Client Library
 parent: Development Guides
-nav_order: 4
+nav_order: 5
 ---
 
 ABLATE is designed so that you can use it in your own application.  If your application uses CMake you can include ABLATE as a sub-project or using FetchContent (shown in the following example).

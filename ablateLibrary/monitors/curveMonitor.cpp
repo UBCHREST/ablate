@@ -1,5 +1,4 @@
 #include "curveMonitor.hpp"
-#include <flow/fvFlow.hpp>
 #include <fstream>
 #include <iostream>
 #include <utilities/mpiError.hpp>
@@ -10,16 +9,16 @@ ablate::monitors::CurveMonitor::CurveMonitor(int interval, std::string prefix, s
                                              std::vector<std::string> outputAuxFields)
     : interval(interval), start(start), end(end), outputFields(outputFields), outputAuxFields(outputAuxFields), filePrefix(prefix) {}
 
-void ablate::monitors::CurveMonitor::Register(std::shared_ptr<Monitorable> monitorableObject) {
+void ablate::monitors::CurveMonitor::Register(std::shared_ptr<solver::Solver> monitorableObject) {
     // this probe will only work with fV flow and a single process
-    flow = std::dynamic_pointer_cast<flow::FVFlow>(monitorableObject);
+    flow = std::dynamic_pointer_cast<finiteVolume::FiniteVolume>(monitorableObject);
     if (!flow) {
-        throw std::invalid_argument("The CurveMonitor monitor can only be used with ablate::flow::FVFlow");
+        throw std::invalid_argument("The CurveMonitor monitor can only be used with ablate::finiteVolume::FiniteVolume");
     }
 
     // check the size
     int size;
-    MPI_Comm_size(PetscObjectComm((PetscObject)flow->GetDM()), &size) >> checkMpiError;
+    MPI_Comm_size(flow->GetSubDomain().GetComm(), &size) >> checkMpiError;
     if (size != 1) {
         throw std::runtime_error("The IgnitionDelay monitor only works with a single mpi rank");
     }
@@ -31,15 +30,15 @@ void ablate::monitors::CurveMonitor::Register(std::shared_ptr<Monitorable> monit
 
     // get the min cell size
     PetscReal minCellRadius;
-    DMPlexGetGeometryFVM(flow->GetDM(), NULL, &cellGeomVec, &minCellRadius) >> checkError;
+    DMPlexGetGeometryFVM(flow->GetSubDomain().GetDM(), NULL, &cellGeomVec, &minCellRadius) >> checkError;
     VecGetDM(cellGeomVec, &dmCell) >> checkError;
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
     PetscMPIInt rank;
-    MPI_Comm_rank((PetscObjectComm((PetscObject)flow->GetDM())), &rank) >> checkMpiError;
+    MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> checkMpiError;
 
     PetscInt dim;
-    DMGetDimension(flow->GetDM(), &dim) >> checkError;
+    DMGetDimension(flow->GetSubDomain().GetDM(), &dim) >> checkError;
 
     // Now march over each sub segment int he line
     double ds = minCellRadius / 10.0;
@@ -70,7 +69,7 @@ void ablate::monitors::CurveMonitor::Register(std::shared_ptr<Monitorable> monit
 
         // find the point in the mesh
         PetscSF cellSF = NULL;
-        DMLocatePoints(flow->GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
+        DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
 
         const PetscSFNode* cells;
         PetscInt numberFound;
@@ -99,7 +98,7 @@ void ablate::monitors::CurveMonitor::Register(std::shared_ptr<Monitorable> monit
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 }
 
-static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIndex, const ablate::flow::FlowFieldDescriptor& fieldDescription, const std::vector<PetscInt>& indexLocations,
+static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIndex, const ablate::domain::Field& fieldDescription, const std::vector<PetscInt>& indexLocations,
                                           const std::vector<PetscReal> distanceAlongLine, PetscErrorCode(plexPointRead)(DM, PetscInt, PetscInt, const PetscScalar*, void*), Vec u) {
     // Open the array
     const PetscScalar* uArray;
@@ -112,8 +111,8 @@ static PetscErrorCode OutputCurveForField(std::ostream& stream, PetscInt fieldIn
     CHKERRQ(ierr);
 
     // Output each component
-    for (PetscInt c = 0; c < fieldDescription.components; c++) {
-        stream << "#" << fieldDescription.fieldName << (fieldDescription.components > 1 ? "_" + (fieldDescription.componentNames.empty() ? std::to_string(c) : fieldDescription.componentNames[c]) : "")
+    for (PetscInt c = 0; c < fieldDescription.numberComponents; c++) {
+        stream << "#" << fieldDescription.name << (fieldDescription.numberComponents > 1 ? "_" + (fieldDescription.components.empty() ? std::to_string(c) : fieldDescription.components[c]) : "")
                << std::endl;
 
         // Output each cell
@@ -157,13 +156,13 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
         curveFile.open(outputFile);
 
         // March over each solution vector
-        curveFile << "#title=" << flow->GetName() << std::endl;
+        curveFile << "#title=" << flow->GetId() << std::endl;
         curveFile << "##time=" << time << std::endl << std::endl;
 
         // output each solution variable
         for (const auto& fieldName : monitor->outputFields) {
-            auto fieldIndex = flow->GetFieldId(fieldName).value();
-            const auto& fieldDescription = flow->GetFieldDescriptor(fieldName);
+            auto fieldIndex = flow->GetSubDomain().GetField(fieldName).id;
+            const auto& fieldDescription = flow->GetSubDomain().GetField(fieldName);
 
             ierr = OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointGlobalFieldRead, u);
             CHKERRQ(ierr);
@@ -171,10 +170,10 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
 
         // output each aux variable
         for (const auto& fieldName : monitor->outputAuxFields) {
-            auto fieldIndex = flow->GetAuxFieldId(fieldName).value();
-            const auto& fieldDescription = flow->GetAuxFieldDescriptor(fieldName);
+            auto fieldIndex = flow->GetSubDomain().GetField(fieldName).id;
+            const auto& fieldDescription = flow->GetSubDomain().GetField(fieldName);
 
-            ierr = OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointLocalFieldRead, flow->GetAuxField());
+            ierr = OutputCurveForField(curveFile, fieldIndex, fieldDescription, monitor->indexLocations, monitor->distanceAlongLine, DMPlexPointLocalFieldRead, flow->GetSubDomain().GetAuxVector());
             CHKERRQ(ierr);
         }
 

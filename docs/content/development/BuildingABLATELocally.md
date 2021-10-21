@@ -2,7 +2,7 @@
 layout: default
 title: Building ABLATE Locally
 parent: Development Guides
-nav_order: 3
+nav_order: 4
 ---
 
 These directions outline the steps for downloading, building, and testing ABLATE on your local computer.  These directions assume you have installed PETSc and setup the environmental variables outlined in [Installing PETSc for ABLATE]({{ site.baseurl}}{%link content/development/InstallingPETSc.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover building with the command line (WSL on Windows) and [CLion](https://www.jetbrains.com/clion/).

@@ -2,7 +2,7 @@
 layout: default
 title: Installing PETSc Locally
 parent: Development Guides
-nav_order: 1
+nav_order: 3
 ---
 
 For the most recent development issues, notes, and workarounds for building PETSc for ABLATE check the [ABLATE repo wiki](https://github.com/UBCHREST/ablate/wiki).

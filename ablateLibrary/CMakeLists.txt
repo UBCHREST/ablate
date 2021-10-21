@@ -72,11 +72,12 @@ target_sources(ablateLibrary
         )
 
 # Include the code in any subdirectory
-add_subdirectory(flow)
+add_subdirectory(finiteVolume)
+add_subdirectory(finiteElement)
 add_subdirectory(utilities)
-add_subdirectory(mesh)
+add_subdirectory(domain)
 add_subdirectory(parameters)
-add_subdirectory(solve)
+add_subdirectory(solver)
 add_subdirectory(parser)
 add_subdirectory(mathFunctions)
 add_subdirectory(particles)

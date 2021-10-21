@@ -18,7 +18,7 @@ class ParticleCount : public Monitor {
    public:
     ParticleCount(int interval, std::shared_ptr<logs::Log> log = {});
 
-    void Register(std::shared_ptr<Monitorable>) override;
+    void Register(std::shared_ptr<solver::Solver>) override;
     PetscMonitorFunction GetPetscFunction() override { return OutputParticleCount; }
 };
 

@@ -26,15 +26,15 @@ timestepper:
     fieldsplit_0_pc_type: lu
     fieldsplit_pressure_ksp_rtol: 1E-10
     fieldsplit_pressure_pc_type: jacobi
-flow: !ablate::flow::IncompressibleFlow
-  name: theFlowField
-  mesh: !ablate::mesh::BoxMesh
+  domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 2, 2 ]
-    lower: [ 0, 0]
-    upper: [1, 1]
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
     options:
       dm_refine: 2
+solver: !ablate::finiteElement::IncompressibleFlow
+  id: theFlowField
   options: {}
   parameters:
     strouhal: 1.0
@@ -61,11 +61,11 @@ flow: !ablate::flow::IncompressibleFlow
     - *pressureField
     - *temperatureField
   boundaryConditions:
-    - !ablate::flow::boundaryConditions::Essential
+    - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall velocity"
       labelIds: [3, 1, 2, 4]
       boundaryValue: *velocityField
-    - !ablate::flow::boundaryConditions::Essential
+    - !ablate::finiteElement::boundaryConditions::Essential
       fieldName: temperature
       boundaryName: "wall temp"
       labelIds: [3, 1, 2, 4]

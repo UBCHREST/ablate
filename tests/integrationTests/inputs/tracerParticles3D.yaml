@@ -25,51 +25,50 @@ timestepper:
     fieldsplit_0_pc_type: lu
     fieldsplit_pressure_ksp_rtol: 1E-10
     fieldsplit_pressure_pc_type: jacobi
-flow: !ablate::flow::IncompressibleFlow
-  name: theFlowField
-  mesh: !ablate::mesh::BoxMesh
+  domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 2, 2, 2 ]
-    lower: [ 0, 0, 0]
-    upper: [1, 1, 1]
+    lower: [ 0, 0, 0 ]
+    upper: [ 1, 1, 1 ]
     options:
       dm_refine: 1
-  options: {}
-  parameters:
-    strouhal: 1.0
-    reynolds: 1.0
-    peclet: 1.0
-    mu: 1.0
-    k: 1.0
-    cp: 1.0
-  initialization:
-    - &velocityField
-      fieldName: "velocity"
-      field: "t + x^2 + y^2 + z^2, t + 2*x^2 - 2*x*y + z, t"
-      timeDerivative: "1.0, 1.0, 1.0"
-    - &pressureField
-      fieldName: "pressure"
-      field: "x + y - 1"
-      timeDerivative: "0.0"
-    - &temperatureField
-      fieldName: "temperature"
-      field: "t + x + y + z"
-      timeDerivative: "1.0"
-  boundaryConditions:
-    - !ablate::flow::boundaryConditions::Essential
-      boundaryName: "velocity"
-      labelIds: [1]
-      boundaryValue: *velocityField
-    - !ablate::flow::boundaryConditions::Essential
-      boundaryName: "wall temp"
-      labelIds: [1]
-      boundaryValue: *temperatureField
-  monitors:
-    - !ablate::monitors::TimeStepMonitor
-
-particles:
+solvers:
+  - !ablate::finiteElement::IncompressibleFlow
+    id: theFlowField
+    options: {}
+    parameters:
+      strouhal: 1.0
+      reynolds: 1.0
+      peclet: 1.0
+      mu: 1.0
+      k: 1.0
+      cp: 1.0
+    initialization:
+      - &velocityField
+        fieldName: "velocity"
+        field: "t + x^2 + y^2 + z^2, t + 2*x^2 - 2*x*y + z, t"
+        timeDerivative: "1.0, 1.0, 1.0"
+      - &pressureField
+        fieldName: "pressure"
+        field: "x + y - 1"
+        timeDerivative: "0.0"
+      - &temperatureField
+        fieldName: "temperature"
+        field: "t + x + y + z"
+        timeDerivative: "1.0"
+    boundaryConditions:
+      - !ablate::finiteElement::boundaryConditions::Essential
+        boundaryName: "velocity"
+        labelIds: [1]
+        boundaryValue: *velocityField
+      - !ablate::finiteElement::boundaryConditions::Essential
+        boundaryName: "wall temp"
+        labelIds: [1]
+        boundaryValue: *temperatureField
+    monitors:
+      - !ablate::monitors::TimeStepMonitor
   - !ablate::particles::Tracer
-    name: particles
+    id: particles
     ndims: 3
     options:
       ts_dt: 0.005

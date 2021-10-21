@@ -13,7 +13,7 @@ class BoxInitializer : public Initializer {
     explicit BoxInitializer(std::vector<double> lowerBound = {0, 0, 0}, std::vector<double> upperBound = {1.0, 1.0, 1.0}, int particlesPerDim = 1);
     ~BoxInitializer() = default;
 
-    void Initialize(ablate::flow::Flow& flow, DM particleDM) override;
+    void Initialize(ablate::domain::SubDomain& flow, DM particleDM) override;
 };
 }  // namespace ablate::particles::initializers
 

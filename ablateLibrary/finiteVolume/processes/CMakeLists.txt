@@ -1,0 +1,12 @@
+target_sources(ablateLibrary
+        PUBLIC
+        process.hpp
+        eulerAdvection.hpp
+        eulerAdvection.cpp
+        eulerDiffusion.hpp
+        eulerDiffusion.cpp
+        tChemReactions.hpp
+        tChemReactions.cpp
+        speciesDiffusion.hpp
+        speciesDiffusion.cpp
+        )
