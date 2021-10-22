@@ -27,6 +27,8 @@ void ablate::domain::Domain::RegisterSolutionField(const ablate::domain::FieldDe
                            .id = (PetscInt)solutionFields.size(),
                            .type = fieldDescriptor.type};
 
+            solutionFields[fieldDescriptor.name] = newField;
+
             break;
         }
         default:
@@ -63,6 +65,9 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
 
     // Set up the global DS
     DMCreateDS(dm) >> checkError;
+    for(auto& subDomain: subDomains){
+        subDomain.second->InitializeDiscreteSystem();
+    }
 
     // Setup each of the fields
     for (auto& solver : solvers) {

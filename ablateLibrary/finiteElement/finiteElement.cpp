@@ -39,45 +39,22 @@ void ablate::finiteElement::FiniteElement::Setup() {
         RegisterPreStep([&](TS ts, Solver&) { UpdateAuxFields(ts, *this); });
     }
 
-    // Apply any boundary conditions
-    PetscDS prob;
-    DMGetDS(subDomain->GetDM(), &prob) >> checkError;
-
     // add each boundary condition
     for (auto boundary : boundaryConditions) {
-        const auto& fieldId = subDomain->GetField(boundary->GetFieldName());
+        const auto& fieldId = subDomain->GetSolutionField(boundary->GetFieldName());
 
         // Setup the boundary condition
-        boundary->SetupBoundary(subDomain->GetDM(), prob, fieldId.id);
+        boundary->SetupBoundary(subDomain->GetDM(), subDomain->GetDiscreteSystem(), fieldId.id);
     }
 }
 
 void ablate::finiteElement::FiniteElement::Initialize() {
-    // Apply any boundary conditions
-    PetscDS prob;
-    DMGetDS(subDomain->GetDM(), &prob) >> checkError;
-
     // Initialize the flow field if provided
-    if (!initialization.empty()) {
-        PetscInt numberFields;
-        DMGetNumFields(subDomain->GetDM(), &numberFields) >> checkError;
-
-        // size up the update and context functions
-        std::vector<mathFunctions::PetscFunction> fieldFunctions(numberFields, NULL);
-        std::vector<void*> fieldContexts(numberFields, NULL);
-
-        for (auto fieldInitialization : initialization) {
-            auto fieldId = subDomain->GetField(fieldInitialization->GetName());
-
-            fieldContexts[fieldId.id] = fieldInitialization->GetSolutionField().GetContext();
-            fieldFunctions[fieldId.id] = fieldInitialization->GetSolutionField().GetPetscFunction();
-        }
-
-        DMProjectFunction(subDomain->GetDM(), 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, subDomain->GetSolutionVector()) >> checkError;
-        this->CompleteFlowInitialization(subDomain->GetDM(), subDomain->GetSolutionVector());
-    }
+    subDomain->ProjectFieldFunctions(initialization, subDomain->GetSolutionVector());
+    this->CompleteFlowInitialization(subDomain->GetDM(), subDomain->GetSolutionVector());
 
     // if an exact solution has been provided register it
+    auto prob = subDomain->GetDiscreteSystem();
     for (const auto& exactSolution : exactSolutions) {
         auto fieldId = subDomain->GetField(exactSolution->GetName());
 
@@ -93,39 +70,6 @@ void ablate::finiteElement::FiniteElement::Initialize() {
     DMTSSetBoundaryLocal(subDomain->GetDM(), DMPlexTSComputeBoundary, NULL) >> checkError;
     DMTSSetIFunctionLocal(subDomain->GetDM(), DMPlexTSComputeIFunctionFEM, NULL) >> checkError;
     DMTSSetIJacobianLocal(subDomain->GetDM(), DMPlexTSComputeIJacobianFEM, NULL) >> checkError;
-
-    // copy over any boundary information from the dm, to the aux dm and set the sideset
-    if (subDomain->GetAuxDM()) {
-        PetscDS flowProblem;
-        DMGetDS(subDomain->GetDM(), &flowProblem) >> checkError;
-        PetscDS auxProblem;
-        DMGetDS(subDomain->GetAuxDM(), &auxProblem) >> checkError;
-
-        // Get the number of boundary conditions and other info
-        PetscInt numberBC;
-        PetscDSGetNumBoundary(flowProblem, &numberBC) >> checkError;
-        PetscInt numberAuxFields;
-        PetscDSGetNumFields(auxProblem, &numberAuxFields) >> checkError;
-
-        for (PetscInt bc = 0; bc < numberBC; bc++) {
-            DMBoundaryConditionType type;
-            const char* name;
-            DMLabel label;
-            PetscInt field;
-            PetscInt numberIds;
-            const PetscInt* ids;
-
-            // Get the boundary
-            PetscDSGetBoundary(flowProblem, bc, NULL, &type, &name, &label, &numberIds, &ids, &field, NULL, NULL, NULL, NULL, NULL) >> checkError;
-
-            // If this is for euler and DM_BC_NATURAL_RIEMANN add it to the aux
-            if (type == DM_BC_NATURAL_RIEMANN && field == 0) {
-                for (PetscInt af = 0; af < numberAuxFields; af++) {
-                    PetscDSAddBoundary(auxProblem, type, name, label, numberIds, ids, af, 0, NULL, NULL, NULL, NULL, NULL) >> checkError;
-                }
-            }
-        }
-    }
 }
 
 void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElement& fe) {
@@ -179,14 +123,12 @@ void ablate::finiteElement::FiniteElement::RegisterFiniteElementField(const abla
 
     // If this is not the first field, copy the quadrature locations
     if (subDomain->GetNumberFields() > 0) {
-        PetscFE referencePetscFE;
-        DMGetField(subDomain->GetDM(), 0, NULL, (PetscObject*)&referencePetscFE) >> checkError;
+        PetscFE referencePetscFE = (PetscFE)  subDomain->GetPetscFieldObject(subDomain->GetField(0));
         PetscFECopyQuadrature(referencePetscFE, petscFE) >> checkError;
     }
 
     // Register the field with the subDomain
     subDomain->RegisterField(fieldDescriptor, (PetscObject)petscFE);
-
     PetscFEDestroy(&petscFE) >> checkError;
 }
 
@@ -197,21 +139,7 @@ void ablate::finiteElement::FiniteElement::Save(PetscViewer viewer, PetscInt seq
         Vec exactVec;
         DMGetGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
 
-        // Get the number of fields
-        PetscDS ds;
-        DMGetDS(subDomain->GetDM(), &ds) >> checkError;
-        PetscInt numberOfFields;
-        PetscDSGetNumFields(ds, &numberOfFields) >> checkError;
-        std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields);
-        std::vector<void*> exactCtxs(numberOfFields);
-        for (auto f = 0; f < numberOfFields; ++f) {
-            PetscDSGetExactSolution(ds, f, &exactFuncs[f], &exactCtxs[f]) >> checkError;
-            if (!exactFuncs[f]) {
-                throw std::invalid_argument("The exact solution has not set");
-            }
-        }
-
-        DMProjectFunction(subDomain->GetDM(), time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> checkError;
+        subDomain->ProjectFieldFunctions(exactSolutions, exactVec, time);
 
         PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
         VecView(exactVec, viewer) >> checkError;

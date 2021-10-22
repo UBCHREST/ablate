@@ -12,7 +12,6 @@ class FieldErrorMonitor : public Monitor {
    public:
     explicit FieldErrorMonitor(std::shared_ptr<logs::Log> log = {});
 
-    void Register(std::shared_ptr<solver::Solver>) override {}
     PetscMonitorFunction GetPetscFunction() override { return MonitorError; }
 };
 }  // namespace ablate::monitors

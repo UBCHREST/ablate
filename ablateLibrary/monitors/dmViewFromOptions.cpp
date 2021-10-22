@@ -21,6 +21,8 @@ ablate::monitors::DmViewFromOptions::~DmViewFromOptions() {
     }
 }
 void ablate::monitors::DmViewFromOptions::Register(std::shared_ptr<solver::Solver> monitorableObject) {
+    ablate::monitors::Monitor::Register(monitorableObject);
+
     if (scope == Scope::INITIAL) {
         // if the scope is initial, dm plex only once during register
         // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate

@@ -10,6 +10,8 @@ ablate::monitors::CurveMonitor::CurveMonitor(int interval, std::string prefix, s
     : interval(interval), start(start), end(end), outputFields(outputFields), outputAuxFields(outputAuxFields), filePrefix(prefix) {}
 
 void ablate::monitors::CurveMonitor::Register(std::shared_ptr<solver::Solver> monitorableObject) {
+    ablate::monitors::Monitor::Register(monitorableObject);
+
     // this probe will only work with fV flow and a single process
     flow = std::dynamic_pointer_cast<finiteVolume::FiniteVolume>(monitorableObject);
     if (!flow) {

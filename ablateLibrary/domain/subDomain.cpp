@@ -23,15 +23,17 @@ ablate::domain::SubDomain::~SubDomain() {
     }
 }
 
-
 ablate::domain::Field ablate::domain::SubDomain::RegisterField(const ablate::domain::FieldDescriptor& fieldDescriptor, PetscObject field) {
     // Create a field with this information
     Field newField{.name = fieldDescriptor.name, .numberComponents = (PetscInt)fieldDescriptor.components.size(), .components = fieldDescriptor.components, .id = -1, .type = fieldDescriptor.type};
 
     // Store the location in this subdomain
-    auto type = fieldDescriptor.type;
-    newField.id = std::count_if(fields.begin(), fields.end(), [type](auto pair) { return pair.second.type == type; });
-    fields[newField.name] = newField;
+    newField.id = fieldsByType[fieldDescriptor.type].size();
+
+    // store by name
+    fieldsByName[newField.name] = newField;
+    // also store the values by type
+    fieldsByType[fieldDescriptor.type].push_back(newField);
 
     if (auto domainPtr = domain.lock()) {
         // add solution fields/aux fields
@@ -58,9 +60,6 @@ ablate::domain::Field ablate::domain::SubDomain::RegisterField(const ablate::dom
     } else {
         throw std::runtime_error("Cannot RegisterField " + newField.name + ". Domain is expired.");
     }
-
-
-
 
     return newField;
 }
@@ -103,6 +102,8 @@ void ablate::domain::SubDomain::CreateSubDomainStructures(){
             DMCreateDS(auxDM) >> checkError;
             DMCreateLocalVector(auxDM, &(auxVec)) >> checkError;
 
+            DMGetRegionDS(auxDM, label, nullptr, &auxDiscreteSystem ) >> checkError;
+
             // attach this field as aux vector to the dm
             DMSetAuxiliaryVec(domainPtr->GetDM(), label, label? region->GetValues()[0] : 0, auxVec) >> checkError;
             auto vecName = "aux" +( region?  "_" +  region->GetName() : "");
@@ -111,5 +112,47 @@ void ablate::domain::SubDomain::CreateSubDomainStructures(){
     } else {
         throw std::runtime_error("Cannot CreateSubDomainStructures. Domain is expired.");
     }
+}
 
+void ablate::domain::SubDomain::InitializeDiscreteSystem() {
+    if (auto domainPtr = domain.lock()) {
+        DMGetRegionDS(domainPtr->GetDM(), label, nullptr, &discreteSystem) >> checkError;
+    } else {
+        throw std::runtime_error("Cannot CreateSubDomainStructures. Domain is expired.");
+    }
+}
+
+PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const Field& field) {
+    switch (field.type) {
+        case FieldType::SOL: {
+            auto solutionField = GetSolutionField(field.name);
+            PetscObject fieldObject;
+            DMGetField(GetDM(), solutionField.id, nullptr, &fieldObject) >> checkError;
+            return fieldObject;
+        }
+        case FieldType::AUX: {
+            PetscObject fieldObject;
+            DMGetField(auxDM, field.id, nullptr, &fieldObject) >> checkError;
+            return fieldObject;
+        }
+    }
+}
+
+void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec,  PetscReal time) {
+    PetscInt numberFields;
+    auto dm = GetDM();
+    DMGetNumFields(dm, &numberFields) >> checkError;
+
+    // size up the update and context functions
+    std::vector<mathFunctions::PetscFunction> fieldFunctions(numberFields, NULL);
+    std::vector<void*> fieldContexts(numberFields, NULL);
+
+    for (auto fieldInitialization : initialization) {
+        auto fieldId = GetSolutionField(fieldInitialization->GetName());
+
+        fieldContexts[fieldId.id] = fieldInitialization->GetSolutionField().GetContext();
+        fieldFunctions[fieldId.id] = fieldInitialization->GetSolutionField().GetPetscFunction();
+    }
+
+    DMProjectFunction(dm, time, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, globVec) >> checkError;
 }

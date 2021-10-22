@@ -5,36 +5,33 @@
 ablate::monitors::FieldErrorMonitor::FieldErrorMonitor(std::shared_ptr<logs::Log> logIn) : log(logIn ? logIn : std::make_shared<logs::StdOut>()) {}
 
 PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
-    DM dm;
-    PetscDS ds;
-
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
-    ierr = TSGetDM(ts, &dm);
-    CHKERRQ(ierr);
-    ierr = DMGetDS(dm, &ds);
-    CHKERRQ(ierr);
-
-    // Get the number of fields
-    PetscInt numberOfFields;
-    ierr = PetscDSGetNumFields(ds, &numberOfFields);
-    CHKERRQ(ierr);
-
     FieldErrorMonitor *monitor = (FieldErrorMonitor *)ctx;
     // if this is the first time step init the log
     if (!monitor->log->Initialized()) {
-        monitor->log->Initialize(PetscObjectComm((PetscObject)dm));
+        monitor->log->Initialize(monitor->GetSolver()->GetSubDomain().GetComm());
     }
 
+    DM dm = monitor->GetSolver()->GetSubDomain().GetDM();
+    PetscDS ds = monitor->GetSolver()->GetSubDomain().GetDiscreteSystem();
+
+    // Get the number of fields
+    PetscInt numberOfFields;
+    ierr = DMGetNumFields(dm, &numberOfFields);
+    CHKERRQ(ierr);
+
     // Get the exact funcs and contx
-    std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields);
-    std::vector<void *> ctxs(numberOfFields);
-    for (auto f = 0; f < numberOfFields; ++f) {
-        ierr = PetscDSGetExactSolution(ds, f, &exactFuncs[f], &ctxs[f]);
+    std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields, nullptr);
+    std::vector<void *> ctxs(numberOfFields, nullptr);
+
+    // Get the exact solution for this ds
+    for(const auto& field : monitor->GetSolver()->GetSubDomain().GetFields()){
+        // Determine the solution location
+        auto solId = monitor->GetSolver()->GetSubDomain().GetSolutionField(field.name);
+
+        ierr = PetscDSGetExactSolution(ds, field.id, &exactFuncs[solId.id], &ctxs[solId.id]);
         CHKERRQ(ierr);
-        if (!exactFuncs[f]) {
-            SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_LIB, "The exact solution has not set");
-        }
     }
 
     // Store the errors

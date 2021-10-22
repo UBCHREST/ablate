@@ -52,6 +52,14 @@ class Domain : public std::enable_shared_from_this<Domain> {
     PetscInt GetDimensions() const;
 
     void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers);
+
+    inline const Field& GetSolutionField(const std::string& fieldName) const {
+        if (solutionFields.count(fieldName)) {
+            return solutionFields.at(fieldName);
+        } else {
+            throw std::invalid_argument("Cannot locate field " + fieldName + " in subDomain " + name);
+        }
+    }
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H
