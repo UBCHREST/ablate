@@ -146,6 +146,14 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
     ierr = DMGetDS(dm, &ds);
     CHKERRQ(ierr);
 
+    // Check for the number of DS, this should be relaxed
+    PetscInt numberDS;
+    ierr = DMGetNumDS(dm, &numberDS);
+    CHKERRQ(ierr);
+    if(numberDS > 1){
+        SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG,"This monitor only supports a single DS in a DM");
+    }
+
     auto monitor = (ablate::monitors::CurveMonitor*)mctx;
     auto flow = monitor->flow;
 

@@ -17,6 +17,14 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
     ierr = DMGetDS(dm, &ds);
     CHKERRQ(ierr);
 
+    // Check for the number of DS, this should be relaxed
+    PetscInt numberDS;
+    ierr = DMGetNumDS(dm, &numberDS);
+    CHKERRQ(ierr);
+    if(numberDS > 1){
+        SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG,"This monitor only supports a single DS in a DM");
+    }
+
     // Get the number of fields
     PetscInt numberOfFields;
     ierr = PetscDSGetNumFields(ds, &numberOfFields);

@@ -81,6 +81,14 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     ierr = DMGetDimension(dm, &dim);
     CHKERRQ(ierr);
 
+    // Check for the number of DS, this should be relaxed
+    PetscInt numberDS;
+    ierr = DMGetNumDS(dm, &numberDS);
+    CHKERRQ(ierr);
+    if(numberDS > 1){
+        SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG,"This monitor only supports a single DS in a DM");
+    }
+
     IgnitionDelayTemperature* monitor = (IgnitionDelayTemperature*)ctx;
 
     // extract the gradLocalVec
