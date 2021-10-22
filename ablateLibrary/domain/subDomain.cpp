@@ -1,15 +1,28 @@
 #include "subDomain.hpp"
 #include <utilities/petscError.hpp>
 
-ablate::domain::SubDomain::SubDomain(std::weak_ptr<Domain> domain, std::shared_ptr<domain::Region> region) : domain(domain), region(region), label(NULL) {
+ablate::domain::SubDomain::SubDomain(std::weak_ptr<Domain> domain, std::shared_ptr<domain::Region> region) : domain(domain), region(region), name(""), label(nullptr), auxDM(nullptr), auxVec(nullptr) {
     if (region) {
         if (auto domainPtr = domain.lock()) {
             DMGetLabel(domainPtr->GetDM(), region->GetName().c_str(), &label) >> checkError;
         } else {
             throw std::runtime_error("Cannot Locate Field in DM. DM is NULL");
         }
+
+        name = region->GetName();
     }
 }
+
+ablate::domain::SubDomain::~SubDomain() {
+    if (auxDM) {
+        DMDestroy(&auxDM) >> checkError;
+    }
+
+    if (auxVec) {
+        VecDestroy(&auxVec) >> checkError;
+    }
+}
+
 
 ablate::domain::Field ablate::domain::SubDomain::RegisterField(const ablate::domain::FieldDescriptor& fieldDescriptor, PetscObject field) {
     // Create a field with this information
@@ -21,10 +34,33 @@ ablate::domain::Field ablate::domain::SubDomain::RegisterField(const ablate::dom
     fields[newField.name] = newField;
 
     if (auto domainPtr = domain.lock()) {
-        domainPtr->RegisterField(fieldDescriptor, field, label);
+        // add solution fields/aux fields
+        switch (fieldDescriptor.type) {
+            case FieldType::SOL: {
+                domainPtr->RegisterSolutionField(fieldDescriptor, field, label);
+                break;
+            }
+            case FieldType::AUX: {
+                // check to see if need to create an aux dm
+                if (auxDM == nullptr) {
+                    /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
+                    DM coordDM;
+                    DMGetCoordinateDM(domainPtr->GetDM(), &coordDM) >> checkError;
+                    DMClone(domainPtr->GetDM(), &auxDM) >> checkError;
+
+                    // this is a hard coded "dmAux" that petsc looks for
+                    DMSetCoordinateDM(auxDM, coordDM) >> checkError;
+                }
+                DMAddField(auxDM, label, (PetscObject)field) >> checkError;
+            }
+        }
+
     } else {
         throw std::runtime_error("Cannot RegisterField " + newField.name + ". Domain is expired.");
     }
+
+
+
 
     return newField;
 }
@@ -38,11 +74,7 @@ DM& ablate::domain::SubDomain::GetDM() {
 }
 
 DM ablate::domain::SubDomain::GetAuxDM() {
-    if (auto domainPtr = domain.lock()) {
-        return domainPtr->GetAuxDM();
-    } else {
-        throw std::runtime_error("Cannot Get DM. Domain is expired.");
-    }
+    return auxDM;
 }
 
 Vec ablate::domain::SubDomain::GetSolutionVector() {
@@ -54,11 +86,7 @@ Vec ablate::domain::SubDomain::GetSolutionVector() {
 }
 
 Vec ablate::domain::SubDomain::GetAuxVector() {
-    if (auto domainPtr = domain.lock()) {
-        return domainPtr->GetAuxVector();
-    } else {
-        throw std::runtime_error("Cannot Get DM. Domain is expired.");
-    }
+    return auxVec;
 }
 
 PetscInt ablate::domain::SubDomain::GetDimensions() const {
@@ -67,4 +95,21 @@ PetscInt ablate::domain::SubDomain::GetDimensions() const {
     } else {
         throw std::runtime_error("Cannot Get DM. Domain is expired.");
     }
+}
+
+void ablate::domain::SubDomain::CreateSubDomainStructures(){
+    if (auto domainPtr = domain.lock()) {
+        if (auxDM) {
+            DMCreateDS(auxDM) >> checkError;
+            DMCreateLocalVector(auxDM, &(auxVec)) >> checkError;
+
+            // attach this field as aux vector to the dm
+            DMSetAuxiliaryVec(domainPtr->GetDM(), label, label? region->GetValues()[0] : 0, auxVec) >> checkError;
+            auto vecName = "aux" +( region?  "_" +  region->GetName() : "");
+            PetscObjectSetName((PetscObject)auxVec, vecName.c_str()) >> checkError;
+        }
+    } else {
+        throw std::runtime_error("Cannot CreateSubDomainStructures. Domain is expired.");
+    }
+
 }

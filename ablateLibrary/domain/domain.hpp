@@ -27,19 +27,16 @@ class Domain : public std::enable_shared_from_this<Domain> {
     DM dm;
 
    private:
+    // Keep track of all solution fields
+    std::map<std::string, Field> solutionFields;
+
     // This domain can be partitions into multiple subdomains
     std::map<std::size_t, std::shared_ptr<SubDomain>> subDomains;
-
-    // The aux vector DM
-    DM auxDM;
 
     // The solution to the flow
     Vec solField;
 
-    // The aux field to the flow
-    Vec auxField;
-
-    void CreateGlobalStructures();
+    void CreateStructures();
 
     std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
 
@@ -48,13 +45,9 @@ class Domain : public std::enable_shared_from_this<Domain> {
 
     DM& GetDM() { return dm; }
 
-    DM GetAuxDM() { return auxDM; }
-
     Vec GetSolutionVector() { return solField; }
 
-    Vec GetAuxVector() { return auxField; }
-
-    void RegisterField(const FieldDescriptor& fieldDescriptor, PetscObject field, DMLabel label);
+    void RegisterSolutionField(const FieldDescriptor& fieldDescriptor, PetscObject field, DMLabel label);
 
     PetscInt GetDimensions() const;
 
