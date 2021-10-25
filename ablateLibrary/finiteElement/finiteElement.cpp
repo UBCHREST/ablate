@@ -1,5 +1,8 @@
-
 #include "finiteElement.hpp"
+#include <petsc.h>
+#include <petsc/private/dmpleximpl.h>
+#include <petscds.h>
+#include <petscfv.h>
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 
@@ -68,8 +71,6 @@ void ablate::finiteElement::FiniteElement::Initialize() {
     }
 
     DMTSSetBoundaryLocal(subDomain->GetDM(), DMPlexTSComputeBoundary, NULL) >> checkError;
-    DMTSSetIFunctionLocal(subDomain->GetDM(), DMPlexTSComputeIFunctionFEM, NULL) >> checkError;
-    DMTSSetIJacobianLocal(subDomain->GetDM(), DMPlexTSComputeIJacobianFEM, NULL) >> checkError;
 }
 
 void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElement& fe) {
@@ -123,7 +124,7 @@ void ablate::finiteElement::FiniteElement::RegisterFiniteElementField(const abla
 
     // If this is not the first field, copy the quadrature locations
     if (subDomain->GetNumberFields() > 0) {
-        PetscFE referencePetscFE = (PetscFE)  subDomain->GetPetscFieldObject(subDomain->GetField(0));
+        PetscFE referencePetscFE = (PetscFE)subDomain->GetPetscFieldObject(subDomain->GetField(0));
         PetscFECopyQuadrature(referencePetscFE, petscFE) >> checkError;
     }
 
@@ -146,3 +147,106 @@ void ablate::finiteElement::FiniteElement::Save(PetscViewer viewer, PetscInt seq
         DMRestoreGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
     }
 }
+
+PetscErrorCode ablate::finiteElement::FiniteElement::ComputeIFunction(PetscReal time, Vec locX, Vec locX_t, Vec locF) {
+    PetscFunctionBegin;
+    DM plex;
+    IS allcellIS;
+    PetscErrorCode ierr;
+
+    ierr = DMConvert(subDomain->GetDM(), DMPLEX, &plex);
+    CHKERRQ(ierr);
+    ierr = DMPlexGetAllCells_Internal(plex, &allcellIS);
+    CHKERRQ(ierr);
+
+    IS cellIS;
+    PetscFormKey key;
+    key.label = subDomain->GetLabel();
+    key.value = 0;
+    key.field = 0;
+    key.part = 0;
+    if (!key.label) {
+        ierr = PetscObjectReference((PetscObject)allcellIS);
+        CHKERRQ(ierr);
+        cellIS = allcellIS;
+    } else {
+        IS pointIS;
+
+        key.value = 1;
+        ierr = DMLabelGetStratumIS(key.label, key.value, &pointIS);
+        CHKERRQ(ierr);
+        ierr = ISIntersect_Caching_Internal(allcellIS, pointIS, &cellIS);
+        CHKERRQ(ierr);
+        ierr = ISDestroy(&pointIS);
+        CHKERRQ(ierr);
+    }
+    ierr = DMPlexComputeResidual_Internal(plex, key, cellIS, time, locX, locX_t, time, locF, nullptr);
+    CHKERRQ(ierr);
+    ierr = ISDestroy(&cellIS);
+    CHKERRQ(ierr);
+
+    ierr = ISDestroy(&allcellIS);
+    CHKERRQ(ierr);
+    ierr = DMDestroy(&plex);
+    CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::finiteElement::FiniteElement::ComputeIJacobian(PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP) {
+    PetscFunctionBeginUser;
+
+    DM plex;
+    IS allcellIS;
+    PetscBool hasJac, hasPrec;
+    PetscErrorCode ierr;
+
+    ierr = DMConvert(subDomain->GetDM(), DMPLEX, &plex);
+    ierr = DMPlexGetAllCells_Internal(plex, &allcellIS);
+    CHKERRQ(ierr);
+
+    PetscDS ds = subDomain->GetDiscreteSystem();
+    IS cellIS;
+    PetscFormKey key;
+    key.label = subDomain->GetLabel();
+    key.value = 0;
+    key.field = 0;
+    key.part = 0;
+    if (!key.label) {
+        ierr = PetscObjectReference((PetscObject)allcellIS);
+        CHKERRQ(ierr);
+        cellIS = allcellIS;
+    } else {
+        IS pointIS;
+
+        key.value = 1;
+        ierr = DMLabelGetStratumIS(key.label, key.value, &pointIS);
+        CHKERRQ(ierr);
+        ierr = ISIntersect_Caching_Internal(allcellIS, pointIS, &cellIS);
+        CHKERRQ(ierr);
+        ierr = ISDestroy(&pointIS);
+        CHKERRQ(ierr);
+    }
+    ierr = PetscDSHasJacobian(ds, &hasJac);
+    CHKERRQ(ierr);
+    ierr = PetscDSHasJacobianPreconditioner(ds, &hasPrec);
+    CHKERRQ(ierr);
+    if (hasJac && hasPrec) {
+        ierr = MatZeroEntries(Jac);
+        CHKERRQ(ierr);
+    }
+    ierr = MatZeroEntries(JacP);
+    CHKERRQ(ierr);
+
+    ierr = DMPlexComputeJacobian_Internal(plex, key, cellIS, time, X_tShift, locX, locX_t, Jac, JacP, nullptr);
+    CHKERRQ(ierr);
+    ierr = ISDestroy(&cellIS);
+    CHKERRQ(ierr);
+
+    ierr = ISDestroy(&allcellIS);
+    CHKERRQ(ierr);
+    ierr = DMDestroy(&plex);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::finiteElement::FiniteElement::ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) { return 0; }

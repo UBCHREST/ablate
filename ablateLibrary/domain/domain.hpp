@@ -5,6 +5,8 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 #include "fieldDescriptor.hpp"
 #include "region.hpp"
 
@@ -43,17 +45,17 @@ class Domain : public std::enable_shared_from_this<Domain> {
    public:
     std::string GetName() const { return name; }
 
-    DM& GetDM() { return dm; }
+    DM &GetDM() { return dm; }
 
     Vec GetSolutionVector() { return solField; }
 
-    void RegisterSolutionField(const FieldDescriptor& fieldDescriptor, PetscObject field, DMLabel label);
+    void RegisterSolutionField(const FieldDescriptor &fieldDescriptor, PetscObject field, DMLabel label);
 
     PetscInt GetDimensions() const;
 
     void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers);
 
-    inline const Field& GetSolutionField(const std::string& fieldName) const {
+    inline const Field &GetSolutionField(const std::string &fieldName) const {
         if (solutionFields.count(fieldName)) {
             return solutionFields.at(fieldName);
         } else {

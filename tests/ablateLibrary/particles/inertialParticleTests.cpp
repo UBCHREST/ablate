@@ -252,6 +252,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
             mesh->InitializeSubDomains({flowObject, particles});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});
+            flowObject->DMTSStaticInitialize(mesh->GetDM());
 
             // Override problem with source terms, boundary, and set the exact solution
             {

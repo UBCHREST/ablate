@@ -12,7 +12,7 @@
 
 namespace ablate::finiteElement {
 
-class FiniteElement : public solver::Solver {
+class FiniteElement : public solver::Solver, public solver::IFunction{//, public solver::BoundaryFunction {
    private:
     // helper function to register fv field
     void RegisterFiniteElementField(const domain::FieldDescriptor&);
@@ -41,6 +41,11 @@ class FiniteElement : public solver::Solver {
     static void UpdateAuxFields(TS ts, FiniteElement& fe);
 
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
+
+    /** Functions to compute F and and jacobian for the fintie element method over this subDomain/DS. **/
+    PetscErrorCode ComputeIFunction(PetscReal time, Vec locX, Vec locX_t, Vec locF) override;
+    PetscErrorCode ComputeIJacobian(PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP) override;
+    PetscErrorCode ComputeBoundary(PetscReal time, Vec locX, Vec locX_t);
 };
 }  // namespace ablate::finiteElement
 

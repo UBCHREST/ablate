@@ -103,6 +103,10 @@ class SubDomain {
         return discreteSystem;
     }
 
+    inline DMLabel GetLabel(){
+        return label;
+    }
+
     /**
      * Get an aux DS if it is available
      * @return
