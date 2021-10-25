@@ -11,18 +11,15 @@ typedef PetscErrorCode (*PetscMonitorFunction)(TS ts, PetscInt steps, PetscReal 
 class Monitor {
    private:
     std::shared_ptr<solver::Solver> solver;
+
    public:
     virtual ~Monitor() = default;
     virtual void* GetContext() { return this; }
-    virtual void Register(std::shared_ptr<solver::Solver> solverIn){
-        solver = solverIn;
-    }
+    virtual void Register(std::shared_ptr<solver::Solver> solverIn) { solver = solverIn; }
     virtual PetscMonitorFunction GetPetscFunction() = 0;
 
    protected:
-    std::shared_ptr<solver::Solver> GetSolver(){
-        return solver;
-    }
+    std::shared_ptr<solver::Solver> GetSolver() { return solver; }
 };
 
 }  // namespace ablate::monitors

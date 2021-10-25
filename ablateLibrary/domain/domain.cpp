@@ -65,7 +65,7 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
 
     // Set up the global DS
     DMCreateDS(dm) >> checkError;
-    for(auto& subDomain: subDomains){
+    for (auto& subDomain : subDomains) {
         subDomain.second->InitializeDiscreteSystem();
     }
 
@@ -76,10 +76,9 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
 
     // Create the global structures
     CreateStructures();
-    for(auto& subDomain: subDomains){
+    for (auto& subDomain : subDomains) {
         subDomain.second->CreateSubDomainStructures();
     }
-
 
     // Initialize each solver
     for (auto& solver : solvers) {

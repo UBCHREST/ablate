@@ -9,5 +9,5 @@ class IFunction {
     virtual PetscErrorCode ComputeIJacobian(PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP) = 0;
 };
 
-}    // namespace ablate::solver
+}  // namespace ablate::solver
 #endif  // ABLATELIBRARY_IFUNCTION_HPP

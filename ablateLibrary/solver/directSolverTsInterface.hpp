@@ -17,12 +17,13 @@ class DirectSolverTsInterface {
     static PetscErrorCode ComputeIFunction(DM, PetscReal time, Vec locX, Vec locX_t, Vec locF, void *ctx);
     static PetscErrorCode ComputeIJacobian(DM, PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP, void *ctx);
     static PetscErrorCode ComputeBoundary(DM, PetscReal time, Vec locX, Vec locX_t, void *ctx);
+    static PetscErrorCode ComputeRHSFunction(DM dm, PetscReal time, Vec locX, Vec F, void *ctx);
 
     /** helper function to see if a class implements an interface **/
     template <class T>
-    static bool AnyOfType(std::vector<std::shared_ptr<Solver>> solvers){
-        for(auto& solver :solvers){
-            if(std::dynamic_pointer_cast<T>(solver)){
+    static bool AnyOfType(std::vector<std::shared_ptr<Solver>> solvers) {
+        for (auto &solver : solvers) {
+            if (std::dynamic_pointer_cast<T>(solver)) {
                 return true;
             }
         }

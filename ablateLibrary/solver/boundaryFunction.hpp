@@ -10,5 +10,5 @@ class BoundaryFunction {
     virtual PetscErrorCode ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) = 0;
 };
 
-}
+}  // namespace ablate::solver
 #endif  // ABLATELIBRARY_BOUNDARYFUNCTION_HPP

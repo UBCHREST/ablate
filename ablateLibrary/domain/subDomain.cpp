@@ -72,9 +72,7 @@ DM& ablate::domain::SubDomain::GetDM() {
     }
 }
 
-DM ablate::domain::SubDomain::GetAuxDM() {
-    return auxDM;
-}
+DM ablate::domain::SubDomain::GetAuxDM() { return auxDM; }
 
 Vec ablate::domain::SubDomain::GetSolutionVector() {
     if (auto domainPtr = domain.lock()) {
@@ -84,9 +82,7 @@ Vec ablate::domain::SubDomain::GetSolutionVector() {
     }
 }
 
-Vec ablate::domain::SubDomain::GetAuxVector() {
-    return auxVec;
-}
+Vec ablate::domain::SubDomain::GetAuxVector() { return auxVec; }
 
 PetscInt ablate::domain::SubDomain::GetDimensions() const {
     if (auto domainPtr = domain.lock()) {
@@ -96,17 +92,17 @@ PetscInt ablate::domain::SubDomain::GetDimensions() const {
     }
 }
 
-void ablate::domain::SubDomain::CreateSubDomainStructures(){
+void ablate::domain::SubDomain::CreateSubDomainStructures() {
     if (auto domainPtr = domain.lock()) {
         if (auxDM) {
             DMCreateDS(auxDM) >> checkError;
             DMCreateLocalVector(auxDM, &(auxVec)) >> checkError;
 
-            DMGetRegionDS(auxDM, label, nullptr, &auxDiscreteSystem ) >> checkError;
+            DMGetRegionDS(auxDM, label, nullptr, &auxDiscreteSystem) >> checkError;
 
             // attach this field as aux vector to the dm
-            DMSetAuxiliaryVec(domainPtr->GetDM(), label, label? region->GetValues()[0] : 0, auxVec) >> checkError;
-            auto vecName = "aux" +( region?  "_" +  region->GetName() : "");
+            DMSetAuxiliaryVec(domainPtr->GetDM(), label, label ? region->GetValues()[0] : 0, auxVec) >> checkError;
+            auto vecName = "aux" + (region ? "_" + region->GetName() : "");
             PetscObjectSetName((PetscObject)auxVec, vecName.c_str()) >> checkError;
         }
     } else {
@@ -138,7 +134,7 @@ PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const Field& field) {
     }
 }
 
-void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec,  PetscReal time) {
+void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time) {
     PetscInt numberFields;
     auto dm = GetDM();
     DMGetNumFields(dm, &numberFields) >> checkError;

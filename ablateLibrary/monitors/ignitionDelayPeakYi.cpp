@@ -100,8 +100,8 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
     PetscInt numberDS;
     ierr = DMGetNumDS(dm, &numberDS);
     CHKERRQ(ierr);
-    if(numberDS > 1){
-        SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG,"This monitor only supports a single DS in a DM");
+    if (numberDS > 1) {
+        SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "This monitor only supports a single DS in a DM");
     }
 
     IgnitionDelayPeakYi* monitor = (IgnitionDelayPeakYi*)ctx;

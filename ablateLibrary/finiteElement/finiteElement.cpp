@@ -245,6 +245,7 @@ PetscErrorCode ablate::finiteElement::FiniteElement::ComputeIJacobian(PetscReal 
     CHKERRQ(ierr);
     ierr = DMDestroy(&plex);
     CHKERRQ(ierr);
+
     PetscFunctionReturn(0);
 }
 
@@ -260,6 +261,9 @@ PetscErrorCode ablate::finiteElement::FiniteElement::ComputeBoundary(PetscReal t
     ierr = ablate::finiteElement::FiniteElement::DMPlexInsertBoundaryValues_Plex(plex, ds, PETSC_TRUE, locX, time, NULL, NULL, NULL);
     CHKERRQ(ierr);
     ierr = ablate::finiteElement::FiniteElement::DMPlexInsertTimeDerivativeBoundaryValues_Plex(plex, ds, PETSC_TRUE, locX_t, time, NULL, NULL, NULL);
+    CHKERRQ(ierr);
+
+    ierr = DMDestroy(&plex);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

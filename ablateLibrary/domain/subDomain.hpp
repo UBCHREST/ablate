@@ -72,9 +72,7 @@ class SubDomain {
         }
     }
 
-    inline const std::vector<Field>& GetFields(FieldType type = FieldType::SOL) const {
-        return fieldsByType.at(type);
-    }
+    inline const std::vector<Field>& GetFields(FieldType type = FieldType::SOL) const { return fieldsByType.at(type); }
 
     /**
      * Get the petscField object from the dm or auxDm for this region
@@ -99,21 +97,15 @@ class SubDomain {
     Vec GetAuxVector();
 
     // Get the discreteSystem describe system for this subDomain
-    inline PetscDS GetDiscreteSystem(){
-        return discreteSystem;
-    }
+    inline PetscDS GetDiscreteSystem() { return discreteSystem; }
 
-    inline DMLabel GetLabel(){
-        return label;
-    }
+    inline DMLabel GetLabel() { return label; }
 
     /**
      * Get an aux DS if it is available
      * @return
      */
-    inline PetscDS GetAuxDiscreteSystem(){
-        return auxDiscreteSystem;
-    }
+    inline PetscDS GetAuxDiscreteSystem() { return auxDiscreteSystem; }
 
     PetscInt GetDimensions() const;
     inline PetscInt GetNumberFields() const { return fieldsByName.size(); }
@@ -123,9 +115,7 @@ class SubDomain {
     /**
      * Support function to project the fields on to the global vector
      */
-    void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization,  Vec globVec, PetscReal time = 0.0);
-
-
+    void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0);
 };
 
 }  // namespace ablate::domain

@@ -96,12 +96,10 @@ void ablate::finiteVolume::FiniteVolume::Initialize() {
             PetscDSSetExactSolution(subDomain->GetDiscreteSystem(), fieldId.id, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
         }
         if (exactSolution->HasTimeDerivative()) {
-            PetscDSSetExactSolutionTimeDerivative(subDomain->GetDiscreteSystem(), fieldId.id, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >> checkError;
+            PetscDSSetExactSolutionTimeDerivative(subDomain->GetDiscreteSystem(), fieldId.id, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >>
+                checkError;
         }
     }
-
-    // Override the DMTSSetRHSFunctionLocal in DMPlexTSComputeRHSFunctionFVM with a function that includes euler and diffusion source terms
-    DMTSSetRHSFunctionLocal(subDomain->GetDM(), FVRHSFunctionLocal, this) >> checkError;
 
     // copy over any boundary information from the dm, to the aux dm and set the sideset
     if (subDomain->GetAuxDM()) {
@@ -160,12 +158,11 @@ void ablate::finiteVolume::FiniteVolume::RegisterFiniteVolumeField(const ablate:
     PetscFVDestroy(&fvm) >> checkError;
 }
 
-PetscErrorCode ablate::finiteVolume::FiniteVolume::FVRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx) {
+PetscErrorCode ablate::finiteVolume::FiniteVolume::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
-    ablate::finiteVolume::FiniteVolume* flow = (ablate::finiteVolume::FiniteVolume*)ctx;
-
+    auto dm = subDomain->GetDM();
     /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
     Vec facegeom, cellgeom;
     ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, NULL);
@@ -174,29 +171,18 @@ PetscErrorCode ablate::finiteVolume::FiniteVolume::FVRHSFunctionLocal(DM dm, Pet
     CHKERRQ(ierr);
 
     // update any aux fields, including ghost cells
-    ierr = FVFlowUpdateAuxFieldsFV(flow->auxFieldUpdateFunctionDescriptions.size(),
-                                   &flow->auxFieldUpdateFunctionDescriptions[0],
-                                   flow->subDomain->GetDM(),
-                                   flow->subDomain->GetAuxDM(),
-                                   time,
-                                   locXVec,
-                                   flow->subDomain->GetAuxVector());
+    ierr =
+        FVFlowUpdateAuxFieldsFV(auxFieldUpdateFunctionDescriptions.size(), &auxFieldUpdateFunctionDescriptions[0], subDomain->GetDM(), subDomain->GetAuxDM(), time, locXVec, subDomain->GetAuxVector());
     CHKERRQ(ierr);
 
     // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
-    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(&flow->rhsFluxFunctionDescriptions[0],
-                                              flow->rhsFluxFunctionDescriptions.size(),
-                                              &flow->rhsPointFunctionDescriptions[0],
-                                              flow->rhsPointFunctionDescriptions.size(),
-                                              dm,
-                                              time,
-                                              locXVec,
-                                              globFVec);
+    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(
+        &rhsFluxFunctionDescriptions[0], rhsFluxFunctionDescriptions.size(), &rhsPointFunctionDescriptions[0], rhsPointFunctionDescriptions.size(), dm, time, locXVec, locFVec);
     CHKERRQ(ierr);
 
     // iterate over any arbitrary RHS functions
-    for (const auto& rhsFunction : flow->rhsArbitraryFunctions) {
-        ierr = rhsFunction.first(dm, time, locXVec, globFVec, rhsFunction.second);
+    for (const auto& rhsFunction : rhsArbitraryFunctions) {
+        ierr = rhsFunction.first(dm, time, locXVec, locFVec, rhsFunction.second);
         CHKERRQ(ierr);
     }
 

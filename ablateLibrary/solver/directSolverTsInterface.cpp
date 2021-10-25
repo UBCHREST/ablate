@@ -2,8 +2,7 @@
 #include <utilities/petscError.hpp>
 #include "boundaryFunction.hpp"
 #include "iFunction.hpp"
-
-
+#include "rhsFunction.hpp"
 
 ablate::solver::DirectSolverTsInterface::DirectSolverTsInterface(TS ts, std::vector<std::shared_ptr<Solver>> solvers) : solvers(solvers) {
     void* test = NULL;
@@ -21,13 +20,15 @@ ablate::solver::DirectSolverTsInterface::DirectSolverTsInterface(TS ts, std::vec
     TSSetPostStep(ts, PostStep);
     TSSetPostEvaluate(ts, PostEvaluate);
 
-    if(AnyOfType<IFunction>(solvers)){
+    if (AnyOfType<IFunction>(solvers)) {
         DMTSSetIFunctionLocal(dm, ComputeIFunction, this) >> checkError;
         DMTSSetIJacobianLocal(dm, ComputeIJacobian, this) >> checkError;
     }
-
-    if(AnyOfType<BoundaryFunction>(solvers)){
+    if (AnyOfType<BoundaryFunction>(solvers)) {
         DMTSSetBoundaryLocal(dm, ComputeBoundary, this) >> checkError;
+    }
+    if (AnyOfType<RHSFunction>(solvers)) {
+        DMTSSetRHSFunctionLocal(dm, ComputeRHSFunction, this) >> checkError;
     }
 }
 
@@ -90,7 +91,7 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::ComputeIFunction(DM, Pet
     PetscFunctionBeginUser;
     auto interface = (ablate::solver::DirectSolverTsInterface*)ctx;
     for (auto& solver : interface->solvers) {
-        if(auto iFunctionSolver = std::dynamic_pointer_cast<IFunction>(solver)) {
+        if (auto iFunctionSolver = std::dynamic_pointer_cast<IFunction>(solver)) {
             PetscErrorCode ierr = iFunctionSolver->ComputeIFunction(time, locX, locX_t, locF);
             CHKERRQ(ierr);
         }
@@ -98,11 +99,11 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::ComputeIFunction(DM, Pet
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::solver::DirectSolverTsInterface::ComputeIJacobian(DM, PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP, void *ctx) {
+PetscErrorCode ablate::solver::DirectSolverTsInterface::ComputeIJacobian(DM, PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP, void* ctx) {
     PetscFunctionBeginUser;
     auto interface = (ablate::solver::DirectSolverTsInterface*)ctx;
     for (auto& solver : interface->solvers) {
-        if(auto iFunctionSolver = std::dynamic_pointer_cast<IFunction>(solver)) {
+        if (auto iFunctionSolver = std::dynamic_pointer_cast<IFunction>(solver)) {
             PetscErrorCode ierr = iFunctionSolver->ComputeIJacobian(time, locX, locX_t, X_tShift, Jac, JacP);
             CHKERRQ(ierr);
         }
@@ -110,14 +111,37 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::ComputeIJacobian(DM, Pet
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::solver::DirectSolverTsInterface::ComputeBoundary(DM, PetscReal time, Vec locX, Vec locX_t, void *ctx) {
+PetscErrorCode ablate::solver::DirectSolverTsInterface::ComputeBoundary(DM, PetscReal time, Vec locX, Vec locX_t, void* ctx) {
     PetscFunctionBeginUser;
     auto interface = (ablate::solver::DirectSolverTsInterface*)ctx;
     for (auto& solver : interface->solvers) {
-        if(auto iFunctionSolver = std::dynamic_pointer_cast<BoundaryFunction>(solver)) {
+        if (auto iFunctionSolver = std::dynamic_pointer_cast<BoundaryFunction>(solver)) {
             PetscErrorCode ierr = iFunctionSolver->ComputeBoundary(time, locX, locX_t);
             CHKERRQ(ierr);
         }
     }
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::solver::DirectSolverTsInterface::ComputeRHSFunction(DM dm, PetscReal time, Vec locX, Vec F, void* ctx) {
+    PetscFunctionBeginUser;
+    auto interface = (ablate::solver::DirectSolverTsInterface*)ctx;
+
+    Vec locF;
+    DMGetLocalVector(dm, &locF);
+    VecZeroEntries(locF);
+
+    for (auto& solver : interface->solvers) {
+        if (auto iFunctionSolver = std::dynamic_pointer_cast<RHSFunction>(solver)) {
+            PetscErrorCode ierr = iFunctionSolver->ComputeRHSFunction(time, locX, locF);
+            CHKERRQ(ierr);
+        }
+    }
+
+    DMLocalToGlobalBegin(dm, locF, ADD_VALUES, F);
+    DMLocalToGlobalEnd(dm, locF, ADD_VALUES, F);
+
+    DMRestoreLocalVector(dm, &locF);
+
     PetscFunctionReturn(0);
 }

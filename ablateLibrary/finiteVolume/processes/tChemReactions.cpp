@@ -398,7 +398,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec fVec, void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
     IS cellIS;
     DM plex;
     PetscInt depth;
@@ -429,7 +429,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 
     // get access to the fArray
     PetscScalar* fArray;
-    ierr = VecGetArray(fVec, &fArray);
+    ierr = VecGetArray(locFVec, &fArray);
     CHKERRQ(ierr);
 
     // hard code assuming only euler and density
@@ -450,7 +450,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 
         // read the global f
         PetscScalar* rhs;
-        ierr = DMPlexPointGlobalRef(dm, cell, fArray, &rhs);
+        ierr = DMPlexPointLocalRef(dm, cell, fArray, &rhs);
         CHKERRQ(ierr);
 
         // if a real cell
@@ -468,7 +468,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
         }
     }
 
-    ierr = VecRestoreArray(fVec, &fArray);
+    ierr = VecRestoreArray(locFVec, &fArray);
     CHKERRQ(ierr);
     ierr = VecGetArrayRead(solver->sourceVec, &sourceArray);
     CHKERRQ(ierr);

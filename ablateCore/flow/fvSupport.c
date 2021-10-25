@@ -125,9 +125,8 @@ PetscErrorCode DMPlexGetDataFVM_MulfiField(DM dm, PetscFV fv, Vec *cellgeom, Vec
 
 PetscErrorCode ABLATE_DMPlexComputeRHSFunctionFVM(FVMRHSFluxFunctionDescription *fluxFunctionDescription, PetscInt numberFluxFunctionDescription,
                                                       FVMRHSPointFunctionDescription *pointFunctionDescriptions, PetscInt numberPointFunctionDescription,
-                                                      DM dm, PetscReal time, Vec locX, Vec F)
+                                                      DM dm, PetscReal time, Vec locX, Vec locF)
 {
-    Vec            locF;
     IS             cellIS;
     DM             plex;
     PetscInt       depth;
@@ -140,8 +139,6 @@ PetscErrorCode ABLATE_DMPlexComputeRHSFunctionFVM(FVMRHSFluxFunctionDescription 
     if (!cellIS) {
         ierr = DMGetStratumIS(plex, "depth", depth, &cellIS);CHKERRQ(ierr);
     }
-    ierr = DMGetLocalVector(plex, &locF);CHKERRQ(ierr);
-    ierr = VecZeroEntries(locF);CHKERRQ(ierr);
 
     // compute the contribution from fluxes
     ierr = ABLATE_DMPlexComputeFluxResidual_Internal(fluxFunctionDescription, numberFluxFunctionDescription, plex, cellIS, time, locX, NULL, time, locF);CHKERRQ(ierr);
@@ -149,9 +146,6 @@ PetscErrorCode ABLATE_DMPlexComputeRHSFunctionFVM(FVMRHSFluxFunctionDescription 
     // compute the contribution from point sources
     ierr = ABLATE_DMPlexComputePointResidual_Internal(pointFunctionDescriptions, numberPointFunctionDescription, plex, cellIS, time, locX, NULL, time, locF);CHKERRQ(ierr);
 
-    ierr = DMLocalToGlobalBegin(plex, locF, ADD_VALUES, F);CHKERRQ(ierr);
-    ierr = DMLocalToGlobalEnd(plex, locF, ADD_VALUES, F);CHKERRQ(ierr);
-    ierr = DMRestoreLocalVector(plex, &locF);CHKERRQ(ierr);
     ierr = ISDestroy(&cellIS);CHKERRQ(ierr);
     ierr = DMDestroy(&plex);CHKERRQ(ierr);
     PetscFunctionReturn(0);

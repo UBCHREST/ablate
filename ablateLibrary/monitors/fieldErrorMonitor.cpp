@@ -26,7 +26,7 @@ PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt
     std::vector<void *> ctxs(numberOfFields, nullptr);
 
     // Get the exact solution for this ds
-    for(const auto& field : monitor->GetSolver()->GetSubDomain().GetFields()){
+    for (const auto &field : monitor->GetSolver()->GetSubDomain().GetFields()) {
         // Determine the solution location
         auto solId = monitor->GetSolver()->GetSubDomain().GetSolutionField(field.name);
 

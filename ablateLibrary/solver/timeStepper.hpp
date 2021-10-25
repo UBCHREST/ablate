@@ -52,7 +52,7 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments = {}, std::shared_ptr<io::Serializer> serializer = {});
     ~TimeStepper();
 
-    TS& GetTS() { return ts; }
+    TS &GetTS() { return ts; }
 
     void Solve();
 
@@ -60,7 +60,7 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
 
     double GetTime() const;
 
-    const std::string& GetName() const { return name; }
+    const std::string &GetName() const { return name; }
 };
 }  // namespace ablate::solver
 

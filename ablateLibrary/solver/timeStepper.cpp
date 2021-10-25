@@ -46,6 +46,18 @@ void ablate::solver::TimeStepper::Solve() {
     domain->InitializeSubDomains(solvers);
     TSSetDM(ts, domain->GetDM()) >> checkError;
 
+    // Register any functions with the dm/ts
+    if (!boundaryFunctionSolvers.empty()) {
+        DMTSSetBoundaryLocal(domain->GetDM(), SolverComputeBoundaryFunctionLocal, this) >> checkError;
+    }
+    if (!rhsFunctionSolvers.empty()) {
+        DMTSSetRHSFunctionLocal(domain->GetDM(), SolverComputeRHSFunctionLocal, this) >> checkError;
+    }
+    if (!iFunctionSolvers.empty()) {
+        DMTSSetIFunctionLocal(domain->GetDM(), SolverComputeIFunctionLocal, this) >> checkError;
+        DMTSSetIJacobianLocal(domain->GetDM(), SolverComputeIJacobianLocal, this) >> checkError;
+    }
+
     // Register the monitors
     for (auto& solver : solvers) {
         // Get any monitors
@@ -107,19 +119,14 @@ void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solve
     }
 
     // check to see if the solver implements a solver function
-    if(auto interface = std::dynamic_pointer_cast<IFunction>(solver)){
+    if (auto interface = std::dynamic_pointer_cast<IFunction>(solver)) {
         iFunctionSolvers.push_back(interface);
-
-        DMTSSetIFunctionLocal(domain->GetDM(), SolverComputeIFunctionLocal, this) >> checkError;
-        DMTSSetIJacobianLocal(domain->GetDM(), SolverComputeIJacobianLocal, this) >> checkError;
     }
-    if(auto interface = std::dynamic_pointer_cast<RHSFunction>(solver)){
+    if (auto interface = std::dynamic_pointer_cast<RHSFunction>(solver)) {
         rhsFunctionSolvers.push_back(interface);
-        DMTSSetRHSFunctionLocal(domain->GetDM(), SolverComputeRHSFunctionLocal, this) >> checkError;
     }
-    if(auto interface = std::dynamic_pointer_cast<BoundaryFunction>(solver)){
+    if (auto interface = std::dynamic_pointer_cast<BoundaryFunction>(solver)) {
         boundaryFunctionSolvers.push_back(interface);
-        DMTSSetBoundaryLocal(domain->GetDM(), SolverComputeBoundaryFunctionLocal, this) >> checkError;
     }
 }
 
@@ -191,11 +198,11 @@ PetscErrorCode ablate::solver::TimeStepper::TSPostEvaluateFunction(TS ts) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::solver::TimeStepper::SolverComputeBoundaryFunctionLocal(DM, PetscReal time, Vec locX, Vec locX_t, void *timeStepperCtx) {
+PetscErrorCode ablate::solver::TimeStepper::SolverComputeBoundaryFunctionLocal(DM, PetscReal time, Vec locX, Vec locX_t, void* timeStepperCtx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
-    auto timeStepper = (ablate::solver::TimeStepper*) timeStepperCtx;
-    for(auto& solver : timeStepper->boundaryFunctionSolvers ){
+    auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
+    for (auto& solver : timeStepper->boundaryFunctionSolvers) {
         ierr = solver->ComputeBoundary(time, locX, locX_t);
         CHKERRQ(ierr);
     }
@@ -203,11 +210,11 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeBoundaryFunctionLocal(D
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::solver::TimeStepper::SolverComputeIFunctionLocal(DM,  PetscReal time, Vec locX, Vec locX_t, Vec locF, void* timeStepperCtx) {
+PetscErrorCode ablate::solver::TimeStepper::SolverComputeIFunctionLocal(DM, PetscReal time, Vec locX, Vec locX_t, Vec locF, void* timeStepperCtx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
-    auto timeStepper = (ablate::solver::TimeStepper*) timeStepperCtx;
-    for(auto& solver : timeStepper->iFunctionSolvers ){
+    auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
+    for (auto& solver : timeStepper->iFunctionSolvers) {
         ierr = solver->ComputeIFunction(time, locX, locX_t, locF);
         CHKERRQ(ierr);
     }
@@ -218,26 +225,25 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeIFunctionLocal(DM,  Pet
 PetscErrorCode ablate::solver::TimeStepper::SolverComputeIJacobianLocal(DM, PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP, void* timeStepperCtx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
-    auto timeStepper = (ablate::solver::TimeStepper*) timeStepperCtx;
-    for(auto& solver : timeStepper->iFunctionSolvers ){
+    auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
+    for (auto& solver : timeStepper->iFunctionSolvers) {
         ierr = solver->ComputeIJacobian(time, locX, locX_t, X_tShift, Jac, JacP);
         CHKERRQ(ierr);
     }
 
     PetscFunctionReturn(0);
-
 }
 PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm, PetscReal time, Vec locX, Vec F, void* timeStepperCtx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
-    auto timeStepper = (ablate::solver::TimeStepper*) timeStepperCtx;
+    auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
 
     Vec locF;
     DMGetLocalVector(dm, &locF);
     VecZeroEntries(locF);
 
-    for(auto& solver : timeStepper->rhsFunctionSolvers ){
+    for (auto& solver : timeStepper->rhsFunctionSolvers) {
         ierr = solver->ComputeRHSFunction(time, locX, locF);
         CHKERRQ(ierr);
     }

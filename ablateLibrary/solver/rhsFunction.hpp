@@ -6,8 +6,8 @@ namespace ablate::solver {
 
 class RHSFunction {
    public:
-    virtual PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locX, Vec F) =0;
+    virtual PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locX, Vec F) = 0;
 };
 
-}
+}  // namespace ablate::solver
 #endif  // ABLATELIBRARY_RHSFUNCTION_HPP
