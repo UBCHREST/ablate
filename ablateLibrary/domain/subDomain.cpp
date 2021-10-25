@@ -132,6 +132,7 @@ PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const Field& field) {
             return fieldObject;
         }
     }
+    return nullptr;
 }
 
 void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time) {
