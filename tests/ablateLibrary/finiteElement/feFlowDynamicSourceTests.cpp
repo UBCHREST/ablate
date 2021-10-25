@@ -167,7 +167,6 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             DMSetApplicationContext(mesh->GetDM(), flowObject.get()) >> testErrorChecker;
             mesh->InitializeSubDomains({flowObject});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
-            flowObject->DMTSStaticInitialize(mesh->GetDM());
 
             // Name the flow field
             PetscObjectSetName((PetscObject)mesh->GetDM(), "Numerical Solution") >> testErrorChecker;

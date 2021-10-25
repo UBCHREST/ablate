@@ -624,7 +624,6 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
 
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
-            flowObject->DMTSStaticInitialize(mesh->GetDM());
 
             // Setup the TS
             TSSetFromOptions(ts) >> testErrorChecker;

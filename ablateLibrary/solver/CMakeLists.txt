@@ -7,8 +7,6 @@ target_sources(ablateLibrary
         directSolverTsInterface.hpp
         directSolverTsInterface.cpp
         iFunction.hpp
-        iFunction.cpp
-        rhsFunction.hpp
         rhsFunction.hpp
         boundaryFunction.hpp
         )
