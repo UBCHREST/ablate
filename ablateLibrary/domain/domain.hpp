@@ -5,6 +5,8 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 #include "fieldDescriptor.hpp"
 #include "region.hpp"
 
@@ -27,38 +29,39 @@ class Domain : public std::enable_shared_from_this<Domain> {
     DM dm;
 
    private:
+    // Keep track of all solution fields
+    std::map<std::string, Field> solutionFields;
+
     // This domain can be partitions into multiple subdomains
     std::map<std::size_t, std::shared_ptr<SubDomain>> subDomains;
-
-    // The aux vector DM
-    DM auxDM;
 
     // The solution to the flow
     Vec solField;
 
-    // The aux field to the flow
-    Vec auxField;
-
-    void CreateGlobalStructures();
+    void CreateStructures();
 
     std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
 
    public:
     std::string GetName() const { return name; }
 
-    DM& GetDM() { return dm; }
-
-    DM GetAuxDM() { return auxDM; }
+    DM &GetDM() { return dm; }
 
     Vec GetSolutionVector() { return solField; }
 
-    Vec GetAuxVector() { return auxField; }
-
-    void RegisterField(const FieldDescriptor& fieldDescriptor, PetscObject field, DMLabel label);
+    void RegisterSolutionField(const FieldDescriptor &fieldDescriptor, PetscObject field, DMLabel label);
 
     PetscInt GetDimensions() const;
 
     void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers);
+
+    inline const Field &GetSolutionField(const std::string &fieldName) const {
+        if (solutionFields.count(fieldName)) {
+            return solutionFields.at(fieldName);
+        } else {
+            throw std::invalid_argument("Cannot locate field " + fieldName + " in subDomain " + name);
+        }
+    }
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H

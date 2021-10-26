@@ -18,6 +18,8 @@ ablate::monitors::IgnitionDelayTemperature::~IgnitionDelayTemperature() {
 }
 
 void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<solver::Solver> monitorableObject) {
+    ablate::monitors::Monitor::Register(monitorableObject);
+
     // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate
     auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolume>(monitorableObject);
     if (!flow) {
@@ -78,6 +80,14 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     PetscInt dim;
     ierr = DMGetDimension(dm, &dim);
     CHKERRQ(ierr);
+
+    // Check for the number of DS, this should be relaxed
+    PetscInt numberDS;
+    ierr = DMGetNumDS(dm, &numberDS);
+    CHKERRQ(ierr);
+    if (numberDS > 1) {
+        SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "This monitor only supports a single DS in a DM");
+    }
 
     IgnitionDelayTemperature* monitor = (IgnitionDelayTemperature*)ctx;
 

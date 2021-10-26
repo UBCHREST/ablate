@@ -21,7 +21,6 @@ class SolutionErrorMonitor : public Monitor {
    public:
     SolutionErrorMonitor(Scope errorScope, Norm normType, std::shared_ptr<logs::Log> log = {});
 
-    void Register(std::shared_ptr<solver::Solver>) override {}
     PetscMonitorFunction GetPetscFunction() override { return MonitorError; }
 
     std::vector<PetscReal> ComputeError(TS ts, PetscReal time, Vec u);

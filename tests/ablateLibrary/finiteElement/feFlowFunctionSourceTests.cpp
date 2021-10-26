@@ -603,9 +603,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
 
             // Override problem with source terms, boundary, and set the exact solution
             {
-                PetscDS prob;
-                DMGetDS(mesh->GetDM(), &prob) >> testErrorChecker;
-
+                PetscDS prob = flowObject->GetSubDomain().GetDiscreteSystem();
                 // V, W Test Function
                 IntegrandTestFunction tempFunctionPointer;
                 if (testingParam.f0_v) {
@@ -623,9 +621,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             }
 
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
-            ablate::solver::DirectSolverTsInterface::SetupSolverTS(flowObject, ts) >> testErrorChecker;
-
-            TSSetApplicationContext(ts, flowObject.get());
+            solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Setup the TS
             TSSetFromOptions(ts) >> testErrorChecker;
@@ -656,7 +652,7 @@ INSTANTIATE_TEST_SUITE_P(
     testing::Values(
         (FEFlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2",
                                                    .nproc = 1,
-                                                   .expectedOutputFile = "outputs/flow/lowMach_2d_tri_p3_p2_p2",
+                                                   .expectedOutputFile = "outputs/finiteElement/lowMach_2d_tri_p3_p2_p2",
                                                    .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                                                 "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                                                 "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
@@ -668,7 +664,7 @@ INSTANTIATE_TEST_SUITE_P(
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlow>(
-                                          name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                                          name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                                   },
                               .uExact = lowMach_quadratic_u,
                               .pExact = lowMach_quadratic_p,
@@ -680,7 +676,7 @@ INSTANTIATE_TEST_SUITE_P(
                               .f0_q = f0_lowMach_quadratic_q},
         (FEFlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d quadratic tri_p3_p2_p2 with real coefficients",
                                                    .nproc = 1,
-                                                   .expectedOutputFile = "outputs/flow/lowMach_2d_tri_p3_p2_p2_real_coefficients",
+                                                   .expectedOutputFile = "outputs/finiteElement/lowMach_2d_tri_p3_p2_p2_real_coefficients",
                                                    .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                                                 "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                                                 "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
@@ -694,7 +690,7 @@ INSTANTIATE_TEST_SUITE_P(
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlow>(
-                                          name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                                          name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                                   },
                               .uExact = lowMach_quadratic_u,
                               .pExact = lowMach_quadratic_p,
@@ -706,7 +702,7 @@ INSTANTIATE_TEST_SUITE_P(
                               .f0_q = f0_lowMach_quadratic_q},
         (FEFlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d cubic tri_p3_p2_p2",
                                                    .nproc = 1,
-                                                   .expectedOutputFile = "outputs/flow/lowMach_2d_cubic_tri_p3_p2_p2",
+                                                   .expectedOutputFile = "outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2",
                                                    .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                                                 "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                                                 "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
@@ -718,7 +714,7 @@ INSTANTIATE_TEST_SUITE_P(
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlow>(
-                                          name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                                          name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                                   },
                               .uExact = lowMach_cubic_u,
                               .pExact = lowMach_cubic_p,
@@ -730,7 +726,7 @@ INSTANTIATE_TEST_SUITE_P(
                               .f0_q = f0_lowMach_cubic_q},
         (FEFlowMMSParameters){.mpiTestParameter = {.testName = "lowMach 2d cubic tri_p3_p2_p2 with real coefficients",
                                                    .nproc = 1,
-                                                   .expectedOutputFile = "outputs/flow/lowMach_2d_cubic_tri_p3_p2_p2_real_coefficients",
+                                                   .expectedOutputFile = "outputs/finiteElement/lowMach_2d_cubic_tri_p3_p2_p2_real_coefficients",
                                                    .arguments = "-dm_plex_separate_marker  -dm_refine 0 "
                                                                 "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                                                 "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 -ksp_type dgmres -ksp_gmres_restart 10 "
@@ -744,7 +740,7 @@ INSTANTIATE_TEST_SUITE_P(
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                                       return std::make_shared<ablate::finiteElement::LowMachFlow>(
-                                          name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                                          name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                                   },
                               .uExact = lowMach_cubic_u,
                               .pExact = lowMach_cubic_p,
@@ -757,7 +753,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p2_p1_p1",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
@@ -768,7 +764,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -781,7 +777,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 4 proc",
                                  .nproc = 4,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p2_p1_p1_nproc4",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_nproc4",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 1 -dm_distribute "
                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
@@ -792,7 +788,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -805,7 +801,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic trig tri_p2_p1_p1_tconv",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p2_p1_p1_tconv",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_tconv",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                               "-ts_max_steps 4 -ts_dt 0.1 -ts_convergence_estimate -convest_num_refine 1 "
@@ -817,7 +813,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_cubic_trig_u,
             .pExact = incompressible_cubic_trig_p,
@@ -830,7 +826,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic p2_p1_p1_sconv",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p2_p1_p1_sconv",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_sconv",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                               "-ts_max_steps 1 -ts_dt 1e-4 -ts_convergence_estimate -ts_convergence_temporal 0 -convest_num_refine 1 "
@@ -842,7 +838,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
@@ -855,7 +851,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p3_p2_p2",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
@@ -867,7 +863,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
@@ -880,7 +876,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d quadratic tri_p2_p1_p1 with real coefficients",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p2_p1_p1_real_coefficients",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_real_coefficients",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
@@ -893,7 +889,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -906,7 +902,7 @@ INSTANTIATE_TEST_SUITE_P(
         (FEFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2 with real coefficients",
                                  .nproc = 1,
-                                 .expectedOutputFile = "outputs/flow/incompressible_2d_tri_p3_p2_p2_real_coefficients",
+                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2_real_coefficients",
                                  .arguments = "-dm_plex_separate_marker -dm_refine 0 "
                                               "-vel_petscspace_degree 3 -pres_petscspace_degree 2 -temp_petscspace_degree 2 "
                                               "-dmts_check .001 -ts_max_steps 4 -ts_dt 0.1 "
@@ -920,7 +916,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, domain::Domain::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,

@@ -71,45 +71,21 @@ void ablate::finiteVolume::FiniteVolume::Setup() {
         process->Initialize(*this);
     }
 
-    // Start problem setup
-    PetscDS prob;
-    DMGetDS(subDomain->GetDM(), &prob) >> checkError;
-
     // Set the flux calculator solver for each component
-    PetscDSSetFromOptions(prob) >> checkError;
+    PetscDSSetFromOptions(subDomain->GetDiscreteSystem()) >> checkError;
 }
 
 void ablate::finiteVolume::FiniteVolume::Initialize() {
-    // Apply any boundary conditions
-    PetscDS prob;
-    DMGetDS(subDomain->GetDM(), &prob) >> checkError;
-
     // add each boundary condition
     for (auto boundary : boundaryConditions) {
-        const auto& fieldId = subDomain->GetField(boundary->GetFieldName());
+        const auto& fieldId = subDomain->GetSolutionField(boundary->GetFieldName());
 
         // Setup the boundary condition
-        boundary->SetupBoundary(subDomain->GetDM(), prob, fieldId.id);
+        boundary->SetupBoundary(subDomain->GetDM(), subDomain->GetDiscreteSystem(), fieldId.id);
     }
 
     // Initialize the flow field if provided
-    if (!initialization.empty()) {
-        PetscInt numberFields;
-        DMGetNumFields(subDomain->GetDM(), &numberFields) >> checkError;
-
-        // size up the update and context functions
-        std::vector<mathFunctions::PetscFunction> fieldFunctions(numberFields, NULL);
-        std::vector<void*> fieldContexts(numberFields, NULL);
-
-        for (auto fieldInitialization : initialization) {
-            auto fieldId = subDomain->GetField(fieldInitialization->GetName());
-
-            fieldContexts[fieldId.id] = fieldInitialization->GetSolutionField().GetContext();
-            fieldFunctions[fieldId.id] = fieldInitialization->GetSolutionField().GetPetscFunction();
-        }
-
-        DMProjectFunction(subDomain->GetDM(), 0.0, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, subDomain->GetSolutionVector()) >> checkError;
-    }
+    subDomain->ProjectFieldFunctions(initialization, subDomain->GetSolutionVector());
 
     // if an exact solution has been provided register it
     for (const auto& exactSolution : exactSolutions) {
@@ -117,22 +93,18 @@ void ablate::finiteVolume::FiniteVolume::Initialize() {
 
         // Get the current field type
         if (exactSolution->HasSolutionField()) {
-            PetscDSSetExactSolution(prob, fieldId.id, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
+            PetscDSSetExactSolution(subDomain->GetDiscreteSystem(), fieldId.id, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
         }
         if (exactSolution->HasTimeDerivative()) {
-            PetscDSSetExactSolutionTimeDerivative(prob, fieldId.id, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >> checkError;
+            PetscDSSetExactSolutionTimeDerivative(subDomain->GetDiscreteSystem(), fieldId.id, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >>
+                checkError;
         }
     }
 
-    // Override the DMTSSetRHSFunctionLocal in DMPlexTSComputeRHSFunctionFVM with a function that includes euler and diffusion source terms
-    DMTSSetRHSFunctionLocal(subDomain->GetDM(), FVRHSFunctionLocal, this) >> checkError;
-
     // copy over any boundary information from the dm, to the aux dm and set the sideset
     if (subDomain->GetAuxDM()) {
-        PetscDS flowProblem;
-        DMGetDS(subDomain->GetDM(), &flowProblem) >> checkError;
-        PetscDS auxProblem;
-        DMGetDS(subDomain->GetAuxDM(), &auxProblem) >> checkError;
+        PetscDS flowProblem = subDomain->GetDiscreteSystem();
+        PetscDS auxProblem = subDomain->GetAuxDiscreteSystem();
 
         // Get the number of boundary conditions and other info
         PetscInt numberBC;
@@ -186,12 +158,11 @@ void ablate::finiteVolume::FiniteVolume::RegisterFiniteVolumeField(const ablate:
     PetscFVDestroy(&fvm) >> checkError;
 }
 
-PetscErrorCode ablate::finiteVolume::FiniteVolume::FVRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx) {
+PetscErrorCode ablate::finiteVolume::FiniteVolume::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
-    ablate::finiteVolume::FiniteVolume* flow = (ablate::finiteVolume::FiniteVolume*)ctx;
-
+    auto dm = subDomain->GetDM();
     /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
     Vec facegeom, cellgeom;
     ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, NULL);
@@ -200,29 +171,18 @@ PetscErrorCode ablate::finiteVolume::FiniteVolume::FVRHSFunctionLocal(DM dm, Pet
     CHKERRQ(ierr);
 
     // update any aux fields, including ghost cells
-    ierr = FVFlowUpdateAuxFieldsFV(flow->auxFieldUpdateFunctionDescriptions.size(),
-                                   &flow->auxFieldUpdateFunctionDescriptions[0],
-                                   flow->subDomain->GetDM(),
-                                   flow->subDomain->GetAuxDM(),
-                                   time,
-                                   locXVec,
-                                   flow->subDomain->GetAuxVector());
+    ierr =
+        FVFlowUpdateAuxFieldsFV(auxFieldUpdateFunctionDescriptions.size(), &auxFieldUpdateFunctionDescriptions[0], subDomain->GetDM(), subDomain->GetAuxDM(), time, locXVec, subDomain->GetAuxVector());
     CHKERRQ(ierr);
 
     // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
-    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(&flow->rhsFluxFunctionDescriptions[0],
-                                              flow->rhsFluxFunctionDescriptions.size(),
-                                              &flow->rhsPointFunctionDescriptions[0],
-                                              flow->rhsPointFunctionDescriptions.size(),
-                                              dm,
-                                              time,
-                                              locXVec,
-                                              globFVec);
+    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(
+        &rhsFluxFunctionDescriptions[0], rhsFluxFunctionDescriptions.size(), &rhsPointFunctionDescriptions[0], rhsPointFunctionDescriptions.size(), dm, time, locXVec, locFVec);
     CHKERRQ(ierr);
 
     // iterate over any arbitrary RHS functions
-    for (const auto& rhsFunction : flow->rhsArbitraryFunctions) {
-        ierr = rhsFunction.first(dm, time, locXVec, globFVec, rhsFunction.second);
+    for (const auto& rhsFunction : rhsArbitraryFunctions) {
+        ierr = rhsFunction.first(dm, time, locXVec, locFVec, rhsFunction.second);
         CHKERRQ(ierr);
     }
 
@@ -354,21 +314,7 @@ void ablate::finiteVolume::FiniteVolume::Save(PetscViewer viewer, PetscInt seque
         DMGetGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
 
         // Get the number of fields
-        PetscDS ds;
-        DMGetDS(subDomain->GetDM(), &ds) >> checkError;
-        PetscInt numberOfFields;
-        PetscDSGetNumFields(ds, &numberOfFields) >> checkError;
-        std::vector<ablate::mathFunctions::PetscFunction> exactFuncs(numberOfFields);
-        std::vector<void*> exactCtxs(numberOfFields);
-        for (auto f = 0; f < numberOfFields; ++f) {
-            PetscDSGetExactSolution(ds, f, &exactFuncs[f], &exactCtxs[f]) >> checkError;
-            if (!exactFuncs[f]) {
-                throw std::invalid_argument("The exact solution has not set");
-            }
-        }
-
-        DMProjectFunction(subDomain->GetDM(), time, &exactFuncs[0], &exactCtxs[0], INSERT_ALL_VALUES, exactVec) >> checkError;
-
+        subDomain->ProjectFieldFunctions(exactSolutions, exactVec, time);
         PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
         VecView(exactVec, viewer) >> checkError;
         DMRestoreGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;

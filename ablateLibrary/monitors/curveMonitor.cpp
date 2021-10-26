@@ -10,6 +10,8 @@ ablate::monitors::CurveMonitor::CurveMonitor(int interval, std::string prefix, s
     : interval(interval), start(start), end(end), outputFields(outputFields), outputAuxFields(outputAuxFields), filePrefix(prefix) {}
 
 void ablate::monitors::CurveMonitor::Register(std::shared_ptr<solver::Solver> monitorableObject) {
+    ablate::monitors::Monitor::Register(monitorableObject);
+
     // this probe will only work with fV flow and a single process
     flow = std::dynamic_pointer_cast<finiteVolume::FiniteVolume>(monitorableObject);
     if (!flow) {
@@ -143,6 +145,14 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
     CHKERRQ(ierr);
     ierr = DMGetDS(dm, &ds);
     CHKERRQ(ierr);
+
+    // Check for the number of DS, this should be relaxed
+    PetscInt numberDS;
+    ierr = DMGetNumDS(dm, &numberDS);
+    CHKERRQ(ierr);
+    if (numberDS > 1) {
+        SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "This monitor only supports a single DS in a DM");
+    }
 
     auto monitor = (ablate::monitors::CurveMonitor*)mctx;
     auto flow = monitor->flow;

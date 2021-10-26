@@ -31,19 +31,16 @@ void ablate::finiteElement::IncompressibleFlow::Setup() {
     FiniteElement::Setup();
 
     {
-        PetscObject pressure;
         MatNullSpace nullspacePres;
-
-        DMGetField(subDomain->GetDM(), PRES, NULL, &pressure) >> checkError;
-        MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
-        PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres) >> checkError;
+        auto fieldId = subDomain->GetField("pressure");
+        auto pressureField = subDomain->GetPetscFieldObject(fieldId);
+        MatNullSpaceCreate(PetscObjectComm(pressureField), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
+        PetscObjectCompose(pressureField, "nullspace", (PetscObject)nullspacePres) >> checkError;
         MatNullSpaceDestroy(&nullspacePres) >> checkError;
     }
 
-    PetscDS prob;
-    DMGetDS(subDomain->GetDM(), &prob) >> checkError;
-
     // V, W, Q Test Function
+    auto prob = subDomain->GetDiscreteSystem();
     PetscDSSetResidual(prob, VTEST, IncompressibleFlow_vIntegrandTestFunction, IncompressibleFlow_vIntegrandTestGradientFunction) >> checkError;
     PetscDSSetResidual(prob, WTEST, IncompressibleFlow_wIntegrandTestFunction, IncompressibleFlow_wIntegrandTestGradientFunction) >> checkError;
     PetscDSSetResidual(prob, QTEST, IncompressibleFlow_qIntegrandTestFunction, NULL) >> checkError;

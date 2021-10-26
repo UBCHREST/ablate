@@ -17,9 +17,9 @@ namespace processes {
 class Process;
 }
 
-class FiniteVolume : public solver::Solver {
+class FiniteVolume : public solver::Solver, public solver::RHSFunction {
    public:
-    using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx);
+    using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolume&, void* ctx);
 
    private:
@@ -71,7 +71,7 @@ class FiniteVolume : public solver::Solver {
      * @param ctx
      * @return
      */
-    static PetscErrorCode FVRHSFunctionLocal(DM dm, PetscReal time, Vec locXVec, Vec globFVec, void* ctx);
+    PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
     /**
      * Register a FVM rhs source flux function
