@@ -311,13 +311,13 @@ void ablate::finiteVolume::FiniteVolume::Save(PetscViewer viewer, PetscInt seque
 
     if (!exactSolutions.empty()) {
         Vec exactVec;
-        DMGetGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
+        DMGetGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
 
-        // Get the number of fields
         subDomain->ProjectFieldFunctions(exactSolutions, exactVec, time);
+
         PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
         VecView(exactVec, viewer) >> checkError;
-        DMRestoreGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
+        DMRestoreGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
     }
 }
 

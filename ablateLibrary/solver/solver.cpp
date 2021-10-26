@@ -59,29 +59,29 @@ void ablate::solver::Solver::PostEvaluate(TS ts) {
 }
 
 void ablate::solver::Solver::Save(PetscViewer viewer, PetscInt steps, PetscReal time) const {
-    auto dm = subDomain->GetDM();
-    auto auxDM = subDomain->GetAuxDM();
+    auto subDm = subDomain->GetSubDM();
+    auto auxDM = subDomain->GetSubAuxDM();
     // If this is the first output, save the mesh
     if (steps == 0) {
         // Print the initial mesh
-        DMView(dm, viewer) >> checkError;
+        DMView(subDm, viewer) >> checkError;
     }
 
     // set the dm sequence number, because we may be skipping outputs
-    DMSetOutputSequenceNumber(dm, steps, time) >> checkError;
+    DMSetOutputSequenceNumber(subDm, steps, time) >> checkError;
     if (auxDM) {
         DMSetOutputSequenceNumber(auxDM, steps, time) >> checkError;
     }
 
     // Always save the main flowField
-    VecView(subDomain->GetSolutionVector(), viewer) >> checkError;
+    VecView(subDomain->GetSubSolutionVector(), viewer) >> checkError;
 
     // If there is aux data output
-    if (subDomain->GetAuxVector()) {
+    if (auto subAuxVector = subDomain->GetSubAuxVector()) {
         // copy over the sequence data from the main dm
         PetscReal dmTime;
         PetscInt dmSequence;
-        DMGetOutputSequenceNumber(dm, &dmSequence, &dmTime) >> checkError;
+        DMGetOutputSequenceNumber(subDm, &dmSequence, &dmTime) >> checkError;
         DMSetOutputSequenceNumber(auxDM, dmSequence, dmTime) >> checkError;
 
         Vec auxGlobalField;
@@ -89,9 +89,9 @@ void ablate::solver::Solver::Save(PetscViewer viewer, PetscInt steps, PetscReal 
 
         // copy over the name of the auxFieldVector
         const char* tempName;
-        PetscObjectGetName((PetscObject)subDomain->GetAuxVector(), &tempName) >> checkError;
+        PetscObjectGetName((PetscObject)subAuxVector, &tempName) >> checkError;
         PetscObjectSetName((PetscObject)auxGlobalField, tempName) >> checkError;
-        DMLocalToGlobal(auxDM, subDomain->GetAuxVector(), INSERT_VALUES, auxGlobalField) >> checkError;
+        DMLocalToGlobal(auxDM, subAuxVector, INSERT_VALUES, auxGlobalField) >> checkError;
         VecView(auxGlobalField, viewer) >> checkError;
         DMRestoreGlobalVector(auxDM, &auxGlobalField) >> checkError;
     }

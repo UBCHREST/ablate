@@ -38,6 +38,15 @@ class SubDomain {
     DM auxDM;
     Vec auxVec;
 
+    // Create/store a subDM for output
+    DM subDM;
+    Vec subSolutionVec;
+    DM subAuxDM;
+    Vec subAuxVec;
+
+    // support call to copy from global to sub vec
+    void CopyGlobalToSubVector(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false);
+
    public:
     SubDomain(std::weak_ptr<Domain> domain, std::shared_ptr<domain::Region>);
     ~SubDomain();
@@ -95,6 +104,14 @@ class SubDomain {
     DM GetAuxDM();
     Vec GetSolutionVector();
     Vec GetAuxVector();
+
+    // Function to create/get the subDM.  If there is no subDM the dm will be returned
+    DM GetSubDM();
+    Vec GetSubSolutionVector();
+
+    // returns an aux vector with the correct data sized for the subDM
+    DM GetSubAuxDM();
+    Vec GetSubAuxVector();
 
     // Get the discreteSystem describe system for this subDomain
     inline PetscDS GetDiscreteSystem() { return discreteSystem; }
