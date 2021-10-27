@@ -2,12 +2,12 @@
 #define ABLATELIBRARY_TWOPHASEEULERADVECTION_HPP
 
 #include <petsc.h>
-#include "flow/fluxCalculator/fluxCalculator.hpp"
-#include "flowProcess.hpp"
+#include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
+#include "process.hpp"
 
-namespace ablate::flow::processes {
+namespace ablate::finiteVolume::processes {
 
-class TwoPhaseEulerAdvection : public FlowProcess {
+class TwoPhaseEulerAdvection : public Process {
    private:
     const std::shared_ptr<eos::EOS> eosGas;
     const std::shared_ptr<eos::EOS> eosLiquid;
@@ -18,7 +18,7 @@ class TwoPhaseEulerAdvection : public FlowProcess {
    public:
     TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
                            std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid);
-    void Initialize(ablate::flow::FVFlow& flow) override;
+    void Initialize(ablate::finiteVolume::FiniteVolume& flow) override;
 
    private:
     static PetscErrorCode CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[],
@@ -57,5 +57,5 @@ class TwoPhaseEulerAdvection : public FlowProcess {
     //        mInf: .3
 };
 
-}  // namespace ablate::flow::processes
+}  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_TWOPHASEEULERADVECTION_HPP
