@@ -21,7 +21,7 @@ New to Ablate? Get up and running with the [Getting Started Guide.]({{ site.base
 AblateCore builds a c library of reusable functions and data structures for solving flow and particle based system.  Use of this library requires knowledge of PETSc. 
 
 ### ablateLibrary
-AblateLibrary is a c++ library used to setup and run simulations.  It is built upon ablateCore and provides a level of abstraction that simplifies setting up complex simulations.
+AblateLibrary is a c++ library used to setup and run simulations.  It is built upon ablateCore and provides a level of abstraction that simplifies setting up complex simulations.  Details of the code structure can be found in [Code Structure]({{ site.baseurl}}{%link content/development/CodeStructure.md %}).
 
 ### tests
 The test directory holds four sub-test projects, each focused on a different aspect of testing.

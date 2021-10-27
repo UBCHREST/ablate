@@ -5,11 +5,11 @@
 namespace ablate::particles {
 class Tracer : public Particles {
    public:
-    Tracer(std::string name, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution = {},
-           std::shared_ptr<parameters::Parameters> options = {});
+    Tracer(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, int ndims, std::shared_ptr<particles::initializers::Initializer> initializer,
+           std::shared_ptr<mathFunctions::MathFunction> exactSolution);
     ~Tracer() override;
 
-    void InitializeFlow(std::shared_ptr<flow::Flow> flow) override;
+    void Initialize() override;
 
    private:
     static PetscErrorCode freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void* ctx);

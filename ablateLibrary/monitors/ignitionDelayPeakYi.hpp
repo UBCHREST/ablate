@@ -31,7 +31,7 @@ class IgnitionDelayPeakYi : public Monitor {
     explicit IgnitionDelayPeakYi(std::string species, std::vector<double> location, std::shared_ptr<logs::Log> log = {}, std::shared_ptr<logs::Log> historyLogIn = {});
     ~IgnitionDelayPeakYi() override;
 
-    void Register(std::shared_ptr<Monitorable>) override;
+    void Register(std::shared_ptr<solver::Solver>) override;
     PetscMonitorFunction GetPetscFunction() override { return MonitorIgnition; }
 };
 

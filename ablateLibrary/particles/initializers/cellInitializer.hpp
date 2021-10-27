@@ -11,7 +11,7 @@ class CellInitializer : public Initializer {
     explicit CellInitializer(int particlesPerCellPerDim = 1);
     ~CellInitializer() override = default;
 
-    void Initialize(ablate::flow::Flow& flow, DM particleDM) override;
+    void Initialize(ablate::domain::SubDomain& flow, DM particleDM) override;
 };
 }  // namespace ablate::particles::initializers
 

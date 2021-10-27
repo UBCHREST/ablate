@@ -4,7 +4,7 @@
 ablate::particles::initializers::BoxInitializer::BoxInitializer(std::vector<double> lowerBound, std::vector<double> upperBound, int particlesPerDim)
     : lowerBound(lowerBound), upperBound(upperBound), particlesPerDim(particlesPerDim){};
 
-void ablate::particles::initializers::BoxInitializer::Initialize(ablate::flow::Flow &flow, DM particleDm) {
+void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain::SubDomain &flow, DM particleDm) {
     /* The initial number of particles per box dimension */
     PetscInt Npb = (PetscInt)particlesPerDim;
 

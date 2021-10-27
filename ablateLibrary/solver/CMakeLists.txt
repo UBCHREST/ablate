@@ -1,0 +1,12 @@
+target_sources(ablateLibrary
+        PUBLIC
+        timeStepper.hpp
+        timeStepper.cpp
+        solver.hpp
+        solver.cpp
+        directSolverTsInterface.hpp
+        directSolverTsInterface.cpp
+        iFunction.hpp
+        rhsFunction.hpp
+        boundaryFunction.hpp
+        )

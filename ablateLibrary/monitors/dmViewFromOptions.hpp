@@ -30,7 +30,7 @@ class DmViewFromOptions : public Monitor {
     explicit DmViewFromOptions(Scope scope, std::string options = {}, std::string optionName = {});
     ~DmViewFromOptions() override;
 
-    void Register(std::shared_ptr<Monitorable>) override;
+    void Register(std::shared_ptr<solver::Solver>) override;
     PetscMonitorFunction GetPetscFunction() override { return CallDmViewFromOptions; }
 };
 

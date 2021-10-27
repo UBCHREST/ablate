@@ -15,7 +15,6 @@ class TimeStepMonitor : public Monitor {
    public:
     explicit TimeStepMonitor(std::shared_ptr<logs::Log> log = {}, std::shared_ptr<io::interval::Interval> interval = {});
 
-    void Register(std::shared_ptr<Monitorable>) override {}
     PetscMonitorFunction GetPetscFunction() override { return MonitorTimeStep; }
 };
 }  // namespace ablate::monitors

@@ -1,19 +1,20 @@
 #include <petsc.h>
-#include <flow/incompressibleFlow.hpp>
+#include <finiteElement/boundaryConditions/essential.hpp>
+#include <finiteElement/incompressibleFlow.hpp>
 #include <memory>
 #include <parameters/petscPrefixOptions.hpp>
 #include <particles/initializers/boxInitializer.hpp>
+#include <solver/directSolverTsInterface.hpp>
 #include "MpiTestFixture.hpp"
-#include "flow/boundaryConditions/essential.hpp"
+#include "domain/boxMesh.hpp"
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "mesh/boxMesh.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "particles/tracer.hpp"
 
 using namespace ablate;
-using namespace ablate::flow;
+using namespace ablate::finiteElement;
 
 typedef PetscErrorCode (*ExactFunction)(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
 
@@ -246,21 +247,21 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     // get the particle data from the context
     ablate::particles::Tracer *tracerParticles = (ablate::particles::Tracer *)ctx;
     PetscInt particleCount;
-    ierr = DMSwarmGetSize(tracerParticles->GetDM(), &particleCount);
+    ierr = DMSwarmGetSize(tracerParticles->GetParticleDM(), &particleCount);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
     // compute the average particle location
     const PetscReal *coords;
     PetscInt dims;
     PetscReal avg[3] = {0.0, 0.0, 0.0};
-    ierr = DMSwarmGetField(tracerParticles->GetDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
+    ierr = DMSwarmGetField(tracerParticles->GetParticleDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     for (PetscInt p = 0; p < particleCount; p++) {
         for (PetscInt n = 0; n < dims; n++) {
             avg[n] += coords[p * dims + n] / PetscReal(particleCount);
         }
     }
-    ierr = DMSwarmRestoreField(tracerParticles->GetDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
+    ierr = DMSwarmRestoreField(tracerParticles->GetParticleDM(), DMSwarmPICField_coor, &dims, NULL, (void **)&coords);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
     ierr = PetscPrintf(PETSC_COMM_WORLD,
@@ -294,8 +295,8 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            auto mesh = std::make_shared<ablate::mesh::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
-            TSSetDM(ts, mesh->GetDomain()) >> testErrorChecker;
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
             // Setup the flow data
@@ -309,11 +310,11 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto temperatureExact =
                 std::make_shared<mathFunctions::FieldFunction>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
 
-            auto flowObject = std::make_shared<ablate::flow::IncompressibleFlow>(
+            auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlow>(
                 "testFlow",
-                mesh,
-                parameters,
+                domain::Region::ENTIREDOMAIN,
                 nullptr,
+                parameters,
                 /* initialization functions */
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
@@ -330,10 +331,20 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                 /* exact solutions*/
                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
 
+            // Create the particle domain
+            // pass all options with the particles prefix to the particle object
+            auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
+            auto initializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.25, 0.25}, std::vector<double>{.75, .75}, 5);
+            auto particles = std::make_shared<ablate::particles::Tracer>(
+                "particle", ablate::domain::Region::ENTIREDOMAIN, particleOptions, 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact));
+
+            mesh->InitializeSubDomains({flowObject, particles});
+            solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});
+
             // Override problem with source terms, boundary, and set the exact solution
             {
                 PetscDS prob;
-                DMGetDS(mesh->GetDomain(), &prob) >> testErrorChecker;
+                DMGetDS(mesh->GetDM(), &prob) >> testErrorChecker;
 
                 // V, W Test Function
                 IntegrandTestFunction tempFunctionPointer;
@@ -350,19 +361,9 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                     PetscDSSetResidual(prob, QTEST, testingParam.f0_q, tempFunctionPointer) >> testErrorChecker;
                 }
             }
-            flowObject->CompleteProblemSetup(ts);
 
             // Check the convergence
-            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
-
-            // Create the particle domain
-            // pass all options with the particles prefix to the particle object
-            auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
-            auto initializer = std::make_shared<ablate::particles::initializers::BoxInitializer>(std::vector<double>{0.25, 0.25}, std::vector<double>{.75, .75}, 5);
-            auto particles = std::make_shared<ablate::particles::Tracer>("particle", 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact), particleOptions);
-
-            // link the flow to the particles
-            particles->InitializeFlow(flowObject);
+            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // setup the initial conditions for error computing, this is only used for tests
             TSSetComputeInitialCondition(particles->GetTS(), ablate::particles::Particles::ComputeParticleExactSolution) >> testErrorChecker;
@@ -372,10 +373,10 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             TSSetFromOptions(ts) >> testErrorChecker;
 
             // Solve the one way coupled system
-            TSSolve(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            TSSolve(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // Compare the actual vs expected values
-            DMTSCheckFromOptions(ts, flowObject->GetSolutionVector()) >> testErrorChecker;
+            DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
