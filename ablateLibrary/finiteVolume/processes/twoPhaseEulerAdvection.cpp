@@ -72,10 +72,11 @@ PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx) {
     return 0;
 }
 
-void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim, const PetscReal *conservedValues,
-                                                                               const PetscReal *normal, PetscReal *density, PetscReal *densityG, PetscReal *densityL, PetscReal *normalVelocity,
-                                                                               PetscReal *velocity, PetscReal *internalEnergy, PetscReal *internalEnergyG, PetscReal *internalEnergyL, PetscReal *aG,
-                                                                               PetscReal *aL, PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *alpha) {
+void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim,
+                                                                                       const PetscReal *conservedValues, const PetscReal *normal, PetscReal *density, PetscReal *densityG,
+                                                                                       PetscReal *densityL, PetscReal *normalVelocity, PetscReal *velocity, PetscReal *internalEnergy,
+                                                                                       PetscReal *internalEnergyG, PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL, PetscReal *MG,
+                                                                                       PetscReal *ML, PetscReal *p, PetscReal *alpha) {
     const int EULER_FIELD = 1;  // denstiyVF is [0] field
     // (densityVF, RHO, RHOE, RHOU, RHOV, RHOW)
     // decode
@@ -177,21 +178,21 @@ void ablate::flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(s
     *alpha = densityVF / (*densityG);
 }
 
-ablate::flow::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid,
-                                                                        std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
-                                                                        std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
-                                                                        std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid)
+ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid,
+                                                                                std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
+                                                                                std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
+                                                                                std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid)
     : eosGas(eosGas), eosLiquid(eosLiquid), fluxCalculatorGasGas(fluxCalculatorGasGas), fluxCalculatorGasLiquid(fluxCalculatorGasLiquid), fluxCalculatorLiquidLiquid(fluxCalculatorLiquidLiquid) {}
-void ablate::flow::processes::TwoPhaseEulerAdvection::Initialize(ablate::flow::FVFlow &flow) {
-    // Currently no option for species advection
+void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Initialize(ablate::finiteVolume::FiniteVolume &flow) {
+    // Currently, no option for species advection
     flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, "euler", {"densityVF", "euler"}, {});
     flow.RegisterRHSFunction(CompressibleFlowComputeVFFlux, this, "densityVF", {"densityVF", "euler"}, {});
 }
-PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
-                                                                                                 const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscScalar *gradL,
-                                                                                                 const PetscScalar *gradR, const PetscInt *aOff, const PetscInt *aOff_x, const PetscScalar *auxL,
-                                                                                                 const PetscScalar *auxR, const PetscScalar *gradAuxL, const PetscScalar *gradAuxR, PetscScalar *flux,
-                                                                                                 void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
+                                                                                                         const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscScalar *gradL,
+                                                                                                         const PetscScalar *gradR, const PetscInt *aOff, const PetscInt *aOff_x,
+                                                                                                         const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
+                                                                                                         const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
     auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
     const int EULER_FIELD = 1;  // densityVF is [0] field
@@ -390,10 +391,11 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeVFFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
-                                                                                              const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR,
-                                                                                              const PetscInt *aOff, const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR,
-                                                                                              const PetscScalar *gradAuxL, const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeVFFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
+                                                                                                      const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscScalar *gradL,
+                                                                                                      const PetscScalar *gradR, const PetscInt *aOff, const PetscInt *aOff_x, const PetscScalar *auxL,
+                                                                                                      const PetscScalar *auxR, const PetscScalar *gradAuxL, const PetscScalar *gradAuxR,
+                                                                                                      PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
     auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
     //    const int VF_FIELD = 0;
@@ -488,6 +490,6 @@ PetscErrorCode ablate::flow::processes::TwoPhaseEulerAdvection::CompressibleFlow
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::flow::processes::FlowProcess, ablate::flow::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eosGas", ""), ARG(ablate::eos::EOS, "eosLiquid", ""),
-         ARG(ablate::flow::fluxCalculator::FluxCalculator, "fluxCalculatorGasGas", ""), ARG(ablate::flow::fluxCalculator::FluxCalculator, "fluxCalculatorGasLiquid", ""),
-         ARG(ablate::flow::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidLiquid", ""));
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eosGas", ""), ARG(ablate::eos::EOS, "eosLiquid", ""),
+         ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasGas", ""), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasLiquid", ""),
+         ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidLiquid", ""));

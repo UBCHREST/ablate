@@ -1,20 +1,12 @@
 #include <petsc.h>
 #include <PetscTestFixture.hpp>
 #include <cmath>
-#include <flow/boundaryConditions/essentialGhost.hpp>
 #include <memory>
-#include <mesh/boxMesh.hpp>
-#include <monitors/solutionErrorMonitor.hpp>
 #include <vector>
-#include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/stiffenedGas.hpp"
-#include "flow/boundaryConditions/ghost.hpp"
-#include "flow/compressibleFlow.hpp"
-#include "flow/processes/twoPhaseEulerAdvection.hpp"
+#include "finiteVolume/processes/twoPhaseEulerAdvection.hpp"
 #include "gtest/gtest.h"
-#include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
 
 using namespace ablate;
@@ -68,25 +60,25 @@ TEST_P(TwoPhaseEulerAdvectionTestDecodeStateFixture, ShouldDecodeState) {
     PetscReal alpha;
 
     // act
-    flow::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(params.eosGas,
-                                                                      params.eosLiquid,
-                                                                      params.dim,
-                                                                      &params.conservedValuesIn[0],
-                                                                      &params.normalIn[0],
-                                                                      &density,
-                                                                      &densityG,
-                                                                      &densityL,
-                                                                      &normalVelocity,
-                                                                      &velocity[0],
-                                                                      &internalEnergy,
-                                                                      &internalEnergyG,
-                                                                      &internalEnergyL,
-                                                                      &soundSpeedG,
-                                                                      &soundSpeedL,
-                                                                      &MG,
-                                                                      &ML,
-                                                                      &pressure,
-                                                                      &alpha);
+    finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(params.eosGas,
+                                                                              params.eosLiquid,
+                                                                              params.dim,
+                                                                              &params.conservedValuesIn[0],
+                                                                              &params.normalIn[0],
+                                                                              &density,
+                                                                              &densityG,
+                                                                              &densityL,
+                                                                              &normalVelocity,
+                                                                              &velocity[0],
+                                                                              &internalEnergy,
+                                                                              &internalEnergyG,
+                                                                              &internalEnergyL,
+                                                                              &soundSpeedG,
+                                                                              &soundSpeedL,
+                                                                              &MG,
+                                                                              &ML,
+                                                                              &pressure,
+                                                                              &alpha);
 
     // assert
     ASSERT_NEAR(density, params.expectedDensity, 1E-6);
