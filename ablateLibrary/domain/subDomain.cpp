@@ -70,7 +70,19 @@ ablate::domain::Field ablate::domain::SubDomain::RegisterField(const ablate::dom
                     // this is a hard coded "dmAux" that petsc looks for
                     DMSetCoordinateDM(auxDM, coordDM) >> checkError;
                 }
+
                 DMAddField(auxDM, label, (PetscObject)field) >> checkError;
+
+                switch (fieldDescriptor.adjacency) {
+                    case FieldAdjacency::FEM:
+                        DMSetAdjacency(auxDM, newField.id, PETSC_FALSE, PETSC_TRUE) >> checkError;
+                        break;
+                    case FieldAdjacency::FVM:
+                        DMSetAdjacency(auxDM, newField.id, PETSC_TRUE, PETSC_FALSE) >> checkError;
+                        break;
+                    default: {
+                    }
+                }
             }
         }
 

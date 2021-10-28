@@ -8,4 +8,4 @@ static std::string getPetscObjectName(DM dm) {
     return std::string(name);
 }
 
-ablate::domain::DMWrapper::DMWrapper(DM dm) : ablate::domain::Domain(getPetscObjectName(dm)) { this->dm = dm; }
+ablate::domain::DMWrapper::DMWrapper(DM dm, std::vector<std::shared_ptr<modifier::Modifier>> modifiers) : ablate::domain::Domain(getPetscObjectName(dm), modifiers) { this->dm = dm; }

@@ -5,8 +5,8 @@
 #include "utilities/petscError.hpp"
 
 ablate::domain::BoxMesh::BoxMesh(std::string name, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary, bool simplex,
-                                 std::shared_ptr<parameters::Parameters> options)
-    : Domain(name), petscOptions(NULL) {
+                                 std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<modifier::Modifier>> modifiers)
+    : Domain(name, modifiers), petscOptions(NULL) {
     // Set the options
     if (options) {
         PetscOptionsCreate(&petscOptions) >> checkError;
@@ -50,4 +50,5 @@ ablate::domain::BoxMesh::~BoxMesh() {
 REGISTER(ablate::domain::Domain, ablate::domain::BoxMesh, "simple uniform box mesh", ARG(std::string, "name", "the name of the domain/mesh object"),
          ARG(std::vector<int>, "faces", "the number of faces in each direction"), ARG(std::vector<double>, "lower", "the lower bound of the mesh"),
          ARG(std::vector<double>, "upper", "the upper bound of the mesh"), OPT(std::vector<std::string>, "boundary", "custom boundary types (NONE, GHOSTED, MIRROR, PERIODIC)"),
-         OPT(bool, "simplex", "sets if the elements/cells are simplex"), OPT(ablate::parameters::Parameters, "options", "any PETSc options"));
+         OPT(bool, "simplex", "sets if the elements/cells are simplex"), OPT(ablate::parameters::Parameters, "options", "any PETSc options"),
+         OPT(std::vector<domain::modifier::Modifier>, "modifiers", "a list of domain modifier"));

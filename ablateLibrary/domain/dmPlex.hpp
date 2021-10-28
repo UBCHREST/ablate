@@ -13,7 +13,7 @@ class DMPlex : public Domain {
     PetscOptions petscOptions;
 
    public:
-    DMPlex(std::string name = "dmplex", std::shared_ptr<parameters::Parameters> options = {});
+    DMPlex(std::string name = "dmplex", std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::shared_ptr<modifier::Modifier>> modifiers = {});
     ~DMPlex() override;
 };
 }  // namespace ablate::domain

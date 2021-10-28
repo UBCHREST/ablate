@@ -4,7 +4,10 @@
 #include "subDomain.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::domain::Domain::Domain(std::string name) : name(name), solField(nullptr) {}
+ablate::domain::Domain::Domain(std::string name, std::vector<std::shared_ptr<modifier::Modifier>> modifiersIn) : name(name), solField(nullptr), modifiers(modifiersIn) {
+    // sort the modifiers based upon priority
+    std::sort(modifiers.begin(), modifiers.end(), [](const auto& a, const auto& b) -> bool { return a->Priority() < b->Priority(); });
+}
 
 ablate::domain::Domain::~Domain() {
     // clean up the petsc objects
@@ -20,12 +23,24 @@ void ablate::domain::Domain::RegisterSolutionField(const ablate::domain::FieldDe
             // Called the shared method to register
             DMAddField(dm, label, (PetscObject)field) >> checkError;
 
-            // Copy to a field Field
+            // Copy to a field
             Field newField{.name = fieldDescriptor.name,
                            .numberComponents = (PetscInt)fieldDescriptor.components.size(),
                            .components = fieldDescriptor.components,
                            .id = (PetscInt)solutionFields.size(),
-                           .type = fieldDescriptor.type};
+                           .type = fieldDescriptor.type,
+                           .adjacency = fieldDescriptor.adjacency};
+
+            switch (fieldDescriptor.adjacency) {
+                case FieldAdjacency::FEM:
+                    DMSetAdjacency(dm, newField.id, PETSC_FALSE, PETSC_TRUE) >> checkError;
+                    break;
+                case FieldAdjacency::FVM:
+                    DMSetAdjacency(dm, newField.id, PETSC_TRUE, PETSC_FALSE) >> checkError;
+                    break;
+                default: {
+                }
+            }
 
             solutionFields[fieldDescriptor.name] = newField;
 
@@ -58,6 +73,11 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
 }
 
 void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers) {
+    // update the dm with the modifiers
+    for (auto& modifier : modifiers) {
+        modifier->Modify(dm);
+    }
+
     // determine the number of fields
     for (auto& solver : solvers) {
         solver->Register(GetSubDomain(solver->GetRegion()));

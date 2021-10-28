@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_DOMAIN_H
 #define ABLATELIBRARY_DOMAIN_H
-
 #include <petsc.h>
+#include <domain/modifiers/modifier.hpp>
 #include <map>
 #include <memory>
 #include <string>
@@ -21,7 +21,7 @@ class SubDomain;
 
 class Domain : public std::enable_shared_from_this<Domain> {
    protected:
-    Domain(std::string name);
+    Domain(std::string name, std::vector<std::shared_ptr<modifier::Modifier>> modifiers);
     virtual ~Domain();
 
     std::string name;
@@ -41,6 +41,9 @@ class Domain : public std::enable_shared_from_this<Domain> {
     void CreateStructures();
 
     std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
+
+    // keep a list of functions that modify the dm
+    std::vector<std::shared_ptr<modifier::Modifier>> modifiers;
 
    public:
     std::string GetName() const { return name; }

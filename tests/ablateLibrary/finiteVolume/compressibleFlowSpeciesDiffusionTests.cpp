@@ -2,6 +2,8 @@
 #include <cmath>
 #include <convergenceTester.hpp>
 #include <domain/boxMesh.hpp>
+#include <domain/modifiers/distributeWithGhostCells.hpp>
+#include <domain/modifiers/ghostBoundaryCells.hpp>
 #include <eos/mockEOS.hpp>
 #include <eos/transport/constant.hpp>
 #include <finiteVolume/boundaryConditions/essentialGhost.hpp>
@@ -127,7 +129,9 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                                                                   std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
                                                                       {"dm_refine", std::to_string(l)},
                                                                       {"dm_distribute", ""},
-                                                                  }));
+                                                                  }),
+                                                                  std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::DistributeWithGhostCells>(),
+                                                                                                                                   std::make_shared<domain::modifier::GhostBoundaryCells>()});
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});

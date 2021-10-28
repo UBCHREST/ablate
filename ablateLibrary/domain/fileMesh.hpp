@@ -14,7 +14,7 @@ class FileMesh : public Domain {
     PetscOptions petscOptions;
 
    public:
-    explicit FileMesh(std::string nameIn, std::filesystem::path path, std::shared_ptr<parameters::Parameters> options = {});
+    explicit FileMesh(std::string nameIn, std::filesystem::path path, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::shared_ptr<modifier::Modifier>> modifiers = {});
     ~FileMesh() override;
 };
 };      // namespace ablate::domain

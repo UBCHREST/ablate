@@ -1,0 +1,10 @@
+target_sources(ablateLibrary
+        PUBLIC
+        modifier.hpp
+        distributeWithGhostCells.hpp
+        distributeWithGhostCells.cpp
+        ghostBoundaryCells.hpp
+        ghostBoundaryCells.cpp
+        setFromOptions.hpp
+        setFromOptions.cpp
+        )

@@ -1,7 +1,8 @@
 #include "fileMesh.hpp"
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
-ablate::domain::FileMesh::FileMesh(std::string nameIn, std::filesystem::path pathIn, std::shared_ptr<parameters::Parameters> options) : Domain(nameIn), path(pathIn), petscOptions(NULL) {
+ablate::domain::FileMesh::FileMesh(std::string nameIn, std::filesystem::path pathIn, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<modifier::Modifier>> modifiers)
+    : Domain(nameIn, modifiers), path(pathIn), petscOptions(NULL) {
     // Set the options if provided
     if (options) {
         PetscOptionsCreate(&petscOptions) >> checkError;
@@ -25,4 +26,5 @@ ablate::domain::FileMesh::~FileMesh() {
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::domain::Domain, ablate::domain::FileMesh, "read a DMPlex from a file", ARG(std::string, "name", "the name of the domain/mesh object"),
-         ARG(std::filesystem::path, "path", "the path to the mesh file"), OPT(ablate::parameters::Parameters, "options", "any PETSc options"));
+         ARG(std::filesystem::path, "path", "the path to the mesh file"), OPT(ablate::parameters::Parameters, "options", "any PETSc options"),
+         OPT(std::vector<domain::modifier::Modifier>, "modifiers", "a list of domain modifier"));

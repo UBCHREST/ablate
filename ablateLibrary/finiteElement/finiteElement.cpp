@@ -23,7 +23,12 @@ void ablate::finiteElement::FiniteElement::Register(std::shared_ptr<ablate::doma
     Solver::DecompressFieldFieldDescriptor(fieldDescriptors);
 
     // initialize each field
-    for (const auto &field : fieldDescriptors) {
+    for (auto &field : fieldDescriptors) {
+        // check the field adjacency
+        if (field.adjacency == domain::FieldAdjacency::DEFAULT) {
+            field.adjacency = domain::FieldAdjacency::FEM;
+        }
+
         if (!field.components.empty()) {
             RegisterFiniteElementField(field);
         }
@@ -32,6 +37,7 @@ void ablate::finiteElement::FiniteElement::Register(std::shared_ptr<ablate::doma
 
 void ablate::finiteElement::FiniteElement::Setup() {
     DM cdm = subDomain->GetDM();
+
     while (cdm) {
         DMCopyDisc(subDomain->GetDM(), cdm) >> checkError;
         DMGetCoarseDM(cdm, &cdm) >> checkError;
