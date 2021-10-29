@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <functional>
 
-ablate::domain::Region::Region(std::string name, std::vector<int> valuesIn) : name(name), values(valuesIn.empty() ? valuesIn : std::vector<int>{1}) {
+ablate::domain::Region::Region(std::string name, std::vector<int> valuesIn) : name(name), values(valuesIn.empty() ? std::vector<PetscInt>{1} : std::vector<PetscInt>(valuesIn.begin(), valuesIn.end())) {
     // sort the values
     std::sort(values.begin(), values.end());
 

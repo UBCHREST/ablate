@@ -297,7 +297,7 @@ void ablate::finiteVolume::FiniteVolume::Save(PetscViewer viewer, PetscInt seque
         Vec exactVec;
         DMGetGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
 
-        subDomain->ProjectFieldFunctions(exactSolutions, exactVec, time);
+        subDomain->ProjectFieldFunctionsToSubDM(exactSolutions, exactVec, time);
 
         PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
         VecView(exactVec, viewer) >> checkError;

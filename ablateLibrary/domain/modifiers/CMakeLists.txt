@@ -7,4 +7,6 @@ target_sources(ablateLibrary
         ghostBoundaryCells.cpp
         setFromOptions.hpp
         setFromOptions.cpp
+        createLabel.hpp
+        createLabel.cpp
         )

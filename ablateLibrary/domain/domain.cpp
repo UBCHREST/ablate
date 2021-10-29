@@ -67,7 +67,7 @@ void ablate::domain::Domain::CreateStructures() {
 std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(std::shared_ptr<domain::Region> region) {
     std::size_t regionHash = region ? region->GetId() : 0;
     if (subDomains.count(regionHash) == 0) {
-        subDomains[regionHash] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), nullptr);
+        subDomains[regionHash] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), region);
     }
     return subDomains[regionHash];
 }

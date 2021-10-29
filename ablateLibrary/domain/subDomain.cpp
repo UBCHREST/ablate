@@ -169,6 +169,42 @@ void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::sha
     DM dm;
 
     VecGetDM(globVec, &dm) >> checkError;
+    if (dm != GetDM()) {
+        throw std::invalid_argument("The Vector passed in to ablate::domain::SubDomain::ProjectFieldFunctions must be a global vector from the DM.");
+    }
+    DMGetNumFields(dm, &numberFields) >> checkError;
+
+    // size up the update and context functions
+    std::vector<mathFunctions::PetscFunction> fieldFunctions(numberFields, NULL);
+    std::vector<void*> fieldContexts(numberFields, NULL);
+
+    for (auto fieldInitialization : initialization) {
+        auto fieldId = GetSolutionField(fieldInitialization->GetName());
+
+        fieldContexts[fieldId.id] = fieldInitialization->GetSolutionField().GetContext();
+        fieldFunctions[fieldId.id] = fieldInitialization->GetSolutionField().GetPetscFunction();
+    }
+
+    if (label == nullptr) {
+        DMProjectFunction(dm, time, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, globVec) >> checkError;
+
+    } else {
+        DMProjectFunctionLabel(dm, time, label, region->GetValues().size(), &region->GetValues()[0], -1, NULL, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, globVec);
+    }
+}
+
+void ablate::domain::SubDomain::ProjectFieldFunctionsToSubDM(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time) {
+    if (subDM == nullptr) {
+        return ProjectFieldFunctions(initialization, globVec, time);
+    }
+
+    PetscInt numberFields;
+    DM dm;
+
+    VecGetDM(globVec, &dm) >> checkError;
+    if (dm != subDM) {
+        throw std::invalid_argument("The Vector passed in to ablate::domain::SubDomain::ProjectFieldFunctionsToSubDM must be a global vector from the SubDM.");
+    }
     DMGetNumFields(dm, &numberFields) >> checkError;
 
     // size up the update and context functions
@@ -201,6 +237,8 @@ DM ablate::domain::SubDomain::GetSubDM() {
             auto petscField = GetPetscFieldObject(fieldInfo);
             DMAddField(subDM, NULL, petscField) >> checkError;
         }
+
+        DMCreateDS(subDM) >> checkError;
     }
 
     return subDM;
@@ -281,7 +319,7 @@ Vec ablate::domain::SubDomain::GetSubAuxVector() {
     return subAuxVec;
 }
 
-void ablate::domain::SubDomain::CopyGlobalToSubVector(DM gDM, DM sDM, Vec globVec, Vec subVec, const std::vector<Field>& gFields, const std::vector<Field>& subFields, bool localVector) {
+void ablate::domain::SubDomain::CopyGlobalToSubVector(DM sDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields, bool localVector) {
     /* Get the map from the subVec to global */
     IS subpointIS;
     const PetscInt* subpointIndices = NULL;
