@@ -5,7 +5,7 @@
 
 namespace ablate::finiteVolume::processes {
 
-class FlowProcess: public Process {
+class FlowProcess : public Process {
    public:
     typedef enum { RHO, RHOE, RHOU, RHOV, RHOW } Components;
 
@@ -31,8 +31,7 @@ class FlowProcess: public Process {
      */
     static void DecodeEulerState(eos::DecodeStateFunction decodeStateFunction, void* decodeStateContext, PetscInt dim, const PetscReal* conservedValues, const PetscReal* densityYi,
                                  const PetscReal* normal, PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* a, PetscReal* M, PetscReal* p);
-
 };
 
-}
+}  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_FLOWPROCESS_HPP

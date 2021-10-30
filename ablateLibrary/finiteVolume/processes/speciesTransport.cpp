@@ -189,7 +189,7 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
                                                                                 const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
                                                                                 const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
-    auto eulerAdvectionData = (AdvectionData*)ctx;
+    auto eulerAdvectionData = (AdvectionData *)ctx;
 
     // Compute the norm
     PetscReal norm[3];
@@ -207,7 +207,19 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
     PetscReal aL;
     PetscReal ML;
     PetscReal pL;
-    DecodeEulerState(eulerAdvectionData->decodeStateFunction, eulerAdvectionData->decodeStateContext, dim, fieldL + uOff[EULER_FIELD], fieldL + uOff[YI_FIELD], norm, &densityL, &normalVelocityL, velocityL, &internalEnergyL, &aL, &ML, &pL);
+    DecodeEulerState(eulerAdvectionData->decodeStateFunction,
+                     eulerAdvectionData->decodeStateContext,
+                     dim,
+                     fieldL + uOff[EULER_FIELD],
+                     fieldL + uOff[YI_FIELD],
+                     norm,
+                     &densityL,
+                     &normalVelocityL,
+                     velocityL,
+                     &internalEnergyL,
+                     &aL,
+                     &ML,
+                     &pL);
 
     PetscReal densityR;
     PetscReal normalVelocityR;
@@ -216,7 +228,19 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
     PetscReal aR;
     PetscReal MR;
     PetscReal pR;
-    DecodeEulerState(eulerAdvectionData->decodeStateFunction, eulerAdvectionData->decodeStateContext, dim, fieldR + uOff[EULER_FIELD], fieldR + uOff[YI_FIELD], norm, &densityR, &normalVelocityR, velocityR, &internalEnergyR, &aR, &MR, &pR);
+    DecodeEulerState(eulerAdvectionData->decodeStateFunction,
+                     eulerAdvectionData->decodeStateContext,
+                     dim,
+                     fieldR + uOff[EULER_FIELD],
+                     fieldR + uOff[YI_FIELD],
+                     norm,
+                     &densityR,
+                     &normalVelocityR,
+                     velocityR,
+                     &internalEnergyR,
+                     &aR,
+                     &MR,
+                     &pR);
 
     // get the face values
     PetscReal massFlux;

@@ -1,7 +1,8 @@
 #include "flowProcess.hpp"
 
-void ablate::finiteVolume::processes::FlowProcess::DecodeEulerState(eos::DecodeStateFunction decodeStateFunction, void* decodeStateContext,PetscInt dim, const PetscReal *conservedValues, const PetscReal *densityYi, const PetscReal *normal, PetscReal *density,
-                                                                    PetscReal *normalVelocity, PetscReal *velocity, PetscReal *internalEnergy, PetscReal *a, PetscReal *M, PetscReal *p) {
+void ablate::finiteVolume::processes::FlowProcess::DecodeEulerState(eos::DecodeStateFunction decodeStateFunction, void *decodeStateContext, PetscInt dim, const PetscReal *conservedValues,
+                                                                    const PetscReal *densityYi, const PetscReal *normal, PetscReal *density, PetscReal *normalVelocity, PetscReal *velocity,
+                                                                    PetscReal *internalEnergy, PetscReal *a, PetscReal *M, PetscReal *p) {
     // decode
     *density = conservedValues[RHO];
     PetscReal totalEnergy = conservedValues[RHOE] / (*density);

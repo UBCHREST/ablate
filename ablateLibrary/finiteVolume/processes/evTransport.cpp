@@ -6,7 +6,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdateNonConservedE
                                                                                   const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + EulerAdvection::RHO];
-    auto evTransport = (ablate::finiteVolume::processes::EVTransport*)ctx;
+    auto evTransport = (ablate::finiteVolume::processes::EVTransport *)ctx;
 
     for (PetscInt ev = 0; ev < evTransport->numberEV; ev++) {
         auxField[ev] = conservedValues[uOff[1] + ev] / density;
@@ -18,11 +18,10 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdateNonConservedE
 void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolume::FiniteVolume &flow) {
     // Update the auxField
     flow.RegisterAuxFieldUpdate(UpdateNonConservedEV, this, nonConserved, {"euler", conserved});
-
-
 }
 
-void ablate::finiteVolume::processes::EVTransport::DecodeEulerState(PetscInt dim, const PetscReal* conservedValues, const PetscReal* normal, PetscReal* density, PetscReal* normalVelocity, PetscReal* velocity) {
+void ablate::finiteVolume::processes::EVTransport::DecodeEulerState(PetscInt dim, const PetscReal *conservedValues, const PetscReal *normal, PetscReal *density, PetscReal *normalVelocity,
+                                                                    PetscReal *velocity) {
     // decode
     *density = conservedValues[EulerAdvection::RHO];
 
@@ -34,13 +33,12 @@ void ablate::finiteVolume::processes::EVTransport::DecodeEulerState(PetscInt dim
     }
 }
 
-
 PetscErrorCode ablate::finiteVolume::processes::EVTransport::EVFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
-                                                                 const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff, const PetscInt *aOff_x,
-                                                                 const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL, const PetscScalar *gradAuxR, PetscScalar *fL,
-                                                                 void *ctx) {
+                                                                    const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff, const PetscInt *aOff_x,
+                                                                    const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL, const PetscScalar *gradAuxR, PetscScalar *fL,
+                                                                    void *ctx) {
     PetscFunctionBeginUser;
-    auto evTransport = (ablate::finiteVolume::processes::EVTransport*)ctx;
+    auto evTransport = (ablate::finiteVolume::processes::EVTransport *)ctx;
 
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int EULER_FIELD_ID = 0;
@@ -69,9 +67,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::EVFlux(PetscInt dim
     // get the face values
     PetscReal massFlux;
 
-
-    if (evTransport->fluxCalculatorFunction(evTransport->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, NULL) ==
-        fluxCalculator::LEFT) {
+    if (evTransport->fluxCalculatorFunction(evTransport->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, NULL) == fluxCalculator::LEFT) {
         // march over each gas species
         for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
             // Note: there is no density in the flux because uR and UL are density*yi
@@ -87,7 +83,5 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::EVFlux(PetscInt dim
 
     PetscFunctionReturn(0);
 
-
     PetscFunctionReturn(0);
-
 }

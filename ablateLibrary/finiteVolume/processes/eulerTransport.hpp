@@ -59,8 +59,6 @@ class EulerTransport : public FlowProcess {
 
     DiffusionData diffusionData;
 
-
-
     // static function to compute time step for euler advection
     static double ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolume& flow, void* ctx);
 
@@ -80,7 +78,8 @@ class EulerTransport : public FlowProcess {
      *
      * public constructor for euler advection
      */
-    EulerTransport(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},  std::shared_ptr<eos::transport::TransportModel> transportModel = {});
+    EulerTransport(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
+                   std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
     /**
      * public function to link this process with the flow
@@ -95,10 +94,9 @@ class EulerTransport : public FlowProcess {
      * ctx = FlowData_CompressibleFlow
      * @return
      */
-    static PetscErrorCode AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[],
-                                                           const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[],
-                                                           const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* flux,
-                                                           void* ctx);
+    static PetscErrorCode AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
+                                        const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[],
+                                        const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* flux, void* ctx);
 
     /**
      * This Computes the diffusion flux for euler rhoE, rhoVel
@@ -107,9 +105,9 @@ class EulerTransport : public FlowProcess {
      * ctx = FlowData_CompressibleFlow
      * @return
      */
-    static PetscErrorCode DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[],
-                                                         const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[],
-                                                         const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* fL, void* ctx);
+    static PetscErrorCode DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
+                                        const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[],
+                                        const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* fL, void* ctx);
 
     /**
      * static support function to compute the stress tensor
@@ -121,7 +119,6 @@ class EulerTransport : public FlowProcess {
      * @return
      */
     static PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVelL, const PetscReal* gradVelR, PetscReal* tau);
-
 };
 
 }  // namespace ablate::finiteVolume::processes

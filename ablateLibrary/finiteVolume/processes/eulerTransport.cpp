@@ -384,7 +384,6 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTempera
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::EulerTransport, "build advection/diffusion for the euler field",
-         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection"),
-         ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
+         OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (default is no advection)"),
          OPT(eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"));
