@@ -39,22 +39,17 @@ solver: !ablate::finiteVolume::FiniteVolume
       components: ["vel0", "vel1"]
       type: AUX
   processes:
-    - !ablate::finiteVolume::processes::EulerAdvection
+    - !ablate::finiteVolume::processes::EulerTransport
       parameters:
-        cfl: 0.5 
+        cfl: 0.5
+      fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
       eos: !ablate::eos::PerfectGas
         parameters:
           gamma: 1.4
-          Rgas : 287.0 
-    - !ablate::finiteVolume::processes::EulerDiffusion
-      parameters:
+          Rgas : 287.0
+      transport:
         k: 0.0
-        mu: 1.0 
-      eos: !ablate::eos::PerfectGas
-        parameters:
-          gamma: 1.4
-          Rgas : 287.0 
-
+        mu: 1.0
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
       field: >-

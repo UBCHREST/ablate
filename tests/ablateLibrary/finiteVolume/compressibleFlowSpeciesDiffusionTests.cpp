@@ -7,7 +7,6 @@
 #include <eos/mockEOS.hpp>
 #include <eos/transport/constant.hpp>
 #include <finiteVolume/boundaryConditions/essentialGhost.hpp>
-#include <finiteVolume/processes/eulerDiffusion.hpp>
 #include <finiteVolume/processes/speciesTransport.hpp>
 #include <map>
 #include <mathFunctions/functionFactory.hpp>
@@ -165,7 +164,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, yiExactField)};
 
             auto flowProcesses = std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{
-                std::make_shared<ablate::finiteVolume::processes::SpeciesDiffusion>(eos, transportModel),
+                std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eos, nullptr, transportModel),
             };
 
             auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolume>(

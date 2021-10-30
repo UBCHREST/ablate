@@ -3,6 +3,7 @@
 #include <domain/modifiers/distributeWithGhostCells.hpp>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
 #include <finiteVolume/boundaryConditions/essentialGhost.hpp>
+#include <finiteVolume/fluxCalculator/ausm.hpp>
 #include <memory>
 #include <monitors/solutionErrorMonitor.hpp>
 #include <solver/directSolverTsInterface.hpp>
@@ -92,7 +93,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                          eos,
                                                                          parameters,
                                                                          nullptr /*transportModel*/,
-                                                                         nullptr,
+                                                                         std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
                                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution} /*initialization*/,
                                                                          boundaryConditions /*boundary conditions*/,
                                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});

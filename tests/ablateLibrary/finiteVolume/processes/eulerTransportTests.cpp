@@ -7,7 +7,7 @@
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
 
-struct CompressibleFlowFluxTestParameters {
+struct EulerTransportFluxTestParameters {
     std::shared_ptr<ablate::finiteVolume::fluxCalculator::FluxCalculator> fluxCalculator;
     std::vector<PetscReal> area;
     std::vector<PetscReal> xLeft;
@@ -15,9 +15,9 @@ struct CompressibleFlowFluxTestParameters {
     std::vector<PetscReal> expectedFlux;
 };
 
-class CompressibleFlowFluxTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<CompressibleFlowFluxTestParameters> {};
+class EulerTransportFluxTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<EulerTransportFluxTestParameters> {};
 
-TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
+TEST_P(EulerTransportFluxTestFixture, ShouldComputeCorrectFlux) {
     // arrange
     const auto& params = GetParam();
 
@@ -29,7 +29,7 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     // set a perfect gas for testing
     auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>());
     eulerFlowData.decodeStateFunction = eos->GetDecodeStateFunction();
-    eulerFlowData.decodeStateFunctionContext = eos->GetDecodeStateContext();
+    eulerFlowData.decodeStateContext = eos->GetDecodeStateContext();
 
     // setup a fake PetscFVFaceGeom
     PetscFVFaceGeom faceGeom{};
@@ -43,7 +43,7 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
             const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
             PetscScalar* flux, void* ctx)*/
     ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(
-        params.area.size(), &faceGeom, uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], eulerFlowData);
+        params.area.size(), &faceGeom, uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], &eulerFlowData);
 
     // assert
     for (std::size_t i = 0; i < params.expectedFlux.size(); i++) {
@@ -51,29 +51,29 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowFluxTestFixture,
-                         testing::Values((CompressibleFlowFluxTestParameters){.fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
-                                                                              .area = {1},
-                                                                              .xLeft = {0.400688, 0.929113, 0.371908},
-                                                                              .xRight = {0.391646, 0.924943, 0.363631},
-                                                                              .expectedFlux = {0.371703, 1.142619, 0.648038}},
-                                         (CompressibleFlowFluxTestParameters){.fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
-                                                                              .area = {1},
-                                                                              .xLeft = {5.999240, 2304.275075, 117.570106},
-                                                                              .xRight = {5.992420, 230.275501, -37.131012},
-                                                                              .expectedFlux = {0.091875, 42.347103, 508.789524}},
-                                         (CompressibleFlowFluxTestParameters){.fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
-                                                                              .area = {1},
-                                                                              .xLeft =
-                                                                                  {
-                                                                                      0.864333,
-                                                                                      2.369795,
-                                                                                      1.637664,
-                                                                                  },
-                                                                              .xRight = {0.893851, 2.501471, 1.714786},
-                                                                              .expectedFlux = {1.637664, 5.110295, 3.430243}},
-                                         (CompressibleFlowFluxTestParameters){.fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
-                                                                              .area = {-1.0},
-                                                                              .xLeft = {0.893851, 2.501471, 1.714786},
-                                                                              .xRight = {0.864333, 2.369795, 1.637664},
-                                                                              .expectedFlux = {-1.637664, -5.110295, -3.430243}}));
+INSTANTIATE_TEST_SUITE_P(CompressibleFlow, EulerTransportFluxTestFixture,
+                         testing::Values((EulerTransportFluxTestParameters){.fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
+                                                                            .area = {1},
+                                                                            .xLeft = {0.400688, 0.929113, 0.371908},
+                                                                            .xRight = {0.391646, 0.924943, 0.363631},
+                                                                            .expectedFlux = {0.371703, 1.142619, 0.648038}},
+                                         (EulerTransportFluxTestParameters){.fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
+                                                                            .area = {1},
+                                                                            .xLeft = {5.999240, 2304.275075, 117.570106},
+                                                                            .xRight = {5.992420, 230.275501, -37.131012},
+                                                                            .expectedFlux = {0.091875, 42.347103, 508.789524}},
+                                         (EulerTransportFluxTestParameters){.fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
+                                                                            .area = {1},
+                                                                            .xLeft =
+                                                                                {
+                                                                                    0.864333,
+                                                                                    2.369795,
+                                                                                    1.637664,
+                                                                                },
+                                                                            .xRight = {0.893851, 2.501471, 1.714786},
+                                                                            .expectedFlux = {1.637664, 5.110295, 3.430243}},
+                                         (EulerTransportFluxTestParameters){.fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
+                                                                            .area = {-1.0},
+                                                                            .xLeft = {0.893851, 2.501471, 1.714786},
+                                                                            .xRight = {0.864333, 2.369795, 1.637664},
+                                                                            .expectedFlux = {-1.637664, -5.110295, -3.430243}}));

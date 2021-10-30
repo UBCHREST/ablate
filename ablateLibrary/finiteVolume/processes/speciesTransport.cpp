@@ -38,7 +38,7 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
 void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finiteVolume::FiniteVolume &flow) {
     if (!eos->GetSpecies().empty()) {
         if (fluxCalculator) {
-            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, EULER_FIELD, {EULER_FIELD, DENSITY_YI_FIELD}, {});
+            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, DENSITY_YI_FIELD, {EULER_FIELD, DENSITY_YI_FIELD}, {});
         }
 
         if (diffusionData.diffFunction) {
@@ -189,7 +189,6 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
                                                                                 const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
                                                                                 const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
-
     auto eulerAdvectionData = (AdvectionData*)ctx;
 
     // Compute the norm

@@ -29,9 +29,6 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<
         diffusionData.kFunction = transportModel->GetComputeConductivityFunction();
         diffusionData.kContext = transportModel->GetComputeConductivityContext();
 
-        // set the decode state function
-        diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
-        diffusionData.yiScratch.resize(eos->GetSpecies().size());
     } else {
         // Store the required data for the low level c functions
         diffusionData.muFunction = nullptr;
@@ -39,6 +36,10 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<
         diffusionData.kFunction = nullptr;
         diffusionData.kContext = nullptr;
     }
+
+    // set the decode state function
+    diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
+    diffusionData.yiScratch.resize(eos->GetSpecies().size());
 
     updateTemperatureData.computeTemperatureFunction = eos->GetComputeTemperatureFunction();
     updateTemperatureData.computeTemperatureContext = eos->GetComputeTemperatureContext();
