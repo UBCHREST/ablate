@@ -1,5 +1,5 @@
 #include "ignitionDelayTemperature.hpp"
-#include "finiteVolume/processes/eulerAdvection.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
@@ -107,11 +107,11 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     // compute the temperature
     // using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
     double T;
-    const double density = eulerValues[ablate::finiteVolume::processes::EulerAdvection::RHO];
+    const double density = eulerValues[ablate::finiteVolume::processes::FlowProcess::RHO];
     monitor->eos->GetComputeTemperatureFunction()(dim,
                                                   density,
-                                                  eulerValues[ablate::finiteVolume::processes::EulerAdvection::RHOE] / density,
-                                                  eulerValues + ablate::finiteVolume::processes::EulerAdvection::RHOU,
+                                                  eulerValues[ablate::finiteVolume::processes::FlowProcess::RHOE] / density,
+                                                  eulerValues + ablate::finiteVolume::processes::FlowProcess::RHOU,
                                                   densityYiValues,
                                                   &T,
                                                   monitor->eos->GetComputeTemperatureContext());

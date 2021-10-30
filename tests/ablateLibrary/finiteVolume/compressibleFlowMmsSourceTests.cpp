@@ -3,7 +3,7 @@
 #include <domain/modifiers/distributeWithGhostCells.hpp>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
 #include <eos/transport/constant.hpp>
-#include <finiteVolume/processes/eulerAdvection.hpp>
+#include <finiteVolume/processes/eulerTransport.hpp>
 #include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"

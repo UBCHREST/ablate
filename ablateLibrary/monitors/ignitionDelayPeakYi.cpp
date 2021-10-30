@@ -1,5 +1,5 @@
 #include "ignitionDelayPeakYi.hpp"
-#include "finiteVolume/processes/eulerAdvection.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
@@ -120,7 +120,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
     CHKERRQ(ierr);
 
     // Store the result
-    double yi = densityYiValues[monitor->yiOffset] / eulerValues[ablate::finiteVolume::processes::EulerAdvection::RHO];
+    double yi = densityYiValues[monitor->yiOffset] / eulerValues[ablate::finiteVolume::processes::FlowProcess::RHO];
     monitor->timeHistory.push_back(crtime);
     monitor->yiHistory.push_back(yi);
 

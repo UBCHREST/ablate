@@ -1,6 +1,6 @@
 #include <petsc.h>
 #include <PetscTestFixture.hpp>
-#include <finiteVolume/processes/eulerAdvection.hpp>
+#include <finiteVolume/processes/eulerTransport.hpp>
 #include <vector>
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
@@ -22,15 +22,14 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
     const auto& params = GetParam();
 
     // For this test, manually setup the compressible flow object;
-    ablate::finiteVolume::processes::EulerAdvection::EulerAdvectionData eulerFlowData;
-    PetscNew(&eulerFlowData);
-    eulerFlowData->cfl = NAN;
-    eulerFlowData->fluxCalculatorFunction = params.fluxCalculator->GetFluxCalculatorFunction();
+    ablate::finiteVolume::processes::EulerTransport::AdvectionData eulerFlowData;
+    eulerFlowData.cfl = NAN;
+    eulerFlowData.fluxCalculatorFunction = params.fluxCalculator->GetFluxCalculatorFunction();
 
     // set a perfect gas for testing
     auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>());
-    eulerFlowData->decodeStateFunction = eos->GetDecodeStateFunction();
-    eulerFlowData->decodeStateFunctionContext = eos->GetDecodeStateContext();
+    eulerFlowData.decodeStateFunction = eos->GetDecodeStateFunction();
+    eulerFlowData.decodeStateFunctionContext = eos->GetDecodeStateContext();
 
     // setup a fake PetscFVFaceGeom
     PetscFVFaceGeom faceGeom{};
@@ -43,16 +42,13 @@ TEST_P(CompressibleFlowFluxTestFixture, ShouldComputeCorrectFlux) {
             const PetscInt uOff[], const PetscScalar uL[], const PetscScalar uR[], const PetscScalar* gradL[], const PetscScalar* gradR[],
             const PetscInt aOff[], const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar* gradAuxL[], const PetscScalar* gradAuxR[],
             PetscScalar* flux, void* ctx)*/
-    ablate::finiteVolume::processes::EulerAdvection::CompressibleFlowComputeEulerFlux(
+    ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(
         params.area.size(), &faceGeom, uOff, NULL, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &computedFlux[0], eulerFlowData);
 
     // assert
     for (std::size_t i = 0; i < params.expectedFlux.size(); i++) {
         ASSERT_NEAR(computedFlux[i], params.expectedFlux[i], 1E-3);
     }
-
-    // cleanup
-    PetscFree(eulerFlowData);
 }
 
 INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowFluxTestFixture,

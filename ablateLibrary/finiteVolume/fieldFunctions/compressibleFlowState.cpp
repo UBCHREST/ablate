@@ -1,5 +1,5 @@
 #include "compressibleFlowState.hpp"
-#include <finiteVolume/processes/eulerAdvection.hpp>
+#include <finiteVolume/processes/eulerTransport.hpp>
 
 ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<mathFunctions::MathFunction> temperatureFunctionIn,
                                                                                    std::shared_ptr<mathFunctions::MathFunction> pressureFunctionIn,
@@ -53,13 +53,13 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::Comp
 
     // compute the density
     ierr = flowState->eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(
-        temperature, pressure, &yi[0], u + ablate::finiteVolume::processes::EulerAdvection::RHO, flowState->eos->GetComputeDensityFunctionFromTemperaturePressureContext());
+        temperature, pressure, &yi[0], u + ablate::finiteVolume::processes::FlowProcess::RHO, flowState->eos->GetComputeDensityFunctionFromTemperaturePressureContext());
     CHKERRQ(ierr);
 
     // compute the internal energy
     PetscReal sensibleInternalEnergy;
     ierr = flowState->eos->GetComputeSensibleInternalEnergyFunction()(
-        temperature, u[ablate::finiteVolume::processes::EulerAdvection::RHO], &yi[0], &sensibleInternalEnergy, flowState->eos->GetComputeSensibleInternalEnergyContext());
+        temperature, u[ablate::finiteVolume::processes::FlowProcess::RHO], &yi[0], &sensibleInternalEnergy, flowState->eos->GetComputeSensibleInternalEnergyContext());
     CHKERRQ(ierr);
 
     // convert to total sensibleEnergy
@@ -68,11 +68,11 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::Comp
         kineticEnergy += PetscSqr(velocity[d]);
     }
     kineticEnergy *= 0.5;
-    u[ablate::finiteVolume::processes::EulerAdvection::RHOE] = u[ablate::finiteVolume::processes::EulerAdvection::RHO] * (kineticEnergy + sensibleInternalEnergy);
+    u[ablate::finiteVolume::processes::FlowProcess::RHOE] = u[ablate::finiteVolume::processes::FlowProcess::RHO] * (kineticEnergy + sensibleInternalEnergy);
 
     // Set the vel*rho term
     for (PetscInt d = 0; d < dim; d++) {
-        u[ablate::finiteVolume::processes::EulerAdvection::RHOU + d] = u[ablate::finiteVolume::processes::EulerAdvection::RHO] * velocity[d];
+        u[ablate::finiteVolume::processes::FlowProcess::RHOU + d] = u[ablate::finiteVolume::processes::FlowProcess::RHO] * velocity[d];
     }
     PetscFunctionReturn(0);
 }

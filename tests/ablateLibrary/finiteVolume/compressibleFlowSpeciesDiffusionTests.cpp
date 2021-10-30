@@ -8,7 +8,7 @@
 #include <eos/transport/constant.hpp>
 #include <finiteVolume/boundaryConditions/essentialGhost.hpp>
 #include <finiteVolume/processes/eulerDiffusion.hpp>
-#include <finiteVolume/processes/speciesDiffusion.hpp>
+#include <finiteVolume/processes/speciesTransport.hpp>
 #include <map>
 #include <mathFunctions/functionFactory.hpp>
 #include <memory>

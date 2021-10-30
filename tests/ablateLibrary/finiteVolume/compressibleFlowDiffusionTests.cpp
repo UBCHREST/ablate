@@ -14,7 +14,7 @@
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlow.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
-#include "finiteVolume/processes/eulerAdvection.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
@@ -78,10 +78,10 @@ static PetscErrorCode EulerExact(PetscInt dim, PetscReal time, const PetscReal x
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    node[ablate::finiteVolume::processes::EulerAdvection::RHO] = parameters->rho;
-    node[ablate::finiteVolume::processes::EulerAdvection::RHOE] = parameters->rho * eT;
-    node[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
-    node[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
+    node[ablate::finiteVolume::processes::FlowProcess::RHO] = parameters->rho;
+    node[ablate::finiteVolume::processes::FlowProcess::RHOE] = parameters->rho * eT;
+    node[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = parameters->rho * u;
+    node[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -97,10 +97,10 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHO] = parameters->rho;
-    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOE] = parameters->rho * eT;
-    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
-    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
+    a_xG[ablate::finiteVolume::processes::FlowProcess::RHO] = parameters->rho;
+    a_xG[ablate::finiteVolume::processes::FlowProcess::RHOE] = parameters->rho * eT;
+    a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = parameters->rho * u;
+    a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -110,7 +110,7 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
     InputParameters *constants = (InputParameters *)ctx;
 
     // Offset the calc assuming the cells are square
-    for (PetscInt f = 0; f < ablate::finiteVolume::processes::EulerAdvection::RHOU + constants->dim; f++) {
+    for (PetscInt f = 0; f < ablate::finiteVolume::processes::FlowProcess::RHOU + constants->dim; f++) {
         a_xG[f] = a_xI[f];
     }
     PetscFunctionReturn(0);
@@ -339,7 +339,7 @@ TEST_P(StressTensorTestFixture, ShouldComputeTheCorrectStressTensor) {
     const auto &params = GetParam();
 
     // act
-    PetscErrorCode ierr = ablate::finiteVolume::processes::EulerDiffusion::CompressibleFlowComputeStressTensor(params.dim, params.mu, &params.gradVelL[0], &params.gradVelR[0], computedTau);
+    PetscErrorCode ierr = ablate::finiteVolume::processes::EulerTransport::CompressibleFlowComputeStressTensor(params.dim, params.mu, &params.gradVelL[0], &params.gradVelR[0], computedTau);
 
     // assert
     ASSERT_EQ(0, ierr);

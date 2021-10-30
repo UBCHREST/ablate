@@ -1,7 +1,6 @@
 #include "compressibleFlow.hpp"
-#include <finiteVolume/processes/eulerAdvection.hpp>
-#include <finiteVolume/processes/eulerDiffusion.hpp>
-#include <finiteVolume/processes/speciesDiffusion.hpp>
+#include <finiteVolume/processes/eulerTransport.hpp>
+#include <finiteVolume/processes/speciesTransport.hpp>
 #include <utilities/mpiError.hpp>
 
 ablate::finiteVolume::CompressibleFlow::CompressibleFlow(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<eos::EOS> eosIn,
@@ -17,9 +16,8 @@ ablate::finiteVolume::CompressibleFlow::CompressibleFlow(std::string solverId, s
                     {.name = "yi", .prefix = "yi", .components = eosIn->GetSpecies(), .type = domain::FieldType::AUX}},
                    {
                        // create assumed processes for compressible flow
-                       std::make_shared<ablate::finiteVolume::processes::EulerAdvection>(parameters, eosIn, fluxCalculatorIn),
-                       std::make_shared<ablate::finiteVolume::processes::EulerDiffusion>(eosIn, transport),
-                       std::make_shared<ablate::finiteVolume::processes::SpeciesDiffusion>(eosIn, transport),
+                       std::make_shared<ablate::finiteVolume::processes::EulerTransport>(parameters, eosIn, fluxCalculatorIn, transport),
+                       std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eosIn, fluxCalculatorIn, transport),
                    },
                    initialization, boundaryConditions, exactSolutions) {}
 

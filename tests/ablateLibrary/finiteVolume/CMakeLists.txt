@@ -1,7 +1,7 @@
 target_sources(libraryTests
         PRIVATE
         compressibleShockTubeTests.cpp
-        compressibleFlowFluxTests.cpp
+        eulerTransportTests.cpp
         compressibleFlowDiffusionTests.cpp
         compressibleFlowMmsSourceTests.cpp
         compressibleFlowAdvectionTests.cpp
