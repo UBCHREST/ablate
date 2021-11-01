@@ -22,6 +22,11 @@ class CompressibleFlowState {
 
     static PetscErrorCode ComputeEulerFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
     static PetscErrorCode ComputeDensityYiFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
+
+    /**
+     * Helper function for other flowStates
+     */
+    PetscReal ComputeDensityFromState(PetscInt dim, PetscReal time, const PetscReal x[]);
 };
 
 }  // namespace ablate::finiteVolume::fieldFunctions

@@ -7,6 +7,8 @@ arguments:
   dm_plex_separate_marker: ""
   petsclimiter_type: none
 timestepper:
+  io:
+    interval: 0
   name: theMainTimeStepper
   arguments:
     ts_type: rk
@@ -17,74 +19,62 @@ timestepper:
     faces: [ 12, 12 ]
     lower: [ 0, 0 ]
     upper: [ 1, 1 ]
-    boundary: [ "PERIODIC", "NONE" ]
+    boundary: [ "NONE", "NONE" ]
     simplex: false
     options:
       dm_refine: 0
-solver: !ablate::finiteVolume::FiniteVolume
-  id: compressibleFlowField
+solver: !ablate::finiteVolume::CompressibleFlow
+  id: evExample
   options:
-    eulerpetscfv_type: leastsquares
+    eulerpetscfv_type: upwind
     Tpetscfv_type: leastsquares
     velpetscfv_type: leastsquares
-  fields:
-    - name: euler
-      components: ["rho", "rhoE", "rhoVel0", "rhoVel1"]
-    - name: vel
-      components: [ "vel0", "vel1" ]
-    - name: T
-      type: AUX
-    - name: vel
-      components: ["vel0", "vel1"]
-      type: AUX
-
-  processes:
-    - !ablate::finiteVolume::processes::EulerAdvection
-      parameters:
-        cfl: 0.5 
-      eos: !ablate::eos::PerfectGas
-        parameters:
-          gamma: 1.4
-          Rgas : 287.0 
-    - !ablate::finiteVolume::processes::EulerDiffusion
-      parameters:
-        k: 0.0
-        mu: 1.0 
-      eos: !ablate::eos::PerfectGas
-        parameters:
-          gamma: 1.4
-          Rgas : 287.0 
+    evpetscfv_type: leastsquares
+  extraVariables: ["ev1", "ev2"]
+  parameters:
+    cfl: .5
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+    mInf: .3
+  transport:
+    diff: 1E-4
+    k: 1E-4
+    mu: 1E-4
+  eos: &eos
+    !ablate::eos::PerfectGas
+         parameters:
+           gamma: 1.4
+           Rgas: 287
 
   initialization:
-    - fieldName: "euler" #for euler all components are in a single field
-      field: >-
-        1.0,
-        215250.0,
-        0.0,
-        0.0
-  exactSolution:
-    - fieldName: "euler" # rho, rho_e = rho*(CvT + u^2/2), rho_u, rho_v
-      field: >-
-        1.0,
-        1.0 * (215250.0 + (0.5 * (50 * y)^2)),
-        1.0 * 50 * y,
-        1.0 * 0.0
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      &eulerFlowFieldState
+      state: &flowFieldState
+        eos: *eos
+        temperature: "300"
+        pressure: "101325.0"
+        velocity: "25., 25"
+    - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
+      &densityEVFlowFieldState
+      state: *flowFieldState
+      functions:
+        - .25
+        - !ablate::mathFunctions::geom::Sphere
+          center: [.25, .25]
+          radius: .25
+          insideValues: [1.5]
+
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"
-      labelIds: [1]
-      boundaryValue:
-        fieldName: euler
-        field: "1.0, 215250.0, 0.0, 0.0"
+      labelIds: [1, 2, 3, 4]
+      boundaryValue: *eulerFlowFieldState
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"
-      labelIds: [3]
-      boundaryValue:
-        fieldName: euler
-        field: "1.0, 216500.0, 50.0, 0.0"
+      labelIds: [ 1, 2, 3, 4 ]
+      boundaryValue: *densityEVFlowFieldState
+
   
   monitors:
-    - !ablate::monitors::SolutionErrorMonitor
-      scope: component
-      type: l2_norm
+    - !ablate::monitors::TimeStepMonitor
+
    

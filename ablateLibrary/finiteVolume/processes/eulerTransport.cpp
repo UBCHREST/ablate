@@ -54,13 +54,13 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
         } else {
             flow.RegisterRHSFunction(AdvectionFlux, &advectionData, EULER_FIELD, {EULER_FIELD, DENSITY_YI_FIELD}, {});
         }
-    }
 
-    // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
-    PetscBool automaticTimeStepCalculator = PETSC_TRUE;
-    PetscOptionsGetBool(nullptr, nullptr, "-automaticTimeStepCalculator", &automaticTimeStepCalculator, nullptr);
-    if (automaticTimeStepCalculator) {
-        flow.RegisterComputeTimeStepFunction(ComputeTimeStep, &advectionData);
+        // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
+        PetscBool automaticTimeStepCalculator = PETSC_TRUE;
+        PetscOptionsGetBool(nullptr, nullptr, "-automaticTimeStepCalculator", &automaticTimeStepCalculator, nullptr);
+        if (automaticTimeStepCalculator) {
+            flow.RegisterComputeTimeStepFunction(ComputeTimeStep, &advectionData);
+        }
     }
 
     // if there are any coefficients for diffusion, compute diffusion

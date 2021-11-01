@@ -19,3 +19,5 @@ target_sources(ablateLibrary
         parsedNested.hpp
         parsedNested.cpp
         )
+
+add_subdirectory(geom)

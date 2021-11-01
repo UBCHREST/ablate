@@ -25,6 +25,7 @@ ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowSta
         }
     }
 }
+
 PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeEulerFromState(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
@@ -114,6 +115,27 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::Comp
     }
 
     PetscFunctionReturn(0);
+}
+PetscReal ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeDensityFromState(PetscInt dim, PetscReal time, const PetscReal x[]) {
+    PetscErrorCode ierr;
+
+    // get the temperature, pressure, and velocity
+    PetscReal temperature = temperatureFunction->Eval(x, dim, time);
+    PetscReal pressure = pressureFunction->Eval(x, dim, time);
+
+    // compute the mass fraction at this location
+    std::vector<PetscReal> yi(eos->GetSpecies().size());
+    if (massFractionFunction) {
+        ierr = massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], massFractionFunction->GetSolutionField().GetContext());
+        CHKERRQ(ierr);
+    }
+
+    // compute the density
+    PetscReal density;
+    ierr = eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(temperature, pressure, &yi[0], &density, eos->GetComputeDensityFunctionFromTemperaturePressureContext());
+    CHKERRQ(ierr);
+
+    return density;
 }
 
 #include "parser/registrar.hpp"
