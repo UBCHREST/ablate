@@ -13,6 +13,38 @@
 namespace ablate::finiteVolume {
 class CompressibleFlow : public FiniteVolume {
    public:
+    /**
+     * Full feature constructor
+     * @param solverId
+     * @param region
+     * @param options
+     * @param eos
+     * @param parameters
+     * @param transport
+     * @param additionalProcesses
+     * @param extraVariables
+     * @param initialization
+     * @param boundaryConditions
+     * @param exactSolutions
+     */
+    CompressibleFlow(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<eos::EOS> eos,
+                     std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::transport::TransportModel> transport, std::shared_ptr<fluxCalculator::FluxCalculator> = {},
+                     std::vector<std::shared_ptr<processes::Process>> additionalProcesses = {}, std::vector<std::string> extraVariables = {},
+                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
+                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
+
+    /**
+     * Constructor without ev or additional processes
+     * @param solverId
+     * @param region
+     * @param options
+     * @param eos
+     * @param parameters
+     * @param transport
+     * @param initialization
+     * @param boundaryConditions
+     * @param exactSolutions
+     */
     CompressibleFlow(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<eos::EOS> eos,
                      std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::transport::TransportModel> transport, std::shared_ptr<fluxCalculator::FluxCalculator> = {},
                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},

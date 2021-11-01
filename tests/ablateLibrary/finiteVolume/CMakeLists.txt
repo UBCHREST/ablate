@@ -1,10 +1,12 @@
 target_sources(libraryTests
         PRIVATE
         compressibleShockTubeTests.cpp
-        compressibleFlowDiffusionTests.cpp
+        compressibleFlowEulerDiffusionTests.cpp
         compressibleFlowMmsSourceTests.cpp
-        compressibleFlowAdvectionTests.cpp
+        compressibleFlowSpeciesAdvectionTests.cpp
         compressibleFlowSpeciesDiffusionTests.cpp
+        compressibleFlowEvAdvectionTests.cpp
+        compressibleFlowEvDiffusionTests.cpp
         )
 
 add_subdirectory(fluxCalculator)

@@ -7,8 +7,8 @@ target_sources(ablateLibrary
         eulerTransport.cpp
         speciesTransport.hpp
         speciesTransport.cpp
-#        evTransport.hpp
-#        evTransport.cpp
+        evTransport.hpp
+        evTransport.cpp
         tChemReactions.hpp
         tChemReactions.cpp
         )

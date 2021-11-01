@@ -267,4 +267,4 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SpeciesTransport, "diffusion/advection for the species yi field",
          ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (default is no advection)"),
-         OPT(ablate::eos::transport::TransportModel, "parameters", "the diffusion transport model (default is no diffusion)"));
+         OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"));

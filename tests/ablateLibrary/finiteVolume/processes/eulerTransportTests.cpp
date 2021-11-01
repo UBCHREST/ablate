@@ -19,7 +19,7 @@ class EulerTransportFluxTestFixture : public testingResources::PetscTestFixture,
 
 TEST_P(EulerTransportFluxTestFixture, ShouldComputeCorrectFlux) {
     // arrange
-    const auto& params = GetParam();
+    const auto &params = GetParam();
 
     // For this test, manually setup the compressible flow object;
     ablate::finiteVolume::processes::EulerTransport::AdvectionData eulerFlowData;
@@ -51,7 +51,7 @@ TEST_P(EulerTransportFluxTestFixture, ShouldComputeCorrectFlux) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(CompressibleFlow, EulerTransportFluxTestFixture,
+INSTANTIATE_TEST_SUITE_P(EulerTransportTests, EulerTransportFluxTestFixture,
                          testing::Values((EulerTransportFluxTestParameters){.fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
                                                                             .area = {1},
                                                                             .xLeft = {0.400688, 0.929113, 0.371908},
@@ -77,3 +77,53 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, EulerTransportFluxTestFixture,
                                                                             .xLeft = {0.893851, 2.501471, 1.714786},
                                                                             .xRight = {0.864333, 2.369795, 1.637664},
                                                                             .expectedFlux = {-1.637664, -5.110295, -3.430243}}));
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+    PetscInt dim;
+    PetscReal mu;
+    std::vector<PetscReal> gradVelL;
+    std::vector<PetscReal> gradVelR;
+    std::vector<PetscReal> expectedStressTensor;
+} StressTensorTestParameters;
+
+class StressTensorTestFixture : public testing::TestWithParam<StressTensorTestParameters> {};
+
+TEST_P(StressTensorTestFixture, ShouldComputeTheCorrectStressTensor) {
+    // arrange
+    PetscReal computedTau[9];
+    const auto &params = GetParam();
+
+    // act
+    PetscErrorCode ierr = ablate::finiteVolume::processes::EulerTransport::CompressibleFlowComputeStressTensor(params.dim, params.mu, &params.gradVelL[0], &params.gradVelR[0], computedTau);
+
+    // assert
+    ASSERT_EQ(0, ierr);
+    for (auto c = 0; c < params.dim; c++) {
+        for (auto d = 0; d < params.dim; d++) {
+            auto i = c * params.dim + d;
+            ASSERT_NEAR(computedTau[i], params.expectedStressTensor[i], 1E-8) << "The tau component [" + std::to_string(c) + "][" + std::to_string(d) + "] is incorrect";
+        }
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    EulerTransportTests, StressTensorTestFixture,
+    testing::Values(
+        (StressTensorTestParameters){.dim = 1, .mu = .3, .gradVelL = {3.5}, .gradVelR = {3.5}, .expectedStressTensor = {1.4}},
+        (StressTensorTestParameters){.dim = 1, .mu = .3, .gradVelL = {4.5}, .gradVelR = {2.5}, .expectedStressTensor = {1.4}},
+        (StressTensorTestParameters){.dim = 2, .mu = .3, .gradVelL = {3.5, -2.45, 0, -1}, .gradVelR = {3.5, -2.45, 0, 1}, .expectedStressTensor = {1.4, -0.735, -0.735, -0.7}},
+        (StressTensorTestParameters){.dim = 2, .mu = 1.5, .gradVelL = {3.5, -2.45, 0, -6}, .gradVelR = {3.5, -2.45, 0, -8}, .expectedStressTensor = {14, -3.675, -3.675, -17.5}},
+        (StressTensorTestParameters){.dim = 2, .mu = 1.5, .gradVelL = {0, -12, 12, 0}, .gradVelR = {0, -12, 12, 0}, .expectedStressTensor = {0, 0, 0, 0}},
+        (StressTensorTestParameters){.dim = 2, .mu = 1.5, .gradVelL = {0, -10, 12, 0}, .gradVelR = {0, -20, 12, 0}, .expectedStressTensor = {0, -4.5, -4.5, 0}},
+        (StressTensorTestParameters){.dim = 3, .mu = 1.5, .gradVelL = {1, 0, 0, 0, 1, 0, 0, 0, 1}, .gradVelR = {1, 0, 0, 0, 3, 0, 0, 0, 5}, .expectedStressTensor = {-3, 0, 0, 0, 0, 0, 0, 0, 3}},
+        (StressTensorTestParameters){
+            .dim = 3, .mu = 1.5, .gradVelL = {2, 4, 6, 8, 10, 12, 14, 16, 18}, .gradVelR = {0, 0, 0, 0, 0, 0, 0, 0, 0}, .expectedStressTensor = {-12, 9, 15, 9, 0, 21, 15, 21, 12}},
+        (StressTensorTestParameters){
+            .dim = 3, .mu = 1.5, .gradVelL = {0, 0, 0, 0, 0, 0, 0, 0, 0}, .gradVelR = {-2, -4, -6, -8, -10, -12, -14, -16, -18}, .expectedStressTensor = {12, -9, -15, -9, 0, -21, -15, -21, -12}},
+        (StressTensorTestParameters){
+            .dim = 3, .mu = 1.5, .gradVelL = {2, 4, 6, 8, 10, 12, 14, 16, 18}, .gradVelR = {-2, -4, -6, -8, -10, -12, -14, -16, -18}, .expectedStressTensor = {0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        (StressTensorTestParameters){.dim = 3, .mu = 0.0, .gradVelL = {1, 2, 3, 4, 5, 6, 7, 8, 9}, .gradVelR = {1, 2, 3, 4, 5, 6, 7, 8, 9}, .expectedStressTensor = {0, 0, 0, 0, 0, 0, 0, 0, 0}},
+        (StressTensorTestParameters){.dim = 3, .mu = 0.7, .gradVelL = {0, 0, 0, 0, 0, 0, 0, 0, 0}, .gradVelR = {0, 0, 0, 0, 0, 0, 0, 0, 0}, .expectedStressTensor = {0, 0, 0, 0, 0, 0, 0, 0, 0}}),
+    [](const testing::TestParamInfo<StressTensorTestParameters> &info) { return "InputParameters_" + std::to_string(info.index); });
