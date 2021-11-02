@@ -11,7 +11,6 @@ typedef PetscErrorCode (*FVMRHSFluxFunction)(PetscInt dim, const PetscFVFaceGeom
 
 typedef PetscErrorCode (*FVMRHSPointFunction)(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx);
 
-typedef PetscErrorCode (*FVAuxFieldUpdateFunction)(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[], const PetscScalar *u, PetscScalar *auxField, void *ctx);
 
 /**
  * struct to describe how to compute RHS finite volume flux source terms
@@ -48,22 +47,6 @@ struct _FVMRHSPointFunctionDescription {
 };
 
 typedef struct _FVMRHSPointFunctionDescription FVMRHSPointFunctionDescription;
-
-/**
- * struct to describe how to compute the aux variable update
- */
-struct _FVAuxFieldUpdateFunctionDescription {
-    FVAuxFieldUpdateFunction function;
-    void *context;
-
-    PetscInt inputFields[MAX_FVM_RHS_FUNCTION_FIELDS];
-    PetscInt numberInputFields;
-
-    PetscInt auxField;
-};
-
-typedef struct _FVAuxFieldUpdateFunctionDescription FVAuxFieldUpdateFunctionDescription;
-
 
 /**
   DMPlexTSComputeRHSFunctionFVM - Form the local forcing F from the local input X using flux and pointfunctions specified by the user
@@ -137,18 +120,5 @@ PETSC_EXTERN PetscErrorCode DMPlexReconstructGradientsFVM_MulfiField(DM dm, Pets
  */
 PETSC_EXTERN PetscErrorCode DMPlexGetDataFVM_MulfiField(DM dm, PetscFV fv, Vec *cellgeom, Vec *facegeom, DM *gradDM);
 
-/**
- * Function to update all cells.  This should be merged into other update calls
- * @param dm
- * @param auxDM
- * @param time
- * @param locXVec
- * @param locAuxField
- * @param numberUpdateFunctions
- * @param updateFunctions
- * @param ctx
- * @return
- */
-PETSC_EXTERN PetscErrorCode FVFlowUpdateAuxFieldsFV(PetscInt numberUpdateFunctions, FVAuxFieldUpdateFunctionDescription *functionDescriptions, DM dm, DM auxDM, PetscReal time, Vec locXVec, Vec locAuxField);
 
 #endif

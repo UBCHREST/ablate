@@ -21,12 +21,23 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
    public:
     using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolume&, void* ctx);
+    using AuxFieldUpdateFunction = PetscErrorCode (*)(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* u, PetscScalar* auxField, void* ctx);
 
    private:
+    /**
+     * struct to describe how to compute the aux variable update
+     */
+    struct AuxFieldUpdateFunctionDescription {
+        AuxFieldUpdateFunction function;
+        void* context;
+        std::vector<PetscInt> inputFields;
+        PetscInt auxField;
+    };
+
     // hold the update functions for flux and point sources
     std::vector<FVMRHSFluxFunctionDescription> rhsFluxFunctionDescriptions;
     std::vector<FVMRHSPointFunctionDescription> rhsPointFunctionDescriptions;
-    std::vector<FVAuxFieldUpdateFunctionDescription> auxFieldUpdateFunctionDescriptions;
+    std::vector<AuxFieldUpdateFunctionDescription> auxFieldUpdateFunctionDescriptions;
 
     // allow the use of any arbitrary rhs functions
     std::vector<std::pair<RHSArbitraryFunction, void*>> rhsArbitraryFunctions;
@@ -47,6 +58,16 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
+
+    /**
+     * Helper function to march over each cell and update the aux Fields
+     * @param flow
+     * @param time
+     * @param locXVec
+     * @param updateFunction
+     * @return
+     */
+    void UpdateAuxFields(PetscReal time, Vec locXVec, Vec locAuxField);
 
    public:
     FiniteVolume(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<domain::FieldDescriptor> fieldDescriptors,
@@ -108,7 +129,7 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields);
+    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields);
 
     /**
      * Register a dtCalculator
@@ -120,6 +141,12 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
      */
     void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx);
 
+    /**
+     * Function to save the subDomain flowField to a viewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
 };
 }  // namespace ablate::finiteVolume

@@ -1,5 +1,5 @@
-
 #include "finiteVolume.hpp"
+#include <petsc/private/dmpleximpl.h>
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 #include "processes/process.hpp"
@@ -9,12 +9,12 @@ ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string solverId, std::shar
                                                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
-    : Solver(solverId, region, options),
-      processes(processes),
-      fieldDescriptors(fieldDescriptors),
-      initialization(initialization),
-      boundaryConditions(boundaryConditions),
-      exactSolutions(exactSolution) {}
+    : Solver(std::move(solverId), std::move(region), std::move(options)),
+      processes(std::move(processes)),
+      fieldDescriptors(std::move(fieldDescriptors)),
+      initialization(std::move(initialization)),
+      boundaryConditions(std::move(boundaryConditions)),
+      exactSolutions(std::move(exactSolution)) {}
 
 ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                  std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<processes::Process>> processes,
@@ -22,15 +22,15 @@ ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string solverId, std::shar
                                                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : ablate::finiteVolume::FiniteVolume::FiniteVolume(
-          solverId, region, options,
+          std::move(solverId), std::move(region), std::move(options),
           [](auto fieldDescriptorsPtrs) {
               auto vec = std::vector<domain::FieldDescriptor>{};
-              for (auto ptr : fieldDescriptorsPtrs) {
+              for (const auto& ptr : fieldDescriptorsPtrs) {
                   vec.push_back(*ptr);
               }
               return vec;
-          }(fieldDescriptors),
-          processes, initialization, boundaryConditions, exactSolution) {}
+          }(std::move(fieldDescriptors)),
+          std::move(processes), std::move(initialization), std::move(boundaryConditions), std::move(exactSolution)) {}
 
 void ablate::finiteVolume::FiniteVolume::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     Solver::Register(subDomain);
@@ -147,17 +147,20 @@ PetscErrorCode ablate::finiteVolume::FiniteVolume::ComputeRHSFunction(PetscReal 
     PetscErrorCode ierr;
 
     auto dm = subDomain->GetDM();
+    auto ds = subDomain->GetDiscreteSystem();
     /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
     Vec facegeom, cellgeom;
     ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, NULL);
     CHKERRQ(ierr);
-    ierr = DMPlexInsertBoundaryValues(dm, PETSC_FALSE, locXVec, time, facegeom, cellgeom, NULL);
+    ierr = solver::Solver::DMPlexInsertBoundaryValues_Plex(dm, ds, PETSC_FALSE, locXVec, time, facegeom, cellgeom, NULL);
     CHKERRQ(ierr);
 
     // update any aux fields, including ghost cells
-    ierr =
-        FVFlowUpdateAuxFieldsFV(auxFieldUpdateFunctionDescriptions.size(), &auxFieldUpdateFunctionDescriptions[0], subDomain->GetDM(), subDomain->GetAuxDM(), time, locXVec, subDomain->GetAuxVector());
-    CHKERRQ(ierr);
+    try {
+        UpdateAuxFields(time, locXVec, subDomain->GetAuxVector());
+    } catch (std::exception& exception) {
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
+    }
 
     // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
     ierr = ABLATE_DMPlexComputeRHSFunctionFVM(
@@ -239,19 +242,15 @@ void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(FVMRHSPointFunction
 
 void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.push_back(std::make_pair(function, context)); }
 
-void ablate::finiteVolume::FiniteVolume::RegisterAuxFieldUpdate(FVAuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields) {
+void ablate::finiteVolume::FiniteVolume::RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields) {
     // find the field location
     auto& auxFieldLocation = subDomain->GetField(auxField);
 
-    FVAuxFieldUpdateFunctionDescription functionDescription{.function = function,
-                                                            .context = context,
-                                                            .inputFields = {-1, -1, -1, -1}, /**default to empty.**/
-                                                            .numberInputFields = (PetscInt)inputFields.size(),
-                                                            .auxField = auxFieldLocation.id};
+    AuxFieldUpdateFunctionDescription functionDescription{.function = function, .context = context, .inputFields = {}, .auxField = auxFieldLocation.id};
 
     for (std::size_t i = 0; i < inputFields.size(); i++) {
         auto fieldId = subDomain->GetField(inputFields[i]);
-        functionDescription.inputFields[i] = fieldId.id;
+        functionDescription.inputFields.push_back(fieldId.id);
     }
 
     auxFieldUpdateFunctionDescriptions.push_back(functionDescription);
@@ -303,6 +302,105 @@ void ablate::finiteVolume::FiniteVolume::Save(PetscViewer viewer, PetscInt seque
         VecView(exactVec, viewer) >> checkError;
         DMRestoreGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
     }
+}
+
+void ablate::finiteVolume::FiniteVolume::UpdateAuxFields(PetscReal time, Vec locXVec, Vec locAuxField) {
+    DM plex;
+    DM auxDM = GetSubDomain().GetAuxDM();
+    // Convert to a dmplex
+    DMConvert(GetSubDomain().GetDM(), DMPLEX, &plex) >> checkError;
+
+    // Start out getting all of the cells
+    PetscInt depth;
+    DMPlexGetDepth(plex, &depth) >> checkError;
+    IS allCellIS;
+    DMGetStratumIS(plex, "dim", depth, &allCellIS) >> checkError;
+    if (!allCellIS) {
+        DMGetStratumIS(plex, "depth", depth, &allCellIS) >> checkError;
+    }
+
+    // If there is a label for this region, get only the parts of the mesh that here
+    IS cellIS;
+    const auto label = GetSubDomain().GetLabel();
+    if (label) {
+        IS labelIS;
+        DMLabelGetStratumIS(label, depth, &labelIS) >> checkError;
+        ISIntersect_Caching_Internal(allCellIS, labelIS, &cellIS) >> checkError;
+        ISDestroy(&labelIS) >> checkError;
+    } else {
+        PetscObjectReference((PetscObject)allCellIS) >> checkError;
+        cellIS = allCellIS;
+    }
+
+    // Get the point range
+    PetscInt cStart, cEnd;
+    const PetscInt* cells;
+    ISGetPointRange(cellIS, &cStart, &cEnd, &cells) >> checkError;
+
+    // Extract the cell geometry, and the dm that holds the information
+    Vec cellGeomVec;
+    DM dmCell;
+    const PetscScalar* cellGeomArray;
+    DMPlexGetGeometryFVM(plex, NULL, &cellGeomVec, NULL) >> checkError;
+    VecGetDM(cellGeomVec, &dmCell) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+
+    // extract the low flow and aux fields
+    const PetscScalar* locFlowFieldArray;
+    VecGetArrayRead(locXVec, &locFlowFieldArray) >> checkError;
+
+    PetscScalar* localAuxFlowFieldArray;
+    VecGetArray(locAuxField, &localAuxFlowFieldArray) >> checkError;
+
+    // Get the cell dim
+    PetscInt dim = subDomain->GetDimensions();
+
+    // determine the number of fields and the totDim
+    PetscInt nf;
+    PetscDSGetNumFields(subDomain->GetDiscreteSystem(), &nf) >> checkError;
+
+    // Create the required offset arrays. These are sized for the max possible value
+    PetscInt* uOff = NULL;
+    PetscCalloc1(nf, &uOff) >> checkError;
+
+    PetscInt* uOffTotal;
+    PetscDSGetComponentOffsets(subDomain->GetDiscreteSystem(), &uOffTotal) >> checkError;
+
+    // March over each cell volume
+    for (PetscInt c = cStart; c < cEnd; ++c) {
+        PetscFVCellGeom* cellGeom;
+        const PetscReal* fieldValues;
+        PetscReal* auxValues;
+
+        // Get the cell location
+        const PetscInt cell = cells ? cells[c] : c;
+
+        DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cellGeom) >> checkError;
+        DMPlexPointLocalRead(plex, cell, locFlowFieldArray, &fieldValues) >> checkError;
+
+        // for each function description
+        for (const auto& updateFunction : auxFieldUpdateFunctionDescriptions) {
+            // get the uOff for the req fields
+            for (std::size_t rf = 0; rf < updateFunction.inputFields.size(); rf++) {
+                uOff[rf] = uOffTotal[updateFunction.inputFields[rf]];
+            }
+
+            // grab the local aux field
+            DMPlexPointLocalFieldRef(auxDM, cell, updateFunction.auxField, localAuxFlowFieldArray, &auxValues) >> checkError;
+
+            // If an update function was passed
+            updateFunction.function(time, dim, cellGeom, uOff, fieldValues, auxValues, updateFunction.context) >> checkError;
+        }
+    }
+
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecRestoreArrayRead(locXVec, &locFlowFieldArray) >> checkError;
+    VecRestoreArray(locAuxField, &localAuxFlowFieldArray) >> checkError;
+    ISRestorePointRange(cellIS, &cStart, &cEnd, &cells) >> checkError;
+    ISDestroy(&cellIS) >> checkError;
+    ISDestroy(&allCellIS) >> checkError;
+    DMDestroy(&plex) >> checkError;
+    PetscFree(uOff) >> checkError;
 }
 
 #include "parser/registrar.hpp"
