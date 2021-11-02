@@ -3,7 +3,6 @@
 #include <domain/dmWrapper.hpp>
 #include <domain/modifiers/distributeWithGhostCells.hpp>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
-#include <finiteVolume/processes/eulerDiffusion.hpp>
 #include <memory>
 #include <solver/directSolverTsInterface.hpp>
 #include <vector>

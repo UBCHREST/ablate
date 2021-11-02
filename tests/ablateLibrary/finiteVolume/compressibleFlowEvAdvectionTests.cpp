@@ -1,22 +1,24 @@
 #include <petsc.h>
 #include <cmath>
-#include <convergenceTester.hpp>
-#include <finiteVolume/boundaryConditions/essentialGhost.hpp>
-#include <finiteVolume/fluxCalculator/ausm.hpp>
-#include <finiteVolume/processes/flowProcess.hpp>
 #include <memory>
-#include <monitors/solutionErrorMonitor.hpp>
-#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "eos/perfectGas.hpp"
+#include "finiteVolume/boundaryConditions/essentialGhost.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/fluxCalculator/ausm.hpp"
+#include "finiteVolume/processes/flowProcess.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "monitors/solutionErrorMonitor.hpp"
 #include "parameters/mapParameters.hpp"
+#include "solver/directSolverTsInterface.hpp"
 
 using namespace ablate;
 using namespace ablate::finiteVolume;
@@ -62,8 +64,15 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
 
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d (%dx%d)\n", l, nx1D, nx1D);
 
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>(
-                "simpleMesh", std::vector<int>{(int)nx1D, (int)nx1D}, std::vector<double>{0.0, 0.0}, std::vector<double>{.01, .01}, std::vector<std::string>{} /*boundary*/, false /*simplex*/);
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
+                                                                  std::vector<int>{(int)nx1D, (int)nx1D},
+                                                                  std::vector<double>{0.0, 0.0},
+                                                                  std::vector<double>{.01, .01},
+                                                                  std::vector<std::string>{} /*boundary*/,
+                                                                  false /*simplex*/,
+                                                                  nullptr /*options*/,
+                                                                  std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::DistributeWithGhostCells>(),
+                                                                                                                                   std::make_shared<domain::modifier::GhostBoundaryCells>()});
             // setup a flow parameters
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}});
 
