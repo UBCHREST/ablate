@@ -26,6 +26,8 @@ TEST(FieldDescriptors, ShouldBeCreatedByFactoryFunction) {
         .WillOnce(::testing::Return(std::vector<std::string>{"one", "two", "three"}));
     EXPECT_CALL(*mockSubFactory, Contains(std::string("type"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(true));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "type"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("AUX"));
+    EXPECT_CALL(*mockSubFactory, Contains(std::string("adjacency"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(true));
+    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "adjacency"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("FEM"));
 
     EXPECT_CALL(*mockFactory, GetFactory(std::string("input123"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
 
@@ -40,6 +42,7 @@ TEST(FieldDescriptors, ShouldBeCreatedByFactoryFunction) {
     ASSERT_EQ(flowField->components.size(), 3);
     auto expectedComponentNames = std::vector<std::string>{"one", "two", "three"};
     ASSERT_EQ(flowField->components, expectedComponentNames);
+    ASSERT_EQ(flowField->adjacency, ablate::domain::FieldAdjacency::FEM);
 }
 
 TEST(FieldDescriptors, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
@@ -54,6 +57,7 @@ TEST(FieldDescriptors, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
     EXPECT_CALL(*mockSubFactory, Contains(std::string("prefix"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
     EXPECT_CALL(*mockSubFactory, Contains(std::string("components"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
     EXPECT_CALL(*mockSubFactory, Contains(std::string("type"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
+    EXPECT_CALL(*mockSubFactory, Contains(std::string("adjacency"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
 
     EXPECT_CALL(*mockFactory, GetFactory(std::string("input123"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
 
@@ -68,5 +72,6 @@ TEST(FieldDescriptors, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
     ASSERT_EQ(flowField->components.size(), 1);
     auto expectedComponentNames = std::vector<std::string>{"_"};
     ASSERT_EQ(flowField->components, expectedComponentNames);
+    ASSERT_EQ(flowField->adjacency, ablate::domain::FieldAdjacency::DEFAULT);
 }
 }  // namespace ablateTesting::flow

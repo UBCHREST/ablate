@@ -36,30 +36,14 @@ void ablate::finiteVolume::FiniteVolume::Register(std::shared_ptr<ablate::domain
     Solver::Register(subDomain);
     Solver::DecompressFieldFieldDescriptor(fieldDescriptors);
 
-    // make sure that the dm works with fv
-    const PetscInt ghostCellDepth = 1;
-    DM& dm = subDomain->GetDM();
-    {  // Make sure that the flow is setup distributed
-        DM dmDist;
-        DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE) >> checkError;
-        DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist) >> checkError;
-        if (dmDist) {
-            DMDestroy(&dm) >> checkError;
-            dm = dmDist;
-        }
-    }
-
-    // create any ghost cells that are needed
-    {
-        DM gdm;
-        DMPlexConstructGhostCells(dm, NULL, NULL, &gdm) >> checkError;
-        DMDestroy(&dm) >> checkError;
-        dm = gdm;
-    }
-
     // initialize each field
-    for (const auto& field : fieldDescriptors) {
+    for (auto& field : fieldDescriptors) {
         if (!field.components.empty()) {
+            // check the field adjacency
+            if (field.adjacency == domain::FieldAdjacency::DEFAULT) {
+                field.adjacency = domain::FieldAdjacency::FVM;
+            }
+
             RegisterFiniteVolumeField(field);
         }
     }
@@ -311,13 +295,13 @@ void ablate::finiteVolume::FiniteVolume::Save(PetscViewer viewer, PetscInt seque
 
     if (!exactSolutions.empty()) {
         Vec exactVec;
-        DMGetGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
+        DMGetGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
 
-        // Get the number of fields
-        subDomain->ProjectFieldFunctions(exactSolutions, exactVec, time);
+        subDomain->ProjectFieldFunctionsToSubDM(exactSolutions, exactVec, time);
+
         PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
         VecView(exactVec, viewer) >> checkError;
-        DMRestoreGlobalVector(subDomain->GetDM(), &exactVec) >> checkError;
+        DMRestoreGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
     }
 }
 

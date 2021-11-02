@@ -17,6 +17,7 @@ struct FieldDescriptor {
     std::string prefix;
     std::vector<std::string> components = {"_"};
     enum FieldType type = FieldType::SOL;
+    enum FieldAdjacency adjacency = FieldAdjacency::DEFAULT;
 };
 
 }  // namespace ablate::domain

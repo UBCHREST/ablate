@@ -1,6 +1,8 @@
 #include <petsc.h>
 #include <cmath>
 #include <domain/dmWrapper.hpp>
+#include <domain/modifiers/distributeWithGhostCells.hpp>
+#include <domain/modifiers/ghostBoundaryCells.hpp>
 #include <finiteVolume/processes/eulerDiffusion.hpp>
 #include <memory>
 #include <solver/directSolverTsInterface.hpp>
@@ -202,6 +204,10 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
+            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
+                                                                    std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::GhostBoundaryCells>(),
+                                                                                                                                     std::make_shared<domain::modifier::DistributeWithGhostCells>()});
+
             // Setup the flow data
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
@@ -216,8 +222,6 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "wall left/right", std::vector<int>{2, 4}, PhysicsBoundary_Euler, &parameters),
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "top/bottom", std::vector<int>{1, 3}, PhysicsBoundary_Mirror, &parameters),
             };
-
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
                                                                                        ablate::domain::Region::ENTIREDOMAIN,

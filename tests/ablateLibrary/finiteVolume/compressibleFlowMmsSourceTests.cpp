@@ -1,5 +1,7 @@
 #include <petsc.h>
 #include <domain/dmWrapper.hpp>
+#include <domain/modifiers/distributeWithGhostCells.hpp>
+#include <domain/modifiers/ghostBoundaryCells.hpp>
 #include <eos/transport/constant.hpp>
 #include <finiteVolume/processes/eulerAdvection.hpp>
 #include <solver/directSolverTsInterface.hpp>
@@ -577,6 +579,10 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, constants.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
+            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
+                                                                    std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::DistributeWithGhostCells>(),
+                                                                                                                                     std::make_shared<domain::modifier::GhostBoundaryCells>()});
+
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
 
@@ -590,8 +596,6 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, PhysicsBoundary_Euler, &constants),
             };
-
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
                                                                                        domain::Region::ENTIREDOMAIN,

@@ -8,6 +8,7 @@
 namespace ablate::domain {
 
 enum class FieldType { SOL, AUX };
+enum class FieldAdjacency { DEFAULT, FVM, FEM };
 
 struct Field {
     std::string name;
@@ -15,9 +16,11 @@ struct Field {
     std::vector<std::string> components;
     PetscInt id;
     enum FieldType type = FieldType::SOL;
+    enum FieldAdjacency adjacency = FieldAdjacency::DEFAULT;
 };
 
 std::istream& operator>>(std::istream& is, FieldType& v);
+std::istream& operator>>(std::istream& is, FieldAdjacency& v);
 
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_FIELD_HPP

@@ -73,16 +73,29 @@ static PetscErrorCode constant(PetscInt dim, PetscReal time, const PetscReal x[]
 
 static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt nfield, MatNullSpace *nullSpace) {
     Vec vec;
-    PetscErrorCode (*funcs[3])(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *) = {zero, zero, zero};
     PetscErrorCode ierr;
 
     PetscFunctionBeginUser;
-    if (ofield != PRES) SETERRQ1(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Nullspace must be for pressure field at correct index, not %D", ofield);
+    // determine the number of fields from PETSC
+    PetscInt numFields;
+    ierr = DMGetNumFields(dm, &numFields);
+    CHKERRQ(ierr);
+
+    // Project to the field specified in nfield
+    std::vector<PetscErrorCode (*)(PetscInt, PetscReal, const PetscReal[], PetscInt, PetscScalar *, void *)> funcs(numFields, zero);
     funcs[nfield] = constant;
     ierr = DMCreateGlobalVector(dm, &vec);
     CHKERRQ(ierr);
-    ierr = DMProjectFunction(dm, 0.0, funcs, NULL, INSERT_ALL_VALUES, vec);
+
+    // Get the label for this field
+    DMLabel label;
+    PetscObject field;
+    ierr = DMGetField(dm, nfield, &label, &field);
     CHKERRQ(ierr);
+
+    PetscInt ids[1] = {1};
+    DMProjectFunctionLabel(dm, 0.0, label, 1, ids, -1, NULL, &funcs[0], NULL, INSERT_VALUES, vec);
+
     ierr = VecNormalize(vec, NULL);
     CHKERRQ(ierr);
     ierr = PetscObjectSetName((PetscObject)vec, "Pressure Null Space");

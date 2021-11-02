@@ -2,6 +2,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 
 #include <petsc.h>
 #include <cmath>
+#include <domain/modifiers/ghostBoundaryCells.hpp>
 #include <memory>
 #include <solver/directSolverTsInterface.hpp>
 #include <vector>
@@ -165,6 +166,9 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 2, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
+            auto mesh =
+                std::make_shared<ablate::domain::DMWrapper>(dmCreate, std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::GhostBoundaryCells>()});
+
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}});
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
@@ -188,7 +192,6 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                                                                                        boundaryConditions /*boundary conditions*/,
                                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{} /*exactSolution*/);
 
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
             mesh->InitializeSubDomains({flowObject});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 

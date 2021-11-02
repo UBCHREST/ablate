@@ -14,7 +14,7 @@ class BoxMesh : public Domain {
 
    public:
     BoxMesh(std::string name, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary = {}, bool simplex = true,
-            std::shared_ptr<parameters::Parameters> options = {});
+            std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::shared_ptr<modifier::Modifier>> modifiers = {});
 
     ~BoxMesh();
 };

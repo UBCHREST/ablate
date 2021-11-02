@@ -1,10 +1,10 @@
 #ifndef ABLATELIBRARY_REGION_HPP
 #define ABLATELIBRARY_REGION_HPP
 
+#include <petsc.h>
 #include <memory>
 #include <string>
 #include <vector>
-
 namespace ablate::domain {
 
 class Region {
@@ -13,7 +13,7 @@ class Region {
 
    private:
     const std::string name;
-    std::vector<int> values;
+    std::vector<PetscInt> values;
     std::size_t id;
 
    public:
@@ -23,7 +23,7 @@ class Region {
 
     inline const std::string& GetName() const { return name; }
 
-    inline const std::vector<int>& GetValues() const { return values; }
+    inline const std::vector<PetscInt>& GetValues() const { return values; }
 };
 
 }  // namespace ablate::domain
