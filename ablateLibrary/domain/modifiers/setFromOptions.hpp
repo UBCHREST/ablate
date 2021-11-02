@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_SETFROMOPTIONS_HPP
 #define ABLATELIBRARY_SETFROMOPTIONS_HPP
 
+#include <memory>
 #include <parameters/parameters.hpp>
 #include "modifier.hpp"
 

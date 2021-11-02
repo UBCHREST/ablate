@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_CREATELABEL_HPP
 #define ABLATELIBRARY_CREATELABEL_HPP
 
+#include <memory>
 #include "mathFunctions/mathFunction.hpp"
 #include "modifier.hpp"
 
