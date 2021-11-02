@@ -94,7 +94,7 @@ static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt n
     CHKERRQ(ierr);
 
     PetscInt ids[1] = {1};
-    DMProjectFunctionLabel(dm, 0.0, label, 1, ids, -1, NULL,  &funcs[0], NULL, INSERT_VALUES, vec);
+    DMProjectFunctionLabel(dm, 0.0, label, 1, ids, -1, NULL, &funcs[0], NULL, INSERT_VALUES, vec);
 
     ierr = VecNormalize(vec, NULL);
     CHKERRQ(ierr);
