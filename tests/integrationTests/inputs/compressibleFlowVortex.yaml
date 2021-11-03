@@ -27,6 +27,7 @@ solver: !ablate::finiteVolume::CompressibleFlow
   id: vortexFlowField
   options:
     eulerpetscfv_type: leastsquares
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
   parameters:
     cfl: 0.5
     k: 0.0

@@ -8,4 +8,6 @@ target_sources(ablateLibrary
         massFractions.cpp
         densityMassFractions.hpp
         densityMassFractions.cpp
+        densityExtraVariables.hpp
+        densityExtraVariables.cpp
         )

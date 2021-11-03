@@ -59,6 +59,7 @@ $$\begin{eqnarray}
 
 Additional models are need to complete the system including an Equation of State (EOS) viscosity model.
 
+#### Species Transport
 Multiple species can be tracked using individual mass fractions.  The following equations are in addition to those shown for Euler.  The conserved equations for species transport are
 
 $$\begin{eqnarray}
@@ -95,6 +96,36 @@ $$\begin{eqnarray}
 \end{eqnarray}$$
 
 where $$h_m$$ is the sensible enthalpy of species m.
+
+#### Extra Variable Transport
+Extra variables (EV) can be tracked and transported in conserved form using the compressible flow equations assuming the form
+
+$$\begin{eqnarray}
+\vector{Q_t} = \begin{bmatrix} \rho EV_i \\ \rho EV_{i+1} \\ ... \\ \rho EV_{N-1} \end{bmatrix}
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+\vector{F_c} = \begin{bmatrix} \rho EV_i u_n \\ \rho EV_{i+1} u_n  \\ ... \\ \rho EV_{N-1} u_n  \end{bmatrix}
+\end{eqnarray}$$
+
+$$\begin{eqnarray}
+\vector{F_v} = \begin{bmatrix}
+n_x \Phi_{xi}  + n_y \Phi_{yi} + n_z \Phi_{zi} \\
+n_x \Phi_{x i + 1}  + n_y \Phi_{y i + 1} + n_z \Phi_{z i + 1} \\
+... \\
+n_x \Phi_{xN-1}  + n_y \Phi_{yN-1} + n_z \Phi_{zN-1}
+\end{bmatrix}
+\end{eqnarray}$$
+
+where
+
+$$\begin{eqnarray}
+\Phi_{xi} = \rho \mathcal{D}_i \frac{\partial EV_i}{\partial x} \\
+\Phi_{yi} = \rho \mathcal{D}_i \frac{\partial EV_i}{\partial y} \\
+\Phi_{zi} = \rho \mathcal{D}_i \frac{\partial EV_i}{\partial z}
+\end{eqnarray}$$
+
+The default $$\mathcal{D}_i$$ implementation assumes the same $$\mathcal{D}_i$$ for each $$EV_i$$ and is equal to species diffusivity.   
 
 ## References
  - Blazek, J. (2001). Computational fluid dynamics: Principles and applications.

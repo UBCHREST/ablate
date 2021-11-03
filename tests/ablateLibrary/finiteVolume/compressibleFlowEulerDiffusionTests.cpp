@@ -3,7 +3,6 @@
 #include <domain/dmWrapper.hpp>
 #include <domain/modifiers/distributeWithGhostCells.hpp>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
-#include <finiteVolume/processes/eulerDiffusion.hpp>
 #include <memory>
 #include <solver/directSolverTsInterface.hpp>
 #include <vector>
@@ -14,7 +13,7 @@
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlow.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
-#include "finiteVolume/processes/eulerAdvection.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
@@ -78,10 +77,10 @@ static PetscErrorCode EulerExact(PetscInt dim, PetscReal time, const PetscReal x
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    node[ablate::finiteVolume::processes::EulerAdvection::RHO] = parameters->rho;
-    node[ablate::finiteVolume::processes::EulerAdvection::RHOE] = parameters->rho * eT;
-    node[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
-    node[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
+    node[ablate::finiteVolume::processes::FlowProcess::RHO] = parameters->rho;
+    node[ablate::finiteVolume::processes::FlowProcess::RHOE] = parameters->rho * eT;
+    node[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = parameters->rho * u;
+    node[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -97,10 +96,10 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHO] = parameters->rho;
-    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOE] = parameters->rho * eT;
-    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = parameters->rho * u;
-    a_xG[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = parameters->rho * v;
+    a_xG[ablate::finiteVolume::processes::FlowProcess::RHO] = parameters->rho;
+    a_xG[ablate::finiteVolume::processes::FlowProcess::RHOE] = parameters->rho * eT;
+    a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = parameters->rho * u;
+    a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -110,7 +109,7 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
     InputParameters *constants = (InputParameters *)ctx;
 
     // Offset the calc assuming the cells are square
-    for (PetscInt f = 0; f < ablate::finiteVolume::processes::EulerAdvection::RHOU + constants->dim; f++) {
+    for (PetscInt f = 0; f < ablate::finiteVolume::processes::FlowProcess::RHOU + constants->dim; f++) {
         a_xG[f] = a_xI[f];
     }
     PetscFunctionReturn(0);
@@ -321,52 +320,3 @@ INSTANTIATE_TEST_SUITE_P(
                                                               .expectedL2Convergence = {NAN, 2.2, NAN, NAN},
                                                               .expectedLInfConvergence = {NAN, 2.5, NAN, NAN}}),
     [](const testing::TestParamInfo<CompressibleFlowDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-typedef struct {
-    PetscInt dim;
-    PetscReal mu;
-    std::vector<PetscReal> gradVelL;
-    std::vector<PetscReal> gradVelR;
-    std::vector<PetscReal> expectedStressTensor;
-} StressTensorTestParameters;
-
-class StressTensorTestFixture : public testing::TestWithParam<StressTensorTestParameters> {};
-
-TEST_P(StressTensorTestFixture, ShouldComputeTheCorrectStressTensor) {
-    // arrange
-    PetscReal computedTau[9];
-    const auto &params = GetParam();
-
-    // act
-    PetscErrorCode ierr = ablate::finiteVolume::processes::EulerDiffusion::CompressibleFlowComputeStressTensor(params.dim, params.mu, &params.gradVelL[0], &params.gradVelR[0], computedTau);
-
-    // assert
-    ASSERT_EQ(0, ierr);
-    for (auto c = 0; c < params.dim; c++) {
-        for (auto d = 0; d < params.dim; d++) {
-            auto i = c * params.dim + d;
-            ASSERT_NEAR(computedTau[i], params.expectedStressTensor[i], 1E-8) << "The tau component [" + std::to_string(c) + "][" + std::to_string(d) + "] is incorrect";
-        }
-    }
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    CompressibleFlow, StressTensorTestFixture,
-    testing::Values(
-        (StressTensorTestParameters){.dim = 1, .mu = .3, .gradVelL = {3.5}, .gradVelR = {3.5}, .expectedStressTensor = {1.4}},
-        (StressTensorTestParameters){.dim = 1, .mu = .3, .gradVelL = {4.5}, .gradVelR = {2.5}, .expectedStressTensor = {1.4}},
-        (StressTensorTestParameters){.dim = 2, .mu = .3, .gradVelL = {3.5, -2.45, 0, -1}, .gradVelR = {3.5, -2.45, 0, 1}, .expectedStressTensor = {1.4, -0.735, -0.735, -0.7}},
-        (StressTensorTestParameters){.dim = 2, .mu = 1.5, .gradVelL = {3.5, -2.45, 0, -6}, .gradVelR = {3.5, -2.45, 0, -8}, .expectedStressTensor = {14, -3.675, -3.675, -17.5}},
-        (StressTensorTestParameters){.dim = 2, .mu = 1.5, .gradVelL = {0, -12, 12, 0}, .gradVelR = {0, -12, 12, 0}, .expectedStressTensor = {0, 0, 0, 0}},
-        (StressTensorTestParameters){.dim = 2, .mu = 1.5, .gradVelL = {0, -10, 12, 0}, .gradVelR = {0, -20, 12, 0}, .expectedStressTensor = {0, -4.5, -4.5, 0}},
-        (StressTensorTestParameters){.dim = 3, .mu = 1.5, .gradVelL = {1, 0, 0, 0, 1, 0, 0, 0, 1}, .gradVelR = {1, 0, 0, 0, 3, 0, 0, 0, 5}, .expectedStressTensor = {-3, 0, 0, 0, 0, 0, 0, 0, 3}},
-        (StressTensorTestParameters){
-            .dim = 3, .mu = 1.5, .gradVelL = {2, 4, 6, 8, 10, 12, 14, 16, 18}, .gradVelR = {0, 0, 0, 0, 0, 0, 0, 0, 0}, .expectedStressTensor = {-12, 9, 15, 9, 0, 21, 15, 21, 12}},
-        (StressTensorTestParameters){
-            .dim = 3, .mu = 1.5, .gradVelL = {0, 0, 0, 0, 0, 0, 0, 0, 0}, .gradVelR = {-2, -4, -6, -8, -10, -12, -14, -16, -18}, .expectedStressTensor = {12, -9, -15, -9, 0, -21, -15, -21, -12}},
-        (StressTensorTestParameters){
-            .dim = 3, .mu = 1.5, .gradVelL = {2, 4, 6, 8, 10, 12, 14, 16, 18}, .gradVelR = {-2, -4, -6, -8, -10, -12, -14, -16, -18}, .expectedStressTensor = {0, 0, 0, 0, 0, 0, 0, 0, 0}},
-        (StressTensorTestParameters){.dim = 3, .mu = 0.0, .gradVelL = {1, 2, 3, 4, 5, 6, 7, 8, 9}, .gradVelR = {1, 2, 3, 4, 5, 6, 7, 8, 9}, .expectedStressTensor = {0, 0, 0, 0, 0, 0, 0, 0, 0}},
-        (StressTensorTestParameters){.dim = 3, .mu = 0.7, .gradVelL = {0, 0, 0, 0, 0, 0, 0, 0, 0}, .gradVelR = {0, 0, 0, 0, 0, 0, 0, 0, 0}, .expectedStressTensor = {0, 0, 0, 0, 0, 0, 0, 0, 0}}),
-    [](const testing::TestParamInfo<StressTensorTestParameters> &info) { return "InputParameters_" + std::to_string(info.index); });

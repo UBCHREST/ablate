@@ -31,6 +31,7 @@ solver: !ablate::finiteVolume::CompressibleFlow
     velpetscfv_type: leastsquares
   parameters:
     cfl: 0.5
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
   transport:
     k: 0.0
     mu: 1.0

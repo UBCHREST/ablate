@@ -83,6 +83,9 @@ class SubDomain {
 
     inline const std::vector<Field>& GetFields(FieldType type = FieldType::SOL) const { return fieldsByType.at(type); }
 
+    // return true if the field was defined
+    inline bool ContainsField(const std::string& fieldName) { return fieldsByName.count(fieldName) > 0; }
+
     /**
      * Get the petscField object from the dm or auxDm for this region
      * @param fieldName

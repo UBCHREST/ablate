@@ -83,12 +83,12 @@ class Registrar {
     using TCreateMethod = std::function<std::shared_ptr<Interface>(std::shared_ptr<Factory>)>;
 
     static std::map<std::string, TCreateMethod>& GetConstructionMethods() {
-        static std::map<std::string, TCreateMethod>* methods = new std::map<std::string, TCreateMethod>();
+        static auto methods = new std::map<std::string, TCreateMethod>();
         return *methods;
     }
 
     static std::string& GetDefaultClassName() {
-        static std::string* defaultClassName = new std::string();
+        static auto defaultClassName = new std::string();
         return *defaultClassName;
     };
 
@@ -145,7 +145,7 @@ class Registrar {
             Listing::Get().RecordListing(Listing::ClassEntry{.interface = typeid(Interface).name(), .className = className, .description = description, .defaultConstructor = defaultConstructor});
 
             // create method
-            methods[className] = [](std::shared_ptr<Factory> factory) { return std::make_shared<Class>(); };
+            methods[className] = [](const std::shared_ptr<Factory>& factory) { return std::make_shared<Class>(); };
 
             if (defaultConstructor) {
                 if (GetDefaultClassName().empty()) {
@@ -172,7 +172,7 @@ class Registrar {
                 .defaultConstructor = defaultConstructor});
 
             // create method
-            methods[className] = [=](std::shared_ptr<Factory> factory) { return std::make_shared<Class>(factory->Get(args)...); };
+            methods[className] = [=](const std::shared_ptr<Factory>& factory) { return std::make_shared<Class>(factory->Get(args)...); };
 
             if (defaultConstructor) {
                 if (GetDefaultClassName().empty()) {

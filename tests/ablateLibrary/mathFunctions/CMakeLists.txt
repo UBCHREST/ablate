@@ -9,3 +9,5 @@ target_sources(libraryTests
         linearInterpolatorTests.cpp
         parsedNestedTests.cpp
         )
+
+add_subdirectory(geom)

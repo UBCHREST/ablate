@@ -1,8 +1,10 @@
 #include <petsc.h>
 #include <cmath>
+#include <convergenceTester.hpp>
 #include <domain/modifiers/distributeWithGhostCells.hpp>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
 #include <finiteVolume/boundaryConditions/essentialGhost.hpp>
+#include <finiteVolume/fluxCalculator/ausm.hpp>
 #include <memory>
 #include <monitors/solutionErrorMonitor.hpp>
 #include <solver/directSolverTsInterface.hpp>
@@ -39,12 +41,11 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
         // initialize petsc and mpi
         PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
 
-        PetscInt blockSize = 4 + 3;
         PetscInt initialNx = GetParam().initialNx;
 
-        std::vector<PetscReal> hHistory;
-        std::vector<std::vector<PetscReal>> l2History(blockSize);
-        std::vector<std::vector<PetscReal>> lInfHistory(blockSize);
+        // keep track of history
+        testingResources::ConvergenceTester l2History("l2");
+        testingResources::ConvergenceTester lInfHistory("lInf");
 
         // March over each level
         for (PetscInt l = 0; l < GetParam().levels; l++) {
@@ -92,7 +93,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                          eos,
                                                                          parameters,
                                                                          nullptr /*transportModel*/,
-                                                                         nullptr,
+                                                                         std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
                                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution} /*initialization*/,
                                                                          boundaryConditions /*boundary conditions*/,
                                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
@@ -119,45 +120,23 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             std::vector<PetscReal> lInfNorm = ablate::monitors::SolutionErrorMonitor(ablate::monitors::SolutionErrorMonitor::Scope::COMPONENT, ablate::monitors::SolutionErrorMonitor::Norm::LINF)
                                                   .ComputeError(ts, endTime, mesh->GetSolutionVector());
 
-            // print the results to help with debug
-            auto l2String = PrintVector(l2Norm, "%2.3g");
-            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 Error: %s\n", l2String.c_str()) >> testErrorChecker;
-
-            auto lInfString = PrintVector(lInfNorm, "%2.3g");
-            PetscPrintf(PETSC_COMM_WORLD, "\tL_2 L_Inf: %s\n", lInfString.c_str()) >> testErrorChecker;
-
             // Store the residual into history
-            hHistory.push_back(PetscLog10Real(0.01 / nx1D));
-            for (auto b = 0; b < blockSize; b++) {
-                l2History[b].push_back(PetscLog10Real(l2Norm[b]));
-                lInfHistory[b].push_back(PetscLog10Real(lInfNorm[b]));
-            }
+            const PetscReal h = 0.01 / nx1D;
+            l2History.Record(h, l2Norm);
+            lInfHistory.Record(h, lInfNorm);
             TSDestroy(&ts) >> testErrorChecker;
         }
 
-        // Fit each component and output
-        for (auto b = 0; b < blockSize; b++) {
-            PetscReal l2Slope;
-            PetscReal l2Intercept;
-            PetscLinearRegression(hHistory.size(), &hHistory[0], &l2History[b][0], &l2Slope, &l2Intercept) >> testErrorChecker;
-
-            PetscReal lInfSlope;
-            PetscReal lInfIntercept;
-            PetscLinearRegression(hHistory.size(), &hHistory[0], &lInfHistory[b][0], &lInfSlope, &lInfIntercept) >> testErrorChecker;
-
-            PetscPrintf(PETSC_COMM_WORLD, "Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> testErrorChecker;
-
-            if (std::isnan(GetParam().expectedL2Convergence[b])) {
-                ASSERT_TRUE(std::isnan(l2Slope)) << "incorrect L2 convergence order for component[" << b << "]";
-            } else {
-                ASSERT_NEAR(l2Slope, GetParam().expectedL2Convergence[b], 0.2) << "incorrect L2 convergence order for component[" << b << "]";
-            }
-            if (std::isnan(GetParam().expectedLInfConvergence[b])) {
-                ASSERT_TRUE(std::isnan(lInfSlope)) << "incorrect LInf convergence order for component[" << b << "]";
-            } else {
-                ASSERT_NEAR(lInfSlope, GetParam().expectedLInfConvergence[b], 0.2) << "incorrect LInf convergence order for component[" << b << "]";
-            }
+        std::string l2Message;
+        if (!l2History.CompareConvergenceRate(GetParam().expectedL2Convergence, l2Message)) {
+            FAIL() << l2Message;
         }
+
+        std::string lInfMessage;
+        if (!lInfHistory.CompareConvergenceRate(GetParam().expectedLInfConvergence, lInfMessage)) {
+            FAIL() << lInfMessage;
+        }
+
         PetscErrorCode ierr = PetscFinalize();
         exit(ierr);
 
