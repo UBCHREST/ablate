@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_GHOST_HPP
 #define ABLATELIBRARY_GHOST_HPP
 
+#include <domain/subDomain.hpp>
 #include "boundaryCondition.hpp"
 
 namespace ablate::finiteVolume::boundaryConditions {
@@ -12,7 +13,7 @@ class Ghost : public BoundaryCondition {
     const std::string labelName;
     const std::vector<PetscInt> labelIds;
     const UpdateFunction updateFunction;
-    const void* updateContext;
+    void* updateContext;
 
    protected:
     // Store some field information
@@ -29,6 +30,8 @@ class Ghost : public BoundaryCondition {
     virtual ~Ghost() override = default;
 
     void SetupBoundary(DM dm, PetscDS problem, PetscInt fieldId) override;
+
+    void InsertBoundaryValues(ablate::domain::SubDomain &subDomain, PetscReal time, Vec faceGeometry, Vec cellGeometry, Vec locX) override;
 };
 
 }  // namespace ablate::finiteVolume::boundaryConditions

@@ -3,7 +3,7 @@
 #include <utilities/petscError.hpp>
 
 ablate::domain::modifier::CreateLabel::CreateLabel(std::string name, std::shared_ptr<mathFunctions::MathFunction> function, int dmDepth, int labelValueIn)
-    : name(name), function(function), dmDepth((PetscInt)dmDepth), labelValue(labelValueIn == 0 ? 1 : (PetscInt)labelValueIn) {}
+    : name(name), function(function), dmHeight((PetscInt)dmDepth), labelValue(labelValueIn == 0 ? 1 : (PetscInt)labelValueIn) {}
 
 void ablate::domain::modifier::CreateLabel::Modify(DM &dm) {
     DMCreateLabel(dm, name.c_str()) >> checkError;
@@ -12,12 +12,13 @@ void ablate::domain::modifier::CreateLabel::Modify(DM &dm) {
     DMGetLabel(dm, name.c_str(), &newLabel) >> checkError;
 
     PetscInt cStart, cEnd;
-    DMPlexGetHeightStratum(dm, dmDepth, &cStart, &cEnd) >> checkError;
+    DMPlexGetHeightStratum(dm, dmHeight, &cStart, &cEnd) >> checkError;
 
     // Get the number of dimensions from the dm
     PetscInt nDims;
     DMGetCoordinateDim(dm, &nDims) >> checkError;
 
+    // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
         PetscReal centroid[3];
 

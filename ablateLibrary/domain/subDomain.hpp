@@ -5,6 +5,7 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include <memory>
 #include <string>
+#include <utilities/petscError.hpp>
 #include "domain.hpp"
 #include "fieldDescriptor.hpp"
 
@@ -131,6 +132,20 @@ class SubDomain {
     inline PetscInt GetNumberFields() const { return fieldsByName.size(); }
 
     inline MPI_Comm GetComm() { return PetscObjectComm((PetscObject)GetDM()); }
+
+    /**
+     * determines if this point is in this region as defined by the label and labelID
+     * @param point
+     * @return
+     */
+    inline bool InRegion(PetscInt point){
+        if(!label){
+            return true;
+        }
+        PetscInt ptValue;
+        DMLabelGetValue(label, point, &ptValue) >> checkError;
+        return ptValue = region->GetValues()[0];
+    }
 
     /**
      * Support function to project the fields on to the global vector

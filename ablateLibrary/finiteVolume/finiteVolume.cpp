@@ -31,6 +31,7 @@ ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string solverId, std::shar
               return vec;
           }(std::move(fieldDescriptors)),
           std::move(processes), std::move(initialization), std::move(boundaryConditions), std::move(exactSolution)) {}
+ablate::finiteVolume::FiniteVolume::~FiniteVolume() {}
 
 void ablate::finiteVolume::FiniteVolume::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     Solver::Register(subDomain);
@@ -144,34 +145,39 @@ void ablate::finiteVolume::FiniteVolume::RegisterFiniteVolumeField(const ablate:
 
 PetscErrorCode ablate::finiteVolume::FiniteVolume::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
-//    PetscErrorCode ierr;
 
-//    auto dm = subDomain->GetDM();
-//    auto ds = subDomain->GetDiscreteSystem();
-    /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
-//    Vec facegeom, cellgeom;
-//    ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, NULL);
-//    CHKERRQ(ierr);
-//    ierr = solver::Solver::DMPlexInsertBoundaryValues_Plex(dm, ds, PETSC_FALSE, locXVec, time, facegeom, cellgeom, NULL);
-//    CHKERRQ(ierr);
+    PetscErrorCode ierr;
+    auto dm = subDomain->GetDM();
 
-    // update any aux fields, including ghost cells
+    Vec facegeom, cellgeom;
+    ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, NULL);
+    CHKERRQ(ierr);
+
     try {
+        // apply any boundary conditions
+        for(auto& boundary : boundaryConditions){
+            boundary->InsertBoundaryValues(*subDomain, time, facegeom, cellgeom, locXVec);
+        }
+
+        // update any aux fields, including ghost cells
         UpdateAuxFields(time, locXVec, subDomain->GetAuxVector());
+
+        // Compute the RHS function
+//        ComputeFlux(time, locXVec, subDomain->GetAuxVector(), locFVec);
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
     }
 
-//    // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
-//    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(
-//        &rhsFluxFunctionDescriptions[0], rhsFluxFunctionDescriptions.size(), &rhsPointFunctionDescriptions[0], rhsPointFunctionDescriptions.size(), dm, time, locXVec, locFVec);
-//    CHKERRQ(ierr);
-//
-//    // iterate over any arbitrary RHS functions
-//    for (const auto& rhsFunction : rhsArbitraryFunctions) {
-//        ierr = rhsFunction.first(dm, time, locXVec, locFVec, rhsFunction.second);
-//        CHKERRQ(ierr);
-//    }
+    // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
+        ierr = ABLATE_DMPlexComputeRHSFunctionFVM(
+            &rhsFluxFunctionDescriptions[0], rhsFluxFunctionDescriptions.size(), &rhsPointFunctionDescriptions[0], rhsPointFunctionDescriptions.size(), dm, time, locXVec, locFVec);
+        CHKERRQ(ierr);
+
+        // iterate over any arbitrary RHS functions
+        for (const auto& rhsFunction : rhsArbitraryFunctions) {
+            ierr = rhsFunction.first(dm, time, locXVec, locFVec, rhsFunction.second);
+            CHKERRQ(ierr);
+        }
 
     PetscFunctionReturn(0);
 }
@@ -310,32 +316,11 @@ void ablate::finiteVolume::FiniteVolume::UpdateAuxFields(PetscReal time, Vec loc
     // Convert to a dmplex
     DMConvert(GetSubDomain().GetDM(), DMPLEX, &plex) >> checkError;
 
-    // Start out getting all of the cells
-    PetscInt depth;
-    DMPlexGetDepth(plex, &depth) >> checkError;
-    IS allCellIS;
-    DMGetStratumIS(plex, "dim", depth, &allCellIS) >> checkError;
-    if (!allCellIS) {
-        DMGetStratumIS(plex, "depth", depth, &allCellIS) >> checkError;
-    }
-
-    // If there is a label for this region, get only the parts of the mesh that here
+    // Get the valid cell range over this region
     IS cellIS;
-    const auto label = GetSubDomain().GetLabel();
-    if (label) {
-        IS labelIS;
-        DMLabelGetStratumIS(label, GetRegion()->GetValues().front(), &labelIS) >> checkError;
-        ISIntersect_Caching_Internal(allCellIS, labelIS, &cellIS) >> checkError;
-        ISDestroy(&labelIS) >> checkError;
-    } else {
-        PetscObjectReference((PetscObject)allCellIS) >> checkError;
-        cellIS = allCellIS;
-    }
-
-    // Get the point range
     PetscInt cStart, cEnd;
     const PetscInt* cells;
-    ISGetPointRange(cellIS, &cStart, &cEnd, &cells) >> checkError;
+    GetCellRange(cellIS, cStart, cEnd, cells);
 
     // Extract the cell geometry, and the dm that holds the information
     Vec cellGeomVec;
@@ -396,11 +381,72 @@ void ablate::finiteVolume::FiniteVolume::UpdateAuxFields(PetscReal time, Vec loc
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     VecRestoreArrayRead(locXVec, &locFlowFieldArray) >> checkError;
     VecRestoreArray(locAuxField, &localAuxFlowFieldArray) >> checkError;
-    ISRestorePointRange(cellIS, &cStart, &cEnd, &cells) >> checkError;
-    ISDestroy(&cellIS) >> checkError;
-    ISDestroy(&allCellIS) >> checkError;
+
+    RestoreRange(cellIS, cStart, cEnd, cells);
+
     DMDestroy(&plex) >> checkError;
     PetscFree(uOff) >> checkError;
+}
+void ablate::finiteVolume::FiniteVolume::ComputeFlux(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
+    // Get the valid cell range over this region
+    IS faceIS;
+    PetscInt fStart, fEnd;
+    const PetscInt* faces;
+    GetFaceRange(faceIS, fStart, fEnd, faces);
+
+    for (PetscInt f = fStart; f < fEnd; ++f) {
+        const PetscInt face = faces ? faces[f] : f;
+
+        std::cout << "face (" << f << "): " << face << std::endl;
+    }
+
+    RestoreRange(faceIS, fStart, fEnd, faces);
+}
+
+void ablate::finiteVolume::FiniteVolume::GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells) {
+    // Start out getting all of the cells
+    PetscInt depth;
+    DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
+    GetRange(depth, cellIS, cStart, cEnd, cells);
+}
+
+void ablate::finiteVolume::FiniteVolume::GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces) {
+    // Start out getting all of the cells
+    PetscInt depth;
+    DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
+    GetRange(depth - 1, faceIS, fStart, fEnd, faces);
+}
+
+void ablate::finiteVolume::FiniteVolume::GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
+    // Start out getting all of the points
+    IS allPointIS;
+    DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> checkError;
+    if (!allPointIS) {
+        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allPointIS) >> checkError;
+    }
+
+    // If there is a label for this region, get only the parts of the mesh that here
+    const auto label = GetSubDomain().GetLabel();
+    if (label) {
+        IS labelIS;
+        DMLabelGetStratumIS(label, GetRegion()->GetValues().front(), &labelIS) >> checkError;
+        ISIntersect_Caching_Internal(allPointIS, labelIS, &pointIS) >> checkError;
+        ISDestroy(&labelIS) >> checkError;
+    } else {
+        PetscObjectReference((PetscObject)allPointIS) >> checkError;
+        pointIS = allPointIS;
+    }
+
+    // Get the point range
+    ISGetPointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
+
+    // Clean up the allCellIS
+    ISDestroy(&allPointIS) >> checkError;
+}
+
+void ablate::finiteVolume::FiniteVolume::RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
+    ISRestorePointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
+    ISDestroy(&pointIS) >> checkError;
 }
 
 #include "parser/registrar.hpp"

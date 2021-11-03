@@ -9,4 +9,6 @@ target_sources(ablateLibrary
         setFromOptions.cpp
         createLabel.hpp
         createLabel.cpp
+        tagLabelBoundary.hpp
+        tagLabelBoundary.cpp
         )

@@ -65,9 +65,59 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
      * @param time
      * @param locXVec
      * @param updateFunction
-     * @return
      */
     void UpdateAuxFields(PetscReal time, Vec locXVec, Vec locAuxField);
+
+    /**
+     * Computes the flux across each face in th region
+
+     */
+    void ComputeFlux(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF);
+
+    /**
+     * Inserts the boundary conditions into the locXVec
+     * @param time
+     * @param locXVec
+     * @param locAuxField
+     */
+    void InsertBoundaryValues(PetscReal time, Vec locXVec, Vec locAuxField);
+
+   protected:
+    /**
+     * Get the cellIS and range over valid cells in this region
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetCellRange(IS& cellIS,PetscInt& cStart, PetscInt& cEnd, const PetscInt* &cells);
+
+    /**
+     * Get the faceIS and range over valid faces in this region
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetFaceRange(IS& faceIS,PetscInt& fStart, PetscInt& fEnd, const PetscInt* &faces);
+
+    /**
+     * Get the valid range over specified depth
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetRange(PetscInt depth, IS& pointIS,PetscInt& pStart, PetscInt& pEnd, const PetscInt* &points);
+
+    /**
+     * Restores the is and range
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void RestoreRange(IS& pointIS,PetscInt& pStart, PetscInt& pEnd, const PetscInt* &points);
 
    public:
     FiniteVolume(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<domain::FieldDescriptor> fieldDescriptors,
@@ -78,6 +128,7 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
                  std::vector<std::shared_ptr<processes::Process>> flowProcesses, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
+    ~FiniteVolume() override;
     /** SubDomain Register and Setup **/
     void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
     void Setup() override;

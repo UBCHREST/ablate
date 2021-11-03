@@ -19,7 +19,7 @@ class CreateLabel : public Modifier {
     std::shared_ptr<mathFunctions::MathFunction> function;
 
     // The depth to evaluate the label.
-    const PetscInt dmDepth;
+    const PetscInt dmHeight;
 
     // value to assign if the function evaluates positive
     const PetscInt labelValue;
