@@ -147,37 +147,36 @@ PetscErrorCode ablate::finiteVolume::FiniteVolume::ComputeRHSFunction(PetscReal 
     PetscFunctionBeginUser;
 
     PetscErrorCode ierr;
-    auto dm = subDomain->GetDM();
 
+    auto dm = subDomain->GetDM();
+    auto ds = subDomain->GetDiscreteSystem();
+    /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
     Vec facegeom, cellgeom;
     ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, NULL);
     CHKERRQ(ierr);
+    ierr = ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(dm, ds, PETSC_FALSE, locXVec, time, facegeom, cellgeom, NULL);
+    CHKERRQ(ierr);
 
     try {
-        // apply any boundary conditions
-        for(auto& boundary : boundaryConditions){
-            boundary->InsertBoundaryValues(*subDomain, time, facegeom, cellgeom, locXVec);
-        }
-
         // update any aux fields, including ghost cells
         UpdateAuxFields(time, locXVec, subDomain->GetAuxVector());
 
         // Compute the RHS function
-//        ComputeFlux(time, locXVec, subDomain->GetAuxVector(), locFVec);
+        //        ComputeFlux(time, locXVec, subDomain->GetAuxVector(), locFVec);
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
     }
 
     // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
-        ierr = ABLATE_DMPlexComputeRHSFunctionFVM(
-            &rhsFluxFunctionDescriptions[0], rhsFluxFunctionDescriptions.size(), &rhsPointFunctionDescriptions[0], rhsPointFunctionDescriptions.size(), dm, time, locXVec, locFVec);
-        CHKERRQ(ierr);
+    ierr = ABLATE_DMPlexComputeRHSFunctionFVM(
+        &rhsFluxFunctionDescriptions[0], rhsFluxFunctionDescriptions.size(), &rhsPointFunctionDescriptions[0], rhsPointFunctionDescriptions.size(), dm, time, locXVec, locFVec);
+    CHKERRQ(ierr);
 
-        // iterate over any arbitrary RHS functions
-        for (const auto& rhsFunction : rhsArbitraryFunctions) {
-            ierr = rhsFunction.first(dm, time, locXVec, locFVec, rhsFunction.second);
-            CHKERRQ(ierr);
-        }
+    // iterate over any arbitrary RHS functions
+    for (const auto& rhsFunction : rhsArbitraryFunctions) {
+        ierr = rhsFunction.first(dm, time, locXVec, locFVec, rhsFunction.second);
+        CHKERRQ(ierr);
+    }
 
     PetscFunctionReturn(0);
 }

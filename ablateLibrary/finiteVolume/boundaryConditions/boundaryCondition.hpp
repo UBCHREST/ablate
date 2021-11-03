@@ -20,8 +20,6 @@ class BoundaryCondition {
 
     virtual ~BoundaryCondition() = default;
     virtual void SetupBoundary(DM dm, PetscDS problem, PetscInt fieldId) = 0;
-
-    virtual void InsertBoundaryValues(ablate::domain::SubDomain &subDomain, PetscReal time, Vec faceGeometry, Vec cellGeometry, Vec locX) = 0;
 };
 }  // namespace ablate::finiteVolume::boundaryConditions
 #endif  // ABLATELIBRARY_BOUNDARYCONDITION_HPP

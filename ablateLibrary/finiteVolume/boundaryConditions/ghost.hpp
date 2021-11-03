@@ -13,7 +13,7 @@ class Ghost : public BoundaryCondition {
     const std::string labelName;
     const std::vector<PetscInt> labelIds;
     const UpdateFunction updateFunction;
-    void* updateContext;
+    const void* updateContext;
 
    protected:
     // Store some field information
@@ -30,8 +30,6 @@ class Ghost : public BoundaryCondition {
     virtual ~Ghost() override = default;
 
     void SetupBoundary(DM dm, PetscDS problem, PetscInt fieldId) override;
-
-    void InsertBoundaryValues(ablate::domain::SubDomain &subDomain, PetscReal time, Vec faceGeometry, Vec cellGeometry, Vec locX) override;
 };
 
 }  // namespace ablate::finiteVolume::boundaryConditions
