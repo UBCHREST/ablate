@@ -1,7 +1,7 @@
 #include "geometry.hpp"
 
-ablate::mathFunctions::geom::Geometry::Geometry(std::vector<double> insideValues, std::vector<double> outsideValuesIn)
-    : insideValues(insideValues), outsideValues(outsideValuesIn.empty() ? std::vector<double>(insideValues.size(), 0.0) : outsideValuesIn) {}
+ablate::mathFunctions::geom::Geometry::Geometry(std::vector<double> insideValuesIn, std::vector<double> outsideValuesIn)
+    : insideValues(insideValuesIn.empty()? std::vector<double>{1}: insideValuesIn), outsideValues(outsideValuesIn.empty() ? std::vector<double>(insideValues.size(), 0.0) : outsideValuesIn) {}
 
 PetscErrorCode ablate::mathFunctions::geom::Geometry::GeometryPetscFunction(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt nf, PetscScalar *u, void *ctx) {
     PetscFunctionBeginUser;

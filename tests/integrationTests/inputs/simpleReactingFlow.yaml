@@ -5,7 +5,6 @@ environment:
 arguments: 
   dm_plex_separate_marker: ""
   petsclimiter_type: none
-  automaticTimeStepCalculator: off
 timestepper:
   name: theMainTimeStepper
   io:

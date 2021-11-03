@@ -313,6 +313,11 @@ Vec ablate::domain::SubDomain::GetSubAuxVector() {
 
     if (!subAuxVec) {
         DMCreateGlobalVector(GetSubAuxDM(), &subAuxVec) >> checkError;
+
+        // Copy the aux vector name
+        const char* vecName;
+        PetscObjectGetName((PetscObject)GetAuxVector(), &vecName) >> checkError;
+        PetscObjectSetName((PetscObject)subAuxVec, vecName) >> checkError;
     }
 
     CopyGlobalToSubVector(GetSubAuxDM(), GetAuxDM(), subAuxVec, GetAuxVector(), GetFields(FieldType::AUX), GetFields(FieldType::AUX), true);
