@@ -1,13 +1,14 @@
 #ifndef ABLATELIBRARY_DOMAIN_H
 #define ABLATELIBRARY_DOMAIN_H
 #include <petsc.h>
+#include <domain/fields/fieldDescriptor.hpp>
 #include <domain/modifiers/modifier.hpp>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include "fieldDescriptor.hpp"
+#include "domain/fields/fieldDescription.hpp"
 #include "region.hpp"
 
 namespace ablate::solver {
@@ -19,21 +20,30 @@ namespace ablate::domain {
 // forward declare the subDomain
 class SubDomain;
 
-class Domain : public std::enable_shared_from_this<Domain> {
+class Domain {
    protected:
-    Domain(std::string name, std::vector<std::shared_ptr<modifier::Modifier>> modifiers);
+    Domain(DM dm, std::string name, std::vector<std::shared_ptr<fields::FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers);
     virtual ~Domain();
 
-    std::string name;
     // The primary dm
     DM dm;
 
    private:
+
+    // the name of the dm
+    std::string name;
+
+    // Hold a copy of the comm for this DM
+    const MPI_Comm comm;
+
+    // List of classes that are used to describe fields
+    const std::vector<std::shared_ptr<fields::FieldDescriptor>> fieldDescriptors;
+
     // Keep track of all solution fields
-    std::map<std::string, Field> solutionFields;
+    std::vector<Field> fields;
 
     // This domain can be partitions into multiple subdomains
-    std::map<std::size_t, std::shared_ptr<SubDomain>> subDomains;
+    std::vector<std::shared_ptr<SubDomain>> subDomains;
 
     // The solution to the flow
     Vec solField;
@@ -43,7 +53,7 @@ class Domain : public std::enable_shared_from_this<Domain> {
     std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
 
     // keep a list of functions that modify the dm
-    std::vector<std::shared_ptr<modifier::Modifier>> modifiers;
+    std::vector<std::shared_ptr<modifiers::Modifier>> modifiers;
 
    public:
     std::string GetName() const { return name; }
@@ -52,18 +62,36 @@ class Domain : public std::enable_shared_from_this<Domain> {
 
     Vec GetSolutionVector() { return solField; }
 
-    void RegisterSolutionField(const FieldDescriptor &fieldDescriptor, PetscObject field, DMLabel label);
+    void RegisterField(const ablate::domain::fields::FieldDescription& fieldDescription);
 
     PetscInt GetDimensions() const;
 
     void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers);
 
-    inline const Field &GetSolutionField(const std::string &fieldName) const {
-        if (solutionFields.count(fieldName)) {
-            return solutionFields.at(fieldName);
-        } else {
-            throw std::invalid_argument("Cannot locate field " + fieldName + " in subDomain " + name);
-        }
+    /**
+     * Get the petscField object from the dm or auxDm for this region
+     * @param fieldName
+     * @return
+     */
+    PetscObject GetPetscFieldObject(const Field& field);
+
+
+    /**
+     *  returns the field  by global id
+     * @param fieldId
+     * @return
+     */
+    inline const Field& GetField(int fieldId) const {
+        return fields[fieldId];
+    }
+
+    /**
+     *  returns all of the fields
+     * @param fieldId
+     * @return
+     */
+    inline const std::vector<Field>& GetFields() const {
+        return fields;
     }
 };
 }  // namespace ablate::domain

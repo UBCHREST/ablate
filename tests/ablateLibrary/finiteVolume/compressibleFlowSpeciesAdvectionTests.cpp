@@ -63,15 +63,18 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
 
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d (%dx%d)\n", l, nx1D, nx1D);
 
+            //TODO: add fields
+            std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>> fieldDescriptors = {};
+
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                   std::vector<int>{(int)nx1D, (int)nx1D},
                                                                   std::vector<double>{0.0, 0.0},
                                                                   std::vector<double>{.01, .01},
                                                                   std::vector<std::string>{} /*boundary*/,
                                                                   false /*simplex*/,
-                                                                  nullptr /*options*/,
-                                                                  std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::DistributeWithGhostCells>(),
-                                                                                                                                   std::make_shared<domain::modifier::GhostBoundaryCells>()});
+                                                                  fieldDescriptors,
+                                                                  std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                   std::make_shared<domain::modifiers::GhostBoundaryCells>()});
             // setup a flow parameters
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}});
 

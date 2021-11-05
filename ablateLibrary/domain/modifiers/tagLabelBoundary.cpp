@@ -1,10 +1,10 @@
 #include "tagLabelBoundary.hpp"
 #include <utilities/petscError.hpp>
 
-ablate::domain::modifier::TagLabelBoundary::TagLabelBoundary(std::string name, std::string boundaryName, int labelValueIn, int boundaryLabelValueIn)
+ablate::domain::modifiers::TagLabelBoundary::TagLabelBoundary(std::string name, std::string boundaryName, int labelValueIn, int boundaryLabelValueIn)
     : name(name), boundaryName(boundaryName), labelValue(labelValueIn == 0 ? 1 : (PetscInt)labelValueIn), boundaryLabelValue(boundaryLabelValueIn == 0 ? 1 : (PetscInt)boundaryLabelValueIn) {}
 
-void ablate::domain::modifier::TagLabelBoundary::Modify(DM &dm) {
+void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
     DMLabel label;
     DMGetLabel(dm, name.c_str(), &label) >> checkError;
     if (label == nullptr) {
@@ -73,6 +73,6 @@ void ablate::domain::modifier::TagLabelBoundary::Modify(DM &dm) {
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::domain::modifier::Modifier, ablate::domain::modifier::TagLabelBoundary, "Creates a new label for all faces on the ouside of the boundary",
+REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::TagLabelBoundary, "Creates a new label for all faces on the ouside of the boundary",
          ARG(std::string, "name", "the field label name"), ARG(std::string, "boundaryName", "the new boundary label name"), OPT(int, "labelValue", "The label value, default is 1"),
          OPT(int, "boundaryLabelValue", "The label value for the new boundary"));

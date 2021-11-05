@@ -4,51 +4,19 @@
 #include <utilities/petscError.hpp>
 #include "processes/process.hpp"
 
-ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                 std::vector<ablate::domain::FieldDescriptor> fieldDescriptors, std::vector<std::shared_ptr<processes::Process>> processes,
+ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> processes,
                                                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : Solver(std::move(solverId), std::move(region), std::move(options)),
       processes(std::move(processes)),
-      fieldDescriptors(std::move(fieldDescriptors)),
       initialization(std::move(initialization)),
       boundaryConditions(std::move(boundaryConditions)),
       exactSolutions(std::move(exactSolution)) {}
 
-ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                 std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<processes::Process>> processes,
-                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
-    : ablate::finiteVolume::FiniteVolume::FiniteVolume(
-          std::move(solverId), std::move(region), std::move(options),
-          [](auto fieldDescriptorsPtrs) {
-              auto vec = std::vector<domain::FieldDescriptor>{};
-              for (const auto& ptr : fieldDescriptorsPtrs) {
-                  vec.push_back(*ptr);
-              }
-              return vec;
-          }(std::move(fieldDescriptors)),
-          std::move(processes), std::move(initialization), std::move(boundaryConditions), std::move(exactSolution)) {}
 ablate::finiteVolume::FiniteVolume::~FiniteVolume() {}
 
-void ablate::finiteVolume::FiniteVolume::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
-    Solver::Register(subDomain);
-    Solver::DecompressFieldFieldDescriptor(fieldDescriptors);
 
-    // initialize each field
-    for (auto& field : fieldDescriptors) {
-        if (!field.components.empty()) {
-            // check the field adjacency
-            if (field.adjacency == domain::FieldAdjacency::DEFAULT) {
-                field.adjacency = domain::FieldAdjacency::FVM;
-            }
-
-            RegisterFiniteVolumeField(field);
-        }
-    }
-}
 
 void ablate::finiteVolume::FiniteVolume::Setup() {
     // march over process and link to the flow
@@ -63,7 +31,7 @@ void ablate::finiteVolume::FiniteVolume::Setup() {
 void ablate::finiteVolume::FiniteVolume::Initialize() {
     // add each boundary condition
     for (auto boundary : boundaryConditions) {
-        const auto& fieldId = subDomain->GetSolutionField(boundary->GetFieldName());
+        const auto& fieldId = subDomain->GetField(boundary->GetFieldName());
 
         // Setup the boundary condition
         boundary->SetupBoundary(subDomain->GetDM(), subDomain->GetDiscreteSystem(), fieldId.id);
@@ -119,28 +87,6 @@ void ablate::finiteVolume::FiniteVolume::Initialize() {
     if (!timeStepFunctions.empty()) {
         RegisterPreStep(ComputeTimeStep);
     }
-}
-
-void ablate::finiteVolume::FiniteVolume::RegisterFiniteVolumeField(const ablate::domain::FieldDescriptor& fieldDescriptor) {
-    PetscFV fvm;
-    PetscFVCreate(PetscObjectComm((PetscObject)subDomain->GetDM()), &fvm) >> checkError;
-    PetscObjectSetOptionsPrefix((PetscObject)fvm, fieldDescriptor.prefix.c_str()) >> checkError;
-    PetscObjectSetName((PetscObject)fvm, fieldDescriptor.name.c_str()) >> checkError;
-    PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;
-
-    PetscFVSetFromOptions(fvm) >> checkError;
-    PetscFVSetNumComponents(fvm, fieldDescriptor.components.size()) >> checkError;
-    PetscFVSetSpatialDimension(fvm, subDomain->GetDimensions()) >> checkError;
-
-    // If there are any names provided, name each component in this field this is used by some of the output fields
-    for (std::size_t c = 0; c < fieldDescriptor.components.size(); c++) {
-        PetscFVSetComponentName(fvm, c, fieldDescriptor.components[c].c_str()) >> checkError;
-    }
-
-    // Register the field with the subDomain
-    subDomain->RegisterField(fieldDescriptor, (PetscObject)fvm);
-
-    PetscFVDestroy(&fvm) >> checkError;
 }
 
 PetscErrorCode ablate::finiteVolume::FiniteVolume::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
@@ -428,7 +374,7 @@ void ablate::finiteVolume::FiniteVolume::GetRange(PetscInt depth, IS& pointIS, P
     const auto label = GetSubDomain().GetLabel();
     if (label) {
         IS labelIS;
-        DMLabelGetStratumIS(label, GetRegion()->GetValues().front(), &labelIS) >> checkError;
+        DMLabelGetStratumIS(label, GetRegion()->GetValue(), &labelIS) >> checkError;
         ISIntersect_Caching_Internal(allPointIS, labelIS, &pointIS) >> checkError;
         ISDestroy(&labelIS) >> checkError;
     } else {
@@ -451,7 +397,6 @@ void ablate::finiteVolume::FiniteVolume::RestoreRange(IS& pointIS, PetscInt& pSt
 #include "parser/registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolume, "finite volume solver", ARG(std::string, "id", "the name of the flow field"),
          OPT(domain::Region, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
-         ARG(std::vector<ablate::domain::FieldDescriptor>, "fields", "field descriptions"),
          ARG(std::vector<ablate::finiteVolume::processes::Process>, "processes", "the processes used to describe the flow"),
          OPT(std::vector<mathFunctions::FieldFunction>, "initialization", "the flow field initialization"),
          OPT(std::vector<finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),

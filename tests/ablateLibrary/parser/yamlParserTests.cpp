@@ -309,6 +309,9 @@ TEST(YamlParserTests, ShouldReportUnusedChildren) {
     yaml << "   -           " << std::endl;
     yaml << "      child1: 3" << std::endl;
     yaml << "      child2: 4" << std::endl;
+    yaml << " item7:" << std::endl;
+    yaml << "     childchild1: 1 " << std::endl;
+    yaml << "     childchild2: 2 " << std::endl;
 
     auto yamlParser = std::make_shared<YamlParser>(yaml.str());
 
@@ -317,10 +320,11 @@ TEST(YamlParserTests, ShouldReportUnusedChildren) {
     yamlParser->GetFactory("item2")->Get(ArgumentIdentifier<std::string>{"child1"});
     yamlParser->GetFactory("item5")->GetFactory("child1")->Get(ArgumentIdentifier<int>{"childchild1"});
     yamlParser->GetFactorySequence("item6")[0]->Get(ArgumentIdentifier<int>{"child2"});
+    yamlParser->GetFactory("item7")->GetFactory("")->Get(ArgumentIdentifier<int>{"childchild1"});
 
     // assert
     auto unusedValues = yamlParser->GetUnusedValues();
-    ASSERT_EQ(8, unusedValues.size());
+    ASSERT_EQ(9, unusedValues.size());
     ASSERT_EQ("root/item3", unusedValues[0]);
     ASSERT_EQ("root/item4", unusedValues[1]);
     ASSERT_EQ("root/item2/child2", unusedValues[2]);
@@ -329,6 +333,7 @@ TEST(YamlParserTests, ShouldReportUnusedChildren) {
     ASSERT_EQ("root/item6/0/child1", unusedValues[5]);
     ASSERT_EQ("root/item6/1/child1", unusedValues[6]);
     ASSERT_EQ("root/item6/1/child2", unusedValues[7]);
+    ASSERT_EQ("root/item7/childchild2", unusedValues[8]);
 }
 
 TEST(YamlParserTests, ShouldGetListOfStrings) {
@@ -826,6 +831,45 @@ TEST(YamlParserTests, ShouldNotErrorForEmptyScalarWhenOptional) {
     ASSERT_THROW(factory1->Get(ArgumentIdentifier<std::string>{.inputName = "subItem1", .optional = false}), std::invalid_argument);
     ASSERT_THROW(factory1->Get(ArgumentIdentifier<int>{.inputName = "subItem1", .optional = false}), std::invalid_argument);
     ASSERT_EQ("classType123", factory1->GetClassType());
+}
+
+TEST(YamlParserTests, ShouldReturnSelfScalarWhenInputNameIsEmpty) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: !classType123 22.3" << std::endl;
+    std::string emptyString = {};
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto factory1 = yamlParser->GetFactory("item");
+
+    // assert
+    ASSERT_EQ("22.3", factory1->Get(ArgumentIdentifier<std::string>{.inputName = ""}));
+    ASSERT_EQ("classType123", factory1->GetClassType());
+}
+
+TEST(YamlParserTests, ShouldReturnSelfFactoryWhenInputNameIsEmpty) {
+    // arrange
+    std::stringstream yaml;
+    yaml << "---" << std::endl;
+    yaml << " item: !classType123" << std::endl;
+    yaml << "   subItem1: 1.0" << std::endl;
+    yaml << "   subItem2: 2.0" << std::endl;
+
+    std::string emptyString = {};
+
+    auto yamlParser = std::make_shared<YamlParser>(yaml.str());
+
+    // act
+    auto factory1 = yamlParser->GetFactory("item");
+    auto selfFactory = factory1->GetFactory("");
+
+    // assert
+    ASSERT_EQ(1.0, selfFactory->Get(ArgumentIdentifier<double>{.inputName = "subItem1"}));
+    ASSERT_EQ(2.0, selfFactory->Get(ArgumentIdentifier<double>{.inputName = "subItem2"}));
+    ASSERT_EQ("", selfFactory->GetClassType());
 }
 
 class YamlParserTestsPetscTestFixture : public testingResources::PetscTestFixture {};

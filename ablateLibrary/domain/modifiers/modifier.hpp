@@ -3,7 +3,7 @@
 
 #include <petsc.h>
 
-namespace ablate::domain::modifier {
+namespace ablate::domain::modifiers {
 class Modifier {
    public:
     virtual ~Modifier() = default;

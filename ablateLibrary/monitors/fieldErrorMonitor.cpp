@@ -28,9 +28,9 @@ PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt
     // Get the exact solution for this ds
     for (const auto &field : monitor->GetSolver()->GetSubDomain().GetFields()) {
         // Determine the solution location
-        auto solId = monitor->GetSolver()->GetSubDomain().GetSolutionField(field.name);
+        auto solId = monitor->GetSolver()->GetSubDomain().GetField(field.name);
 
-        ierr = PetscDSGetExactSolution(ds, field.id, &exactFuncs[solId.id], &ctxs[solId.id]);
+        ierr = PetscDSGetExactSolution(ds, field.subId, &exactFuncs[solId.id], &ctxs[solId.id]);
         CHKERRQ(ierr);
     }
 

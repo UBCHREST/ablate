@@ -579,9 +579,12 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, constants.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
+            //TODO: add fields
+            std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>> fieldDescriptors = {};
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
-                                                                    std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::DistributeWithGhostCells>(),
-                                                                                                                                     std::make_shared<domain::modifier::GhostBoundaryCells>()});
+                                                                    fieldDescriptors,
+                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                     std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});

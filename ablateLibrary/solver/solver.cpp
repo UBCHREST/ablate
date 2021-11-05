@@ -20,23 +20,6 @@ ablate::solver::Solver::~Solver() {
 
 void ablate::solver::Solver::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = subDomainIn; }
 
-void ablate::solver::Solver::DecompressFieldFieldDescriptor(std::vector<ablate::domain::FieldDescriptor> &fieldDescriptors) {
-    for (auto &field : fieldDescriptors) {
-        for (std::size_t c = 0; c < field.components.size(); c++) {
-            if (field.components[c].find(domain::FieldDescriptor::DIMENSION) != std::string::npos) {
-                auto baseName = field.components[c];
-
-                // Delete this component
-                field.components.erase(field.components.begin() + c);
-
-                for (PetscInt d = subDomain->GetDimensions() - 1; d >= 0; d--) {
-                    auto newName = std::regex_replace(baseName, std::regex(domain::FieldDescriptor::DIMENSION), std::to_string(d));  // replace 'def' -> 'klm'
-                    field.components.insert(field.components.begin() + c, newName);
-                }
-            }
-        }
-    }
-}
 void ablate::solver::Solver::PreStage(TS ts, PetscReal stagetime) {
     for (auto &function : preStageFunctions) {
         function(ts, *this, stagetime);
@@ -192,8 +175,6 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
 
     PetscFunctionBegin;
     if (!locX) PetscFunctionReturn(0);
-    ierr = DMGetDS(dm, &prob);
-    CHKERRQ(ierr);
     ierr = PetscDSGetNumBoundary(prob, &numBd);
     CHKERRQ(ierr);
     ierr = PetscObjectQuery((PetscObject)locX, "__Vec_bc_zero__", &isZero);

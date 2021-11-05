@@ -51,10 +51,6 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
     // static function to update the flowfield
     static void ComputeTimeStep(TS, ablate::solver::Solver&);
 
-    // helper function to register fv field
-    void RegisterFiniteVolumeField(const domain::FieldDescriptor&);
-
-    std::vector<domain::FieldDescriptor> fieldDescriptors;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
@@ -120,17 +116,12 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
     void RestoreRange(IS& pointIS,PetscInt& pStart, PetscInt& pEnd, const PetscInt* &points);
 
    public:
-    FiniteVolume(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<domain::FieldDescriptor> fieldDescriptors,
-                 std::vector<std::shared_ptr<processes::Process>> flowProcesses, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
-
-    FiniteVolume(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors,
+    FiniteVolume(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options,
                  std::vector<std::shared_ptr<processes::Process>> flowProcesses, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                  std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
     ~FiniteVolume() override;
     /** SubDomain Register and Setup **/
-    void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
     void Setup() override;
     void Initialize() override;
 

@@ -4,6 +4,7 @@
 #include <domain/boxMesh.hpp>
 #include <domain/modifiers/distributeWithGhostCells.hpp>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
+#include <domain/modifiers/setFromOptions.hpp>
 #include <eos/mockEOS.hpp>
 #include <eos/transport/constant.hpp>
 #include <finiteVolume/boundaryConditions/essentialGhost.hpp>
@@ -118,19 +119,32 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             // setup any global arguments
             ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"automaticTimeStepCalculator", "off"}, {"petsclimiter_type", "none"}});
 
+            // TODO: add fields
+            std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>> fieldDescriptors = {};
+            //            std::vector<ablate::domain::FieldDescription>{{.name = "euler", .prefix = "euler", .components = {"rho", "rhoE", "rhoVel" + domain::FieldDescription::DIMENSION}},
+            //                                                          {
+            //                                                              .name = "densityYi",
+            //                                                              .prefix = "densityYi",
+            //                                                              .components = eos->GetSpecies(),
+            //                                                          },
+            //                                                          {.name = "yi", .prefix = "yi", .components = eos->GetSpecies(), .type = ablate::domain::FieldLocation::AUX}},
+
             PetscInt initialNx = GetParam().initialNx;
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
-                                                                  std::vector<int>{(int)initialNx, (int)initialNx},
-                                                                  std::vector<double>{0.0, 0.0},
-                                                                  std::vector<double>{parameters.L, parameters.L},
-                                                                  std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
-                                                                  false /*simplex*/,
-                                                                  std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-                                                                      {"dm_refine", std::to_string(l)},
-                                                                      {"dm_distribute", ""},
-                                                                  }),
-                                                                  std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::DistributeWithGhostCells>(),
-                                                                                                                                   std::make_shared<domain::modifier::GhostBoundaryCells>()});
+            auto mesh =
+                std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
+                                                          std::vector<int>{(int)initialNx, (int)initialNx},
+                                                          std::vector<double>{0.0, 0.0},
+                                                          std::vector<double>{parameters.L, parameters.L},
+                                                          std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
+                                                          false /*simplex*/,
+                                                          fieldDescriptors,
+                                                          std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
+                                                              std::make_shared<domain::modifiers::SetFromOptions>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                                                                  {"dm_refine", std::to_string(l)},
+                                                                  {"dm_distribute", ""},
+                                                              })),
+                                                              std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                              std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
@@ -167,21 +181,13 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eos, nullptr, transportModel),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolume>(
-                "testFlow",
-                domain::Region::ENTIREDOMAIN,
-                petscFlowOptions /*options*/,
-                std::vector<ablate::domain::FieldDescriptor>{{.name = "euler", .prefix = "euler", .components = {"rho", "rhoE", "rhoVel" + domain::FieldDescriptor::DIMENSION}},
-                                                             {
-                                                                 .name = "densityYi",
-                                                                 .prefix = "densityYi",
-                                                                 .components = eos->GetSpecies(),
-                                                             },
-                                                             {.name = "yi", .prefix = "yi", .components = eos->GetSpecies(), .type = ablate::domain::FieldType::AUX}},
-                flowProcesses,
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
-                boundaryConditions /*boundary conditions*/,
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
+            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolume>("testFlow",
+                                                                                   domain::Region::ENTIREDOMAIN,
+                                                                                   petscFlowOptions /*options*/,
+                                                                                   flowProcesses,
+                                                                                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
+                                                                                   boundaryConditions /*boundary conditions*/,
+                                                                                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
 
             timeStepper.Register(flowObject);
 

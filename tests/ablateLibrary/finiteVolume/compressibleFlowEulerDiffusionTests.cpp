@@ -203,9 +203,12 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
+            //TODO: add fields
+            std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>> fieldDescriptors = {};
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
-                                                                    std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::GhostBoundaryCells>(),
-                                                                                                                                     std::make_shared<domain::modifier::DistributeWithGhostCells>()});
+                                                                    fieldDescriptors,
+                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>(),
+                                                                                                                                     std::make_shared<domain::modifiers::DistributeWithGhostCells>()});
 
             // Setup the flow data
             auto eos = std::make_shared<ablate::eos::PerfectGas>(

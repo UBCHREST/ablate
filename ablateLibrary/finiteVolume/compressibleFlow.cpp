@@ -12,13 +12,6 @@ ablate::finiteVolume::CompressibleFlow::CompressibleFlow(std::string solverId, s
                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
     : FiniteVolume(
           solverId, region, options,
-          {{.name = processes::FlowProcess::EULER_FIELD, .prefix = processes::FlowProcess::EULER_FIELD, .components = {"rho", "rhoE", "rhoVel" + domain::FieldDescriptor::DIMENSION}},
-           {.name = processes::FlowProcess::DENSITY_YI_FIELD, .prefix = processes::FlowProcess::DENSITY_YI_FIELD, .components = eosIn->GetSpecies()},
-           {.name = "T", .prefix = "T", .type = domain::FieldType::AUX},
-           {.name = "vel", .prefix = "vel", .components = {"vel" + domain::FieldDescriptor::DIMENSION}, .type = domain::FieldType::AUX},
-           {.name = processes::FlowProcess::YI_FIELD, .prefix = processes::FlowProcess::YI_FIELD, .components = eosIn->GetSpecies(), .type = domain::FieldType::AUX},
-           {.name = processes::FlowProcess::DENSITY_EV_FIELD, .prefix = processes::FlowProcess::DENSITY_EV_FIELD, .components = extraVariables},
-           {.name = processes::FlowProcess::EV_FIELD, .prefix = processes::FlowProcess::EV_FIELD, .components = extraVariables, .type = domain::FieldType::AUX}},
           utilities::VectorUtilities::Merge(
               {
                   // create assumed processes for compressible flow
@@ -44,7 +37,6 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlow, "compre
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculators (defaults to none)"),
          OPT(std::vector<ablate::finiteVolume::processes::Process>, "additionalProcesses", "any additional processes besides euler/yi/ev transport"),
          OPT(std::vector<std::string>, "extraVariables", "any additional conserved extra variables"),
-
          OPT(std::vector<mathFunctions::FieldFunction>, "initialization", "the flow field initialization"),
          OPT(std::vector<finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          OPT(std::vector<mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

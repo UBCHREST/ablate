@@ -9,12 +9,10 @@ namespace ablate::domain {
 
 class FileMesh : public Domain {
    private:
-    const std::filesystem::path path;
-    // Petsc options specific to the mesh. These may be null by default
-    PetscOptions petscOptions;
+    static DM ReadDMFromFile(const std::string& name, const std::filesystem::path& path);
 
    public:
-    explicit FileMesh(std::string nameIn, std::filesystem::path path, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::shared_ptr<modifier::Modifier>> modifiers = {});
+    explicit FileMesh(std::string nameIn, std::filesystem::path path, std::vector<std::shared_ptr<fields::FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {});
     ~FileMesh() override;
 };
 };      // namespace ablate::domain

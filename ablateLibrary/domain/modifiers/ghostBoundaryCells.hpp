@@ -3,7 +3,7 @@
 
 #include "modifier.hpp"
 
-namespace ablate::domain::modifier {
+namespace ablate::domain::modifiers {
 
 class GhostBoundaryCells : public Modifier {
    private:

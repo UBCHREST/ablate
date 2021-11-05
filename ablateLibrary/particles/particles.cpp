@@ -40,14 +40,14 @@ ablate::particles::Particles::Particles(std::string solverId, std::shared_ptr<do
         default:
             throw std::invalid_argument("Particles ndims must be 1, 2, or 3. " + std::to_string(ndims) + " is not valid.");
     }
-    auto coordField = ParticleField{.name = DMSwarmPICField_coor, .components = coordComponents, .type = domain::FieldType::SOL, .dataType = PETSC_REAL};
+    auto coordField = ParticleField{.name = DMSwarmPICField_coor, .components = coordComponents, .type = domain::FieldLocation::SOL, .dataType = PETSC_REAL};
     particleFieldDescriptors.push_back(coordField);
     particleSolutionFieldDescriptors.push_back(coordField);
-    particleFieldDescriptors.emplace_back(ParticleField{.name = DMSwarmField_pid, .type = domain::FieldType::AUX, .dataType = PETSC_INT64});
+    particleFieldDescriptors.emplace_back(ParticleField{.name = DMSwarmField_pid, .type = domain::FieldLocation::AUX, .dataType = PETSC_INT64});
 
     // if the exact solution was provided, register the initial particle location in the field
     if (exactSolution) {
-        fields.push_back(ParticleField{.name = ParticleInitialLocation, .components = coordComponents, .type = domain::FieldType::AUX, .dataType = PETSC_REAL});
+        fields.push_back(ParticleField{.name = ParticleInitialLocation, .components = coordComponents, .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
     }
 
     // register each field
@@ -68,7 +68,7 @@ void ablate::particles::Particles::Initialize() {
         }
 
         // Compute the size of the exact solution (each component added up)
-        RegisterParticleField(ParticleField{.name = PackedSolution, .components = std::vector<std::string>(packedSolutionComponentSize, "_"), .type = domain::FieldType::AUX, .dataType = PETSC_REAL});
+        RegisterParticleField(ParticleField{.name = PackedSolution, .components = std::vector<std::string>(packedSolutionComponentSize, "_"), .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
     }
 
     // before setting up the flow finalize the fields
@@ -81,7 +81,6 @@ void ablate::particles::Particles::Initialize() {
     flowFinal = subDomain->GetSolutionVector();
     VecDuplicate(flowFinal, &(flowInitial)) >> checkError;
     VecCopy(subDomain->GetSolutionVector(), flowInitial) >> checkError;
-    flowVelocityField = subDomain->GetField("velocity");
 
     // name the particle domain
     PetscObjectSetOptions((PetscObject)swarmDm, petscOptions) >> checkError;
@@ -138,7 +137,7 @@ void ablate::particles::Particles::RegisterParticleField(const ParticleField &fi
 
     // store the field
     particleFieldDescriptors.push_back(field);
-    if (field.type == domain::FieldType::SOL) {
+    if (field.type == domain::FieldLocation::SOL) {
         particleSolutionFieldDescriptors.push_back(field);
     }
 }

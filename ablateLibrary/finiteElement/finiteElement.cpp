@@ -7,12 +7,11 @@
 #include <utilities/petscError.hpp>
 
 ablate::finiteElement::FiniteElement::FiniteElement(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                    std::vector<ablate::domain::FieldDescriptor> fieldDescriptors, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
+                                                    std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : Solver(solverId, region, options),
-      fieldDescriptors(fieldDescriptors),
       initialization(initialization),
       boundaryConditions(boundaryConditions),
       auxiliaryFieldsUpdaters(auxiliaryFields),
@@ -20,19 +19,6 @@ ablate::finiteElement::FiniteElement::FiniteElement(std::string solverId, std::s
 
 void ablate::finiteElement::FiniteElement::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     Solver::Register(subDomain);
-    Solver::DecompressFieldFieldDescriptor(fieldDescriptors);
-
-    // initialize each field
-    for (auto &field : fieldDescriptors) {
-        // check the field adjacency
-        if (field.adjacency == domain::FieldAdjacency::DEFAULT) {
-            field.adjacency = domain::FieldAdjacency::FEM;
-        }
-
-        if (!field.components.empty()) {
-            RegisterFiniteElementField(field);
-        }
-    }
 }
 
 void ablate::finiteElement::FiniteElement::Setup() {
@@ -50,7 +36,7 @@ void ablate::finiteElement::FiniteElement::Setup() {
 
     // add each boundary condition
     for (auto boundary : boundaryConditions) {
-        const auto &fieldId = subDomain->GetSolutionField(boundary->GetFieldName());
+        const auto &fieldId = subDomain->GetField(boundary->GetFieldName());
 
         // Setup the boundary condition
         boundary->SetupBoundary(subDomain->GetDM(), subDomain->GetDiscreteSystem(), fieldId.id);
@@ -102,40 +88,6 @@ void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finite
     DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> checkError;
 }
 
-void ablate::finiteElement::FiniteElement::RegisterFiniteElementField(const ablate::domain::FieldDescriptor &fieldDescriptor) {
-    // determine if it a simplex element and the number of dimensions
-    DMPolytopeType ct;
-    PetscInt cStart;
-    DMPlexGetHeightStratum(subDomain->GetDM(), 0, &cStart, NULL) >> checkError;
-    DMPlexGetCellType(subDomain->GetDM(), cStart, &ct) >> checkError;
-    PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
-    PetscInt simplexGlobal;
-
-    // Assume true if any rank says true
-    MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, subDomain->GetComm()) >> checkMpiError;
-    // create a petsc fe
-    PetscFE petscFE;
-    PetscFECreateDefault(PetscObjectComm((PetscObject)subDomain->GetDM()),
-                         subDomain->GetDimensions(),
-                         fieldDescriptor.components.size(),
-                         simplexGlobal ? PETSC_TRUE : PETSC_FALSE,
-                         fieldDescriptor.prefix.c_str(),
-                         PETSC_DEFAULT,
-                         &petscFE) >>
-        checkError;
-    PetscObjectSetName((PetscObject)petscFE, fieldDescriptor.name.c_str()) >> checkError;
-    PetscObjectSetOptions((PetscObject)petscFE, petscOptions) >> checkError;
-
-    // If this is not the first field, copy the quadrature locations
-    if (subDomain->GetNumberFields() > 0) {
-        PetscFE referencePetscFE = (PetscFE)subDomain->GetPetscFieldObject(subDomain->GetField(0));
-        PetscFECopyQuadrature(referencePetscFE, petscFE) >> checkError;
-    }
-
-    // Register the field with the subDomain
-    subDomain->RegisterField(fieldDescriptor, (PetscObject)petscFE);
-    PetscFEDestroy(&petscFE) >> checkError;
-}
 
 void ablate::finiteElement::FiniteElement::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
     Solver::Save(viewer, sequenceNumber, time);

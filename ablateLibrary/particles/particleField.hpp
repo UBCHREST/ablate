@@ -11,7 +11,7 @@ namespace ablate::particles {
 struct ParticleField {
     const std::string name;
     const std::vector<std::string> components = {"_"};
-    enum domain::FieldType type = domain::FieldType::AUX;
+    enum domain::FieldLocation type = domain::FieldLocation::AUX;
     const PetscDataType dataType;
 };
 

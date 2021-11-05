@@ -1,5 +1,6 @@
 #include <petsc.h>
 #include <cmath>
+#include <domain/modifiers/setFromOptions.hpp>
 #include <map>
 #include <memory>
 #include <vector>
@@ -104,18 +105,24 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"automaticTimeStepCalculator", "off"}, {"petsclimiter_type", "none"}});
 
             PetscInt initialNx = GetParam().initialNx;
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
-                                                                  std::vector<int>{(int)initialNx, (int)initialNx},
-                                                                  std::vector<double>{0.0, 0.0},
-                                                                  std::vector<double>{parameters.L, parameters.L},
-                                                                  std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
-                                                                  false /*simplex*/,
-                                                                  std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-                                                                      {"dm_refine", std::to_string(l)},
-                                                                      {"dm_distribute", ""},
-                                                                  }),
-                                                                  std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::DistributeWithGhostCells>(),
-                                                                                                                                   std::make_shared<domain::modifier::GhostBoundaryCells>()});
+
+            // TODO: add fields
+            std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>> fieldDescriptors = {};
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>(
+                "simpleMesh",
+                std::vector<int>{(int)initialNx, (int)initialNx},
+                std::vector<double>{0.0, 0.0},
+                std::vector<double>{parameters.L, parameters.L},
+                std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
+                false /*simplex*/,
+                fieldDescriptors,
+                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
+                    std::make_shared<domain::modifiers::SetFromOptions>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                        {"dm_refine", std::to_string(l)},
+                        {"dm_distribute", ""},
+                    })),
+                    std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                    std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});

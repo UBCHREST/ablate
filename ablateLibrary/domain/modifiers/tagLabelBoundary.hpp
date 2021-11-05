@@ -3,7 +3,7 @@
 
 #include "modifier.hpp"
 
-namespace ablate::domain::modifier {
+namespace ablate::domain::modifiers {
 
 /**
  * Class to label/tag all faces on a label boundary

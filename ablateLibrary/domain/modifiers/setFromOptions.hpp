@@ -5,7 +5,7 @@
 #include <parameters/parameters.hpp>
 #include "modifier.hpp"
 
-namespace ablate::domain::modifier {
+namespace ablate::domain::modifiers {
 
 class SetFromOptions : public Modifier {
    private:

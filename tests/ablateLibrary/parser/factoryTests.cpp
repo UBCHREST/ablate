@@ -137,7 +137,7 @@ TEST(FactoryTests, GetByNameShouldReturnDefaultValueWithEmptyList) {
     ASSERT_EQ(0, result.size());
 }
 
-enum class TestEnum { VECTOR, COMPONENT };
+enum class TestEnum { VECTOR, COMPONENT, DEFAULT };
 
 std::istream& operator>>(std::istream& is, TestEnum& v) {
     std::string enumString;
@@ -148,7 +148,7 @@ std::istream& operator>>(std::istream& is, TestEnum& v) {
     } else if (enumString == "component") {
         v = TestEnum::COMPONENT;
     } else {
-        throw std::invalid_argument("Unknown Scope type " + enumString);
+        v = TestEnum::DEFAULT;
     }
     return is;
 }
@@ -166,6 +166,21 @@ TEST(FactoryTests, ShouldReturnEnumFromString) {
 
     // assert
     ASSERT_EQ(result, TestEnum::COMPONENT);
+}
+
+TEST(FactoryTests, ShouldReturnDefaultEnumValueWhenOptional) {
+    // arrange
+
+    ablate::parser::Registrar<FactoryMockClass1>::Register<FactoryMockClass1>(true, "FactoryMockClass1", "this is a simple mock class");
+    auto mockFactory = std::make_shared<MockFactory>();
+    EXPECT_CALL(*mockFactory, Get(ArgumentIdentifier<std::string>{.inputName = "input123", .optional = true})).Times(::testing::Exactly(1));
+
+    // act
+    auto argument = ArgumentIdentifier<EnumWrapper<TestEnum>>{.inputName = "input123", .optional = true};
+    auto result = std::dynamic_pointer_cast<Factory>(mockFactory)->Get(argument);
+
+    // assert
+    ASSERT_EQ(result, TestEnum::DEFAULT);
 }
 
 TEST(FactoryTests, ShouldGetMapOfSharedPointers) {

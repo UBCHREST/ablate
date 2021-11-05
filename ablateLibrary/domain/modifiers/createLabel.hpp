@@ -5,7 +5,7 @@
 #include "mathFunctions/mathFunction.hpp"
 #include "modifier.hpp"
 
-namespace ablate::domain::modifier {
+namespace ablate::domain::modifiers {
 
 /**
  * Class to create a label based upon a field function.  By default, positive values are assigned to the label while negative values are not.

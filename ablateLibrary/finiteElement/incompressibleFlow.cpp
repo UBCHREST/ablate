@@ -10,25 +10,23 @@ ablate::finiteElement::IncompressibleFlow::IncompressibleFlow(std::string solver
                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
     : FiniteElement(
           solverId, region, options,
-          {
-              {.name = "velocity", .prefix = "vel_", .components = {"vel" + domain::FieldDescriptor::DIMENSION}},
-              {.name = "pressure", .prefix = "pres_"},
-              {.name = "temperature", .prefix = "temp_"},
-              {.name = "momentum_source",
-               .prefix = "momentum_source_",
-               .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mom" + domain::FieldDescriptor::DIMENSION},
-               .type = domain::FieldType::AUX},
-              {.name = "mass_source", .prefix = "mass_source_", .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mass"}, .type = domain::FieldType::AUX},
-              {.name = "energy_source",
-               .prefix = "energy_source_",
-               .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"ener"},
-               .type = domain::FieldType::AUX},
-          },
+
           initialization, boundaryConditions, auxiliaryFields, exactSolutions),
       parameters(parameters) {}
 
 void ablate::finiteElement::IncompressibleFlow::Setup() {
     FiniteElement::Setup();
+
+    // Make sure that the fields
+    if(VEL != subDomain->GetField("velocity").subId ){
+        throw std::invalid_argument("The velocity field subId is expected to be " + std::to_string(VEL) + ", but found to be " + std::to_string(subDomain->GetField("velocity").subId));
+    }
+    if(PRES != subDomain->GetField("pressure").subId ){
+        throw std::invalid_argument("The pressure field subId is expected to be " + std::to_string(PRES) + ", but found to be " + std::to_string(subDomain->GetField("pressure").subId));
+    }
+    if(TEMP != subDomain->GetField("temperature").subId ){
+        throw std::invalid_argument("The temperature field subId is expected to be " + std::to_string(TEMP) + ", but found to be " + std::to_string(subDomain->GetField("temperature").subId));
+    }
 
     {
         MatNullSpace nullspacePres;

@@ -33,6 +33,15 @@ class YamlParser : public Factory {
         }
     }
 
+    /**
+     * Marks all of the keys used.
+     */
+    inline void MarkAllUsed() const{
+        for(auto& pairs: nodeUsages){
+            pairs.second++;
+        }
+    }
+
     /***
      * Helper Function to get the correct parameters
      */

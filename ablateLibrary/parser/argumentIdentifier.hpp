@@ -23,6 +23,14 @@ struct ArgumentIdentifier {
     const bool optional;
     bool operator==(const ArgumentIdentifier<Interface>& other) const { return inputName == other.inputName && optional == other.optional; }
 };
+
+template <typename Interface>
+std::ostream& operator<<(std::ostream& os, const ArgumentIdentifier<Interface>& arg)
+{
+    os << arg.inputName << (arg.optional ? "(OPT)" : "") << ": " << arg.description;
+    return os;
+}
+
 }  // namespace ablate::parser
 
 #endif  // ABLATELIBRARY_ARGUMENTIDENTIFIER_HPP

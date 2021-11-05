@@ -13,18 +13,13 @@
 namespace ablate::finiteElement {
 
 class FiniteElement : public solver::Solver, public solver::IFunction, public solver::BoundaryFunction {
-   private:
-    // helper function to register fv field
-    void RegisterFiniteElementField(const domain::FieldDescriptor&);
-
-    std::vector<domain::FieldDescriptor> fieldDescriptors;
-    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
+   private:const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFieldsUpdaters;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
-    FiniteElement(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::vector<domain::FieldDescriptor> fieldDescriptors,
+    FiniteElement(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
