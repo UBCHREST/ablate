@@ -107,7 +107,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscInt initialNx = GetParam().initialNx;
 
             // TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>> fieldDescriptors = {};
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
             auto mesh = std::make_shared<ablate::domain::BoxMesh>(
                 "simpleMesh",
                 std::vector<int>{(int)initialNx, (int)initialNx},

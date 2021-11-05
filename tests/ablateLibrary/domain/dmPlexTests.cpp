@@ -32,7 +32,7 @@ TEST_P(DMPlexTestFixture, ShouldCreateAndViewDMPlex) {
 
             // act
             auto dmPlex = std::make_shared<ablate::domain::DMPlex>(
-                std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>>{},
+                std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>>{},
                 "dmPlex",
                 std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::SetFromOptions>(testingParam.parameters)});
 

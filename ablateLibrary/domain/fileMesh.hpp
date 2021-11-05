@@ -12,7 +12,7 @@ class FileMesh : public Domain {
     static DM ReadDMFromFile(const std::string& name, const std::filesystem::path& path);
 
    public:
-    explicit FileMesh(std::string nameIn, std::filesystem::path path, std::vector<std::shared_ptr<fields::FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {});
+    explicit FileMesh(std::string nameIn, std::filesystem::path path, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {});
     ~FileMesh() override;
 };
 };      // namespace ablate::domain

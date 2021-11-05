@@ -10,9 +10,7 @@ namespace ablate::domain {
 enum class FieldLocation { SOL, AUX };
 enum class FieldType { FVM, FEM };
 
-namespace fields{
 struct FieldDescription;
-}
 
 struct Field {
     const std::string name;
@@ -30,7 +28,7 @@ struct Field {
     // Keep track of the field type
     const enum FieldType type;
 
-    static Field FromFieldDescription(const fields::FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT);
+    static Field FromFieldDescription(const FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT);
 
     Field CreateSubField(PetscInt subId) const;
 };

@@ -4,7 +4,7 @@
 #include <utilities/petscError.hpp>
 #include <regex>
 
-ablate::domain::fields::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
+ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
                                                            ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
     : name(nameIn),
       prefix(prefixIn.empty() ? name : prefixIn),
@@ -15,7 +15,7 @@ ablate::domain::fields::FieldDescription::FieldDescription(std::string nameIn, s
       options(options) {}
 
 
-PetscObject ablate::domain::fields::FieldDescription::CreatePetscField(DM dm) const {
+PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
     switch (type) {
         case FieldType::FEM: {
             // determine if it a simplex element and the number of dimensions
@@ -81,7 +81,7 @@ PetscObject ablate::domain::fields::FieldDescription::CreatePetscField(DM dm) co
             throw std::runtime_error("Can only register SOL fields in Domain::RegisterSolutionField");
     }
 }
-void ablate::domain::fields::FieldDescription::DecompressComponents(PetscInt ndims) {
+void ablate::domain::FieldDescription::DecompressComponents(PetscInt ndims) {
     for (std::size_t c = 0; c < components.size(); c++) {
         if (components[c].find(FieldDescription::DIMENSION) != std::string::npos) {
             auto baseName = components[c];
@@ -96,12 +96,12 @@ void ablate::domain::fields::FieldDescription::DecompressComponents(PetscInt ndi
         }
     }
 }
-std::vector<std::shared_ptr<ablate::domain::fields::FieldDescription>> ablate::domain::fields::FieldDescription::GetFields() {
-    return std::vector<std::shared_ptr<ablate::domain::fields::FieldDescription>>{shared_from_this()};
+std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::domain::FieldDescription::GetFields() {
+    return std::vector<std::shared_ptr<ablate::domain::FieldDescription>>{shared_from_this()};
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::domain::fields::FieldDescription, ablate::domain::fields::FieldDescription, "A single custom field description",
+REGISTER(ablate::domain::FieldDescription, ablate::domain::FieldDescription, "A single custom field description",
          ARG(std::string, "name", "the name of the field"),
          OPT(std::string, "prefix", "optional prefix (defaults to name)"),
          OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
@@ -110,7 +110,7 @@ REGISTER(ablate::domain::fields::FieldDescription, ablate::domain::fields::Field
          OPT(domain::Region, "region", "the region in which this field lives"),
          OPT(parameters::Parameters, "options", "field specific options"));
 
-REGISTER(ablate::domain::fields::FieldDescriptor, ablate::domain::fields::FieldDescription, "A single custom field description",
+REGISTER(ablate::domain::FieldDescriptor, ablate::domain::FieldDescription, "A single custom field description",
          ARG(std::string, "name", "the name of the field"),
          OPT(std::string, "prefix", "optional prefix (defaults to name)"),
          OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),

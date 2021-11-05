@@ -1,11 +1,10 @@
 #ifndef ABLATELIBRARY_FIELDDESCRIPTOR_HPP
 #define ABLATELIBRARY_FIELDDESCRIPTOR_HPP
 
-
 #include <memory>
 #include <vector>
 
-namespace ablate::domain::fields {
+namespace ablate::domain {
 
 // forward declare FieldDescription to prevent circular reference
 struct FieldDescription;
@@ -19,6 +18,6 @@ class FieldDescriptor {
     virtual ~FieldDescriptor() = default;
 };
 
-}  // namespace ablate::domain::fields
+}  // namespace ablate::domain
 
 #endif  // ABLATELIBRARY_FIELDINITIALIZER_HPP

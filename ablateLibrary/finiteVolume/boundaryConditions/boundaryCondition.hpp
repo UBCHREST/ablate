@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_FINITEVOLUME_BOUNDARYCONDITION_HPP
 #include <memory>
 #include <string>
-#include "domain/fields/fieldDescription.hpp"
+#include "domain/fieldDescription.hpp"
 #include "mathFunctions/mathFunction.hpp"
 
 namespace ablate::finiteVolume::boundaryConditions {

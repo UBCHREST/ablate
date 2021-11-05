@@ -64,7 +64,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d (%dx%d)\n", l, nx1D, nx1D);
 
             //TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>> fieldDescriptors = {};
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
 
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                   std::vector<int>{(int)nx1D, (int)nx1D},

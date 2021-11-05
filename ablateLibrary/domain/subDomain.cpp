@@ -1,7 +1,7 @@
 #include "subDomain.hpp"
 #include <utilities/petscError.hpp>
 
-ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, std::vector<std::shared_ptr<fields::FieldDescription>> allAuxFields)
+ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, std::vector<std::shared_ptr<FieldDescription>> allAuxFields)
     : domain(domainIn),
       name(""),
       label(nullptr),
@@ -48,7 +48,7 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, std::v
         }
 
         // Create the auxDM if there are any auxVariables in this region
-        std::vector<std::shared_ptr<fields::FieldDescription>> subAuxFields;
+        std::vector<std::shared_ptr<FieldDescription>> subAuxFields;
 
         // check if there is a label
         if (!label) {

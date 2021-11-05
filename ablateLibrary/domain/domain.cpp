@@ -4,7 +4,7 @@
 #include "subDomain.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<fields::FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn)
+ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn)
     : dm(dmIn), name(name), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solField(nullptr), modifiers(std::move(modifiersIn)) {
     // sort the modifiers based upon priority
     std::sort(modifiers.begin(), modifiers.end(), [](const auto& a, const auto& b) -> bool { return a->Priority() < b->Priority(); });
@@ -15,7 +15,7 @@ ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::share
     }
 
     // register all the solution fields with the DM, store the aux fields for later
-    std::vector<std::shared_ptr<fields::FieldDescription>> allAuxFields;
+    std::vector<std::shared_ptr<FieldDescription>> allAuxFields;
     for (const auto& fieldDescriptor : fieldDescriptors) {
         for (auto& fieldDescription : fieldDescriptor->GetFields()) {
             fieldDescription->DecompressComponents(GetDimensions());
@@ -52,7 +52,7 @@ ablate::domain::Domain::~Domain() {
     }
 }
 
-void ablate::domain::Domain::RegisterField(const ablate::domain::fields::FieldDescription& fieldDescription) {
+void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescription& fieldDescription) {
     // make sure that this is a solution field
     if (fieldDescription.location != FieldLocation::SOL) {
         throw std::invalid_argument("The field must be FieldLocation::SOL to be registered with the domain");

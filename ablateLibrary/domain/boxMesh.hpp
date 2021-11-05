@@ -13,7 +13,7 @@ class BoxMesh : public Domain {
     static DM CreateBoxDM(std::string name, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary = {}, bool simplex = true);
    public:
     BoxMesh(std::string name, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary = {}, bool simplex = true,
-            std::vector<std::shared_ptr<fields::FieldDescriptor>> fieldDescriptors = {}, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {});
+            std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors = {}, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {});
 
     ~BoxMesh();
 };

@@ -120,7 +120,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"automaticTimeStepCalculator", "off"}, {"petsclimiter_type", "none"}});
 
             // TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>> fieldDescriptors = {};
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
             //            std::vector<ablate::domain::FieldDescription>{{.name = "euler", .prefix = "euler", .components = {"rho", "rhoE", "rhoVel" + domain::FieldDescription::DIMENSION}},
             //                                                          {
             //                                                              .name = "densityYi",

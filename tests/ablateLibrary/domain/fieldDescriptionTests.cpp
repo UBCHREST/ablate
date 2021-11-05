@@ -1,4 +1,4 @@
-#include <domain/fields/fieldDescription.hpp>
+#include <domain/fieldDescription.hpp>
 #include <memory>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -15,7 +15,7 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunction) {
 
     // return a subMockFactory the components in it
     auto mockSubFactory = std::make_shared<ablateTesting::parser::MockFactory>();
-    std::string className = "ablate::domain::fields::FieldDescription";
+    std::string className = "ablate::domain::FieldDescription";
     EXPECT_CALL(*mockSubFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(className));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "name"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("name1"));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "prefix", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("prefix1"));
@@ -32,7 +32,7 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunction) {
     EXPECT_CALL(*mockFactory, GetFactory(std::string("input123"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
 
     // act
-    auto argument = ArgumentIdentifier<ablate::domain::fields::FieldDescription>{.inputName = "input123"};
+    auto argument = ArgumentIdentifier<ablate::domain::FieldDescription>{.inputName = "input123"};
     auto flowField = std::dynamic_pointer_cast<Factory>(mockFactory)->Get(argument);
 
     // assert
@@ -51,9 +51,9 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
     // arrange
     auto mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
 
-    // return a subMockFactory the the components in it
+    // return a subMockFactory the components in it
     auto mockSubFactory = std::make_shared<ablateTesting::parser::MockFactory>();
-    std::string className = "ablate::domain::fields::FieldDescription";
+    std::string className = "ablate::domain::FieldDescription";
     EXPECT_CALL(*mockSubFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(className));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "name"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("name1"));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "prefix", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::string()));
@@ -69,7 +69,7 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
     EXPECT_CALL(*mockFactory, GetFactory(std::string("input123"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
 
     // act
-    auto argument = ArgumentIdentifier<ablate::domain::fields::FieldDescription>{.inputName = "input123"};
+    auto argument = ArgumentIdentifier<ablate::domain::FieldDescription>{.inputName = "input123"};
     auto flowField = std::dynamic_pointer_cast<Factory>(mockFactory)->Get(argument);
 
     // assert
@@ -89,9 +89,9 @@ TEST(FieldDescriptionTests, ShouldActAsSingleFieldDescriptor) {
     // arrange
     auto mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
 
-    // return a subMockFactory the the components in it
+    // return a subMockFactory the components in it
     auto mockSubFactory = std::make_shared<ablateTesting::parser::MockFactory>();
-    std::string className = "ablate::domain::fields::FieldDescription";
+    std::string className = "ablate::domain::FieldDescription";
     EXPECT_CALL(*mockSubFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(className));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "name"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("name1"));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "prefix", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::string()));
@@ -107,7 +107,7 @@ TEST(FieldDescriptionTests, ShouldActAsSingleFieldDescriptor) {
     EXPECT_CALL(*mockFactory, GetFactory(std::string("input123"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
 
     // act
-    auto argument = ArgumentIdentifier<ablate::domain::fields::FieldDescriptor>{.inputName = "input123"};
+    auto argument = ArgumentIdentifier<ablate::domain::FieldDescriptor>{.inputName = "input123"};
     auto fieldDescriptor = std::dynamic_pointer_cast<Factory>(mockFactory)->Get(argument);
     auto fieldDescription = fieldDescriptor->GetFields();
 

@@ -11,7 +11,7 @@
 #include "parser/factory.hpp"
 #include "fieldDescriptor.hpp"
 
-namespace ablate::domain::fields {
+namespace ablate::domain {
 
 /**
  * Describes the necessary information to produce a field in the domain/dm

@@ -204,7 +204,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             //TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::fields::FieldDescriptor>> fieldDescriptors = {};
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
                                                                     fieldDescriptors,
                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>(),

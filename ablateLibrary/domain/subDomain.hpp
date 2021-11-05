@@ -7,7 +7,7 @@
 #include <string>
 #include <utilities/petscError.hpp>
 #include "domain.hpp"
-#include "domain/fields/fieldDescription.hpp"
+#include "fieldDescription.hpp"
 
 namespace ablate::domain {
 
@@ -50,7 +50,7 @@ class SubDomain {
     void CopyGlobalToSubVector(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
 
    public:
-    SubDomain(Domain& domain, PetscInt dsNumber, std::vector<std::shared_ptr<fields::FieldDescription>> allAuxFields);
+    SubDomain(Domain& domain, PetscInt dsNumber, std::vector<std::shared_ptr<FieldDescription>> allAuxFields);
     ~SubDomain();
 
 

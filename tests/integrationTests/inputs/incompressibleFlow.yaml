@@ -35,16 +35,16 @@ timestepper:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 2
     fields:
-      - !ablate::domain::fields::FieldDescription
+      - !ablate::domain::FieldDescription
         name: velocity
         prefix: vel_
         components: ["vel0", "vel1"]
         type: FE
-      - !ablate::domain::fields::FieldDescription
+      - !ablate::domain::FieldDescription
         name: pressure
         prefix: pres_
         type: FE
-      - !ablate::domain::fields::FieldDescription
+      - !ablate::domain::FieldDescription
         name: temperature
         prefix: temp_
         type: FE

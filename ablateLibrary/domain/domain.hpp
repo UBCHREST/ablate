@@ -1,14 +1,14 @@
 #ifndef ABLATELIBRARY_DOMAIN_H
 #define ABLATELIBRARY_DOMAIN_H
 #include <petsc.h>
-#include <domain/fields/fieldDescriptor.hpp>
+#include <domain/fieldDescriptor.hpp>
 #include <domain/modifiers/modifier.hpp>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include "domain/fields/fieldDescription.hpp"
+#include "fieldDescription.hpp"
 #include "region.hpp"
 
 namespace ablate::solver {
@@ -22,7 +22,7 @@ class SubDomain;
 
 class Domain {
    protected:
-    Domain(DM dm, std::string name, std::vector<std::shared_ptr<fields::FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers);
+    Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers);
     virtual ~Domain();
 
     // The primary dm
@@ -37,7 +37,7 @@ class Domain {
     const MPI_Comm comm;
 
     // List of classes that are used to describe fields
-    const std::vector<std::shared_ptr<fields::FieldDescriptor>> fieldDescriptors;
+    const std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors;
 
     // Keep track of all solution fields
     std::vector<Field> fields;
@@ -62,7 +62,7 @@ class Domain {
 
     Vec GetSolutionVector() { return solField; }
 
-    void RegisterField(const ablate::domain::fields::FieldDescription& fieldDescription);
+    void RegisterField(const ablate::domain::FieldDescription& fieldDescription);
 
     PetscInt GetDimensions() const;
 
