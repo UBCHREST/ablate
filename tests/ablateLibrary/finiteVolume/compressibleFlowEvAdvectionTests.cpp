@@ -1,5 +1,6 @@
 #include <petsc.h>
 #include <cmath>
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
@@ -81,8 +82,8 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
             auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}));
 
             // setup solutions from the exact params
-            auto exactEulerSolution = std::make_shared<mathFunctions::FieldFunction>(processes::FlowProcess::EULER_FIELD, GetParam().eulerExact);
-            auto evExactSolution = std::make_shared<mathFunctions::FieldFunction>(processes::FlowProcess::DENSITY_EV_FIELD, GetParam().densityEvExact);
+            auto exactEulerSolution = std::make_shared<mathFunctions::FieldFunction>(CompressibleFlowFields::EULER_FIELD, GetParam().eulerExact);
+            auto evExactSolution = std::make_shared<mathFunctions::FieldFunction>(CompressibleFlowFields::DENSITY_EV_FIELD, GetParam().densityEvExact);
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, exactEulerSolution),

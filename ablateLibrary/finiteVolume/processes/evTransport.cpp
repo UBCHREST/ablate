@@ -1,4 +1,5 @@
 #include "evTransport.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include <utilities/mathUtilities.hpp>
 
 ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved, std::string nonConserved, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
@@ -52,22 +53,22 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
         }
 
         if (fluxCalculator) {
-            if (flow.GetSubDomain().ContainsField(DENSITY_YI_FIELD)) {
-                flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {EULER_FIELD, conserved, DENSITY_YI_FIELD}, {});
+            if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::DENSITY_YI_FIELD)) {
+                flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
             } else {
-                flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {EULER_FIELD, conserved}, {});
+                flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved}, {});
             }
         }
 
         if (diffusionData.diffFunction) {
-            if (flow.GetSubDomain().ContainsField(YI_FIELD)) {
-                flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, conserved, {EULER_FIELD}, {nonConserved, YI_FIELD});
+            if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::YI_FIELD)) {
+                flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, conserved, {CompressibleFlowFields::EULER_FIELD}, {nonConserved, CompressibleFlowFields::YI_FIELD});
             } else {
-                flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, conserved, {EULER_FIELD}, {nonConserved});
+                flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, conserved, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
             }
         }
 
-        flow.RegisterAuxFieldUpdate(UpdateEVField, &updateData, nonConserved, {EULER_FIELD, conserved});
+        flow.RegisterAuxFieldUpdate(UpdateEVField, &updateData, nonConserved, {CompressibleFlowFields::EULER_FIELD, conserved});
     }
 }
 

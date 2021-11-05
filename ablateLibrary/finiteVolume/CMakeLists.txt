@@ -2,6 +2,8 @@ target_sources(ablateLibrary
         PUBLIC
         finiteVolume.hpp
         finiteVolume.cpp
+        compressibleFlowFields.hpp
+        compressibleFlowFields.cpp
         compressibleFlow.cpp
         compressibleFlow.hpp
         reactingCompressibleFlow.hpp

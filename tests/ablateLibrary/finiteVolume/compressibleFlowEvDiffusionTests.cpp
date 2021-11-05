@@ -1,9 +1,10 @@
 #include <petsc.h>
 #include <cmath>
-#include <domain/modifiers/setFromOptions.hpp>
+#include "domain/modifiers/setFromOptions.hpp"
 #include <map>
 #include <memory>
 #include <vector>
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "convergenceTester.hpp"
@@ -149,7 +150,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             // Create the yi field solutions
             auto evExact = ablate::mathFunctions::Create(ComputeDensityEVExact, &parameters);
-            auto evExactField = std::make_shared<mathFunctions::FieldFunction>(ablate::finiteVolume::processes::FlowProcess::DENSITY_EV_FIELD, evExact);
+            auto evExactField = std::make_shared<mathFunctions::FieldFunction>(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD, evExact);
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{4, 2}, eulerExactField),

@@ -22,7 +22,7 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunction) {
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "components", .optional = true}))
         .Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(std::vector<std::string>{"one", "two", "three"}));
-    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "location"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("AUX"));
+    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "location", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("AUX"));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "type"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("FE"));
     EXPECT_CALL(*mockSubFactory, Contains(std::string("region"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
     EXPECT_CALL(*mockSubFactory, GetFactory("region")).Times(::testing::Exactly(0));
@@ -44,7 +44,6 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunction) {
     ASSERT_EQ(flowField->components, expectedComponentNames);
     ASSERT_EQ(flowField->type, ablate::domain::FieldType::FEM);
     ASSERT_EQ(flowField->region, nullptr);
-    ASSERT_EQ(flowField->options, nullptr);
 }
 
 TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
@@ -59,7 +58,7 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "prefix", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::string()));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "components", .optional = true})).Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(std::vector<std::string>{}));
-    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "location"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(""));
+    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "location", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(""));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "type"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("FE"));
     EXPECT_CALL(*mockSubFactory, Contains(std::string("region"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
     EXPECT_CALL(*mockSubFactory, GetFactory("region")).Times(::testing::Exactly(0));
@@ -81,7 +80,6 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
     ASSERT_EQ(flowField->components, expectedComponentNames);
     ASSERT_EQ(flowField->type, ablate::domain::FieldType::FEM);
     ASSERT_EQ(flowField->region, nullptr);
-    ASSERT_EQ(flowField->options, nullptr);
 }
 
 
@@ -97,7 +95,7 @@ TEST(FieldDescriptionTests, ShouldActAsSingleFieldDescriptor) {
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "prefix", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::string()));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "components", .optional = true})).Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(std::vector<std::string>{}));
-    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "location"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("AUX"));
+    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "location", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("AUX"));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "type"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("FE"));
     EXPECT_CALL(*mockSubFactory, Contains(std::string("region"))).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
     EXPECT_CALL(*mockSubFactory, GetFactory("region")).Times(::testing::Exactly(0));
@@ -121,6 +119,5 @@ TEST(FieldDescriptionTests, ShouldActAsSingleFieldDescriptor) {
     ASSERT_EQ(fieldDescription.front()->components, expectedComponentNames);
     ASSERT_EQ(fieldDescription.front()->type, ablate::domain::FieldType::FEM);
     ASSERT_EQ(fieldDescription.front()->region, nullptr);
-    ASSERT_EQ(fieldDescription.front()->options, nullptr);
 }
 }  // namespace ablateTesting::flow

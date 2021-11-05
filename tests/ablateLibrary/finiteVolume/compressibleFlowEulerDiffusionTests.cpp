@@ -3,6 +3,7 @@
 #include <domain/dmWrapper.hpp>
 #include <domain/modifiers/distributeWithGhostCells.hpp>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
+#include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
 #include <solver/directSolverTsInterface.hpp>
 #include <vector>
@@ -203,17 +204,17 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
-            //TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
+            // define the fields based upon a compressible flow
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(
+                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
+
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
                                                                     fieldDescriptors,
                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>(),
                                                                                                                                      std::make_shared<domain::modifiers::DistributeWithGhostCells>()});
 
             // Setup the flow data
-            auto eos = std::make_shared<ablate::eos::PerfectGas>(
-                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
-
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
 
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(parameters.k);
@@ -306,8 +307,8 @@ INSTANTIATE_TEST_SUITE_P(
     CompressibleFlow, CompressibleFlowDiffusionTestFixture,
     testing::Values((CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
                                                                                    .nproc = 1,
-                                                                                   .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                                                "-Tpetscfv_type leastsquares -velpetscfv_type leastsquares -ts_max_steps 600 -ts_dt 0.00000625 "},
+                                                                                   .arguments = "-dm_plex_separate_marker -petsclimiter_type none  -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                                                                "-temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares  -ts_max_steps 600 -ts_dt 0.00000625 "},
                                                               .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                               .initialNx = 3,
                                                               .levels = 3,
@@ -316,7 +317,7 @@ INSTANTIATE_TEST_SUITE_P(
                     (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
                                                                                    .nproc = 2,
                                                                                    .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                                                "-Tpetscfv_type leastsquares -velpetscfv_type leastsquares -ts_max_steps 600 -ts_dt 0.00000625 "},
+                                                                                                "-temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -ts_max_steps 600 -ts_dt 0.00000625 "},
                                                               .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                               .initialNx = 9,
                                                               .levels = 2,

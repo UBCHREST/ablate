@@ -74,7 +74,7 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, std::v
 
             for (const auto& subAuxField : subAuxFields) {
                 // Create the field and add it with the label
-                auto petscField = subAuxField->CreatePetscField(subDM);
+                auto petscField = subAuxField->CreatePetscField(domain.GetDM());
 
                 // add to the dm
                 DMAddField(auxDM, label, petscField);
@@ -83,7 +83,7 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, std::v
                 PetscObjectDestroy(&petscField);
 
                 // Record the field
-                auto newAuxField = Field::FromFieldDescription(*subAuxField, PETSC_DECIDE, fieldsByType[FieldLocation::AUX].size());
+                auto newAuxField = Field::FromFieldDescription(*subAuxField, fieldsByType[FieldLocation::AUX].size(), fieldsByType[FieldLocation::AUX].size());
                 fieldsByType[FieldLocation::AUX].push_back(newAuxField);
                 fieldsByName.insert(std::make_pair(newAuxField.name, newAuxField));
             }
@@ -170,7 +170,6 @@ void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::sha
 
     if (label == nullptr) {
         DMProjectFunction(dm, time, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, globVec) >> checkError;
-
     } else {
         DMProjectFunctionLabel(dm, time, label, 1, &labelValue, -1, nullptr, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, globVec);
     }

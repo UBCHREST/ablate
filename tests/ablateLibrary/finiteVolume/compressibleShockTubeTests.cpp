@@ -3,6 +3,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include <petsc.h>
 #include <cmath>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
+#include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
 #include <solver/directSolverTsInterface.hpp>
 #include <vector>
@@ -166,16 +167,16 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 2, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
-            //TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(
+                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}}));
 
-            auto mesh =
-                std::make_shared<ablate::domain::DMWrapper>(dmCreate, fieldDescriptors, std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>()});
+            // define the fields based upon a compressible flow
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+            auto mesh = std::make_shared<ablate::domain::DMWrapper>(
+                dmCreate, fieldDescriptors, std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}});
-            auto eos = std::make_shared<ablate::eos::PerfectGas>(
-                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}}));
 
             auto initialCondition = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
 

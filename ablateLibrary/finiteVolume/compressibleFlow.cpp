@@ -3,6 +3,7 @@
 #include "finiteVolume/processes/eulerTransport.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
 #include "utilities/vectorUtilities.hpp"
+#include "compressibleFlowFields.hpp"
 
 ablate::finiteVolume::CompressibleFlow::CompressibleFlow(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<eos::EOS> eosIn,
                                                          std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::transport::TransportModel> transport,
@@ -17,7 +18,7 @@ ablate::finiteVolume::CompressibleFlow::CompressibleFlow(std::string solverId, s
                   // create assumed processes for compressible flow
                   std::make_shared<ablate::finiteVolume::processes::EulerTransport>(parameters, eosIn, fluxCalculatorIn, transport),
                   std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eosIn, fluxCalculatorIn, transport),
-                  std::make_shared<ablate::finiteVolume::processes::EVTransport>(processes::FlowProcess::DENSITY_EV_FIELD, processes::FlowProcess::EV_FIELD, eosIn, fluxCalculatorIn, transport),
+                  std::make_shared<ablate::finiteVolume::processes::EVTransport>(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD, finiteVolume::CompressibleFlowFields::EV_FIELD, eosIn, fluxCalculatorIn, transport),
               },
               additionalProcesses),
           initialization, boundaryConditions, exactSolutions) {}

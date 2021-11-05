@@ -1,18 +1,24 @@
 #include "fieldDescription.hpp"
 #include <map>
+#include <regex>
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
-#include <regex>
+#include <utilities/petscOptions.hpp>
 
 ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
-                                                           ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
+                                                           ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> optionsIn)
     : name(nameIn),
-      prefix(prefixIn.empty() ? name : prefixIn),
+      prefix(prefixIn.empty() ? name + "_" : prefixIn + "_"),
       components(componentsIn.empty() ? std::vector<std::string>{"_"} : componentsIn),
       location(location),
       type(type),
-      region(region),
-      options(options) {}
+      region(region)
+    {
+    if(optionsIn){
+        PetscOptionsCreate(&options);
+        optionsIn->Fill(options);
+    }
+}
 
 
 PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
@@ -38,8 +44,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             PetscFECreateDefault(PetscObjectComm((PetscObject)dm), dim, components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, prefix.c_str(), PETSC_DEFAULT, &petscFE) >>
                 checkError;
             PetscObjectSetName((PetscObject)petscFE, name.c_str()) >> checkError;
-            // TODO: move this to specific options
-            PetscObjectSetOptions((PetscObject)petscFE, nullptr) >> checkError;
+            PetscObjectSetOptions((PetscObject)petscFE, options) >> checkError;
 
             // If this is not the first field, copy the quadrature locations
             // Check to see if there is already a petscFE object defined
@@ -60,18 +65,17 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
         case FieldType::FVM: {
             PetscFV fvm;
             PetscFVCreate(PetscObjectComm((PetscObject)dm), &fvm) >> checkError;
-            PetscObjectSetOptionsPrefix((PetscObject)fvm, prefix.c_str()) >> checkError;
             PetscObjectSetName((PetscObject)fvm, name.c_str()) >> checkError;
+            PetscObjectSetOptions((PetscObject)fvm, options) >> checkError;
 
-            // TODO: convert to petscOptions
-            // PetscObjectSetOptions((PetscObject)fvm, petscOptions) >> checkError;
+
+            PetscObjectSetOptionsPrefix((PetscObject)fvm, prefix.c_str()) >> checkError;
+            PetscFVSetFromOptions(fvm) >> checkError;
+            PetscFVSetNumComponents(fvm, components.size()) >> checkError;
 
             // Determine the number of dims
             PetscInt dim;
             DMGetDimension(dm, &dim) >> checkError;
-
-            PetscFVSetFromOptions(fvm) >> checkError;
-            PetscFVSetNumComponents(fvm, components.size()) >> checkError;
             PetscFVSetSpatialDimension(fvm,dim) >> checkError;
 
             // Add the field to the
@@ -98,6 +102,11 @@ void ablate::domain::FieldDescription::DecompressComponents(PetscInt ndims) {
 }
 std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::domain::FieldDescription::GetFields() {
     return std::vector<std::shared_ptr<ablate::domain::FieldDescription>>{shared_from_this()};
+}
+ablate::domain::FieldDescription::~FieldDescription() {
+    if(options){
+        ablate::utilities::PetscOptionsDestroyAndCheck("Field " + name, &options);
+    }
 }
 
 #include "parser/registrar.hpp"
