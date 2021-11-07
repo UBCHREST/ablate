@@ -1,10 +1,11 @@
 #include <petsc.h>
-#include <domain/dmWrapper.hpp>
-#include <domain/modifiers/distributeWithGhostCells.hpp>
-#include <domain/modifiers/ghostBoundaryCells.hpp>
-#include <eos/transport/constant.hpp>
-#include <finiteVolume/processes/eulerTransport.hpp>
-#include <solver/directSolverTsInterface.hpp>
+#include "domain/dmWrapper.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "eos/transport/constant.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
+#include "solver/directSolverTsInterface.hpp"
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "eos/perfectGas.hpp"
@@ -579,18 +580,19 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, constants.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
-            //TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
+            // Setup the flow data
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(
+                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(constants.gamma)}, {"Rgas", std::to_string(constants.R)}}));
+
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
                                                                     fieldDescriptors,
                                                                     std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
                                                                                                                                      std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
-            // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
 
-            auto eos = std::make_shared<ablate::eos::PerfectGas>(
-                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(constants.gamma)}, {"Rgas", std::to_string(constants.R)}}));
 
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &constants));
 
@@ -786,7 +788,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedL2Convergence = {1.0, 1.0, 1.0, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){
-                        .mpiTestParameter = {.testName = "low speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker  -eulerpetscfv_type leastsquares"},
+                        .mpiTestParameter = {.testName = "low speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker  -euler_petscfv_type leastsquares"},
                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
 
                         .constants = {.dim = 2,
@@ -805,7 +807,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .expectedL2Convergence = {1.5, 1.5, 1.5, 1.5},
                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){
-                        .mpiTestParameter = {.testName = "high speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker -eulerpetscfv_type leastsquares"},
+                        .mpiTestParameter = {.testName = "high speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker -euler_petscfv_type leastsquares"},
                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
 
                         .constants = {.dim = 2,
@@ -825,7 +827,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .expectedLInfConvergence = {1.0, 0.5, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction",
                                                                              .nproc = 1,
-                                                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
+                                                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none"},
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
@@ -846,7 +848,7 @@ INSTANTIATE_TEST_SUITE_P(
                     (CompressibleFlowMmsTestParameters){
                         .mpiTestParameter = {.testName = "high speed average with conduction",
                                              .nproc = 1,
-                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none "},
+                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none "},
                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                         .constants = {.dim = 2,
@@ -866,7 +868,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction and diffusion",
                                                                              .nproc = 1,
-                                                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
+                                                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none"},
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 2,
@@ -887,7 +889,7 @@ INSTANTIATE_TEST_SUITE_P(
                     (CompressibleFlowMmsTestParameters){
                         .mpiTestParameter = {.testName = "high speed average with conduction and diffusion",
                                              .nproc = 1,
-                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none "},
+                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none "},
                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                         .constants = {.dim = 2,
@@ -907,7 +909,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .expectedLInfConvergence = {1.9, 2.0, 1.8, 1.8}},
                     (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction and diffusion 3D",
                                                                              .nproc = 1,
-                                                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
+                                                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none"},
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                                                         .constants = {.dim = 3,

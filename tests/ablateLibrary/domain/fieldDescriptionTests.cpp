@@ -38,7 +38,7 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunction) {
     // assert
     ASSERT_EQ(flowField->location, ablate::domain::FieldLocation::AUX);
     ASSERT_EQ(flowField->name, "name1");
-    ASSERT_EQ(flowField->prefix, "prefix1");
+    ASSERT_EQ(flowField->prefix, "prefix1_");
     ASSERT_EQ(flowField->components.size(), 3);
     auto expectedComponentNames = std::vector<std::string>{"one", "two", "three"};
     ASSERT_EQ(flowField->components, expectedComponentNames);
@@ -74,7 +74,7 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
     // assert
     ASSERT_EQ(flowField->location, ablate::domain::FieldLocation::SOL);
     ASSERT_EQ(flowField->name, "name1");
-    ASSERT_EQ(flowField->prefix, "name1");
+    ASSERT_EQ(flowField->prefix, "name1_");
     ASSERT_EQ(flowField->components.size(), 1);
     auto expectedComponentNames = std::vector<std::string>{"_"};
     ASSERT_EQ(flowField->components, expectedComponentNames);
@@ -113,7 +113,7 @@ TEST(FieldDescriptionTests, ShouldActAsSingleFieldDescriptor) {
     ASSERT_EQ(fieldDescription.size(), 1);
     ASSERT_EQ(fieldDescription.front()->location, ablate::domain::FieldLocation::AUX);
     ASSERT_EQ(fieldDescription.front()->name, "name1");
-    ASSERT_EQ(fieldDescription.front()->prefix, "name1");
+    ASSERT_EQ(fieldDescription.front()->prefix, "name1_");
     ASSERT_EQ(fieldDescription.front()->components.size(), 1);
     auto expectedComponentNames = std::vector<std::string>{"_"};
     ASSERT_EQ(fieldDescription.front()->components, expectedComponentNames);

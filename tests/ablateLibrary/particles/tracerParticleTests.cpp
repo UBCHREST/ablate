@@ -1,17 +1,19 @@
 #include <petsc.h>
-#include <finiteElement/boundaryConditions/essential.hpp>
-#include <finiteElement/incompressibleFlow.hpp>
 #include <memory>
-#include <parameters/petscPrefixOptions.hpp>
-#include <particles/initializers/boxInitializer.hpp>
-#include <solver/directSolverTsInterface.hpp>
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/modifiers/setFromOptions.hpp"
+#include "finiteElement/boundaryConditions/essential.hpp"
+#include "finiteElement/incompressibleFlow.hpp"
+#include "finiteElement/lowMachFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/petscOptionParameters.hpp"
+#include "parameters/petscPrefixOptions.hpp"
+#include "particles/initializers/boxInitializer.hpp"
 #include "particles/tracer.hpp"
+#include "solver/directSolverTsInterface.hpp"
 
 using namespace ablate;
 using namespace ablate::finiteElement;
@@ -293,9 +295,17 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             // initialize petsc and mpi
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
+            // setup the required fields for the flow
+            std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::LowMachFlowFields>()};
+
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>("mesh",
+                                                                  fieldDescriptors,
+                                                                  std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::SetFromOptions>()},
+                                                                  std::vector<int>{2, 2},
+                                                                  std::vector<double>{0.0, 0.0},
+                                                                  std::vector<double>{1.0, 1.0});
             TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 

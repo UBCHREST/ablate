@@ -1,21 +1,21 @@
 #include <petsc.h>
 #include <cmath>
-#include "domain/modifiers/setFromOptions.hpp"
 #include <map>
 #include <memory>
 #include <vector>
-#include "finiteVolume/compressibleFlowFields.hpp"
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "domain/modifiers/setFromOptions.hpp"
 #include "eos/mockEOS.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/essentialGhost.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -107,15 +107,21 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             PetscInt initialNx = GetParam().initialNx;
 
-            // TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
+            // create a mock eos
+            std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
+            auto species = std::vector<std::string>();
+            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
+            EXPECT_CALL(*eos, GetComputeTemperatureFunction()).Times(::testing::Exactly(3)).WillRepeatedly(::testing::Return(MockTemperatureFunction));
+            EXPECT_CALL(*eos, GetComputeTemperatureContext()).Times(::testing::Exactly(3));
+            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockSpeciesSensibleEnthalpyFunction));
+            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyContext()).Times(::testing::Exactly(1));
+
+            // determine required fields for finite volume compressible flow
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{"ev1", "ev2"})};
+
             auto mesh = std::make_shared<ablate::domain::BoxMesh>(
                 "simpleMesh",
-                std::vector<int>{(int)initialNx, (int)initialNx},
-                std::vector<double>{0.0, 0.0},
-                std::vector<double>{parameters.L, parameters.L},
-                std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
-                false /*simplex*/,
                 fieldDescriptors,
                 std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
                     std::make_shared<domain::modifiers::SetFromOptions>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
@@ -123,7 +129,12 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
                         {"dm_distribute", ""},
                     })),
                     std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                    std::make_shared<domain::modifiers::GhostBoundaryCells>()});
+                    std::make_shared<domain::modifiers::GhostBoundaryCells>()},
+                std::vector<int>{(int)initialNx, (int)initialNx},
+                std::vector<double>{0.0, 0.0},
+                std::vector<double>{parameters.L, parameters.L},
+                std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
+                false /*simplex*/);
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
@@ -134,15 +145,6 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             // create an eos with three species
             auto eosParameters = std::make_shared<ablate::parameters::MapParameters>();
-
-            // create a mock eos
-            std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-            auto species = std::vector<std::string>();
-            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
-            EXPECT_CALL(*eos, GetComputeTemperatureFunction()).Times(::testing::Exactly(3)).WillRepeatedly(::testing::Return(MockTemperatureFunction));
-            EXPECT_CALL(*eos, GetComputeTemperatureContext()).Times(::testing::Exactly(3));
-            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockSpeciesSensibleEnthalpyFunction));
-            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyContext()).Times(::testing::Exactly(1));
 
             // create a constant density field
             auto eulerExact = mathFunctions::Create(ComputeEulerExact, &parameters);
@@ -165,7 +167,6 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                        transportModel,
                                                                                        nullptr /*no advection */,
                                                                                        std::vector<std::shared_ptr<finiteVolume::processes::Process>>(),
-                                                                                       std::vector<std::string>{"ev1", "ev2"},
                                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField} /*initialization*/,
                                                                                        boundaryConditions /*boundary conditions*/,
                                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});

@@ -1,23 +1,24 @@
 #include <petsc.h>
 #include <cmath>
-#include <convergenceTester.hpp>
-#include <domain/modifiers/distributeWithGhostCells.hpp>
-#include <domain/modifiers/ghostBoundaryCells.hpp>
-#include <finiteVolume/boundaryConditions/essentialGhost.hpp>
-#include <finiteVolume/fluxCalculator/ausm.hpp>
 #include <memory>
-#include <monitors/solutionErrorMonitor.hpp>
-#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "eos/perfectGas.hpp"
+#include "finiteVolume/boundaryConditions/essentialGhost.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "monitors/solutionErrorMonitor.hpp"
 #include "parameters/mapParameters.hpp"
+#include "solver/directSolverTsInterface.hpp"
 
 using namespace ablate;
 
@@ -63,23 +64,25 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
 
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d (%dx%d)\n", l, nx1D, nx1D);
 
-            //TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
+            // determine required fields for finite volume compressible flow
+
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}),
+                                                                 std::vector<std::string>{"O2", "H2O", "N2"});
+
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
 
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
+                                                                  fieldDescriptors,
+                                                                  std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                    std::make_shared<domain::modifiers::GhostBoundaryCells>()},
                                                                   std::vector<int>{(int)nx1D, (int)nx1D},
                                                                   std::vector<double>{0.0, 0.0},
                                                                   std::vector<double>{.01, .01},
                                                                   std::vector<std::string>{} /*boundary*/,
-                                                                  false /*simplex*/,
-                                                                  fieldDescriptors,
-                                                                  std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                                                                                                                                   std::make_shared<domain::modifiers::GhostBoundaryCells>()});
+                                                                  false /*simplex*/
+            );
             // setup a flow parameters
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}});
-
-            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}),
-                                                                 std::vector<std::string>{"O2", "H2O", "N2"});
 
             // setup solutions from the exact params
             auto exactEulerSolution = std::make_shared<mathFunctions::FieldFunction>("euler", GetParam().eulerExact);
@@ -152,7 +155,7 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowAdvectionFixture,
                                  .mpiTestParameter = {.testName = "yi advection",
                                                       .nproc = 1,
                                                       .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                   "-eulerpetscfv_type upwind -densityYipetscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
+                                                                   "-euler_petscfv_type upwind -densityYi_petscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
                                  .initialNx = 5,
                                  .levels = 4,
                                  .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
@@ -163,7 +166,7 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowAdvectionFixture,
                                  .mpiTestParameter = {.testName = "mpi yi advection",
                                                       .nproc = 2,
                                                       .arguments = "-dm_plex_separate_marker -dm_distribute -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                   "-eulerpetscfv_type upwind -densityYipetscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
+                                                                   "-euler_petscfv_type upwind -densityYi_petscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
                                  .initialNx = 5,
                                  .levels = 4,
                                  .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),

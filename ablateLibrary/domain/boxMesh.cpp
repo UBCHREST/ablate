@@ -4,8 +4,8 @@
 #include <utilities/petscOptions.hpp>
 #include "utilities/petscError.hpp"
 
-ablate::domain::BoxMesh::BoxMesh(std::string name, std::vector<int> faces, std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary, bool simplex,
-                                 std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers)
+ablate::domain::BoxMesh::BoxMesh(std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers, std::vector<int> faces,
+                                 std::vector<double> lower, std::vector<double> upper, std::vector<std::string> boundary, bool simplex)
     : Domain(CreateBoxDM(name, faces, lower, upper, boundary, simplex), name, fieldDescriptors, modifiers) {}
 
 ablate::domain::BoxMesh::~BoxMesh() {
@@ -42,7 +42,7 @@ DM ablate::domain::BoxMesh::CreateBoxDM(std::string name, std::vector<int> faces
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::domain::Domain, ablate::domain::BoxMesh, "simple uniform box mesh", ARG(std::string, "name", "the name of the domain/mesh object"),
+         OPT(std::vector<domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"), OPT(std::vector<domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"),
          ARG(std::vector<int>, "faces", "the number of faces in each direction"), ARG(std::vector<double>, "lower", "the lower bound of the mesh"),
          ARG(std::vector<double>, "upper", "the upper bound of the mesh"), OPT(std::vector<std::string>, "boundary", "custom boundary types (NONE, GHOSTED, MIRROR, PERIODIC)"),
-         OPT(bool, "simplex", "sets if the elements/cells are simplex"), OPT(std::vector<domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
-         OPT(std::vector<domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"));
+         OPT(bool, "simplex", "sets if the elements/cells are simplex"));

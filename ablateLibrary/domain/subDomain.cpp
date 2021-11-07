@@ -5,6 +5,7 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, std::v
     : domain(domainIn),
       name(""),
       label(nullptr),
+      labelValue(0),
       fieldMap(nullptr),
       discreteSystem(nullptr),
       auxDM(nullptr),
@@ -13,82 +14,82 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, std::v
       subSolutionVec(nullptr),
       subAuxDM(nullptr),
       subAuxVec(nullptr) {
-        // Get the information for this subDomain
-        DMGetRegionNumDS(domain.GetDM(), dsNumber, &label, &fieldMap, &discreteSystem) >> checkError;
+    // Get the information for this subDomain
+    DMGetRegionNumDS(domain.GetDM(), dsNumber, &label, &fieldMap, &discreteSystem) >> checkError;
 
-        // Check for the name in the label
-        if (label) {
-            const char* labelName;
-            PetscObjectGetName((PetscObject)label, &labelName) >> checkError;
-            name = std::string(labelName);
+    // Check for the name in the label
+    if (label) {
+        const char* labelName;
+        PetscObjectGetName((PetscObject)label, &labelName) >> checkError;
+        name = std::string(labelName);
+        labelValue = 1;  // assume that the region value is one for now until a different value is returned from DMGetRegionNumDS
+    }
+
+    // Get a reference to local fields
+    if (fieldMap) {
+        PetscInt s, e;
+        const PetscInt* points;
+        ISGetPointRange(fieldMap, &s, &e, &points) >> checkError;
+
+        for (PetscInt f = s; f < e; f++) {
+            PetscInt globID = points ? points[f] : f;
+
+            const auto& field = domain.GetField(globID);
+            auto newField = field.CreateSubField(f);
+            fieldsByName.insert(std::make_pair(newField.name, newField));
+            fieldsByType[FieldLocation::SOL].push_back(newField);
         }
 
-        // Get a reference to local fields
-        if (fieldMap) {
-            PetscInt s, e;
-            const PetscInt* points;
-            ISGetPointRange(fieldMap, &s, &e, &points) >> checkError;
+    } else {
+        // just copy them all over
+        for (const auto& field : domain.GetFields()) {
+            auto newField = field.CreateSubField(field.id);
+            fieldsByName.insert(std::make_pair(newField.name, newField));
+            fieldsByType[FieldLocation::SOL].push_back(newField);
+        }
+    }
 
-            for (PetscInt f = s; f < e; f++) {
-                PetscInt globID = points ? points[f] : f;
+    // Create the auxDM if there are any auxVariables in this region
+    std::vector<std::shared_ptr<FieldDescription>> subAuxFields;
 
-                const auto& field = domain.GetField(globID);
-                auto newField = field.CreateSubField(f);
-                fieldsByName.insert(std::make_pair(newField.name, newField));
-                fieldsByType[FieldLocation::SOL].push_back(newField);
-            }
-
-        } else {
-            // just copy them all over
-            for (const auto& field : domain.GetFields()) {
-                auto newField = field.CreateSubField(field.id);
-                fieldsByName.insert(std::make_pair(newField.name, newField));
-                fieldsByType[FieldLocation::SOL].push_back(newField);
+    // check if there is a label
+    if (!label) {
+        subAuxFields = allAuxFields;
+    } else {
+        for (auto const& auxField : allAuxFields) {
+            // If there is no region, add it to the sub
+            if (auxField->region == nullptr || InRegion(*auxField->region)) {
+                subAuxFields.push_back(auxField);
             }
         }
+    }
 
-        // Create the auxDM if there are any auxVariables in this region
-        std::vector<std::shared_ptr<FieldDescription>> subAuxFields;
+    // Create an aux dm if it is needed
+    if (!subAuxFields.empty()) {
+        /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
+        DM coordDM;
+        DMGetCoordinateDM(domain.GetDM(), &coordDM) >> checkError;
+        DMClone(domain.GetDM(), &auxDM) >> checkError;
 
-        // check if there is a label
-        if (!label) {
-            subAuxFields = allAuxFields;
-        } else {
-            for (auto const& auxField : allAuxFields) {
-                // If there is no region, add it to the sub
-                if (auxField->region == nullptr || InRegion(*auxField->region)) {
-                    subAuxFields.push_back(auxField);
-                }
-            }
+        // this is a hard coded "dmAux" that petsc looks for
+        DMSetCoordinateDM(auxDM, coordDM) >> checkError;
+
+        for (const auto& subAuxField : subAuxFields) {
+            // Create the field and add it with the label
+            auto petscField = subAuxField->CreatePetscField(domain.GetDM());
+
+            // add to the dm
+            DMAddField(auxDM, label, petscField);
+
+            // Free the petsc after being added
+            PetscObjectDestroy(&petscField);
+
+            // Record the field
+            auto newAuxField = Field::FromFieldDescription(*subAuxField, fieldsByType[FieldLocation::AUX].size(), fieldsByType[FieldLocation::AUX].size());
+            fieldsByType[FieldLocation::AUX].push_back(newAuxField);
+            fieldsByName.insert(std::make_pair(newAuxField.name, newAuxField));
         }
-
-        // Create an aux dm if it is needed
-        if (!subAuxFields.empty()) {
-            /* MUST call DMGetCoordinateDM() in order to get p4est setup if present */
-            DM coordDM;
-            DMGetCoordinateDM(domain.GetDM(), &coordDM) >> checkError;
-            DMClone(domain.GetDM(), &auxDM) >> checkError;
-
-            // this is a hard coded "dmAux" that petsc looks for
-            DMSetCoordinateDM(auxDM, coordDM) >> checkError;
-
-            for (const auto& subAuxField : subAuxFields) {
-                // Create the field and add it with the label
-                auto petscField = subAuxField->CreatePetscField(domain.GetDM());
-
-                // add to the dm
-                DMAddField(auxDM, label, petscField);
-
-                // Free the petsc after being added
-                PetscObjectDestroy(&petscField);
-
-                // Record the field
-                auto newAuxField = Field::FromFieldDescription(*subAuxField, fieldsByType[FieldLocation::AUX].size(), fieldsByType[FieldLocation::AUX].size());
-                fieldsByType[FieldLocation::AUX].push_back(newAuxField);
-                fieldsByName.insert(std::make_pair(newAuxField.name, newAuxField));
-            }
-        }
-
+    }
 }
 
 ablate::domain::SubDomain::~SubDomain() {
@@ -117,21 +118,15 @@ ablate::domain::SubDomain::~SubDomain() {
     }
 }
 
-DM& ablate::domain::SubDomain::GetDM() {
-    return domain.GetDM();
-}
+DM& ablate::domain::SubDomain::GetDM() { return domain.GetDM(); }
 
 DM ablate::domain::SubDomain::GetAuxDM() { return auxDM; }
 
-Vec ablate::domain::SubDomain::GetSolutionVector() {
-    return domain.GetSolutionVector();
-}
+Vec ablate::domain::SubDomain::GetSolutionVector() { return domain.GetSolutionVector(); }
 
 Vec ablate::domain::SubDomain::GetAuxVector() { return auxVec; }
 
-PetscInt ablate::domain::SubDomain::GetDimensions() const {
-    return domain.GetDimensions();
-}
+PetscInt ablate::domain::SubDomain::GetDimensions() const { return domain.GetDimensions(); }
 
 void ablate::domain::SubDomain::CreateSubDomainStructures() {
     if (auxDM) {
@@ -364,7 +359,7 @@ void ablate::domain::SubDomain::CopyGlobalToSubVector(DM sDM, DM gDM, Vec subVec
 }
 
 bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
-    if(!label){
+    if (!label) {
         return true;
     }
     bool inside = false;
@@ -399,7 +394,6 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     ISDestroy(&regionIS) >> checkError;
     ISDestroy(&dsLabelIS) >> checkError;
     return inside;
-
 }
 PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const ablate::domain::Field& field) {
     switch (field.location) {

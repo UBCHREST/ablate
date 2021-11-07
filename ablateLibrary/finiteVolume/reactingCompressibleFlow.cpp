@@ -10,7 +10,7 @@ ablate::finiteVolume::ReactingCompressibleFlow::ReactingCompressibleFlow(std::st
     : CompressibleFlow(solverId, region, options, eosIn, parameters, transport, fluxCalculatorIn,
                        {std::make_shared<ablate::finiteVolume::processes::TChemReactions>(
                            std::dynamic_pointer_cast<eos::TChem>(eosIn) ? std::dynamic_pointer_cast<eos::TChem>(eosIn) : throw std::invalid_argument("The eos must of type eos::TChem"))},
-                       /*no ev*/ {}, initialization, boundaryConditions, exactSolutions) {}
+                       initialization, boundaryConditions, exactSolutions) {}
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::ReactingCompressibleFlow, "reacting compressible finite volume flow", ARG(std::string, "id", "the name of the flow field"),

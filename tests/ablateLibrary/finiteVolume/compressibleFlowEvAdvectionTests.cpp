@@ -1,6 +1,5 @@
 #include <petsc.h>
 #include <cmath>
-#include "finiteVolume/compressibleFlowFields.hpp"
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
@@ -13,6 +12,7 @@
 #include "finiteVolume/boundaryConditions/essentialGhost.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
 #include "gtest/gtest.h"
@@ -65,21 +65,23 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
 
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d (%dx%d)\n", l, nx1D, nx1D);
 
-            //TODO: add fields
-            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {};
+            // determine required fields for finite volume compressible flow
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}));
+
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{"ev1", "ev2"})};
+
             auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
+                                                                  fieldDescriptors,
+                                                                  std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                    std::make_shared<domain::modifiers::GhostBoundaryCells>()},
                                                                   std::vector<int>{(int)nx1D, (int)nx1D},
                                                                   std::vector<double>{0.0, 0.0},
                                                                   std::vector<double>{.01, .01},
                                                                   std::vector<std::string>{} /*boundary*/,
-                                                                  false /*simplex*/,
-                                                                  fieldDescriptors,
-                                                                  std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                                                                                                                                   std::make_shared<domain::modifiers::GhostBoundaryCells>()});
+                                                                  false /*simplex*/);
             // setup a flow parameters
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.25"}});
-
-            auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287"}}));
 
             // setup solutions from the exact params
             auto exactEulerSolution = std::make_shared<mathFunctions::FieldFunction>(CompressibleFlowFields::EULER_FIELD, GetParam().eulerExact);
@@ -98,7 +100,6 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                          nullptr /*transportModel*/,
                                                                          std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
                                                                          std::vector<std::shared_ptr<processes::Process>>(),
-                                                                         std::vector<std::string>{"ev1", "ev2"},
                                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution} /*initialization*/,
                                                                          boundaryConditions /*boundary conditions*/,
                                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
@@ -154,7 +155,7 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowEvAdvectionFixture,
                                  .mpiTestParameter = {.testName = "ev advection",
                                                       .nproc = 1,
                                                       .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                   "-eulerpetscfv_type upwind -densityEVpetscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
+                                                                   "-euler_petscfv_type upwind -densityEV_petscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
                                  .initialNx = 5,
                                  .levels = 4,
                                  .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
@@ -165,7 +166,7 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowEvAdvectionFixture,
                                  .mpiTestParameter = {.testName = "mpi ev advection",
                                                       .nproc = 2,
                                                       .arguments = "-dm_plex_separate_marker -dm_distribute -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                   "-eulerpetscfv_type upwind -densityEVpetscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
+                                                                   "-euler_petscfv_type upwind -densityEV_petscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
                                  .initialNx = 5,
                                  .levels = 4,
                                  .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),

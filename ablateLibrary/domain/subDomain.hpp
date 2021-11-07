@@ -21,7 +21,7 @@ class SubDomain {
 
     // The label used to describe this subDomain
     DMLabel label;
-    PetscInt labelValue = 1;
+    PetscInt labelValue;
 
     // contains the DM field numbers for the fields in this DS, or NULL
     IS fieldMap;
@@ -52,8 +52,6 @@ class SubDomain {
    public:
     SubDomain(Domain& domain, PetscInt dsNumber, std::vector<std::shared_ptr<FieldDescription>> allAuxFields);
     ~SubDomain();
-
-
 
     /**
      * Create the auxDM, auxVec, and other structures on the subDomain
@@ -95,7 +93,6 @@ class SubDomain {
      */
     PetscObject GetPetscFieldObject(const Field& field);
 
-
     //[[deprecated("Should remove need for direct dm access")]]
     DM& GetDM();
     //[[deprecated("Should remove need for direct dm access")]]
@@ -132,8 +129,8 @@ class SubDomain {
      * @param point
      * @return
      */
-    inline bool InRegion(PetscInt point){
-        if(!label){
+    inline bool InRegion(PetscInt point) {
+        if (!label) {
             return true;
         }
         PetscInt ptValue;

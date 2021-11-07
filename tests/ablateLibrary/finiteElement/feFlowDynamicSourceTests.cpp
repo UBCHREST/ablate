@@ -2,16 +2,17 @@ static char help[] =
     "Time-dependent Low Mach Flow in 2d channels with finite elements. We solve the Low Mach flow problem in a rectangular domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
-#include <mathFunctions/parsedFunction.hpp>
-#include <parameters/petscOptionParameters.hpp>
-#include <solver/directSolverTsInterface.hpp>
+#include "domain/modifiers/setFromOptions.hpp"
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
-#include "domain/dmWrapper.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlow.hpp"
 #include "finiteElement/lowMachFlow.hpp"
+#include "finiteElement/lowMachFlowFields.hpp"
 #include "gtest/gtest.h"
+#include "mathFunctions/parsedFunction.hpp"
+#include "parameters/petscOptionParameters.hpp"
+#include "solver/directSolverTsInterface.hpp"
 
 // We can define them because they are the same between fe flows
 #define VTEST 0
@@ -125,8 +126,13 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
 
+            // setup the required fields for the flow
+            std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::LowMachFlowFields>(ablate::domain::Region::ENTIREDOMAIN, true)};
+
             // Create a simple test mesh
-            auto mesh = std::make_shared<domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<domain::BoxMesh>("mesh", fieldDescriptors,
+                                                          std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::SetFromOptions>()},
+                                                          std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
 
             TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;

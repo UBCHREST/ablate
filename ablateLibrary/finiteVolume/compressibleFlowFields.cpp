@@ -1,6 +1,6 @@
 #include "compressibleFlowFields.hpp"
 #include "domain/fieldDescription.hpp"
-#include "parameters/mapParameters.hpp"
+
 ablate::finiteVolume::CompressibleFlowFields::CompressibleFlowFields(std::shared_ptr<eos::EOS> eos, std::vector<std::string> extraVariables, std::shared_ptr<domain::Region> region)
     : eos(eos), extraVariables(extraVariables), region(region) {}
 
@@ -8,8 +8,7 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
     std::vector<std::shared_ptr<ablate::domain::FieldDescription>> flowFields{
         std::make_shared<domain::FieldDescription>(
             EULER_FIELD, EULER_FIELD, std::vector<std::string>{"rho", "rhoE", "rhoVel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::SOL, domain::FieldType::FVM, region),
-        std::make_shared<domain::FieldDescription>(
-            TEMPERATURE_FIELD, TEMPERATURE_FIELD, domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::AUX, domain::FieldType::FVM, region),
+        std::make_shared<domain::FieldDescription>(TEMPERATURE_FIELD, TEMPERATURE_FIELD, domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::AUX, domain::FieldType::FVM, region),
         std::make_shared<domain::FieldDescription>(
             VELOCITY_FIELD, VELOCITY_FIELD, std::vector<std::string>{"vel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::AUX, domain::FieldType::FVM, region)};
 
