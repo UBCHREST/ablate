@@ -573,7 +573,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             PetscInitialize(argc, argv, NULL, help);
 
             // setup the required fields for the flow
-            std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::LowMachFlowFields>()};
+            std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;

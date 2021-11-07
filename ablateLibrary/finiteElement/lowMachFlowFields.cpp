@@ -1,9 +1,9 @@
 #include "lowMachFlowFields.hpp"
 #include "domain/fieldDescription.hpp"
 
-ablate::finiteVolume::LowMachFlowFields::LowMachFlowFields(std::shared_ptr<domain::Region> region, bool includeSourceTerms) : region(region), includeSourceTerms(includeSourceTerms) {}
+ablate::finiteElement::LowMachFlowFields::LowMachFlowFields(std::shared_ptr<domain::Region> region, bool includeSourceTerms) : region(region), includeSourceTerms(includeSourceTerms) {}
 
-std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVolume::LowMachFlowFields::GetFields() {
+std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteElement::LowMachFlowFields::GetFields() {
     std::vector<std::shared_ptr<ablate::domain::FieldDescription>> flowFields{
         std::make_shared<domain::FieldDescription>(
             "velocity", "vel", std::vector<std::string>{"vel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::SOL, domain::FieldType::FEM, region),
@@ -23,5 +23,5 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::domain::FieldDescriptor, ablate::finiteVolume::LowMachFlowFields, "FE fields need for incompressible/low-Mach flow",
+REGISTER(ablate::domain::FieldDescriptor, ablate::finiteElement::LowMachFlowFields, "FE fields need for incompressible/low-Mach flow",
          OPT(domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"), OPT(bool, "includeSourceTerms", "include aux fields for source terms (defaults to false)"));

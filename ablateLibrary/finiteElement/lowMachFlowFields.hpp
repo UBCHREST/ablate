@@ -8,7 +8,7 @@
 #include "domain/fieldDescriptor.hpp"
 #include "eos/eos.hpp"
 
-namespace ablate::finiteVolume {
+namespace ablate::finiteElement {
 
 class LowMachFlowFields : public domain::FieldDescriptor {
    private:
@@ -21,6 +21,6 @@ class LowMachFlowFields : public domain::FieldDescriptor {
     std::vector<std::shared_ptr<domain::FieldDescription>> GetFields() override;
 };
 
-}  // namespace ablate::finiteVolume
+}  // namespace ablate::finiteElement
 
 #endif  // ABLATELIBRARY_COMPRESSIBLEFLOWFIELDS_HPP

@@ -31,9 +31,12 @@ timestepper:
     faces: [ 2, 2 ]
     lower: [ 0, 0 ]
     upper: [ 1, 1 ]
-    options:
-      dm_refine: 0
-solver: !ablate::finiteElement::IncompressibleFlow
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+    fields:
+      - !ablate::finiteElement::LowMachFlowFields
+solver: !ablate::finiteElement::IncompressibleFlowSolver
   id: theFlowField
   options: {}
   parameters:

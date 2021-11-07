@@ -6,6 +6,9 @@ environment:
 arguments: 
   dm_plex_separate_marker: ""
   petsclimiter_type: none
+  euler_petscfv_type: leastsquares
+  temperature_petscfv_type: leastsquares
+  velocity_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -19,25 +22,24 @@ timestepper:
     upper: [ 1, 1 ]
     boundary: [ "PERIODIC", "NONE" ]
     simplex: false
-    options:
-      dm_refine: 0
+    fields:
+      - name: euler
+        components: [ "rho", "rhoE", "rhoVel0", "rhoVel1" ]
+        type: FVM
+      - name: temperature
+        location: AUX
+        type: FVM
+      - name: velocity
+        components: [ "vel0", "vel1" ]
+        location: AUX
+        type: FVM
     modifiers:
-      - !ablate::domain::modifier::GhostBoundaryCells
-      - !ablate::domain::modifier::DistributeWithGhostCells
-solver: !ablate::finiteVolume::FiniteVolume
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+      - !ablate::domain::modifiers::GhostBoundaryCells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: compressibleFlowField
-  options:
-    eulerpetscfv_type: leastsquares
-    Tpetscfv_type: leastsquares
-    velpetscfv_type: leastsquares
-  fields:
-    - name: euler
-      components: ["rho", "rhoE", "rhoVel0", "rhoVel1"]
-    - name: T
-      type: AUX
-    - name: vel
-      components: ["vel0", "vel1"]
-      type: AUX
   processes:
     - !ablate::finiteVolume::processes::EulerTransport
       parameters:

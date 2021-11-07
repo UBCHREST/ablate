@@ -5,9 +5,9 @@ environment:
   tagDirectory: false
 arguments:
   dm_plex_separate_marker: ""
-  vel_petscspace_degree: 2
-  pres_petscspace_degree: 1
-  temp_petscspace_degree: 1
+  velocity_petscspace_degree: 2
+  pressure_petscspace_degree: 1
+  temperature_petscspace_degree: 1
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -37,18 +37,18 @@ timestepper:
     fields:
       - !ablate::domain::FieldDescription
         name: velocity
-        prefix: vel_
+        prefix: velocity
         components: ["vel0", "vel1"]
         type: FE
       - !ablate::domain::FieldDescription
         name: pressure
-        prefix: pres_
+        prefix: pressure
         type: FE
       - !ablate::domain::FieldDescription
         name: temperature
-        prefix: temp_
+        prefix: temperature
         type: FE
-solver: !ablate::finiteElement::IncompressibleFlow
+solver: !ablate::finiteElement::IncompressibleFlowSolver
   id: theFlowField
   options: {}
   parameters:

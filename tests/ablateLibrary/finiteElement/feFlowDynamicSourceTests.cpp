@@ -127,7 +127,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
 
             // setup the required fields for the flow
-            std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::LowMachFlowFields>(ablate::domain::Region::ENTIREDOMAIN, true)};
+            std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>(ablate::domain::Region::ENTIREDOMAIN, true)};
 
             // Create a simple test mesh
             auto mesh = std::make_shared<domain::BoxMesh>("mesh",

@@ -135,7 +135,7 @@ class SubDomain {
         }
         PetscInt ptValue;
         DMLabelGetValue(label, point, &ptValue) >> checkError;
-        return ptValue = labelValue;
+        return ptValue == labelValue;
     }
 
     /**
