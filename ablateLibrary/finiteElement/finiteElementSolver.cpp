@@ -1,4 +1,4 @@
-#include "finiteElement.hpp"
+#include "finiteElementSolver.hpp"
 #include <petsc.h>
 #include <petsc/private/dmpleximpl.h>
 #include <petscds.h>
@@ -6,16 +6,16 @@
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 
-ablate::finiteElement::FiniteElement::FiniteElement(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                    std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                    std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                    std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
-                                                    std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
+ablate::finiteElement::FiniteElementSolver::FiniteElementSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
+                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
+                                                                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
+                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : Solver(solverId, region, options), initialization(initialization), boundaryConditions(boundaryConditions), auxiliaryFieldsUpdaters(auxiliaryFields), exactSolutions(exactSolution) {}
 
-void ablate::finiteElement::FiniteElement::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { Solver::Register(subDomain); }
+void ablate::finiteElement::FiniteElementSolver::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { Solver::Register(subDomain); }
 
-void ablate::finiteElement::FiniteElement::Setup() {
+void ablate::finiteElement::FiniteElementSolver::Setup() {
     DM cdm = subDomain->GetDM();
 
     while (cdm) {
@@ -37,7 +37,7 @@ void ablate::finiteElement::FiniteElement::Setup() {
     }
 }
 
-void ablate::finiteElement::FiniteElement::Initialize() {
+void ablate::finiteElement::FiniteElementSolver::Initialize() {
     // Initialize the flow field if provided
     subDomain->ProjectFieldFunctions(initialization, subDomain->GetSolutionVector());
     this->CompleteFlowInitialization(subDomain->GetDM(), subDomain->GetSolutionVector());
@@ -57,7 +57,7 @@ void ablate::finiteElement::FiniteElement::Initialize() {
     }
 }
 
-void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElement &fe) {
+void ablate::finiteElement::FiniteElementSolver::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElementSolver &fe) {
     PetscInt numberAuxFields;
     DMGetNumFields(fe.subDomain->GetAuxDM(), &numberAuxFields) >> checkError;
 
@@ -82,7 +82,7 @@ void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finite
     DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> checkError;
 }
 
-void ablate::finiteElement::FiniteElement::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
+void ablate::finiteElement::FiniteElementSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
     Solver::Save(viewer, sequenceNumber, time);
 
     if (!exactSolutions.empty()) {
@@ -97,7 +97,7 @@ void ablate::finiteElement::FiniteElement::Save(PetscViewer viewer, PetscInt seq
     }
 }
 
-PetscErrorCode ablate::finiteElement::FiniteElement::ComputeIFunction(PetscReal time, Vec locX, Vec locX_t, Vec locF) {
+PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIFunction(PetscReal time, Vec locX, Vec locX_t, Vec locF) {
     PetscFunctionBegin;
     DM plex;
     IS allcellIS;
@@ -142,7 +142,7 @@ PetscErrorCode ablate::finiteElement::FiniteElement::ComputeIFunction(PetscReal 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteElement::FiniteElement::ComputeIJacobian(PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP) {
+PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIJacobian(PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP) {
     PetscFunctionBeginUser;
 
     DM plex;
@@ -200,7 +200,7 @@ PetscErrorCode ablate::finiteElement::FiniteElement::ComputeIJacobian(PetscReal 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteElement::FiniteElement::ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) {
+PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeBoundary(PetscReal time, Vec locX, Vec locX_t) {
     PetscFunctionBeginUser;
 
     DM plex;

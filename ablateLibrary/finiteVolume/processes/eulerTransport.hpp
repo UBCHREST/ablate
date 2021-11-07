@@ -60,7 +60,7 @@ class EulerTransport : public FlowProcess {
     DiffusionData diffusionData;
 
     // static function to compute time step for euler advection
-    static double ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolume& flow, void* ctx);
+    static double ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
 
     /**
      * Function to compute the temperature field. This function assumes that the input values will be {"euler", "densityYi"}
@@ -85,7 +85,7 @@ class EulerTransport : public FlowProcess {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::finiteVolume::FiniteVolume& flow) override;
+    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
 
     /**
      * This Computes the Flow Euler flow for rho, rhoE, and rhoVel.

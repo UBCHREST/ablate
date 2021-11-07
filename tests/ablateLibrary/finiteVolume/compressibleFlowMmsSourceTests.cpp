@@ -7,8 +7,8 @@
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
-#include "finiteVolume/compressibleFlow.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/fluxCalculator/ausmpUp.hpp"
 #include "finiteVolume/fluxCalculator/averageFlux.hpp"
@@ -61,7 +61,7 @@ struct CompressibleFlowMmsTestParameters {
 
 typedef struct {
     Constants constants;
-    std::shared_ptr<ablate::finiteVolume::CompressibleFlow> flowData;
+    std::shared_ptr<ablate::finiteVolume::CompressibleFlowSolver> flowData;
 } ProblemSetup;
 
 class CompressibleFlowMmsTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<CompressibleFlowMmsTestParameters> {
@@ -601,16 +601,16 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, PhysicsBoundary_Euler, &constants),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       domain::Region::ENTIREDOMAIN,
-                                                                                       nullptr /*options*/,
-                                                                                       eos,
-                                                                                       parameters,
-                                                                                       transportModel,
-                                                                                       GetParam().fluxCalculator,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
-                                                                                       boundaryConditions /*boundary conditions*/,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
+                                                                                             domain::Region::ENTIREDOMAIN,
+                                                                                             nullptr /*options*/,
+                                                                                             eos,
+                                                                                             parameters,
+                                                                                             transportModel,
+                                                                                             GetParam().fluxCalculator,
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
+                                                                                             boundaryConditions /*boundary conditions*/,
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
             // Combine the flow data
             ProblemSetup problemSetup;
@@ -678,7 +678,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    CompressibleFlow, CompressibleFlowMmsTestFixture,
+    CompressibleFlowSolver, CompressibleFlowMmsTestFixture,
     testing::Values((CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
                                                         .constants = {.dim = 2,

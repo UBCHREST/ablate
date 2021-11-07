@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_FINITEVOLUME_HPP
-#define ABLATELIBRARY_FINITEVOLUME_HPP
+#ifndef ABLATELIBRARY_FINITEVOLUMESOLVER_HPP
+#define ABLATELIBRARY_FINITEVOLUMESOLVER_HPP
 
 #include <solver/timeStepper.hpp>
 #include <string>
@@ -17,10 +17,10 @@ namespace processes {
 class Process;
 }
 
-class FiniteVolume : public solver::Solver, public solver::RHSFunction {
+class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
    public:
     using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
-    using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolume&, void* ctx);
+    using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
     using AuxFieldUpdateFunction = PetscErrorCode (*)(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* u, PetscScalar* auxField, void* ctx);
 
    private:
@@ -116,11 +116,11 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
     void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
 
    public:
-    FiniteVolume(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
-                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
+    FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
+                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
-    ~FiniteVolume() override;
+    ~FiniteVolumeSolver() override;
     /** SubDomain Register and Setup **/
     void Setup() override;
     void Initialize() override;
@@ -193,4 +193,4 @@ class FiniteVolume : public solver::Solver, public solver::RHSFunction {
 };
 }  // namespace ablate::finiteVolume
 
-#endif  // ABLATELIBRARY_FINITEVOLUME_HPP
+#endif  // ABLATELIBRARY_FINITEVOLUMESOLVER_HPP

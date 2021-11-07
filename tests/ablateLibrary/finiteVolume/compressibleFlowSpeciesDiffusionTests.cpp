@@ -179,13 +179,13 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eos, nullptr, transportModel),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolume>("testFlow",
-                                                                                   domain::Region::ENTIREDOMAIN,
-                                                                                   petscFlowOptions /*options*/,
-                                                                                   flowProcesses,
-                                                                                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
-                                                                                   boundaryConditions /*boundary conditions*/,
-                                                                                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
+            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>("testFlow",
+                                                                                         domain::Region::ENTIREDOMAIN,
+                                                                                         petscFlowOptions /*options*/,
+                                                                                         flowProcesses,
+                                                                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
+                                                                                         boundaryConditions /*boundary conditions*/,
+                                                                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
 
             timeStepper.Register(flowObject);
 

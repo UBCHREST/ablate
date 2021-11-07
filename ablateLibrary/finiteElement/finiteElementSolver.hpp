@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_FINITEELEMENT_HPP
-#define ABLATELIBRARY_FINITEELEMENT_HPP
+#ifndef ABLATELIBRARY_FINITEELEMENTSOLVER_HPP
+#define ABLATELIBRARY_FINITEELEMENTSOLVER_HPP
 
 #include <solver/timeStepper.hpp>
 #include <string>
@@ -12,7 +12,7 @@
 
 namespace ablate::finiteElement {
 
-class FiniteElement : public solver::Solver, public solver::IFunction, public solver::BoundaryFunction {
+class FiniteElementSolver : public solver::Solver, public solver::IFunction, public solver::BoundaryFunction {
    private:
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
@@ -20,9 +20,9 @@ class FiniteElement : public solver::Solver, public solver::IFunction, public so
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
-    FiniteElement(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
+    FiniteElementSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
+                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
     /** SubDomain Register and Setup **/
     void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
@@ -34,7 +34,7 @@ class FiniteElement : public solver::Solver, public solver::IFunction, public so
     /**
      * function to update the aux fields.
      */
-    static void UpdateAuxFields(TS ts, FiniteElement& fe);
+    static void UpdateAuxFields(TS ts, FiniteElementSolver& fe);
 
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
 

@@ -68,7 +68,7 @@ class EVTransport : public FlowProcess {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::finiteVolume::FiniteVolume& flow) override;
+    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
 
    private:
     /**

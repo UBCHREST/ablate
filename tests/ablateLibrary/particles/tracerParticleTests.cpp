@@ -4,7 +4,7 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/setFromOptions.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
-#include "finiteElement/incompressibleFlow.hpp"
+#include "finiteElement/incompressibleFlowSolver.hpp"
 #include "finiteElement/lowMachFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
@@ -320,7 +320,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto temperatureExact =
                 std::make_shared<mathFunctions::FieldFunction>("temperature", ablate::mathFunctions::Create(testingParam.TExact), ablate::mathFunctions::Create(testingParam.TDerivativeExact));
 
-            auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlow>(
+            auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
                 "testFlow",
                 domain::Region::ENTIREDOMAIN,
                 nullptr,

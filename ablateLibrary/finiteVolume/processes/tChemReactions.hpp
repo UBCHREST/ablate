@@ -69,7 +69,7 @@ class TChemReactions : public Process {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::finiteVolume::FiniteVolume &flow) override;
+    void Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
 };
 }  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_TCHEMREACTIONS_HPP

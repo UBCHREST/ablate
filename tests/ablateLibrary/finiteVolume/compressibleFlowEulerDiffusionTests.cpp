@@ -12,7 +12,7 @@
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
-#include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
@@ -116,7 +116,7 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
     PetscFunctionReturn(0);
 }
 
-static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::finiteVolume::CompressibleFlow> flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf,
+static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::finiteVolume::CompressibleFlowSolver> flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf,
                               InputParameters *parameters, PetscTestErrorChecker &errorChecker) {
     // Compute the error
     PetscDS ds;
@@ -226,16 +226,16 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "top/bottom", std::vector<int>{1, 3}, PhysicsBoundary_Mirror, &parameters),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       ablate::domain::Region::ENTIREDOMAIN,
-                                                                                       nullptr /*options*/,
-                                                                                       eos,
-                                                                                       flowParameters,
-                                                                                       transportModel,
-                                                                                       std::make_shared<finiteVolume::fluxCalculator::OffFlux>(),
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
-                                                                                       boundaryConditions /*boundary conditions*/,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
+                                                                                             ablate::domain::Region::ENTIREDOMAIN,
+                                                                                             nullptr /*options*/,
+                                                                                             eos,
+                                                                                             flowParameters,
+                                                                                             transportModel,
+                                                                                             std::make_shared<finiteVolume::fluxCalculator::OffFlux>(),
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
+                                                                                             boundaryConditions /*boundary conditions*/,
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
             mesh->InitializeSubDomains({flowObject});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);

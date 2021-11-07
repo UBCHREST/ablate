@@ -1,15 +1,20 @@
-#include "lowMachFlow.hpp"
-#include "lowMachFlow.h"
+#include "incompressibleFlowSolver.hpp"
+#include <stdexcept>
+#include "incompressibleFlow.h"
 #include "utilities/petscError.hpp"
 
-ablate::finiteElement::LowMachFlow::LowMachFlow(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : FiniteElement(solverId, region, options, initialization, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {}
+ablate::finiteElement::IncompressibleFlowSolver::IncompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
+                                                                          std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
+                                                                          std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
+                                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
+    : FiniteElementSolver(solverId, region, options,
 
-void ablate::finiteElement::LowMachFlow::Setup() {
-    FiniteElement::Setup();
+                          initialization, boundaryConditions, auxiliaryFields, exactSolutions),
+      parameters(parameters) {}
+
+void ablate::finiteElement::IncompressibleFlowSolver::Setup() {
+    FiniteElementSolver::Setup();
 
     // Make sure that the fields
     if (VEL != subDomain->GetField("velocity").subId) {
@@ -23,36 +28,32 @@ void ablate::finiteElement::LowMachFlow::Setup() {
     }
 
     {
-        PetscObject pressure;
         MatNullSpace nullspacePres;
-
-        DMGetField(subDomain->GetDM(), PRES, NULL, &pressure) >> checkError;
-        MatNullSpaceCreate(PetscObjectComm(pressure), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
-        PetscObjectCompose(pressure, "nullspace", (PetscObject)nullspacePres) >> checkError;
+        auto fieldId = subDomain->GetField("pressure");
+        auto pressureField = subDomain->GetPetscFieldObject(fieldId);
+        MatNullSpaceCreate(PetscObjectComm(pressureField), PETSC_TRUE, 0, NULL, &nullspacePres) >> checkError;
+        PetscObjectCompose(pressureField, "nullspace", (PetscObject)nullspacePres) >> checkError;
         MatNullSpaceDestroy(&nullspacePres) >> checkError;
     }
 
-    PetscDS prob;
-    DMGetDS(subDomain->GetDM(), &prob) >> checkError;
-
     // V, W, Q Test Function
-    PetscDSSetResidual(prob, VTEST, LowMachFlow_vIntegrandTestFunction, LowMachFlow_vIntegrandTestGradientFunction) >> checkError;
-    PetscDSSetResidual(prob, WTEST, LowMachFlow_wIntegrandTestFunction, LowMachFlow_wIntegrandTestGradientFunction) >> checkError;
-    PetscDSSetResidual(prob, QTEST, LowMachFlow_qIntegrandTestFunction, NULL) >> checkError;
+    auto prob = subDomain->GetDiscreteSystem();
+    PetscDSSetResidual(prob, VTEST, IncompressibleFlow_vIntegrandTestFunction, IncompressibleFlow_vIntegrandTestGradientFunction) >> checkError;
+    PetscDSSetResidual(prob, WTEST, IncompressibleFlow_wIntegrandTestFunction, IncompressibleFlow_wIntegrandTestGradientFunction) >> checkError;
+    PetscDSSetResidual(prob, QTEST, IncompressibleFlow_qIntegrandTestFunction, NULL) >> checkError;
 
-    PetscDSSetJacobian(prob, VTEST, VEL, LowMachFlow_g0_vu, LowMachFlow_g1_vu, NULL, LowMachFlow_g3_vu) >> checkError;
-    PetscDSSetJacobian(prob, VTEST, PRES, NULL, NULL, LowMachFlow_g2_vp, NULL) >> checkError;
-    PetscDSSetJacobian(prob, VTEST, TEMP, LowMachFlow_g0_vT, NULL, NULL, NULL) >> checkError;
-    PetscDSSetJacobian(prob, QTEST, VEL, LowMachFlow_g0_qu, LowMachFlow_g1_qu, NULL, NULL) >> checkError;
-    PetscDSSetJacobian(prob, QTEST, TEMP, LowMachFlow_g0_qT, LowMachFlow_g1_qT, NULL, NULL) >> checkError;
-    PetscDSSetJacobian(prob, WTEST, VEL, LowMachFlow_g0_wu, NULL, NULL, NULL) >> checkError;
-    PetscDSSetJacobian(prob, WTEST, TEMP, LowMachFlow_g0_wT, LowMachFlow_g1_wT, NULL, LowMachFlow_g3_wT) >> checkError;
+    PetscDSSetJacobian(prob, VTEST, VEL, IncompressibleFlow_g0_vu, IncompressibleFlow_g1_vu, NULL, IncompressibleFlow_g3_vu) >> checkError;
+    PetscDSSetJacobian(prob, VTEST, PRES, NULL, NULL, IncompressibleFlow_g2_vp, NULL) >> checkError;
+    PetscDSSetJacobian(prob, QTEST, VEL, NULL, IncompressibleFlow_g1_qu, NULL, NULL) >> checkError;
+    PetscDSSetJacobian(prob, WTEST, VEL, IncompressibleFlow_g0_wu, NULL, NULL, NULL) >> checkError;
+    PetscDSSetJacobian(prob, WTEST, TEMP, IncompressibleFlow_g0_wT, IncompressibleFlow_g1_wT, NULL, IncompressibleFlow_g3_wT) >> checkError;
 
     /* Setup constants */;
-    PetscReal parameterArray[TOTAL_LOW_MACH_FLOW_PARAMETERS];
-    parameters->Fill(TOTAL_LOW_MACH_FLOW_PARAMETERS, lowMachFlowParametersTypeNames, parameterArray, defaultParameters);
-    PetscDSSetConstants(prob, TOTAL_LOW_MACH_FLOW_PARAMETERS, parameterArray) >> checkError;
+    PetscReal parameterArray[TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS];
+    parameters->Fill(TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, incompressibleFlowParametersTypeNames, parameterArray, defaultParameters);
+    PetscDSSetConstants(prob, TOTAL_INCOMPRESSIBLE_FLOW_PARAMETERS, parameterArray) >> checkError;
 }
+
 static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx) {
     PetscInt d;
     for (d = 0; d < Nc; ++d) u[d] = 0.0;
@@ -106,7 +107,7 @@ static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt n
 }
 
 /* Make the discrete pressure discretely divergence free */
-static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteElement::LowMachFlow &flow) {
+static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteElement::IncompressibleFlowSolver &flow) {
     Vec u;
     PetscErrorCode ierr;
     DM dm;
@@ -126,14 +127,14 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteE
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteElement::LowMachFlow::Initialize() {
-    ablate::finiteElement::FiniteElement::Initialize();
+void ablate::finiteElement::IncompressibleFlowSolver::Initialize() {
+    ablate::finiteElement::FiniteElementSolver::Initialize();
 
     DMSetNullSpaceConstructor(subDomain->GetDM(), PRES, createPressureNullSpace) >> checkError;
     RegisterPreStep([&](TS ts, Solver &) { removeDiscretePressureNullspaceOnTs(ts, *this); });
 }
 
-void ablate::finiteElement::LowMachFlow::CompleteFlowInitialization(DM dm, Vec u) {
+void ablate::finiteElement::IncompressibleFlowSolver::CompleteFlowInitialization(DM dm, Vec u) {
     MatNullSpace nullsp;
 
     createPressureNullSpace(dm, PRES, PRES, &nullsp) >> checkError;
@@ -142,10 +143,10 @@ void ablate::finiteElement::LowMachFlow::CompleteFlowInitialization(DM dm, Vec u
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::finiteElement::LowMachFlow, "incompressible FE flow", ARG(std::string, "id", "the name of the flow field"),
+REGISTER(ablate::solver::Solver, ablate::finiteElement::IncompressibleFlowSolver, "incompressible FE flow", ARG(std::string, "id", "the name of the flow field"),
          OPT(domain::Region, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
          ARG(std::vector<mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),
          ARG(std::vector<finiteElement::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         ARG(std::vector<mathFunctions::FieldFunction>, "auxFields", "enables and sets the update functions for the auxFields"),
+         OPT(std::vector<mathFunctions::FieldFunction>, "auxFields", "enables and sets the update functions for the auxFields"),
          OPT(std::vector<mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

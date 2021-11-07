@@ -13,7 +13,7 @@ void ablate::monitors::CurveMonitor::Register(std::shared_ptr<solver::Solver> mo
     ablate::monitors::Monitor::Register(monitorableObject);
 
     // this probe will only work with fV flow and a single process
-    flow = std::dynamic_pointer_cast<finiteVolume::FiniteVolume>(monitorableObject);
+    flow = std::dynamic_pointer_cast<finiteVolume::FiniteVolumeSolver>(monitorableObject);
     if (!flow) {
         throw std::invalid_argument("The CurveMonitor monitor can only be used with ablate::finiteVolume::FiniteVolume");
     }

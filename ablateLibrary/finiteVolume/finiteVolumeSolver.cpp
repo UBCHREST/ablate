@@ -1,22 +1,22 @@
-#include "finiteVolume.hpp"
+#include "finiteVolumeSolver.hpp"
 #include <petsc/private/dmpleximpl.h>
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 #include "processes/process.hpp"
 
-ablate::finiteVolume::FiniteVolume::FiniteVolume(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                 std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
+ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
+                                                             std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
+                                                             std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : Solver(std::move(solverId), std::move(region), std::move(options)),
       processes(std::move(processes)),
       initialization(std::move(initialization)),
       boundaryConditions(std::move(boundaryConditions)),
       exactSolutions(std::move(exactSolution)) {}
 
-ablate::finiteVolume::FiniteVolume::~FiniteVolume() {}
+ablate::finiteVolume::FiniteVolumeSolver::~FiniteVolumeSolver() {}
 
-void ablate::finiteVolume::FiniteVolume::Setup() {
+void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     // march over process and link to the flow
     for (const auto& process : processes) {
         process->Initialize(*this);
@@ -26,7 +26,7 @@ void ablate::finiteVolume::FiniteVolume::Setup() {
     PetscDSSetFromOptions(subDomain->GetDiscreteSystem()) >> checkError;
 }
 
-void ablate::finiteVolume::FiniteVolume::Initialize() {
+void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
     // add each boundary condition
     for (auto boundary : boundaryConditions) {
         const auto& fieldId = subDomain->GetField(boundary->GetFieldName());
@@ -87,7 +87,7 @@ void ablate::finiteVolume::FiniteVolume::Initialize() {
     }
 }
 
-PetscErrorCode ablate::finiteVolume::FiniteVolume::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
+PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
 
     PetscErrorCode ierr;
@@ -125,7 +125,8 @@ PetscErrorCode ablate::finiteVolume::FiniteVolume::ComputeRHSFunction(PetscReal 
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(FVMRHSFluxFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields) {
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSFluxFunction function, void* context, std::string field, std::vector<std::string> inputFields,
+                                                                   std::vector<std::string> auxFields) {
     // map the field, inputFields, and auxFields to locations
     auto& fieldId = subDomain->GetField(field);
 
@@ -155,8 +156,8 @@ void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(FVMRHSFluxFunction 
     rhsFluxFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::vector<std::string> fields, std::vector<std::string> inputFields,
-                                                             std::vector<std::string> auxFields) {
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::vector<std::string> fields, std::vector<std::string> inputFields,
+                                                                   std::vector<std::string> auxFields) {
     // Create the FVMRHS Function
     FVMRHSPointFunctionDescription functionDescription{.function = function,
                                                        .context = context,
@@ -189,9 +190,9 @@ void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(FVMRHSPointFunction
     rhsPointFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::finiteVolume::FiniteVolume::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.push_back(std::make_pair(function, context)); }
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.push_back(std::make_pair(function, context)); }
 
-void ablate::finiteVolume::FiniteVolume::RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields) {
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields) {
     // find the field location
     auto& auxFieldLocation = subDomain->GetField(auxField);
 
@@ -205,8 +206,8 @@ void ablate::finiteVolume::FiniteVolume::RegisterAuxFieldUpdate(AuxFieldUpdateFu
     auxFieldUpdateFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::finiteVolume::FiniteVolume::ComputeTimeStep(TS ts, ablate::solver::Solver& solver) {
-    auto& flowFV = static_cast<ablate::finiteVolume::FiniteVolume&>(solver);
+void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::solver::Solver& solver) {
+    auto& flowFV = static_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
@@ -237,8 +238,8 @@ void ablate::finiteVolume::FiniteVolume::ComputeTimeStep(TS ts, ablate::solver::
     }
 }
 
-void ablate::finiteVolume::FiniteVolume::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.push_back(std::make_pair(function, ctx)); }
-void ablate::finiteVolume::FiniteVolume::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.push_back(std::make_pair(function, ctx)); }
+void ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
     Solver::Save(viewer, sequenceNumber, time);
 
     if (!exactSolutions.empty()) {
@@ -253,7 +254,7 @@ void ablate::finiteVolume::FiniteVolume::Save(PetscViewer viewer, PetscInt seque
     }
 }
 
-void ablate::finiteVolume::FiniteVolume::UpdateAuxFields(PetscReal time, Vec locXVec, Vec locAuxField) {
+void ablate::finiteVolume::FiniteVolumeSolver::UpdateAuxFields(PetscReal time, Vec locXVec, Vec locAuxField) {
     DM plex;
     DM auxDM = GetSubDomain().GetAuxDM();
     // Convert to a dmplex
@@ -330,7 +331,7 @@ void ablate::finiteVolume::FiniteVolume::UpdateAuxFields(PetscReal time, Vec loc
     DMDestroy(&plex) >> checkError;
     PetscFree(uOff) >> checkError;
 }
-void ablate::finiteVolume::FiniteVolume::ComputeFlux(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
+void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
     // Get the valid cell range over this region
     IS faceIS;
     PetscInt fStart, fEnd;
@@ -346,21 +347,21 @@ void ablate::finiteVolume::FiniteVolume::ComputeFlux(PetscReal time, Vec locXVec
     RestoreRange(faceIS, fStart, fEnd, faces);
 }
 
-void ablate::finiteVolume::FiniteVolume::GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells) {
+void ablate::finiteVolume::FiniteVolumeSolver::GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells) {
     // Start out getting all of the cells
     PetscInt depth;
     DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
     GetRange(depth, cellIS, cStart, cEnd, cells);
 }
 
-void ablate::finiteVolume::FiniteVolume::GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces) {
+void ablate::finiteVolume::FiniteVolumeSolver::GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces) {
     // Start out getting all of the cells
     PetscInt depth;
     DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
     GetRange(depth - 1, faceIS, fStart, fEnd, faces);
 }
 
-void ablate::finiteVolume::FiniteVolume::GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
+void ablate::finiteVolume::FiniteVolumeSolver::GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
     // Start out getting all of the points
     IS allPointIS;
     DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> checkError;
@@ -387,13 +388,13 @@ void ablate::finiteVolume::FiniteVolume::GetRange(PetscInt depth, IS& pointIS, P
     ISDestroy(&allPointIS) >> checkError;
 }
 
-void ablate::finiteVolume::FiniteVolume::RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
+void ablate::finiteVolume::FiniteVolumeSolver::RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
     ISRestorePointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
     ISDestroy(&pointIS) >> checkError;
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolume, "finite volume solver", ARG(std::string, "id", "the name of the flow field"),
+REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolumeSolver, "finite volume solver", ARG(std::string, "id", "the name of the flow field"),
          OPT(domain::Region, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
          ARG(std::vector<ablate::finiteVolume::processes::Process>, "processes", "the processes used to describe the flow"),
          OPT(std::vector<mathFunctions::FieldFunction>, "initialization", "the flow field initialization"),

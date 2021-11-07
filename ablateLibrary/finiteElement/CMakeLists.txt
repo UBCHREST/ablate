@@ -1,11 +1,11 @@
 target_sources(ablateLibrary
         PUBLIC
-        finiteElement.hpp
-        finiteElement.cpp
-        lowMachFlow.hpp
-        lowMachFlow.cpp
-        incompressibleFlow.hpp
-        incompressibleFlow.cpp
+        finiteElementSolver.hpp
+        finiteElementSolver.cpp
+        lowMachFlowSolver.hpp
+        lowMachFlowSolver.cpp
+        incompressibleFlowSolver.hpp
+        incompressibleFlowSolver.cpp
         lowMachFlowFields.hpp
         lowMachFlowFields.cpp
         )

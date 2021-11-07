@@ -14,8 +14,8 @@
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/essentialGhost.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
-#include "finiteVolume/compressibleFlow.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -159,17 +159,18 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("left", std::vector<int>{4}, evExactField),
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, evExactField)};
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       domain::Region::ENTIREDOMAIN,
-                                                                                       petscFlowOptions /*options*/,
-                                                                                       eos,
-                                                                                       nullptr /*options*/,
-                                                                                       transportModel,
-                                                                                       nullptr /*no advection */,
-                                                                                       std::vector<std::shared_ptr<finiteVolume::processes::Process>>(),
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField} /*initialization*/,
-                                                                                       boundaryConditions /*boundary conditions*/,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});
+            auto flowObject =
+                std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
+                                                                               domain::Region::ENTIREDOMAIN,
+                                                                               petscFlowOptions /*options*/,
+                                                                               eos,
+                                                                               nullptr /*options*/,
+                                                                               transportModel,
+                                                                               nullptr /*no advection */,
+                                                                               std::vector<std::shared_ptr<finiteVolume::processes::Process>>(),
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField} /*initialization*/,
+                                                                               boundaryConditions /*boundary conditions*/,
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});
 
             timeStepper.Register(flowObject);
 

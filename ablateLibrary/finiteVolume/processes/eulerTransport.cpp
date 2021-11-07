@@ -47,7 +47,7 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<
     updateTemperatureData.numberSpecies = (PetscInt)eos->GetSpecies().size();
 }
 
-void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteVolume::FiniteVolume& flow) {
+void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Register the euler source terms
     if (fluxCalculator) {
         if (eos->GetSpecies().empty()) {
@@ -204,7 +204,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(Pe
     PetscFunctionReturn(0);
 }
 
-double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolume& flow, void* ctx) {
+double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
