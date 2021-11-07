@@ -25,8 +25,7 @@ struct ArgumentIdentifier {
 };
 
 template <typename Interface>
-std::ostream& operator<<(std::ostream& os, const ArgumentIdentifier<Interface>& arg)
-{
+std::ostream& operator<<(std::ostream& os, const ArgumentIdentifier<Interface>& arg) {
     os << arg.inputName << (arg.optional ? "(OPT)" : "") << ": " << arg.description;
     return os;
 }

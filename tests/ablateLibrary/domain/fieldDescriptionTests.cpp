@@ -56,7 +56,8 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
     EXPECT_CALL(*mockSubFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(className));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "name"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("name1"));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "prefix", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::string()));
-    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "components", .optional = true})).Times(::testing::Exactly(1))
+    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "components", .optional = true}))
+        .Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(std::vector<std::string>{}));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "location", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(""));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "type"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("FE"));
@@ -82,7 +83,6 @@ TEST(FieldDescriptionTests, ShouldBeCreatedByFactoryFunctionWithMinimalInputs) {
     ASSERT_EQ(flowField->region, nullptr);
 }
 
-
 TEST(FieldDescriptionTests, ShouldActAsSingleFieldDescriptor) {
     // arrange
     auto mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
@@ -93,7 +93,8 @@ TEST(FieldDescriptionTests, ShouldActAsSingleFieldDescriptor) {
     EXPECT_CALL(*mockSubFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(className));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "name"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("name1"));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "prefix", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::string()));
-    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "components", .optional = true})).Times(::testing::Exactly(1))
+    EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::vector<std::string>>{.inputName = "components", .optional = true}))
+        .Times(::testing::Exactly(1))
         .WillOnce(::testing::Return(std::vector<std::string>{}));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "location", .optional = true})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("AUX"));
     EXPECT_CALL(*mockSubFactory, Get(ArgumentIdentifier<std::string>{.inputName = "type"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("FE"));

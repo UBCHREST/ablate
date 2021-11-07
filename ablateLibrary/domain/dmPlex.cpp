@@ -3,8 +3,7 @@
 #include <utilities/petscOptions.hpp>
 
 ablate::domain::DMPlex::DMPlex(std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string nameIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers)
-    : Domain(CreateDM(nameIn), nameIn, fieldDescriptors, modifiers) {
-}
+    : Domain(CreateDM(nameIn), nameIn, fieldDescriptors, modifiers) {}
 
 ablate::domain::DMPlex::~DMPlex() {
     if (dm) {
@@ -20,7 +19,5 @@ DM ablate::domain::DMPlex::CreateDM(const std::string& name) {
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::domain::Domain, ablate::domain::DMPlex, "DMPlex that can be set using PETSc options",
-         OPT(std::vector<domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
-         ARG(std::string, "name", "the mesh dm name"),
-         OPT(std::vector<domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"));
+REGISTER(ablate::domain::Domain, ablate::domain::DMPlex, "DMPlex that can be set using PETSc options", OPT(std::vector<domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
+         ARG(std::string, "name", "the mesh dm name"), OPT(std::vector<domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"));

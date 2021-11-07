@@ -29,7 +29,6 @@ class Domain {
     DM dm;
 
    private:
-
     // the name of the dm
     std::string name;
 
@@ -58,7 +57,7 @@ class Domain {
    public:
     std::string GetName() const { return name; }
 
-    DM &GetDM() { return dm; }
+    DM& GetDM() { return dm; }
 
     Vec GetSolutionVector() { return solField; }
 
@@ -75,24 +74,19 @@ class Domain {
      */
     PetscObject GetPetscFieldObject(const Field& field);
 
-
     /**
      *  returns the field  by global id
      * @param fieldId
      * @return
      */
-    inline const Field& GetField(int fieldId) const {
-        return fields[fieldId];
-    }
+    inline const Field& GetField(int fieldId) const { return fields[fieldId]; }
 
     /**
      *  returns all of the fields
      * @param fieldId
      * @return
      */
-    inline const std::vector<Field>& GetFields() const {
-        return fields;
-    }
+    inline const std::vector<Field>& GetFields() const { return fields; }
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H

@@ -2,8 +2,11 @@
 #include <map>
 #include "fieldDescription.hpp"
 
-static const std::map<std::string, ablate::domain::FieldLocation> stringToFieldLocation = {
-    {"", ablate::domain::FieldLocation::SOL}, {"sol", ablate::domain::FieldLocation::SOL}, {"SOL", ablate::domain::FieldLocation::SOL}, {"AUX", ablate::domain::FieldLocation::AUX}, {"aux", ablate::domain::FieldLocation::AUX}};
+static const std::map<std::string, ablate::domain::FieldLocation> stringToFieldLocation = {{"", ablate::domain::FieldLocation::SOL},
+                                                                                           {"sol", ablate::domain::FieldLocation::SOL},
+                                                                                           {"SOL", ablate::domain::FieldLocation::SOL},
+                                                                                           {"AUX", ablate::domain::FieldLocation::AUX},
+                                                                                           {"aux", ablate::domain::FieldLocation::AUX}};
 
 static const std::map<std::string, ablate::domain::FieldType> stringToFieldAdjacency = {{"FE", ablate::domain::FieldType::FEM},
                                                                                         {"fe", ablate::domain::FieldType::FEM},
@@ -30,18 +33,20 @@ std::istream& ablate::domain::operator>>(std::istream& is, ablate::domain::Field
 }
 
 ablate::domain::Field ablate::domain::Field::FromFieldDescription(const ablate::domain::FieldDescription& fieldDescription, PetscInt id, PetscInt subId) {
-    return ablate::domain::Field{.name = fieldDescription.name,
-                                 .numberComponents = (PetscInt)fieldDescription.components.size(),
-                                 .components = fieldDescription.components,
-                                 .id = id,
-                                 .subId = subId,
-                                 .location = fieldDescription.location,
-                                 .type = fieldDescription.type,
+    return ablate::domain::Field{
+        .name = fieldDescription.name,
+        .numberComponents = (PetscInt)fieldDescription.components.size(),
+        .components = fieldDescription.components,
+        .id = id,
+        .subId = subId,
+        .location = fieldDescription.location,
+        .type = fieldDescription.type,
     };
 }
 
-ablate::domain::Field ablate::domain::Field::CreateSubField(PetscInt newSubId) const{
-    return ablate::domain::Field{.name = name,
+ablate::domain::Field ablate::domain::Field::CreateSubField(PetscInt newSubId) const {
+    return ablate::domain::Field{
+        .name = name,
         .numberComponents = numberComponents,
         .components = components,
         .id = id,

@@ -1,9 +1,7 @@
 #include "region.hpp"
 #include <functional>
 
-ablate::domain::Region::Region(std::string name, PetscInt valueIn)
-    : name(name), value(valueIn == 0?  1: valueIn) {
-
+ablate::domain::Region::Region(std::string name, PetscInt valueIn) : name(name), value(valueIn == 0 ? 1 : valueIn) {
     // Create a unique string
     auto hashString = name + ":" + std::to_string(value);
     id = std::hash<std::string>()(hashString);

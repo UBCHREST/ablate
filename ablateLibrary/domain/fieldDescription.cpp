@@ -6,20 +6,18 @@
 #include <utilities/petscOptions.hpp>
 
 ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::string prefixIn, std::vector<std::string> componentsIn, ablate::domain::FieldLocation location,
-                                                           ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> optionsIn)
+                                                   ablate::domain::FieldType type, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> optionsIn)
     : name(nameIn),
       prefix(prefixIn.empty() ? name + "_" : prefixIn + "_"),
       components(componentsIn.empty() ? std::vector<std::string>{"_"} : componentsIn),
       location(location),
       type(type),
-      region(region)
-    {
-    if(optionsIn){
+      region(region) {
+    if (optionsIn) {
         PetscOptionsCreate(&options);
         optionsIn->Fill(options);
     }
 }
-
 
 PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
     switch (type) {
@@ -41,8 +39,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
 
             // create a petsc fe
             PetscFE petscFE;
-            PetscFECreateDefault(PetscObjectComm((PetscObject)dm), dim, components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, prefix.c_str(), PETSC_DEFAULT, &petscFE) >>
-                checkError;
+            PetscFECreateDefault(PetscObjectComm((PetscObject)dm), dim, components.size(), simplexGlobal ? PETSC_TRUE : PETSC_FALSE, prefix.c_str(), PETSC_DEFAULT, &petscFE) >> checkError;
             PetscObjectSetName((PetscObject)petscFE, name.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)petscFE, options) >> checkError;
 
@@ -50,7 +47,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             // Check to see if there is already a petscFE object defined
             PetscInt numberFields;
             DMGetNumFields(dm, &numberFields) >> checkError;
-            for(PetscInt f = 0; f < numberFields; f++){
+            for (PetscInt f = 0; f < numberFields; f++) {
                 PetscObject obj;
                 DMGetField(dm, f, NULL, &obj) >> checkError;
                 PetscClassId id;
@@ -68,7 +65,6 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             PetscObjectSetName((PetscObject)fvm, name.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)fvm, options) >> checkError;
 
-
             PetscObjectSetOptionsPrefix((PetscObject)fvm, prefix.c_str()) >> checkError;
             PetscFVSetFromOptions(fvm) >> checkError;
             PetscFVSetNumComponents(fvm, components.size()) >> checkError;
@@ -76,7 +72,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             // Determine the number of dims
             PetscInt dim;
             DMGetDimension(dm, &dim) >> checkError;
-            PetscFVSetSpatialDimension(fvm,dim) >> checkError;
+            PetscFVSetSpatialDimension(fvm, dim) >> checkError;
 
             // Add the field to the
             return (PetscObject)fvm;
@@ -104,26 +100,20 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::domain::F
     return std::vector<std::shared_ptr<ablate::domain::FieldDescription>>{shared_from_this()};
 }
 ablate::domain::FieldDescription::~FieldDescription() {
-    if(options){
+    if (options) {
         ablate::utilities::PetscOptionsDestroyAndCheck("Field " + name, &options);
     }
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::domain::FieldDescription, ablate::domain::FieldDescription, "A single custom field description",
-         ARG(std::string, "name", "the name of the field"),
-         OPT(std::string, "prefix", "optional prefix (defaults to name)"),
-         OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
+REGISTER(ablate::domain::FieldDescription, ablate::domain::FieldDescription, "A single custom field description", ARG(std::string, "name", "the name of the field"),
+         OPT(std::string, "prefix", "optional prefix (defaults to name)"), OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
          OPT(EnumWrapper<ablate::domain::FieldLocation>, "location", "if it is a solution (SOL) or auxiliary (aux) field"),
-         ARG(EnumWrapper<ablate::domain::FieldType>, "type", "if it is a finite volume (FV) or finite element (FE) field"),
-         OPT(domain::Region, "region", "the region in which this field lives"),
+         ARG(EnumWrapper<ablate::domain::FieldType>, "type", "if it is a finite volume (FV) or finite element (FE) field"), OPT(domain::Region, "region", "the region in which this field lives"),
          OPT(parameters::Parameters, "options", "field specific options"));
 
-REGISTER(ablate::domain::FieldDescriptor, ablate::domain::FieldDescription, "A single custom field description",
-         ARG(std::string, "name", "the name of the field"),
-         OPT(std::string, "prefix", "optional prefix (defaults to name)"),
-         OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
+REGISTER(ablate::domain::FieldDescriptor, ablate::domain::FieldDescription, "A single custom field description", ARG(std::string, "name", "the name of the field"),
+         OPT(std::string, "prefix", "optional prefix (defaults to name)"), OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
          OPT(EnumWrapper<ablate::domain::FieldLocation>, "location", "if it is a solution (SOL) or auxiliary (aux) field"),
-         ARG(EnumWrapper<ablate::domain::FieldType>, "type", "if it is a finite volume (FV) or finite element (FE) field"),
-         OPT(domain::Region, "region", "the region in which this field lives"),
+         ARG(EnumWrapper<ablate::domain::FieldType>, "type", "if it is a finite volume (FV) or finite element (FE) field"), OPT(domain::Region, "region", "the region in which this field lives"),
          OPT(parameters::Parameters, "options", "field specific options"));

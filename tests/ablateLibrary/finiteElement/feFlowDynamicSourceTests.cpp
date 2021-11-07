@@ -2,9 +2,9 @@ static char help[] =
     "Time-dependent Low Mach Flow in 2d channels with finite elements. We solve the Low Mach flow problem in a rectangular domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
-#include "domain/modifiers/setFromOptions.hpp"
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/modifiers/setFromOptions.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlow.hpp"
 #include "finiteElement/lowMachFlow.hpp"
@@ -130,9 +130,12 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::LowMachFlowFields>(ablate::domain::Region::ENTIREDOMAIN, true)};
 
             // Create a simple test mesh
-            auto mesh = std::make_shared<domain::BoxMesh>("mesh", fieldDescriptors,
+            auto mesh = std::make_shared<domain::BoxMesh>("mesh",
+                                                          fieldDescriptors,
                                                           std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::SetFromOptions>()},
-                                                          std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+                                                          std::vector<int>{2, 2},
+                                                          std::vector<double>{0.0, 0.0},
+                                                          std::vector<double>{1.0, 1.0});
 
             TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;

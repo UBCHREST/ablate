@@ -2,9 +2,9 @@
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
 
-ablate::domain::FileMesh::FileMesh(std::string nameIn, std::filesystem::path pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,  std::vector<std::shared_ptr<modifiers::Modifier>> modifiers)
-    : Domain(ReadDMFromFile(nameIn, pathIn), nameIn, fieldDescriptors, modifiers) {
-}
+ablate::domain::FileMesh::FileMesh(std::string nameIn, std::filesystem::path pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
+                                   std::vector<std::shared_ptr<modifiers::Modifier>> modifiers)
+    : Domain(ReadDMFromFile(nameIn, pathIn), nameIn, fieldDescriptors, modifiers) {}
 
 ablate::domain::FileMesh::~FileMesh() {
     if (dm) {
@@ -20,6 +20,5 @@ DM ablate::domain::FileMesh::ReadDMFromFile(const std::string& name, const std::
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::domain::Domain, ablate::domain::FileMesh, "read a DMPlex from a file", ARG(std::string, "name", "the name of the domain/mesh object"),
-         ARG(std::filesystem::path, "path", "the path to the mesh file"),
-         OPT(std::vector<domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
+         ARG(std::filesystem::path, "path", "the path to the mesh file"), OPT(std::vector<domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
          OPT(std::vector<domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"));

@@ -43,7 +43,11 @@ void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finit
         }
 
         if (diffusionData.diffFunction) {
-            flow.RegisterRHSFunction(DiffusionEnergyFlux, &diffusionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {CompressibleFlowFields::YI_FIELD});
+            flow.RegisterRHSFunction(DiffusionEnergyFlux,
+                                     &diffusionData,
+                                     CompressibleFlowFields::EULER_FIELD,
+                                     {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                     {CompressibleFlowFields::YI_FIELD});
             flow.RegisterRHSFunction(DiffusionSpeciesFlux, &diffusionData, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::YI_FIELD});
         }
 

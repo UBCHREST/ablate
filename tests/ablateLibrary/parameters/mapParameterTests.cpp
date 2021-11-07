@@ -26,7 +26,7 @@ TEST(MapParametersTests, ShouldCreateFromInitializerList) {
 TEST(MapParametersTests, ShouldSupportCreateFunction) {
     // arrange
     // act
-    auto mapParameters =  ablate::parameters::MapParameters::Create({{"item1", "value1"}, {"item2", "value2"}});
+    auto mapParameters = ablate::parameters::MapParameters::Create({{"item1", "value1"}, {"item2", "value2"}});
 
     // assert
     ASSERT_EQ(mapParameters->GetString("item1"), "value1");

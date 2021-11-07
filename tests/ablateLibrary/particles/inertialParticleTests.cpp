@@ -1,7 +1,7 @@
 #include <petsc.h>
-#include "domain/modifiers/setFromOptions.hpp"
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/modifiers/setFromOptions.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlow.hpp"
 #include "finiteElement/lowMachFlowFields.hpp"

@@ -13,7 +13,8 @@
 namespace ablate::finiteElement {
 
 class FiniteElement : public solver::Solver, public solver::IFunction, public solver::BoundaryFunction {
-   private:const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
+   private:
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFieldsUpdaters;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;

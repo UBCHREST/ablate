@@ -17,5 +17,5 @@ class GhostBoundaryCells : public Modifier {
     int Priority() const override { return 5; }
 };
 
-}  // namespace ablate::domain::modifier
+}  // namespace ablate::domain::modifiers
 #endif  // ABLATELIBRARY_GHOSTBOUNDARYCELLS_HPP

@@ -33,7 +33,7 @@ ablate::parser::YamlParser::YamlParser(std::filesystem::path filePath, bool relo
 std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(const std::string& name) const {
     // Check to see if the child factory has already been created
     if (childFactories.count(name) == 0) {
-        if(name.empty()){
+        if (name.empty()) {
             auto parameter = yamlConfiguration;
             auto childPath = nodePath;
 
@@ -44,7 +44,7 @@ std::shared_ptr<ablate::parser::Factory> ablate::parser::YamlParser::GetFactory(
             MarkAllUsed();
             MarkUsage(name);
             childFactories[name] = std::shared_ptr<YamlParser>(new YamlParser(parameter, childPath, tagType, relocateRemoteFiles, searchDirectories));
-        }else{
+        } else {
             auto parameter = yamlConfiguration[name];
             auto childPath = nodePath + "/" + name;
 

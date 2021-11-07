@@ -11,15 +11,9 @@ ablate::finiteElement::FiniteElement::FiniteElement(std::string solverId, std::s
                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
-    : Solver(solverId, region, options),
-      initialization(initialization),
-      boundaryConditions(boundaryConditions),
-      auxiliaryFieldsUpdaters(auxiliaryFields),
-      exactSolutions(exactSolution) {}
+    : Solver(solverId, region, options), initialization(initialization), boundaryConditions(boundaryConditions), auxiliaryFieldsUpdaters(auxiliaryFields), exactSolutions(exactSolution) {}
 
-void ablate::finiteElement::FiniteElement::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
-    Solver::Register(subDomain);
-}
+void ablate::finiteElement::FiniteElement::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { Solver::Register(subDomain); }
 
 void ablate::finiteElement::FiniteElement::Setup() {
     DM cdm = subDomain->GetDM();
@@ -87,7 +81,6 @@ void ablate::finiteElement::FiniteElement::UpdateAuxFields(TS ts, ablate::finite
     // Update the source terms
     DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> checkError;
 }
-
 
 void ablate::finiteElement::FiniteElement::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
     Solver::Save(viewer, sequenceNumber, time);

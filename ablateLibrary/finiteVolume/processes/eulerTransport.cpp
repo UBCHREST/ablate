@@ -68,9 +68,17 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
     if (diffusionData.kFunction || diffusionData.muFunction) {
         // Register the euler diffusion source terms
         if (diffusionData.numberSpecies > 0) {
-            flow.RegisterRHSFunction(DiffusionFlux, &diffusionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
+            flow.RegisterRHSFunction(DiffusionFlux,
+                                     &diffusionData,
+                                     CompressibleFlowFields::EULER_FIELD,
+                                     {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                     {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
         } else {
-            flow.RegisterRHSFunction(DiffusionFlux, &diffusionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
+            flow.RegisterRHSFunction(DiffusionFlux,
+                                     &diffusionData,
+                                     CompressibleFlowFields::EULER_FIELD,
+                                     {CompressibleFlowFields::EULER_FIELD},
+                                     {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
         }
     }
 
@@ -81,7 +89,8 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::TEMPERATURE_FIELD)) {
         if (diffusionData.numberSpecies > 0) {
             // add in aux update variables
-            flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
+            flow.RegisterAuxFieldUpdate(
+                UpdateAuxTemperatureField, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
         } else {
             // add in aux update variables
             flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD});

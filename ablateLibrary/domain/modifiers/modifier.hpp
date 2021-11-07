@@ -16,6 +16,6 @@ class Modifier {
      */
     virtual int Priority() const { return 0; }
 };
-}  // namespace ablate::domain::modifier
+}  // namespace ablate::domain::modifiers
 
 #endif  // ABLATELIBRARY_MODIFIER_HPP

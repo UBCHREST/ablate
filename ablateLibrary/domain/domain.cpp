@@ -95,18 +95,18 @@ void ablate::domain::Domain::CreateStructures() {
 
 std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(std::shared_ptr<domain::Region> region) {
     // Check to see if there is a label for this region
-    if(region){
+    if (region) {
         // March over each ds region, and return the subdomain if this region is inside of any subDomain region
-        for(const auto& subDomain: subDomains){
-            if(subDomain->InRegion(*region)){
+        for (const auto& subDomain : subDomains) {
+            if (subDomain->InRegion(*region)) {
                 return subDomain;
             }
         }
         throw std::runtime_error("Unable to locate subDomain for region " + region->ToString());
 
-    }else{
+    } else {
         // Get the only subDomain
-        if(subDomains.size() > 1){
+        if (subDomains.size() > 1) {
             throw std::runtime_error("More than one DS was created, the region is expected to be defined.");
         }
         return subDomains.front();

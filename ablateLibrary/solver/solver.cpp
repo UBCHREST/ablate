@@ -86,15 +86,13 @@ void ablate::solver::Solver::Restore(PetscViewer viewer, PetscInt sequenceNumber
     VecLoad(subDomain->GetSolutionVector(), viewer) >> checkError;
 }
 
-
 static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx) {
     PetscInt c;
     for (c = 0; c < Nc; ++c) u[c] = 0.0;
     return 0;
 }
 
-PetscErrorCode ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(DM dm, PetscDS prob, PetscBool insertEssential, Vec locX, PetscReal time, Vec faceGeomFVM, Vec cellGeomFVM,
-                                                                                     Vec gradFVM) {
+PetscErrorCode ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(DM dm, PetscDS prob, PetscBool insertEssential, Vec locX, PetscReal time, Vec faceGeomFVM, Vec cellGeomFVM, Vec gradFVM) {
     PetscObject isZero;
     PetscInt numBd, b;
     PetscErrorCode ierr;
@@ -167,8 +165,8 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(DM dm, Pe
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_Plex(DM dm, PetscDS prob, PetscBool insertEssential, Vec locX, PetscReal time, Vec faceGeomFVM,
-                                                                                                   Vec cellGeomFVM, Vec gradFVM) {
+PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_Plex(DM dm, PetscDS prob, PetscBool insertEssential, Vec locX, PetscReal time, Vec faceGeomFVM, Vec cellGeomFVM,
+                                                                                     Vec gradFVM) {
     PetscObject isZero;
     PetscInt numBd, b;
     PetscErrorCode ierr;

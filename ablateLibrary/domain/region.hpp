@@ -23,9 +23,9 @@ class Region {
 
     inline const std::string& GetName() const { return name; }
 
-    inline const PetscInt & GetValue() const { return value; }
+    inline const PetscInt& GetValue() const { return value; }
 
-    inline const std::string ToString() const {return name + ":" + std::to_string(value);};
+    inline const std::string ToString() const { return name + ":" + std::to_string(value); };
 };
 
 }  // namespace ablate::domain

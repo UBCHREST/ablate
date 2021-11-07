@@ -68,7 +68,8 @@ void ablate::particles::Particles::Initialize() {
         }
 
         // Compute the size of the exact solution (each component added up)
-        RegisterParticleField(ParticleField{.name = PackedSolution, .components = std::vector<std::string>(packedSolutionComponentSize, "_"), .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
+        RegisterParticleField(
+            ParticleField{.name = PackedSolution, .components = std::vector<std::string>(packedSolutionComponentSize, "_"), .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
     }
 
     // before setting up the flow finalize the fields

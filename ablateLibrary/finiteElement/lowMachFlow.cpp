@@ -6,22 +6,19 @@ ablate::finiteElement::LowMachFlow::LowMachFlow(std::string solverId, std::share
                                                 std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                 std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : FiniteElement(
-          solverId, region, options,
-          initialization, boundaryConditions, auxiliaryFields, exactSolutions),
-      parameters(parameters) {}
+    : FiniteElement(solverId, region, options, initialization, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {}
 
 void ablate::finiteElement::LowMachFlow::Setup() {
     FiniteElement::Setup();
 
     // Make sure that the fields
-    if(VEL != subDomain->GetField("velocity").subId ){
+    if (VEL != subDomain->GetField("velocity").subId) {
         throw std::invalid_argument("The velocity field subId is expected to be " + std::to_string(VEL) + ", but found to be " + std::to_string(subDomain->GetField("velocity").subId));
     }
-    if(PRES != subDomain->GetField("pressure").subId ){
+    if (PRES != subDomain->GetField("pressure").subId) {
         throw std::invalid_argument("The pressure field subId is expected to be " + std::to_string(PRES) + ", but found to be " + std::to_string(subDomain->GetField("pressure").subId));
     }
-    if(TEMP != subDomain->GetField("temperature").subId ){
+    if (TEMP != subDomain->GetField("temperature").subId) {
         throw std::invalid_argument("The temperature field subId is expected to be " + std::to_string(TEMP) + ", but found to be " + std::to_string(subDomain->GetField("temperature").subId));
     }
 

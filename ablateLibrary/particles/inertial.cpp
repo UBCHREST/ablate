@@ -85,7 +85,7 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
     DMInterpolationInfo ictx;
     const PetscScalar *coords;
     PetscScalar *f;
-    const auto& flowVelocityField = particles->subDomain->GetField("velocity");
+    const auto &flowVelocityField = particles->subDomain->GetField("velocity");
     PetscInt vf[1] = {flowVelocityField.id};
     PetscInt dim, Np;
     PetscErrorCode ierr;

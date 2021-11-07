@@ -8,15 +8,15 @@
 #include <vector>
 #include "domain/field.hpp"
 #include "domain/region.hpp"
-#include "parser/factory.hpp"
 #include "fieldDescriptor.hpp"
+#include "parser/factory.hpp"
 
 namespace ablate::domain {
 
 /**
  * Describes the necessary information to produce a field in the domain/dm
  */
-struct FieldDescription: public FieldDescriptor, public std::enable_shared_from_this<FieldDescription>{
+struct FieldDescription : public FieldDescriptor, public std::enable_shared_from_this<FieldDescription> {
     virtual ~FieldDescription();
 
     // Helper variable, replaces any components with this value with one for each dimension
@@ -41,12 +41,13 @@ struct FieldDescription: public FieldDescriptor, public std::enable_shared_from_
     // The region for the field (nullptr is everywhere)
     const std::shared_ptr<domain::Region> region;
 
-    FieldDescription(std::string name, std::string prefix, std::vector<std::string> components, FieldLocation location, FieldType type, std::shared_ptr<domain::Region> = {}, std::shared_ptr<parameters::Parameters> = {});
+    FieldDescription(std::string name, std::string prefix, std::vector<std::string> components, FieldLocation location, FieldType type, std::shared_ptr<domain::Region> = {},
+                     std::shared_ptr<parameters::Parameters> = {});
 
     /**
      * Public function that will cause the components to expand or decompress based upon the number of dims
      */
-     void DecompressComponents(PetscInt dim);
+    void DecompressComponents(PetscInt dim);
 
     /** Allow a single FieldDescription to report it self allowing FieldDescription to be used as FieldDescriptor**/
     std::vector<std::shared_ptr<FieldDescription>> GetFields() override;
@@ -61,7 +62,6 @@ struct FieldDescription: public FieldDescriptor, public std::enable_shared_from_
    private:
     // Petsc options specific for this field
     PetscOptions options = nullptr;
-
 };
 
 }  // namespace ablate::domain
