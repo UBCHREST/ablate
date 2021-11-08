@@ -91,6 +91,17 @@ void ablate::domain::Domain::CreateStructures() {
     DMPlexCreateClosureIndex(dm, NULL) >> checkError;
     DMCreateGlobalVector(dm, &(solField)) >> checkError;
     PetscObjectSetName((PetscObject)solField, "solution") >> checkError;
+
+    // add the names to each of the components in the dm section
+    PetscSection section;
+    DMGetLocalSection(dm, &section) >> checkError;
+    for (const auto& field : fields) {
+        if (field.numberComponents > 1) {
+            for (PetscInt c = 0; c < field.numberComponents; c++) {
+                PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> checkError;
+            }
+        }
+    }
 }
 
 std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(std::shared_ptr<domain::Region> region) {

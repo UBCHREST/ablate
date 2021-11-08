@@ -10,11 +10,20 @@ namespace fs = std::filesystem;
 namespace testingResources {
 
 struct MpiTestParameter {
+    // A general test name
     std::string testName;
+    // The number of mpi processes to test agains
     int nproc;
+    // An optional expected output file to compare against standard out
     std::string expectedOutputFile;
+
+    // Optional program arguments
     std::string arguments;
 
+    // an optional list of other files that may be output (expected, actual)
+    std::vector<std::pair<std::string, std::string>> expectedFiles;
+
+    // A sanitized version of the test name
     std::string getTestName() const {
         std::string s = testName;
         std::replace(s.begin(), s.end(), ' ', '_');
@@ -32,6 +41,9 @@ class MpiTestFixture : public ::testing::Test {
     static std::string ParseCommandLineArgument(int* argc, char*** argv, const std::string flag);
     MpiTestParameter mpiTestParameter;
 
+    // Support call for comparing two files
+    static void CompareOutputFile(const std::string& expectedFileName, const std::string& actualFileName);
+
    protected:
     static int* argc;
     static char*** argv;
@@ -46,6 +58,7 @@ class MpiTestFixture : public ::testing::Test {
 
     void RunWithMPI() const;
 
+    // Function to compare expected output file(s)
     void CompareOutputFiles();
 
     void SetMpiParameters(MpiTestParameter mpiTestParameterIn) { mpiTestParameter = mpiTestParameterIn; }
@@ -55,6 +68,10 @@ class MpiTestFixture : public ::testing::Test {
     std::string TestName() const {
         return std::string(::testing::UnitTest::GetInstance()->current_test_info()->test_suite_name()) + "." + std::string(::testing::UnitTest::GetInstance()->current_test_info()->name());
     }
+
+    std::filesystem::path BuildResultDirectory();
+
+    std::filesystem::path ResultDirectory() const { return std::filesystem::current_path() / mpiTestParameter.getTestName(); }
 
     std::string OutputFile() const {
         auto fileName = TestName() + ".txt";

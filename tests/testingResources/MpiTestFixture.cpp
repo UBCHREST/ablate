@@ -86,16 +86,53 @@ void testingResources::MpiTestFixture::RunWithMPI() const {
 }
 
 void testingResources::MpiTestFixture::CompareOutputFiles() {
-    if (mpiTestParameter.expectedOutputFile.empty()) {
-        return;
-    }
-    // load in the actual and expected results files
-    if (!std::filesystem::exists(mpiTestParameter.expectedOutputFile)) {
-        FAIL() << "The expected output file " << mpiTestParameter.expectedOutputFile << " cannot be found";
+    // Compare the output (stdout) file
+    if (!mpiTestParameter.expectedOutputFile.empty()) {
+        // load in the actual and expected results files
+        if (!std::filesystem::exists(mpiTestParameter.expectedOutputFile)) {
+            FAIL() << "The expected output file " << mpiTestParameter.expectedOutputFile << " cannot be found";
+        }
+
+        CompareOutputFile(mpiTestParameter.expectedOutputFile, OutputFile());
     }
 
-    std::ifstream expectedStream(mpiTestParameter.expectedOutputFile);
-    std::ifstream actualStream(OutputFile());
+    // compare any other files if provided
+    for (const auto& outputFile : mpiTestParameter.expectedFiles) {
+        CompareOutputFile(outputFile.first, ResultDirectory() / outputFile.second);
+    }
+}
+
+static void ExpandExpectedValues(std::vector<std::string>& expectedValues) {
+    // Check the expected values to see if they start with a int, if they do expand the results
+    for (std::size_t e = 0; e < expectedValues.size(); e++) {
+        if (std::isdigit(expectedValues[e][0])) {
+            // get the number of times to apply this
+            auto split = expectedValues[e].find_first_not_of(" 0123456789");
+            auto numberOfTimes = std::stoi(expectedValues[e].substr(0, split));
+            auto expectedValue = expectedValues[e].substr(split);
+
+            // Delete this component
+            expectedValues.erase(expectedValues.begin() + e);
+
+            // replace the values
+            for (std::size_t n = 0; n < numberOfTimes; n++) {
+                expectedValues.insert(expectedValues.begin() + e, expectedValue);
+            }
+        }
+    }
+}
+
+void testingResources::MpiTestFixture::CompareOutputFile(const std::string& expectedFileName, const std::string& actualFileName) {
+    // make sure we can find both files
+    if (!std::filesystem::exists(expectedFileName)) {
+        FAIL() << "Cannot locate expectedFile " << expectedFileName;
+    }
+    if (!std::filesystem::exists(actualFileName)) {
+        FAIL() << "Cannot locate actualFile " << actualFileName;
+    }
+
+    std::ifstream expectedStream(expectedFileName);
+    std::ifstream actualStream(actualFileName);
 
     // march over each line
     std::string expectedLine;
@@ -103,64 +140,92 @@ void testingResources::MpiTestFixture::CompareOutputFiles() {
     int lineNumber = 1;
     while (std::getline(expectedStream, expectedLine)) {
         if (!std::getline(actualStream, actualLine)) {
-            FAIL() << "The actual output file is missing lines";
+            FAIL() << "File " << actualFileName << " is missing lines from " << expectedFileName;
         }
 
         // check to see if this lines includes any expected values
         auto expectedResultDelimiterPosition = expectedLine.find(expectedResultDelimiter);
         if (expectedResultDelimiterPosition == std::string::npos) {
             // do a direct match
-            ASSERT_EQ(expectedLine, actualLine);
+            ASSERT_EQ(expectedLine, actualLine) << " on line " << expectedLine << " of file " << expectedFileName;
         } else {
             std::string regexLine = expectedLine.substr(0, expectedResultDelimiterPosition);
             std::string valuesLine = expectedLine.substr(expectedResultDelimiterPosition + expectedResultDelimiter.size());
 
             // get the matches
             std::smatch matches;
-            std::regex_search(actualLine, matches, std::regex(regexLine));
+            std::vector<std::string> actualValues;
+
+            // Perform multiple searches if needed for each line
+            auto searchStart = actualLine.cbegin();
+            const auto regex = std::regex(regexLine);
+
+            // while there is more searching
+            while (std::regex_search(searchStart, actualLine.cend(), matches, regex)) {
+                // If there are any grouped results
+                for (size_t i = 1; i < matches.size(); i++) {
+                    actualValues.push_back(matches[i]);
+                }
+                // start the search at the start of the remainder
+                searchStart = matches.suffix().first;
+            }
 
             // get the expected values
             std::istringstream valuesStream(valuesLine);
             std::vector<std::string> expectedValues(std::istream_iterator<std::string>{valuesStream}, std::istream_iterator<std::string>());
+            ExpandExpectedValues(expectedValues);
 
-            ASSERT_EQ(expectedValues.size(), matches.size() - 1) << "the number of expected and found values is different on line (" << lineNumber << ") " << expectedLine << " from " << actualLine;
+            ASSERT_EQ(expectedValues.size(), actualValues.size()) << "the number of expected and found values is different on line (" << lineNumber << ") " << expectedLine << " from " << actualLine
+                                                                  << " of file " << expectedFileName;
 
             // march over each value
             for (std::size_t v = 0; v < expectedValues.size(); v++) {
                 char compareChar = expectedValues[v][0];
                 double expectedValue = expectedValues[v].size() > 1 ? stod(expectedValues[v].substr(1)) : NAN;
-                std::string actualValueString = matches[v + 1];
+                std::string actualValueString = actualValues[v];
 
                 switch (compareChar) {
                     case '<':
-                        ASSERT_LT(std::stod(actualValueString), expectedValue) << " on line " << expectedLine;
+                        ASSERT_LT(std::stod(actualValueString), expectedValue) << " on line " << expectedLine << " of file " << expectedFileName;
                         break;
                     case '>':
-                        ASSERT_GT(std::stod(actualValueString), expectedValue) << " on line " << expectedLine;
+                        ASSERT_GT(std::stod(actualValueString), expectedValue) << " on line " << expectedLine << " of file " << expectedFileName;
                         break;
                     case '=':
                         // check some special cases for double values
                         if (std::isnan(expectedValue)) {
-                            ASSERT_TRUE(std::isnan(std::stod(actualValueString))) << " on line " << expectedLine;
+                            ASSERT_TRUE(std::isnan(std::stod(actualValueString))) << " on line " << expectedLine << " of file " << expectedFileName;
                         } else {
-                            ASSERT_DOUBLE_EQ(std::stod(actualValueString), expectedValue) << " on line " << expectedLine;
+                            ASSERT_DOUBLE_EQ(std::stod(actualValueString), expectedValue) << " on line " << expectedLine << " of file " << expectedFileName;
                         }
                         break;
                     case '~':
                         // is any number once trimmed
-                        ASSERT_TRUE(actualValueString.find_first_not_of(" \t\n\v\f\r") != std::string::npos) << " on line " << expectedLine;
+                        ASSERT_TRUE(actualValueString.find_first_not_of(" \t\n\v\f\r") != std::string::npos) << " on line " << expectedLine << " of file " << expectedFileName;
                         break;
                     case '*':
                         // is anything of length
-                        ASSERT_TRUE(!actualValueString.empty()) << " on line " << expectedLine;
+                        ASSERT_TRUE(!actualValueString.empty()) << " on line " << expectedLine << " of file " << expectedFileName;
                         break;
                     default:
-                        FAIL() << "Unknown compare char " << compareChar << " on line " << expectedLine;
+                        FAIL() << "Unknown compare char " << compareChar << " on line " << expectedLine << " of file " << expectedFileName;
                 }
             }
         }
         lineNumber++;
     }
 
-    ASSERT_FALSE(std::getline(actualStream, actualLine)) << "actual results should reach end of file";
+    ASSERT_FALSE(std::getline(actualStream, actualLine)) << "actual results should reach end of file " << expectedFileName;
+}
+
+std::filesystem::path testingResources::MpiTestFixture::BuildResultDirectory() {
+    int rank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+    std::filesystem::path resultDirectory = ResultDirectory();
+    if (rank == 0) {
+        std::filesystem::remove_all(resultDirectory);
+    }
+    MPI_Barrier(PETSC_COMM_WORLD);
+    return resultDirectory;
 }

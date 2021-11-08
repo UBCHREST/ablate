@@ -139,6 +139,17 @@ void ablate::domain::SubDomain::CreateSubDomainStructures() {
         DMSetAuxiliaryVec(domain.GetDM(), label, labelValue, auxVec) >> checkError;
         auto vecName = "aux" + (name.empty() ? "_" + name : "");
         PetscObjectSetName((PetscObject)auxVec, vecName.c_str()) >> checkError;
+
+        // add the names to each of the components in the dm section
+        PetscSection section;
+        DMGetLocalSection(auxDM, &section) >> checkError;
+        for (const auto& field : GetFields(FieldLocation::AUX)) {
+            if (field.numberComponents > 1) {
+                for (PetscInt c = 0; c < field.numberComponents; c++) {
+                    PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> checkError;
+                }
+            }
+        }
     }
 }
 

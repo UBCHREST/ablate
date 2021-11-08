@@ -29,12 +29,8 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
             // precompute the resultDirectory directory so we can remove it if it here
-            auto testName = GetParam().getTestName();
-            std::filesystem::path resultDirectory = std::filesystem::current_path() / testName;
-            if (rank == 0) {
-                std::filesystem::remove_all(resultDirectory);
-            }
-            MPI_Barrier(PETSC_COMM_WORLD);
+            std::filesystem::path resultDirectory = BuildResultDirectory();
+            auto testName = TestName();
 
             // get the file
             std::filesystem::path inputPath = GetParam().testName;
@@ -89,12 +85,8 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
         MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
         // precompute the resultDirectory directory so we can remove it if it is here
-        auto testName = GetParam().mpiTestParameter.getTestName();
-        std::filesystem::path resultDirectory = std::filesystem::current_path() / testName;
-        if (rank == 0) {
-            std::filesystem::remove_all(resultDirectory);
-        }
-        MPI_Barrier(PETSC_COMM_WORLD);
+        std::filesystem::path resultDirectory = BuildResultDirectory();
+        auto testName = TestName();
 
         // Perform the initial run
         {
@@ -155,10 +147,19 @@ INSTANTIATE_TEST_SUITE_P(
     Tests, IntegrationTestsSpecifier,
     testing::Values((MpiTestParameter){.testName = "inputs/compressibleCouetteFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleCouetteFlow.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlow.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/tracerParticles2DHDF5Monitor.yaml", .nproc = 2, .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/tracerParticles2DHDF5Monitor.yaml",
+                                       .nproc = 2,
+                                       .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt",
+                                       .arguments = "",
+                                       .expectedFiles{{"outputs/tracerParticles2DHDF5Monitor/flowTracerParticles.xmf", "flowTracerParticles.xmf"},
+                                                      {"outputs/tracerParticles2DHDF5Monitor/theFlowField.xmf", "theFlowField.xmf"}}},
                     (MpiTestParameter){.testName = "inputs/tracerParticles3D.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles3D.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/shockTubeRieman.yaml", .nproc = 1, .expectedOutputFile = "outputs/shockTubeRieman.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/compressibleFlowVortex.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlowVortex.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/compressibleFlowVortex.yaml",
+                                       .nproc = 1,
+                                       .expectedOutputFile = "outputs/compressibleFlowVortex.txt",
+                                       .arguments = "",
+                                       .expectedFiles{{"outputs/compressibleFlowVortex/vortexFlowField.xmf", "vortexFlowField.xmf"}}},
                     (MpiTestParameter){.testName = "inputs/customCouetteCompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/customCouetteCompressibleFlow.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/simpleReactingFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/simpleReactingFlow.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/ignitionDelayGriMech.yaml", .nproc = 1, .expectedOutputFile = "outputs/ignitionDelayGriMech.txt", .arguments = ""},
