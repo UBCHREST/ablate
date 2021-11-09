@@ -115,12 +115,12 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
     ierr = ABLATE_DMPlexComputeRHSFunctionFVM(
         &rhsFluxFunctionDescriptions[0], rhsFluxFunctionDescriptions.size(), &rhsPointFunctionDescriptions[0], rhsPointFunctionDescriptions.size(), dm, time, locXVec, locFVec);
     CHKERRQ(ierr);
-    //
-    //    // iterate over any arbitrary RHS functions
-    //    for (const auto& rhsFunction : rhsArbitraryFunctions) {
-    //        ierr = rhsFunction.first(dm, time, locXVec, locFVec, rhsFunction.second);
-    //        CHKERRQ(ierr);
-    //    }
+
+        // iterate over any arbitrary RHS functions
+        for (const auto& rhsFunction : rhsArbitraryFunctions) {
+            ierr = rhsFunction.first(dm, time, locXVec, locFVec, rhsFunction.second);
+            CHKERRQ(ierr);
+        }
 
     PetscFunctionReturn(0);
 }
@@ -416,6 +416,10 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
         }
     }
 
+    // get raw access to the locF
+    PetscScalar *locFArray;
+    VecGetArray(locF, &locFArray) >> checkError;
+
     // Size up the work arrays (uL, uR, gradL, gradR, auxL, auxR, gradAuxL, gradAuxR), these are only sized for one face at a time
     PetscScalar     *flux;
     DMGetWorkArray(dm, totDim, MPIU_SCALAR, &flux) >> checkError;
@@ -439,6 +443,42 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
         DMGetWorkArray(dmAux, dim*totDimAux, MPIU_SCALAR, &gradAuxL) >> checkError;
     }
 
+    // Precompute the offsets to pass into the rhsFluxFunctionDescriptions
+    std::vector<PetscInt> fluxComponentSize (rhsFluxFunctionDescriptions.size());
+    std::vector<PetscInt> fluxSubId (rhsFluxFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> uOff (rhsFluxFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> aOff (rhsFluxFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> uOff_x (rhsFluxFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> aOff_x (rhsFluxFunctionDescriptions.size());
+
+    // Get the full set of offsets from the ds
+    PetscInt * uOffTotal;
+    PetscInt * uGradOffTotal;
+    PetscDSGetComponentOffsets(ds, &uOffTotal)>> checkError;
+    PetscDSGetComponentDerivativeOffsets(ds, &uGradOffTotal)>> checkError;
+
+    for (std::size_t fun = 0; fun < rhsFluxFunctionDescriptions.size(); fun++ ){
+        const auto& field = subDomain->GetField(rhsFluxFunctionDescriptions[fun].field);
+        fluxComponentSize[fun] = field.numberComponents;
+        fluxSubId[fun] = field.subId;
+        for (PetscInt f =0; f < rhsFluxFunctionDescriptions[fun].numberInputFields; f++){
+            uOff[fun].push_back(uOffTotal[rhsFluxFunctionDescriptions[fun].inputFields[f]]);
+            uOff_x[fun].push_back(uGradOffTotal[rhsFluxFunctionDescriptions[fun].inputFields[f]]);
+        }
+    }
+
+    if (dsAux) {
+        PetscInt* auxOffTotal;
+        PetscInt* auxGradOffTotal;
+        PetscDSGetComponentOffsets(dsAux, &auxOffTotal) >> checkError;
+        PetscDSGetComponentDerivativeOffsets(dsAux, &auxGradOffTotal) >> checkError;
+        for (std::size_t fun = 0; fun < rhsFluxFunctionDescriptions.size(); fun++ ){
+            for (PetscInt f =0; f < rhsFluxFunctionDescriptions[fun].numberAuxFields; f++){
+                aOff[fun].push_back(auxOffTotal[rhsFluxFunctionDescriptions[fun].auxFields[f]]);
+                aOff_x[fun].push_back(auxGradOffTotal[rhsFluxFunctionDescriptions[fun].auxFields[f]]);
+            }
+        }
+    }
 
     // March over each face in this region
     IS faceIS;
@@ -475,18 +515,21 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
         }
 
         // March over each source function
-        for(const auto& rhsFluxFunctionDescription : rhsFluxFunctionDescriptions){
-            rhsFluxFunctionDescription.function(dim, fg, uOff, uOff_x, uL, uR, gradL, gradR, aOff, aOff_x, auxL, auxR, gradAuxL, gradAuxR, flux, rhsFluxFunctionDescription.context) >> checkError;
-        }
+        for(std::size_t fun =0; fun < rhsFluxFunctionDescriptions.size(); fun++){
+            const auto& rhsFluxFunctionDescription = rhsFluxFunctionDescriptions[fun];
+            rhsFluxFunctionDescription.function(dim, fg, &uOff[fun][0], &uOff_x[fun][0], uL, uR, gradL, gradR, &aOff[fun][0], &aOff_x[fun][0], auxL, auxR, gradAuxL, gradAuxR, flux, rhsFluxFunctionDescription.context) >> checkError;
 
-        // add the flux back to the cell
-        DMLabelGetValue(ghostLabel,faceCells[0],&ghost) >> checkError;
-        if (ghost <= 0) {DMPlexPointLocalFieldRef(dm, scells[0], f, fa, &fL) >> checkError}
-        DMLabelGetValue(ghostLabel,faceCells[1],&ghost) >> checkError;
-        if (ghost <= 0) {ierr = DMPlexPointLocalFieldRef(dm, scells[1], f, fa, &fR) >> checkError}
-        for (d = 0; d < pdim; ++d) {
-            if (fL) fL[d] -= fluxL[iface*totDim+foff+d];
-            if (fR) fR[d] += fluxR[iface*totDim+foff+d];
+            // add the flux back to the cell
+            PetscScalar    *fL = NULL, *fR = NULL;
+            DMLabelGetValue(ghostLabel,faceCells[0],&ghost) >> checkError;
+            if (ghost <= 0) {DMPlexPointLocalFieldRef(dm, faceCells[0], fluxSubId[fun], locFArray, &fL) >> checkError;}
+            DMLabelGetValue(ghostLabel,faceCells[1],&ghost) >> checkError;
+            if (ghost <= 0) {DMPlexPointLocalFieldRef(dm, faceCells[1], fluxSubId[fun], locFArray, &fR) >> checkError;}
+
+            for (PetscInt d = 0; d < fluxComponentSize[fun]; ++d) {
+                if (fL) fL[d] -= flux[d]/cgL->volume;
+                if (fR) fR[d] += flux[d]/cgR->volume;
+            }
         }
 
 
@@ -497,8 +540,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
 
 
     // cleanup
-    DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &fluxL) >> checkError;
-    DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &fluxR) >> checkError;
+    DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &flux) >> checkError;
     DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &uL) >> checkError;
     DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &uR) >> checkError;
     DMRestoreWorkArray(dm, dim*totDim, MPIU_SCALAR, &gradL) >> checkError;
@@ -530,6 +572,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
         }
     }
 
+    VecRestoreArray(locF, &locFArray) >> checkError;
 
 
     RestoreRange(cellIS, cStart, cEnd, cells);

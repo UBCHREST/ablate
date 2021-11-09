@@ -141,7 +141,7 @@ PetscErrorCode ABLATE_DMPlexComputeRHSFunctionFVM(FVMRHSFluxFunctionDescription 
     }
 
     // compute the contribution from fluxes
-    ierr = ABLATE_DMPlexComputeFluxResidual_Internal(fluxFunctionDescription, numberFluxFunctionDescription, plex, cellIS, time, locX, NULL, time, locF);CHKERRQ(ierr);
+//    ierr = ABLATE_DMPlexComputeFluxResidual_Internal(fluxFunctionDescription, numberFluxFunctionDescription, plex, cellIS, time, locX, NULL, time, locF);CHKERRQ(ierr);
 
     // compute the contribution from point sources
     ierr = ABLATE_DMPlexComputePointResidual_Internal(pointFunctionDescriptions, numberPointFunctionDescription, plex, cellIS, time, locX, NULL, time, locF);CHKERRQ(ierr);
