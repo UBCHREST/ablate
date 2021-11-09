@@ -333,8 +333,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::UpdateAuxFields(PetscReal time, V
     PetscFree(uOff) >> checkError;
 }
 
-
-
 void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
     auto dm = subDomain->GetDM();
     auto dmAux = subDomain->GetAuxDM();
