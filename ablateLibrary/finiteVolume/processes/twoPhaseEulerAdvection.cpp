@@ -41,9 +41,9 @@ PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx) {
     PetscReal rhoG = ax[0];
     PetscReal eG = ax[1];
     PetscReal etG = ax[1] + decodeDataStruct->ke;
-    PetscReal eL = (decodeDataStruct->e - decodeDataStruct->Yg * ax[1]) / decodeDataStruct->Yl;
+    PetscReal eL = (decodeDataStruct->e - decodeDataStruct->Yg * ax[1]) / (decodeDataStruct->Yl + 1E-10);
     PetscReal etL = eL + decodeDataStruct->ke;
-    PetscReal rhoL = decodeDataStruct->Yl / (1 / decodeDataStruct->rho - decodeDataStruct->Yg / ax[0]);
+    PetscReal rhoL = decodeDataStruct->Yl / (1 / decodeDataStruct->rho - decodeDataStruct->Yg / ax[0] + 1E-10) + 1E-10;
 
     PetscReal massfluxG[3];
     PetscReal massfluxL[3];
@@ -123,7 +123,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
                                       .vel = velocity};
     SNESSetFunction(snes, r, FormFunction, &decodeDataStruct);
     // default Newton's method, SNESSetType(SNES snes, SNESType method);
-    //    SNESSetType(snes,"python");
+//    SNESSetType(snes,"newtontr");
     //    SNESSetTolerances(SNES snes,PetscReal atol,PetscReal rtol,PetscReal stol, PetscInt its,PetscInt fcts);
     SNESSetTolerances(snes, 1E-16, 1E-26, 1E-16, 100000, 100000);
     // default rtol=10e-8
@@ -149,10 +149,10 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     //  ax = [rhog, eg]
     PetscReal eG = ax[1];
     PetscReal etG = eG + ke;
-    PetscReal eL = ((*internalEnergy) - Yg * eG) / Yl;
+    PetscReal eL = ((*internalEnergy) - Yg * eG) / (Yl + 1E-10);
     PetscReal etL = eL + ke;
     PetscReal rhoG = ax[0];
-    PetscReal rhoL = Yl / (1 / (*density) - Yg / rhoG);
+    PetscReal rhoL = Yl / (1 / (*density) - Yg / rhoG + 1E-10) + 1E-10;
     // define output variables
     PetscReal pG;
     PetscReal pL;
