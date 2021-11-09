@@ -1,6 +1,6 @@
 ---
 environment:
-  title: eulerVortex
+  title: compressibleFlowVortex
   tagDirectory: false
 arguments:
   euler_petscfv_type: leastsquares
