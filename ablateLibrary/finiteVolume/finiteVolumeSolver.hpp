@@ -74,7 +74,7 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * support call to compute the gradients in each cell.  This also limits the gradient based upon
      * the limiter
      */
-    void ComputeFieldGradients(const domain::Field& field,Vec cellGeometryVec, Vec faceGeometryVec, Vec xGlobVec, Vec& gradLocVec, DM& dmGrad);
+    void ComputeFieldGradients(const domain::Field& field, Vec xGlobVec, Vec& gradLocVec, DM& dmGrad);
 
     /**
      * support call to project to a single face from a side

@@ -387,15 +387,17 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
     /* Reconstruct and limit cell gradients */
     // for each field compute the gradient in the localGrads vector
     for (const auto& field : subDomain->GetFields()) {
-        ComputeFieldGradients(field, cellGeometryFVM, faceGeometryFVM, locXVec, locGradVecs[field.subId], dmGrads[field.subId] );
+        ComputeFieldGradients(field, locXVec, locGradVecs[field.subId], dmGrads[field.subId] );
     }
 
     // do the same for the aux fields
     for (const auto& field : subDomain->GetFields(domain::FieldLocation::AUX)) {
-        ComputeFieldGradients(field, cellGeometryFVM, faceGeometryFVM, locAuxField, locAuxGradVecs[field.subId], dmAuxGrads[field.subId] );
+        ComputeFieldGradients(field, locAuxField, locAuxGradVecs[field.subId], dmAuxGrads[field.subId] );
 
-        auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
-        ABLATE_FillGradientBoundary(subDomain->GetAuxDM(), fvm,locAuxField, locAuxGradVecs[field.subId] ) >> checkError;
+        if(dmAuxGrads[field.subId]) {
+            auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
+            ABLATE_FillGradientBoundary(dmAux, fvm, locAuxField, locAuxGradVecs[field.subId]) >> checkError;
+        }
     }
 
     // Get raw access to the computed values
@@ -512,12 +514,13 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
 
         // determine the left/right cells
         if(auxArray) {
-            ProjectToFace(subDomain->GetFields(domain::FieldLocation::AUX), dsAux, *fg, faceCells[0], *cgL, dmAux, auxArray, dmAuxGrads, locAuxGradArrays, auxL, gradAuxL);
-            ProjectToFace(subDomain->GetFields(domain::FieldLocation::AUX), dsAux, *fg, faceCells[1], *cgR, dmAux, auxArray, dmAuxGrads, locAuxGradArrays, auxR, gradAuxR);
+            ProjectToFace(subDomain->GetFields(domain::FieldLocation::AUX), dsAux, *fg, faceCells[0], *cgL, dmAux, auxArray, dmAuxGrads, locAuxGradArrays, auxL, gradAuxL, false);
+            ProjectToFace(subDomain->GetFields(domain::FieldLocation::AUX), dsAux, *fg, faceCells[1], *cgR, dmAux, auxArray, dmAuxGrads, locAuxGradArrays, auxR, gradAuxR, false);
         }
 
         // March over each source function
         for(std::size_t fun =0; fun < rhsFluxFunctionDescriptions.size(); fun++){
+            PetscArrayzero(flux, totDim) >> checkError;
             const auto& rhsFluxFunctionDescription = rhsFluxFunctionDescriptions[fun];
             rhsFluxFunctionDescription.function(dim, fg, &uOff[fun][0], &uOff_x[fun][0], uL, uR, gradL, gradR, &aOff[fun][0], &aOff_x[fun][0], auxL, auxR, gradAuxL, gradAuxR, flux, rhsFluxFunctionDescription.context) >> checkError;
 
@@ -624,13 +627,18 @@ void ablate::finiteVolume::FiniteVolumeSolver::RestoreRange(IS& pointIS, PetscIn
     ISDestroy(&pointIS) >> checkError;
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablate::domain::Field& field, Vec cellGeometryVec, Vec faceGeometryVec, Vec xGlobVec, Vec& gradLocVec, DM& dmGrad) {
+void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablate::domain::Field& field, Vec xGlobVec, Vec& gradLocVec, DM& dmGrad) {
     // get the FVM petsc field associated with this field
     auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
     auto dm = subDomain->GetFieldDM(field);
 
     // Get the dm for this grad field
-    DMPlexGetDataFVM_MulfiField(dm, fvm, NULL, NULL, &dmGrad) >> checkError;
+    Vec faceGeometryVec;
+    DMPlexGetDataFVM_MulfiField(dm, fvm, NULL, &faceGeometryVec, &dmGrad) >> checkError;
+    // If there is no grad, return
+    if(!dmGrad){
+        return;
+    }
 
     // Create a gradLocVec
     DMGetLocalVector(dmGrad, &gradLocVec)>> checkError;
@@ -638,6 +646,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
     // Get the correct sized vec (gradient for this field)
     Vec gradGlobVec;
     DMGetGlobalVector(dmGrad, &gradGlobVec) >> checkError;
+    VecZeroEntries(gradGlobVec) >> checkError;
 
     // check to see if there is a ghost label
     DMLabel ghostLabel;
@@ -688,7 +697,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
             throw std::runtime_error("face " + std::to_string(face) +  " has " + std::to_string(numCells) +" support points (cells): expected 2");
         }
 
-        // add in the contribuations from this face
+        // add in the contributions from this face
         const PetscInt* cells;
         PetscFVFaceGeom* fg;
         PetscScalar* cx[2];
