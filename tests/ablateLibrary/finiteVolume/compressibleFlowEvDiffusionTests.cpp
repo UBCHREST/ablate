@@ -9,11 +9,13 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "domain/modifiers/setFromOptions.hpp"
 #include "eos/mockEOS.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/essentialGhost.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
-#include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -104,18 +106,35 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"automaticTimeStepCalculator", "off"}, {"petsclimiter_type", "none"}});
 
             PetscInt initialNx = GetParam().initialNx;
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
-                                                                  std::vector<int>{(int)initialNx, (int)initialNx},
-                                                                  std::vector<double>{0.0, 0.0},
-                                                                  std::vector<double>{parameters.L, parameters.L},
-                                                                  std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
-                                                                  false /*simplex*/,
-                                                                  std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-                                                                      {"dm_refine", std::to_string(l)},
-                                                                      {"dm_distribute", ""},
-                                                                  }),
-                                                                  std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::DistributeWithGhostCells>(),
-                                                                                                                                   std::make_shared<domain::modifier::GhostBoundaryCells>()});
+
+            // create a mock eos
+            std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
+            auto species = std::vector<std::string>();
+            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
+            EXPECT_CALL(*eos, GetComputeTemperatureFunction()).Times(::testing::Exactly(3)).WillRepeatedly(::testing::Return(MockTemperatureFunction));
+            EXPECT_CALL(*eos, GetComputeTemperatureContext()).Times(::testing::Exactly(3));
+            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockSpeciesSensibleEnthalpyFunction));
+            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyContext()).Times(::testing::Exactly(1));
+
+            // determine required fields for finite volume compressible flow
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
+                std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{"ev1", "ev2"})};
+
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>(
+                "simpleMesh",
+                fieldDescriptors,
+                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
+                    std::make_shared<domain::modifiers::SetFromOptions>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                        {"dm_refine", std::to_string(l)},
+                        {"dm_distribute", ""},
+                    })),
+                    std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                    std::make_shared<domain::modifiers::GhostBoundaryCells>()},
+                std::vector<int>{(int)initialNx, (int)initialNx},
+                std::vector<double>{0.0, 0.0},
+                std::vector<double>{parameters.L, parameters.L},
+                std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
+                false /*simplex*/);
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
@@ -127,40 +146,31 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             // create an eos with three species
             auto eosParameters = std::make_shared<ablate::parameters::MapParameters>();
 
-            // create a mock eos
-            std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-            auto species = std::vector<std::string>();
-            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
-            EXPECT_CALL(*eos, GetComputeTemperatureFunction()).Times(::testing::Exactly(3)).WillRepeatedly(::testing::Return(MockTemperatureFunction));
-            EXPECT_CALL(*eos, GetComputeTemperatureContext()).Times(::testing::Exactly(3));
-            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockSpeciesSensibleEnthalpyFunction));
-            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyContext()).Times(::testing::Exactly(1));
-
             // create a constant density field
             auto eulerExact = mathFunctions::Create(ComputeEulerExact, &parameters);
             auto eulerExactField = std::make_shared<mathFunctions::FieldFunction>("euler", eulerExact);
 
             // Create the yi field solutions
             auto evExact = ablate::mathFunctions::Create(ComputeDensityEVExact, &parameters);
-            auto evExactField = std::make_shared<mathFunctions::FieldFunction>(ablate::finiteVolume::processes::FlowProcess::DENSITY_EV_FIELD, evExact);
+            auto evExactField = std::make_shared<mathFunctions::FieldFunction>(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD, evExact);
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{4, 2}, eulerExactField),
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("left", std::vector<int>{4}, evExactField),
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, evExactField)};
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       domain::Region::ENTIREDOMAIN,
-                                                                                       petscFlowOptions /*options*/,
-                                                                                       eos,
-                                                                                       nullptr /*options*/,
-                                                                                       transportModel,
-                                                                                       nullptr /*no advection */,
-                                                                                       std::vector<std::shared_ptr<finiteVolume::processes::Process>>(),
-                                                                                       std::vector<std::string>{"ev1", "ev2"},
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField} /*initialization*/,
-                                                                                       boundaryConditions /*boundary conditions*/,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});
+            auto flowObject =
+                std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
+                                                                               domain::Region::ENTIREDOMAIN,
+                                                                               petscFlowOptions /*options*/,
+                                                                               eos,
+                                                                               nullptr /*options*/,
+                                                                               transportModel,
+                                                                               nullptr /*no advection */,
+                                                                               std::vector<std::shared_ptr<finiteVolume::processes::Process>>(),
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField} /*initialization*/,
+                                                                               boundaryConditions /*boundary conditions*/,
+                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});
 
             timeStepper.Register(flowObject);
 

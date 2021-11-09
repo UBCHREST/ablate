@@ -5,7 +5,7 @@
 #include "mathFunctions/mathFunction.hpp"
 #include "modifier.hpp"
 
-namespace ablate::domain::modifier {
+namespace ablate::domain::modifiers {
 
 /**
  * Class to create a label based upon a field function.  By default, positive values are assigned to the label while negative values are not.
@@ -19,7 +19,7 @@ class CreateLabel : public Modifier {
     std::shared_ptr<mathFunctions::MathFunction> function;
 
     // The depth to evaluate the label.
-    const PetscInt dmDepth;
+    const PetscInt dmHeight;
 
     // value to assign if the function evaluates positive
     const PetscInt labelValue;
@@ -30,5 +30,5 @@ class CreateLabel : public Modifier {
     void Modify(DM&) override;
 };
 
-}  // namespace ablate::domain::modifier
+}  // namespace ablate::domain::modifiers
 #endif  // ABLATELIBRARY_CREATELABEL_HPP

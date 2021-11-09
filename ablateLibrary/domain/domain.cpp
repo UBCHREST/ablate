@@ -4,9 +4,45 @@
 #include "subDomain.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::domain::Domain::Domain(std::string name, std::vector<std::shared_ptr<modifier::Modifier>> modifiersIn) : name(name), solField(nullptr), modifiers(modifiersIn) {
+ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn)
+    : dm(dmIn), name(name), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solField(nullptr), modifiers(std::move(modifiersIn)) {
     // sort the modifiers based upon priority
     std::sort(modifiers.begin(), modifiers.end(), [](const auto& a, const auto& b) -> bool { return a->Priority() < b->Priority(); });
+
+    // update the dm with the modifiers
+    for (auto& modifier : modifiers) {
+        modifier->Modify(dm);
+    }
+
+    // register all the solution fields with the DM, store the aux fields for later
+    std::vector<std::shared_ptr<FieldDescription>> allAuxFields;
+    for (const auto& fieldDescriptor : fieldDescriptors) {
+        for (auto& fieldDescription : fieldDescriptor->GetFields()) {
+            fieldDescription->DecompressComponents(GetDimensions());
+            switch (fieldDescription->location) {
+                case FieldLocation::SOL:
+                    RegisterField(*fieldDescription);
+                    break;
+                case FieldLocation::AUX:
+                    allAuxFields.push_back(fieldDescription);
+                    break;
+                default:
+                    throw std::invalid_argument("Unknown Field Location for " + fieldDescription->name);
+            }
+        }
+    }
+
+    // Set up the global DS
+    DMCreateDS(dm) >> checkError;
+
+    // based upon the ds divisions in the dm, create a subDomain for each
+    PetscInt numberDS;
+    DMGetNumDS(dm, &numberDS) >> checkError;
+
+    // March over each ds and create a subDomain
+    for (PetscInt ds = 0; ds < numberDS; ds++) {
+        subDomains.emplace_back(std::make_shared<ablate::domain::SubDomain>(*this, ds, allAuxFields));
+    }
 }
 
 ablate::domain::Domain::~Domain() {
@@ -16,39 +52,32 @@ ablate::domain::Domain::~Domain() {
     }
 }
 
-void ablate::domain::Domain::RegisterSolutionField(const ablate::domain::FieldDescriptor& fieldDescriptor, PetscObject field, DMLabel label) {
-    // add solution fields/aux fields
-    switch (fieldDescriptor.type) {
-        case FieldType::SOL: {
-            // Called the shared method to register
-            DMAddField(dm, label, (PetscObject)field) >> checkError;
-
-            // Copy to a field
-            Field newField{.name = fieldDescriptor.name,
-                           .numberComponents = (PetscInt)fieldDescriptor.components.size(),
-                           .components = fieldDescriptor.components,
-                           .id = (PetscInt)solutionFields.size(),
-                           .type = fieldDescriptor.type,
-                           .adjacency = fieldDescriptor.adjacency};
-
-            switch (fieldDescriptor.adjacency) {
-                case FieldAdjacency::FEM:
-                    DMSetAdjacency(dm, newField.id, PETSC_FALSE, PETSC_TRUE) >> checkError;
-                    break;
-                case FieldAdjacency::FVM:
-                    DMSetAdjacency(dm, newField.id, PETSC_TRUE, PETSC_FALSE) >> checkError;
-                    break;
-                default: {
-                }
-            }
-
-            solutionFields[fieldDescriptor.name] = newField;
-
-            break;
-        }
-        default:
-            throw std::runtime_error("Can only register SOL fields in Domain::RegisterSolutionField");
+void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescription& fieldDescription) {
+    // make sure that this is a solution field
+    if (fieldDescription.location != FieldLocation::SOL) {
+        throw std::invalid_argument("The field must be FieldLocation::SOL to be registered with the domain");
     }
+
+    // Look up the label for this field
+    DMLabel label = nullptr;
+    if (fieldDescription.region) {
+        DMGetLabel(dm, fieldDescription.region->GetName().c_str(), &label) >> checkError;
+        if (label == nullptr) {
+            throw std::invalid_argument("Cannot locate label " + fieldDescription.region->GetName() + " for field " + fieldDescription.name);
+        }
+    }
+
+    // Create the field and add it with the label
+    auto petscField = fieldDescription.CreatePetscField(dm);
+
+    // add to the dm
+    DMAddField(dm, label, petscField);
+
+    // Free the petsc after being added
+    PetscObjectDestroy(&petscField);
+
+    // Record the field
+    fields.push_back(Field::FromFieldDescription(fieldDescription, fields.size()));
 }
 
 PetscInt ablate::domain::Domain::GetDimensions() const {
@@ -65,39 +94,39 @@ void ablate::domain::Domain::CreateStructures() {
 }
 
 std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(std::shared_ptr<domain::Region> region) {
-    std::size_t regionHash = region ? region->GetId() : 0;
-    if (subDomains.count(regionHash) == 0) {
-        subDomains[regionHash] = std::make_shared<ablate::domain::SubDomain>(shared_from_this(), region);
+    // Check to see if there is a label for this region
+    if (region) {
+        // March over each ds region, and return the subdomain if this region is inside of any subDomain region
+        for (const auto& subDomain : subDomains) {
+            if (subDomain->InRegion(*region)) {
+                return subDomain;
+            }
+        }
+        throw std::runtime_error("Unable to locate subDomain for region " + region->ToString());
+
+    } else {
+        // Get the only subDomain
+        if (subDomains.size() > 1) {
+            throw std::runtime_error("More than one DS was created, the region is expected to be defined.");
+        }
+        return subDomains.front();
     }
-    return subDomains[regionHash];
 }
 
 void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers) {
-    // update the dm with the modifiers
-    for (auto& modifier : modifiers) {
-        modifier->Modify(dm);
-    }
-
     // determine the number of fields
     for (auto& solver : solvers) {
         solver->Register(GetSubDomain(solver->GetRegion()));
-    }
-
-    // Set up the global DS
-    DMCreateDS(dm) >> checkError;
-    for (auto& subDomain : subDomains) {
-        subDomain.second->InitializeDiscreteSystem();
     }
 
     // Setup each of the fields
     for (auto& solver : solvers) {
         solver->Setup();
     }
-
     // Create the global structures
     CreateStructures();
     for (auto& subDomain : subDomains) {
-        subDomain.second->CreateSubDomainStructures();
+        subDomain->CreateSubDomainStructures();
     }
 
     // Initialize each solver

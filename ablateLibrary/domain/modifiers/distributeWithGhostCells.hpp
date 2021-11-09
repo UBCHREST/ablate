@@ -3,7 +3,7 @@
 
 #include "modifier.hpp"
 
-namespace ablate::domain::modifier {
+namespace ablate::domain::modifiers {
 
 class DistributeWithGhostCells : public Modifier {
    private:
@@ -15,5 +15,5 @@ class DistributeWithGhostCells : public Modifier {
     void Modify(DM&) override;
 };
 
-}  // namespace ablate::domain::modifier
+}  // namespace ablate::domain::modifiers
 #endif  // ABLATELIBRARY_DISTRIBUTEWITHGHOSTCELLS_HPP

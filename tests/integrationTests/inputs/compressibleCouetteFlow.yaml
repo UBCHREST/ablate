@@ -5,6 +5,9 @@ environment:
 arguments: 
   dm_plex_separate_marker: ""
   petsclimiter_type: none
+  euler_petscfv_type: leastsquares
+  temperature_petscfv_type: leastsquares
+  velocity_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -18,23 +21,26 @@ timestepper:
     upper: [ 1, 1 ]
     boundary: [ "PERIODIC", "NONE" ]
     simplex: false
-    options:
-      dm_refine: 0
     modifiers:
-      - !ablate::domain::modifier::GhostBoundaryCells
-      - !ablate::domain::modifier::DistributeWithGhostCells
-solver: !ablate::finiteVolume::CompressibleFlow
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+      - !ablate::domain::modifiers::GhostBoundaryCells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: vortexFlowField
-  options:
-    eulerpetscfv_type: leastsquares
-    Tpetscfv_type: leastsquares
-    velpetscfv_type: leastsquares
   parameters:
     cfl: 0.5
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
   transport:
     k: 0.0
     mu: 1.0
+  eos: *eos
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
       field: >-
@@ -78,8 +84,3 @@ solver: !ablate::finiteVolume::CompressibleFlow
       type: l2_norm
       log: !ablate::monitors::logs::CsvLog
         name: solutionMonitor.csv
-
-  eos: !ablate::eos::PerfectGas
-    parameters:
-      gamma: 1.4
-      Rgas : 287.0

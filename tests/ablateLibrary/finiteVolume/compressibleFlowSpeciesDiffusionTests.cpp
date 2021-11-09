@@ -1,25 +1,26 @@
 #include <petsc.h>
 #include <cmath>
-#include <convergenceTester.hpp>
-#include <domain/boxMesh.hpp>
-#include <domain/modifiers/distributeWithGhostCells.hpp>
-#include <domain/modifiers/ghostBoundaryCells.hpp>
-#include <eos/mockEOS.hpp>
-#include <eos/transport/constant.hpp>
-#include <finiteVolume/boundaryConditions/essentialGhost.hpp>
-#include <finiteVolume/processes/speciesTransport.hpp>
 #include <map>
-#include <mathFunctions/functionFactory.hpp>
 #include <memory>
-#include <monitors/solutionErrorMonitor.hpp>
-#include <solver/timeStepper.hpp>
-#include <utilities/petscOptions.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "convergenceTester.hpp"
+#include "domain/boxMesh.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "domain/modifiers/setFromOptions.hpp"
+#include "eos/mockEOS.hpp"
+#include "eos/transport/constant.hpp"
+#include "finiteVolume/boundaryConditions/essentialGhost.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
+#include "finiteVolume/processes/speciesTransport.hpp"
 #include "gtest/gtest.h"
+#include "mathFunctions/functionFactory.hpp"
+#include "monitors/solutionErrorMonitor.hpp"
 #include "parameters/mapParameters.hpp"
+#include "solver/timeStepper.hpp"
+#include "utilities/petscOptions.hpp"
 
 typedef struct {
     PetscInt dim;
@@ -118,19 +119,38 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             // setup any global arguments
             ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"automaticTimeStepCalculator", "off"}, {"petsclimiter_type", "none"}});
 
+            // create a mock eos
+            std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
+            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
+            EXPECT_CALL(*eos, GetComputeTemperatureFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockTemperatureFunction));
+            EXPECT_CALL(*eos, GetComputeTemperatureContext()).Times(::testing::Exactly(1));
+            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockSpeciesSensibleEnthalpyFunction));
+            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyContext()).Times(::testing::Exactly(1));
+
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
+                std::make_shared<ablate::domain::FieldDescription>(
+                    "euler", "euler", std::vector<std::string>{"rho", "rhoE", "rhoVel" + domain::FieldDescription::DIMENSION}, domain::FieldLocation::SOL, domain::FieldType::FVM),
+                std::make_shared<ablate::domain::FieldDescription>("densityYi", "densityYi", eos->GetSpecies(), domain::FieldLocation::SOL, domain::FieldType::FVM),
+                std::make_shared<ablate::domain::FieldDescription>("yi", "yi", eos->GetSpecies(), domain::FieldLocation::AUX, domain::FieldType::FVM),
+
+            };
+
             PetscInt initialNx = GetParam().initialNx;
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
-                                                                  std::vector<int>{(int)initialNx, (int)initialNx},
-                                                                  std::vector<double>{0.0, 0.0},
-                                                                  std::vector<double>{parameters.L, parameters.L},
-                                                                  std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
-                                                                  false /*simplex*/,
-                                                                  std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-                                                                      {"dm_refine", std::to_string(l)},
-                                                                      {"dm_distribute", ""},
-                                                                  }),
-                                                                  std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::DistributeWithGhostCells>(),
-                                                                                                                                   std::make_shared<domain::modifier::GhostBoundaryCells>()});
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>(
+                "simpleMesh",
+                fieldDescriptors,
+                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
+                    std::make_shared<domain::modifiers::SetFromOptions>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                        {"dm_refine", std::to_string(l)},
+                        {"dm_distribute", ""},
+                    })),
+                    std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                    std::make_shared<domain::modifiers::GhostBoundaryCells>()},
+                std::vector<int>{(int)initialNx, (int)initialNx},
+                std::vector<double>{0.0, 0.0},
+                std::vector<double>{parameters.L, parameters.L},
+                std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
+                false /*simplex*/);
 
             // create a time stepper
             auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
@@ -141,14 +161,6 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             // create an eos with three species
             auto eosParameters = std::make_shared<ablate::parameters::MapParameters>();
-
-            // create a mock eos
-            std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-            EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
-            EXPECT_CALL(*eos, GetComputeTemperatureFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockTemperatureFunction));
-            EXPECT_CALL(*eos, GetComputeTemperatureContext()).Times(::testing::Exactly(1));
-            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockSpeciesSensibleEnthalpyFunction));
-            EXPECT_CALL(*eos, GetComputeSpeciesSensibleEnthalpyContext()).Times(::testing::Exactly(1));
 
             // create a constant density field
             auto eulerExact = mathFunctions::Create(ComputeEulerExact, &parameters);
@@ -167,21 +179,13 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eos, nullptr, transportModel),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolume>(
-                "testFlow",
-                domain::Region::ENTIREDOMAIN,
-                petscFlowOptions /*options*/,
-                std::vector<ablate::domain::FieldDescriptor>{{.name = "euler", .prefix = "euler", .components = {"rho", "rhoE", "rhoVel" + domain::FieldDescriptor::DIMENSION}},
-                                                             {
-                                                                 .name = "densityYi",
-                                                                 .prefix = "densityYi",
-                                                                 .components = eos->GetSpecies(),
-                                                             },
-                                                             {.name = "yi", .prefix = "yi", .components = eos->GetSpecies(), .type = ablate::domain::FieldType::AUX}},
-                flowProcesses,
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
-                boundaryConditions /*boundary conditions*/,
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
+            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>("testFlow",
+                                                                                         domain::Region::ENTIREDOMAIN,
+                                                                                         petscFlowOptions /*options*/,
+                                                                                         flowProcesses,
+                                                                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
+                                                                                         boundaryConditions /*boundary conditions*/,
+                                                                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
 
             timeStepper.Register(flowObject);
 

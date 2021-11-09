@@ -6,8 +6,8 @@ target_sources(ablateLibrary
         subDomain.cpp
         field.hpp
         field.cpp
-        fieldDescriptor.hpp
-        fieldDescriptor.cpp
+        fieldDescription.hpp
+        fieldDescription.cpp
         boxMesh.hpp
         boxMesh.cpp
         dmWrapper.hpp
@@ -18,6 +18,9 @@ target_sources(ablateLibrary
         fileMesh.cpp
         region.hpp
         region.cpp
+        fieldDescription.hpp
+        fieldDescription.cpp
+        fieldDescriptor.hpp
         )
 
 add_subdirectory(modifiers)

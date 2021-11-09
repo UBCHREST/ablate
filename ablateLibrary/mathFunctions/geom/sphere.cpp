@@ -19,5 +19,5 @@ bool ablate::mathFunctions::geom::Sphere::InsideGeometry(const double *xyz, cons
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::geom::Sphere, "assigns a uniform value to all points inside the sphere", ARG(std::vector<double>, "center", "the sphere center"),
-         ARG(double, "radius", "the sphere radius"), ARG(std::vector<double>, "insideValues", "the values for inside the sphere"),
+         OPT(double, "radius", "the sphere radius"), OPT(std::vector<double>, "insideValues", "the values for inside the sphere, defaults to 1"),
          OPT(std::vector<double>, "outsideValues", "the outside values, defaults to zero"));

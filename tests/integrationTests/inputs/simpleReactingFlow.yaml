@@ -5,7 +5,8 @@ environment:
 arguments: 
   dm_plex_separate_marker: ""
   petsclimiter_type: none
-  automaticTimeStepCalculator: off
+  temperature_petscfv_type: leastsquares
+  velocity_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   io:
@@ -23,18 +24,21 @@ timestepper:
     upper: [ .1, .1 ]
     boundary: [ "NONE", "NONE" ]
     simplex: false
-    options:
-      dm_refine: 0
     modifiers:
-      - !ablate::domain::modifier::GhostBoundaryCells
-      - !ablate::domain::modifier::DistributeWithGhostCells
-solver: !ablate::finiteVolume::ReactingCompressibleFlow
+      - !ablate::domain::modifiers::SetFromOptions
+          dm_refine: 0
+      - !ablate::domain::modifiers::GhostBoundaryCells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: &eos !ablate::eos::TChem
+          mechFile: grimech30.dat
+          thermoFile: thermo30.dat
+solver: !ablate::finiteVolume::ReactingCompressibleFlowSolver
   id: vortexFlowField
-  options:
-    Tpetscfv_type: leastsquares
-    velpetscfv_type: leastsquares
   parameters:
     cfl: 0.4
+  transport:
     k: 0.0
     mu: 0.0
   initialization:
@@ -59,6 +63,4 @@ solver: !ablate::finiteVolume::ReactingCompressibleFlow
       boundaryValue: *densityYiField
   monitors:
     - !ablate::monitors::TimeStepMonitor
-  eos: !ablate::eos::TChem
-    mechFile: grimech30.dat
-    thermoFile: thermo30.dat
+  eos: *eos

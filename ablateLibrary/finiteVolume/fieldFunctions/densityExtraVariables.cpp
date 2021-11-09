@@ -1,10 +1,11 @@
 #include "densityExtraVariables.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
 #include "mathFunctions/functionPointer.hpp"
 
 ablate::finiteVolume::fieldFunctions::DensityExtraVariables::DensityExtraVariables(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowStateIn,
                                                                                    std::vector<std::shared_ptr<mathFunctions::MathFunction>> evFunctions)
-    : ablate::mathFunctions::FieldFunction(ablate::finiteVolume::processes::FlowProcess::DENSITY_EV_FIELD, std::make_shared<ablate::mathFunctions::FunctionPointer>(ComputeDensityEvFunction, this)),
+    : ablate::mathFunctions::FieldFunction(CompressibleFlowFields::DENSITY_EV_FIELD, std::make_shared<ablate::mathFunctions::FunctionPointer>(ComputeDensityEvFunction, this)),
       flowState(flowStateIn),
       evFunctions(evFunctions) {}
 

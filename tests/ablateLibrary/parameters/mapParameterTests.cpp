@@ -22,3 +22,13 @@ TEST(MapParametersTests, ShouldCreateFromInitializerList) {
     ASSERT_EQ(mapParameters.GetString("item1"), "value1");
     ASSERT_EQ(mapParameters.GetString("item2"), "value2");
 }
+
+TEST(MapParametersTests, ShouldSupportCreateFunction) {
+    // arrange
+    // act
+    auto mapParameters = ablate::parameters::MapParameters::Create({{"item1", "value1"}, {"item2", "value2"}});
+
+    // assert
+    ASSERT_EQ(mapParameters->GetString("item1"), "value1");
+    ASSERT_EQ(mapParameters->GetString("item2"), "value2");
+}

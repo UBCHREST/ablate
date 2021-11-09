@@ -1,11 +1,13 @@
 target_sources(ablateLibrary
         PUBLIC
-        finiteVolume.hpp
-        finiteVolume.cpp
-        compressibleFlow.cpp
-        compressibleFlow.hpp
-        reactingCompressibleFlow.hpp
-        reactingCompressibleFlow.cpp
+        finiteVolumeSolver.hpp
+        finiteVolumeSolver.cpp
+        compressibleFlowFields.hpp
+        compressibleFlowFields.cpp
+        compressibleFlowSolver.cpp
+        compressibleFlowSolver.hpp
+        reactingCompressibleFlowSolver.hpp
+        reactingCompressibleFlowSolver.cpp
         )
 
 add_subdirectory(boundaryConditions)

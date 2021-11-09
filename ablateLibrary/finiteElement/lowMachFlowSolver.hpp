@@ -5,20 +5,20 @@
 #include <map>
 #include <string>
 #include "domain/domain.hpp"
-#include "finiteElement.hpp"
+#include "finiteElementSolver.hpp"
 #include "finiteVolume/boundaryConditions/boundaryCondition.hpp"
 #include "parameters/parameters.hpp"
 
 namespace ablate::finiteElement {
-class LowMachFlow : public FiniteElement {
+class LowMachFlowSolver : public FiniteElementSolver {
    private:
     const std::shared_ptr<parameters::Parameters> parameters;
 
    public:
-    LowMachFlow(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options = {}, std::shared_ptr<parameters::Parameters> parameters = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
-    virtual ~LowMachFlow() = default;
+    LowMachFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options = {}, std::shared_ptr<parameters::Parameters> parameters = {},
+                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
+                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
+    virtual ~LowMachFlowSolver() = default;
 
     /** SubDomain Register and Setup **/
     void Setup() override;

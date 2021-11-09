@@ -1,7 +1,8 @@
 #include "eulerTransport.hpp"
-#include <finiteVolume/fluxCalculator/ausm.hpp>
-#include <utilities/petscError.hpp>
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "utilities/mathUtilities.hpp"
+#include "utilities/petscError.hpp"
 
 ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<parameters::Parameters> parametersIn, std::shared_ptr<eos::EOS> eosIn,
                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn)
@@ -46,13 +47,13 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<
     updateTemperatureData.numberSpecies = (PetscInt)eos->GetSpecies().size();
 }
 
-void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteVolume::FiniteVolume& flow) {
+void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Register the euler source terms
     if (fluxCalculator) {
         if (eos->GetSpecies().empty()) {
-            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, EULER_FIELD, {EULER_FIELD}, {});
+            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD}, {});
         } else {
-            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, EULER_FIELD, {EULER_FIELD, DENSITY_YI_FIELD}, {});
+            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
         }
 
         // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
@@ -67,23 +68,32 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
     if (diffusionData.kFunction || diffusionData.muFunction) {
         // Register the euler diffusion source terms
         if (diffusionData.numberSpecies > 0) {
-            flow.RegisterRHSFunction(DiffusionFlux, &diffusionData, EULER_FIELD, {EULER_FIELD, DENSITY_YI_FIELD}, {"T", "vel"});
+            flow.RegisterRHSFunction(DiffusionFlux,
+                                     &diffusionData,
+                                     CompressibleFlowFields::EULER_FIELD,
+                                     {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                     {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
         } else {
-            flow.RegisterRHSFunction(DiffusionFlux, &diffusionData, EULER_FIELD, {EULER_FIELD}, {"T", "vel"});
+            flow.RegisterRHSFunction(DiffusionFlux,
+                                     &diffusionData,
+                                     CompressibleFlowFields::EULER_FIELD,
+                                     {CompressibleFlowFields::EULER_FIELD},
+                                     {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
         }
     }
 
     // check to see if auxFieldUpdates needed to be added
-    if (flow.GetSubDomain().ContainsField("vel")) {
-        flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, nullptr, "vel", {EULER_FIELD});
+    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VELOCITY_FIELD)) {
+        flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, nullptr, CompressibleFlowFields::VELOCITY_FIELD, {CompressibleFlowFields::EULER_FIELD});
     }
-    if (flow.GetSubDomain().ContainsField("T")) {
+    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::TEMPERATURE_FIELD)) {
         if (diffusionData.numberSpecies > 0) {
             // add in aux update variables
-            flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, &updateTemperatureData, "T", {EULER_FIELD, DENSITY_YI_FIELD});
+            flow.RegisterAuxFieldUpdate(
+                UpdateAuxTemperatureField, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
         } else {
             // add in aux update variables
-            flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, &updateTemperatureData, "T", {EULER_FIELD});
+            flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD});
         }
     }
 }
@@ -194,7 +204,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(Pe
     PetscFunctionReturn(0);
 }
 
-double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolume& flow, void* ctx) {
+double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;

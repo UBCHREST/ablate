@@ -1,32 +1,28 @@
-#include "lowMachFlow.hpp"
+#include "lowMachFlowSolver.hpp"
 #include "lowMachFlow.h"
 #include "utilities/petscError.hpp"
 
-ablate::finiteElement::LowMachFlow::LowMachFlow(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : FiniteElement(
-          solverId, region, options,
-          {
-              {.name = "velocity", .prefix = "vel_", .components = {"vel" + domain::FieldDescriptor::DIMENSION}},
-              {.name = "pressure", .prefix = "pres_"},
-              {.name = "temperature", .prefix = "temp_"},
-              {.name = "momentum_source",
-               .prefix = "momentum_source_",
-               .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mom" + domain::FieldDescriptor::DIMENSION},
-               .type = domain::FieldType::AUX},
-              {.name = "mass_source", .prefix = "mass_source_", .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"mass"}, .type = domain::FieldType::AUX},
-              {.name = "energy_source",
-               .prefix = "energy_source_",
-               .components = auxiliaryFields.empty() ? std::vector<std::string>{} : std::vector<std::string>{"ener"},
-               .type = domain::FieldType::AUX},
-          },
-          initialization, boundaryConditions, auxiliaryFields, exactSolutions),
-      parameters(parameters) {}
+ablate::finiteElement::LowMachFlowSolver::LowMachFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
+                                                            std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
+                                                            std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
+                                                            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
+    : FiniteElementSolver(solverId, region, options, initialization, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {}
 
-void ablate::finiteElement::LowMachFlow::Setup() {
-    FiniteElement::Setup();
+void ablate::finiteElement::LowMachFlowSolver::Setup() {
+    FiniteElementSolver::Setup();
+
+    // Make sure that the fields
+    if (VEL != subDomain->GetField("velocity").subId) {
+        throw std::invalid_argument("The velocity field subId is expected to be " + std::to_string(VEL) + ", but found to be " + std::to_string(subDomain->GetField("velocity").subId));
+    }
+    if (PRES != subDomain->GetField("pressure").subId) {
+        throw std::invalid_argument("The pressure field subId is expected to be " + std::to_string(PRES) + ", but found to be " + std::to_string(subDomain->GetField("pressure").subId));
+    }
+    if (TEMP != subDomain->GetField("temperature").subId) {
+        throw std::invalid_argument("The temperature field subId is expected to be " + std::to_string(TEMP) + ", but found to be " + std::to_string(subDomain->GetField("temperature").subId));
+    }
+
     {
         PetscObject pressure;
         MatNullSpace nullspacePres;
@@ -111,7 +107,7 @@ static PetscErrorCode createPressureNullSpace(DM dm, PetscInt ofield, PetscInt n
 }
 
 /* Make the discrete pressure discretely divergence free */
-static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteElement::LowMachFlow &flow) {
+static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteElement::LowMachFlowSolver &flow) {
     Vec u;
     PetscErrorCode ierr;
     DM dm;
@@ -131,14 +127,14 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteE
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteElement::LowMachFlow::Initialize() {
-    ablate::finiteElement::FiniteElement::Initialize();
+void ablate::finiteElement::LowMachFlowSolver::Initialize() {
+    ablate::finiteElement::FiniteElementSolver::Initialize();
 
     DMSetNullSpaceConstructor(subDomain->GetDM(), PRES, createPressureNullSpace) >> checkError;
     RegisterPreStep([&](TS ts, Solver &) { removeDiscretePressureNullspaceOnTs(ts, *this); });
 }
 
-void ablate::finiteElement::LowMachFlow::CompleteFlowInitialization(DM dm, Vec u) {
+void ablate::finiteElement::LowMachFlowSolver::CompleteFlowInitialization(DM dm, Vec u) {
     MatNullSpace nullsp;
 
     createPressureNullSpace(dm, PRES, PRES, &nullsp) >> checkError;
@@ -147,7 +143,7 @@ void ablate::finiteElement::LowMachFlow::CompleteFlowInitialization(DM dm, Vec u
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::finiteElement::LowMachFlow, "incompressible FE flow", ARG(std::string, "id", "the name of the flow field"),
+REGISTER(ablate::solver::Solver, ablate::finiteElement::LowMachFlowSolver, "incompressible FE flow", ARG(std::string, "id", "the name of the flow field"),
          OPT(domain::Region, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
          ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
          ARG(std::vector<mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),

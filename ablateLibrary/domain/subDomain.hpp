@@ -5,30 +5,32 @@
 #include <mathFunctions/fieldFunction.hpp>
 #include <memory>
 #include <string>
+#include <utilities/petscError.hpp>
 #include "domain.hpp"
-#include "fieldDescriptor.hpp"
+#include "fieldDescription.hpp"
 
 namespace ablate::domain {
 
 class SubDomain {
    private:
-    // const pointer to the parent domain/dm
-    const std::weak_ptr<Domain> domain;
-
-    // store the region used to define this subDomain
-    const std::shared_ptr<domain::Region> region;
+    // const reference to the parent domain/dm
+    Domain& domain;
 
     // Keep a name for this subDomain for output/debug
     std::string name;
 
     // The label used to describe this subDomain
     DMLabel label;
+    PetscInt labelValue;
+
+    // contains the DM field numbers for the fields in this DS, or NULL
+    IS fieldMap;
 
     // Keep track of fields that live in this subDomain;
     std::map<std::string, Field> fieldsByName;
 
     // also keep the fields by type for faster iteration
-    std::map<FieldType, std::vector<Field>> fieldsByType;
+    std::map<FieldLocation, std::vector<Field>> fieldsByType;
 
     // Each subDomain will operate over a ds
     PetscDS discreteSystem;
@@ -45,18 +47,11 @@ class SubDomain {
     Vec subAuxVec;
 
     // support call to copy from global to sub vec
-    void CopyGlobalToSubVector(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false);
+    void CopyGlobalToSubVector(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
 
    public:
-    SubDomain(std::weak_ptr<Domain> domain, std::shared_ptr<domain::Region>);
+    SubDomain(Domain& domain, PetscInt dsNumber, std::vector<std::shared_ptr<FieldDescription>> allAuxFields);
     ~SubDomain();
-
-    Field RegisterField(const FieldDescriptor& fieldDescriptor, PetscObject field);
-
-    /**
-     * Create the subDomain discrete system
-     */
-    void InitializeDiscreteSystem();
 
     /**
      * Create the auxDM, auxVec, and other structures on the subDomain
@@ -72,8 +67,8 @@ class SubDomain {
         }
     }
 
-    inline const Field& GetField(PetscInt id, FieldType type = FieldType::SOL) const {
-        auto field = std::find_if(fieldsByName.begin(), fieldsByName.end(), [type, id](auto pair) { return pair.second.type == type && pair.second.id == id; });
+    inline const Field& GetField(PetscInt id, FieldLocation location = FieldLocation::SOL) const {
+        auto field = std::find_if(fieldsByName.begin(), fieldsByName.end(), [location, id](auto pair) { return pair.second.location == location && pair.second.id == id; });
         if (field != fieldsByName.end()) {
             return field->second;
         } else {
@@ -81,10 +76,15 @@ class SubDomain {
         }
     }
 
-    inline const std::vector<Field>& GetFields(FieldType type = FieldType::SOL) const { return fieldsByType.at(type); }
+    inline const std::vector<Field>& GetFields(FieldLocation type = FieldLocation::SOL) const { return fieldsByType.at(type); }
 
     // return true if the field was defined
     inline bool ContainsField(const std::string& fieldName) { return fieldsByName.count(fieldName) > 0; }
+
+    /**
+     * Helper function that checks to see if any part of the specified region is in this subDomain
+     */
+    bool InRegion(const domain::Region&) const;
 
     /**
      * Get the petscField object from the dm or auxDm for this region
@@ -92,14 +92,6 @@ class SubDomain {
      * @return
      */
     PetscObject GetPetscFieldObject(const Field& field);
-
-    inline const Field& GetSolutionField(const std::string& fieldName) const {
-        if (auto domainPtr = domain.lock()) {
-            return domainPtr->GetSolutionField(fieldName);
-        } else {
-            throw std::runtime_error("Cannot GetSolutionField. Domain is expired.");
-        }
-    }
 
     //[[deprecated("Should remove need for direct dm access")]]
     DM& GetDM();
@@ -131,6 +123,20 @@ class SubDomain {
     inline PetscInt GetNumberFields() const { return fieldsByName.size(); }
 
     inline MPI_Comm GetComm() { return PetscObjectComm((PetscObject)GetDM()); }
+
+    /**
+     * determines if this point is in this region as defined by the label and labelID
+     * @param point
+     * @return
+     */
+    inline bool InRegion(PetscInt point) {
+        if (!label) {
+            return true;
+        }
+        PetscInt ptValue;
+        DMLabelGetValue(label, point, &ptValue) >> checkError;
+        return ptValue == labelValue;
+    }
 
     /**
      * Support function to project the fields on to the global vector

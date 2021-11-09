@@ -1,5 +1,6 @@
 #include "speciesTransport.hpp"
-#include <utilities/mathUtilities.hpp>
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "utilities/mathUtilities.hpp"
 
 ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
                                                                     std::shared_ptr<eos::transport::TransportModel> transportModelIn)
@@ -35,18 +36,22 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
     updateData.numberSpecies = (PetscInt)eos->GetSpecies().size();
 }
 
-void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finiteVolume::FiniteVolume &flow) {
+void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     if (!eos->GetSpecies().empty()) {
         if (fluxCalculator) {
-            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, DENSITY_YI_FIELD, {EULER_FIELD, DENSITY_YI_FIELD}, {});
+            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
         }
 
         if (diffusionData.diffFunction) {
-            flow.RegisterRHSFunction(DiffusionEnergyFlux, &diffusionData, EULER_FIELD, {EULER_FIELD, DENSITY_YI_FIELD}, {YI_FIELD});
-            flow.RegisterRHSFunction(DiffusionSpeciesFlux, &diffusionData, DENSITY_YI_FIELD, {EULER_FIELD}, {YI_FIELD});
+            flow.RegisterRHSFunction(DiffusionEnergyFlux,
+                                     &diffusionData,
+                                     CompressibleFlowFields::EULER_FIELD,
+                                     {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                     {CompressibleFlowFields::YI_FIELD});
+            flow.RegisterRHSFunction(DiffusionSpeciesFlux, &diffusionData, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::YI_FIELD});
         }
 
-        flow.RegisterAuxFieldUpdate(UpdateAuxMassFractionField, &updateData, YI_FIELD, {EULER_FIELD, DENSITY_YI_FIELD});
+        flow.RegisterAuxFieldUpdate(UpdateAuxMassFractionField, &updateData, CompressibleFlowFields::YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
     }
 }
 

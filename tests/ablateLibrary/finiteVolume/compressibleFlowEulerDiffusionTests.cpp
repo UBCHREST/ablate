@@ -3,6 +3,7 @@
 #include <domain/dmWrapper.hpp>
 #include <domain/modifiers/distributeWithGhostCells.hpp>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
+#include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
 #include <solver/directSolverTsInterface.hpp>
 #include <vector>
@@ -11,7 +12,7 @@
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
-#include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
@@ -115,7 +116,7 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
     PetscFunctionReturn(0);
 }
 
-static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::finiteVolume::CompressibleFlow> flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf,
+static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::finiteVolume::CompressibleFlowSolver> flowData, std::vector<PetscReal> &residualNorm2, std::vector<PetscReal> &residualNormInf,
                               InputParameters *parameters, PetscTestErrorChecker &errorChecker) {
     // Compute the error
     PetscDS ds;
@@ -203,14 +204,17 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
-                                                                    std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::GhostBoundaryCells>(),
-                                                                                                                                     std::make_shared<domain::modifier::DistributeWithGhostCells>()});
-
-            // Setup the flow data
+            // define the fields based upon a compressible flow
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(parameters.gamma)}, {"Rgas", std::to_string(parameters.Rgas)}}));
 
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
+                                                                    fieldDescriptors,
+                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>(),
+                                                                                                                                      std::make_shared<domain::modifiers::DistributeWithGhostCells>()});
+
+            // Setup the flow data
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
 
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(parameters.k);
@@ -222,16 +226,16 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "top/bottom", std::vector<int>{1, 3}, PhysicsBoundary_Mirror, &parameters),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       ablate::domain::Region::ENTIREDOMAIN,
-                                                                                       nullptr /*options*/,
-                                                                                       eos,
-                                                                                       flowParameters,
-                                                                                       transportModel,
-                                                                                       std::make_shared<finiteVolume::fluxCalculator::OffFlux>(),
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
-                                                                                       boundaryConditions /*boundary conditions*/,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
+                                                                                             ablate::domain::Region::ENTIREDOMAIN,
+                                                                                             nullptr /*options*/,
+                                                                                             eos,
+                                                                                             flowParameters,
+                                                                                             transportModel,
+                                                                                             std::make_shared<finiteVolume::fluxCalculator::OffFlux>(),
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
+                                                                                             boundaryConditions /*boundary conditions*/,
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
             mesh->InitializeSubDomains({flowObject});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
@@ -301,22 +305,23 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
 INSTANTIATE_TEST_SUITE_P(
     CompressibleFlow, CompressibleFlowDiffusionTestFixture,
-    testing::Values((CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
-                                                                                   .nproc = 1,
-                                                                                   .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                                                "-Tpetscfv_type leastsquares -velpetscfv_type leastsquares -ts_max_steps 600 -ts_dt 0.00000625 "},
-                                                              .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
-                                                              .initialNx = 3,
-                                                              .levels = 3,
-                                                              .expectedL2Convergence = {NAN, 1.5, NAN, NAN},
-                                                              .expectedLInfConvergence = {NAN, 1.3, NAN, NAN}},
-                    (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
-                                                                                   .nproc = 2,
-                                                                                   .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                                                "-Tpetscfv_type leastsquares -velpetscfv_type leastsquares -ts_max_steps 600 -ts_dt 0.00000625 "},
-                                                              .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
-                                                              .initialNx = 9,
-                                                              .levels = 2,
-                                                              .expectedL2Convergence = {NAN, 2.2, NAN, NAN},
-                                                              .expectedLInfConvergence = {NAN, 2.5, NAN, NAN}}),
+    testing::Values(
+        (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
+                                                                       .nproc = 1,
+                                                                       .arguments = "-dm_plex_separate_marker -petsclimiter_type none  -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                                                    "-temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares  -ts_max_steps 600 -ts_dt 0.00000625 "},
+                                                  .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
+                                                  .initialNx = 3,
+                                                  .levels = 3,
+                                                  .expectedL2Convergence = {NAN, 1.5, NAN, NAN},
+                                                  .expectedLInfConvergence = {NAN, 1.3, NAN, NAN}},
+        (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
+                                                                       .nproc = 2,
+                                                                       .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                                                    "-temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -ts_max_steps 600 -ts_dt 0.00000625 "},
+                                                  .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
+                                                  .initialNx = 9,
+                                                  .levels = 2,
+                                                  .expectedL2Convergence = {NAN, 2.2, NAN, NAN},
+                                                  .expectedLInfConvergence = {NAN, 2.5, NAN, NAN}}),
     [](const testing::TestParamInfo<CompressibleFlowDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

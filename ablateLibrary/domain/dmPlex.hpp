@@ -9,11 +9,10 @@ namespace ablate::domain {
 
 class DMPlex : public Domain {
    private:
-    // Petsc options specific to the mesh. These may be null by default
-    PetscOptions petscOptions;
+    static DM CreateDM(const std::string& name);
 
    public:
-    DMPlex(std::string name = "dmplex", std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::shared_ptr<modifier::Modifier>> modifiers = {});
+    DMPlex(std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string name = "dmplex", std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {});
     ~DMPlex() override;
 };
 }  // namespace ablate::domain

@@ -26,7 +26,7 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<solver::Sol
     ablate::monitors::Monitor::Register(monitorableObject);
 
     // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate
-    auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolume>(monitorableObject);
+    auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolumeSolver>(monitorableObject);
     if (!flow) {
         throw std::invalid_argument("The IgnitionDelay monitor can only be used with ablate::finiteVolume::FiniteVolume");
     }

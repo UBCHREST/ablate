@@ -3,7 +3,7 @@
 
 #include <petsc.h>
 #include <vector>
-#include "finiteVolume/finiteVolume.hpp"
+#include "finiteVolume/finiteVolumeSolver.hpp"
 #include "monitor.hpp"
 namespace ablate::monitors {
 
@@ -23,7 +23,7 @@ class CurveMonitor : public Monitor {
     PetscInt outputIndex = 0; /*keep track of the local cell number we are outputting*/
     std::vector<PetscInt> indexLocations;
     std::vector<PetscReal> distanceAlongLine;
-    std::shared_ptr<ablate::finiteVolume::FiniteVolume> flow;
+    std::shared_ptr<ablate::finiteVolume::FiniteVolumeSolver> flow;
 
     static PetscErrorCode OutputCurve(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx);
 

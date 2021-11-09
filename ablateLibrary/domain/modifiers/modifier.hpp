@@ -3,7 +3,7 @@
 
 #include <petsc.h>
 
-namespace ablate::domain::modifier {
+namespace ablate::domain::modifiers {
 class Modifier {
    public:
     virtual ~Modifier() = default;
@@ -16,6 +16,6 @@ class Modifier {
      */
     virtual int Priority() const { return 0; }
 };
-}  // namespace ablate::domain::modifier
+}  // namespace ablate::domain::modifiers
 
 #endif  // ABLATELIBRARY_MODIFIER_HPP

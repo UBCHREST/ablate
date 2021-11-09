@@ -3,6 +3,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include <petsc.h>
 #include <cmath>
 #include <domain/modifiers/ghostBoundaryCells.hpp>
+#include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
 #include <solver/directSolverTsInterface.hpp>
 #include <vector>
@@ -11,7 +12,7 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include "domain/dmWrapper.hpp"
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
-#include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
@@ -166,13 +167,16 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 2, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
-            auto mesh =
-                std::make_shared<ablate::domain::DMWrapper>(dmCreate, std::vector<std::shared_ptr<ablate::domain::modifier::Modifier>>{std::make_shared<domain::modifier::GhostBoundaryCells>()});
+            auto eos = std::make_shared<ablate::eos::PerfectGas>(
+                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}}));
+
+            // define the fields based upon a compressible flow
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+            auto mesh = std::make_shared<ablate::domain::DMWrapper>(
+                dmCreate, fieldDescriptors, std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             // Setup the flow data
             auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", std::to_string(testingParam.cfl)}});
-            auto eos = std::make_shared<ablate::eos::PerfectGas>(
-                std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}}));
 
             auto initialCondition = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
 
@@ -181,16 +185,16 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "right left", 2, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "mirrorWall", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       ablate::domain::Region::ENTIREDOMAIN,
-                                                                                       nullptr /*options*/,
-                                                                                       eos,
-                                                                                       parameters,
-                                                                                       nullptr /*transportModel*/,
-                                                                                       testingParam.fluxCalculator,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition} /*initialization*/,
-                                                                                       boundaryConditions /*boundary conditions*/,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{} /*exactSolution*/);
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
+                                                                                             ablate::domain::Region::ENTIREDOMAIN,
+                                                                                             nullptr /*options*/,
+                                                                                             eos,
+                                                                                             parameters,
+                                                                                             nullptr /*transportModel*/,
+                                                                                             testingParam.fluxCalculator,
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition} /*initialization*/,
+                                                                                             boundaryConditions /*boundary conditions*/,
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{} /*exactSolution*/);
 
             mesh->InitializeSubDomains({flowObject});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);

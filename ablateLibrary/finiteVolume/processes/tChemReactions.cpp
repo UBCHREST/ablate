@@ -96,7 +96,7 @@ ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {
     PetscFree3(tchemScratch, jacobianScratch, rows) >> checkError;
 }
 
-void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FiniteVolume& flow) {
+void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Create a copy of the dm for the solver
     DM coordDM;
     DMGetCoordinateDM(flow.GetSubDomain().GetDM(), &coordDM) >> checkError;

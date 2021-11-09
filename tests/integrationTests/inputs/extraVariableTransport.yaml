@@ -6,6 +6,10 @@ environment:
 arguments: 
   dm_plex_separate_marker: ""
   petsclimiter_type: none
+  euler_petscfv_type: upwind
+  temperature_petscfv_type: leastsquares
+  velocity_petscfv_type: leastsquares
+  extraVariables_petscfv_type: leastsquares
 timestepper:
   io:
     interval: 0
@@ -21,19 +25,20 @@ timestepper:
     upper: [ 1, 1 ]
     boundary: [ "NONE", "NONE" ]
     simplex: false
-    options:
-      dm_refine: 0
     modifiers:
-      - !ablate::domain::modifier::GhostBoundaryCells
-      - !ablate::domain::modifier::DistributeWithGhostCells
-solver: !ablate::finiteVolume::CompressibleFlow
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+      - !ablate::domain::modifiers::GhostBoundaryCells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287
+        extraVariables: ["ev1", "ev2"]
+solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: evExample
-  options:
-    eulerpetscfv_type: upwind
-    Tpetscfv_type: leastsquares
-    velpetscfv_type: leastsquares
-    evpetscfv_type: leastsquares
-  extraVariables: ["ev1", "ev2"]
   parameters:
     cfl: .5
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
@@ -42,12 +47,7 @@ solver: !ablate::finiteVolume::CompressibleFlow
     diff: 1E-4
     k: 1E-4
     mu: 1E-4
-  eos: &eos
-    !ablate::eos::PerfectGas
-         parameters:
-           gamma: 1.4
-           Rgas: 287
-
+  eos: *eos
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       &eulerFlowFieldState
