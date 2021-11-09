@@ -78,6 +78,17 @@ class SubDomain {
 
     inline const std::vector<Field>& GetFields(FieldLocation type = FieldLocation::SOL) const { return fieldsByType.at(type); }
 
+    // Helper function that returns the dm or auxDM
+    inline DM GetFieldDM(const Field& field) noexcept{
+        switch(field.location){
+            case FieldLocation::SOL:
+                return GetDM();
+            case FieldLocation::AUX:
+                return GetAuxDM();
+        }
+        return nullptr;
+    }
+
     // return true if the field was defined
     inline bool ContainsField(const std::string& fieldName) { return fieldsByName.count(fieldName) > 0; }
 
@@ -93,10 +104,12 @@ class SubDomain {
      */
     PetscObject GetPetscFieldObject(const Field& field);
 
-    //[[deprecated("Should remove need for direct dm access")]]
-    DM& GetDM();
-    //[[deprecated("Should remove need for direct dm access")]]
-    DM GetAuxDM();
+    inline DM& GetDM() noexcept{
+        return domain.GetDM();
+    }
+    inline DM GetAuxDM() noexcept{
+        return auxDM;
+    }
     Vec GetSolutionVector();
     Vec GetAuxVector();
 
@@ -141,7 +154,7 @@ class SubDomain {
     /**
      * Support function to project the fields on to the global vector
      */
-    void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0);
+    void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0, const std::shared_ptr<domain::Region> region = {});
 
     /**
      * Support function to project the fields on to vector that lives only on the subDM

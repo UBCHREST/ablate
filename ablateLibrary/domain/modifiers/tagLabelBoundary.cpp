@@ -1,20 +1,26 @@
 #include "tagLabelBoundary.hpp"
 #include <utilities/petscError.hpp>
 
-ablate::domain::modifiers::TagLabelBoundary::TagLabelBoundary(std::string name, std::string boundaryName, int labelValueIn, int boundaryLabelValueIn)
-    : name(name), boundaryName(boundaryName), labelValue(labelValueIn == 0 ? 1 : (PetscInt)labelValueIn), boundaryLabelValue(boundaryLabelValueIn == 0 ? 1 : (PetscInt)boundaryLabelValueIn) {}
+ablate::domain::modifiers::TagLabelBoundary::TagLabelBoundary(std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> boundaryFaceRegion, const std::shared_ptr<domain::Region> boundaryCellRegion)
+    : region(region), boundaryFaceRegion(boundaryFaceRegion), boundaryCellRegion(boundaryCellRegion){}
 
 void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
     DMLabel label;
-    DMGetLabel(dm, name.c_str(), &label) >> checkError;
+    DMGetLabel(dm, region->GetName().c_str(), &label) >> checkError;
     if (label == nullptr) {
-        throw std::runtime_error("Label " + name + " cannot be found in the dm.");
+        throw std::runtime_error("Label " + region->GetName() + " cannot be found in the dm.");
     }
 
     // Create a new label
-    DMCreateLabel(dm, boundaryName.c_str()) >> checkError;
-    DMLabel boundaryLabel;
-    DMGetLabel(dm, boundaryName.c_str(), &boundaryLabel) >> checkError;
+    DMCreateLabel(dm, boundaryFaceRegion->GetName().c_str()) >> checkError;
+    DMLabel boundaryFaceLabel;
+    DMGetLabel(dm, boundaryFaceRegion->GetName().c_str(), &boundaryFaceLabel) >> checkError;
+
+    DMLabel boundaryCellLabel = nullptr;
+    if(boundaryCellRegion){
+        DMCreateLabel(dm, boundaryCellRegion->GetName().c_str()) >> checkError;
+        DMGetLabel(dm, boundaryCellRegion->GetName().c_str(), &boundaryCellLabel) >> checkError;
+    }
 
     // Get all of the faces
     PetscInt depth;
@@ -28,7 +34,7 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
 
     // Get all of the points in the label
     IS labelIS;
-    DMLabelGetStratumIS(label, labelValue, &labelIS) >> checkError;
+    DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> checkError;
 
     // Get the intersect between these two IS
     IS faceIS;
@@ -49,7 +55,7 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
 
         if (supportSize == 1) {
             // Assume that this face is a boundary
-            DMLabelSetValue(label, face, boundaryLabelValue) >> checkError;
+            DMLabelSetValue(label, face, boundaryFaceRegion->GetValue()) >> checkError;
         } else {
             // Check if any of the supports/cells are not in the label.  This will tell us if this is a boundary face
             const PetscInt *cells;
@@ -59,8 +65,15 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
                 const PetscInt cell = cells[c];
                 PetscInt cellLabelValue;
                 DMLabelGetValue(label, cell, &cellLabelValue) >> checkError;
-                if (cellLabelValue != labelValue) {
-                    DMLabelSetValue(boundaryLabel, face, boundaryLabelValue) >> checkError;
+                // If this cell is not inside of original region
+                if (cellLabelValue != region->GetValue()) {
+                    // tage the face cell
+                    DMLabelSetValue(boundaryFaceLabel, face, boundaryFaceRegion->GetValue()) >> checkError;
+
+                    // also tag the boundary cell
+                    if(boundaryCellLabel){
+                        DMLabelSetValue(boundaryCellLabel, cell, boundaryCellRegion->GetValue()) >> checkError;
+                    }
                 }
             }
         }
@@ -73,6 +86,7 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::TagLabelBoundary, "Creates a new label for all faces on the ouside of the boundary",
-         ARG(std::string, "name", "the field label name"), ARG(std::string, "boundaryName", "the new boundary label name"), OPT(int, "labelValue", "The label value, default is 1"),
-         OPT(int, "boundaryLabelValue", "The label value for the new boundary"));
+REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::TagLabelBoundary, "Creates a new label for all faces on the outside of the boundary",
+         ARG(ablate::domain::Region, "region", "the region to tag the boundary"),
+         ARG(ablate::domain::Region, "boundaryFaceRegion", "the new region for the boundary faces"),
+         OPT(ablate::domain::Region, "boundaryCellRegion", "the new region for the boundary cells"));

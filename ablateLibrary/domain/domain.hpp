@@ -57,7 +57,7 @@ class Domain {
    public:
     std::string GetName() const { return name; }
 
-    DM& GetDM() { return dm; }
+    inline DM& GetDM() noexcept { return dm; }
 
     Vec GetSolutionVector() { return solField; }
 

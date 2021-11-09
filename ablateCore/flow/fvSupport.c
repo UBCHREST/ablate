@@ -472,7 +472,7 @@ static PetscErrorCode ComputeBoundaryCellGradient(PetscInt dim, PetscInt dof, co
  * @param gradLocalVec
  * @return
  */
-static PetscErrorCode ABLATE_FillGradientBoundary(DM dm, PetscFV auxFvm, Vec localXVec, Vec gradLocalVec){
+PetscErrorCode ABLATE_FillGradientBoundary(DM dm, PetscFV auxFvm, Vec localXVec, Vec gradLocalVec) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 

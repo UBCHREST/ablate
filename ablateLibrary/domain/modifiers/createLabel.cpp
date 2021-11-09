@@ -2,14 +2,14 @@
 #include "createLabel.hpp"
 #include <utilities/petscError.hpp>
 
-ablate::domain::modifiers::CreateLabel::CreateLabel(std::string name, std::shared_ptr<mathFunctions::MathFunction> function, int dmDepth, int labelValueIn)
-    : name(name), function(function), dmHeight((PetscInt)dmDepth), labelValue(labelValueIn == 0 ? 1 : (PetscInt)labelValueIn) {}
+ablate::domain::modifiers::CreateLabel::CreateLabel(std::shared_ptr<domain::Region> region, std::shared_ptr<mathFunctions::MathFunction> function, int dmDepth)
+    : region(region), function(function), dmHeight((PetscInt)dmDepth) {}
 
 void ablate::domain::modifiers::CreateLabel::Modify(DM &dm) {
-    DMCreateLabel(dm, name.c_str()) >> checkError;
+    DMCreateLabel(dm, region->GetName().c_str()) >> checkError;
 
     DMLabel newLabel;
-    DMGetLabel(dm, name.c_str(), &newLabel) >> checkError;
+    DMGetLabel(dm, region->GetName().c_str(), &newLabel) >> checkError;
 
     PetscInt cStart, cEnd;
     DMPlexGetHeightStratum(dm, dmHeight, &cStart, &cEnd) >> checkError;
@@ -17,6 +17,9 @@ void ablate::domain::modifiers::CreateLabel::Modify(DM &dm) {
     // Get the number of dimensions from the dm
     PetscInt nDims;
     DMGetCoordinateDim(dm, &nDims) >> checkError;
+
+    // get the region value
+    const auto labelValue = region->GetValue();
 
     // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
@@ -35,6 +38,6 @@ void ablate::domain::modifiers::CreateLabel::Modify(DM &dm) {
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::CreateLabel, "Creates a new label for all positive points in the function", ARG(std::string, "name", "the new label name"),
-         ARG(mathFunctions::MathFunction, "function", "the function to evaluate"), OPT(int, "depth", "The depth in which to apply the label.  The default is zero or cell/element"),
-         OPT(int, "labelValue", "The label value, default is 1"));
+REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::CreateLabel, "Creates a new label for all positive points in the function",
+         ARG(domain::Region, "region", "the region describing the new label"),
+         ARG(mathFunctions::MathFunction, "function", "the function to evaluate"), OPT(int, "depth", "The depth in which to apply the label.  The default is zero or cell/element"));

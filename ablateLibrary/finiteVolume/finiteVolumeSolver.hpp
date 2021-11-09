@@ -71,12 +71,16 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     void ComputeFlux(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF);
 
     /**
-     * Inserts the boundary conditions into the locXVec
-     * @param time
-     * @param locXVec
-     * @param locAuxField
+     * support call to compute the gradients in each cell.  This also limits the gradient based upon
+     * the limiter
      */
-    void InsertBoundaryValues(PetscReal time, Vec locXVec, Vec locAuxField);
+    void ComputeFieldGradients(const domain::Field& field,Vec cellGeometryVec, Vec faceGeometryVec, Vec xGlobVec, Vec& gradLocVec, DM& dmGrad);
+
+    /**
+     * support call to project to a single face from a side
+     */
+    void ProjectToFace(const std::vector<domain::Field>& fields, PetscDS ds, const PetscFVFaceGeom& faceGeom, PetscInt cellId, const PetscFVCellGeom& cellGeom, DM dm, const PetscScalar* xArray,
+                       const std::vector<DM> & dmGrads,const std::vector<const PetscScalar*>& gradArrays, PetscScalar* u, PetscScalar* grad, bool projectField = true);
 
    protected:
     /**

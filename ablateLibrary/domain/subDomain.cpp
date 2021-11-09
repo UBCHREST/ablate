@@ -118,10 +118,6 @@ ablate::domain::SubDomain::~SubDomain() {
     }
 }
 
-DM& ablate::domain::SubDomain::GetDM() { return domain.GetDM(); }
-
-DM ablate::domain::SubDomain::GetAuxDM() { return auxDM; }
-
 Vec ablate::domain::SubDomain::GetSolutionVector() { return domain.GetSolutionVector(); }
 
 Vec ablate::domain::SubDomain::GetAuxVector() { return auxVec; }
@@ -153,7 +149,7 @@ void ablate::domain::SubDomain::CreateSubDomainStructures() {
     }
 }
 
-void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time) {
+void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time, const std::shared_ptr<domain::Region> region) {
     PetscInt numberFields;
     DM dm;
 
@@ -174,10 +170,18 @@ void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::sha
         fieldFunctions[fieldId.id] = fieldInitialization->GetSolutionField().GetPetscFunction();
     }
 
-    if (label == nullptr) {
+    // Get the region to project to, start out assuming it is this subdomain
+    DMLabel projectLabel = label;
+    PetscInt projectValue = labelValue;
+    if(region){
+        DMGetLabel(dm, region->GetName().c_str(), &label ) >> checkError;
+        projectValue = region->GetValue();
+    }
+
+    if (projectLabel == nullptr) {
         DMProjectFunction(dm, time, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, globVec) >> checkError;
     } else {
-        DMProjectFunctionLabel(dm, time, label, 1, &labelValue, -1, nullptr, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, globVec);
+        DMProjectFunctionLabel(dm, time, projectLabel, 1, &projectValue, -1, nullptr, &fieldFunctions[0], &fieldContexts[0], INSERT_VALUES, globVec);
     }
 }
 
@@ -406,6 +410,7 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     ISDestroy(&dsLabelIS) >> checkError;
     return inside;
 }
+
 PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const ablate::domain::Field& field) {
     switch (field.location) {
         case FieldLocation::SOL: {
