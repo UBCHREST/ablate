@@ -22,16 +22,14 @@ ablate::domain::FieldDescription::FieldDescription(std::string nameIn, std::stri
 PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
     switch (type) {
         case FieldType::FEM: {
-            // determine if it a simplex element and the number of dimensions
-            DMPolytopeType ct;
-            PetscInt cStart;
-            DMPlexGetHeightStratum(dm, 0, &cStart, NULL) >> checkError;
-            DMPlexGetCellType(dm, cStart, &ct) >> checkError;
-            PetscInt simplex = DMPolytopeTypeGetNumVertices(ct) == DMPolytopeTypeGetDim(ct) + 1 ? PETSC_TRUE : PETSC_FALSE;
+            // determine if it is a simplex element
+            PetscBool simplex;
+            DMPlexIsSimplex(dm, &simplex) >> checkError;
+            PetscInt simplexLoc = simplex? 1: 0;
             PetscInt simplexGlobal;
 
             // Assume true if any rank says true
-            MPI_Allreduce(&simplex, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm)) >> checkMpiError;
+            MPI_Allreduce(&simplexLoc, &simplexGlobal, 1, MPIU_INT, MPI_MAX, PetscObjectComm((PetscObject)dm)) >> checkMpiError;
 
             // Determine the number of dims
             PetscInt dim;
