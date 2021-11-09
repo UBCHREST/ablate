@@ -25,7 +25,7 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             // determine if it is a simplex element
             PetscBool simplex;
             DMPlexIsSimplex(dm, &simplex) >> checkError;
-            PetscInt simplexLoc = simplex? 1: 0;
+            PetscInt simplexLoc = simplex ? 1 : 0;
             PetscInt simplexGlobal;
 
             // Assume true if any rank says true
