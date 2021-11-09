@@ -111,6 +111,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
     }
 
+
     // compute the  flux across each face and point wise functions(note CompressibleFlowComputeEulerFlux has already been registered)
     ierr = ABLATE_DMPlexComputeRHSFunctionFVM(
         &rhsFluxFunctionDescriptions[0], rhsFluxFunctionDescriptions.size(), &rhsPointFunctionDescriptions[0], rhsPointFunctionDescriptions.size(), dm, time, locXVec, locFVec);
@@ -238,7 +239,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
     }
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.push_back(std::make_pair(function, ctx)); }
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.emplace_back(function, ctx); }
 void ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
     Solver::Save(viewer, sequenceNumber, time);
 
@@ -336,6 +337,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::UpdateAuxFields(PetscReal time, V
 
 void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
     auto dm = subDomain->GetDM();
+    auto dmAux = subDomain->GetAuxDM();
     // Get the cell range
     IS cellIS;
     PetscInt cStart, cEnd;
@@ -370,8 +372,8 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
     const PetscScalar* cellGeomArray = NULL;
     const PetscScalar* faceGeomArray = NULL;
     DMPlexGetGeometryFVM(dm, &faceGeometryFVM, &cellGeometryFVM, NULL) >> checkError;
-    VecGetArrayRead(faceGeometryFVM, &cellGeomArray) >> checkError;
-    VecGetArrayRead(cellGeometryFVM, &faceGeomArray) >> checkError;
+    VecGetArrayRead(cellGeometryFVM, &cellGeomArray) >> checkError;
+    VecGetArrayRead(faceGeometryFVM, &faceGeomArray) >> checkError;
     DM faceDM, cellDM;
     VecGetDM(faceGeometryFVM, &faceDM)>> checkError;
     VecGetDM(cellGeometryFVM, &cellDM)>> checkError;
@@ -393,7 +395,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
         ComputeFieldGradients(field, cellGeometryFVM, faceGeometryFVM, locAuxField, locAuxGradVecs[field.subId], dmAuxGrads[field.subId] );
 
         auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
-        ABLATE_FillGradientBoundary(dm, fvm,locAuxField, locAuxGradVecs[field.subId] ) >> checkError;
+        ABLATE_FillGradientBoundary(subDomain->GetAuxDM(), fvm,locAuxField, locAuxGradVecs[field.subId] ) >> checkError;
     }
 
     // Get raw access to the computed values
@@ -435,9 +437,9 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
     // size up the aux variables
     PetscScalar *auxL = nullptr, *auxR = nullptr;
     PetscScalar *gradAuxL = nullptr, *gradAuxR = nullptr;
-    if(auto dmAux = subDomain->GetAuxDM()){
+    if(dmAux){
         DMGetWorkArray(dmAux, totDimAux, MPIU_SCALAR, &auxL) >> checkError;
-        DMGetWorkArray(dmAux, totDimAux, MPIU_SCALAR, &uR) >> checkError;
+        DMGetWorkArray(dmAux, totDimAux, MPIU_SCALAR, &auxR) >> checkError;
 
         DMGetWorkArray(dmAux, dim*totDimAux, MPIU_SCALAR, &gradAuxR) >> checkError;
         DMGetWorkArray(dmAux, dim*totDimAux, MPIU_SCALAR, &gradAuxL) >> checkError;
@@ -510,8 +512,8 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
 
         // determine the left/right cells
         if(auxArray) {
-            ProjectToFace(subDomain->GetFields(domain::FieldLocation::AUX), dsAux, *fg, faceCells[0], *cgL, dm, auxArray, dmAuxGrads, locAuxGradArrays, auxL, gradAuxL);
-            ProjectToFace(subDomain->GetFields(domain::FieldLocation::AUX), dsAux, *fg, faceCells[1], *cgR, dm, auxArray, dmAuxGrads, locAuxGradArrays, gradAuxR, gradAuxR);
+            ProjectToFace(subDomain->GetFields(domain::FieldLocation::AUX), dsAux, *fg, faceCells[0], *cgL, dmAux, auxArray, dmAuxGrads, locAuxGradArrays, auxL, gradAuxL);
+            ProjectToFace(subDomain->GetFields(domain::FieldLocation::AUX), dsAux, *fg, faceCells[1], *cgR, dmAux, auxArray, dmAuxGrads, locAuxGradArrays, auxR, gradAuxR);
         }
 
         // March over each source function
@@ -531,11 +533,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
                 if (fR) fR[d] += flux[d]/cgR->volume;
             }
         }
-
-
-        // project the auxFields to the face
-
-        std::cout << "face (" << f << "): " << face << std::endl;
     }
 
 
@@ -544,11 +541,11 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
     DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &uL) >> checkError;
     DMRestoreWorkArray(dm, totDim, MPIU_SCALAR, &uR) >> checkError;
     DMRestoreWorkArray(dm, dim*totDim, MPIU_SCALAR, &gradL) >> checkError;
-    DMRestoreWorkArray(dm, dim*totDim, MPIU_SCALAR, &gradL) >> checkError;
+    DMRestoreWorkArray(dm, dim*totDim, MPIU_SCALAR, &gradR) >> checkError;
 
-    if(auto dmAux = subDomain->GetAuxDM()){
+    if(dmAux){
         DMRestoreWorkArray(dmAux, totDimAux, MPIU_SCALAR, &auxL) >> checkError;
-        DMRestoreWorkArray(dmAux, totDimAux, MPIU_SCALAR, &uR) >> checkError;
+        DMRestoreWorkArray(dmAux, totDimAux, MPIU_SCALAR, &auxR) >> checkError;
 
         DMRestoreWorkArray(dmAux, dim*totDimAux, MPIU_SCALAR, &gradAuxR) >> checkError;
         DMRestoreWorkArray(dmAux, dim*totDimAux, MPIU_SCALAR, &gradAuxL) >> checkError;
@@ -573,8 +570,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFlux(PetscReal time, Vec l
     }
 
     VecRestoreArray(locF, &locFArray) >> checkError;
-
-
     RestoreRange(cellIS, cStart, cEnd, cells);
     RestoreRange(faceIS, fStart, fEnd, faces);
     VecRestoreArrayRead(faceGeometryFVM, (const PetscScalar**)&cellGeomArray) >> checkError;
@@ -702,8 +697,8 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
         DMPlexGetSupport(dm, face, &cells);
         DMPlexPointLocalRead(dmFace, face, faceGeometryArray, &fg);
         for (PetscInt c = 0; c < 2; ++c) {
-            DMPlexPointLocalFieldRead(dm, cells[c], field.id, xGlobArray, &cx[c]);
-            DMPlexPointGlobalRef(dmGrad, cells[c], gradGlobArray, &cgrad[c]);
+            DMPlexPointLocalFieldRead(dm, cells[c], field.id, xGlobArray, &cx[c]) >> checkError;
+            DMPlexPointGlobalRef(dmGrad, cells[c], gradGlobArray, &cgrad[c]) >> checkError;
         }
         for (PetscInt pd = 0; pd < dof; ++pd) {
             PetscScalar delta = cx[1][pd] - cx[0][pd];
