@@ -134,7 +134,6 @@ class Solver : public io::Serializable {
      * @param points
      */
     void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
-
 };
 
 }  // namespace ablate::solver

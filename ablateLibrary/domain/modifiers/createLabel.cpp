@@ -1,4 +1,3 @@
-
 #include "createLabel.hpp"
 #include <utilities/petscError.hpp>
 
@@ -39,5 +38,5 @@ void ablate::domain::modifiers::CreateLabel::Modify(DM &dm) {
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::CreateLabel, "Creates a new label for all positive points in the function",
-         ARG(domain::Region, "region", "the region describing the new label"),
-         ARG(mathFunctions::MathFunction, "function", "the function to evaluate"), OPT(int, "depth", "The depth in which to apply the label.  The default is zero or cell/element"));
+         ARG(domain::Region, "region", "the region describing the new label"), ARG(mathFunctions::MathFunction, "function", "the function to evaluate"),
+         OPT(int, "depth", "The depth in which to apply the label.  The default is zero or cell/element"));

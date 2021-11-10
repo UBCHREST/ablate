@@ -1,8 +1,8 @@
 #include "finiteVolumeSolver.hpp"
+#include <petsc/private/dmpleximpl.h>
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 #include "processes/process.hpp"
-#include <petsc/private/dmpleximpl.h>
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
@@ -126,12 +126,12 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSFluxFun
     // Create the FVMRHS Function
     FluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
 
-    for (auto & inputField : inputFields) {
+    for (auto& inputField : inputFields) {
         auto& inputFieldId = subDomain->GetField(inputField);
         functionDescription.inputFields.push_back(inputFieldId.id);
     }
 
-    for (const auto & auxField : auxFields) {
+    for (const auto& auxField : auxFields) {
         auto& auxFieldId = subDomain->GetField(auxField);
         functionDescription.auxFields.push_back(auxFieldId.id);
     }
@@ -144,17 +144,17 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSPointFu
     // Create the FVMRHS Function
     PointFunctionDescription functionDescription{.function = function, .context = context};
 
-    for (const auto & field : fields) {
+    for (const auto& field : fields) {
         auto& fieldId = subDomain->GetField(field);
         functionDescription.fields.push_back(fieldId.id);
     }
 
-    for (const auto & inputField : inputFields) {
+    for (const auto& inputField : inputFields) {
         auto& fieldId = subDomain->GetField(inputField);
         functionDescription.inputFields.push_back(fieldId.id);
     }
 
-    for (const auto & auxField : auxFields) {
+    for (const auto& auxField : auxFields) {
         auto& fieldId = subDomain->GetField(auxField);
         functionDescription.auxFields.push_back(fieldId.id);
     }
@@ -170,7 +170,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterAuxFieldUpdate(AuxFieldUp
 
     AuxFieldUpdateFunctionDescription functionDescription{.function = function, .context = context, .inputFields = {}, .auxField = auxFieldLocation.id};
 
-    for (const auto & inputField : inputFields) {
+    for (const auto& inputField : inputFields) {
         auto fieldId = subDomain->GetField(inputField);
         functionDescription.inputFields.push_back(fieldId.id);
     }
@@ -902,10 +902,10 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
     GetCellRange(cellIS, cStart, cEnd, cells);
 
     // Get the pointer to the local grad arrays
-    const PetscScalar* const* gradU = locGradArrays.empty()? nullptr : &locGradArrays[0];
-    const PetscScalar* const* gradAux = locAuxGradArrays.empty()? nullptr : &locAuxGradArrays[0];
+    const PetscScalar* const* gradU = locGradArrays.empty() ? nullptr : &locGradArrays[0];
+    const PetscScalar* const* gradAux = locAuxGradArrays.empty() ? nullptr : &locAuxGradArrays[0];
 
-        // March over each cell
+    // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
         // if there is a cell array, use it, otherwise it is just c
         const PetscInt cell = cells ? cells[c] : c;

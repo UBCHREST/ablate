@@ -22,10 +22,11 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
     using AuxFieldUpdateFunction = PetscErrorCode (*)(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* u, PetscScalar* auxField, void* ctx);
-    using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
-                                                  const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[],
-                                                  const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void *ctx);
-    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[] , const PetscInt aOff[], const PetscScalar a[],const PetscScalar* const gradA[], PetscScalar f[], void *ctx);
+    using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
+                                                  const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
+                                                  const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void* ctx);
+    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[], const PetscInt aOff[],
+                                                   const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    private:
     /**
@@ -39,11 +40,11 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     };
 
     /**
-    * struct to describe how to compute RHS finite volume flux source terms
+     * struct to describe how to compute RHS finite volume flux source terms
      */
     struct FluxFunctionDescription {
         FVMRHSFluxFunction function;
-        void *context;
+        void* context;
 
         PetscInt field;
         std::vector<PetscInt> inputFields;
@@ -51,11 +52,11 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     };
 
     /**
-    * struct to describe how to compute RHS finite volume point source terms
+     * struct to describe how to compute RHS finite volume point source terms
      */
     struct PointFunctionDescription {
         FVMRHSPointFunction function;
-        void *context;
+        void* context;
 
         std::vector<PetscInt> fields;
         std::vector<PetscInt> inputFields;
@@ -108,49 +109,21 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * support call to project to a single face from a side
      */
     void ProjectToFace(const std::vector<domain::Field>& fields, PetscDS ds, const PetscFVFaceGeom& faceGeom, PetscInt cellId, const PetscFVCellGeom& cellGeom, DM dm, const PetscScalar* xArray,
-                       const std::vector<DM> & dmGrads,const std::vector<const PetscScalar*>& gradArrays, PetscScalar* u, PetscScalar* grad, bool projectField = true);
+                       const std::vector<DM>& dmGrads, const std::vector<const PetscScalar*>& gradArrays, PetscScalar* u, PetscScalar* grad, bool projectField = true);
 
     /**
      * Function to compute the flux source terms
      */
-    void ComputeFluxSourceTerms(DM dm,
-                                PetscDS ds,
-                                PetscInt totDim,
-                                const PetscScalar *xArray,
-                                DM dmAux,
-                                PetscDS dsAux,
-                                PetscInt totDimAux,
-                                const PetscScalar *auxArray,
-                                DM faceDM,
-                                const PetscScalar* faceGeomArray,
-                                DM cellDM,
-                                const PetscScalar* cellGeomArray,
-                                std::vector<DM>& dmGrads,
-                                std::vector<const PetscScalar*>& locGradArrays,
-                                std::vector<DM>& dmAuxGrads,
-                                std::vector<const PetscScalar*>& locAuxGradArrays,
-                                PetscScalar *locFArray);
+    void ComputeFluxSourceTerms(DM dm, PetscDS ds, PetscInt totDim, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux, const PetscScalar* auxArray, DM faceDM,
+                                const PetscScalar* faceGeomArray, DM cellDM, const PetscScalar* cellGeomArray, std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays,
+                                std::vector<DM>& dmAuxGrads, std::vector<const PetscScalar*>& locAuxGradArrays, PetscScalar* locFArray);
 
     /**
      * Function to compute the point source terms
      */
-    void ComputePointSourceTerms(DM dm,
-                                PetscDS ds,
-                                PetscInt totDim,
-                                const PetscScalar *xArray,
-                                DM dmAux,
-                                PetscDS dsAux,
-                                PetscInt totDimAux,
-                                const PetscScalar *auxArray,
-                                DM faceDM,
-                                const PetscScalar* faceGeomArray,
-                                DM cellDM,
-                                const PetscScalar* cellGeomArray,
-                                std::vector<DM>& dmGrads,
-                                std::vector<const PetscScalar*>& locGradArrays,
-                                std::vector<DM>& dmAuxGrads,
-                                std::vector<const PetscScalar*>& locAuxGradArrays,
-                                PetscScalar *locFArray);
+    void ComputePointSourceTerms(DM dm, PetscDS ds, PetscInt totDim, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux, const PetscScalar* auxArray, DM faceDM,
+                                 const PetscScalar* faceGeomArray, DM cellDM, const PetscScalar* cellGeomArray, std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays,
+                                 std::vector<DM>& dmAuxGrads, std::vector<const PetscScalar*>& locAuxGradArrays, PetscScalar* locFArray);
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
@@ -190,7 +163,8 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(FVMRHSPointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
+    void RegisterRHSFunction(FVMRHSPointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields,
+                             const std::vector<std::string>& auxFields);
 
     /**
      * Register an arbitrary function.  The user is responsible for all work
@@ -207,7 +181,7 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context,const std::string& auxField, const std::vector<std::string>& inputFields);
+    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, const std::string& auxField, const std::vector<std::string>& inputFields);
 
     /**
      * Register a dtCalculator
@@ -226,7 +200,6 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param time
      */
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
-
 };
 }  // namespace ablate::finiteVolume
 

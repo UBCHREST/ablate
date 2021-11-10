@@ -114,7 +114,7 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
 
     // Only define the new field over the region used by this solver
     DMLabel regionLabel = nullptr;
-    if(auto region = flow.GetRegion()){
+    if (auto region = flow.GetRegion()) {
         DMGetLabel(fieldDm, region->GetName().c_str(), &regionLabel);
     }
     DMAddField(fieldDm, regionLabel, (PetscObject)fvm) >> checkError;

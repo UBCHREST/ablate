@@ -79,8 +79,8 @@ class SubDomain {
     inline const std::vector<Field>& GetFields(FieldLocation type = FieldLocation::SOL) const { return fieldsByType.at(type); }
 
     // Helper function that returns the dm or auxDM
-    inline DM GetFieldDM(const Field& field) noexcept{
-        switch(field.location){
+    inline DM GetFieldDM(const Field& field) noexcept {
+        switch (field.location) {
             case FieldLocation::SOL:
                 return GetDM();
             case FieldLocation::AUX:
@@ -104,12 +104,8 @@ class SubDomain {
      */
     PetscObject GetPetscFieldObject(const Field& field);
 
-    inline DM& GetDM() noexcept{
-        return domain.GetDM();
-    }
-    inline DM GetAuxDM() noexcept{
-        return auxDM;
-    }
+    inline DM& GetDM() noexcept { return domain.GetDM(); }
+    inline DM GetAuxDM() noexcept { return auxDM; }
     Vec GetSolutionVector();
     Vec GetAuxVector();
 

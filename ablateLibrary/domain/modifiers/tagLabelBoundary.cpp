@@ -1,8 +1,9 @@
 #include "tagLabelBoundary.hpp"
 #include <utilities/petscError.hpp>
 
-ablate::domain::modifiers::TagLabelBoundary::TagLabelBoundary(std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> boundaryFaceRegion, const std::shared_ptr<domain::Region> boundaryCellRegion)
-    : region(region), boundaryFaceRegion(boundaryFaceRegion), boundaryCellRegion(boundaryCellRegion){}
+ablate::domain::modifiers::TagLabelBoundary::TagLabelBoundary(std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> boundaryFaceRegion,
+                                                              const std::shared_ptr<domain::Region> boundaryCellRegion)
+    : region(region), boundaryFaceRegion(boundaryFaceRegion), boundaryCellRegion(boundaryCellRegion) {}
 
 void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
     DMLabel label;
@@ -17,7 +18,7 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
     DMGetLabel(dm, boundaryFaceRegion->GetName().c_str(), &boundaryFaceLabel) >> checkError;
 
     DMLabel boundaryCellLabel = nullptr;
-    if(boundaryCellRegion){
+    if (boundaryCellRegion) {
         DMCreateLabel(dm, boundaryCellRegion->GetName().c_str()) >> checkError;
         DMGetLabel(dm, boundaryCellRegion->GetName().c_str(), &boundaryCellLabel) >> checkError;
     }
@@ -71,7 +72,7 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
                     DMLabelSetValue(boundaryFaceLabel, face, boundaryFaceRegion->GetValue()) >> checkError;
 
                     // also tag the boundary cell
-                    if(boundaryCellLabel){
+                    if (boundaryCellLabel) {
                         DMLabelSetValue(boundaryCellLabel, cell, boundaryCellRegion->GetValue()) >> checkError;
                     }
                 }
@@ -87,6 +88,5 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
 
 #include "parser/registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::TagLabelBoundary, "Creates a new label for all faces on the outside of the boundary",
-         ARG(ablate::domain::Region, "region", "the region to tag the boundary"),
-         ARG(ablate::domain::Region, "boundaryFaceRegion", "the new region for the boundary faces"),
+         ARG(ablate::domain::Region, "region", "the region to tag the boundary"), ARG(ablate::domain::Region, "boundaryFaceRegion", "the new region for the boundary faces"),
          OPT(ablate::domain::Region, "boundaryCellRegion", "the new region for the boundary cells"));

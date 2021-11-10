@@ -149,7 +149,8 @@ void ablate::domain::SubDomain::CreateSubDomainStructures() {
     }
 }
 
-void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time, const std::shared_ptr<domain::Region> region) {
+void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time,
+                                                      const std::shared_ptr<domain::Region> region) {
     PetscInt numberFields;
     DM dm;
 
@@ -173,8 +174,8 @@ void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::sha
     // Get the region to project to, start out assuming it is this subdomain
     DMLabel projectLabel = label;
     PetscInt projectValue = labelValue;
-    if(region){
-        DMGetLabel(dm, region->GetName().c_str(), &label ) >> checkError;
+    if (region) {
+        DMGetLabel(dm, region->GetName().c_str(), &label) >> checkError;
         projectValue = region->GetValue();
     }
 

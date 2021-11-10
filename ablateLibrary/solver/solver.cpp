@@ -1,8 +1,8 @@
 #include "solver.hpp"
+#include <petsc/private/dmpleximpl.h>
 #include <regex>
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
-#include <petsc/private/dmpleximpl.h>
 
 ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
     : solverId(std::move(solverId)), region(std::move(region)), petscOptions(nullptr) {
@@ -232,22 +232,21 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
     PetscFunctionReturn(0);
 }
 
-
-void ablate::solver::Solver::GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells) {
+void ablate::solver::Solver::GetCellRange(IS &cellIS, PetscInt &cStart, PetscInt &cEnd, const PetscInt *&cells) {
     // Start out getting all the cells
     PetscInt depth;
     DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
     GetRange(depth, cellIS, cStart, cEnd, cells);
 }
 
-void ablate::solver::Solver::GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces) {
+void ablate::solver::Solver::GetFaceRange(IS &faceIS, PetscInt &fStart, PetscInt &fEnd, const PetscInt *&faces) {
     // Start out getting all the faces
     PetscInt depth;
     DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
     GetRange(depth - 1, faceIS, fStart, fEnd, faces);
 }
 
-void ablate::solver::Solver::GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
+void ablate::solver::Solver::GetRange(PetscInt depth, IS &pointIS, PetscInt &pStart, PetscInt &pEnd, const PetscInt *&points) {
     // Start out getting all of the points
     IS allPointIS;
     DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> checkError;
@@ -276,7 +275,7 @@ void ablate::solver::Solver::GetRange(PetscInt depth, IS& pointIS, PetscInt& pSt
     ISDestroy(&allPointIS) >> checkError;
 }
 
-void ablate::solver::Solver::RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
+void ablate::solver::Solver::RestoreRange(IS &pointIS, PetscInt &pStart, PetscInt &pEnd, const PetscInt *&points) {
     ISRestorePointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
     ISDestroy(&pointIS) >> checkError;
 }
