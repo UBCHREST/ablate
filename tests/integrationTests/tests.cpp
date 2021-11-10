@@ -164,7 +164,12 @@ INSTANTIATE_TEST_SUITE_P(
                     (MpiTestParameter){.testName = "inputs/simpleReactingFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/simpleReactingFlow.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/ignitionDelayGriMech.yaml", .nproc = 1, .expectedOutputFile = "outputs/ignitionDelayGriMech.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/dmViewFromOptions.yaml", .nproc = 1, .expectedOutputFile = "outputs/dmViewFromOptions.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/extraVariableTransport.yaml", .nproc = 1, .expectedOutputFile = "outputs/extraVariableTransport.txt", .arguments = ""}),
+                    (MpiTestParameter){.testName = "inputs/extraVariableTransport.yaml", .nproc = 1, .expectedOutputFile = "outputs/extraVariableTransport.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/subDomainFVM.yaml",
+                                       .nproc = 1,
+                                       .expectedOutputFile = "outputs/subDomainFVM/subDomainFVM.out",
+                                       .arguments = "",
+                                       .expectedFiles{{"outputs/subDomainFVM/subDomainFVMSolver.xmf", "subDomainFVMSolver.xmf"}}}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(

@@ -22,6 +22,13 @@ void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
 
     // Set the flux calculator solver for each component
     PetscDSSetFromOptions(subDomain->GetDiscreteSystem()) >> checkError;
+
+    // Some petsc code assumes that a ghostLabel has created, so create one
+    PetscBool ghostLabel;
+    DMHasLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+    if (!ghostLabel) {
+        throw std::runtime_error("The FiniteVolumeSolver expects ghost cells around the boundary even if the FiniteVolumeSolver region does not include the boundary.");
+    }
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
@@ -769,6 +776,14 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
     DMLabel ghostLabel;
     DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
 
+    // get the label for this region
+    DMLabel regionLabel = nullptr;
+    PetscInt regionValue = 0;
+    if (auto region = GetRegion()) {
+        regionValue = region->GetValue();
+        DMGetLabel(dm, region->GetName().c_str(), &regionLabel) >> checkError;
+    }
+
     // March over each face in this region
     IS faceIS;
     PetscInt fStart, fEnd;
@@ -813,12 +828,21 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
 
             // add the flux back to the cell
             PetscScalar *fL = nullptr, *fR = nullptr;
+            PetscInt cellLabelValue = regionValue;
             DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> checkError;
-            if (ghost <= 0) {
+            if (regionLabel) {
+                DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> checkError;
+            }
+            if (ghost <= 0 && regionValue == cellLabelValue) {
                 DMPlexPointLocalFieldRef(dm, faceCells[0], fluxId[fun], locFArray, &fL) >> checkError;
             }
+
+            cellLabelValue = regionValue;
             DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> checkError;
-            if (ghost <= 0) {
+            if (regionLabel) {
+                DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> checkError;
+            }
+            if (ghost <= 0 && regionValue == cellLabelValue) {
                 DMPlexPointLocalFieldRef(dm, faceCells[1], fluxId[fun], locFArray, &fR) >> checkError;
             }
 

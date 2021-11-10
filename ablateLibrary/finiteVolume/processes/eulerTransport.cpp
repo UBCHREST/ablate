@@ -217,8 +217,13 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
     // Get the fv geom
     PetscReal minCellRadius;
     DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> checkError;
+
+    // Get the valid cell range over this region
+    IS cellIS;
     PetscInt cStart, cEnd;
-    DMPlexGetSimplexOrBoxCells(dm, 0, &cStart, &cEnd) >> checkError;
+    const PetscInt* cells;
+    flow.GetCellRange(cellIS, cStart, cEnd, cells);
+
     const PetscScalar* x;
     VecGetArrayRead(v, &x) >> checkError;
 
@@ -236,12 +241,14 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
     // March over each cell
     PetscReal dtMin = 1000.0;
     for (PetscInt c = cStart; c < cEnd; ++c) {
+        PetscInt cell = cells ? cells[c] : c;
+
         const PetscReal* xc;
         const PetscReal* densityYi = NULL;
-        DMPlexPointGlobalFieldRead(dm, c, eulerId, x, &xc) >> checkError;
+        DMPlexPointGlobalFieldRead(dm, cell, eulerId, x, &xc) >> checkError;
 
         if (densityYiId >= 0) {
-            DMPlexPointGlobalFieldRead(dm, c, densityYiId, x, &densityYi) >> checkError;
+            DMPlexPointGlobalFieldRead(dm, cell, densityYiId, x, &densityYi) >> checkError;
         }
 
         if (xc) {  // must be real cell and not ghost
@@ -264,6 +271,7 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
         }
     }
     VecRestoreArrayRead(v, &x) >> checkError;
+    flow.RestoreRange(cellIS, cStart, cEnd, cells);
     return dtMin;
 }
 PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscInt* uOff_x, const PetscScalar* fieldL,
