@@ -68,7 +68,7 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * Computes the flux across each face in th region
 
      */
-    void ComputeFlux(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF);
+    void ComputeSourceTerms(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF);
 
     /**
      * support call to compute the gradients in each cell.  This also limits the gradient based upon
@@ -82,42 +82,47 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     void ProjectToFace(const std::vector<domain::Field>& fields, PetscDS ds, const PetscFVFaceGeom& faceGeom, PetscInt cellId, const PetscFVCellGeom& cellGeom, DM dm, const PetscScalar* xArray,
                        const std::vector<DM> & dmGrads,const std::vector<const PetscScalar*>& gradArrays, PetscScalar* u, PetscScalar* grad, bool projectField = true);
 
-   protected:
     /**
-     * Get the cellIS and range over valid cells in this region
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
+     * Function to compute the flux source terms
      */
-    void GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells);
+    void ComputeFluxSourceTerms(DM dm,
+                                PetscDS ds,
+                                PetscInt totDim,
+                                const PetscScalar *xArray,
+                                DM dmAux,
+                                PetscDS dsAux,
+                                PetscInt totDimAux,
+                                const PetscScalar *auxArray,
+                                DM faceDM,
+                                const PetscScalar* faceGeomArray,
+                                DM cellDM,
+                                const PetscScalar* cellGeomArray,
+                                std::vector<DM>& dmGrads,
+                                std::vector<const PetscScalar*>& locGradArrays,
+                                std::vector<DM>& dmAuxGrads,
+                                std::vector<const PetscScalar*>& locAuxGradArrays,
+                                PetscScalar *locFArray);
 
     /**
-     * Get the faceIS and range over valid faces in this region
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
+     * Function to compute the point source terms
      */
-    void GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces);
-
-    /**
-     * Get the valid range over specified depth
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
-     */
-    void GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
-
-    /**
-     * Restores the is and range
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
-     */
-    void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
+    void ComputePointSourceTerms(DM dm,
+                                PetscDS ds,
+                                PetscInt totDim,
+                                const PetscScalar *xArray,
+                                DM dmAux,
+                                PetscDS dsAux,
+                                PetscInt totDimAux,
+                                const PetscScalar *auxArray,
+                                DM faceDM,
+                                const PetscScalar* faceGeomArray,
+                                DM cellDM,
+                                const PetscScalar* cellGeomArray,
+                                std::vector<DM>& dmGrads,
+                                std::vector<const PetscScalar*>& locGradArrays,
+                                std::vector<DM>& dmAuxGrads,
+                                std::vector<const PetscScalar*>& locAuxGradArrays,
+                                PetscScalar *locFArray);
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
@@ -194,6 +199,42 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param time
      */
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
+    /**
+     * Get the cellIS and range over valid cells in this region
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells);
+
+    /**
+     * Get the faceIS and range over valid faces in this region
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces);
+
+    /**
+     * Get the valid range over specified depth
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
+
+    /**
+     * Restores the is and range
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
+
 };
 }  // namespace ablate::finiteVolume
 
