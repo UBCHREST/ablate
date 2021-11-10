@@ -107,8 +107,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     VecCreate(PETSC_COMM_SELF, &x);
     VecSetSizes(x, PETSC_DECIDE, 2);  // 2x1 vector
     VecSetFromOptions(x);
-    VecSet(x, 1.0);  // set initial guess [rho1, e1]= [1.0,1.0]
-                     //    VecSetValues(x, 2, [0,1],[1.0,1.0],INSERT_VALUES); // set each initial guess separately
+    PetscReal choice = 1.0;//PetscMax(1.0,densityVF);
+    VecSet(x, choice);  // set initial guess [rho1, e1]= [1.0,1.0]
+//    VecSetValues(x, 1, 1, (*internalEnergy),INSERT_VALUES); // set each initial guess separately
     VecDuplicate(x, &r);
 
     SNESCreate(PETSC_COMM_SELF, &snes);
@@ -125,7 +126,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     // default Newton's method, SNESSetType(SNES snes, SNESType method);
 //    SNESSetType(snes,"newtontr");
     //    SNESSetTolerances(SNES snes,PetscReal atol,PetscReal rtol,PetscReal stol, PetscInt its,PetscInt fcts);
-    SNESSetTolerances(snes, 1E-16, 1E-26, 1E-16, 100000, 100000);
+    SNESSetTolerances(snes, 1E-16, 1E-26, 1E-22, 100000, 100000);
     // default rtol=10e-8
     // snes_fd : use FD Jacobian - SNESComputeJacobianDefault()
     // snes_monitor : view residuals for each iteration
@@ -183,7 +184,7 @@ ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid)
     : eosGas(eosGas), eosLiquid(eosLiquid), fluxCalculatorGasGas(fluxCalculatorGasGas), fluxCalculatorGasLiquid(fluxCalculatorGasLiquid), fluxCalculatorLiquidLiquid(fluxCalculatorLiquidLiquid) {}
-void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Initialize(ablate::finiteVolume::FiniteVolume &flow) {
+void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     // Currently, no option for species advection
     flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, "euler", {"densityVF", "euler"}, {});
     flow.RegisterRHSFunction(CompressibleFlowComputeVFFlux, this, "densityVF", {"densityVF", "euler"}, {});
