@@ -126,26 +126,16 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSFluxFun
     auto& fieldId = subDomain->GetField(field);
 
     // Create the FVMRHS Function
-    FVMRHSFluxFunctionDescription functionDescription{.function = function,
-                                                      .context = context,
-                                                      .field = fieldId.id,
-                                                      .inputFields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
-                                                      .numberInputFields = (PetscInt)inputFields.size(),
-                                                      .auxFields = {-1, -1, -1, -1}, /**default to empty**/
-                                                      .numberAuxFields = (PetscInt)auxFields.size()};
-
-    if (inputFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || auxFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS) {
-        std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");
-    }
+    FluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
 
     for (std::size_t i = 0; i < inputFields.size(); i++) {
         auto& inputFieldId = subDomain->GetField(inputFields[i]);
-        functionDescription.inputFields[i] = inputFieldId.id;
+        functionDescription.inputFields.push_back(inputFieldId.id);
     }
 
     for (std::size_t i = 0; i < auxFields.size(); i++) {
         auto& auxFieldId = subDomain->GetField(auxFields[i]);
-        functionDescription.auxFields[i] = auxFieldId.id;
+        functionDescription.auxFields.push_back(auxFieldId.id);
     }
 
     rhsFluxFunctionDescriptions.push_back(functionDescription);
@@ -154,32 +144,21 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSFluxFun
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::vector<std::string> fields, std::vector<std::string> inputFields,
                                                                    std::vector<std::string> auxFields) {
     // Create the FVMRHS Function
-    FVMRHSPointFunctionDescription functionDescription{.function = function,
-                                                       .context = context,
-                                                       .fields = {-1, -1, -1, -1}, /**default to empty.  Right now it is hard coded to be a 4 length array.  This should be relaxed**/
-                                                       .numberFields = (PetscInt)fields.size(),
-                                                       .inputFields = {-1, -1, -1, -1}, /**default to empty.**/
-                                                       .numberInputFields = (PetscInt)inputFields.size(),
-                                                       .auxFields = {-1, -1, -1, -1}, /**default to empty**/
-                                                       .numberAuxFields = (PetscInt)auxFields.size()};
-
-    if (fields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || inputFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS || auxFields.size() > MAX_FVM_RHS_FUNCTION_FIELDS) {
-        std::runtime_error("Cannot register more than " + std::to_string(MAX_FVM_RHS_FUNCTION_FIELDS) + " fields in RegisterRHSFunction.");
-    }
+    PointFunctionDescription functionDescription{.function = function, .context = context};
 
     for (std::size_t i = 0; i < fields.size(); i++) {
         auto& fieldId = subDomain->GetField(fields[i]);
-        functionDescription.fields[i] = fieldId.id;
+        functionDescription.fields.push_back(fieldId.id);
     }
 
     for (std::size_t i = 0; i < inputFields.size(); i++) {
         auto& fieldId = subDomain->GetField(inputFields[i]);
-        functionDescription.inputFields[i] = fieldId.id;
+        functionDescription.inputFields.push_back(fieldId.id);
     }
 
     for (std::size_t i = 0; i < auxFields.size(); i++) {
         auto& fieldId = subDomain->GetField(auxFields[i]);
-        functionDescription.auxFields[i] = fieldId.id;
+        functionDescription.auxFields.push_back(fieldId.id);
     }
 
     rhsPointFunctionDescriptions.push_back(functionDescription);
@@ -408,12 +387,13 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
     VecGetArray(locF, &locFArray) >> checkError;
 
     // Compute the source terms from flux across the interface
-    if(!this->rhsFluxFunctionDescriptions.empty()) {
+    if (!this->rhsFluxFunctionDescriptions.empty()) {
         ComputeFluxSourceTerms(
             dm, ds, totDim, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, dmGrads, locGradArrays, dmAuxGrads, locAuxGradArrays, locFArray);
     }
-    if(!this->rhsPointFunctionDescriptions.empty()){
-        ComputePointSourceTerms(dm, ds, totDim, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, dmGrads, locGradArrays, dmAuxGrads, locAuxGradArrays, locFArray);
+    if (!this->rhsPointFunctionDescriptions.empty()) {
+        ComputePointSourceTerms(
+            dm, ds, totDim, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, dmGrads, locGradArrays, dmAuxGrads, locAuxGradArrays, locFArray);
     }
 
     // cleanup (restore access to locGradVecs, locAuxGradVecs with DMRestoreLocalVector)
@@ -817,7 +797,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
         const auto& field = subDomain->GetField(rhsFluxFunctionDescriptions[fun].field);
         fluxComponentSize[fun] = field.numberComponents;
         fluxId[fun] = field.id;
-        for (PetscInt f = 0; f < rhsFluxFunctionDescriptions[fun].numberInputFields; f++) {
+        for (std::size_t f = 0; f < rhsFluxFunctionDescriptions[fun].inputFields.size(); f++) {
             uOff[fun].push_back(uOffTotal[rhsFluxFunctionDescriptions[fun].inputFields[f]]);
             uOff_x[fun].push_back(uGradOffTotal[rhsFluxFunctionDescriptions[fun].inputFields[f]]);
         }
@@ -829,7 +809,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
         PetscDSGetComponentOffsets(dsAux, &auxOffTotal) >> checkError;
         PetscDSGetComponentDerivativeOffsets(dsAux, &auxGradOffTotal) >> checkError;
         for (std::size_t fun = 0; fun < rhsFluxFunctionDescriptions.size(); fun++) {
-            for (PetscInt f = 0; f < rhsFluxFunctionDescriptions[fun].numberAuxFields; f++) {
+            for (std::size_t f = 0; f < rhsFluxFunctionDescriptions[fun].auxFields.size(); f++) {
                 aOff[fun].push_back(auxOffTotal[rhsFluxFunctionDescriptions[fun].auxFields[f]]);
                 aOff_x[fun].push_back(auxGradOffTotal[rhsFluxFunctionDescriptions[fun].auxFields[f]]);
             }
@@ -920,7 +900,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
                                                                        const PetscScalar* auxArray, DM faceDM, const PetscScalar* faceGeomArray, DM cellDM, const PetscScalar* cellGeomArray,
                                                                        std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays, std::vector<DM>& dmAuxGrads,
                                                                        std::vector<const PetscScalar*>& locAuxGradArrays, PetscScalar* locFArray) {
-
     // Precompute the offsets to pass into the rhsFluxFunctionDescriptions
     std::vector<std::vector<PetscInt>> fluxComponentSize(rhsPointFunctionDescriptions.size());
     std::vector<std::vector<PetscInt>> fluxComponentOffset(rhsPointFunctionDescriptions.size());
@@ -932,17 +911,17 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
     PetscDSGetComponentOffsets(ds, &uOffTotal) >> checkError;
 
     for (std::size_t fun = 0; fun < rhsPointFunctionDescriptions.size(); fun++) {
-        for (PetscInt f = 0; f < rhsPointFunctionDescriptions[fun].numberFields; f++) {
+        for (std::size_t f = 0; f < rhsPointFunctionDescriptions[fun].fields.size(); f++) {
             const auto& field = subDomain->GetField(rhsPointFunctionDescriptions[fun].fields[f]);
 
             PetscInt fieldSize, fieldOffset;
             PetscDSGetFieldSize(ds, field.subId, &fieldSize) >> checkError;
-            PetscDSGetFieldOffset(ds, field.subId, &fieldOffset)  >> checkError;
+            PetscDSGetFieldOffset(ds, field.subId, &fieldOffset) >> checkError;
             fluxComponentSize[fun].push_back(fieldSize);
             fluxComponentOffset[fun].push_back(fieldOffset);
         }
 
-        for (PetscInt f = 0; f < rhsPointFunctionDescriptions[fun].numberInputFields; f++) {
+        for (std::size_t f = 0; f < rhsPointFunctionDescriptions[fun].inputFields.size(); f++) {
             uOff[fun].push_back(uOffTotal[rhsPointFunctionDescriptions[fun].inputFields[f]]);
         }
     }
@@ -951,7 +930,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
         PetscInt* auxOffTotal;
         PetscDSGetComponentOffsets(dsAux, &auxOffTotal) >> checkError;
         for (std::size_t fun = 0; fun < rhsPointFunctionDescriptions.size(); fun++) {
-            for (PetscInt f = 0; f < rhsPointFunctionDescriptions[fun].numberAuxFields; f++) {
+            for (std::size_t f = 0; f < rhsPointFunctionDescriptions[fun].auxFields.size(); f++) {
                 aOff[fun].push_back(auxOffTotal[rhsPointFunctionDescriptions[fun].auxFields[f]]);
             }
         }
@@ -985,27 +964,27 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
         }
 
         // extract the point locations for this cell
-        const PetscFVCellGeom *cg;
-        const PetscScalar *u;
-        PetscScalar *rhs;
-        DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cg)>> checkError;
-        DMPlexPointLocalRead(dm, cell, xArray, &u)>> checkError;
-        DMPlexPointLocalRef(dm, cell, locFArray, &rhs)>> checkError;
+        const PetscFVCellGeom* cg;
+        const PetscScalar* u;
+        PetscScalar* rhs;
+        DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cg) >> checkError;
+        DMPlexPointLocalRead(dm, cell, xArray, &u) >> checkError;
+        DMPlexPointLocalRef(dm, cell, locFArray, &rhs) >> checkError;
 
         // if there is an aux field, get it
-        const PetscScalar *a = NULL;
-        if (auxArray){
+        const PetscScalar* a = NULL;
+        if (auxArray) {
             DMPlexPointLocalRead(dmAux, cell, auxArray, &a) >> checkError;
         }
 
         // March over each functionDescriptions
-        for (std::size_t fun =0; fun < rhsPointFunctionDescriptions.size(); fun++){
+        for (std::size_t fun = 0; fun < rhsPointFunctionDescriptions.size(); fun++) {
             // (PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx)
             rhsPointFunctionDescriptions[fun].function(dim, cg, &uOff[fun][0], u, &aOff[fun][0], a, fScratch, rhsPointFunctionDescriptions[fun].context) >> checkError;
 
             // copy over each result flux field
             PetscInt r = 0;
-            for (PetscInt ff = 0; ff < rhsPointFunctionDescriptions[fun].numberFields; ff++){
+            for (std::size_t ff = 0; ff < rhsPointFunctionDescriptions[fun].fields.size(); ff++) {
                 for (PetscInt d = 0; d < fluxComponentSize[fun][ff]; ++d) {
                     rhs[fluxComponentOffset[fun][ff] + d] += fScratch[r++];
                 }
@@ -1014,7 +993,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
     }
 
     RestoreRange(cellIS, cStart, cEnd, cells);
-
 }
 
 #include "parser/registrar.hpp"

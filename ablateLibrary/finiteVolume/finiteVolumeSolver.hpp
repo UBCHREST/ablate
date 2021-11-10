@@ -22,6 +22,10 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
     using AuxFieldUpdateFunction = PetscErrorCode (*)(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* u, PetscScalar* auxField, void* ctx);
+    using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
+                                                  const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[],
+                                                  const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void *ctx);
+    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx);
 
    private:
     /**
@@ -34,9 +38,33 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
         PetscInt auxField;
     };
 
+    /**
+    * struct to describe how to compute RHS finite volume flux source terms
+     */
+    struct FluxFunctionDescription {
+        FVMRHSFluxFunction function;
+        void *context;
+
+        PetscInt field;
+        std::vector<PetscInt> inputFields;
+        std::vector<PetscInt> auxFields;
+    };
+
+    /**
+    * struct to describe how to compute RHS finite volume point source terms
+     */
+    struct PointFunctionDescription {
+        FVMRHSPointFunction function;
+        void *context;
+
+        std::vector<PetscInt> fields;
+        std::vector<PetscInt> inputFields;
+        std::vector<PetscInt> auxFields;
+    };
+
     // hold the update functions for flux and point sources
-    std::vector<FVMRHSFluxFunctionDescription> rhsFluxFunctionDescriptions;
-    std::vector<FVMRHSPointFunctionDescription> rhsPointFunctionDescriptions;
+    std::vector<FluxFunctionDescription> rhsFluxFunctionDescriptions;
+    std::vector<PointFunctionDescription> rhsPointFunctionDescriptions;
     std::vector<AuxFieldUpdateFunctionDescription> auxFieldUpdateFunctionDescriptions;
 
     // allow the use of any arbitrary rhs functions
