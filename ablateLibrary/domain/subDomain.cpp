@@ -352,8 +352,8 @@ void ablate::domain::SubDomain::CopyGlobalToSubVector(DM sDM, DM gDM, Vec subVec
             PetscInt gP = subpointIndices ? subpointIndices[p] : p;
 
             // Hold a ref to the values
-            PetscScalar* subRef;
-            const PetscScalar* ref;
+            PetscScalar* subRef = nullptr;
+            const PetscScalar* ref = nullptr;
 
             if (localVector) {
                 DMPlexPointLocalFieldRef(sDM, p, subFieldInfo.id, subVecArray, &subRef) >> checkError;
