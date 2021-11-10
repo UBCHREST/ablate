@@ -107,8 +107,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     VecCreate(PETSC_COMM_SELF, &x);
     VecSetSizes(x, PETSC_DECIDE, 2);  // 2x1 vector
     VecSetFromOptions(x);
-    PetscReal choice = 1.0;//PetscMax(1.0,densityVF);
-    VecSet(x, choice);  // set initial guess [rho1, e1]= [1.0,1.0]
+//    PetscReal choice = PetscMax(1.0,densityVF);
+    VecSet(x, densityVF);  // set initial guess [rho1, e1]= [1.0,1.0]
 //    VecSetValues(x, 1, 1, (*internalEnergy),INSERT_VALUES); // set each initial guess separately
     VecDuplicate(x, &r);
 
@@ -126,7 +126,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     // default Newton's method, SNESSetType(SNES snes, SNESType method);
 //    SNESSetType(snes,"newtontr");
     //    SNESSetTolerances(SNES snes,PetscReal atol,PetscReal rtol,PetscReal stol, PetscInt its,PetscInt fcts);
-    SNESSetTolerances(snes, 1E-16, 1E-26, 1E-22, 100000, 100000);
+    SNESSetTolerances(snes, 1E-16, 1E-26, 1E-16, 100000, 100000);
     // default rtol=10e-8
     // snes_fd : use FD Jacobian - SNESComputeJacobianDefault()
     // snes_monitor : view residuals for each iteration
