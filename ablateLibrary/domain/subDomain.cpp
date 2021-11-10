@@ -356,12 +356,11 @@ void ablate::domain::SubDomain::CopyGlobalToSubVector(DM sDM, DM gDM, Vec subVec
             const PetscScalar* ref = nullptr;
 
             if (localVector) {
-                DMPlexPointLocalFieldRef(sDM, p, subFieldInfo.id, subVecArray, &subRef) >> checkError;
-                DMPlexPointLocalFieldRead(gDM, gP, globFieldInfo.id, globalVecArray, &ref) >> checkError;
+                DMPlexPointGlobalFieldRef(sDM, p, subFieldInfo.id, subVecArray, &subRef) >> checkError;
             } else {
                 DMPlexPointGlobalFieldRef(sDM, p, subFieldInfo.id, subVecArray, &subRef) >> checkError;
-                DMPlexPointGlobalFieldRead(gDM, gP, globFieldInfo.id, globalVecArray, &ref) >> checkError;
             }
+            DMPlexPointGlobalFieldRead(gDM, gP, globFieldInfo.id, globalVecArray, &ref) >> checkError;
 
             if (subRef && ref) {
                 // Copy the point
