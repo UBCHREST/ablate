@@ -25,7 +25,7 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
                                                   const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[],
                                                   const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void *ctx);
-    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx);
+    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[] , const PetscInt aOff[], const PetscScalar a[],const PetscScalar* const gradA[], PetscScalar f[], void *ctx);
 
    private:
     /**
@@ -157,7 +157,6 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
-    ~FiniteVolumeSolver() override;
     /** SubDomain Register and Setup **/
     void Setup() override;
     void Initialize() override;
@@ -181,7 +180,7 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(FVMRHSFluxFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields);
+    void RegisterRHSFunction(FVMRHSFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
 
     /**
      * Register a FVM rhs point function
@@ -191,7 +190,7 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::vector<std::string> fields, std::vector<std::string> inputFields, std::vector<std::string> auxFields);
+    void RegisterRHSFunction(FVMRHSPointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
 
     /**
      * Register an arbitrary function.  The user is responsible for all work
@@ -208,7 +207,7 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields);
+    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context,const std::string& auxField, const std::vector<std::string>& inputFields);
 
     /**
      * Register a dtCalculator
@@ -227,41 +226,6 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param time
      */
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
-    /**
-     * Get the cellIS and range over valid cells in this region
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
-     */
-    void GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells);
-
-    /**
-     * Get the faceIS and range over valid faces in this region
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
-     */
-    void GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces);
-
-    /**
-     * Get the valid range over specified depth
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
-     */
-    void GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
-
-    /**
-     * Restores the is and range
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
-     */
-    void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
 
 };
 }  // namespace ablate::finiteVolume

@@ -157,7 +157,7 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx) {
+static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const uGrad[],  const PetscInt aOff[], const PetscScalar a[],const PetscScalar* const auxGrad[], PetscScalar f[], void *ctx) {
     PetscFunctionBeginUser;
 
     Constants *constants = (Constants *)ctx;

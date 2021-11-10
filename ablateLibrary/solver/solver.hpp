@@ -52,9 +52,17 @@ class Solver : public io::Serializable {
     /** Finalize the Setup of the subDomain before running **/
     virtual void Initialize() = 0;
 
-    inline ablate::domain::SubDomain& GetSubDomain() { return *subDomain; }
+    /**
+     * Get the sub domain used in this solver
+     * @return
+     */
+    inline ablate::domain::SubDomain& GetSubDomain() noexcept { return *subDomain; }
 
-    inline std::shared_ptr<domain::Region> GetRegion() const { return region; }
+    /**
+     * Get the region used to define this solver
+     * @return
+     */
+    inline std::shared_ptr<domain::Region> GetRegion() const noexcept { return region; }
 
     inline const std::string& GetId() const override { return solverId; }
 
@@ -90,6 +98,43 @@ class Solver : public io::Serializable {
 
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
     void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * Get the cellIS and range over valid cells in this region
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells);
+
+    /**
+     * Get the faceIS and range over valid faces in this region
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces);
+
+    /**
+     * Get the valid range over specified depth
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
+
+    /**
+     * Restores the is and range
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
+
 };
 
 }  // namespace ablate::solver

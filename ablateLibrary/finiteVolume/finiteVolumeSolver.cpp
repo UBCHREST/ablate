@@ -1,8 +1,8 @@
 #include "finiteVolumeSolver.hpp"
-#include <petsc/private/dmpleximpl.h>
 #include <utilities/mpiError.hpp>
 #include <utilities/petscError.hpp>
 #include "processes/process.hpp"
+#include <petsc/private/dmpleximpl.h>
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
@@ -13,8 +13,6 @@ ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverI
       initialization(std::move(initialization)),
       boundaryConditions(std::move(boundaryConditions)),
       exactSolutions(std::move(exactSolution)) {}
-
-ablate::finiteVolume::FiniteVolumeSolver::~FiniteVolumeSolver() {}
 
 void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     // march over process and link to the flow
@@ -28,7 +26,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
 
 void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
     // add each boundary condition
-    for (auto boundary : boundaryConditions) {
+    for (const auto& boundary : boundaryConditions) {
         const auto& fieldId = subDomain->GetField(boundary->GetFieldName());
 
         // Setup the boundary condition
@@ -72,12 +70,12 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
             const PetscInt* ids;
 
             // Get the boundary
-            PetscDSGetBoundary(flowProblem, bc, NULL, &type, &name, &label, &numberIds, &ids, &field, NULL, NULL, NULL, NULL, NULL) >> checkError;
+            PetscDSGetBoundary(flowProblem, bc, nullptr, &type, &name, &label, &numberIds, &ids, &field, nullptr, nullptr, nullptr, nullptr, nullptr) >> checkError;
 
             // If this is for euler and DM_BC_NATURAL_RIEMANN add it to the aux
             if (type == DM_BC_NATURAL_RIEMANN && field == 0) {
                 for (PetscInt af = 0; af < numberAuxFields; af++) {
-                    PetscDSAddBoundary(auxProblem, type, name, label, numberIds, ids, af, 0, NULL, NULL, NULL, NULL, NULL) >> checkError;
+                    PetscDSAddBoundary(auxProblem, type, name, label, numberIds, ids, af, 0, nullptr, nullptr, nullptr, nullptr, nullptr) >> checkError;
                 }
             }
         }
@@ -96,9 +94,9 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
     auto ds = subDomain->GetDiscreteSystem();
     /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
     Vec facegeom, cellgeom;
-    ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, NULL);
+    ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, nullptr);
     CHKERRQ(ierr);
-    ierr = ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(dm, ds, PETSC_FALSE, locXVec, time, facegeom, cellgeom, NULL);
+    ierr = ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(dm, ds, PETSC_FALSE, locXVec, time, facegeom, cellgeom, nullptr);
     CHKERRQ(ierr);
 
     try {
@@ -120,60 +118,60 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSFluxFunction function, void* context, std::string field, std::vector<std::string> inputFields,
-                                                                   std::vector<std::string> auxFields) {
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields,
+                                                                   const std::vector<std::string>& auxFields) {
     // map the field, inputFields, and auxFields to locations
     auto& fieldId = subDomain->GetField(field);
 
     // Create the FVMRHS Function
     FluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
 
-    for (std::size_t i = 0; i < inputFields.size(); i++) {
-        auto& inputFieldId = subDomain->GetField(inputFields[i]);
+    for (auto & inputField : inputFields) {
+        auto& inputFieldId = subDomain->GetField(inputField);
         functionDescription.inputFields.push_back(inputFieldId.id);
     }
 
-    for (std::size_t i = 0; i < auxFields.size(); i++) {
-        auto& auxFieldId = subDomain->GetField(auxFields[i]);
+    for (const auto & auxField : auxFields) {
+        auto& auxFieldId = subDomain->GetField(auxField);
         functionDescription.auxFields.push_back(auxFieldId.id);
     }
 
     rhsFluxFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::vector<std::string> fields, std::vector<std::string> inputFields,
-                                                                   std::vector<std::string> auxFields) {
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSPointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields,
+                                                                   const std::vector<std::string>& auxFields) {
     // Create the FVMRHS Function
     PointFunctionDescription functionDescription{.function = function, .context = context};
 
-    for (std::size_t i = 0; i < fields.size(); i++) {
-        auto& fieldId = subDomain->GetField(fields[i]);
+    for (const auto & field : fields) {
+        auto& fieldId = subDomain->GetField(field);
         functionDescription.fields.push_back(fieldId.id);
     }
 
-    for (std::size_t i = 0; i < inputFields.size(); i++) {
-        auto& fieldId = subDomain->GetField(inputFields[i]);
+    for (const auto & inputField : inputFields) {
+        auto& fieldId = subDomain->GetField(inputField);
         functionDescription.inputFields.push_back(fieldId.id);
     }
 
-    for (std::size_t i = 0; i < auxFields.size(); i++) {
-        auto& fieldId = subDomain->GetField(auxFields[i]);
+    for (const auto & auxField : auxFields) {
+        auto& fieldId = subDomain->GetField(auxField);
         functionDescription.auxFields.push_back(fieldId.id);
     }
 
     rhsPointFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.push_back(std::make_pair(function, context)); }
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.emplace_back(function, context); }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields) {
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, const std::string& auxField, const std::vector<std::string>& inputFields) {
     // find the field location
     auto& auxFieldLocation = subDomain->GetField(auxField);
 
     AuxFieldUpdateFunctionDescription functionDescription{.function = function, .context = context, .inputFields = {}, .auxField = auxFieldLocation.id};
 
-    for (std::size_t i = 0; i < inputFields.size(); i++) {
-        auto fieldId = subDomain->GetField(inputFields[i]);
+    for (const auto & inputField : inputFields) {
+        auto fieldId = subDomain->GetField(inputField);
         functionDescription.inputFields.push_back(fieldId.id);
     }
 
@@ -181,7 +179,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterAuxFieldUpdate(AuxFieldUp
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::solver::Solver& solver) {
-    auto& flowFV = static_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
+    auto& flowFV = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
@@ -244,7 +242,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::UpdateAuxFields(PetscReal time, V
     Vec cellGeomVec;
     DM dmCell;
     const PetscScalar* cellGeomArray;
-    DMPlexGetGeometryFVM(plex, NULL, &cellGeomVec, NULL) >> checkError;
+    DMPlexGetGeometryFVM(plex, nullptr, &cellGeomVec, nullptr) >> checkError;
     VecGetDM(cellGeomVec, &dmCell) >> checkError;
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
@@ -263,7 +261,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::UpdateAuxFields(PetscReal time, V
     PetscDSGetNumFields(subDomain->GetDiscreteSystem(), &nf) >> checkError;
 
     // Create the required offset arrays. These are sized for the max possible value
-    PetscInt* uOff = NULL;
+    PetscInt* uOff = nullptr;
     PetscCalloc1(nf, &uOff) >> checkError;
 
     PetscInt* uOffTotal;
@@ -330,10 +328,10 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
 
     /* 2: Get geometric data */
     // We can use a single call for the geometry data because it does not depend on the fv object
-    Vec cellGeometryFVM = NULL, faceGeometryFVM = NULL;
-    const PetscScalar* cellGeomArray = NULL;
-    const PetscScalar* faceGeomArray = NULL;
-    DMPlexGetGeometryFVM(dm, &faceGeometryFVM, &cellGeometryFVM, NULL) >> checkError;
+    Vec cellGeometryFVM = nullptr, faceGeometryFVM = nullptr;
+    const PetscScalar* cellGeomArray = nullptr;
+    const PetscScalar* faceGeomArray = nullptr;
+    DMPlexGetGeometryFVM(dm, &faceGeometryFVM, &cellGeometryFVM, nullptr) >> checkError;
     VecGetArrayRead(cellGeometryFVM, &cellGeomArray) >> checkError;
     VecGetArrayRead(faceGeometryFVM, &faceGeomArray) >> checkError;
     DM faceDM, cellDM;
@@ -417,54 +415,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
     VecRestoreArray(locF, &locFArray) >> checkError;
     VecRestoreArrayRead(faceGeometryFVM, (const PetscScalar**)&cellGeomArray) >> checkError;
     VecRestoreArrayRead(cellGeometryFVM, (const PetscScalar**)&faceGeomArray) >> checkError;
-}
-
-void ablate::finiteVolume::FiniteVolumeSolver::GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells) {
-    // Start out getting all of the cells
-    PetscInt depth;
-    DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
-    GetRange(depth, cellIS, cStart, cEnd, cells);
-}
-
-void ablate::finiteVolume::FiniteVolumeSolver::GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces) {
-    // Start out getting all of the cells
-    PetscInt depth;
-    DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
-    GetRange(depth - 1, faceIS, fStart, fEnd, faces);
-}
-
-void ablate::finiteVolume::FiniteVolumeSolver::GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
-    // Start out getting all of the points
-    IS allPointIS;
-    DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> checkError;
-    if (!allPointIS) {
-        DMGetStratumIS(subDomain->GetDM(), "depth", depth, &allPointIS) >> checkError;
-    }
-
-    // If there is a label for this solver, get only the parts of the mesh that here
-    if (const auto& region = GetRegion()) {
-        DMLabel label;
-        DMGetLabel(subDomain->GetDM(), region->GetName().c_str(), &label);
-
-        IS labelIS;
-        DMLabelGetStratumIS(label, GetRegion()->GetValue(), &labelIS) >> checkError;
-        ISIntersect_Caching_Internal(allPointIS, labelIS, &pointIS) >> checkError;
-        ISDestroy(&labelIS) >> checkError;
-    } else {
-        PetscObjectReference((PetscObject)allPointIS) >> checkError;
-        pointIS = allPointIS;
-    }
-
-    // Get the point range
-    ISGetPointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
-
-    // Clean up the allCellIS
-    ISDestroy(&allPointIS) >> checkError;
-}
-
-void ablate::finiteVolume::FiniteVolumeSolver::RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) {
-    ISRestorePointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
-    ISDestroy(&pointIS) >> checkError;
 }
 
 /**
@@ -584,7 +534,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
         }
         DMIsBoundaryPoint(dm, face, &boundary);
         PetscInt numChildren;
-        DMPlexGetTreeChildren(dm, face, &numChildren, NULL);
+        DMPlexGetTreeChildren(dm, face, &numChildren, nullptr);
         if (ghost >= 0 || boundary || numChildren) continue;
 
         // Do a sanity check on the number of cells connected to this face
@@ -831,7 +781,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
         PetscInt ghost, nsupp, nchild;
         DMLabelGetValue(ghostLabel, face, &ghost) >> checkError;
         DMPlexGetSupportSize(dm, face, &nsupp) >> checkError;
-        DMPlexGetTreeChildren(dm, face, &nchild, NULL) >> checkError;
+        DMPlexGetTreeChildren(dm, face, &nchild, nullptr) >> checkError;
         if (ghost >= 0 || nsupp > 2 || nchild > 0) continue;
 
         // Get the face geometry
@@ -862,7 +812,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
                 checkError;
 
             // add the flux back to the cell
-            PetscScalar *fL = NULL, *fR = NULL;
+            PetscScalar *fL = nullptr, *fR = nullptr;
             DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> checkError;
             if (ghost <= 0) {
                 DMPlexPointLocalFieldRef(dm, faceCells[0], fluxId[fun], locFArray, &fL) >> checkError;
@@ -950,7 +900,12 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
     PetscInt cStart, cEnd;
     const PetscInt* cells;
     GetCellRange(cellIS, cStart, cEnd, cells);
-    // March over each cell
+
+    // Get the pointer to the local grad arrays
+    const PetscScalar* const* gradU = locGradArrays.empty()? nullptr : &locGradArrays[0];
+    const PetscScalar* const* gradAux = locAuxGradArrays.empty()? nullptr : &locAuxGradArrays[0];
+
+        // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
         // if there is a cell array, use it, otherwise it is just c
         const PetscInt cell = cells ? cells[c] : c;
@@ -972,7 +927,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
         DMPlexPointLocalRef(dm, cell, locFArray, &rhs) >> checkError;
 
         // if there is an aux field, get it
-        const PetscScalar* a = NULL;
+        const PetscScalar* a = nullptr;
         if (auxArray) {
             DMPlexPointLocalRead(dmAux, cell, auxArray, &a) >> checkError;
         }
@@ -980,7 +935,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
         // March over each functionDescriptions
         for (std::size_t fun = 0; fun < rhsPointFunctionDescriptions.size(); fun++) {
             // (PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx)
-            rhsPointFunctionDescriptions[fun].function(dim, cg, &uOff[fun][0], u, &aOff[fun][0], a, fScratch, rhsPointFunctionDescriptions[fun].context) >> checkError;
+            rhsPointFunctionDescriptions[fun].function(dim, cg, &uOff[fun][0], u, gradU, &aOff[fun][0], a, gradAux, fScratch, rhsPointFunctionDescriptions[fun].context) >> checkError;
 
             // copy over each result flux field
             PetscInt r = 0;
