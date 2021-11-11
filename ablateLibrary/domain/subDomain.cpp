@@ -301,7 +301,17 @@ Vec ablate::domain::SubDomain::GetSubAuxVector() {
 
     // If there is no label, just return the entire solution vector
     if (!label) {
-        return GetAuxVector();
+        // The subAuxVector is always treated as a global vector
+        if (!subAuxVec) {
+            DMCreateGlobalVector(auxDM, &subAuxVec) >> checkError;
+            // copy over the name of the auxFieldVector
+            const char* tempName;
+            PetscObjectGetName((PetscObject)auxVec, &tempName) >> checkError;
+            PetscObjectSetName((PetscObject)subAuxVec, tempName) >> checkError;
+        }
+
+        DMLocalToGlobal(auxDM, auxVec, INSERT_VALUES, subAuxVec) >> checkError;
+        return subAuxVec;
     }
 
     if (!subAuxVec) {
