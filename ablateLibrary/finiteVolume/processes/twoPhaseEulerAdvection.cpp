@@ -94,6 +94,20 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     }
     ke *= 0.5;
     (*internalEnergy) = (totalEnergy)-ke;
+
+    // near boundary checks
+    if (densityVF<1E-4)  // mostly liquid
+    {
+        densityVF = 1E-4;
+
+    } else  if (densityVF>((*density)-1E-4) )// mostly gas
+    {
+        densityVF = (*density)-1E-4;
+    } else // boundary cell, liquid and gas
+    {
+        densityVF = conservedValues[0];
+    }
+
     // mass fractions
     PetscReal Yg = densityVF / (*density);
     PetscReal Yl = ((*density) - densityVF) / (*density);
@@ -107,9 +121,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     VecCreate(PETSC_COMM_SELF, &x);
     VecSetSizes(x, PETSC_DECIDE, 2);  // 2x1 vector
     VecSetFromOptions(x);
-//    PetscReal choice = PetscMax(1.0,densityVF);
+    //    PetscReal choice = PetscMax(1.0,densityVF);
     VecSet(x, densityVF);  // set initial guess [rho1, e1]= [1.0,1.0]
-//    VecSetValues(x, 1, 1, (*internalEnergy),INSERT_VALUES); // set each initial guess separately
+                           //    VecSetValues(x, 1, 1, (*internalEnergy),INSERT_VALUES); // set each initial guess separately
     VecDuplicate(x, &r);
 
     SNESCreate(PETSC_COMM_SELF, &snes);
@@ -124,7 +138,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
                                       .vel = velocity};
     SNESSetFunction(snes, r, FormFunction, &decodeDataStruct);
     // default Newton's method, SNESSetType(SNES snes, SNESType method);
-//    SNESSetType(snes,"newtontr");
+    //    SNESSetType(snes,"newtontr");
     //    SNESSetTolerances(SNES snes,PetscReal atol,PetscReal rtol,PetscReal stol, PetscInt its,PetscInt fcts);
     SNESSetTolerances(snes, 1E-16, 1E-26, 1E-16, 100000, 100000);
     // default rtol=10e-8
@@ -148,6 +162,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     //      Tg-Tl = 0
 
     //  ax = [rhog, eg]
+
     PetscReal eG = ax[1];
     PetscReal etG = eG + ke;
     PetscReal eL = ((*internalEnergy) - Yg * eG) / (Yl + 1E-10);
