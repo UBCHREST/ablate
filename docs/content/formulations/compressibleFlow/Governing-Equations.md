@@ -127,8 +127,9 @@ $$\begin{eqnarray}
 
 The default $$\mathcal{D}_i$$ implementation assumes the same $$\mathcal{D}_i$$ for each $$EV_i$$ and is equal to species diffusivity.   
 
-#### Multiphase Flow
+### Multiphase Flow
 Two phases can be solved for using Volume of Fluid method, where $$\alpha$$ represents the volume fraction of a given fluid.  The conserved equations are
+
 $$\begin{eqnarray}
 \vector{Q_t} = \begin{bmatrix} \alpha_g \rho_g \\ \rho \\ \rho u \\ \rho v \\ \rho w \\ \rho e_t \end{bmatrix}
 \end{eqnarray}$$
@@ -142,7 +143,7 @@ $$\begin{eqnarray}
 
 Where the velocity is assumed to be uniform throughout each volume. Each flux is calculated by a stratified flow model from Chang and Liou.
 
-$$\begin{eqngarray}\vector{F_c} = A_{g-g} \vector{F_{g-g}} + A_{g-l} \vector{F_{g-l}} + A_{l-l} \vector{F_{l-l}} \end{eqnarray}$$
+$$\begin{eqnarray}\vector{F_c} = A_{g-g} \vector{F_{g-g}} + A_{g-l} \vector{F_{g-l}} + A_{l-l} \vector{F_{l-l}} \end{eqnarray}$$
 
 Where $$A_{g-g}, A_{g-l}, A_{l-l}$$ are sub-areas of the control volume based on the volume fraction
 The viscous fluxes are defined as:
@@ -171,7 +172,7 @@ $$\begin{eqnarray}
 \end{bmatrix}
 \end{eqnarray}$$
 
-Where $$\vector{CSF}$$ is the surface tension, calculated using the continuum surface force model by Brackbill.
+Where $$\vector{CSF}$$ is the surface tension force, calculated using the continuum surface force model by Brackbill.
 
 ## References
  - Brackbill, J. U., Kothe, D. B., and Zemach, C. (1992), "A continuum method for modeling surface tension." Journal of Computational Physics, 100, 335-354.
