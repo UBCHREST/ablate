@@ -29,11 +29,12 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     PetscInt i = 0;
     const PetscInt MAXIT = 100;
     const PetscReal err = 1e-6;
-    PetscReal gammaL = *(PetscReal *)ctx;  // pass-in specific heat ratio from EOS_Left
+    PetscReal gamma = *(PetscReal *)ctx;  // pass-in specific heat ratio from EOS_Left
     // This is where Rieman solver lives.
+    PetscReal gammaL = gamma[0]
     PetscReal gamLm1 = gammaL - 1.0, gamLp1 = gammaL + 1.0;
-    PetscReal gammaR = *(PetscReal *)ctx;  // pass-in specific heat ratio from EOS_Right
-    PetscReal gamRm1 = gammaR - 1.0, gamRp1 = gammaR+ 1.0;
+    PetscReal gammaR = gamma[1]
+    PetscReal gamRm1 = gammaR - 1.0, gamRp1 = gammaR + 1.0;
 
     PetscReal pold, pstar, ustar, f_L_0, f_L_1, f_R_0, f_R_1, del_u = uR - uL;
     PetscReal A, B, sqterm;
@@ -46,10 +47,12 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
 
     if (pstar <= pL)  // expansion wave equation from Toto
     {
-        f_L_0 = ((2. * aL) / gamLm1) * (PetscPowReal(pstar / pL, 0.5 * gamLm1 / gammaL) - 1.);
-        f_L_1 = (aL / pL / gammaL) * PetscPowReal(pstar / pL, -0.5 * gamLp1 / gammaL);
+        gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
+        f_L_0 = ((2. * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1.);
+        f_L_1 = (aL / pL / gamma) * PetscPowReal(pstar / pL, -0.5 * gamp1 / gamma);
     } else  // shock equation from Toro
     {
+        gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
         A = 2 / gamp1 / rhoL;
         B = gamm1 * pL / gamp1;
         sqterm = sqrt(A / (pstar + B));
@@ -58,10 +61,12 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     }
     if (pstar <= pR)  // expansion wave equation from Toto
     {
+        gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
         f_R_0 = ((2 * aR) / gamm1) * (PetscPowReal(pstar / pR, 0.5 * gamm1 / gamma) - 1);
         f_R_1 = (aR / pR / gamma) * PetscPowReal(pstar / pR, -0.5 * gamp1 / gamma);
     } else  // shock euqation from Toro
     {
+        gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
         A = 2 / gamp1 / rhoR;
         B = gamm1 * pR / gamp1;
         sqterm = sqrt(A / (pstar + B));
@@ -76,10 +81,12 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
         if (pstar <= pL)                                           // expansion wave equation from Toto
         {
+            gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
             f_L_0 = ((2. * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1.);
             f_L_1 = (aL / pL / gamma) * PetscPowReal(pstar / pL, -0.5 * gamp1 / gamma);
         } else  // shock equation from Toro
         {
+            gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
             A = 2 / gamp1 / rhoL;
             B = gamm1 * pL / gamp1;
             sqterm = sqrt(A / (pstar + B));
@@ -88,10 +95,12 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         }
         if (pstar <= pR)  // expansion wave equation from Toto
         {
+            gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
             f_R_0 = ((2 * aR) / gamm1) * (PetscPowReal(pstar / pR, 0.5 * gamm1 / gamma) - 1);
             f_R_1 = (aR / pR / gamma) * PetscPowReal(pstar / pR, -0.5 * gamp1 / gamma);
-        } else  // shock euqation from Toro
+        } else  // shock equation from Toro
         {
+            gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
             A = 2 / gamp1 / rhoR;
             B = gamm1 * pR / gamp1;
             sqterm = sqrt(A / (pstar + B));
@@ -109,6 +118,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     if (ustar >= 0) {
         if (pstar <= pL)  // left expansion
         {
+            gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
             astar = aL * PetscPowReal(pstar / pL, (gamm1 / (2 * gamma)));
             STLR = ustar - astar;
             if (STLR >= 0)  // positive tail wave
@@ -127,6 +137,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
                     *p12 = pL * PetscPowReal((2 / gamp1) + ((gamm1 * uL) / (gamp1 * aL)), (2 * gamma / gamm1));
                 }
             } else {
+                gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
                 auto pRatio = pstar / pL;
                 *massFlux = rhoL * PetscPowReal(pRatio, 1.0 / gamma) * ustar;
                 *p12 = pstar;
@@ -135,6 +146,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
 
         } else  // Left shock
         {
+            gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
             A = sqrt((gamp1 * pstar / 2 / gamma / pL) + (gamm1 / 2 / gamma));
             STLR = uL - (aL * A);  // shock wave speed
             if (STLR >= 0) {
@@ -143,6 +155,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
                 uX = uL;
             } else  // negative wave speed
             {
+                gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
                 auto pRatio = pstar / pL;
                 *massFlux = rhoL * (pRatio + (gamm1 / gamp1)) / (gamm1 * pRatio / gamp1 + 1) * ustar;
                 *p12 = pstar;
@@ -156,6 +169,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
             SHLR = uR + aR;
             if (SHLR >= 0)  // positive head wave
             {
+                gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
                 astar = aR * PetscPowReal(pstar / pR, (gamm1 / (2 * gamma)));
                 STLR = ustar + astar;
                 if (STLR >= 0)  // positive tail wave
@@ -179,6 +193,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
             }
         } else  // right shock
         {
+            gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
             A = sqrt((gamp1 * pstar / 2 / gamma / pR) + (gamm1 / 2 / gamma));
             STLR = uR + (aR * A);  // shock wave speed
             if (STLR >= 0) {
