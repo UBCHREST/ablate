@@ -5,6 +5,7 @@
 #include "finiteVolume/fluxCalculator/averageFlux.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
 #include "finiteVolume/fluxCalculator/rieman.hpp"
+#include "finiteVolume/fluxCalculator/riemann2Gas.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
 
@@ -135,6 +136,24 @@ INSTANTIATE_TEST_SUITE_P(
         (FluxCalculatorTestParameters){
             .testName = "RiemanFlux",
             .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Rieman>(
+                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}))),
+            .uL = {0.0, -2.0, 0.0, 0.0, 19.5975},
+            .aL = {1.18321596, 0.74833148, 37.4165739, 0.1183216, 10.3708995},  // gam=1.4 a = \gam * p / \rho
+            .rhoL = {1.0, 1.0, 1.0, 1.0, 5.99924},
+            .pL = {1.0, 0.4, 1000.0, 0.01, 460.894},
+            .uR = {0.0, 2.0, 0.0, 0.0, -6.19633},
+            .aR = {1.05830052, 0.74833148, 0.1183216, 11.8321596, 3.28163145},  // gam=1.4 a = \gam * p / \rho
+            .rhoR = {0.125, 1.0, 1.0, 1.0, 5.99242},
+            .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
+            .expectedMassFlux = {0.39539107, 0, 11.2697554, -3.56358518796, 117.5701},           // status at x =0
+            .expectedInterfacePressure = {0.30313018, 0.00189387, 460.893787, 46.095, 460.894},  // pressure at x=0
+            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                // Upwind direction based on velocity at x = 0
+        },
+        // Riemann2Gas flux testing
+        (FluxCalculatorTestParameters){
+            .testName = "Riemann2GasFlux",
+            .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Riemann2Gas>(
+                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}})),
                 std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}))),
             .uL = {0.0, -2.0, 0.0, 0.0, 19.5975},
             .aL = {1.18321596, 0.74833148, 37.4165739, 0.1183216, 10.3708995},  // gam=1.4 a = \gam * p / \rho

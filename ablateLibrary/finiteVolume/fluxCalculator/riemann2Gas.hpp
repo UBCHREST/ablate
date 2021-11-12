@@ -1,5 +1,10 @@
 #ifndef ABLATELIBRARY_RIEMANN2GAS_HPP
 #define ABLATELIBRARY_RIEMANN2GAS_HPP
+#include <eos/eos.hpp>
+#include <memory>
+#include "fluxCalculator.hpp"
+
+namespace ablate::finiteVolume::fluxCalculator {
 /*
  * Computes the flux by treating all surfaces as Riemann problems, different perfect gas on left/right.
  */
