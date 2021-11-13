@@ -1,6 +1,8 @@
 #ifndef ABLATELIBRARY_TAGLABELBOUNDARY_HPP
 #define ABLATELIBRARY_TAGLABELBOUNDARY_HPP
 
+#include <memory>
+#include "domain/region.hpp"
 #include "modifier.hpp"
 
 namespace ablate::domain::modifiers {
@@ -11,19 +13,16 @@ namespace ablate::domain::modifiers {
 class TagLabelBoundary : public Modifier {
    private:
     // the label to tag
-    const std::string name;
+    const std::shared_ptr<domain::Region> region;
 
-    // the label to tag the boundary
-    const std::string boundaryName;
+    // the region to tag the boundary faces
+    const std::shared_ptr<domain::Region> boundaryFaceRegion;
 
-    // value of the label to tag the boundary of
-    const PetscInt labelValue;
-
-    // value of the boundary label
-    const PetscInt boundaryLabelValue;
+    // value of the boundary cell value
+    const std::shared_ptr<domain::Region> boundaryCellRegion;
 
    public:
-    explicit TagLabelBoundary(std::string labelName, std::string boundaryName, int labelValue = {}, int boundaryLabelValue = {});
+    explicit TagLabelBoundary(std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> boundaryFaceRegion, const std::shared_ptr<domain::Region> boundaryCellRegion = {});
 
     void Modify(DM&) override;
 };

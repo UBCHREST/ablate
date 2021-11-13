@@ -11,4 +11,6 @@ target_sources(ablateLibrary
         createLabel.cpp
         tagLabelBoundary.hpp
         tagLabelBoundary.cpp
+        mergeLabels.hpp
+        mergeLabels.cpp
         )
