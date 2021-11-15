@@ -22,6 +22,11 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
     using AuxFieldUpdateFunction = PetscErrorCode (*)(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* u, PetscScalar* auxField, void* ctx);
+    using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
+                                                  const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
+                                                  const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void* ctx);
+    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[], const PetscInt aOff[],
+                                                   const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    private:
     /**
@@ -34,9 +39,33 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
         PetscInt auxField;
     };
 
+    /**
+     * struct to describe how to compute RHS finite volume flux source terms
+     */
+    struct FluxFunctionDescription {
+        FVMRHSFluxFunction function;
+        void* context;
+
+        PetscInt field;
+        std::vector<PetscInt> inputFields;
+        std::vector<PetscInt> auxFields;
+    };
+
+    /**
+     * struct to describe how to compute RHS finite volume point source terms
+     */
+    struct PointFunctionDescription {
+        FVMRHSPointFunction function;
+        void* context;
+
+        std::vector<PetscInt> fields;
+        std::vector<PetscInt> inputFields;
+        std::vector<PetscInt> auxFields;
+    };
+
     // hold the update functions for flux and point sources
-    std::vector<FVMRHSFluxFunctionDescription> rhsFluxFunctionDescriptions;
-    std::vector<FVMRHSPointFunctionDescription> rhsPointFunctionDescriptions;
+    std::vector<FluxFunctionDescription> rhsFluxFunctionDescriptions;
+    std::vector<PointFunctionDescription> rhsPointFunctionDescriptions;
     std::vector<AuxFieldUpdateFunctionDescription> auxFieldUpdateFunctionDescriptions;
 
     // allow the use of any arbitrary rhs functions
@@ -68,59 +97,39 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * Computes the flux across each face in th region
 
      */
-    void ComputeFlux(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF);
+    void ComputeSourceTerms(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF);
 
     /**
-     * Inserts the boundary conditions into the locXVec
-     * @param time
-     * @param locXVec
-     * @param locAuxField
+     * support call to compute the gradients in each cell.  This also limits the gradient based upon
+     * the limiter
      */
-    void InsertBoundaryValues(PetscReal time, Vec locXVec, Vec locAuxField);
-
-   protected:
-    /**
-     * Get the cellIS and range over valid cells in this region
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
-     */
-    void GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells);
+    void ComputeFieldGradients(const domain::Field& field, Vec xGlobVec, Vec& gradLocVec, DM& dmGrad);
 
     /**
-     * Get the faceIS and range over valid faces in this region
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
+     * support call to project to a single face from a side
      */
-    void GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces);
+    void ProjectToFace(const std::vector<domain::Field>& fields, PetscDS ds, const PetscFVFaceGeom& faceGeom, PetscInt cellId, const PetscFVCellGeom& cellGeom, DM dm, const PetscScalar* xArray,
+                       const std::vector<DM>& dmGrads, const std::vector<const PetscScalar*>& gradArrays, PetscScalar* u, PetscScalar* grad, bool projectField = true);
 
     /**
-     * Get the valid range over specified depth
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
+     * Function to compute the flux source terms
      */
-    void GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
+    void ComputeFluxSourceTerms(DM dm, PetscDS ds, PetscInt totDim, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux, const PetscScalar* auxArray, DM faceDM,
+                                const PetscScalar* faceGeomArray, DM cellDM, const PetscScalar* cellGeomArray, std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays,
+                                std::vector<DM>& dmAuxGrads, std::vector<const PetscScalar*>& locAuxGradArrays, PetscScalar* locFArray);
 
     /**
-     * Restores the is and range
-     * @param cellIS
-     * @param pStart
-     * @param pEnd
-     * @param points
+     * Function to compute the point source terms
      */
-    void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
+    void ComputePointSourceTerms(DM dm, PetscDS ds, PetscInt totDim, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux, const PetscScalar* auxArray, DM faceDM,
+                                 const PetscScalar* faceGeomArray, DM cellDM, const PetscScalar* cellGeomArray, std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays,
+                                 std::vector<DM>& dmAuxGrads, std::vector<const PetscScalar*>& locAuxGradArrays, PetscScalar* locFArray);
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
-    ~FiniteVolumeSolver() override;
     /** SubDomain Register and Setup **/
     void Setup() override;
     void Initialize() override;
@@ -144,7 +153,7 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(FVMRHSFluxFunction function, void* context, std::string field, std::vector<std::string> inputFields, std::vector<std::string> auxFields);
+    void RegisterRHSFunction(FVMRHSFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
 
     /**
      * Register a FVM rhs point function
@@ -154,7 +163,8 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(FVMRHSPointFunction function, void* context, std::vector<std::string> fields, std::vector<std::string> inputFields, std::vector<std::string> auxFields);
+    void RegisterRHSFunction(FVMRHSPointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields,
+                             const std::vector<std::string>& auxFields);
 
     /**
      * Register an arbitrary function.  The user is responsible for all work
@@ -171,7 +181,7 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, std::string auxField, std::vector<std::string> inputFields);
+    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, const std::string& auxField, const std::vector<std::string>& inputFields);
 
     /**
      * Register a dtCalculator

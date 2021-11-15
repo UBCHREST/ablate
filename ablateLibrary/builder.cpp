@@ -1,6 +1,5 @@
 #include "builder.hpp"
 #include "monitors/monitor.hpp"
-#include "particles/particles.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
 #include "utilities/petscOptions.hpp"
