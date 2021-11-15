@@ -181,9 +181,9 @@ INSTANTIATE_TEST_SUITE_P(
             .aR = {1.15481600, 0.81657823, 0.12911235, 12.91123542, 3.58091149},  // gam=1.667 a = \gam * p / \rho
             .rhoR = {0.125, 1.0, 1.0, 1.0, 5.99242},
             .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
-            .expectedMassFlux = {0.39442313, 0.00001119, 11.0900218667, -3.61787265, 117.570105900},           // status at x =0
+            .expectedMassFlux = {0.39442313, 0.00001119, 11.0900218667, -3.61787265, 117.570105900},    // status at x =0
             .expectedInterfacePressure = {0.314396658, 0.000506098, 475.022995502, 43.1357, 460.8940},  // pressure at x=0
-            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                // Upwind direction based on velocity at x = 0
+            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                       // Upwind direction based on velocity at x = 0
         },
         // Riemann2Gas flux testing, same gamma 1.667 L/ gamma 1.4 R
         (FluxCalculatorTestParameters){
@@ -199,9 +199,9 @@ INSTANTIATE_TEST_SUITE_P(
             .aR = {1.05830052, 0.74833148, 0.1183216, 11.8321596, 3.28163145},  // gam=1.4 a = \gam * p / \rho
             .rhoR = {0.125, 1.0, 1.0, 1.0, 5.99242},
             .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
-            .expectedMassFlux = {0.405243, -0.005215, 11.4486735, -3.5061155, 112.3130},           // status at x =0
+            .expectedMassFlux = {0.405243, -0.005215, 11.4486735, -3.5061155, 112.3130},                // status at x =0
             .expectedInterfacePressure = {0.28296141, 0.000676, 430.992964, 47.5230682, 1758.5562536},  // pressure at x=0
-            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                // Upwind direction based on velocity at x = 0
+            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                       // Upwind direction based on velocity at x = 0
         },
 
         (FluxCalculatorTestParameters){.testName = "OffFlux",

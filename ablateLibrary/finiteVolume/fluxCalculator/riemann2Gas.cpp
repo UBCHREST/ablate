@@ -1,9 +1,10 @@
 #include "riemann2Gas.hpp"
 #include <eos/perfectGas.hpp>
-ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2GasFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
-                                                                                                                 PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
+ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2GasFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
+                                                                                                                           PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
+                                                                                                                           PetscReal *massFlux,
 
-                                                                                                                 PetscReal *p12) {
+                                                                                                                           PetscReal *p12) {
     /*
      * gammaL: specific heat ratio for gas on left (pass in from EOS)
      * gamLm1 = gammaL - 1
@@ -45,16 +46,20 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     pstar = aL + aR - (0.5 * gamLm1 * (uR - uL));
     pstar = pstar / ((aL / PetscPowReal(pL, 0.5 * gamLm1 / gammaL)) + (aR / PetscPowReal(pR, 0.5 * gamRm1 / gammaR)));
     pstar = PetscPowReal(pstar, 2.0 * gammaL / gamLm1);
-    pstar = 0.5*(pR + pL);
+    pstar = 0.5 * (pR + pL);
 
     if (pstar <= pL)  // expansion wave equation from Toro
     {
-        gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
+        gamma = gammaL;
+        gamm1 = gamLm1;
+        gamp1 = gamLp1;
         f_L_0 = ((2. * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1.);
         f_L_1 = (aL / pL / gamma) * PetscPowReal(pstar / pL, -0.5 * gamp1 / gamma);
     } else  // shock equation from Toro
     {
-        gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
+        gamma = gammaL;
+        gamm1 = gamLm1;
+        gamp1 = gamLp1;
         A = 2 / gamp1 / rhoL;
         B = gamm1 * pL / gamp1;
         sqterm = sqrt(A / (pstar + B));
@@ -63,12 +68,16 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     }
     if (pstar <= pR)  // expansion wave equation from Toro
     {
-        gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
+        gamma = gammaR;
+        gamm1 = gamRm1;
+        gamp1 = gamRp1;
         f_R_0 = ((2 * aR) / gamm1) * (PetscPowReal(pstar / pR, 0.5 * gamm1 / gamma) - 1);
         f_R_1 = (aR / pR / gamma) * PetscPowReal(pstar / pR, -0.5 * gamp1 / gamma);
     } else  // shock equation from Toro
     {
-        gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
+        gamma = gammaR;
+        gamm1 = gamRm1;
+        gamp1 = gamRp1;
         A = 2 / gamp1 / rhoR;
         B = gamm1 * pR / gamp1;
         sqterm = sqrt(A / (pstar + B));
@@ -83,12 +92,16 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
         if (pstar <= pL)                                           // expansion wave equation from Toto
         {
-            gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
+            gamma = gammaL;
+            gamm1 = gamLm1;
+            gamp1 = gamLp1;
             f_L_0 = ((2. * aL) / gamm1) * (PetscPowReal(pstar / pL, 0.5 * gamm1 / gamma) - 1.);
             f_L_1 = (aL / pL / gamma) * PetscPowReal(pstar / pL, -0.5 * gamp1 / gamma);
         } else  // shock equation from Toro
         {
-            gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
+            gamma = gammaL;
+            gamm1 = gamLm1;
+            gamp1 = gamLp1;
             A = 2 / gamp1 / rhoL;
             B = gamm1 * pL / gamp1;
             sqterm = sqrt(A / (pstar + B));
@@ -97,12 +110,16 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         }
         if (pstar <= pR)  // expansion wave equation from Toto
         {
-            gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
+            gamma = gammaR;
+            gamm1 = gamRm1;
+            gamp1 = gamRp1;
             f_R_0 = ((2 * aR) / gamm1) * (PetscPowReal(pstar / pR, 0.5 * gamm1 / gamma) - 1);
             f_R_1 = (aR / pR / gamma) * PetscPowReal(pstar / pR, -0.5 * gamp1 / gamma);
         } else  // shock equation from Toro
         {
-            gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
+            gamma = gammaR;
+            gamm1 = gamRm1;
+            gamp1 = gamRp1;
             A = 2 / gamp1 / rhoR;
             B = gamm1 * pR / gamp1;
             sqterm = sqrt(A / (pstar + B));
@@ -120,7 +137,9 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     if (ustar >= 0) {
         if (pstar <= pL)  // left expansion
         {
-            gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
+            gamma = gammaL;
+            gamm1 = gamLm1;
+            gamp1 = gamLp1;
             astar = aL * PetscPowReal(pstar / pL, (gamm1 / (2 * gamma)));
             STLR = ustar - astar;
             if (STLR >= 0)  // positive tail wave
@@ -139,7 +158,9 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
                     *p12 = pL * PetscPowReal((2 / gamp1) + ((gamm1 * uL) / (gamp1 * aL)), (2 * gamma / gamm1));
                 }
             } else {
-                gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
+                gamma = gammaL;
+                gamm1 = gamLm1;
+                gamp1 = gamLp1;
                 auto pRatio = pstar / pL;
                 *massFlux = rhoL * PetscPowReal(pRatio, 1.0 / gamma) * ustar;
                 *p12 = pstar;
@@ -148,7 +169,9 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
 
         } else  // Left shock
         {
-            gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
+            gamma = gammaL;
+            gamm1 = gamLm1;
+            gamp1 = gamLp1;
             A = sqrt((gamp1 * pstar / 2 / gamma / pL) + (gamm1 / 2 / gamma));
             STLR = uL - (aL * A);  // shock wave speed
             if (STLR >= 0) {
@@ -157,7 +180,9 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
                 uX = uL;
             } else  // negative wave speed
             {
-                gamma = gammaL; gamm1 = gamLm1; gamp1 = gamLp1;
+                gamma = gammaL;
+                gamm1 = gamLm1;
+                gamp1 = gamLp1;
                 auto pRatio = pstar / pL;
                 *massFlux = rhoL * (pRatio + (gamm1 / gamp1)) / (gamm1 * pRatio / gamp1 + 1) * ustar;
                 *p12 = pstar;
@@ -171,7 +196,9 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
             SHLR = uR + aR;
             if (SHLR >= 0)  // positive head wave
             {
-                gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
+                gamma = gammaR;
+                gamm1 = gamRm1;
+                gamp1 = gamRp1;
                 astar = aR * PetscPowReal(pstar / pR, (gamm1 / (2 * gamma)));
                 STLR = ustar + astar;
                 if (STLR >= 0)  // positive tail wave
@@ -195,7 +222,9 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
             }
         } else  // right shock
         {
-            gamma = gammaR; gamm1 = gamRm1; gamp1 = gamRp1;
+            gamma = gammaR;
+            gamm1 = gamRm1;
+            gamp1 = gamRp1;
             A = sqrt((gamp1 * pstar / 2 / gamma / pR) + (gamm1 / 2 / gamma));
             STLR = uR + (aR * A);  // shock wave speed
             if (STLR >= 0) {
@@ -228,5 +257,5 @@ ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2Gas(std::shared_ptr<e
 }
 
 #include "parser/registrar.hpp"
-REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Riemann2Gas, "Exact Riemann Solution for 2 Perfect Gasses", ARG(eos::EOS, "eosL", "only valid for perfect gas"),
-         ARG(eos::EOS, "eosR", "only valid for perfect gas"));
+REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Riemann2Gas, "Exact Riemann Solution for 2 Perfect Gasses",
+         ARG(eos::EOS, "eosL", "only valid for perfect gas"), ARG(eos::EOS, "eosR", "only valid for perfect gas"));
