@@ -49,8 +49,6 @@ class Domain {
 
     void CreateStructures();
 
-    std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
-
     // keep a list of functions that modify the dm
     std::vector<std::shared_ptr<modifiers::Modifier>> modifiers;
 
@@ -66,6 +64,8 @@ class Domain {
     PetscInt GetDimensions() const;
 
     void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers);
+
+    std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
 
     /**
      * Get the petscField object from the dm or auxDm for this region

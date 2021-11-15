@@ -10,7 +10,7 @@ class Sphere : public Geometry {
     const double radius;
 
    public:
-    Sphere(std::vector<double> center, double radius, std::vector<double> insideValues, std::vector<double> outsideValues = {});
+    Sphere(std::vector<double> center, double radius, std::vector<double> insideValues = {}, std::vector<double> outsideValues = {});
 
     bool InsideGeometry(const double* xyz, const int& ndims, const double& time) const override;
 };

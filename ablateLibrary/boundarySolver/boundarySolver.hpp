@@ -11,8 +11,7 @@ namespace ablate::boundarySolver {
 class BoundaryProcess;
 
 class BoundarySolver : public solver::Solver, public solver::RHSFunction {
-   private:
-
+   public:
     /**
      * Boundary information.
      */
@@ -21,11 +20,20 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
         PetscReal   centroid[3]; /* Location of centroid (quadrature point) */
     } BoundaryFVFaceGeom;
 
-   public:
     using BoundarySourceFunction = PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell,
                                                       const PetscInt uOff[], const PetscScalar* boundaryValues, const PetscScalar* stencilValues[],
                                                       const PetscInt aOff[], const PetscScalar* auxValues, const PetscScalar* stencilAuxValues[],
                                                       PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[], PetscScalar source[], void* ctx);
+
+    /**
+     * public helper function to compute the gradient
+     * @param dim
+     * @param boundaryValue
+     * @param stencilValues
+     * @param stencilWeights
+     * @param grad
+     */
+    static void ComputeGradient(PetscInt dim, PetscScalar boundaryValue,PetscInt stencilSize,  const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar* grad);
 
    private:
     /**
@@ -98,6 +106,11 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
      * @return
      */
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
+
+    /**
+     * Helper function to project values to a cell boundary instead of the cell centroid
+     */
+    void InsertFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, PetscReal time = 0.0);
 };
 
 }  // namespace ablate::boundarySolver

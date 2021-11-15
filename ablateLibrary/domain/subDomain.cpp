@@ -118,9 +118,9 @@ ablate::domain::SubDomain::~SubDomain() {
     }
 }
 
-Vec ablate::domain::SubDomain::GetSolutionVector() { return domain.GetSolutionVector(); }
+Vec ablate::domain::SubDomain::GetSolutionVector() noexcept { return domain.GetSolutionVector(); }
 
-Vec ablate::domain::SubDomain::GetAuxVector() { return auxVec; }
+Vec ablate::domain::SubDomain::GetAuxVector() noexcept{ return auxVec; }
 
 PetscInt ablate::domain::SubDomain::GetDimensions() const { return domain.GetDimensions(); }
 
@@ -155,9 +155,6 @@ void ablate::domain::SubDomain::ProjectFieldFunctions(const std::vector<std::sha
     DM dm;
 
     VecGetDM(globVec, &dm) >> checkError;
-    if (dm != GetDM()) {
-        throw std::invalid_argument("The Vector passed in to ablate::domain::SubDomain::ProjectFieldFunctions must be a global vector from the DM.");
-    }
     DMGetNumFields(dm, &numberFields) >> checkError;
 
     // size up the update and context functions

@@ -89,6 +89,17 @@ class SubDomain {
         return nullptr;
     }
 
+    // Helper function that returns the vec or auxVec
+    inline Vec GetFieldVec(const Field& field) noexcept {
+        switch (field.location) {
+            case FieldLocation::SOL:
+                return GetSolutionVector();
+            case FieldLocation::AUX:
+                return GetAuxVector();
+        }
+        return nullptr;
+    }
+
     // return true if the field was defined
     inline bool ContainsField(const std::string& fieldName) { return fieldsByName.count(fieldName) > 0; }
 
@@ -106,8 +117,8 @@ class SubDomain {
 
     inline DM& GetDM() noexcept { return domain.GetDM(); }
     inline DM GetAuxDM() noexcept { return auxDM; }
-    Vec GetSolutionVector();
-    Vec GetAuxVector();
+    Vec GetSolutionVector() noexcept;
+    Vec GetAuxVector() noexcept;
 
     // Function to create/get the subDM.  If there is no subDM the dm will be returned
     DM GetSubDM();
