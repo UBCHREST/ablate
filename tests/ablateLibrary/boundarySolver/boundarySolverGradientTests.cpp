@@ -22,6 +22,7 @@ using namespace ablate;
 
 typedef struct {
     testingResources::MpiTestParameter mpiTestParameter;
+    PetscInt dim;
     std::string fieldAFunction;
     std::string fieldBFunction;
     std::string auxAFunction;
@@ -30,7 +31,6 @@ typedef struct {
     std::string expectedFieldBGradient;
     std::string expectedAuxAGradient;
     std::string expectedAuxBGradient;
-    PetscInt dim;
 } BoundarySolverGradientTestParameters;
 
 class BoundarySolverGradientTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<BoundarySolverGradientTestParameters> {
@@ -47,7 +47,7 @@ static void FillStencilValues(PetscInt loc, const PetscScalar* stencilValues[], 
 TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
     StartWithMPI
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        PetscInitialize(argc, argv, nullptr, "HELP") >> testErrorChecker;
 
         // Define regions for this test
         auto insideRegion = std::make_shared<ablate::domain::Region>("insideRegion");
@@ -218,21 +218,22 @@ TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundar
             std::vector<PetscScalar> exactGrad(3);
 
             // March over each field
+            const double absError = 1E-8;
             expectedFieldAGradient->Eval(face.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
-                ASSERT_DOUBLE_EQ(exactGrad[d], data[offset++]) << "Expected gradient not found for FieldA dir " << d << " in cell " << cell;
+                ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for FieldA dir " << d << " in cell " << cell;
             }
             expectedFieldBGradient->Eval(face.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
-                ASSERT_DOUBLE_EQ(exactGrad[d], data[offset++]) << "Expected gradient not found for FieldB dir " << d << " in cell " << cell;
+                ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for FieldB dir " << d << " in cell " << cell;
             }
             expectedAuxAGradient->Eval(face.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
-                ASSERT_DOUBLE_EQ(exactGrad[d], data[offset++]) << "Expected gradient not found for AuxA dir " << d << " in cell " << cell;
+                ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for AuxA dir " << d << " in cell " << cell;
             }
             expectedAuxBGradient->Eval(face.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
-                ASSERT_DOUBLE_EQ(exactGrad[d], data[offset++]) << "Expected gradient not found for AuxB dir " << d << " in cell " << cell;
+                ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for AuxB dir " << d << " in cell " << cell;
             }
         }
 
@@ -241,6 +242,7 @@ TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundar
 
         // debug code
         DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDM");
+        DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDMAlso");
 
         VecDestroy(&gradVec) >> checkError;
 
@@ -249,17 +251,44 @@ TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundar
 }
 
 INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverGradientTestFixture,
-                         testing::Values((BoundarySolverGradientTestParameters){
-                             .mpiTestParameter = {.testName = "1D BoundarySolver", .nproc = 1, .arguments = ""},
-                             .dim = 1,
-                             .fieldAFunction = "x + x*y+ y + z",
-                             .fieldBFunction = "10*x + 3*y + z*x +2*z",
-                             .auxAFunction = "-x - y -z",
-                             .auxBFunction = "-x*y*z",
-                             .expectedFieldAGradient = "1 + y, x + 1, 1",
-                             .expectedFieldBGradient = "10+z, 3, x + 2",
-                             .expectedAuxAGradient = "-1, -1, -1",
-                             .expectedAuxBGradient = "-y*z, -x*z, -x*y",
+                         testing::Values(
+                             (BoundarySolverGradientTestParameters){
+                                 .mpiTestParameter = {.testName = "1D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .dim = 1,
+                                 .fieldAFunction = "x + x*y+ y + z",
+                                 .fieldBFunction = "10*x + 3*y + z*x +2*z",
+                                 .auxAFunction = "-x - y -z",
+                                 .auxBFunction = "-x*y*z",
+                                 .expectedFieldAGradient = "1 + y, x + 1, 1",
+                                 .expectedFieldBGradient = "10+z, 3, x + 2",
+                                 .expectedAuxAGradient = "-1, -1, -1",
+                                 .expectedAuxBGradient = "-y*z, -x*z, -x*y",
 
-                         }),
+                             },
+                             (BoundarySolverGradientTestParameters){
+                                 .mpiTestParameter = {.testName = "2D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .dim = 2,
+                                 .fieldAFunction = "x + y + z",
+                                 .fieldBFunction = "10*x + 3*y +2*z",
+                                 .auxAFunction = "-x - y -z",
+                                 .auxBFunction = "-x-x",
+                                 .expectedFieldAGradient = "1,  1, 1",
+                                 .expectedFieldBGradient = "10, 3,  2",
+                                 .expectedAuxAGradient = "-1, -1, -1",
+                                 .expectedAuxBGradient = "-2,0, 0",
+
+                             },
+                             (BoundarySolverGradientTestParameters){
+                                 .mpiTestParameter = {.testName = "3D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .dim = 3,
+                                 .fieldAFunction = "x + y + z",
+                                 .fieldBFunction = "10*x + 3*y +2*z",
+                                 .auxAFunction = "-x - y -z",
+                                 .auxBFunction = "-x-x",
+                                 .expectedFieldAGradient = "1,  1, 1",
+                                 .expectedFieldBGradient = "10, 3,  2",
+                                 .expectedAuxAGradient = "-1, -1, -1",
+                                 .expectedAuxBGradient = "-2,0, 0",
+
+                             }),
                          [](const testing::TestParamInfo<BoundarySolverGradientTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
