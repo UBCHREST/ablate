@@ -1,9 +1,9 @@
 #ifndef ABLATELIBRARY_BOUNDARYSOLVER_HPP
 #define ABLATELIBRARY_BOUNDARYSOLVER_HPP
 
+#include <memory>
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
-#include <memory>
 
 namespace ablate::boundarySolver {
 
@@ -16,13 +16,12 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
      * Boundary information.
      */
     typedef struct {
-        PetscReal   normal[3];   /* Area-scaled normals */
-        PetscReal   centroid[3]; /* Location of centroid (quadrature point) */
+        PetscReal normal[3];   /* Area-scaled normals */
+        PetscReal centroid[3]; /* Location of centroid (quadrature point) */
     } BoundaryFVFaceGeom;
 
-    using BoundarySourceFunction = PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell,
-                                                      const PetscInt uOff[], const PetscScalar* boundaryValues, const PetscScalar* stencilValues[],
-                                                      const PetscInt aOff[], const PetscScalar* auxValues, const PetscScalar* stencilAuxValues[],
+    using BoundarySourceFunction = PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[], const PetscScalar* boundaryValues,
+                                                      const PetscScalar* stencilValues[], const PetscInt aOff[], const PetscScalar* auxValues, const PetscScalar* stencilAuxValues[],
                                                       PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[], PetscScalar source[], void* ctx);
 
     /**
@@ -33,7 +32,7 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
      * @param stencilWeights
      * @param grad
      */
-    static void ComputeGradient(PetscInt dim, PetscScalar boundaryValue,PetscInt stencilSize,  const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar* grad);
+    static void ComputeGradient(PetscInt dim, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar* grad);
 
    private:
     /**
@@ -81,7 +80,8 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
     PetscFV gradientCalculator = nullptr;
 
    public:
-    BoundarySolver(std::string solverId, std::shared_ptr<domain::Region>,std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses, std::shared_ptr<parameters::Parameters> options);
+    BoundarySolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses,
+                   std::shared_ptr<parameters::Parameters> options);
     ~BoundarySolver() override;
 
     /** SubDomain Register and Setup **/
@@ -111,6 +111,11 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
      * Helper function to project values to a cell boundary instead of the cell centroid
      */
     void InsertFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, PetscReal time = 0.0);
+
+    /**
+     * Return a reference to the boundary geometry.  This is a slow call and should only be done for init/debugging/testing
+     */
+    const BoundaryFVFaceGeom& GetBoundaryGeometry(PetscInt cell) const;
 };
 
 }  // namespace ablate::boundarySolver

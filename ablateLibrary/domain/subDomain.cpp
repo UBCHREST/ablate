@@ -120,7 +120,7 @@ ablate::domain::SubDomain::~SubDomain() {
 
 Vec ablate::domain::SubDomain::GetSolutionVector() noexcept { return domain.GetSolutionVector(); }
 
-Vec ablate::domain::SubDomain::GetAuxVector() noexcept{ return auxVec; }
+Vec ablate::domain::SubDomain::GetAuxVector() noexcept { return auxVec; }
 
 PetscInt ablate::domain::SubDomain::GetDimensions() const { return domain.GetDimensions(); }
 

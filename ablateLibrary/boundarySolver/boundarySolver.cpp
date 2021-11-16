@@ -13,6 +13,47 @@ ablate::boundarySolver::BoundarySolver::~BoundarySolver() {
     }
 }
 
+static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel boundaryLabel, PetscInt boundaryValue, PetscInt depth, DM dm, PetscInt cell) {
+    const PetscInt maxDepth = 2;
+
+    // Check to see if this cell is already in the list
+    if (stencilSet.count(cell)) {
+        return;
+    }
+
+    // Add to the list
+    stencilSet.insert(cell);
+
+    // If not at max depth, check another layer
+    if (depth < maxDepth) {
+        PetscInt numberFaces;
+        const PetscInt* cellFaces;
+        DMPlexGetConeSize(dm, cell, &numberFaces) >> ablate::checkError;
+        DMPlexGetCone(dm, cell, &cellFaces) >> ablate::checkError;
+
+        // For each connected face
+        for (PetscInt f = 0; f < numberFaces; f++) {
+            PetscInt face = cellFaces[f];
+
+            // Don't allow the search back over the boundary Label
+            PetscInt faceValue;
+            DMLabelGetValue(boundaryLabel, face, &faceValue) >> ablate::checkError;
+            if (faceValue == boundaryValue) {
+                continue;
+            }
+
+            // check any neighbors
+            PetscInt numberNeighborCells;
+            const PetscInt* neighborCells;
+            DMPlexGetSupportSize(dm, face, &numberNeighborCells) >> ablate::checkError;
+            DMPlexGetSupport(dm, face, &neighborCells) >> ablate::checkError;
+            for (PetscInt n = 0; n < numberNeighborCells; n++) {
+                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, depth + 1, dm, neighborCells[n]);
+            }
+        }
+    }
+}
+
 void ablate::boundarySolver::BoundarySolver::Setup() {
     // march over process and link to the flow
     for (auto& process : boundaryProcesses) {
@@ -66,7 +107,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         const PetscInt cell = cells ? cells[c] : c;
 
         // keep a list of cells in the stencil
-        std::set<PetscInt> stencilSet;
+        std::set<PetscInt> stencilSet{cell};
 
         // Keep track of connected faces
         PetscInt connectedFaces = 0;
@@ -106,7 +147,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             DMPlexGetSupportSize(subDomain->GetDM(), face, &numberNeighborCells) >> checkError;
             DMPlexGetSupport(subDomain->GetDM(), face, &neighborCells) >> checkError;
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                stencilSet.insert(neighborCells[n]);
+                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n]);
             }
         }
 
@@ -270,7 +311,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
             }
 
             // Get each of the stencil pts
-            const auto& stencilInfo = gradientStencils[0];
+            const auto& stencilInfo = gradientStencils[cOffset];
             for (PetscInt p = 0; p < stencilInfo.stencilSize; p++) {
                 DMPlexPointLocalRead(dm, stencilInfo.stencil[p], locXArray, &inputStencilValues[p]) >> checkError;
                 if (auxDM) {
@@ -322,7 +363,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
     PetscFunctionReturn(0);
 }
 void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, PetscReal time) {
-    for(const auto& fieldFunction : fieldFunctions){
+    for (const auto& fieldFunction : fieldFunctions) {
         // Get the field
         const auto& field = subDomain->GetField(fieldFunction->GetName());
 
@@ -366,18 +407,30 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
         RestoreRange(cellIS, cStart, cEnd, cells);
         VecRestoreArray(vec, &array);
     }
-
-
 }
-void ablate::boundarySolver::BoundarySolver::ComputeGradient(PetscInt dim, PetscScalar boundaryValue,PetscInt stencilSize,  const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar* grad) {
+void ablate::boundarySolver::BoundarySolver::ComputeGradient(PetscInt dim, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights,
+                                                             PetscScalar* grad) {
     PetscArrayzero(grad, dim);
 
     for (PetscInt c = 0; c < stencilSize; ++c) {
         PetscScalar delta = stencilValues[c] - boundaryValue;
 
         for (PetscInt d = 0; d < dim; ++d) {
-            grad[d] += stencilWeights[c*dim + d] * delta;
+            grad[d] += stencilWeights[c * dim + d] * delta;
         }
     }
+}
 
+const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom& ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {
+    IS cellIS;
+    PetscInt cStart, cEnd;
+    const PetscInt* cells;
+    GetCellRange(cellIS, cStart, cEnd, cells);
+
+    // Locate the index
+    PetscInt location;
+    ISLocate(cellIS, cell, &location) >> checkError;
+    RestoreRange(cellIS, cStart, cEnd, cells);
+
+    return gradientStencils[location].geometry;
 }

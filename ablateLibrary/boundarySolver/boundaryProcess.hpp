@@ -9,8 +9,7 @@ class BoundaryProcess {
    public:
     virtual ~BoundaryProcess() = default;
     virtual void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) = 0;
-
 };
 
-}
+}  // namespace ablate::boundarySolver
 #endif  // ABLATELIBRARY_BOUNDARYPROCESS_HPP

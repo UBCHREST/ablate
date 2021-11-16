@@ -223,21 +223,21 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
     PetscFunctionReturn(0);
 }
 
-void ablate::solver::Solver::GetCellRange(IS &cellIS, PetscInt &cStart, PetscInt &cEnd, const PetscInt *&cells) {
+void ablate::solver::Solver::GetCellRange(IS &cellIS, PetscInt &cStart, PetscInt &cEnd, const PetscInt *&cells) const {
     // Start out getting all the cells
     PetscInt depth;
     DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
     GetRange(depth, cellIS, cStart, cEnd, cells);
 }
 
-void ablate::solver::Solver::GetFaceRange(IS &faceIS, PetscInt &fStart, PetscInt &fEnd, const PetscInt *&faces) {
+void ablate::solver::Solver::GetFaceRange(IS &faceIS, PetscInt &fStart, PetscInt &fEnd, const PetscInt *&faces) const {
     // Start out getting all the faces
     PetscInt depth;
     DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
     GetRange(depth - 1, faceIS, fStart, fEnd, faces);
 }
 
-void ablate::solver::Solver::GetRange(PetscInt depth, IS &pointIS, PetscInt &pStart, PetscInt &pEnd, const PetscInt *&points) {
+void ablate::solver::Solver::GetRange(PetscInt depth, IS &pointIS, PetscInt &pStart, PetscInt &pEnd, const PetscInt *&points) const {
     // Start out getting all of the points
     IS allPointIS;
     DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> checkError;
@@ -266,7 +266,7 @@ void ablate::solver::Solver::GetRange(PetscInt depth, IS &pointIS, PetscInt &pSt
     ISDestroy(&allPointIS) >> checkError;
 }
 
-void ablate::solver::Solver::RestoreRange(IS &pointIS, PetscInt &pStart, PetscInt &pEnd, const PetscInt *&points) {
+void ablate::solver::Solver::RestoreRange(IS &pointIS, PetscInt &pStart, PetscInt &pEnd, const PetscInt *&points) const {
     ISRestorePointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
     ISDestroy(&pointIS) >> checkError;
 }
