@@ -397,8 +397,10 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
             switch (field.location) {
                 case domain::FieldLocation::SOL:
                     DMPlexPointGlobalFieldRef(dm, cell, field.id, array, &pt) >> checkError;
+                    break;
                 case domain::FieldLocation::AUX:
                     DMPlexPointLocalFieldRef(dm, cell, field.id, array, &pt) >> checkError;
+                    break;
             }
 
             petscFunction(dim, time, gradientStencils[cOffset].geometry.centroid, field.numberComponents, pt, context);
