@@ -5,3 +5,4 @@ target_sources(ablateLibrary
         boundaryProcess.hpp
         )
 
+add_subdirectory(lodi)

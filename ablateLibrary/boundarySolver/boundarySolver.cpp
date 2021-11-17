@@ -146,6 +146,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             const PetscInt* neighborCells;
             DMPlexGetSupportSize(subDomain->GetDM(), face, &numberNeighborCells) >> checkError;
             DMPlexGetSupport(subDomain->GetDM(), face, &neighborCells) >> checkError;
+
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
                 AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n]);
             }
