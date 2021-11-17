@@ -106,7 +106,7 @@ class Solver : public io::Serializable {
      * @param pEnd
      * @param points
      */
-    void GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells);
+    void GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells) const;
 
     /**
      * Get the faceIS and range over valid faces in this region
@@ -115,7 +115,7 @@ class Solver : public io::Serializable {
      * @param pEnd
      * @param points
      */
-    void GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces);
+    void GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces) const;
 
     /**
      * Get the valid range over specified depth
@@ -124,7 +124,7 @@ class Solver : public io::Serializable {
      * @param pEnd
      * @param points
      */
-    void GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
+    void GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) const;
 
     /**
      * Restores the is and range
@@ -133,7 +133,7 @@ class Solver : public io::Serializable {
      * @param pEnd
      * @param points
      */
-    void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points);
+    void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) const;
 };
 
 }  // namespace ablate::solver

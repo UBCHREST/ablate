@@ -1,0 +1,294 @@
+#include <petsc.h>
+#include <boundarySolver/boundarySolver.hpp>
+#include <cmath>
+#include <domain/modifiers/createLabel.hpp>
+#include <domain/modifiers/mergeLabels.hpp>
+#include <domain/modifiers/tagLabelBoundary.hpp>
+#include <mathFunctions/geom/sphere.hpp>
+#include <memory>
+#include <vector>
+#include "MpiTestFixture.hpp"
+#include "PetscTestErrorChecker.hpp"
+#include "domain/boxMesh.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "eos/transport/constant.hpp"
+#include "finiteVolume/boundaryConditions/ghost.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "gtest/gtest.h"
+#include "mathFunctions/functionFactory.hpp"
+
+using namespace ablate;
+
+typedef struct {
+    testingResources::MpiTestParameter mpiTestParameter;
+    PetscInt dim;
+    std::string fieldAFunction;
+    std::string fieldBFunction;
+    std::string auxAFunction;
+    std::string auxBFunction;
+    std::string expectedFieldAGradient;
+    std::string expectedFieldBGradient;
+    std::string expectedAuxAGradient;
+    std::string expectedAuxBGradient;
+} BoundarySolverGradientTestParameters;
+
+class BoundarySolverGradientTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<BoundarySolverGradientTestParameters> {
+   public:
+    void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
+};
+
+static void FillStencilValues(PetscInt loc, const PetscScalar* stencilValues[], std::vector<PetscScalar>& selectValues) {
+    for (std::size_t i = 0; i < selectValues.size(); i++) {
+        selectValues[i] = stencilValues[i][loc];
+    }
+}
+
+TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
+    StartWithMPI
+        // initialize petsc and mpi
+        PetscInitialize(argc, argv, nullptr, "HELP") >> testErrorChecker;
+
+        // Define regions for this test
+        auto insideRegion = std::make_shared<ablate::domain::Region>("insideRegion");
+        auto boundaryFaceRegion = std::make_shared<ablate::domain::Region>("boundaryFaces");
+        auto boundaryCellRegion = std::make_shared<ablate::domain::Region>("boundaryCells");
+        auto fieldRegion = std::make_shared<ablate::domain::Region>("fieldRegion");
+
+        // define a test field to compute gradients
+        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
+            std::make_shared<ablate::domain::FieldDescription>(
+                "fieldA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::SOL, ablate::domain::FieldType::FVM, fieldRegion),
+            std::make_shared<ablate::domain::FieldDescription>(
+                "fieldB", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::SOL, ablate::domain::FieldType::FVM, fieldRegion),
+            std::make_shared<ablate::domain::FieldDescription>(
+                "auxA", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM, fieldRegion),
+            std::make_shared<ablate::domain::FieldDescription>(
+                "auxB", "", ablate::domain::FieldDescription::ONECOMPONENT, ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM, fieldRegion),
+            std::make_shared<ablate::domain::FieldDescription>("resultGrad",
+                                                               "",
+                                                               std::vector<std::string>{"fieldAGrad" + ablate::domain::FieldDescription::DIMENSION,
+                                                                                        "fieldBGrad" + ablate::domain::FieldDescription::DIMENSION,
+                                                                                        "auxAGrad" + ablate::domain::FieldDescription::DIMENSION,
+                                                                                        "auxBGrad" + ablate::domain::FieldDescription::DIMENSION},
+                                                               ablate::domain::FieldLocation::SOL,
+                                                               ablate::domain::FieldType::FVM,
+                                                               fieldRegion)};
+
+        auto dim = GetParam().dim;
+
+        // define the test mesh and setup hthe labels
+        auto mesh = std::make_shared<ablate::domain::BoxMesh>(
+            "test",
+            fieldDescriptors,
+            std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
+
+                std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                std::make_shared<domain::modifiers::GhostBoundaryCells>(),
+                std::make_shared<ablate::domain::modifiers::CreateLabel>(insideRegion, std::make_shared<ablate::mathFunctions::geom::Sphere>(std::vector<double>(dim, .5), .25)),
+                std::make_shared<ablate::domain::modifiers::TagLabelBoundary>(insideRegion, boundaryFaceRegion, boundaryCellRegion),
+                std::make_shared<ablate::domain::modifiers::MergeLabels>(fieldRegion, std::vector<std::shared_ptr<domain::Region>>{insideRegion, boundaryCellRegion})},
+            std::vector<int>(dim, 5),
+            std::vector<double>(dim, 0.0),
+            std::vector<double>(dim, 1.0),
+            std::vector<std::string>(dim, "NONE") /*boundary*/,
+            true /*simplex*/);
+
+        // create a boundarySolver
+        auto boundarySolver =
+            std::make_shared<boundarySolver::BoundarySolver>("testSolver", boundaryCellRegion, boundaryFaceRegion, std::vector<std::shared_ptr<boundarySolver::BoundaryProcess>>{}, nullptr);
+
+        // Init the subDomain
+        mesh->InitializeSubDomains({boundarySolver});
+
+        // Get the global vectors
+        auto globVec = mesh->GetSolutionVector();
+
+        // Initialize each of the fields
+        auto subDomain = mesh->GetSubDomain(boundaryCellRegion);
+        auto fieldFunctions = {
+            std::make_shared<mathFunctions::FieldFunction>("fieldA", ablate::mathFunctions::Create(GetParam().fieldAFunction)),
+            std::make_shared<mathFunctions::FieldFunction>("fieldB", ablate::mathFunctions::Create(GetParam().fieldBFunction)),
+        };
+        subDomain->ProjectFieldFunctions(fieldFunctions, globVec);
+
+        auto auxVec = subDomain->GetAuxVector();
+        auto auxFieldFunctions = {
+            std::make_shared<mathFunctions::FieldFunction>("auxA", ablate::mathFunctions::Create(GetParam().auxAFunction)),
+            std::make_shared<mathFunctions::FieldFunction>("auxB", ablate::mathFunctions::Create(GetParam().auxBFunction)),
+        };
+        subDomain->ProjectFieldFunctions(auxFieldFunctions, auxVec);
+
+        // Set the boundary cells values so that they are the correct value on the centroid of the face
+        boundarySolver->InsertFieldFunctions(fieldFunctions);
+        boundarySolver->InsertFieldFunctions(auxFieldFunctions);
+
+        // for each
+        boundarySolver->RegisterFunction(
+            [](PetscInt dim,
+               const boundarySolver::BoundarySolver::BoundaryFVFaceGeom* fg,
+               const PetscFVCellGeom* boundaryCell,
+               const PetscInt uOff[],
+               const PetscScalar* boundaryValues,
+               const PetscScalar* stencilValues[],
+               const PetscInt aOff[],
+               const PetscScalar* auxValues,
+               const PetscScalar* stencilAuxValues[],
+               PetscInt stencilSize,
+               const PetscInt stencil[],
+               const PetscScalar stencilWeights[],
+               const PetscInt sOff[],
+               PetscScalar source[],
+               void* ctx) {
+                const PetscInt fieldA = 1;
+                const PetscInt fieldB = 0;
+                const PetscInt sourceField = 0;
+                const PetscInt auxA = 1;
+                const PetscInt auxB = 0;
+
+                // Create a scratch space
+                std::vector<PetscScalar> pointValues(stencilSize, 0.0);
+                PetscInt sourceOffset = 0;
+
+                // Compute each field
+                FillStencilValues(uOff[fieldA], stencilValues, pointValues);
+                boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[fieldA]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset++ * dim));
+
+                FillStencilValues(uOff[fieldB], stencilValues, pointValues);
+                boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[fieldB]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset++ * dim));
+
+                FillStencilValues(uOff[auxA], stencilAuxValues, pointValues);
+                boundarySolver::BoundarySolver::ComputeGradient(dim, auxValues[aOff[auxA]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset++ * dim));
+
+                FillStencilValues(uOff[auxB], stencilAuxValues, pointValues);
+                boundarySolver::BoundarySolver::ComputeGradient(dim, auxValues[aOff[auxB]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset++ * dim));
+
+                return 0;
+            },
+            nullptr,
+            {"resultGrad"},
+            {"fieldB", "fieldA"},
+            {"auxB", "auxA"});
+
+        // Create a locFVector
+        Vec gradVec;
+        DMCreateLocalVector(subDomain->GetDM(), &gradVec) >> checkError;
+
+        // evaluate
+        boundarySolver->ComputeRHSFunction(0.0, globVec, gradVec);
+
+        // Get raw access to the vector
+        const PetscScalar* gradArray;
+        VecGetArrayRead(gradVec, &gradArray) >> checkError;
+
+        // Get the offset for field
+        PetscInt resultGradOffset;
+        PetscDSGetFieldOffset(boundarySolver->GetSubDomain().GetDiscreteSystem(), boundarySolver->GetSubDomain().GetField("resultGrad").subId, &resultGradOffset) >> checkError;
+
+        // get the exactGrads
+        auto expectedFieldAGradient = ablate::mathFunctions::Create(GetParam().expectedFieldAGradient);
+        auto expectedFieldBGradient = ablate::mathFunctions::Create(GetParam().expectedFieldBGradient);
+        auto expectedAuxAGradient = ablate::mathFunctions::Create(GetParam().expectedAuxAGradient);
+        auto expectedAuxBGradient = ablate::mathFunctions::Create(GetParam().expectedAuxBGradient);
+
+        // March over each cell
+        IS cellIS;
+        PetscInt cStart, cEnd;
+        const PetscInt* cells;
+        boundarySolver->GetCellRange(cellIS, cStart, cEnd, cells);
+        PetscInt cOffset = 0;  // Keep track of the cell offset
+        for (PetscInt c = cStart; c < cEnd; ++c, cOffset++) {
+            // if there is a cell array, use it, otherwise it is just c
+            const PetscInt cell = cells ? cells[c] : c;
+
+            // Get the raw data at this point, this check assumes the order the fields
+            const PetscScalar* data;
+            DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), cell, gradArray, &data) >> checkError;
+
+            // All the fluxes before the offset should be zero
+            for (PetscInt i = 0; i < resultGradOffset; i++) {
+                ASSERT_DOUBLE_EQ(0.0, data[i]) << "All values not in the 'resultGrad' field should be zero.  Not zero at cell " << cell;
+            }
+
+            // Get the exact location of the face
+            const auto& face = boundarySolver->GetBoundaryGeometry(cell);
+
+            // March over each source and compare against the known solution assuming field order
+            PetscInt offset = resultGradOffset;
+            std::vector<PetscScalar> exactGrad(3);
+
+            // March over each field
+            const double absError = 1E-8;
+            expectedFieldAGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            for (PetscInt d = 0; d < dim; d++) {
+                ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for FieldA dir " << d << " in cell " << cell;
+            }
+            expectedFieldBGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            for (PetscInt d = 0; d < dim; d++) {
+                ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for FieldB dir " << d << " in cell " << cell;
+            }
+            expectedAuxAGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            for (PetscInt d = 0; d < dim; d++) {
+                ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for AuxA dir " << d << " in cell " << cell;
+            }
+            expectedAuxBGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            for (PetscInt d = 0; d < dim; d++) {
+                ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for AuxB dir " << d << " in cell " << cell;
+            }
+        }
+
+        boundarySolver->RestoreRange(cellIS, cStart, cEnd, cells);
+        VecRestoreArrayRead(gradVec, &gradArray) >> checkError;
+
+        // debug code
+        DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDM");
+        DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDMAlso");
+
+        VecDestroy(&gradVec) >> checkError;
+
+        exit(PetscFinalize());
+    EndWithMPI
+}
+
+INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverGradientTestFixture,
+                         testing::Values(
+                             (BoundarySolverGradientTestParameters){
+                                 .mpiTestParameter = {.testName = "1D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .dim = 1,
+                                 .fieldAFunction = "x + x*y+ y + z",
+                                 .fieldBFunction = "10*x + 3*y + z*x +2*z",
+                                 .auxAFunction = "-x - y -z",
+                                 .auxBFunction = "-x*y*z",
+                                 .expectedFieldAGradient = "1 + y, x + 1, 1",
+                                 .expectedFieldBGradient = "10+z, 3, x + 2",
+                                 .expectedAuxAGradient = "-1, -1, -1",
+                                 .expectedAuxBGradient = "-y*z, -x*z, -x*y",
+
+                             },
+                             (BoundarySolverGradientTestParameters){
+                                 .mpiTestParameter = {.testName = "2D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .dim = 2,
+                                 .fieldAFunction = "x + y + z",
+                                 .fieldBFunction = "10*x + 3*y +2*z",
+                                 .auxAFunction = "-x - y -z",
+                                 .auxBFunction = "-x-x",
+                                 .expectedFieldAGradient = "1,  1, 1",
+                                 .expectedFieldBGradient = "10, 3,  2",
+                                 .expectedAuxAGradient = "-1, -1, -1",
+                                 .expectedAuxBGradient = "-2,0, 0",
+
+                             },
+                             (BoundarySolverGradientTestParameters){
+                                 .mpiTestParameter = {.testName = "3D BoundarySolver", .nproc = 1, .arguments = ""},
+                                 .dim = 3,
+                                 .fieldAFunction = "x + y + z",
+                                 .fieldBFunction = "10*x + 3*y +2*z",
+                                 .auxAFunction = "-x - y -z",
+                                 .auxBFunction = "-x-x",
+                                 .expectedFieldAGradient = "1,  1, 1",
+                                 .expectedFieldBGradient = "10, 3,  2",
+                                 .expectedAuxAGradient = "-1, -1, -1",
+                                 .expectedAuxBGradient = "-2,0, 0",
+
+                             }),
+                         [](const testing::TestParamInfo<BoundarySolverGradientTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
