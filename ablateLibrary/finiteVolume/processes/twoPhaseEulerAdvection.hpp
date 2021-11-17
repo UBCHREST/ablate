@@ -4,6 +4,7 @@
 #include <petsc.h>
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "process.hpp"
+#include "parameters/parameters.hpp"
 
 namespace ablate::finiteVolume::processes {
 
@@ -14,10 +15,16 @@ class TwoPhaseEulerAdvection : public Process {
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid;
+    struct Parameters {
+        // gravitational acceleration vector
+        PetscReal g[3];// = {0.0, 0.0, 0.0};
+    };
+    Parameters parameters;
 
    public:
     TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
-                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid);
+                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid,
+                           std::shared_ptr<parameters::Parameters> parametersIn);
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver & flow) override;
 
    private:
@@ -30,31 +37,10 @@ class TwoPhaseEulerAdvection : public Process {
                                                         const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* flux, void* ctx);
 
    public:
-    static void DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim, const PetscReal* conservedValues, const PetscReal* normal,
+    static void DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim, const PetscReal* conservedValues, PetscReal densityVF, const PetscReal* normal,
                                          PetscReal* density, PetscReal* densityG, PetscReal* densityL, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy,
                                          PetscReal* internalEnergyG, PetscReal* internalEnergyL, PetscReal* aG, PetscReal* aL, PetscReal* MG, PetscReal* ML, PetscReal* p, PetscReal* alpha);
 
-    //           *** yaml example ***
-    //      - !ablate::flow::processes::TwoPhaseEulerAdvection
-    //      parameters:
-    //        cfl: 0.5
-    //      eosGas: !ablate::eos::PerfectGas
-    //        parameters:
-    //          gamma: 1.4
-    //          Rgas : 287.0 
-    //      eosLiquid: !ablate::eos::StiffenedGas
-    //        parameters:
-    //          gamma: 1.4
-    //          Cv : 287.0
-    //          p0 : 1.0
-    //          T0 : 1.0
-    //          e0 : 1.0 
-    //      fluxCalculatorGasGas: !ablate::flow::fluxCalculator::AusmpUp
-    //        mInf: .3
-    //      fluxCalculatorGasLiquid: !ablate::flow::fluxCalculator::AusmpUp
-    //        mInf: .3
-    //      fluxCalculatorLiquidLiquid: !ablate::flow::fluxCalculator::AusmpUp
-    //        mInf: .3
 };
 
 }  // namespace ablate::finiteVolume::processes

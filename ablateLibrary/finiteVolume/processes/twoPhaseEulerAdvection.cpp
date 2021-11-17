@@ -1,4 +1,5 @@
 #include "twoPhaseEulerAdvection.hpp"
+#include "flowProcess.hpp"
 // #include <petscsnes.h>
 
 static inline void NormVector(PetscInt dim, const PetscReal *in, PetscReal *out) {
@@ -73,22 +74,20 @@ PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx) {
 }
 
 void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim,
-                                                                                       const PetscReal *conservedValues, const PetscReal *normal, PetscReal *density, PetscReal *densityG,
+                                                                                       const PetscReal *conservedValues, PetscReal densityVF , const PetscReal *normal, PetscReal *density, PetscReal *densityG,
                                                                                        PetscReal *densityL, PetscReal *normalVelocity, PetscReal *velocity, PetscReal *internalEnergy,
                                                                                        PetscReal *internalEnergyG, PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL, PetscReal *MG,
                                                                                        PetscReal *ML, PetscReal *p, PetscReal *alpha) {
-    const int EULER_FIELD = 1;  // denstiyVF is [0] field
-    // (densityVF, RHO, RHOE, RHOU, RHOV, RHOW)
+    // (RHO, RHOE, RHOU, RHOV, RHOW)
     // decode
-    PetscReal densityVF = conservedValues[0];
-    *density = conservedValues[0 + EULER_FIELD];
-    PetscReal totalEnergy = conservedValues[1 + EULER_FIELD] / (*density);
+    *density = conservedValues[FlowProcess::RHO];
+    PetscReal totalEnergy = conservedValues[FlowProcess::RHOE] / (*density);
 
     // Get the velocity in this direction, and kinetic energy
     (*normalVelocity) = 0.0;
     PetscReal ke = 0.0;
     for (PetscInt d = 0; d < dim; d++) {
-        velocity[d] = conservedValues[2 + EULER_FIELD + d] / (*density);
+        velocity[d] = conservedValues[FlowProcess::RHOU + d] / (*density);
         (*normalVelocity) += velocity[d] * normal[d];
         ke += PetscSqr(velocity[d]);
     }
@@ -96,14 +95,14 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     (*internalEnergy) = (totalEnergy)-ke;
 
     // near boundary checks
-    if (densityVF<1E-4)  // mostly liquid
+    if (densityVF < 1E-4)  // mostly liquid
     {
         densityVF = 1E-4;
 
-    } else  if (densityVF>((*density)-1E-4) )// mostly gas
+    } else if (densityVF > ((*density) - 1E-4))  // mostly gas
     {
-        densityVF = (*density)-1E-4;
-    } else // boundary cell, liquid and gas
+        densityVF = (*density) - 1E-4;
+    } else  // boundary cell, liquid and gas
     {
         densityVF = conservedValues[0];
     }
@@ -121,8 +120,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     VecCreate(PETSC_COMM_SELF, &x);
     VecSetSizes(x, PETSC_DECIDE, 2);  // 2x1 vector
     VecSetFromOptions(x);
-    //    PetscReal choice = PetscMax(1.0,densityVF);
-    VecSet(x, densityVF);  // set initial guess [rho1, e1]= [1.0,1.0]
+    PetscReal choice = PetscMax(1.0,densityVF);
+    VecSet(x, choice);  // set initial guess [rho1, e1]= [1.0,1.0]
                            //    VecSetValues(x, 1, 1, (*internalEnergy),INSERT_VALUES); // set each initial guess separately
     VecDuplicate(x, &r);
 
@@ -144,8 +143,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
     // default rtol=10e-8
     // snes_fd : use FD Jacobian - SNESComputeJacobianDefault()
     // snes_monitor : view residuals for each iteration
-    PetscOptionsSetValue(NULL, "-snes_monitor", NULL);
-    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
+//    PetscOptionsSetValue(NULL, "-snes_monitor", NULL);
+//    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
     SNESSetFromOptions(snes);
     //    SNESMonitorSet(SNES snes,PetscErrorCode (*mon)(SNES,PetscInt its,PetscReal norm,void* mctx),void *mctx,PetscErrorCode (*monitordestroy)(void**));
 
@@ -197,8 +196,19 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
 ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
-                                                                                std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid)
-    : eosGas(eosGas), eosLiquid(eosLiquid), fluxCalculatorGasGas(fluxCalculatorGasGas), fluxCalculatorGasLiquid(fluxCalculatorGasLiquid), fluxCalculatorLiquidLiquid(fluxCalculatorLiquidLiquid) {}
+                                                                                std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid,
+                                                                                std::shared_ptr<parameters::Parameters> parametersIn)
+    : eosGas(eosGas), eosLiquid(eosLiquid), fluxCalculatorGasGas(fluxCalculatorGasGas), fluxCalculatorGasLiquid(fluxCalculatorGasLiquid), fluxCalculatorLiquidLiquid(fluxCalculatorLiquidLiquid) {
+    // If there is a flux calculator assumed advection
+    if (fluxCalculatorGasGas) {
+        // parameters
+        auto gravVec = parametersIn->Get<std::vector<double>>("g", {0.0, 0.0, 0.0});
+        for (std::size_t d=0;d<gravVec.size();d++) {
+            parameters.g[d] = gravVec[d];  //[0.0, 0.0, 0.0]
+        }
+    }
+}
+
 void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     // Currently, no option for species advection
     flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, "euler", {"densityVF", "euler"}, {});
@@ -210,8 +220,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
                                                                                                          const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
                                                                                                          const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
+    Parameters *parameters = (Parameters *)ctx;
     auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
-    const int EULER_FIELD = 1;  // densityVF is [0] field
+    const int EULER_FIELD = 1;
+    const int VF_FIELD = 0;
     // Compute the norm of cell face
     PetscReal norm[3];
     NormVector(dim, fg->normal, norm);
@@ -236,6 +248,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
                              twoPhaseEulerAdvection->eosLiquid,
                              dim,
                              fieldL + uOff[EULER_FIELD],
+                             fieldL[uOff[VF_FIELD]],
                              norm,
                              &densityL,
                              &densityG_L,
@@ -270,6 +283,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
                              twoPhaseEulerAdvection->eosLiquid,
                              dim,
                              fieldR + uOff[EULER_FIELD],
+                             fieldR[uOff[VF_FIELD]],
                              norm,
                              &densityR,
                              &densityG_R,
@@ -316,7 +330,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal alphaDif = PetscAbs(alphaL - alphaR);
     if (directionG == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
                                                //        flux[RHO] = massFlux * areaMag;
-        flux[0 + EULER_FIELD] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin));
+        flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin));
         PetscReal velMagL = MagVector(dim, velocityL);
         PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
         PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
@@ -332,14 +346,18 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
             HGL_L = 0.0;
         }
         //        flux[RHOE] = HL * massFlux * areaMag;
-        flux[1 + EULER_FIELD] = (HG_L * massFluxGG * areaMag * alphaMin) + (HGL_L * massFluxGL * areaMag * alphaDif) + (HL_L * massFluxLL * areaMag * (1 - alphaMin));
+        flux[FlowProcess::RHOE] = (HG_L * massFluxGG * areaMag * alphaMin) + (HGL_L * massFluxGL * areaMag * alphaDif) + (HL_L * massFluxLL * areaMag * (1 - alphaMin));
+        // gravity
+        flux[FlowProcess::RHOE] -= densityL*(parameters->g[0]*velocityL[0]+parameters->g[1]*velocityL[1]+parameters->g[2]*velocityL[2]);
         for (PetscInt n = 0; n < dim; n++) {
             //            flux[RHOU + n] = velocityL[n] * massFlux * areaMag + p12 * fg->normal[n];
-            flux[2 + EULER_FIELD + n] = velocityL[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin)) + p12 * fg->normal[n];
+            flux[FlowProcess::RHOU + n] = velocityL[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin)) + p12 * fg->normal[n];
+            // gravity
+            flux[FlowProcess::RHOU + n] -= densityL*parameters->g[n];
         }
     } else if (directionG == fluxCalculator::RIGHT) {
         //        flux[RHO] = massFlux * areaMag;
-        flux[0 + EULER_FIELD] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin));
+        flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin));
         PetscReal velMagR = MagVector(dim, velocityR);
         PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
         PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
@@ -355,14 +373,18 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
             HGL_R = 0.0;
         }
         //        flux[RHOE] = HR * massFlux * areaMag;
-        flux[1 + EULER_FIELD] = (HG_R * massFluxGG * areaMag * alphaMin) + (HGL_R * massFluxGL * areaMag * alphaDif) + (HL_R * massFluxLL * areaMag * (1 - alphaMin));
+        flux[FlowProcess::RHOE] = (HG_R * massFluxGG * areaMag * alphaMin) + (HGL_R * massFluxGL * areaMag * alphaDif) + (HL_R * massFluxLL * areaMag * (1 - alphaMin));
+        // gravity
+        flux[FlowProcess::RHOE] -= densityR*(parameters->g[0]*velocityR[0]+parameters->g[1]*velocityR[1]+parameters->g[2]*velocityR[2]);
         for (PetscInt n = 0; n < dim; n++) {
             //            flux[RHOU + n] = velocityR[n] * massFlux * areaMag + p12 * fg->normal[n];
-            flux[2 + EULER_FIELD + n] = velocityR[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin)) + p12 * fg->normal[n];
+            flux[FlowProcess::RHOU + n] = velocityR[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin)) + p12 * fg->normal[n];
+            // gravity
+            flux[FlowProcess::RHOU + n] -= densityR*parameters->g[n];
         }
     } else {
         //        flux[RHO] = massFlux * areaMag;
-        flux[0 + EULER_FIELD] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin));
+        flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin));
 
         PetscReal velMagL = MagVector(dim, velocityL);
         //        PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
@@ -396,15 +418,31 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
             HGL_R = 0.0;
         }
         //        flux[RHOE] = 0.5 * (HL + HR) * massFlux * areaMag;
-        flux[1 + EULER_FIELD] =
+        flux[FlowProcess::RHOE] =
             (0.5 * (HG_L + HG_R) * massFluxGG * areaMag * alphaMin) + (0.5 * (HGL_L + HGL_R) * massFluxGL * areaMag * alphaDif) + (0.5 * (HL_L + HL_R) * massFluxLL * areaMag * (1 - alphaMin));
-
+        // gravity term, rho*dot(g,vel)
+        PetscReal fdotL = densityL*(parameters->g[0]*velocityL[0]+parameters->g[1]*velocityL[1]+parameters->g[2]*velocityL[2]);
+        PetscReal fdotR = densityR*(parameters->g[0]*velocityR[0]+parameters->g[1]*velocityR[1]+parameters->g[2]*velocityR[2]);
+        flux[FlowProcess::RHOE] -= 0.5*(fdotL+fdotR);
         for (PetscInt n = 0; n < dim; n++) {
             //            flux[RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * massFlux * areaMag + p12 * fg->normal[n];
-            flux[2 + EULER_FIELD + n] = 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin)) + p12 * fg->normal[n];
+            flux[FlowProcess::RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin)) + p12 * fg->normal[n];
+            // gravity
+            flux[FlowProcess::RHOU + n] -= 0.5*(densityL+densityR)*parameters->g[n];
         }
     }
-
+    if(PetscAbs(flux[0])>1E-8){
+        puts("too much error 0?!!!");
+    }
+    if(PetscAbs(flux[1])>1E-8){
+        puts("too much error 1?!!!");
+    }
+    if(PetscAbs(flux[2])>1E-8){
+        puts("too much error 2?!!!");
+    }
+    if(PetscAbs(flux[3])>1E-8){
+        puts("too much error 3?!!!");
+    }
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeVFFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
@@ -414,9 +452,8 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
                                                                                                       PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
     auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
-    //    const int VF_FIELD = 0;
     const int EULER_FIELD = 1;
-
+    const int VF_FIELD = 0;
     // Compute the norm
     PetscReal norm[3];
     NormVector(dim, fg->normal, norm);
@@ -440,7 +477,8 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     DecodeTwoPhaseEulerState(twoPhaseEulerAdvection->eosGas,
                              twoPhaseEulerAdvection->eosLiquid,
                              dim,
-                             fieldR + uOff[EULER_FIELD],
+                             fieldL + uOff[EULER_FIELD],
+                             fieldL[uOff[VF_FIELD]],
                              norm,
                              &densityL,
                              &densityG_L,
@@ -475,6 +513,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
                              twoPhaseEulerAdvection->eosLiquid,
                              dim,
                              fieldR + uOff[EULER_FIELD],
+                             fieldR[uOff[VF_FIELD]],
                              norm,
                              &densityR,
                              &densityG_R,
@@ -508,4 +547,4 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
 #include "parser/registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eosGas", ""), ARG(ablate::eos::EOS, "eosLiquid", ""),
          ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasGas", ""), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasLiquid", ""),
-         ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidLiquid", ""));
+         ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidLiquid", ""), ARG(ablate::parameters::Parameters, "parameters", "parameters for two phase advection"));

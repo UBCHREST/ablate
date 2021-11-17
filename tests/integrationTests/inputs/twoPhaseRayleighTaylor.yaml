@@ -1,0 +1,104 @@
+---
+# Rayleigh Taylor example from Jibben et al. 2019
+environment:
+  title: rayleighTaylor
+  tagDirectory: false
+arguments:
+  dm_plex_separate_marker: ""
+  petsclimiter_type: none
+  euler_petscfv_type: leastsquares
+  temperature_petscfv_type: leastsquares
+  velocity_petscfv_type: leastsquares
+timestepper:
+  name: theMainTimeStepper
+  io:
+    interval: 0
+  arguments:
+    ts_type: rk
+    ts_adapt_type: none
+    ts_max_time: 5.0
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 200, 100 ]
+    lower: [ 0, 0]
+    upper: [2, 1]
+    boundary: ["NONE", "NONE"]
+    simplex: false
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+      - !ablate::domain::modifiers::GhostBoundaryCells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+
+      - name: densityVF
+        type: FVM
+
+solver: !ablate::finiteVolume::FiniteVolumeSolver
+  id: compressibleFlowField
+
+  processes:
+    - !ablate::finiteVolume::processes::TwoPhaseEulerAdvection
+      parameters:
+        g: [0, -0.1, 0]
+      eosGas: !ablate::eos::PerfectGas
+        parameters:
+          gamma: 1.4
+          Rgas : 287.0
+      eosLiquid: !ablate::eos::PerfectGas
+        parameters:
+          gamma: 1.4
+          Rgas : 287.0
+
+      fluxCalculatorGasGas: !ablate::finiteVolume::fluxCalculator::AusmpUp
+        mInf: .3
+      fluxCalculatorGasLiquid: !ablate::finiteVolume::fluxCalculator::Riemann2gas
+        eosL: *eos
+        eosR: *eos
+      fluxCalculatorLiquidLiquid: !ablate::finiteVolume::fluxCalculator::AusmpUp
+        mInf: .3
+
+  initialization:
+    - &eulerField
+      fieldName: "euler" # y = 0.5 + A0*cos(kx)
+      field: >-
+        y < 0.5 + 0.04*cos(15.707963267948966*x) ? 1.0 : 2.0,
+        215250.0,
+        0.0,
+        0.0
+    - &vfField
+      fieldName: "densityVF"
+      field: >-
+        y < 0.5 + 0.04*cos(15.707963267948966*x) ? 1.0 : 0.0
+
+  exactSolution:
+    - fieldName: "euler" # rho, rho_e = rho*(CvT + u^2/2), rho_u, rho_v; y = 0.5 + A0*cos(kx)*cosh(nt)
+      field: >-
+        y < 0.5 + 0.04*cos(15.707963267948966*x)*cosh(0.7236012545582676*t) ? 1.0 : 2.0,
+        215250.0,
+        0.0,
+        0.0
+    -fieldName: "densityVF"
+      field: >-
+        y < 0.5 + 0.04*cos(15.707963267948966*x)*cosh(0.7236012545582676*t) ? 1.0 : 0.0
+
+  boundaryConditions: # should be v=0,0, T=300K, p/rho/vf=zero gradient
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "walls"
+      labelIds: [1,2,3,4]
+      boundaryValue: *eulerField
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "vf walls"
+      labelIds: [1,2,3,4]
+      boundaryValue: *vfField
+
+  monitors:
+    - !ablate::monitors::TimeStepMonitor
+    - !ablate::monitors::SolutionErrorMonitor
+      scope: component
+      type: l2_norm
