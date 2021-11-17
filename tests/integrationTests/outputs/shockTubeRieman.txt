@@ -1,4 +1,3 @@
-DOF: 2
 Timestep: 0000 time = 0        dt = (.*)<expects> <5e-06
 Timestep: 0001 time = 1e-06    dt = (.*)<expects> <0.03
 Timestep: 0002 time = 0.02114  dt = (.*)<expects> <0.03
@@ -12,6 +11,15 @@ Timestep: 0009 time = 0.1266   dt = (.*)<expects> <0.02
 Timestep: 0010 time = 0.14     dt = (.*)<expects> <0.02
 Timestep: 0011 time = 0.1532   dt = (.*)<expects> <0.02
 ResultFiles:
-SOD Problem.hdf5
-SOD Problem.xmf
-restart.rst
+SOD Problem.0.curve
+SOD Problem.1.curve
+SOD Problem.10.curve
+SOD Problem.11.curve
+SOD Problem.2.curve
+SOD Problem.3.curve
+SOD Problem.4.curve
+SOD Problem.5.curve
+SOD Problem.6.curve
+SOD Problem.7.curve
+SOD Problem.8.curve
+SOD Problem.9.curve

@@ -68,16 +68,7 @@ void ablate::solver::Solver::Save(PetscViewer viewer, PetscInt steps, PetscReal 
         DMGetOutputSequenceNumber(subDm, &dmSequence, &dmTime) >> checkError;
         DMSetOutputSequenceNumber(auxDM, dmSequence, dmTime) >> checkError;
 
-        Vec auxGlobalField;
-        DMGetGlobalVector(auxDM, &auxGlobalField) >> checkError;
-
-        // copy over the name of the auxFieldVector
-        const char *tempName;
-        PetscObjectGetName((PetscObject)subAuxVector, &tempName) >> checkError;
-        PetscObjectSetName((PetscObject)auxGlobalField, tempName) >> checkError;
-        DMLocalToGlobal(auxDM, subAuxVector, INSERT_VALUES, auxGlobalField) >> checkError;
-        VecView(auxGlobalField, viewer) >> checkError;
-        DMRestoreGlobalVector(auxDM, &auxGlobalField) >> checkError;
+        VecView(subAuxVector, viewer) >> checkError;
     }
 }
 
