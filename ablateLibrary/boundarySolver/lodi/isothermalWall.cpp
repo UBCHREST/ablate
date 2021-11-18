@@ -9,11 +9,11 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsoth
                                                                                                   const PetscScalar *stencilWeights, const PetscInt *sOff, PetscScalar *source, void *ctx) {
     PetscFunctionBeginUser;
 
-    auto isothermalWall = (IsothermalWall*)ctx;
+//    auto isothermalWall = (IsothermalWall*)ctx;
 
     PetscFunctionReturn(0);
 
 }
 void ablate::boundarySolver::lodi::IsothermalWall::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
-    bSolver.RegisterFunction(IsothermalWallIsothermalWallFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {})
+    bSolver.RegisterFunction(IsothermalWallIsothermalWallFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
 }

@@ -11,7 +11,7 @@ class LODIBoundary : public BoundaryProcess{
    public:
     explicit LODIBoundary(std::shared_ptr<eos::EOS> eos);
 
-    void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
+    void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override = 0;
 
 
 
