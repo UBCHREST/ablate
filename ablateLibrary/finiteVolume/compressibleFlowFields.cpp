@@ -25,6 +25,7 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteVol
     return flowFields;
 }
 
-#include "parser/registrar.hpp"
-REGISTER(ablate::domain::FieldDescriptor, ablate::finiteVolume::CompressibleFlowFields, "FVM fields need for compressible flow", ARG(eos::EOS, "eos", "the equation of state to be used for the flow"),
-         OPT(std::vector<std::string>, "extraVariables", "Any extra variables to transport"), OPT(domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"));
+#include "registrar.hpp"
+REGISTER(ablate::domain::FieldDescriptor, ablate::finiteVolume::CompressibleFlowFields, "FVM fields need for compressible flow",
+         ARG(ablate::eos::EOS, "eos", "the equation of state to be used for the flow"), OPT(std::vector<std::string>, "extraVariables", "Any extra variables to transport"),
+         OPT(ablate::domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"));

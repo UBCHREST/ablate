@@ -40,9 +40,9 @@ DM ablate::domain::BoxMesh::CreateBoxDM(std::string name, std::vector<int> faces
     return dm;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::domain::Domain, ablate::domain::BoxMesh, "simple uniform box mesh", ARG(std::string, "name", "the name of the domain/mesh object"),
-         OPT(std::vector<domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"), OPT(std::vector<domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"),
-         ARG(std::vector<int>, "faces", "the number of faces in each direction"), ARG(std::vector<double>, "lower", "the lower bound of the mesh"),
-         ARG(std::vector<double>, "upper", "the upper bound of the mesh"), OPT(std::vector<std::string>, "boundary", "custom boundary types (NONE, GHOSTED, MIRROR, PERIODIC)"),
-         OPT(bool, "simplex", "sets if the elements/cells are simplex"));
+         OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
+         OPT(std::vector<ablate::domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"), ARG(std::vector<int>, "faces", "the number of faces in each direction"),
+         ARG(std::vector<double>, "lower", "the lower bound of the mesh"), ARG(std::vector<double>, "upper", "the upper bound of the mesh"),
+         OPT(std::vector<std::string>, "boundary", "custom boundary types (NONE, GHOSTED, MIRROR, PERIODIC)"), OPT(bool, "simplex", "sets if the elements/cells are simplex"));

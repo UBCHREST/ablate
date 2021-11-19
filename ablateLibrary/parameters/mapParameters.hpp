@@ -18,6 +18,8 @@ class MapParameters : public Parameters {
     std::optional<std::string> GetString(std::string paramName) const override;
     std::unordered_set<std::string> GetKeys() const override;
 
+    const std::map<std::string, std::string>& GetMap() const { return values; }
+
     static std::shared_ptr<MapParameters> Create(std::initializer_list<std::pair<std::string, std::string>>);
 };
 }  // namespace ablate::parameters

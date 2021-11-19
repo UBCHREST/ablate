@@ -87,6 +87,6 @@ PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::P5Minus(PetscReal m, do
     }
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::AusmpUp, "A sequel to AUSM, Part II: AUSM+-up for all speeds, Meng-Sing Liou, Pages 137-170, 2006",
          ARG(double, "mInf", "the reference mach number"));

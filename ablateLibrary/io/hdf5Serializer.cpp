@@ -141,6 +141,6 @@ void ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Save(PetscInt sn, PetscRe
     }
 }
 
-#include "parser/registrar.hpp"
-REGISTERDEFAULT(ablate::io::Serializer, ablate::io::Hdf5Serializer, "default serializer for IO",
-                ARG(ablate::io::interval::Interval, "interval", "The interval object used to determine write interval."));
+#include "registrar.hpp"
+REGISTER_DEFAULT(ablate::io::Serializer, ablate::io::Hdf5Serializer, "default serializer for IO",
+                 ARG(ablate::io::interval::Interval, "interval", "The interval object used to determine write interval."));

@@ -106,6 +106,6 @@ void ablate::monitors::CurveMonitor::WriteToCurveFile(std::ostream& curveFile, P
     VecRestoreArrayRead(valuesVec, &valuesArray) >> checkError;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::CurveMonitor, "Write 1D results to a curve file", OPT(ablate::io::interval::Interval, "interval", "output interval"),
          OPT(std::string, "prefix", "the file prefix"));

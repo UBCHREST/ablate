@@ -256,7 +256,7 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm,
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
-REGISTERDEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
-                ARG(ablate::domain::Domain, "domain", "the mesh used for the simulation"), ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
-                OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"));
+#include "registrar.hpp"
+REGISTER_DEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
+                 ARG(ablate::domain::Domain, "domain", "the mesh used for the simulation"), ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
+                 OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"));

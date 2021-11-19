@@ -103,15 +103,15 @@ ablate::domain::FieldDescription::~FieldDescription() {
     }
 }
 
-#include "parser/registrar.hpp"
-REGISTERDEFAULT(ablate::domain::FieldDescription, ablate::domain::FieldDescription, "A single custom field description", ARG(std::string, "name", "the name of the field"),
-                OPT(std::string, "prefix", "optional prefix (defaults to name)"), OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
-                OPT(EnumWrapper<ablate::domain::FieldLocation>, "location", "if it is a solution (SOL) or auxiliary (aux) field"),
-                ARG(EnumWrapper<ablate::domain::FieldType>, "type", "if it is a finite volume (FV) or finite element (FE) field"),
-                OPT(domain::Region, "region", "the region in which this field lives"), OPT(parameters::Parameters, "options", "field specific options"));
+#include "registrar.hpp"
+REGISTER_DEFAULT(ablate::domain::FieldDescription, ablate::domain::FieldDescription, "A single custom field description", ARG(std::string, "name", "the name of the field"),
+                 OPT(std::string, "prefix", "optional prefix (defaults to name)"), OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
+                 OPT(EnumWrapper<ablate::domain::FieldLocation>, "location", "if it is a solution (SOL) or auxiliary (aux) field"),
+                 ARG(EnumWrapper<ablate::domain::FieldType>, "type", "if it is a finite volume (FV) or finite element (FE) field"),
+                 OPT(ablate::domain::Region, "region", "the region in which this field lives"), OPT(ablate::parameters::Parameters, "options", "field specific options"));
 
-REGISTERDEFAULT(ablate::domain::FieldDescriptor, ablate::domain::FieldDescription, "A single custom field description", ARG(std::string, "name", "the name of the field"),
-                OPT(std::string, "prefix", "optional prefix (defaults to name)"), OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
-                OPT(EnumWrapper<ablate::domain::FieldLocation>, "location", "if it is a solution (SOL) or auxiliary (aux) field"),
-                ARG(EnumWrapper<ablate::domain::FieldType>, "type", "if it is a finite volume (FV) or finite element (FE) field"),
-                OPT(domain::Region, "region", "the region in which this field lives"), OPT(parameters::Parameters, "options", "field specific options"));
+REGISTER_DEFAULT(ablate::domain::FieldDescriptor, ablate::domain::FieldDescription, "A single custom field description", ARG(std::string, "name", "the name of the field"),
+                 OPT(std::string, "prefix", "optional prefix (defaults to name)"), OPT(std::vector<std::string>, "components", "the components in the field (defaults to 1)"),
+                 OPT(EnumWrapper<ablate::domain::FieldLocation>, "location", "if it is a solution (SOL) or auxiliary (aux) field"),
+                 ARG(EnumWrapper<ablate::domain::FieldType>, "type", "if it is a finite volume (FV) or finite element (FE) field"),
+                 OPT(ablate::domain::Region, "region", "the region in which this field lives"), OPT(ablate::parameters::Parameters, "options", "field specific options"));

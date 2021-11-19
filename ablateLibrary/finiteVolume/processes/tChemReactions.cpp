@@ -465,6 +465,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem v1 library", ARG(eos::EOS, "eos", "the tChem v1 eos"),
+#include "registrar.hpp"
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem v1 library", ARG(ablate::eos::EOS, "eos", "the tChem v1 eos"),
          OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"));

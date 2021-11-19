@@ -20,5 +20,5 @@ void ablate::domain::modifiers::SetFromOptions::Modify(DM &dm) {
     DMSetFromOptions(dm) >> checkError;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER_PASS_THROUGH(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::SetFromOptions, "Sets the specified options on the dm.", ablate::parameters::Parameters);

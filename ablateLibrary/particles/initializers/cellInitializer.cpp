@@ -1,5 +1,5 @@
 #include "cellInitializer.hpp"
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 #include "utilities/petscError.hpp"
 
 ablate::particles::initializers::CellInitializer::CellInitializer(int particlesPerCellPerDim) : particlesPerCell(particlesPerCellPerDim) {}

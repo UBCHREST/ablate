@@ -256,6 +256,6 @@ ablate::finiteVolume::fluxCalculator::Riemann2Gas::Riemann2Gas(std::shared_ptr<e
     gammaVec[1] = perfectGasEosR->GetSpecificHeatRatio();
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Riemann2Gas, "Exact Riemann Solution for 2 Perfect Gasses",
-         ARG(eos::EOS, "eosL", "only valid for perfect gas"), ARG(eos::EOS, "eosR", "only valid for perfect gas"));
+         ARG(ablate::eos::EOS, "eosL", "only valid for perfect gas"), ARG(ablate::eos::EOS, "eosR", "only valid for perfect gas"));

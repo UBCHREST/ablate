@@ -61,6 +61,6 @@ PetscErrorCode ablate::monitors::ParticleAverage::OutputParticleAverage(TS ts, P
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::ParticleAverage, "Outputs the average particle location in the domain", OPT(int, "interval", "output interval"),
          OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

@@ -22,5 +22,5 @@ bool ablate::io::interval::WallTimeInterval::Check(MPI_Comm comm, PetscInt steps
     return checkPoint;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER_PASS_THROUGH(ablate::io::interval::Interval, ablate::io::interval::WallTimeInterval, "Outputs approximately every n wall time seconds", int);

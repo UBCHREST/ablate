@@ -9,13 +9,29 @@
 namespace ablate::utilities {
 class FileUtility {
    private:
-    FileUtility() = delete;
+    const MPI_Comm comm;
+    const std::vector<std::filesystem::path> searchPaths;
+    const std::filesystem::path remoteRelocatePath;
 
     // include list of prefixes for urls
     inline static std::vector<std::string> urlPrefixes = {"https://", "http://"};
 
    public:
-    static std::filesystem::path LocateFile(std::string name, MPI_Comm com = MPI_COMM_SELF, std::vector<std::filesystem::path> searchPaths = {}, std::filesystem::path remoteRelocatePath = {});
+    explicit FileUtility(MPI_Comm comm = MPI_COMM_SELF, std::vector<std::filesystem::path> searchPaths = {}, std::filesystem::path remoteRelocatePath = {});
+
+    std::filesystem::path Locate(std::string name);
+
+    std::function<std::filesystem::path(std::string)> GetLocateFileFunction();
+
+    /**
+     * public static call to be used without a class instance
+     * @param name
+     * @param com
+     * @param searchPaths
+     * @param remoteRelocatePath
+     * @return
+     */
+    static std::filesystem::path LocateFile(std::string name, MPI_Comm comm = MPI_COMM_SELF, std::vector<std::filesystem::path> searchPaths = {}, std::filesystem::path remoteRelocatePath = {});
 };
 };      // namespace ablate::utilities
 #endif  // ABLATELIBRARY_FILEUTILITY_HPP

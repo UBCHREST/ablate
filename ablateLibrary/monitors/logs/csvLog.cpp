@@ -49,6 +49,6 @@ void ablate::monitors::logs::CsvLog::Print(const char *name, std::size_t num, co
     }
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::logs::Log, ablate::monitors::logs::CsvLog, "Writes the result of the log to a csv file.  Only prints data to the log.",
          ARG(std::string, "name", "the name of the log file"));

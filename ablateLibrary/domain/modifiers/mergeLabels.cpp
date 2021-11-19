@@ -35,6 +35,6 @@ void ablate::domain::modifiers::MergeLabels::Modify(DM& dm) {
     DMPlexLabelComplete(dm, mergedLabel) >> checkError;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::MergeLabels, "Creates a new label for all faces on the outside of the boundary",
          ARG(ablate::domain::Region, "mergedRegion", "the merged region to create"), ARG(std::vector<ablate::domain::Region>, "regions", "the regions to include in the new merged region"));

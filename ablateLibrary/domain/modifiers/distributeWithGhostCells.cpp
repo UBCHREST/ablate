@@ -14,6 +14,6 @@ void ablate::domain::modifiers::DistributeWithGhostCells::Modify(DM &dm) {
     }
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::DistributeWithGhostCells, "Distribute DMPlex with ghost cells",
          OPT(int, "ghostCellDepth", "the number of ghost cells to share on the boundary.  Default is 1."));

@@ -90,8 +90,7 @@ void ablate::particles::initializers::BoxInitializer::Initialize(ablate::domain:
     DMSwarmMigrate(particleDm, PETSC_TRUE) >> checkError;
 }
 
-#include "parser/registrar.hpp"
-
+#include "registrar.hpp"
 REGISTER(ablate::particles::initializers::Initializer, ablate::particles::initializers::BoxInitializer, "simple box initializer that puts particles in a defined box",
          ARG(std::vector<double>, "lower", "the lower bound of the box"), ARG(std::vector<double>, "upper", "the upper bound of the box"),
          ARG(int, "particlesPerDim", "the particles per box dimension"));
