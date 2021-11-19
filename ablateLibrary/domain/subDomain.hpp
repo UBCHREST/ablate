@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_SUBDOMAIN_HPP
 #define ABLATELIBRARY_SUBDOMAIN_HPP
 #include <petsc.h>
+#include <algorithm>
 #include <map>
 #include <mathFunctions/fieldFunction.hpp>
 #include <memory>
