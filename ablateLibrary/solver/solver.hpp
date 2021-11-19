@@ -3,6 +3,7 @@
 
 #include <domain/region.hpp>
 #include <domain/subDomain.hpp>
+#include <functional>
 #include <parameters/parameters.hpp>
 #include <string>
 #include <vector>
