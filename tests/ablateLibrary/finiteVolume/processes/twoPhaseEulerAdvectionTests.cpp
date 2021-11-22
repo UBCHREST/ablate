@@ -16,6 +16,7 @@ struct TwoPhaseEulerAdvectionTestDecodeStateParameters {
     std::shared_ptr<eos::EOS> eosLiquid;
     PetscInt dim;
     std::vector<PetscReal> conservedValuesIn;
+    PetscReal densityVFIn;
     std::vector<PetscReal> normalIn;
     PetscReal expectedDensity;
     PetscReal expectedDensityG;
@@ -64,6 +65,7 @@ TEST_P(TwoPhaseEulerAdvectionTestDecodeStateFixture, ShouldDecodeState) {
                                                                               params.eosLiquid,
                                                                               params.dim,
                                                                               &params.conservedValuesIn[0],
+                                                                              params.densityVFIn,
                                                                               &params.normalIn[0],
                                                                               &density,
                                                                               &densityG,
@@ -106,7 +108,8 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                                  .eosGas = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
                                  .eosLiquid = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
                                  .dim = 3,
-                                 .conservedValuesIn = {3.9-1E-4, 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .conservedValuesIn = {3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .densityVFIn = 3.9-1E-4,
                                  .normalIn = {0.5, 0.5, 0.7071},                                 // x, y, z
                                  .expectedDensity = 3.9,
                                  .expectedDensityG = 3.899934912891986,
@@ -127,7 +130,8 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                                  .eosGas = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
                                  .eosLiquid = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
                                  .dim = 3,
-                                 .conservedValuesIn = {0.0001, 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .conservedValuesIn = { 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .densityVFIn = 0.0001,
                                  .normalIn = {0.5, 0.5, 0.7071},                                 // x, y, z
                                  .expectedDensity = 3.9,
                                  .expectedDensityG = 1.3616678745644597,
@@ -148,7 +152,8 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                              .eosGas = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
                              .eosLiquid = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
                              .dim = 3,
-                             .conservedValuesIn = {3.9-1E-7, 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                             .conservedValuesIn = { 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                             .densityVFIn = 3.9-1E-7,
                              .normalIn = {0.5, 0.5, 0.7071},                                 // x, y, z
                              .expectedDensity = 3.9,
                              .expectedDensityG = 3.899934912891986,
@@ -169,7 +174,8 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                              .eosGas = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
                              .eosLiquid = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
                              .dim = 3,
-                             .conservedValuesIn = {0.0000001, 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                             .conservedValuesIn = { 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                             .densityVFIn = 0.0000001,
                              .normalIn = {0.5, 0.5, 0.7071},                                 // x, y, z
                              .expectedDensity = 3.9,
                              .expectedDensityG = 1.3616678745644597,
@@ -190,7 +196,8 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                                  .eosGas = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
                                  .eosLiquid = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "3.2"}, {"Rgas", "100.2"}})),
                                  .dim = 3,
-                                 .conservedValuesIn = {0.8, 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .conservedValuesIn = { 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .densityVFIn = 0.8,
                                  .normalIn = {0.5, 0.5, 0.7071},                                 // x, y, z
                                  .expectedDensity = 3.9,
                                  .expectedDensityG = 1.88229965,
@@ -212,7 +219,8 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                                  .eosLiquid = std::make_shared<eos::StiffenedGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{
                                      {"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}})),
                                  .dim = 3,
-                                 .conservedValuesIn = {0.8, 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .conservedValuesIn = { 3.9, 936986.7, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .densityVFIn = 0.8,
                                  .normalIn = {0.5, 0.5, 0.7071},                                 // x, y, z
                                  .expectedDensity = 3.9,
                                  .expectedDensityG = 0.8397454729123517,
@@ -235,7 +243,8 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                                  .eosLiquid = std::make_shared<eos::StiffenedGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{
                                      {"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}})),
                                  .dim = 3,
-                                 .conservedValuesIn = {0.8, 3.9, 9369867.0, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .conservedValuesIn = { 3.9, 9369867.0, 39.0, -78.0, 117.0},  // RHOALPHA, RHO, RHOE, RHOU, RHOV, RHOW
+                                 .densityVFIn = 0.8,
                                  .normalIn = {0.5, 0.5, 0.7071},                                  // x, y, z
                                  .expectedDensity = 3.9,
                                  .expectedDensityG = 3.525420883761893,
