@@ -47,6 +47,6 @@ PetscErrorCode ablate::monitors::FieldErrorMonitor::MonitorError(TS ts, PetscInt
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::FieldErrorMonitor, "Computes and reports the error every time step",
          OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

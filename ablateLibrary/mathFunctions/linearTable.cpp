@@ -138,7 +138,7 @@ PetscErrorCode ablate::mathFunctions::LinearTable::LinearInterpolatorPetscFuncti
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::LinearTable,
          "A table that is built from a spreadsheet that allows linear interpolation of variables based on monotonically increasing independent variables",
          ARG(std::filesystem::path, "file", "a file with csv data and header"), ARG(std::string, "independent", "the name of the independent column name as defined in the header"),

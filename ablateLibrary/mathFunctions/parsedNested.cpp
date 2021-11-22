@@ -156,7 +156,7 @@ PetscErrorCode ablate::mathFunctions::ParsedNested::ParsedPetscNested(PetscInt d
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedNested,
          " computes string function with variables x, y, z, and t where additional variables can be specified using other functions",
          ARG(std::string, "formula", "see ParsedFunction for details on the string formatting."),

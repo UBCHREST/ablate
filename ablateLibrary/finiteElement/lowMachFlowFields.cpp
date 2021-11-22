@@ -22,6 +22,7 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> ablate::finiteEle
     return flowFields;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::domain::FieldDescriptor, ablate::finiteElement::LowMachFlowFields, "FE fields need for incompressible/low-Mach flow",
-         OPT(domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"), OPT(bool, "includeSourceTerms", "include aux fields for source terms (defaults to false)"));
+         OPT(ablate::domain::Region, "region", "the region for the compressible flow (defaults to entire domain)"),
+         OPT(bool, "includeSourceTerms", "include aux fields for source terms (defaults to false)"));

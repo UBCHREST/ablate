@@ -1,17 +1,11 @@
 # Setup any ablateLibrary specific dependencies
-### YAML CPP ###
-# turn off yaml-cpp options
-set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
-set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "" FORCE)
-set(YAML_CPP_INSTALL OFF CACHE BOOL "" FORCE)
-
+# Get the CPP dependency
 FetchContent_Declare(
-        yaml-cpp
-        GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-        GIT_TAG yaml-cpp-0.6.3
+        cppParser
+        GIT_REPOSITORY https://github.com/UBCHREST/CppParser.git
+        GIT_TAG v0.1.2
 )
-FetchContent_MakeAvailable(yaml-cpp)
+FetchContent_MakeAvailable(cppParser)
 
 ### MuParser ###
 # install muparser for reading text equations
@@ -79,7 +73,6 @@ add_subdirectory(utilities)
 add_subdirectory(domain)
 add_subdirectory(parameters)
 add_subdirectory(solver)
-add_subdirectory(parser)
 add_subdirectory(mathFunctions)
 add_subdirectory(particles)
 add_subdirectory(monitors)
@@ -88,7 +81,7 @@ add_subdirectory(environment)
 add_subdirectory(io)
 
 # Add link to required libraries to the ablate library
-target_link_libraries(ablateLibrary PUBLIC ablateCore yaml-cpp muparser petscXdmfGeneratorLibrary TChem::TChem)
+target_link_libraries(ablateLibrary PUBLIC ablateCore cppParserLibrary muparser petscXdmfGeneratorLibrary TChem::TChem)
 
 # Add required warnings for the ablate library
 ablate_default_target_compile_options_cxx(ablateLibrary)

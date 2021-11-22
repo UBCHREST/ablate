@@ -359,6 +359,6 @@ const char *ablate::eos::TChem::periodicTable =
     "  2.01410    5.45E-4  \n"
     "";
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::TChem, "TChem ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format)"),
          ARG(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format)"));

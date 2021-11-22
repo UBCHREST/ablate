@@ -6,6 +6,6 @@ ablate::finiteVolume::fieldFunctions::Euler::Euler(std::shared_ptr<ablate::finit
           "euler", std::make_shared<ablate::mathFunctions::FunctionPointer>(ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeEulerFromState, flowStateIn.get())),
       flowState(flowStateIn) {}
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::mathFunctions::FieldFunction, ablate::finiteVolume::fieldFunctions::Euler, "initializes the euler conserved field variables based upon a CompressibleFlowState",
          ARG(ablate::finiteVolume::fieldFunctions::CompressibleFlowState, "state", "The CompressibleFlowState used to initialize"));

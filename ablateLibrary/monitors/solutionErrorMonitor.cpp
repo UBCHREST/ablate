@@ -210,7 +210,7 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::S
     return is;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::SolutionErrorMonitor, "Computes and reports the error every time step",
          ENUM(ablate::monitors::SolutionErrorMonitor::Scope, "scope", "how the error should be calculated ('vector', 'component')"),
          ENUM(ablate::monitors::SolutionErrorMonitor::Norm, "type", "norm type ('l2', 'linf', 'l2_norm')"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

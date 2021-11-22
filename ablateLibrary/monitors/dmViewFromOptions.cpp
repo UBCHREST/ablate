@@ -102,7 +102,7 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::D
     return is;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::DmViewFromOptions, "replicates the DMViewFromOptions function in PETSC",
          ENUM(ablate::monitors::DmViewFromOptions::Scope, "scope", "determines if DMViewFromOptions is called initially (initial) or every time step (monitor)"),
          OPT(std::string, "options", "if provided these options are used for the DMView call, otherwise global options is used"),

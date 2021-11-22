@@ -194,7 +194,7 @@ PetscErrorCode ablate::monitors::ExtractLineMonitor::OutputCurve(TS ts, PetscInt
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::ExtractLineMonitor, "Outputs the results along a line as a curve file (beta)", ARG(int, "interval", "output interval"),
          ARG(std::string, "prefix", "the file prefix"), ARG(std::vector<double>, "start", "the line start location"), ARG(std::vector<double>, "end", "the line end location"),
          ARG(std::vector<std::string>, "outputFields", "a list of fields to write to the curve"), ARG(std::vector<std::string>, "outputAuxFields", "a list of aux fields to write to the curve "));

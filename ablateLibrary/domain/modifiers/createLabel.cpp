@@ -36,7 +36,7 @@ void ablate::domain::modifiers::CreateLabel::Modify(DM &dm) {
     DMPlexLabelComplete(dm, newLabel) >> checkError;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::CreateLabel, "Creates a new label for all positive points in the function",
-         ARG(domain::Region, "region", "the region describing the new label"), ARG(mathFunctions::MathFunction, "function", "the function to evaluate"),
+         ARG(ablate::domain::Region, "region", "the region describing the new label"), ARG(ablate::mathFunctions::MathFunction, "function", "the function to evaluate"),
          OPT(int, "depth", "The depth in which to apply the label.  The default is zero or cell/element"));

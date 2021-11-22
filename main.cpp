@@ -6,8 +6,8 @@
 #include <utilities/mpiError.hpp>
 #include "builder.hpp"
 #include "environment/runEnvironment.hpp"
-#include "parser/listing.h"
-#include "parser/yamlParser.hpp"
+#include "listing.hpp"
+#include "yamlParser.hpp"
 #include "utilities/petscError.hpp"
 
 using namespace ablate;
@@ -47,7 +47,7 @@ int main(int argc, char** args) {
     PetscBool printParserOptions = PETSC_FALSE;
     PetscOptionsGetBool(NULL, NULL, "--help", &printParserOptions, NULL) >> checkError;
     if (printParserOptions) {
-        std::cout << parser::Listing::Get() << std::endl;
+        std::cout << cppParser::Listing::Get() << std::endl;
         return 0;
     }
 
@@ -70,8 +70,11 @@ int main(int argc, char** args) {
         // build options from the command line
         auto yamlOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>(replacementInputPrefix);
 
+        // create the class to search for files and to relocate files
+        ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {filePath.parent_path()}, environment::RunEnvironment::Get().GetOutputDirectory());
+
         // create the yaml parser
-        std::shared_ptr<parser::YamlParser> parser = std::make_shared<parser::YamlParser>(filePath, true, yamlOptions);
+        std::shared_ptr<cppParser::YamlParser> parser = std::make_shared<cppParser::YamlParser>(filePath, fileLocator.GetLocateFileFunction(), yamlOptions->GetMap());
 
         // setup the monitor
         auto setupEnvironmentParameters = parser->GetByName<ablate::parameters::Parameters>("environment");

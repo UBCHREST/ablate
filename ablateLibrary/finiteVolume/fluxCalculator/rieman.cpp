@@ -200,5 +200,5 @@ ablate::finiteVolume::fluxCalculator::Rieman::Rieman(std::shared_ptr<eos::EOS> e
     gamma = perfectGasEos->GetSpecificHeatRatio();
 }
 
-#include "parser/registrar.hpp"
-REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Rieman, "Exact Rieman Solution", ARG(eos::EOS, "eos", "only valid for perfect gas"));
+#include "registrar.hpp"
+REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Rieman, "Exact Rieman Solution", ARG(ablate::eos::EOS, "eos", "only valid for perfect gas"));

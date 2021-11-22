@@ -130,6 +130,6 @@ std::invalid_argument ablate::mathFunctions::ParsedFunction::ConvertToException(
     return std::invalid_argument("Unable to parser (" + exception.GetExpr() + "). " + exception.GetMsg());
 }
 
-#include "parser/registrar.hpp"
-REGISTERDEFAULT_PASS_THROUGH(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedFunction,
-                             "a string based function to be parsed with muparser. The (string) formula that may accept x, y, z, t as variables", std::string);
+#include "registrar.hpp"
+REGISTER_DEFAULT_PASS_THROUGH(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedFunction,
+                              "a string based function to be parsed with muparser. The (string) formula that may accept x, y, z, t as variables", std::string);

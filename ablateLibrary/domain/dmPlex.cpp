@@ -18,6 +18,7 @@ DM ablate::domain::DMPlex::CreateDM(const std::string& name) {
     return dm;
 }
 
-#include "parser/registrar.hpp"
-REGISTER(ablate::domain::Domain, ablate::domain::DMPlex, "DMPlex that can be set using PETSc options", OPT(std::vector<domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
-         ARG(std::string, "name", "the mesh dm name"), OPT(std::vector<domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"));
+#include "registrar.hpp"
+REGISTER(ablate::domain::Domain, ablate::domain::DMPlex, "DMPlex that can be set using PETSc options",
+         OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"), ARG(std::string, "name", "the mesh dm name"),
+         OPT(std::vector<ablate::domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"));

@@ -86,7 +86,7 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
     ISDestroy(&allFacesIS);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::TagLabelBoundary, "Creates a new label for all faces on the outside of the boundary",
          ARG(ablate::domain::Region, "region", "the region to tag the boundary"), ARG(ablate::domain::Region, "boundaryFaceRegion", "the new region for the boundary faces"),
          OPT(ablate::domain::Region, "boundaryCellRegion", "the new region for the boundary cells"));

@@ -153,7 +153,7 @@ PetscErrorCode ablate::mathFunctions::ParsedSeries::ParsedPetscSeries(PetscInt d
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedSeries,
          " computes a series result from a string function with variables x, y, z, t, and i where i index of summation. $$\\sum_{i = m}^n formula(x, y, z, t, n)$$",
          ARG(std::string, "formula", "see ParsedFunction for details on the string formatting."), ARG(int, "lowerBound", "the inclusive lower bound of summation (m)"),

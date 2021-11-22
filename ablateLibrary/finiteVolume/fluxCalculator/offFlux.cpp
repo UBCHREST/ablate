@@ -8,5 +8,5 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     return NA;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER_WITHOUT_ARGUMENTS(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::OffFlux, "Turns of convective flux through the face.");

@@ -42,6 +42,6 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     return dir;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER_WITHOUT_ARGUMENTS(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::Ausm,
                            "AUSM Flux Spliting: \"A New Flux Splitting Scheme\" Liou and Steffen, pg 26, Eqn (6), 1993");

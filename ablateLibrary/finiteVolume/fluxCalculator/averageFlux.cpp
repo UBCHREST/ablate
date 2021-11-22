@@ -10,6 +10,6 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     return NA;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER_WITHOUT_ARGUMENTS(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::AverageFlux,
                            "Takes the average of the left/right faces.  Only useful for debugging.");

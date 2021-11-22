@@ -1,17 +1,17 @@
 #include <memory>
 #include "gtest/gtest.h"
 #include "mathFunctions/parsedFunction.hpp"
-#include "parser/mockFactory.hpp"
-#include "parser/registrar.hpp"
+#include "mockFactory.hpp"
+#include "registrar.hpp"
 
 namespace ablateTesting::mathFunctions {
 
 TEST(ParsedFunctionTests, ShouldBeCreatedFromRegistar) {
     // arrange
-    std::shared_ptr<ablateTesting::parser::MockFactory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
+    std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "";  // should be default class
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
-    EXPECT_CALL(*mockFactory, Get(ablate::parser::ArgumentIdentifier<std::string>{})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("x+y+z+t"));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::string>{})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("x+y+z+t"));
 
     // act
     auto instance = ResolveAndCreate<ablate::mathFunctions::MathFunction>(mockFactory);

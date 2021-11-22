@@ -27,7 +27,7 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::DensityExtraVariables::Comp
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::mathFunctions::FieldFunction, ablate::finiteVolume::fieldFunctions::DensityExtraVariables,
          "initializes the densityEV conserved field variables based upon a CompressibleFlowState and specified EV",
          ARG(ablate::finiteVolume::fieldFunctions::CompressibleFlowState, "state", "The CompressibleFlowState used to initialize"),

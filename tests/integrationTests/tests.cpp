@@ -1,14 +1,15 @@
 static char help[] = "Integration Level Testing";
 
 #include <filesystem>
+#include <utilities/fileUtility.hpp>
 #include "MpiTestFixture.hpp"
 #include "MpiTestParamFixture.hpp"
 #include "builder.hpp"
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
-#include "parser/yamlParser.hpp"
 #include "petscsys.h"
+#include "yamlParser.hpp"
 
 /**
  * Note: the test name is assumed to be the relative path to the yaml file
@@ -40,7 +41,8 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // load a yaml file
-            std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath);
+            ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
+            std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction());
 
             // run with the parser
             ablate::Builder::Run(parser);
@@ -98,7 +100,8 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // load a yaml file
-            std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath);
+            ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
+            std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction());
 
             // run with the parser
             ablate::Builder::Run(parser);
@@ -115,10 +118,10 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
 
             // override some parameters
             auto overrideMap = GetParam().restartOverrides;
-            auto overrideParams = std::make_shared<ablate::parameters::MapParameters>(overrideMap);
 
             // load a yaml file
-            std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath, false, overrideParams);
+            ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
+            std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction(), overrideMap);
 
             // run with the parser
             ablate::Builder::Run(parser);

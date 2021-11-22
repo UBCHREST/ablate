@@ -8,6 +8,6 @@ void ablate::domain::modifiers::GhostBoundaryCells::Modify(DM &dm) {
     dm = gdm;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::GhostBoundaryCells, "Adds ghost cells to the boundary",
          OPT(std::string, "labelName", "The label specifying the boundary faces, or \"Face Sets\" if not specified"));

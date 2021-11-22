@@ -87,6 +87,6 @@ PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeSpecificHeatConstantPre
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::PerfectGas, "perfect gas eos", ARG(ablate::parameters::Parameters, "parameters", "parameters for the perfect gas eos"),
          OPT(std::vector<std::string>, "species", "species to track.  Note: species mass fractions do not change eos"));
