@@ -167,6 +167,7 @@ struct TChemStateParameters {
     PetscReal speedOfSound;
     PetscReal pressure;
     PetscReal specificHeatCp;
+    PetscReal specificHeatCv;
 };
 
 class TChemStateTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemStateParameters> {};
@@ -193,8 +194,8 @@ TEST_P(TChemStateTestFixture, ShouldDecodeState) {
     }
 
     // act
-    PetscErrorCode ierr =
-        eos->GetDecodeStateFunction()(velocityIn.size(), params.density, params.totalEnergy, &velocityIn[0], &densityYi[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
+    PetscErrorCode ierr = eos->GetDecodeStateFunction()(
+        (PetscInt)velocityIn.size(), params.density, params.totalEnergy, &velocityIn[0], &densityYi[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
@@ -217,8 +218,8 @@ TEST_P(TChemStateTestFixture, ShouldComputeTemperature) {
     PetscReal temperature;
 
     // act
-    PetscErrorCode ierr =
-        eos->GetComputeTemperatureFunction()(params.massFlux.size(), params.density, params.totalEnergy, &params.massFlux[0], &densityYi[0], &temperature, eos->GetComputeTemperatureContext());
+    PetscErrorCode ierr = eos->GetComputeTemperatureFunction()(
+        (PetscInt)params.massFlux.size(), params.density, params.totalEnergy, &params.massFlux[0], &densityYi[0], &temperature, eos->GetComputeTemperatureContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
@@ -290,6 +291,27 @@ TEST_P(TChemStateTestFixture, ShouldComputeSpecificHeatConstantPressure) {
     ASSERT_NEAR(params.specificHeatCp, cp, 1.0);
 }
 
+TEST_P(TChemStateTestFixture, ShouldComputeSpecificHeatConstantVolume) {
+    // arrange
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // get the mass fraction as an array
+    auto yi = GetMassFraction(eos->GetSpecies(), params.yi);
+
+    // Prepare outputs
+    PetscReal cv;
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeSpecificHeatConstantVolumeFunction()(params.temperature, params.density, &yi[0], &cv, eos->GetComputeSpecificHeatConstantVolumeContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(params.specificHeatCv, cv, 1.0);
+}
+
 INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                          testing::Values((TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
@@ -301,7 +323,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .internalEnergy = 99300.0,
                                                                 .speedOfSound = 464.33,
                                                                 .pressure = 197710.5,
-                                                                .specificHeatCp = 1399.301411},
+                                                                .specificHeatCp = 1399.301411,
+                                                                .specificHeatCv = 1069.297887},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
                                                                 .yi = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
@@ -312,7 +335,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .internalEnergy = 320000.0,
                                                                 .speedOfSound = 560.83,
                                                                 .pressure = 189973.54,
-                                                                .specificHeatCp = 1270.738292},
+                                                                .specificHeatCp = 1270.738292,
+                                                                .specificHeatCv = 959.3732847},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
                                                                 .yi = {{"N2", 1.0}},
@@ -323,7 +347,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .internalEnergy = 990.0,
                                                                 .speedOfSound = 416.04,
                                                                 .pressure = 409488.10,
-                                                                .specificHeatCp = 1048.36597},
+                                                                .specificHeatCp = 1048.36597,
+                                                                .specificHeatCv = 751.569283},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
                                                                 .yi = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
@@ -334,7 +359,8 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .internalEnergy = 99993.0,
                                                                 .speedOfSound = 1013.73,
                                                                 .pressure = 7411.11,
-                                                                .specificHeatCp = 6075.990042},
+                                                                .specificHeatCp = 6075.990042,
+                                                                .specificHeatCv = 4381.932446},
                                          (TChemStateParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                 .thermoFile = "inputs/eos/thermo30.dat",
                                                                 .yi = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
@@ -345,5 +371,6 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .internalEnergy = -35250.0,
                                                                 .speedOfSound = 623.9,
                                                                 .pressure = 281125963.5,
-                                                                .specificHeatCp = 2564.816937}),
+                                                                .specificHeatCp = 2564.816937,
+                                                                .specificHeatCv = 1852.31255}),
                          [](const testing::TestParamInfo<TChemStateParameters>& info) { return std::to_string(info.index); });

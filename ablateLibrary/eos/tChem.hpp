@@ -46,6 +46,7 @@ class TChem : public EOS {
     static PetscErrorCode TChemComputeDensityFunctionFromTemperaturePressure(PetscReal T, PetscReal pressure, const PetscReal yi[], PetscReal* density, void* ctx);
     static PetscErrorCode TChemComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
     static PetscErrorCode TChemComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
+    static PetscErrorCode TChemComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
 
     /**
      * The tempYiWorkingArray is expected to be filled with correct species yi.  The 0 location is set in this function.
@@ -90,8 +91,10 @@ class TChem : public EOS {
     void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return this; }
     ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return TChemComputeSensibleInternalEnergy; }
     void* GetComputeSensibleInternalEnergyContext() override { return this; }
-    ComputeSpecificHeatConstantPressureFunction GetComputeSpecificHeatConstantPressureFunction() override { return TChemComputeSpecificHeatConstantPressure; }
+    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() override { return TChemComputeSpecificHeatConstantPressure; }
     void* GetComputeSpecificHeatConstantPressureContext() override { return this; }
+    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantVolumeFunction() override { return TChemComputeSpecificHeatConstantVolume; }
+    void* GetComputeSpecificHeatConstantVolumeContext() override { return this; }
 
     static int ComputeEnthalpyOfFormation(int numSpec, double* tempYiWorkingArray, double& enthalpyOfFormation);
 

@@ -46,11 +46,11 @@ class MathUtilities {
      * @param dim
      * @param transformationMatrix
      */
-    static inline void Multiply(PetscReal dim,const PetscScalar A[3][3], const PetscReal* in,  PetscReal* out){
-        for (PetscInt i=0;i<dim;i++) {
+    static inline void Multiply(PetscReal dim, const PetscScalar A[3][3], const PetscReal* in, PetscReal* out) {
+        for (PetscInt i = 0; i < dim; i++) {
             out[i] = 0.0;
-            for (PetscInt j=0;j< dim;j++) {
-                out[i] += A[i][j]*in[j];
+            for (PetscInt j = 0; j < dim; j++) {
+                out[i] += A[i][j] * in[j];
             }
         }
     }
@@ -62,11 +62,11 @@ class MathUtilities {
      * @param dim
      * @param transformationMatrix
      */
-    static inline void MultiplyTranspose(PetscReal dim,const PetscScalar A[3][3], const PetscReal* in,  PetscReal* out){
-        for (PetscInt i=0;i<dim;i++) {
+    static inline void MultiplyTranspose(PetscReal dim, const PetscScalar A[3][3], const PetscReal* in, PetscReal* out) {
+        for (PetscInt i = 0; i < dim; i++) {
             out[i] = 0.0;
-            for (PetscInt j=0;j< dim;j++) {
-                out[i] += A[j][i]*in[j];
+            for (PetscInt j = 0; j < dim; j++) {
+                out[i] += A[j][i] * in[j];
             }
         }
     }
@@ -88,7 +88,6 @@ class MathUtilities {
      * @param transformationMatrix [row, col]
      */
     static PetscReal ComputeDeterminant(PetscInt dim, PetscScalar transformationMatrix[3][3]);
-
 
    private:
     MathUtilities() = delete;

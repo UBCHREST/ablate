@@ -286,19 +286,19 @@ INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasComputeSensibleIntern
                          [](const testing::TestParamInfo<StiffenedGasComputeSensibleInternalEnergyParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Stiffened Gas ComputeSpecificHeatConstantPressure
+/// Stiffened Gas ComputeSpecificHeatConstantPressure and ComputeSpecificHeatConstantVolume
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct StiffenedGasComputeSpecificHeatConstantPressureParameters {
+struct StiffenedGasComputeSpecificHeatParameters {
     std::map<std::string, std::string> options;
     PetscReal temperatureIn;
     PetscReal densityIn;
     PetscReal expectedCp;
+    PetscReal expectedCv;
 };
 
-class StiffenedGasComputeSpecificHeatConstantPressureTestFixture : public testingResources::PetscTestFixture,
-                                                                   public ::testing::WithParamInterface<StiffenedGasComputeSpecificHeatConstantPressureParameters> {};
+class StiffenedGasComputeSpecificHeatTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<StiffenedGasComputeSpecificHeatParameters> {};
 
-TEST_P(StiffenedGasComputeSpecificHeatConstantPressureTestFixture, ShouldComputeCorrectEnergy) {
+TEST_P(StiffenedGasComputeSpecificHeatTestFixture, ShouldComputeCorrectCpAndCv) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::StiffenedGas>(parameters);
@@ -307,22 +307,26 @@ TEST_P(StiffenedGasComputeSpecificHeatConstantPressureTestFixture, ShouldCompute
     const auto& params = GetParam();
 
     // Prepare outputs
-    PetscReal cp;
+    PetscReal cp, cv;
 
     // act
-    PetscErrorCode ierr = eos->GetComputeSpecificHeatConstantPressureFunction()(params.temperatureIn, params.densityIn, nullptr, &cp, eos->GetComputeSensibleInternalEnergyContext());
+    eos->GetComputeSpecificHeatConstantPressureFunction()(params.temperatureIn, params.densityIn, nullptr, &cp, eos->GetComputeSpecificHeatConstantPressureContext()) >> errorChecker;
+    eos->GetComputeSpecificHeatConstantVolumeFunction()(params.temperatureIn, params.densityIn, nullptr, &cv, eos->GetComputeSpecificHeatConstantVolumeContext()) >> errorChecker;
 
     // assert
-    ASSERT_EQ(ierr, 0);
     ASSERT_NEAR(cp, params.expectedCp, 1E-3);
+    ASSERT_NEAR(cv, params.expectedCv, 1E-3);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    StiffenedGasEOSTests, StiffenedGasComputeSpecificHeatConstantPressureTestFixture,
-    testing::Values((StiffenedGasComputeSpecificHeatConstantPressureParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
-                                                                                .temperatureIn = NAN,
-                                                                                .densityIn = NAN,
-                                                                                .expectedCp = 320.64},
-                    (StiffenedGasComputeSpecificHeatConstantPressureParameters){
-                        .options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 7272.0}),
-    [](const testing::TestParamInfo<StiffenedGasComputeSpecificHeatConstantPressureParameters>& info) { return std::to_string(info.index); });
+INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasComputeSpecificHeatTestFixture,
+                         testing::Values((StiffenedGasComputeSpecificHeatParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
+                                                                                     .temperatureIn = NAN,
+                                                                                     .densityIn = NAN,
+                                                                                     .expectedCp = 320.64,
+                                                                                     .expectedCv = 100.2},
+                                         (StiffenedGasComputeSpecificHeatParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
+                                                                                     .temperatureIn = NAN,
+                                                                                     .densityIn = NAN,
+                                                                                     .expectedCp = 7272.0,
+                                                                                     .expectedCv = 3030.0}),
+                         [](const testing::TestParamInfo<StiffenedGasComputeSpecificHeatParameters>& info) { return std::to_string(info.index); });

@@ -8,8 +8,8 @@ void ablate::utilities::MathUtilities::ComputeTransformationMatrix(PetscInt dim,
     // Compute the tangential vectors
     switch (dim) {
         case 3: {
-            PetscScalar refAxis[3] =  {0.0, 0.0, 1.0};
-            if(PetscAbs(normal[2]) > .9){
+            PetscScalar refAxis[3] = {0.0, 0.0, 1.0};
+            if (PetscAbs(normal[2]) > .9) {
                 refAxis[1] = 1.0;
                 refAxis[2] = 0.0;
             }

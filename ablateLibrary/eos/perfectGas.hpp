@@ -28,6 +28,8 @@ class PerfectGas : public EOS {
 
     static PetscErrorCode PerfectGasComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
 
+    static PetscErrorCode PerfectGasComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
+
    public:
     explicit PerfectGas(std::shared_ptr<ablate::parameters::Parameters>, std::vector<std::string> species = {});
     void View(std::ostream& stream) const override;
@@ -41,8 +43,10 @@ class PerfectGas : public EOS {
     void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return &parameters; }
     ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return PerfectGasComputeSensibleInternalEnergy; }
     void* GetComputeSensibleInternalEnergyContext() override { return &parameters; }
-    ComputeSpecificHeatConstantPressureFunction GetComputeSpecificHeatConstantPressureFunction() override { return PerfectGasComputeSpecificHeatConstantPressure; }
+    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() override { return PerfectGasComputeSpecificHeatConstantPressure; }
     void* GetComputeSpecificHeatConstantPressureContext() override { return &parameters; }
+    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantVolumeFunction() override { return PerfectGasComputeSpecificHeatConstantVolume; }
+    void* GetComputeSpecificHeatConstantVolumeContext() override { return &parameters; }
     PetscReal GetSpecificHeatRatio() const { return parameters.gamma; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }

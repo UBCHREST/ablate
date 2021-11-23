@@ -10,7 +10,7 @@ namespace ablate::eos::transport {
 class Sutherland : public TransportModel {
    private:
     const std::shared_ptr<eos::EOS> eos;
-    const ComputeSpecificHeatConstantPressureFunction cpFunction;
+    const ComputeSpecificHeatFunction cpFunction;
     void* cpContext;
 
     // constant values

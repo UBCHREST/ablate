@@ -32,6 +32,8 @@ class StiffenedGas : public EOS {
 
     static PetscErrorCode StiffenedGasComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
 
+    static PetscErrorCode StiffenedGasComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
+
    public:
     explicit StiffenedGas(std::shared_ptr<ablate::parameters::Parameters>, std::vector<std::string> species = {});
     void View(std::ostream& stream) const override;
@@ -45,8 +47,10 @@ class StiffenedGas : public EOS {
     void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return &parameters; }
     ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return StiffenedGasComputeSensibleInternalEnergy; }
     void* GetComputeSensibleInternalEnergyContext() override { return &parameters; }
-    ComputeSpecificHeatConstantPressureFunction GetComputeSpecificHeatConstantPressureFunction() override { return StiffenedGasComputeSpecificHeatConstantPressure; }
+    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() override { return StiffenedGasComputeSpecificHeatConstantPressure; }
     void* GetComputeSpecificHeatConstantPressureContext() override { return &parameters; }
+    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantVolumeFunction() override { return StiffenedGasComputeSpecificHeatConstantVolume; }
+    void* GetComputeSpecificHeatConstantVolumeContext() override { return &parameters; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };

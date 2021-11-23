@@ -86,6 +86,12 @@ PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeSpecificHeatConstantPre
     (*specificHeat) = parameters->gamma * parameters->rGas / (parameters->gamma - 1.0);
     PetscFunctionReturn(0);
 }
+PetscErrorCode ablate::eos::PerfectGas::PerfectGasComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    Parameters *parameters = (Parameters *)ctx;
+    (*specificHeat) = parameters->rGas / (parameters->gamma - 1.0);
+    PetscFunctionReturn(0);
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::PerfectGas, "perfect gas eos", ARG(ablate::parameters::Parameters, "parameters", "parameters for the perfect gas eos"),
