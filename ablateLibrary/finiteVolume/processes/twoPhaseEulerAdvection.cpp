@@ -134,7 +134,17 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         *aL = a2;
         *MG = (*normalVelocity) / (*aG);
         *ML = (*normalVelocity) / (*aL);
-        *alpha = densityVF / (*densityG);
+        if (densityVF/(*densityG) > 1.0)
+        {
+            *alpha = 1.0;
+        } else if (densityVF/(*densityG) < 0.0)
+        {
+            *alpha = 0.0;
+        } else
+        {
+            *alpha = densityVF / (*densityG);
+        }
+
     }
     else {
         // near boundary checks
@@ -569,10 +579,9 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     // calculate gas sub-area of face (stratified flow model)
     PetscReal alpha = PetscMin(alphaR, alphaL);
 
-    // how do I check that densityVF/dt is being integrated over Volume*alpha????? (can I get this to cancel out??)
     twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorFunction()(
         twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFlux, &p12);
-    flux[0] = massFlux * areaMag * alpha * alpha;  //
+    flux[0] = massFlux * areaMag * alpha;
 
     PetscFunctionReturn(0);
 }
