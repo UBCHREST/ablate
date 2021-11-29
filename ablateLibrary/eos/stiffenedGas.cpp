@@ -97,6 +97,11 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpecificHeatConstan
     (*specificHeat) = parameters->Cv;
     PetscFunctionReturn(0);
 }
+PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSensibleEnthalpy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleEnthalpy, void *ctx) {
+    PetscFunctionBeginUser;
+    (*sensibleEnthalpy) = NAN;
+    PetscFunctionReturn(0);
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::StiffenedGas, "stiffened gas eos", ARG(ablate::parameters::Parameters, "parameters", "parameters for the stiffened gas eos"),

@@ -267,6 +267,44 @@ INSTANTIATE_TEST_SUITE_P(
     [](const testing::TestParamInfo<ComputeSensibleInternalEnergyParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Perfect Gas DensityFunctionFromTemperaturePressure
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct ComputeSensibleEnthalpyParameters {
+    std::map<std::string, std::string> options;
+    PetscReal temperatureIn;
+    PetscReal densityIn;
+    PetscReal expectedSensibleEnthalpy;
+};
+
+class ComputeSensibleEnthalpyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ComputeSensibleEnthalpyParameters> {};
+
+TEST_P(ComputeSensibleEnthalpyTestFixture, ShouldComputeCorrectEnergy) {
+    // arrange
+    auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // Prepare outputs
+    PetscReal sensibleEnthalpy;
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeSensibleEnthalpyFunction()(params.temperatureIn, params.densityIn, nullptr, &sensibleEnthalpy, eos->GetComputeSensibleEnthalpyContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(sensibleEnthalpy, params.expectedSensibleEnthalpy, 1E-3);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    PerfectGasEOSTests, ComputeSensibleEnthalpyTestFixture,
+    testing::Values((ComputeSensibleEnthalpyParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = 39000, .densityIn = .9, .expectedSensibleEnthalpy = 312000},
+                    (ComputeSensibleEnthalpyParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 1.1, .expectedSensibleEnthalpy = 351575.0},
+                    (ComputeSensibleEnthalpyParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 20.1, .expectedSensibleEnthalpy = 351575.0}),
+    [](const testing::TestParamInfo<ComputeSensibleEnthalpyParameters>& info) { return std::to_string(info.index); });
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Perfect Gas ComputeSpecificHeatConstantPressure
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct ComputeSpecificHeatParameters {

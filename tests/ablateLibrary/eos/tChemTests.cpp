@@ -164,6 +164,7 @@ struct TChemStateParameters {
     std::vector<PetscReal> massFlux;
     PetscReal temperature;
     PetscReal internalEnergy;
+    PetscReal sensibleEnthalpy;
     PetscReal speedOfSound;
     PetscReal pressure;
     PetscReal specificHeatCp;
@@ -270,6 +271,28 @@ TEST_P(TChemStateTestFixture, ShouldComputeSensibleInternalEnergy) {
     ASSERT_LT(error, 1E-3);
 }
 
+TEST_P(TChemStateTestFixture, ShouldComputeSensibleEnthalpy) {
+    // arrange
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // get the mass fraction as an array
+    auto yi = GetMassFraction(eos->GetSpecies(), params.yi);
+
+    // Prepare outputs
+    PetscReal sensibleEnthalpy;
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeSensibleEnthalpyFunction()(params.temperature, params.density, &yi[0], &sensibleEnthalpy, eos->GetComputeSensibleInternalEnergyContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    const double error = (sensibleEnthalpy - params.sensibleEnthalpy) / params.sensibleEnthalpy;
+    ASSERT_LT(error, 1E-3);
+}
+
 TEST_P(TChemStateTestFixture, ShouldComputeSpecificHeatConstantPressure) {
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
@@ -321,6 +344,7 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .massFlux = {1.2 * 10, -1.2 * 20, 1.2 * 30},
                                                                 .temperature = 499.25,
                                                                 .internalEnergy = 99300.0,
+                                                                .sensibleEnthalpy = 264064.7,
                                                                 .speedOfSound = 464.33,
                                                                 .pressure = 197710.5,
                                                                 .specificHeatCp = 1399.301411,
@@ -333,6 +357,7 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .massFlux = {0, 0, 0},
                                                                 .temperature = 762.664,
                                                                 .internalEnergy = 320000.0,
+                                                                .sensibleEnthalpy = 557466.2,
                                                                 .speedOfSound = 560.83,
                                                                 .pressure = 189973.54,
                                                                 .specificHeatCp = 1270.738292,
@@ -345,6 +370,7 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .massFlux = {0.0, 3.3 * 2, 3.3 * 4},
                                                                 .temperature = 418.079,
                                                                 .internalEnergy = 990.0,
+                                                                .sensibleEnthalpy = 125084.2,
                                                                 .speedOfSound = 416.04,
                                                                 .pressure = 409488.10,
                                                                 .specificHeatCp = 1048.36597,
@@ -357,6 +383,7 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .massFlux = {.01 * -1, .01 * -2, .01 * -3},
                                                                 .temperature = 437.46,
                                                                 .internalEnergy = 99993.0,
+                                                                .sensibleEnthalpy = 841150.64,
                                                                 .speedOfSound = 1013.73,
                                                                 .pressure = 7411.11,
                                                                 .specificHeatCp = 6075.990042,
@@ -369,6 +396,7 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemStateTestFixture,
                                                                 .massFlux = {999.9 * -10, 999.9 * -20, 999.9 * -300},
                                                                 .temperature = 394.59,
                                                                 .internalEnergy = -35250.0,
+                                                                .sensibleEnthalpy = 245915.9,
                                                                 .speedOfSound = 623.9,
                                                                 .pressure = 281125963.5,
                                                                 .specificHeatCp = 2564.816937,

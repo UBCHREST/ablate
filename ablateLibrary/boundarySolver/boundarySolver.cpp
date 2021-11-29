@@ -121,6 +121,11 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         // Create a new BoundaryFVFaceGeom
         BoundaryFVFaceGeom geom{.normal = {0.0, 0.0, 0.0}, .centroid = {0.0, 0.0, 0.0}};
 
+        // Set the face centroid to be equal to the face for gradient calc
+        PetscFVCellGeom* cellGeom;
+        DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cellGeom);
+        PetscArraycpy(geom.centroid, cellGeom->centroid, dim) >> checkError;
+
         // For each connected face
         for (PetscInt f = 0; f < numberFaces; f++) {
             PetscInt face = cellFaces[f];
@@ -132,15 +137,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
                 continue;
             }
 
-            // Add this geometry to the BoundaryFVFaceGeom
-            PetscFVFaceGeom* fg;
-            DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
-            for (PetscInt d = 0; d < dim; d++) {
-                geom.normal[d] += fg->normal[d];
-                geom.centroid[d] += fg->centroid[d];
-            }
-            connectedFaces++;
-
             // Get the connected cells
             PetscInt numberNeighborCells;
             const PetscInt* neighborCells;
@@ -150,16 +146,29 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
                 AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n]);
             }
+
+            // Add this geometry to the BoundaryFVFaceGeom
+            PetscFVFaceGeom* fg;
+            DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
+
+            // The normal should be pointing away from the boundary domain.  The current fg support points from cell[0] -> cell[1]
+            // If the neighborCells[0] is in the boundary (this cell), flip the normal
+            if(neighborCells[0] == cell){
+                for (PetscInt d = 0; d < dim; d++) {
+                    geom.normal[d] -= fg->normal[d];
+                }
+            }else{
+                for (PetscInt d = 0; d < dim; d++) {
+                    geom.normal[d] += fg->normal[d];
+                }
+            }
+
+            connectedFaces++;
         }
 
         // Perform some error checking
         if (connectedFaces < 1) {
             throw std::runtime_error("Isolated cell " + std::to_string(cell) + " cannot be used in BoundarySolver.");
-        }
-
-        // Compute the new centroid location
-        for (PetscInt d = 0; d < dim; d++) {
-            geom.centroid[d] /= connectedFaces;
         }
 
         // remove the boundary cell from the stencil
@@ -423,6 +432,19 @@ void ablate::boundarySolver::BoundarySolver::ComputeGradient(PetscInt dim, Petsc
         }
     }
 }
+
+void ablate::boundarySolver::BoundarySolver::ComputeGradientAlongNormal(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom* fg, PetscScalar boundaryValue,
+                                                                        PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm) {
+    dPhiDNorm = 0.0;
+    for (PetscInt c = 0; c < stencilSize; ++c) {
+        PetscScalar delta = stencilValues[c] - boundaryValue;
+
+        for (PetscInt d = 0; d < dim; ++d) {
+            dPhiDNorm += stencilWeights[c * dim + d] * delta * fg->normal[d];
+        }
+    }
+}
+
 
 const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom& ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {
     IS cellIS;

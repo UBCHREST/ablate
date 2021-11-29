@@ -26,6 +26,8 @@ class PerfectGas : public EOS {
 
     static PetscErrorCode PerfectGasComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
 
+    static PetscErrorCode PerfectGasComputeSensibleEnthalpy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
+
     static PetscErrorCode PerfectGasComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
 
     static PetscErrorCode PerfectGasComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
@@ -43,6 +45,8 @@ class PerfectGas : public EOS {
     void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return &parameters; }
     ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return PerfectGasComputeSensibleInternalEnergy; }
     void* GetComputeSensibleInternalEnergyContext() override { return &parameters; }
+    virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleEnthalpyFunction() override { return PerfectGasComputeSensibleEnthalpy; }
+    void* GetComputeSensibleEnthalpyContext() override { return &parameters; }
     ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() override { return PerfectGasComputeSpecificHeatConstantPressure; }
     void* GetComputeSpecificHeatConstantPressureContext() override { return &parameters; }
     ComputeSpecificHeatFunction GetComputeSpecificHeatConstantVolumeFunction() override { return PerfectGasComputeSpecificHeatConstantVolume; }

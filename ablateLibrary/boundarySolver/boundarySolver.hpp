@@ -34,6 +34,16 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
      */
     static void ComputeGradient(PetscInt dim, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar* grad);
 
+    /**
+     * public helper function to compute dPhiDNorm
+     * @param dim
+     * @param boundaryValue
+     * @param stencilValues
+     * @param stencilWeights
+     * @param grad
+     */
+    static void ComputeGradientAlongNormal(PetscInt dim, const BoundaryFVFaceGeom* fg, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm);
+
    private:
     /**
      * struct to hold the gradient stencil for the boundary
