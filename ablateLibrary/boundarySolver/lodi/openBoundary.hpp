@@ -10,9 +10,11 @@ class OpenBoundary : public LODIBoundary {
     const PetscReal reflectFactor;
     // Reference pressure
     const PetscReal referencePressure;
+    // Max Reference Length
+    const PetscReal maxAcousticsLength;
 
    public:
-    OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure);
+    OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure, double maxAcousticsLength);
 
     void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
 

@@ -20,7 +20,11 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsoth
     auto decodeStateContext = isothermalWall->eos->GetDecodeStateContext();
     const int neq = 2 + dim;
 
-    // Compute the pressure at each cell
+    // Compute the transformation matrix
+    PetscReal transformationMatrix[3][3];
+    utilities::MathUtilities::ComputeTransformationMatrix(dim, fg->normal, transformationMatrix);
+
+    // Compute the pressure/values on the boundary
     PetscReal boundaryDensity;
     PetscReal boundaryVel[3];
     PetscReal boundaryNormalVelocity;
@@ -28,10 +32,6 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsoth
     PetscReal boundarySpeedOfSound;
     PetscReal boundaryMach;
     PetscReal boundaryPressure;
-
-    // Compute the transformation matrix
-    PetscReal transformationMatrix[3][3];
-    utilities::MathUtilities::ComputeTransformationMatrix(dim, fg->normal, transformationMatrix);
 
     // Get the velocity and pressure on the surface
     finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
