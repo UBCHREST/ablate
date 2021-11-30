@@ -45,7 +45,7 @@ class PerfectGas : public EOS {
     void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return &parameters; }
     ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return PerfectGasComputeSensibleInternalEnergy; }
     void* GetComputeSensibleInternalEnergyContext() override { return &parameters; }
-    virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleEnthalpyFunction() override { return PerfectGasComputeSensibleEnthalpy; }
+    ComputeSensibleEnthalpyFunction GetComputeSensibleEnthalpyFunction() override { return PerfectGasComputeSensibleEnthalpy; }
     void* GetComputeSensibleEnthalpyContext() override { return &parameters; }
     ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() override { return PerfectGasComputeSpecificHeatConstantPressure; }
     void* GetComputeSpecificHeatConstantPressureContext() override { return &parameters; }

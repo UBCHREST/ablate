@@ -4,5 +4,7 @@ target_sources(ablateLibrary
         lodiBoundary.cpp
         isothermalWall.hpp
         isothermalWall.cpp
+        openBoundary.hpp
+        openBoundary.cpp
         )
 

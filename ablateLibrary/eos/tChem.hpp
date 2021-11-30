@@ -92,7 +92,7 @@ class TChem : public EOS {
     void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return this; }
     ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return TChemComputeSensibleInternalEnergy; }
     void* GetComputeSensibleInternalEnergyContext() override { return this; }
-    ComputeSensibleInternalEnergyFunction GetComputeSensibleEnthalpyFunction() override { return TChemComputeSensibleEnthalpy; }
+    ComputeSensibleEnthalpyFunction GetComputeSensibleEnthalpyFunction() override { return TChemComputeSensibleEnthalpy; }
     void* GetComputeSensibleEnthalpyContext() override { return this; }
     ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() override { return TChemComputeSpecificHeatConstantPressure; }
     void* GetComputeSpecificHeatConstantPressureContext() override { return this; }

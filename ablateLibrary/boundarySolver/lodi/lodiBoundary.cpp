@@ -39,7 +39,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetEigenValues(PetscInt ndims, 
 void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(PetscInt ndims, PetscInt neqs, PetscInt nspeceq, PetscInt nEVeq, const PetscReal *vel, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C,
                                                           PetscReal Enth, PetscReal velnprm, PetscReal Cprm, const PetscReal *Yi, const PetscReal *EV, const PetscReal *sL, const PetscReal transformationMatrix[3][3], PetscReal *mdFdn) {
 
-    std::vector<PetscScalar> d (2+ ndims + nspeceq + nEVeq);
+    std::vector<PetscScalar> d (neqs);
     auto fac = 0.5e+0 * (sL[0] - sL[1 + ndims]) * (velnprm - vel[0]) / Cprm;
     double C2 = C * C;
     d[0] = (sL[1] + 0.5e+0 * (sL[1 + ndims] + sL[0]) + fac) / C2;

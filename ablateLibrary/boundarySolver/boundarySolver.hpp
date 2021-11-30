@@ -17,6 +17,7 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
      */
     typedef struct {
         PetscReal normal[3];   /* Area-scaled normals */
+        PetscReal areas[3];   /* Area-scaled normals */
         PetscReal centroid[3]; /* Location of centroid (quadrature point) */
     } BoundaryFVFaceGeom;
 
@@ -86,11 +87,19 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
     // keep track of maximumStencilSize
     PetscInt maximumStencilSize = -1;
 
-    // The PetscFV (usually least squares) is used to compute the gradient weights
+    // The PetscFV (usually the least squares method) is used to compute the gradient weights
     PetscFV gradientCalculator = nullptr;
 
    public:
-    BoundarySolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses,
+    /**
+     *
+     * @param solverId the id for this solver
+     * @param region the boundary cell region
+     * @param fieldBoundary the region describing the faces between the boundary and field
+     * @param boundaryProcesses a list of boundary processes
+     * @param options other options
+     */
+    BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses,
                    std::shared_ptr<parameters::Parameters> options);
     ~BoundarySolver() override;
 

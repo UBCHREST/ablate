@@ -99,7 +99,17 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpecificHeatConstan
 }
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSensibleEnthalpy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleEnthalpy, void *ctx) {
     PetscFunctionBeginUser;
-    (*sensibleEnthalpy) = NAN;
+    // Total Enthalpy == Sensible Enthalpy = e + p/rho
+    PetscReal sensibleInternalEnergy;
+    PetscErrorCode ierr = ablate::eos::StiffenedGas::StiffenedGasComputeSensibleInternalEnergy(T, density, yi, &sensibleInternalEnergy, ctx);
+    CHKERRQ(ierr);
+
+    // Compute the pressure
+    Parameters *parameters = (Parameters *)ctx;
+    PetscReal p = (parameters->gamma - 1.0) * density * (sensibleInternalEnergy)-parameters->gamma * parameters->p0;
+
+    // compute the enthalpy
+    *sensibleEnthalpy = sensibleInternalEnergy + p / density;
     PetscFunctionReturn(0);
 }
 

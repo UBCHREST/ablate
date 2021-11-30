@@ -1,20 +1,26 @@
-#ifndef ABLATELIBRARY_ISOTHERMALWALL_HPP
-#define ABLATELIBRARY_ISOTHERMALWALL_HPP
+#ifndef ABLATELIBRARY_OPENBOUNDARY_HPP
+#define ABLATELIBRARY_OPENBOUNDARY_HPP
 
 #include "lodiBoundary.hpp"
 namespace ablate::boundarySolver::lodi {
 
-class IsothermalWall : public LODIBoundary {
+class OpenBoundary : public LODIBoundary {
+   private:
+    // Boundary reflection factor
+    const PetscReal reflectFactor;
+    // Reference pressure
+    const PetscReal referencePressure;
+
    public:
-    explicit IsothermalWall(std::shared_ptr<eos::EOS> eos);
+    OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure);
 
     void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
 
-    static PetscErrorCode IsothermalWallIsothermalWallFunction(PetscInt dim, const boundarySolver::BoundarySolver::BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[],
+    static PetscErrorCode OpenBoundaryFunction(PetscInt dim, const boundarySolver::BoundarySolver::BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[],
                                                                const PetscScalar* boundaryValues, const PetscScalar* stencilValues[], const PetscInt aOff[], const PetscScalar* auxValues,
                                                                const PetscScalar* stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[],
                                                                const PetscInt sOff[], PetscScalar source[], void* ctx);
 };
 
 }  // namespace ablate::boundarySolver::lodi
-#endif  // ABLATELIBRARY_ISOTHERMALWALL_HPP
+#endif  // ABLATELIBRARY_OPENBOUNDARY_HPP

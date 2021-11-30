@@ -20,7 +20,7 @@ using ComputeDensityFunctionFromTemperaturePressure = PetscErrorCode (*)(PetscRe
 
 using ComputeSensibleInternalEnergyFunction = PetscErrorCode (*)(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
 
-using ComputeSensibleEnthalpyFunction = PetscErrorCode (*)(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnthalpy, void* ctx);
+using ComputeSensibleEnthalpyFunction = PetscErrorCode (*)(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx);
 
 using ComputeSpecificHeatFunction = PetscErrorCode (*)(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
 
@@ -49,7 +49,7 @@ class EOS {
     virtual void* GetComputeDensityFunctionFromTemperaturePressureContext() = 0;
     virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() = 0;
     virtual void* GetComputeSensibleInternalEnergyContext() = 0;
-    virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleEnthalpyFunction() = 0;
+    virtual ComputeSensibleEnthalpyFunction GetComputeSensibleEnthalpyFunction() = 0;
     virtual void* GetComputeSensibleEnthalpyContext() = 0;
     virtual ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() = 0;
     virtual void* GetComputeSpecificHeatConstantPressureContext() = 0;

@@ -240,7 +240,7 @@ INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasTestComputeDensityTes
                          [](const testing::TestParamInfo<StiffenedGasTestComputeDensityParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Stiffened Gas DensityFunctionFromTemperaturePressure
+/// Stiffened Gas SensibleInternalEnergy
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct StiffenedGasComputeSensibleInternalEnergyParameters {
     std::map<std::string, std::string> options;
@@ -284,6 +284,52 @@ INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasComputeSensibleIntern
                                                                                                .densityIn = 20.1,
                                                                                                .expectedSensibleInternalEnergy = 683222.50}),
                          [](const testing::TestParamInfo<StiffenedGasComputeSensibleInternalEnergyParameters>& info) { return std::to_string(info.index); });
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Stiffened Gas SensibleEnthalpy
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct StiffenedGasComputeSensibleEnthalpyParameters {
+    std::map<std::string, std::string> options;
+    PetscReal temperatureIn;
+    PetscReal densityIn;
+    PetscReal expectedSensibleEnthalpy;
+};
+
+class StiffenedGasComputeSensibleEnthalpyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<StiffenedGasComputeSensibleEnthalpyParameters> {};
+
+TEST_P(StiffenedGasComputeSensibleEnthalpyTestFixture, ShouldComputeCorrectEnthalpy) {
+    // arrange
+    auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::StiffenedGas>(parameters);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // Prepare outputs
+    PetscReal enthalpy;
+
+    // act
+    PetscErrorCode ierr = eos->GetComputeSensibleEnthalpyFunction()(params.temperatureIn, params.densityIn, nullptr, &enthalpy, eos->GetComputeSensibleEnthalpyContext());
+
+    // assert
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(enthalpy, params.expectedSensibleEnthalpy, 1E-3);
+}
+
+INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasComputeSensibleEnthalpyTestFixture,
+                         testing::Values((StiffenedGasComputeSensibleEnthalpyParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
+                                                                                         .temperatureIn = 39000,
+                                                                                         .densityIn = 800,
+                                                                                         .expectedSensibleEnthalpy = 1.7023561715E+07},
+                                         (StiffenedGasComputeSensibleEnthalpyParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
+                                                                                         .temperatureIn = 350.0,
+                                                                                         .densityIn = 998.7,
+                                                                                         .expectedSensibleEnthalpy = 1.6157027594E+06},
+                                         (StiffenedGasComputeSensibleEnthalpyParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
+                                                                                         .temperatureIn = 350.0,
+                                                                                         .densityIn = 20.1,
+                                                                                         .expectedSensibleEnthalpy = 4.4570414925E+05}),
+                         [](const testing::TestParamInfo<StiffenedGasComputeSensibleEnthalpyParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Stiffened Gas ComputeSpecificHeatConstantPressure and ComputeSpecificHeatConstantVolume

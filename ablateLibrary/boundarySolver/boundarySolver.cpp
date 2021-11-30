@@ -2,6 +2,7 @@
 #include <set>
 #include <utility>
 #include "boundaryProcess.hpp"
+#include "utilities/mathUtilities.hpp"
 
 ablate::boundarySolver::BoundarySolver::BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
                                                        std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses, std::shared_ptr<parameters::Parameters> options)
@@ -109,9 +110,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         // keep a list of cells in the stencil
         std::set<PetscInt> stencilSet{cell};
 
-        // Keep track of connected faces
-        PetscInt connectedFaces = 0;
-
         // March over each face
         PetscInt numberFaces;
         const PetscInt* cellFaces;
@@ -119,12 +117,17 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         DMPlexGetCone(subDomain->GetDM(), cell, &cellFaces) >> checkError;
 
         // Create a new BoundaryFVFaceGeom
-        BoundaryFVFaceGeom geom{.normal = {0.0, 0.0, 0.0}, .centroid = {0.0, 0.0, 0.0}};
+        BoundaryFVFaceGeom geom{.normal = {0.0, 0.0, 0.0}, .areas = {0.0, 0.0, 0.0}, .centroid = {0.0, 0.0, 0.0}};
 
         // Set the face centroid to be equal to the face for gradient calc
         PetscFVCellGeom* cellGeom;
         DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cellGeom);
         PetscArraycpy(geom.centroid, cellGeom->centroid, dim) >> checkError;
+
+        // Perform some error checking
+        if (numberFaces < 1) {
+            throw std::runtime_error("Isolated cell " + std::to_string(cell) + " cannot be used in BoundarySolver.");
+        }
 
         // For each connected face
         for (PetscInt f = 0; f < numberFaces; f++) {
@@ -153,23 +156,21 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
 
             // The normal should be pointing away from the boundary domain.  The current fg support points from cell[0] -> cell[1]
             // If the neighborCells[0] is in the boundary (this cell), flip the normal
-            if(neighborCells[0] == cell){
+            if (neighborCells[0] == cell) {
                 for (PetscInt d = 0; d < dim; d++) {
                     geom.normal[d] -= fg->normal[d];
+                    geom.areas[d] -= fg->normal[d];
                 }
-            }else{
+            } else {
                 for (PetscInt d = 0; d < dim; d++) {
                     geom.normal[d] += fg->normal[d];
+                    geom.areas[d] += fg->normal[d];
                 }
             }
-
-            connectedFaces++;
         }
 
-        // Perform some error checking
-        if (connectedFaces < 1) {
-            throw std::runtime_error("Isolated cell " + std::to_string(cell) + " cannot be used in BoundarySolver.");
-        }
+        // compute the normal
+        utilities::MathUtilities::NormVector(dim, geom.normal);
 
         // remove the boundary cell from the stencil
         stencilSet.erase(cell);
@@ -445,7 +446,6 @@ void ablate::boundarySolver::BoundarySolver::ComputeGradientAlongNormal(PetscInt
     }
 }
 
-
 const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom& ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {
     IS cellIS;
     PetscInt cStart, cEnd;
@@ -459,3 +459,9 @@ const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom& ablate::bounda
 
     return gradientStencils[location].geometry;
 }
+
+#include "registrar.hpp"
+REGISTER(ablate::solver::Solver, ablate::boundarySolver::BoundarySolver, "A solver used to compute boundary values in boundary cells", ARG(std::string, "id", "the name of the flow field"),
+         ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "the region describing the faces between the boundary and field"),
+         ARG(std::vector<ablate::boundarySolver::BoundaryProcess>, "processes", "a list of boundary processes"),
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"));

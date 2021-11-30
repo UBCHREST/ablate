@@ -5,8 +5,8 @@
 
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
-ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos, std::vector<double> velocityWallIn)
-    : LODIBoundary(std::move(eos)), velocityWall(velocityWallIn.empty() ? std::vector<PetscReal>{0.0, 0.0, 0.0} : std::vector<PetscReal>(velocityWallIn.begin(), velocityWallIn.end())) {}
+ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos)
+    : LODIBoundary(std::move(eos)){}
 
 PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsothermalWallFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
                                                                                                   const PetscFVCellGeom *boundaryCell, const PetscInt *uOff, const PetscScalar *boundaryValues,
@@ -18,10 +18,11 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsoth
     auto isothermalWall = (IsothermalWall *)ctx;
     auto decodeStateFunction = isothermalWall->eos->GetDecodeStateFunction();
     auto decodeStateContext = isothermalWall->eos->GetDecodeStateContext();
+    const int neq = 2 + dim;
 
     // Compute the pressure at each cell
     PetscReal boundaryDensity;
-    std::vector<PetscReal> boundaryVel(dim);
+    PetscReal boundaryVel[3];
     PetscReal boundaryNormalVelocity;
     PetscReal boundaryInternalEnergy;
     PetscReal boundarySpeedOfSound;
@@ -41,11 +42,15 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsoth
                                                            fg->normal,
                                                            &boundaryDensity,
                                                            &boundaryNormalVelocity,
-                                                           &boundaryVel[0],
+                                                           boundaryVel,
                                                            &boundaryInternalEnergy,
                                                            &boundarySpeedOfSound,
                                                            &boundaryMach,
                                                            &boundaryPressure);
+
+    // Map the boundary velocity into the normal coord system
+    PetscReal boundaryVelNormCord[3];
+    utilities::MathUtilities::Multiply(dim, transformationMatrix, boundaryVel, boundaryVelNormCord);
 
     // Compute each stencil point
     std::vector<PetscReal> stencilDensity(stencilSize);
@@ -60,7 +65,7 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsoth
         finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                                decodeStateContext,
                                                                dim,
-                                                               stencilValues[s] + uOff[EULER],
+                                                               &stencilValues[s][uOff[EULER]],
                                                                nullptr,
                                                                fg->normal,
                                                                &stencilDensity[s],
@@ -108,11 +113,11 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsoth
     GetVelAndCPrims(boundaryNormalVelocity, boundarySpeedOfSound, boundaryCp, boundaryCv, velNormPrim, speedOfSoundPrim);
 
     // get_eigenvalues
-    std::vector<PetscReal> lambda;
+    std::vector<PetscReal> lambda(neq);
     GetEigenValues(dim, 0, 0, boundaryNormalVelocity, boundarySpeedOfSound, velNormPrim, speedOfSoundPrim, &lambda[0]);
 
     // Get scriptL
-    std::vector<PetscReal> scriptL;
+    std::vector<PetscReal> scriptL(neq);
     scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));  // Outgoing
     // acoustic
     // wave
@@ -132,10 +137,10 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsoth
 
     // Directly compute the source terms, note that this may be problem in the future with multiple source terms on the same boundary cell
     GetmdFdn(dim,
-             2 + dim,
+             neq,
              0,
              0,
-             &isothermalWall->velocityWall[0],
+             boundaryVelNormCord,
              boundaryDensity,
              boundaryTemperature,
              boundaryCp,
@@ -155,3 +160,7 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsoth
 void ablate::boundarySolver::lodi::IsothermalWall::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     bSolver.RegisterFunction(IsothermalWallIsothermalWallFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
 }
+
+#include "registrar.hpp"
+REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::IsothermalWall, "Enforces a isothermal wall with fixed velocity/temperature",
+         ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the wall"));
