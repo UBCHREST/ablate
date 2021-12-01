@@ -79,21 +79,21 @@ TEST_P(IsothermalWallTestFixture, ShouldComputeCorrectSourceTerm) {
     std::vector<PetscScalar> sourceResults(GetParam().expectedResults.size());
 
     // act
-    ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallIsothermalWallFunction(params.dim,
-                                                                                       &params.fvFaceGeom,
-                                                                                       nullptr /*boundaryCell*/,
-                                                                                       uOff,
-                                                                                       &params.boundaryValues[0],
-                                                                                       allStencilValues,
-                                                                                       aOff,
-                                                                                       nullptr /*auxValues*/,
-                                                                                       nullptr /*stencilAuxValues*/,
-                                                                                       1,
-                                                                                       stencil,
-                                                                                       stencilWeights,
-                                                                                       sOff,
-                                                                                       &sourceResults[0],
-                                                                                       &boundary);
+    ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunction(params.dim,
+                                                                         &params.fvFaceGeom,
+                                                                         nullptr /*boundaryCell*/,
+                                                                         uOff,
+                                                                         &params.boundaryValues[0],
+                                                                         allStencilValues,
+                                                                         aOff,
+                                                                         nullptr /*auxValues*/,
+                                                                         nullptr /*stencilAuxValues*/,
+                                                                         1,
+                                                                         stencil,
+                                                                         stencilWeights,
+                                                                         sOff,
+                                                                         &sourceResults[0],
+                                                                         &boundary);
 
     // assert
     for (std::size_t i = 0; i < GetParam().expectedResults.size(); i++) {

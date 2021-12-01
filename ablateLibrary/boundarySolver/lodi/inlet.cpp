@@ -1,26 +1,24 @@
-#include "isothermalWall.hpp"
+#include "inlet.hpp"
+#include <utilities/mathUtilities.hpp>
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "finiteVolume/processes/flowProcess.hpp"
-#include "utilities/mathUtilities.hpp"
 
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
-ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos) : LODIBoundary(std::move(eos)) {}
+ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos)
+    : LODIBoundary(std::move(eos)){}
 
-void ablate::boundarySolver::lodi::IsothermalWall::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
-    bSolver.RegisterFunction(IsothermalWallFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
+void ablate::boundarySolver::lodi::Inlet::Initialize(ablate::boundarySolver::BoundarySolver& bSolver) {
+    bSolver.RegisterFunction(InletFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
 }
-
-PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
-                                                                                    const PetscFVCellGeom *boundaryCell, const PetscInt uOff[], const PetscScalar *boundaryValues,
-                                                                                    const PetscScalar *stencilValues[], const PetscInt aOff[], const PetscScalar *auxValues,
-                                                                                    const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[],
-                                                                                    const PetscScalar stencilWeights[], const PetscInt sOff[], PetscScalar source[], void *ctx) {
+PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell,
+                                                                  const PetscInt *uOff, const PetscScalar *boundaryValues, const PetscScalar **stencilValues, const PetscInt *aOff,
+                                                                  const PetscScalar *auxValues, const PetscScalar **stencilAuxValues, PetscInt stencilSize, const PetscInt *stencil,
+                                                                  const PetscScalar *stencilWeights, const PetscInt *sOff, PetscScalar *source, void *ctx) {
     PetscFunctionBeginUser;
     const int EULER = 0;
-    auto isothermalWall = (IsothermalWall *)ctx;
-    auto decodeStateFunction = isothermalWall->eos->GetDecodeStateFunction();
-    auto decodeStateContext = isothermalWall->eos->GetDecodeStateContext();
+    auto inletBoundary = (Inlet *)ctx;
+    auto decodeStateFunction = inletBoundary->eos->GetDecodeStateFunction();
+    auto decodeStateContext = inletBoundary->eos->GetDecodeStateContext();
     const int neq = 2 + dim;
 
     // Compute the transformation matrix
@@ -88,27 +86,27 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
 
     // Compute the temperature at the boundary
     PetscReal boundaryTemperature;
-    isothermalWall->eos->GetComputeTemperatureFunction()(dim,
+    inletBoundary->eos->GetComputeTemperatureFunction()(dim,
                                                          boundaryDensity,
                                                          boundaryValues[uOff[EULER] + fp::RHOE] / boundaryDensity,
                                                          boundaryValues + uOff[EULER] + fp::RHOU,
                                                          nullptr,
                                                          &boundaryTemperature,
-                                                         isothermalWall->eos->GetComputeTemperatureContext()) >>
+                                                        inletBoundary->eos->GetComputeTemperatureContext()) >>
         checkError;
 
     // Compute the cp, cv from the eos
     PetscReal boundaryCp, boundaryCv;
-    isothermalWall->eos->GetComputeSpecificHeatConstantPressureFunction()(
-        boundaryTemperature, boundaryDensity, nullptr, &boundaryCp, isothermalWall->eos->GetComputeSpecificHeatConstantPressureContext()) >>
+    inletBoundary->eos->GetComputeSpecificHeatConstantPressureFunction()(
+        boundaryTemperature, boundaryDensity, nullptr, &boundaryCp, inletBoundary->eos->GetComputeSpecificHeatConstantPressureContext()) >>
         checkError;
-    isothermalWall->eos->GetComputeSpecificHeatConstantVolumeFunction()(
-        boundaryTemperature, boundaryDensity, nullptr, &boundaryCv, isothermalWall->eos->GetComputeSpecificHeatConstantVolumeContext()) >>
+    inletBoundary->eos->GetComputeSpecificHeatConstantVolumeFunction()(
+        boundaryTemperature, boundaryDensity, nullptr, &boundaryCv, inletBoundary->eos->GetComputeSpecificHeatConstantVolumeContext()) >>
         checkError;
 
     // Compute the enthalpy
     PetscReal boundarySensibleEnthalpy;
-    isothermalWall->eos->GetComputeSensibleEnthalpyFunction()(boundaryTemperature, boundaryDensity, nullptr, &boundarySensibleEnthalpy, isothermalWall->eos->GetComputeSensibleEnthalpyContext()) >>
+    inletBoundary->eos->GetComputeSensibleEnthalpyFunction()(boundaryTemperature, boundaryDensity, nullptr, &boundarySensibleEnthalpy, inletBoundary->eos->GetComputeSensibleEnthalpyContext()) >>
         checkError;
 
     // get_vel_and_c_prims(PGS, velwall[0], C, Cp, Cv, velnprm, Cprm);
@@ -121,15 +119,20 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
 
     // Get scriptL
     std::vector<PetscReal> scriptL(neq);
-    scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));  // Outgoing
-    // acoustic
-    // wave
-    scriptL[0] = scriptL[1 + dim];  // Incoming acoustic wave
-    // sL[1][n1][n0] = 0.; // Entropy wave
-    scriptL[1] = 0.5e+0 * (boundaryCp / boundaryCv - 1.e+0) * (scriptL[1 + dim] + scriptL[0]) -
-                 (boundaryCp / boundaryCv + 1.e+0) * (scriptL[0] - scriptL[1 + dim]) * (velNormPrim - boundaryNormalVelocity) / speedOfSoundPrim;  // Entropy wave
+    // Outgoing acoustic wave
+    scriptL[1+dim] = lambda[1+dim]*(dPdNorm-boundaryDensity*dVeldNorm*(velNormPrim-boundaryNormalVelocity-speedOfSoundPrim));
+
+    // Incoming acoustic wave
+    scriptL[0] = scriptL[1 + dim];
+
+    // Entropy wave
+    scriptL[1] = 0.5e+0*(boundaryCp/boundaryCv-1.e+0)*(scriptL[1+dim]+scriptL[0])
+                 -0.5*(boundaryCp/boundaryCv+1.e+0)*(scriptL[0]-scriptL[1+dim])
+                       *(velNormPrim-boundaryNormalVelocity)/speedOfSoundPrim;
+
+    // Tangential velocities
     for (int d = 1; d < dim; d++) {
-        scriptL[1 + d] = 0.e+0;  // Tangential velocities
+        scriptL[1 + d] = 0.e+0;
     }
     //    for (int ns = 0; ns < nspeceq; ns++) {
     //        sL[2 + ndims + ns][n1][n0] = 0.e+0; // Species
@@ -162,5 +165,5 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::IsothermalWall, "Enforces a isothermal wall with fixed velocity/temperature",
+REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::Inlet, "Enforces an inlet with specified velocity",
          ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the wall"));

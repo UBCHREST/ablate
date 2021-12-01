@@ -6,5 +6,7 @@ target_sources(ablateLibrary
         isothermalWall.cpp
         openBoundary.hpp
         openBoundary.cpp
+        inlet.hpp
+        inlet.cpp
         )
 
