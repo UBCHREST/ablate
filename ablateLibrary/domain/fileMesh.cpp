@@ -13,7 +13,7 @@ ablate::domain::FileMesh::~FileMesh() {
 }
 DM ablate::domain::FileMesh::ReadDMFromFile(const std::string& name, const std::filesystem::path& path) {
     DM dm;
-    DMPlexCreateFromFile(PETSC_COMM_WORLD, path.c_str(), PETSC_TRUE, &dm) >> checkError;
+    DMPlexCreateFromFile(PETSC_COMM_WORLD, path.c_str(), name.c_str(), PETSC_TRUE, &dm) >> checkError;
     PetscObjectSetName((PetscObject)dm, name.c_str()) >> checkError;
     return dm;
 }
