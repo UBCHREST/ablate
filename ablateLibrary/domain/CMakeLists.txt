@@ -21,6 +21,8 @@ target_sources(ablateLibrary
         fieldDescription.hpp
         fieldDescription.cpp
         fieldDescriptor.hpp
+        boxMeshBoundaryCells.hpp
+        boxMeshBoundaryCells.cpp
         )
 
 add_subdirectory(modifiers)

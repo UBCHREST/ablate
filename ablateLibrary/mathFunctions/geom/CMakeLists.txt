@@ -4,4 +4,6 @@ target_sources(ablateLibrary
         geometry.cpp
         sphere.hpp
         sphere.cpp
+        box.hpp
+        box.cpp
         )
