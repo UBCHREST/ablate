@@ -157,9 +157,9 @@ Label 'celltype':
 DM Object: (.*) 1 MPI processes<expects> *
   type: plex
 (.*) in 2 dimensions:<expects> *
-  0-cells: 9
-  1-cells: 12
-  2-cells: 4
+  Number of 0-cells per rank: 9
+  Number of 1-cells per rank: 12
+  Number of 2-cells per rank: 4
 Labels:
   marker: 4 strata with value/size (4 (5), 2 (5), 1 (5), 3 (5))
   Face Sets: 4 strata with value/size (4 (2), 2 (2), 1 (2), 3 (2))
@@ -174,9 +174,9 @@ Field temperature:
 DM Object: (.*) 1 MPI processes<expects> *
   type: plex
 (.*) in 2 dimensions:<expects> *
-  0-cells: 9
-  1-cells: 12
-  2-cells: 4
+  Number of 0-cells per rank: 9
+  Number of 1-cells per rank: 12
+  Number of 2-cells per rank: 4
 Labels:
   marker: 4 strata with value/size (4 (5), 2 (5), 1 (5), 3 (5))
   Face Sets: 4 strata with value/size (4 (2), 2 (2), 1 (2), 3 (2))
@@ -191,9 +191,9 @@ Field temperature:
 DM Object: (.*) 1 MPI processes<expects> *
   type: plex
 (.*) in 2 dimensions:<expects> *
-  0-cells: 9
-  1-cells: 12
-  2-cells: 4
+  Number of 0-cells per rank: 9
+  Number of 1-cells per rank: 12
+  Number of 2-cells per rank: 4
 Labels:
   marker: 4 strata with value/size (4 (5), 2 (5), 1 (5), 3 (5))
   Face Sets: 4 strata with value/size (4 (2), 2 (2), 1 (2), 3 (2))
