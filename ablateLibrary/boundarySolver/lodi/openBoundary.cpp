@@ -59,6 +59,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     // Compute each stencil point
     std::vector<PetscReal> stencilDensity(stencilSize);
     std::vector<std::vector<PetscReal>> stencilVel(stencilSize, std::vector<PetscReal>(dim));
+    std::vector<std::vector<PetscReal>> stencilNormalCoordsVel(dim, std::vector<PetscReal>(stencilSize));  // NOTE this is [dim][stencil]
     std::vector<PetscReal> stencilInternalEnergy(stencilSize);
     std::vector<PetscReal> stencilNormalVelocity(stencilSize);
     std::vector<PetscReal> stencilSpeedOfSound(stencilSize);
@@ -79,13 +80,21 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                                                                &stencilSpeedOfSound[s],
                                                                &stencilMach[s],
                                                                &stencilPressure[s]);
+
+        // Map the stencil velocity to a normal velocity
+        PetscReal normalCoordsVel[3];
+        utilities::MathUtilities::Multiply(dim, transformationMatrix, &stencilVel[s][0], normalCoordsVel);
+
+        for (PetscInt d = 0; d < dim; d++) {
+            stencilNormalCoordsVel[d][s] = normalCoordsVel[d];
+        }
     }
 
     // Interpolate the normal velocity gradient to the surface
     PetscScalar dVeldNorm[3];
-    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryNormalVelocity, stencilSize, &stencilNormalVelocity[0], stencilWeights, dVeldNorm[0]);
+    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryVelNormCord[0], stencilSize, &stencilNormalCoordsVel[0][0], stencilWeights, dVeldNorm[0]);
     for (PetscInt d = 1; d < dim; d++) {
-        BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryNormalVelocity, stencilSize, &stencilNormalVelocity[d], stencilWeights, dVeldNorm[d]);
+        BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryVelNormCord[d], stencilSize, &stencilNormalCoordsVel[d][0], stencilWeights, dVeldNorm[d]);
     }
     PetscScalar dRhodNorm;
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryDensity, stencilSize, &stencilDensity[0], stencilWeights, dRhodNorm);
