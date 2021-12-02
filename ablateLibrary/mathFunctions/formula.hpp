@@ -1,13 +1,13 @@
-#ifndef ABLATELIBRARY_PARSEDNESTED_HPP
-#define ABLATELIBRARY_PARSEDNESTED_HPP
-
+#ifndef ABLATELIBRARY_FORMULA_HPP
+#define ABLATELIBRARY_FORMULA_HPP
 #include <muParser.h>
 #include <memory>
+#include "parameters/parameters.hpp"
 #include <vector>
 #include "mathFunction.hpp"
 
 namespace ablate::mathFunctions {
-class ParsedNested : public MathFunction {
+class Formula : public MathFunction {
    private:
     mutable double coordinate[3] = {0, 0, 0};
     mutable double time = 0.0;
@@ -23,10 +23,10 @@ class ParsedNested : public MathFunction {
     static PetscErrorCode ParsedPetscNested(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
    public:
-    ParsedNested(const ParsedNested&) = delete;
-    void operator=(const ParsedNested&) = delete;
+    Formula(const Formula&) = delete;
+    void operator=(const Formula&) = delete;
 
-    explicit ParsedNested(std::string functionString, std::map<std::string, std::shared_ptr<MathFunction>>);
+    explicit Formula(std::string functionString, std::map<std::string, std::shared_ptr<MathFunction>>, std::shared_ptr<ablate::parameters::Parameters> constants = {});
 
     double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 
@@ -41,4 +41,4 @@ class ParsedNested : public MathFunction {
     PetscFunction GetPetscFunction() override { return ParsedPetscNested; }
 };
 }  // namespace ablate::mathFunctions
-#endif  // ABLATELIBRARY_PARSEDNESTED_HPP
+#endif  // ABLATELIBRARY_FORMULA_HPP

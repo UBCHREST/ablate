@@ -1,7 +1,7 @@
 target_sources(ablateLibrary
         PUBLIC
-        parsedFunction.cpp
-        parsedFunction.hpp
+        simpleFormula.cpp
+        simpleFormula.hpp
         functionWrapper.cpp
         functionWrapper.hpp
         functionPointer.hpp
@@ -16,8 +16,8 @@ target_sources(ablateLibrary
         parsedSeries.cpp
         linearTable.hpp
         linearTable.cpp
-        parsedNested.hpp
-        parsedNested.cpp
+        formula.hpp
+        formula.cpp
         )
 
 add_subdirectory(geom)

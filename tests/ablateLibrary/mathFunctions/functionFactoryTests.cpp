@@ -34,7 +34,7 @@ TEST(FunctionFactoryTests, ShouldCreateFunctionForParsedString) {
     auto function = ablate::mathFunctions::Create("x + y + z +t");
 
     // act/assert
-    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::mathFunctions::ParsedFunction>(function) != nullptr);
+    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::mathFunctions::SimpleFormula>(function) != nullptr);
     ASSERT_DOUBLE_EQ(10.0, function->Eval(1.0, 2.0, 3.0, 4.0));
 }
 

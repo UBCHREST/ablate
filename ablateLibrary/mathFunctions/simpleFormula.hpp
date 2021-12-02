@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_PARSEDFUNCTION_HPP
-#define ABLATELIBRARY_PARSEDFUNCTION_HPP
+#ifndef ABLATELIBRARY_SIMPLEFORMULA_HPP
+#define ABLATELIBRARY_SIMPLEFORMULA_HPP
 #include <muParser.h>
 #include "mathFunction.hpp"
 
@@ -9,7 +9,7 @@ namespace ablate::mathFunctions {
  * see https://beltoforion.de/en/muparser/index.php
  */
 
-class ParsedFunction : public MathFunction {
+class SimpleFormula : public MathFunction {
    private:
     mutable double coordinate[3] = {0, 0, 0};
     mutable double time = 0.0;
@@ -20,10 +20,10 @@ class ParsedFunction : public MathFunction {
     static PetscErrorCode ParsedPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
    public:
-    ParsedFunction(const ParsedFunction&) = delete;
-    void operator=(const ParsedFunction&) = delete;
+    SimpleFormula(const SimpleFormula&) = delete;
+    void operator=(const SimpleFormula&) = delete;
 
-    explicit ParsedFunction(std::string functionString);
+    explicit SimpleFormula(std::string functionString);
 
     double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 
@@ -43,4 +43,4 @@ class ParsedFunction : public MathFunction {
 };
 }  // namespace ablate::mathFunctions
 
-#endif  // ABLATELIBRARY_PARSEDFUNCTION_HPP
+#endif  // ABLATELIBRARY_SIMPLEFORMULA_HPP

@@ -1,12 +1,20 @@
-#include "parsedNested.hpp"
-#include "parsedFunction.hpp"
+#include "formula.hpp"
+#include "simpleFormula.hpp"
 
-ablate::mathFunctions::ParsedNested::ParsedNested(std::string functionString, std::map<std::string, std::shared_ptr<MathFunction>> nestedFunctionsIn) : formula(functionString) {
+ablate::mathFunctions::Formula::Formula(std::string functionString, std::map<std::string, std::shared_ptr<MathFunction>> nestedFunctionsIn, std::shared_ptr<ablate::parameters::Parameters> constants)
+    : formula(functionString) {
     // define the x,y,z and t variables
     parser.DefineVar("x", &coordinate[0]);
     parser.DefineVar("y", &coordinate[1]);
     parser.DefineVar("z", &coordinate[2]);
     parser.DefineVar("t", &time);
+
+    // Add in any provided constants
+    if (constants) {
+        for (const auto& key : constants->GetKeys()) {
+            parser.DefineConst(key, constants->GetExpect<double>(key));
+        }
+    }
 
     // for every nestedFunction passed in , use it
     for (auto nestedFunction : nestedFunctionsIn) {
@@ -21,18 +29,18 @@ ablate::mathFunctions::ParsedNested::ParsedNested(std::string functionString, st
     }
 
     // define any additional helper functions
-    ablate::mathFunctions::ParsedFunction::DefineAdditionalFunctions(parser);
+    ablate::mathFunctions::SimpleFormula::DefineAdditionalFunctions(parser);
     parser.SetExpr(formula);
 
     // Test the function
     try {
         parser.Eval();
     } catch (mu::Parser::exception_type& exception) {
-        throw ablate::mathFunctions::ParsedFunction::ConvertToException(exception);
+        throw ablate::mathFunctions::SimpleFormula::ConvertToException(exception);
     }
 }
 
-double ablate::mathFunctions::ParsedNested::Eval(const double& x, const double& y, const double& z, const double& t) const {
+double ablate::mathFunctions::Formula::Eval(const double& x, const double& y, const double& z, const double& t) const {
     coordinate[0] = x;
     coordinate[1] = y;
     coordinate[2] = z;
@@ -46,7 +54,7 @@ double ablate::mathFunctions::ParsedNested::Eval(const double& x, const double& 
     return parser.Eval();
 }
 
-double ablate::mathFunctions::ParsedNested::Eval(const double* xyz, const int& ndims, const double& t) const {
+double ablate::mathFunctions::Formula::Eval(const double* xyz, const int& ndims, const double& t) const {
     coordinate[0] = 0;
     coordinate[1] = 0;
     coordinate[2] = 0;
@@ -64,7 +72,7 @@ double ablate::mathFunctions::ParsedNested::Eval(const double* xyz, const int& n
     return parser.Eval();
 }
 
-void ablate::mathFunctions::ParsedNested::Eval(const double& x, const double& y, const double& z, const double& t, std::vector<double>& result) const {
+void ablate::mathFunctions::Formula::Eval(const double& x, const double& y, const double& z, const double& t, std::vector<double>& result) const {
     coordinate[0] = x;
     coordinate[1] = y;
     coordinate[2] = z;
@@ -88,7 +96,7 @@ void ablate::mathFunctions::ParsedNested::Eval(const double& x, const double& y,
     }
 }
 
-void ablate::mathFunctions::ParsedNested::Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const {
+void ablate::mathFunctions::Formula::Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const {
     coordinate[0] = 0;
     coordinate[1] = 0;
     coordinate[2] = 0;
@@ -116,11 +124,11 @@ void ablate::mathFunctions::ParsedNested::Eval(const double* xyz, const int& ndi
     }
 }
 
-PetscErrorCode ablate::mathFunctions::ParsedNested::ParsedPetscNested(PetscInt dim, PetscReal time, const PetscReal* x, PetscInt nf, PetscScalar* u, void* ctx) {
+PetscErrorCode ablate::mathFunctions::Formula::ParsedPetscNested(PetscInt dim, PetscReal time, const PetscReal* x, PetscInt nf, PetscScalar* u, void* ctx) {
     // wrap in try, so we return petsc error code instead of c++ exception
     PetscFunctionBeginUser;
     try {
-        auto parser = (ParsedNested*)ctx;
+        auto parser = (Formula*)ctx;
 
         // update the coordinates
         parser->coordinate[0] = 0;
@@ -157,7 +165,8 @@ PetscErrorCode ablate::mathFunctions::ParsedNested::ParsedPetscNested(PetscInt d
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedNested,
+REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::Formula,
          " computes string function with variables x, y, z, and t where additional variables can be specified using other functions",
          ARG(std::string, "formula", "see ParsedFunction for details on the string formatting."),
-         ARG(std::map<std::string TMP_COMMA ablate::mathFunctions::MathFunction>, "nested", "a map of nested MathFunctions.  These functions are assumed to compute a single scalar value"));
+         OPT(std::map<std::string TMP_COMMA ablate::mathFunctions::MathFunction>, "nested", "a map of nested MathFunctions.  These functions are assumed to compute a single scalar value"),
+         OPT(ablate::parameters::Parameters, "constants", "constants that can be used in the formula"));

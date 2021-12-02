@@ -10,7 +10,7 @@ static char help[] =
 #include "finiteElement/lowMachFlowFields.hpp"
 #include "finiteElement/lowMachFlowSolver.hpp"
 #include "gtest/gtest.h"
-#include "mathFunctions/parsedFunction.hpp"
+#include "mathFunctions/simpleFormula.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "solver/directSolverTsInterface.hpp"
 
@@ -145,11 +145,11 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
             auto velocityExact = std::make_shared<mathFunctions::FieldFunction>(
-                "velocity", std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact));
+                "velocity", std::make_shared<mathFunctions::SimpleFormula>(testingParam.uExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.uDerivativeExact));
             auto pressureExact = std::make_shared<mathFunctions::FieldFunction>(
-                "pressure", std::make_shared<mathFunctions::ParsedFunction>(testingParam.pExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.pDerivativeExact));
+                "pressure", std::make_shared<mathFunctions::SimpleFormula>(testingParam.pExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.pDerivativeExact));
             auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>(
-                "temperature", std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact));
+                "temperature", std::make_shared<mathFunctions::SimpleFormula>(testingParam.TExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.TDerivativeExact));
 
             // Create the flow object
             std::shared_ptr<ablate::finiteElement::FiniteElementSolver> flowObject =
@@ -169,9 +169,9 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                                                                                                               std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{
-                                              std::make_shared<mathFunctions::FieldFunction>("momentum_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.vSource)),
-                                              std::make_shared<mathFunctions::FieldFunction>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
-                                              std::make_shared<mathFunctions::FieldFunction>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
+                                              std::make_shared<mathFunctions::FieldFunction>("momentum_source", std::make_shared<mathFunctions::SimpleFormula>(testingParam.vSource)),
+                                              std::make_shared<mathFunctions::FieldFunction>("mass_source", std::make_shared<mathFunctions::SimpleFormula>(testingParam.qSource)),
+                                              std::make_shared<mathFunctions::FieldFunction>("energy_source", std::make_shared<mathFunctions::SimpleFormula>(testingParam.wSource))});
 
             DMSetApplicationContext(mesh->GetDM(), flowObject.get()) >> testErrorChecker;
             mesh->InitializeSubDomains({flowObject});

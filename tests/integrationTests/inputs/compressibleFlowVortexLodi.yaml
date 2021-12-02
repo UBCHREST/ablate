@@ -1,0 +1,99 @@
+---
+# This is the lodi validation case from Poinsot and Lele (Boundary Conditions for Direct Simulations of Compressible Viscous Flows)
+# parameters:
+#   l = .5
+#   L = 1
+#   pInf = 101325.0
+#   rhoInit = 1.0
+#   gamma = 1.4
+#   R = 287.0
+#   c = sqrt(gamma*p/rho) ~ 376.6178434435
+#   uo = 1.1*c = 414.2796277878
+#   Re = uo * l/nu = rho * uo * l /mu = 10,000
+#       ... mu = (rho * uo * l)/Re = 0.02071398139
+# Vortex Params
+#   C/(cl) = -.0005 ... C = -0.09415446086
+#   Rc = 0.15*l = 0.075
+# Fields
+# u_x = uo - C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*y
+# u_y =  + C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*x
+# p = pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2))
+# T = p/(R*rho) = 1/(R*rho) * (pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2)))
+
+environment:
+  title: compressibleFlowVortex
+  tagDirectory: false
+arguments:
+  euler_petscfv_type: leastsquares
+timestepper:
+  name: theMainTimeStepper
+  io:
+    interval: 0
+  arguments:
+    ts_type: rk
+    ts_adapt_type: none
+    ts_max_steps: 2500000
+    ts_max_time:
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [ 100, 100 ]
+    lower: [ -.5, 0 ]
+    upper: [ .5, 1 ]
+    simplex: false
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+      - !ablate::domain::modifiers::MergeLabels
+        mergedRegion:
+          name: openBoundaryLabel
+        regions:
+          - name: boundaryCellsRight
+          - name: boundaryCellsTop
+          - name: boundaryCellsBottom
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas : 287.0
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
+    parameters:
+      cfl: 0.5
+    transport:
+      k: 0.0
+      mu: 0.0
+    initialization:
+      - fieldName: "euler" #for euler all components are in a single field
+        field: >-
+          1.*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004),
+          1.*(0.5*(Power(0. + 1028.869904770776*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + x),2) +         Power(103.80884355390921 - 102.88699047707759*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*           (-0.5 + y),2)) + 213815.00000000003*Power(1 -         1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*         (Power(-0.5 + x,2) + Power(-0.5 + y,2)),1.))*   Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*      (Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004),
+          1.*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004)*(103.80884355390921 - 102.88699047707759*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + y)),
+          1.*(0. + 1028.869904770776*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + x))*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004)
+        timeDerivative: "0.0, 0.0, 0.0, 0.0"
+    monitors:
+      - !ablate::monitors::TimeStepMonitor
+    eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: boundaryCellsLeft
+    fieldBoundary:
+      name: boundaryFace
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: openBoundaryLabel
+    fieldBoundary:
+      name: boundaryFace
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 1
+        maxAcousticsLength: 1
