@@ -38,8 +38,6 @@ solvers:
     id: flow solver
     region:
       name: mainSolver
-    transport:
-      k: 1.0
     parameters:
       cfl: .25
     eos: *eos

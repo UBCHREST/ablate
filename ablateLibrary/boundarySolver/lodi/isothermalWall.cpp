@@ -9,7 +9,7 @@ ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos
 
 void ablate::boundarySolver::lodi::IsothermalWall::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
-    bSolver.RegisterFunction(IsothermalWallFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
+    bSolver.RegisterFunction(IsothermalWallFunction, this, fieldNames, fieldNames, {});
 }
 
 PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
@@ -18,7 +18,6 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
                                                                                     const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[],
                                                                                     const PetscScalar stencilWeights[], const PetscInt sOff[], PetscScalar source[], void *ctx) {
     PetscFunctionBeginUser;
-    const int EULER = 0;
     auto isothermalWall = (IsothermalWall *)ctx;
     auto decodeStateFunction = isothermalWall->eos->GetDecodeStateFunction();
     auto decodeStateContext = isothermalWall->eos->GetDecodeStateContext();
@@ -40,7 +39,7 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                            decodeStateContext,
                                                            dim,
-                                                           boundaryValues + uOff[EULER],
+                                                           boundaryValues + uOff[isothermalWall->eulerId],
                                                            nullptr,
                                                            fg->normal,
                                                            &boundaryDensity,
@@ -68,7 +67,7 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
         finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                                decodeStateContext,
                                                                dim,
-                                                               &stencilValues[s][uOff[EULER]],
+                                                               &stencilValues[s][uOff[isothermalWall->eulerId]],
                                                                nullptr,
                                                                fg->normal,
                                                                &stencilDensity[s],
@@ -90,8 +89,8 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     PetscReal boundaryTemperature;
     isothermalWall->eos->GetComputeTemperatureFunction()(dim,
                                                          boundaryDensity,
-                                                         boundaryValues[uOff[EULER] + fp::RHOE] / boundaryDensity,
-                                                         boundaryValues + uOff[EULER] + fp::RHOU,
+                                                         boundaryValues[uOff[isothermalWall->eulerId] + fp::RHOE] / boundaryDensity,
+                                                         boundaryValues + uOff[isothermalWall->eulerId] + fp::RHOU,
                                                          nullptr,
                                                          &boundaryTemperature,
                                                          isothermalWall->eos->GetComputeTemperatureContext()) >>
@@ -131,15 +130,18 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     for (int d = 1; d < dim; d++) {
         scriptL[1 + d] = 0.e+0;  // Tangential velocities
     }
-    //    for (int ns = 0; ns < nspeceq; ns++) {
-    //        sL[2 + ndims + ns][n1][n0] = 0.e+0; // Species
-    //    }
-    //    for (int ne = 0; ne < nEVeq; ne++) {
-    //        sL[2 + ndims + nspeceq + ne][n1][n0] = 0.e+0; // Extra variables
-    //    }
+    // Species
+    for (int ns = 0; ns < isothermalWall->nSpecEqs; ns++) {
+        scriptL[2 + dim + ns] = 0.e+0;
+    }
+    // Extra variables
+    for (int ne = 0; ne < isothermalWall->nEvEqs; ne++) {
+        scriptL[2 + dim + isothermalWall->nSpecEqs + ne] = 0.e+0;
+    }
 
     // Directly compute the source terms, note that this may be problem in the future with multiple source terms on the same boundary cell
-    isothermalWall->GetmdFdn(boundaryVelNormCord,
+    isothermalWall->GetmdFdn(sOff,
+                             boundaryVelNormCord,
                              boundaryDensity,
                              boundaryTemperature,
                              boundaryCp,
@@ -152,7 +154,7 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
                              nullptr /* PetscReal* EV*/,
                              &scriptL[0],
                              transformationMatrix,
-                             source + sOff[EULER]);
+                             source);
 
     PetscFunctionReturn(0);
 }

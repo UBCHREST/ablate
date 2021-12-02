@@ -9,14 +9,13 @@ ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos) : LODI
 void ablate::boundarySolver::lodi::Inlet::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
 
-    bSolver.RegisterFunction(InletFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
+    bSolver.RegisterFunction(InletFunction, this, fieldNames, fieldNames, {});
 }
 PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell,
                                                                   const PetscInt *uOff, const PetscScalar *boundaryValues, const PetscScalar **stencilValues, const PetscInt *aOff,
                                                                   const PetscScalar *auxValues, const PetscScalar **stencilAuxValues, PetscInt stencilSize, const PetscInt *stencil,
                                                                   const PetscScalar *stencilWeights, const PetscInt *sOff, PetscScalar *source, void *ctx) {
     PetscFunctionBeginUser;
-    const int EULER = 0;
     auto inletBoundary = (Inlet *)ctx;
     auto decodeStateFunction = inletBoundary->eos->GetDecodeStateFunction();
     auto decodeStateContext = inletBoundary->eos->GetDecodeStateContext();
@@ -38,7 +37,7 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
     finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                            decodeStateContext,
                                                            dim,
-                                                           boundaryValues + uOff[EULER],
+                                                           boundaryValues + uOff[inletBoundary->eulerId],
                                                            nullptr,
                                                            fg->normal,
                                                            &boundaryDensity,
@@ -66,7 +65,7 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
         finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                                decodeStateContext,
                                                                dim,
-                                                               &stencilValues[s][uOff[EULER]],
+                                                               &stencilValues[s][uOff[inletBoundary->eulerId]],
                                                                nullptr,
                                                                fg->normal,
                                                                &stencilDensity[s],
@@ -88,8 +87,8 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
     PetscReal boundaryTemperature;
     inletBoundary->eos->GetComputeTemperatureFunction()(dim,
                                                         boundaryDensity,
-                                                        boundaryValues[uOff[EULER] + fp::RHOE] / boundaryDensity,
-                                                        boundaryValues + uOff[EULER] + fp::RHOU,
+                                                        boundaryValues[uOff[inletBoundary->eulerId] + fp::RHOE] / boundaryDensity,
+                                                        boundaryValues + uOff[inletBoundary->eulerId] + fp::RHOU,
                                                         nullptr,
                                                         &boundaryTemperature,
                                                         inletBoundary->eos->GetComputeTemperatureContext()) >>
@@ -132,15 +131,18 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
     for (int d = 1; d < dim; d++) {
         scriptL[1 + d] = 0.e+0;
     }
-    //    for (int ns = 0; ns < nspeceq; ns++) {
-    //        sL[2 + ndims + ns][n1][n0] = 0.e+0; // Species
-    //    }
-    //    for (int ne = 0; ne < nEVeq; ne++) {
-    //        sL[2 + ndims + nspeceq + ne][n1][n0] = 0.e+0; // Extra variables
-    //    }
+    for (int ns = 0; ns < inletBoundary->nSpecEqs; ns++) {
+        // Species
+        scriptL[2 + dim + ns] = 0.e+0;
+    }
+    for (int ne = 0; ne < inletBoundary->nEvEqs; ne++) {
+        // Extra variables
+        scriptL[2 + dim + inletBoundary->nSpecEqs + ne] = 0.e+0;
+    }
 
     // Directly compute the source terms, note that this may be problem in the future with multiple source terms on the same boundary cell
-    inletBoundary->GetmdFdn(boundaryVelNormCord,
+    inletBoundary->GetmdFdn(sOff,
+                            boundaryVelNormCord,
                             boundaryDensity,
                             boundaryTemperature,
                             boundaryCp,
@@ -153,7 +155,7 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
                             nullptr /* PetscReal* EV*/,
                             &scriptL[0],
                             transformationMatrix,
-                            source + sOff[EULER]);
+                            source);
 
     PetscFunctionReturn(0);
 }

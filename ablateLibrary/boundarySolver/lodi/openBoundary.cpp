@@ -10,7 +10,7 @@ ablate::boundarySolver::lodi::OpenBoundary::OpenBoundary(std::shared_ptr<eos::EO
 void ablate::boundarySolver::lodi::OpenBoundary::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
 
-    bSolver.RegisterFunction(OpenBoundaryFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
+    bSolver.RegisterFunction(OpenBoundaryFunction, this, fieldNames, fieldNames, {});
 }
 
 PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell,
@@ -18,7 +18,6 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                                                                                 const PetscScalar *auxValues, const PetscScalar **stencilAuxValues, PetscInt stencilSize, const PetscInt *stencil,
                                                                                 const PetscScalar *stencilWeights, const PetscInt *sOff, PetscScalar *source, void *ctx) {
     PetscFunctionBeginUser;
-    const int EULER = 0;
     auto boundary = (OpenBoundary *)ctx;
     auto decodeStateFunction = boundary->eos->GetDecodeStateFunction();
     auto decodeStateContext = boundary->eos->GetDecodeStateContext();
@@ -40,7 +39,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                            decodeStateContext,
                                                            dim,
-                                                           boundaryValues + uOff[EULER],
+                                                           boundaryValues + uOff[boundary->eulerId],
                                                            nullptr,
                                                            fg->normal,
                                                            &boundaryDensity,
@@ -71,7 +70,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
         finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                                decodeStateContext,
                                                                dim,
-                                                               &stencilValues[s][uOff[EULER]],
+                                                               &stencilValues[s][uOff[boundary->eulerId]],
                                                                nullptr,
                                                                fg->normal,
                                                                &stencilDensity[s],
@@ -106,8 +105,8 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     PetscReal boundaryTemperature;
     boundary->eos->GetComputeTemperatureFunction()(dim,
                                                    boundaryDensity,
-                                                   boundaryValues[uOff[EULER] + fp::RHOE] / boundaryDensity,
-                                                   boundaryValues + uOff[EULER] + fp::RHOU,
+                                                   boundaryValues[uOff[boundary->eulerId] + fp::RHOE] / boundaryDensity,
+                                                   boundaryValues + uOff[boundary->eulerId] + fp::RHOU,
                                                    nullptr,
                                                    &boundaryTemperature,
                                                    boundary->eos->GetComputeTemperatureContext()) >>
@@ -153,12 +152,12 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                 for (int d = 1; d < dim; d++) {
                     scriptL[1 + d] = lambda[1 + d] * dVeldNorm[d];  // Tangential velocities
                 };
-                //                for (int ns = 0; ns < nspeceq; ns++) {
-                //                    sL[2+ndims+ns][n1][n0] = lam[2+ndims+ns]*dYidn[ns][n1][n0];// Species
-                //                }
-                //                for (int ne = 0; ne < nEVeq; ne++) {
-                //                    sL[2+ndims+nspeceq+ne][n1][n0] = lam[2+ndims+nspeceq+ne]*dEVdn[ne][n1][n0];// Scalars
-                //                }
+                //                                for (int ns = 0; ns < nspeceq; ns++) {
+                //                                    scriptL[2+dim+ns] = lambda[2+ndims+ns]*dYidn[ns][n1][n0];// Species
+                //                                }
+                //                                for (int ne = 0; ne < nEVeq; ne++) {
+                //                                    scriptL[2+dim+nspeceq+ne] = lambda[2+ndims+nspeceq+ne]*dEVdn[ne][n1][n0];// Scalars
+                //                                }
             } else {
                 // Coming into the domain (assume dP/dt = 0)
                 scriptL[1] = 0.;  // Entropy wave
@@ -207,7 +206,8 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     }
 
     // Directly compute the source terms, note that this may be problem in the future with multiple source terms on the same boundary cell
-    boundary->GetmdFdn(boundaryVelNormCord,
+    boundary->GetmdFdn(sOff,
+                       boundaryVelNormCord,
                        boundaryDensity,
                        boundaryTemperature,
                        boundaryCp,
@@ -220,7 +220,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                        nullptr /* PetscReal* EV*/,
                        &scriptL[0],
                        transformationMatrix,
-                       source + sOff[EULER]);
+                       source);
 
     PetscFunctionReturn(0);
 }

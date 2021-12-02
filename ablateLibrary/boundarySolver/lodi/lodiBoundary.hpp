@@ -21,13 +21,16 @@ class LODIBoundary : public BoundaryProcess {
 
     static void GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal Cp, PetscReal Cv, PetscReal& velNormPrim, PetscReal& speedOfSoundPrim);
 
-    void GetEigenValues(PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal lamda[]);
+    void GetEigenValues(PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal lamda[]) const;
 
-    void GetmdFdn(const PetscReal* velNormCord, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C, PetscReal Enth, PetscReal velnprm, PetscReal Cprm, const PetscReal* Yi,
-                  const PetscReal* EV, const PetscReal* sL, const PetscReal transformationMatrix[3][3], PetscReal* mdFdn);
+    void GetmdFdn(const PetscInt sOff[], const PetscReal* velNormCord, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C, PetscReal Enth, PetscReal velnprm, PetscReal Cprm,
+                  const PetscReal* Yi, const PetscReal* EV, const PetscReal* sL, const PetscReal transformationMatrix[3][3], PetscReal* mdFdn) const;
 
     // Compute known/shared values
-    PetscInt dims, nEqs, nSpecEqs, nEvEqs;
+    PetscInt dims, nEqs, nSpecEqs, nEvEqs, eulerId, speciesId, evId;
+
+    // Keep track of the required fields
+    std::vector<std::string> fieldNames;
 
    public:
     explicit LODIBoundary(std::shared_ptr<eos::EOS> eos);
@@ -44,7 +47,7 @@ class LODIBoundary : public BoundaryProcess {
     void Initialize(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0);
 
    private:
-    ablate::finiteVolume::processes::EulerTransport::UpdateTemperatureData updateTemperatureData;
+    ablate::finiteVolume::processes::EulerTransport::UpdateTemperatureData updateTemperatureData{};
 };
 
 }  // namespace ablate::boundarySolver::lodi
