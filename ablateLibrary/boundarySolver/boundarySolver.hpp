@@ -17,7 +17,7 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
      */
     typedef struct {
         PetscReal normal[3];   /* Area-scaled normals */
-        PetscReal areas[3];   /* Area-scaled normals */
+        PetscReal areas[3];    /* Area-scaled normals */
         PetscReal centroid[3]; /* Location of centroid (quadrature point) */
     } BoundaryFVFaceGeom;
 
@@ -43,7 +43,8 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
      * @param stencilWeights
      * @param grad
      */
-    static void ComputeGradientAlongNormal(PetscInt dim, const BoundaryFVFaceGeom* fg, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm);
+    static void ComputeGradientAlongNormal(PetscInt dim, const BoundaryFVFaceGeom* fg, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues,
+                                           const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm);
 
    private:
     /**

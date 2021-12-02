@@ -197,7 +197,7 @@ INSTANTIATE_TEST_SUITE_P(
                         *p = 251618.820766997;
                     } else {
                         CHECK_EXPECT("dim", 1, dim);
-                        CHECK_EXPECT("density", (8.692018326008165+1.040246109552421), density);
+                        CHECK_EXPECT("density", (8.692018326008165 + 1.040246109552421), density);
                         CHECK_EXPECT("velocity0", -19.960302, velocity[0]);
                         CHECK_EXPECT("totalEnergy", 3000, totalEnergy, 1E-3);
                         *internalEnergy = NAN;
@@ -239,7 +239,7 @@ INSTANTIATE_TEST_SUITE_P(
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .boundaryValues = {8.692018326008165, -1967429.7903072261, -173.8412357219959},
-            .stencilValues = { (8.692018326008165+1.040246109552421), 3000 * (8.692018326008165+1.040246109552421), (-20.0001  + 0.03979797979809766) * (8.692018326008165+1.040246109552421)},
+            .stencilValues = {(8.692018326008165 + 1.040246109552421), 3000 * (8.692018326008165 + 1.040246109552421), (-20.0001 + 0.03979797979809766) * (8.692018326008165 + 1.040246109552421)},
             .expectedResults = {-888.7282612652397, 1.770387294967629E8, -165929.9623913537}},
         (OpenBoundaryTestParameters){
             .name = "1D supersonic out of the domain",
@@ -260,7 +260,7 @@ INSTANTIATE_TEST_SUITE_P(
                         *p = 251618.820766997;
                     } else {
                         CHECK_EXPECT("dim", 1, dim);
-                        CHECK_EXPECT("density", (8.692018326008165+1.040246109552421), density);
+                        CHECK_EXPECT("density", (8.692018326008165 + 1.040246109552421), density);
                         CHECK_EXPECT("velocity0", -499.960302, velocity[0]);
                         CHECK_EXPECT("totalEnergy", 3000, totalEnergy, 1E-3);
                         *internalEnergy = NAN;
@@ -302,7 +302,7 @@ INSTANTIATE_TEST_SUITE_P(
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .boundaryValues = {8.692018326008165, -882665.4860045275, -4346.010032205915},
-            .stencilValues = { (8.692018326008165+1.040246109552421), 3000 * (8.692018326008165+1.040246109552421), (-500.0001  + 0.03979797979809766) * (8.692018326008165+1.040246109552421)},
+            .stencilValues = {(8.692018326008165 + 1.040246109552421), 3000 * (8.692018326008165 + 1.040246109552421), (-500.0001 + 0.03979797979809766) * (8.692018326008165 + 1.040246109552421)},
             .expectedResults = {519.7772340310783, -8.949767410165516E7, -259915.7065747647}},
         (OpenBoundaryTestParameters){
             .name = "1D supersonic into the domain",
@@ -323,7 +323,7 @@ INSTANTIATE_TEST_SUITE_P(
                         *p = 251618.820766997;
                     } else {
                         CHECK_EXPECT("dim", 1, dim);
-                        CHECK_EXPECT("density", (8.692018326008165+1.040246109552421), density);
+                        CHECK_EXPECT("density", (8.692018326008165 + 1.040246109552421), density);
                         CHECK_EXPECT("velocity0", 500.0398979798, velocity[0]);
                         CHECK_EXPECT("totalEnergy", 3000, totalEnergy, 1E-3);
                         *internalEnergy = NAN;
@@ -365,7 +365,7 @@ INSTANTIATE_TEST_SUITE_P(
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .boundaryValues = {8.692018326008165, -882665.4860045275, 4346.010032205915},
-            .stencilValues = { (8.692018326008165+1.040246109552421), 3000 * (8.692018326008165+1.040246109552421), (500.0001  + 0.03979797979809766) * (8.692018326008165+1.040246109552421)},
+            .stencilValues = {(8.692018326008165 + 1.040246109552421), 3000 * (8.692018326008165 + 1.040246109552421), (500.0001 + 0.03979797979809766) * (8.692018326008165 + 1.040246109552421)},
             .expectedResults = {0.0, 0.0, 0.0}},
         (OpenBoundaryTestParameters){
             .name = "3D supersonic out of the domain",
@@ -388,10 +388,10 @@ INSTANTIATE_TEST_SUITE_P(
                         *p = 251619.82076699712;
                     } else {
                         CHECK_EXPECT("dim", 3, dim);
-                        CHECK_EXPECT("density", (8.694650097350083-0.12298691191290341), density);
-                        CHECK_EXPECT("velocity0", -500  + 1.9999999999981803, velocity[0]);
-                        CHECK_EXPECT("velocity1", -600+2.0000000000436553, velocity[1]);
-                        CHECK_EXPECT("velocity2", -700+0.004999999964638845, velocity[2]);
+                        CHECK_EXPECT("density", (8.694650097350083 - 0.12298691191290341), density);
+                        CHECK_EXPECT("velocity0", -500 + 1.9999999999981803, velocity[0]);
+                        CHECK_EXPECT("velocity1", -600 + 2.0000000000436553, velocity[1]);
+                        CHECK_EXPECT("velocity2", -700 + 0.004999999964638845, velocity[2]);
                         CHECK_EXPECT("totalEnergy", 3000, totalEnergy, 1E-3);
                         *internalEnergy = NAN;
                         *a = NAN,
@@ -435,7 +435,11 @@ INSTANTIATE_TEST_SUITE_P(
                 },
             .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .boundaryValues = {8.694650097350083, 2812108.5386315645, -4347.325048675041, -5216.79005841005, -6086.255068145058},
-            .stencilValues = {(8.694650097350083-0.12298691191290341), 3000 * (8.694650097350083-0.12298691191290341), (-500.0  + 1.9999999999981803)*(8.694650097350083-0.12298691191290341), (-600.0+2.0000000000436553)*(8.694650097350083-0.12298691191290341),(-700.0+0.004999999964638845)*(8.694650097350083-0.12298691191290341) },
+            .stencilValues = {(8.694650097350083 - 0.12298691191290341),
+                              3000 * (8.694650097350083 - 0.12298691191290341),
+                              (-500.0 + 1.9999999999981803) * (8.694650097350083 - 0.12298691191290341),
+                              (-600.0 + 2.0000000000436553) * (8.694650097350083 - 0.12298691191290341),
+                              (-700.0 + 0.004999999964638845) * (8.694650097350083 - 0.12298691191290341)},
             .expectedResults = {-86.13431158921169, -3.467059254299343E7, 55239.66593088489, 63853.09709008283, 60124.44938764354}},
         (OpenBoundaryTestParameters){
             .name = "3D subsonic out of the domain",
@@ -458,10 +462,10 @@ INSTANTIATE_TEST_SUITE_P(
                         *p = 251619.82076699712;
                     } else {
                         CHECK_EXPECT("dim", 3, dim);
-                        CHECK_EXPECT("density", (8.694650097350083-0.12298691191290341), density);
-                        CHECK_EXPECT("velocity0", -5.0  + 2.000000000000312, velocity[0]);
-                        CHECK_EXPECT("velocity1", -6.0+0.005000000000165981, velocity[1]);
-                        CHECK_EXPECT("velocity2", -7.0+2.000000000000312, velocity[2]);
+                        CHECK_EXPECT("density", (8.694650097350083 - 0.12298691191290341), density);
+                        CHECK_EXPECT("velocity0", -5.0 + 2.000000000000312, velocity[0]);
+                        CHECK_EXPECT("velocity1", -6.0 + 0.005000000000165981, velocity[1]);
+                        CHECK_EXPECT("velocity2", -7.0 + 2.000000000000312, velocity[2]);
                         CHECK_EXPECT("totalEnergy", 3000, totalEnergy, 1E-3);
                         *internalEnergy = NAN;
                         *a = NAN,
@@ -505,6 +509,10 @@ INSTANTIATE_TEST_SUITE_P(
                 },
             .fvFaceGeom = {.normal = {0.0, -1.0, 0.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .boundaryValues = {8.694650097350083, -1969470.8091556267, -43.473250486750416, -52.167900584100494, -60.86255068145058},
-            .stencilValues = {(8.694650097350083-0.12298691191290341), 3000 * (8.694650097350083-0.12298691191290341), (-5.0  + 2.000000000000312)*(8.694650097350083-0.12298691191290341), (-6.0+0.005000000000165981)*(8.694650097350083-0.12298691191290341),(-7.0+2.000000000000312)*(8.694650097350083-0.12298691191290341) },
+            .stencilValues = {(8.694650097350083 - 0.12298691191290341),
+                              3000 * (8.694650097350083 - 0.12298691191290341),
+                              (-5.0 + 2.000000000000312) * (8.694650097350083 - 0.12298691191290341),
+                              (-6.0 + 0.005000000000165981) * (8.694650097350083 - 0.12298691191290341),
+                              (-7.0 + 2.000000000000312) * (8.694650097350083 - 0.12298691191290341)},
             .expectedResults = {-910.2235530052537, 1.810158811466939E8, 4655.4535661944865, -178273.9425225725, 6475.9006722049935}}),
     [](const testing::TestParamInfo<OpenBoundaryTestParameters>& info) { return testingResources::PetscTestFixture::SanitizeTestName(info.param.name); });

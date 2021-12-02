@@ -22,8 +22,9 @@ class LODIBoundary : public BoundaryProcess {
 
     static void GetEigenValues(PetscInt ndims, PetscInt nSpec, PetscInt nEV, PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal lamda[]);
 
-    static void GetmdFdn(PetscInt ndims, PetscInt neqs, PetscInt nspeceq, PetscInt nEVeq, const PetscReal* velNormCord, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C, PetscReal Enth,
-                         PetscReal velnprm, PetscReal Cprm, const PetscReal* Yi, const PetscReal* EV, const PetscReal* sL, const PetscReal transformationMatrix[3][3], PetscReal* mdFdn);
+    static void GetmdFdn(PetscInt ndims, PetscInt neqs, PetscInt nspeceq, PetscInt nEVeq, const PetscReal* velNormCord, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C,
+                         PetscReal Enth, PetscReal velnprm, PetscReal Cprm, const PetscReal* Yi, const PetscReal* EV, const PetscReal* sL, const PetscReal transformationMatrix[3][3],
+                         PetscReal* mdFdn);
 
    public:
     explicit LODIBoundary(std::shared_ptr<eos::EOS> eos);

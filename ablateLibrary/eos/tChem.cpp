@@ -329,14 +329,14 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSensibleEnthalpy(PetscReal T, Pet
 
     // get the required values
     double totalEnthalpy;
-    int err = TC_getMs2HmixMs(tempYiWorkingArray,  tChem->numberSpecies + 1, &totalEnthalpy);
+    int err = TC_getMs2HmixMs(tempYiWorkingArray, tChem->numberSpecies + 1, &totalEnthalpy);
     if (err != 0) {
         return err;
     }
 
     // compute the heat of formation
     double enthalpyOfFormation;
-    err = ComputeEnthalpyOfFormation( tChem->numberSpecies, tempYiWorkingArray, enthalpyOfFormation);
+    err = ComputeEnthalpyOfFormation(tChem->numberSpecies, tempYiWorkingArray, enthalpyOfFormation);
 
     *sensibleEnthalpy = totalEnthalpy - enthalpyOfFormation;
     PetscFunctionReturn(0);
@@ -403,7 +403,6 @@ const char *ablate::eos::TChem::periodicTable =
     "D          E\n"
     "  2.01410    5.45E-4  \n"
     "";
-
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::TChem, "TChem ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format)"),

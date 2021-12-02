@@ -1,10 +1,10 @@
-
 #include "lodiBoundary.hpp"
-#include "utilities/mathUtilities.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
+#include "utilities/mathUtilities.hpp"
+
 ablate::boundarySolver::lodi::LODIBoundary::LODIBoundary(const std::shared_ptr<eos::EOS> eos) : eos(eos) {}
 
-void ablate::boundarySolver::lodi::LODIBoundary::GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal cp, PetscReal cv, PetscReal& velNormPrim, PetscReal& speedOfSoundPrim) {
+void ablate::boundarySolver::lodi::LODIBoundary::GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal cp, PetscReal cv, PetscReal &velNormPrim, PetscReal &speedOfSoundPrim) {
     PetscReal ralpha2 = 1.;
     PetscReal fourralpha2 = 4;
 
@@ -20,7 +20,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetVelAndCPrims(PetscReal velNo
     speedOfSoundPrim = 0.5e+0 * (speedOfSound * PetscSqrtReal(gamm12 * tmp * M2 + fourralpha2));
 }
 
-void ablate::boundarySolver::lodi::LODIBoundary::GetEigenValues(PetscInt ndims, PetscInt nSpec, PetscInt nEV, PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal* lamda) {
+void ablate::boundarySolver::lodi::LODIBoundary::GetEigenValues(PetscInt ndims, PetscInt nSpec, PetscInt nEV, PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal *lamda) {
     lamda[0] = velnprm - cprm;
     lamda[1] = veln;
     for (int ndim = 1; ndim < ndims; ndim++) {
@@ -35,10 +35,10 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetEigenValues(PetscInt ndims, 
     }
 }
 
-void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(PetscInt ndims, PetscInt neqs, PetscInt nspeceq, PetscInt nEVeq, const PetscReal *vel, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C,
-                                                          PetscReal Enth, PetscReal velnprm, PetscReal Cprm, const PetscReal *Yi, const PetscReal *EV, const PetscReal *sL, const PetscReal transformationMatrix[3][3], PetscReal *mdFdn) {
-
-    std::vector<PetscScalar> d (neqs);
+void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(PetscInt ndims, PetscInt neqs, PetscInt nspeceq, PetscInt nEVeq, const PetscReal *vel, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv,
+                                                          PetscReal C, PetscReal Enth, PetscReal velnprm, PetscReal Cprm, const PetscReal *Yi, const PetscReal *EV, const PetscReal *sL,
+                                                          const PetscReal transformationMatrix[3][3], PetscReal *mdFdn) {
+    std::vector<PetscScalar> d(neqs);
     auto fac = 0.5e+0 * (sL[0] - sL[1 + ndims]) * (velnprm - vel[0]) / Cprm;
     double C2 = C * C;
     d[0] = (sL[1] + 0.5e+0 * (sL[1 + ndims] + sL[0]) + fac) / C2;
@@ -54,21 +54,21 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(PetscInt ndims, PetscI
         d[2 + ndims + nspeceq + ne] = sL[2 + ndims + nspeceq + ne];
     }
     mdFdn[RHO] = -d[0];
-    mdFdn[RHOVELN] = -(vel[0] * d[0] + rho * d[2]); 	// Wall normal component momentum, not really rho u
+    mdFdn[RHOVELN] = -(vel[0] * d[0] + rho * d[2]);  // Wall normal component momentum, not really rho u
     double KE = vel[0] * vel[0];
     double dvelterm = vel[0] * d[2];
-    for (int ndim = 1; ndim < ndims; ndim++) { 							// Tangential components for momentum
+    for (int ndim = 1; ndim < ndims; ndim++) {  // Tangential components for momentum
         mdFdn[RHOVELN + ndim] = -(vel[ndim] * d[0] + rho * d[2 + ndim]);
         KE += vel[ndim] * vel[ndim];
         dvelterm = dvelterm + vel[ndim] * d[2 + ndim];
     }
     KE = 0.5e+0 * KE;
-    mdFdn[RHOE] = -(d[0] * (KE + Enth - Cp * T) + d[1] / (Cp/Cv - 1.e+0 + 1.0E-30) + rho * dvelterm);
+    mdFdn[RHOE] = -(d[0] * (KE + Enth - Cp * T) + d[1] / (Cp / Cv - 1.e+0 + 1.0E-30) + rho * dvelterm);
     for (int ns = 0; ns < nspeceq; ns++) {
-        mdFdn[2 + ndims + ns] = -(Yi[ns] * d[0] + rho * d[2 + ndims + ns]); // species
+        mdFdn[2 + ndims + ns] = -(Yi[ns] * d[0] + rho * d[2 + ndims + ns]);  // species
     }
     for (int ne = 0; ne < nEVeq; ne++) {
-        mdFdn[2 + ndims + nspeceq + ne] = -(EV[ne] * d[0] + rho * d[2 + ndims + nspeceq + ne]); // extra
+        mdFdn[2 + ndims + nspeceq + ne] = -(EV[ne] * d[0] + rho * d[2 + ndims + nspeceq + ne]);  // extra
     }
 
     /*
@@ -82,10 +82,9 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(PetscInt ndims, PetscI
         data structure is used which is more general but also more expensive.
      */
     PetscReal mdFdntmp[3] = {0.0, 0.0, 0.0};
-    utilities::MathUtilities::MultiplyTranspose(ndims, transformationMatrix, mdFdn +  RHOVELN, mdFdntmp);
+    utilities::MathUtilities::MultiplyTranspose(ndims, transformationMatrix, mdFdn + RHOVELN, mdFdntmp);
     // Over-write source components
     for (PetscInt nc = 0; nc < ndims; nc++) {
-        mdFdn[RHOVELN+ nc] = mdFdntmp[nc];
+        mdFdn[RHOVELN + nc] = mdFdntmp[nc];
     }
-
 }

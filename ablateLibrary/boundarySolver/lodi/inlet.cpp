@@ -4,10 +4,9 @@
 
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
-ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos)
-    : LODIBoundary(std::move(eos)){}
+ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos) : LODIBoundary(std::move(eos)) {}
 
-void ablate::boundarySolver::lodi::Inlet::Initialize(ablate::boundarySolver::BoundarySolver& bSolver) {
+void ablate::boundarySolver::lodi::Inlet::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     bSolver.RegisterFunction(InletFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
 }
 PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell,
@@ -87,11 +86,11 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
     // Compute the temperature at the boundary
     PetscReal boundaryTemperature;
     inletBoundary->eos->GetComputeTemperatureFunction()(dim,
-                                                         boundaryDensity,
-                                                         boundaryValues[uOff[EULER] + fp::RHOE] / boundaryDensity,
-                                                         boundaryValues + uOff[EULER] + fp::RHOU,
-                                                         nullptr,
-                                                         &boundaryTemperature,
+                                                        boundaryDensity,
+                                                        boundaryValues[uOff[EULER] + fp::RHOE] / boundaryDensity,
+                                                        boundaryValues + uOff[EULER] + fp::RHOU,
+                                                        nullptr,
+                                                        &boundaryTemperature,
                                                         inletBoundary->eos->GetComputeTemperatureContext()) >>
         checkError;
 
@@ -100,8 +99,7 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
     inletBoundary->eos->GetComputeSpecificHeatConstantPressureFunction()(
         boundaryTemperature, boundaryDensity, nullptr, &boundaryCp, inletBoundary->eos->GetComputeSpecificHeatConstantPressureContext()) >>
         checkError;
-    inletBoundary->eos->GetComputeSpecificHeatConstantVolumeFunction()(
-        boundaryTemperature, boundaryDensity, nullptr, &boundaryCv, inletBoundary->eos->GetComputeSpecificHeatConstantVolumeContext()) >>
+    inletBoundary->eos->GetComputeSpecificHeatConstantVolumeFunction()(boundaryTemperature, boundaryDensity, nullptr, &boundaryCv, inletBoundary->eos->GetComputeSpecificHeatConstantVolumeContext()) >>
         checkError;
 
     // Compute the enthalpy
@@ -120,15 +118,14 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
     // Get scriptL
     std::vector<PetscReal> scriptL(neq);
     // Outgoing acoustic wave
-    scriptL[1+dim] = lambda[1+dim]*(dPdNorm-boundaryDensity*dVeldNorm*(velNormPrim-boundaryNormalVelocity-speedOfSoundPrim));
+    scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));
 
     // Incoming acoustic wave
     scriptL[0] = scriptL[1 + dim];
 
     // Entropy wave
-    scriptL[1] = 0.5e+0*(boundaryCp/boundaryCv-1.e+0)*(scriptL[1+dim]+scriptL[0])
-                 -0.5*(boundaryCp/boundaryCv+1.e+0)*(scriptL[0]-scriptL[1+dim])
-                       *(velNormPrim-boundaryNormalVelocity)/speedOfSoundPrim;
+    scriptL[1] = 0.5e+0 * (boundaryCp / boundaryCv - 1.e+0) * (scriptL[1 + dim] + scriptL[0]) -
+                 0.5 * (boundaryCp / boundaryCv + 1.e+0) * (scriptL[0] - scriptL[1 + dim]) * (velNormPrim - boundaryNormalVelocity) / speedOfSoundPrim;
 
     // Tangential velocities
     for (int d = 1; d < dim; d++) {

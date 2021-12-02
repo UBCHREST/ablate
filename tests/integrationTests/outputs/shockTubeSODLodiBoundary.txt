@@ -1,0 +1,149 @@
+DM Object: 1 MPI processes
+  type: plex
+(.*) in 1 dimension:<expects> *
+Supports:
+[0] Max support size: 2
+[0]: 9 ----> 0
+[0]: 9 ----> 7
+[0]: 10 ----> 0
+[0]: 10 ----> 1
+[0]: 11 ----> 1
+[0]: 11 ----> 2
+[0]: 12 ----> 2
+[0]: 12 ----> 3
+[0]: 13 ----> 3
+[0]: 13 ----> 4
+[0]: 14 ----> 4
+[0]: 14 ----> 5
+[0]: 15 ----> 5
+[0]: 15 ----> 6
+[0]: 16 ----> 6
+[0]: 16 ----> 8
+Cones:
+[0] Max cone size: 2
+[0]: 0 <---- 9 (0)
+[0]: 0 <---- 10 (0)
+[0]: 1 <---- 10 (0)
+[0]: 1 <---- 11 (0)
+[0]: 2 <---- 11 (0)
+[0]: 2 <---- 12 (0)
+[0]: 3 <---- 12 (0)
+[0]: 3 <---- 13 (0)
+[0]: 4 <---- 13 (0)
+[0]: 4 <---- 14 (0)
+[0]: 5 <---- 14 (0)
+[0]: 5 <---- 15 (0)
+[0]: 6 <---- 15 (0)
+[0]: 6 <---- 16 (0)
+[0]: 7 <---- 9 (0)
+[0]: 8 <---- 16 (0)
+coordinates with 1 fields
+  field 0 with 1 components
+Process 0:
+  \(   9\) dim  1 offset   0 (.*)<expects> *
+  \(  10\) dim  1 offset   1 (.*)<expects> *
+  \(  11\) dim  1 offset   2 (.*)<expects> *
+  \(  12\) dim  1 offset   3 (.*)<expects> *
+  \(  13\) dim  1 offset   4 (.*)<expects> *
+  \(  14\) dim  1 offset   5 (.*)<expects> *
+  \(  15\) dim  1 offset   6 (.*)<expects> *
+  \(  16\) dim  1 offset   7 (.*)<expects> *
+Labels:
+Label 'celltype':
+[0]: 9 (0)
+[0]: 10 (0)
+[0]: 11 (0)
+[0]: 12 (0)
+[0]: 13 (0)
+[0]: 14 (0)
+[0]: 15 (0)
+[0]: 16 (0)
+[0]: 0 (1)
+[0]: 1 (1)
+[0]: 2 (1)
+[0]: 3 (1)
+[0]: 4 (1)
+[0]: 5 (1)
+[0]: 6 (1)
+[0]: 7 (12)
+[0]: 8 (12)
+Label 'marker':
+[0]: 9 (1)
+[0]: 16 (1)
+Label 'Face Sets':
+[0]: 9 (1)
+[0]: 16 (2)
+Label 'boundaryCellsLeft':
+[0]: 0 (1)
+[0]: 9 (1)
+[0]: 10 (1)
+Label 'mainSolver':
+[0]: 1 (1)
+[0]: 2 (1)
+[0]: 3 (1)
+[0]: 4 (1)
+[0]: 5 (1)
+[0]: 10 (1)
+[0]: 11 (1)
+[0]: 12 (1)
+[0]: 13 (1)
+[0]: 14 (1)
+[0]: 15 (1)
+Label 'boundaryFace':
+[0]: 10 (1)
+[0]: 15 (1)
+Label 'boundaryCells':
+[0]: 0 (1)
+[0]: 6 (1)
+Label 'boundaryCellsRight':
+[0]: 6 (1)
+[0]: 15 (1)
+[0]: 16 (1)
+Label 'vtk':
+[0]: 0 (1)
+[0]: 1 (1)
+[0]: 2 (1)
+[0]: 3 (1)
+[0]: 4 (1)
+[0]: 5 (1)
+[0]: 6 (1)
+Label 'ghost':
+Timestep: 0000 time = 0        dt = (.*)<expects> <0.05
+Timestep: 0001 time = 1e-06    dt = (.*)<expects> <0.05
+Timestep: 0002 time = 0.04228  dt = (.*)<expects> <0.05
+Timestep: 0003 time = 0.0773   dt = (.*)<expects> <0.05
+Timestep: 0004 time = 0.1091   dt = (.*)<expects> <0.05
+Timestep: 0005 time = 0.1393   dt = (.*)<expects> <0.05
+Timestep: 0006 time = 0.1687   dt = (.*)<expects> <0.05
+Timestep: 0007 time = 0.1976   dt = (.*)<expects> <0.05
+Timestep: 0008 time = 0.2262   dt = (.*)<expects> <0.05
+Timestep: 0009 time = 0.2546   dt = (.*)<expects> <0.05
+Timestep: 0010 time = 0.2829   dt = (.*)<expects> <0.05
+Timestep: 0011 time = 0.3113   dt = (.*)<expects> <0.05
+Timestep: 0012 time = 0.3396   dt = (.*)<expects> <0.05
+Timestep: 0013 time = 0.3681   dt = (.*)<expects> <0.05
+Timestep: 0014 time = 0.3966   dt = (.*)<expects> <0.05
+Timestep: 0015 time = 0.4254   dt = (.*)<expects> <0.05
+Timestep: 0016 time = 0.4545   dt = (.*)<expects> <0.05
+Timestep: 0017 time = 0.4839   dt = (.*)<expects> <0.05
+Timestep: 0018 time = 0.5136   dt = (.*)<expects> <0.05
+ResultFiles:
+flow solver.0.curve
+flow solver.1.curve
+flow solver.10.curve
+flow solver.11.curve
+flow solver.12.curve
+flow solver.13.curve
+flow solver.14.curve
+flow solver.15.curve
+flow solver.16.curve
+flow solver.17.curve
+flow solver.18.curve
+flow solver.2.curve
+flow solver.3.curve
+flow solver.4.curve
+flow solver.5.curve
+flow solver.6.curve
+flow solver.7.curve
+flow solver.8.curve
+flow solver.9.curve

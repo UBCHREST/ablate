@@ -11,7 +11,7 @@ class Box : public Geometry {
     const std::vector<double> upper;
 
    public:
-    Box(std::vector<double> lower,std::vector<double> upper , std::vector<double> insideValues = {}, std::vector<double> outsideValues = {});
+    Box(std::vector<double> lower, std::vector<double> upper, std::vector<double> insideValues = {}, std::vector<double> outsideValues = {});
 
     bool InsideGeometry(const double* xyz, const int& ndims, const double& time) const override;
 };

@@ -1,8 +1,8 @@
 #include "finiteVolumeSolver.hpp"
 #include <petsc/private/dmpleximpl.h>
-#include <utilities/mpiError.hpp>
-#include <utilities/petscError.hpp>
 #include "processes/process.hpp"
+#include "utilities/mpiError.hpp"
+#include "utilities/petscError.hpp"
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
@@ -27,7 +27,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     PetscBool ghostLabel;
     DMHasLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
     if (!ghostLabel) {
-//        throw std::runtime_error("The FiniteVolumeSolver expects ghost cells around the boundary even if the FiniteVolumeSolver region does not include the boundary.");
+        //        throw std::runtime_error("The FiniteVolumeSolver expects ghost cells around the boundary even if the FiniteVolumeSolver region does not include the boundary.");
     }
 }
 

@@ -215,7 +215,7 @@ INSTANTIATE_TEST_SUITE_P(InletTests, InletTestFixture,
                                                        [](PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx) {
                                                            CHECK_EXPECT("T", 300.4, T);
                                                            CHECK_EXPECT("density", 2.905934985931918, density);
-                                                           *specificHeat =1009.8821078326129;
+                                                           *specificHeat = 1009.8821078326129;
                                                            return 0;
                                                        },
                                                    .computeCvFunction =
@@ -235,5 +235,5 @@ INSTANTIATE_TEST_SUITE_P(InletTests, InletTestFixture,
                                                    .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
                                                    .boundaryValues = {2.905934985931918, -244872.459632804, 0.0, 0.0, 29.05934985931918},
                                                    .stencilValues = {20, 3000 * 20, 0.0, 0.0, (10.0 + 40000.000000000015) * 20},
-                                                   .expectedResults = {-157992.19383660285, 1.3313421427129639E10,0.0, 0.0, -1579921.9383660285}}),
+                                                   .expectedResults = {-157992.19383660285, 1.3313421427129639E10, 0.0, 0.0, -1579921.9383660285}}),
                          [](const testing::TestParamInfo<InletTestParameters>& info) { return std::to_string(info.index); });

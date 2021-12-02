@@ -172,7 +172,8 @@ INSTANTIATE_TEST_SUITE_P(
                                        .nproc = 1,
                                        .expectedOutputFile = "outputs/subDomainFVM/subDomainFVM.txt",
                                        .arguments = "",
-                                       .expectedFiles{{"outputs/subDomainFVM/subDomainFVMSolver.xmf", "subDomainFVMSolver.xmf"}}}),
+                                       .expectedFiles{{"outputs/subDomainFVM/subDomainFVMSolver.xmf", "subDomainFVMSolver.xmf"}}},
+                    (MpiTestParameter){.testName = "inputs/shockTubeSODLodiBoundary.yaml", .nproc = 1, .expectedOutputFile = "outputs/shockTubeSODLodiBoundary.txt", .arguments = ""}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(
