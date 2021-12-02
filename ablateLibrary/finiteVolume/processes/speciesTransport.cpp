@@ -4,7 +4,7 @@
 
 ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
                                                                     std::shared_ptr<eos::transport::TransportModel> transportModelIn)
-    : fluxCalculator(std::move(fluxCalcIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)), advectionData(), updateData() {
+    : fluxCalculator(std::move(fluxCalcIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)), advectionData() {
     if (fluxCalculator) {
         // set the decode state function
         advectionData.decodeStateFunction = eos->GetDecodeStateFunction();
@@ -33,7 +33,7 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
         diffusionData.diffContext = nullptr;
     }
 
-    updateData.numberSpecies = (PetscInt)eos->GetSpecies().size();
+    numberSpecies = (PetscInt)eos->GetSpecies().size();
 }
 
 void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
@@ -51,7 +51,7 @@ void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finit
             flow.RegisterRHSFunction(DiffusionSpeciesFlux, &diffusionData, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::YI_FIELD});
         }
 
-        flow.RegisterAuxFieldUpdate(UpdateAuxMassFractionField, &updateData, CompressibleFlowFields::YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
+        flow.RegisterAuxFieldUpdate(UpdateAuxMassFractionField, &numberSpecies, CompressibleFlowFields::YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
     }
 }
 
@@ -60,9 +60,9 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::UpdateAuxMassF
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + RHO];
 
-    auto flowParameters = (UpdateData *)ctx;
+    auto numberSpecies = (PetscInt *)ctx;
 
-    for (PetscInt sp = 0; sp < flowParameters->numberSpecies; sp++) {
+    for (PetscInt sp = 0; sp < *numberSpecies; sp++) {
         auxField[sp] = conservedValues[uOff[1] + sp] / density;
     }
 

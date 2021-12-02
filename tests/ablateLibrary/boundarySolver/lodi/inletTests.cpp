@@ -7,6 +7,9 @@
 
 struct InletTestParameters {
     PetscInt dim;
+    PetscInt nEqs;
+    PetscInt nSpecEqs = 0;
+    PetscInt nEvEqs = 0;
     std::function<PetscErrorCode(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p,
                                  void* ctx)>
         decodeStateFunction;
@@ -63,7 +66,8 @@ TEST_P(InletTestFixture, ShouldComputeCorrectSourceTerm) {
     EXPECT_CALL(*mockEOS, GetComputeSensibleEnthalpyContext).Times(::testing::Exactly(1)).WillOnce(::testing::Return((void*)&params.computeSensibleEnthalpy));
 
     // create the boundary
-    ablate::boundarySolver::lodi::Inlet boundary(mockEOS);
+    std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary = std::make_shared<ablate::boundarySolver::lodi::Inlet>(mockEOS);
+    boundary->Initialize(params.dim, params.nEqs, params.nEvEqs, params.nSpecEqs);
 
     PetscInt uOff[1] = {0};
     PetscInt aOff[1] = {0};
@@ -93,7 +97,7 @@ TEST_P(InletTestFixture, ShouldComputeCorrectSourceTerm) {
                                                        stencilWeights,
                                                        sOff,
                                                        &sourceResults[0],
-                                                       &boundary);
+                                                       boundary.get());
 
     // assert
     for (std::size_t i = 0; i < GetParam().expectedResults.size(); i++) {
@@ -112,6 +116,7 @@ INSTANTIATE_TEST_SUITE_P(InletTests, InletTestFixture,
                          testing::Values(
                              // case 0
                              (InletTestParameters){.dim = 1,
+                                                   .nEqs = 3,
                                                    .decodeStateFunction =
                                                        [](PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy,
                                                           PetscReal* a, PetscReal* p, void* ctx) {
@@ -172,6 +177,7 @@ INSTANTIATE_TEST_SUITE_P(InletTests, InletTestFixture,
                                                    .expectedResults = {723193.7481425349, -7.345496719316035E10, 3.615968740712674E8}},
                              // case 0
                              (InletTestParameters){.dim = 3,
+                                                   .nEqs = 5,
                                                    .decodeStateFunction =
                                                        [](PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy,
                                                           PetscReal* a, PetscReal* p, void* ctx) {

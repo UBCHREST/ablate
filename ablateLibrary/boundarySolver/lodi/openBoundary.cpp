@@ -8,6 +8,8 @@ ablate::boundarySolver::lodi::OpenBoundary::OpenBoundary(std::shared_ptr<eos::EO
     : LODIBoundary(std::move(eos)), reflectFactor((PetscReal)reflectFactor), referencePressure((PetscReal)referencePressure), maxAcousticsLength((PetscReal)maxAcousticsLength) {}
 
 void ablate::boundarySolver::lodi::OpenBoundary::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
+    ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
+
     bSolver.RegisterFunction(OpenBoundaryFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
 }
 
@@ -20,7 +22,6 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     auto boundary = (OpenBoundary *)ctx;
     auto decodeStateFunction = boundary->eos->GetDecodeStateFunction();
     auto decodeStateContext = boundary->eos->GetDecodeStateContext();
-    const int neq = 2 + dim;
 
     // Compute the transformation matrix
     PetscReal transformationMatrix[3][3];
@@ -128,8 +129,8 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     GetVelAndCPrims(boundaryNormalVelocity, boundarySpeedOfSound, boundaryCp, boundaryCv, velNormPrim, speedOfSoundPrim);
 
     // get_eigenvalues
-    std::vector<PetscReal> lambda(neq);
-    GetEigenValues(dim, 0, 0, boundaryNormalVelocity, boundarySpeedOfSound, velNormPrim, speedOfSoundPrim, &lambda[0]);
+    std::vector<PetscReal> lambda(boundary->nEqs);
+    boundary->GetEigenValues(boundaryNormalVelocity, boundarySpeedOfSound, velNormPrim, speedOfSoundPrim, &lambda[0]);
 
     // compute the relaxation timescale
     // L2 = (p - pref)/tau = (p - pref)*kFac*a
@@ -137,7 +138,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     PetscReal kFac = boundary->reflectFactor / boundary->maxAcousticsLength;
 
     // Compute scriptL
-    std::vector<PetscReal> scriptL(neq);
+    std::vector<PetscReal> scriptL(boundary->nEqs);
     {
         if (boundaryMach < 1.0) {
             // Subsonic
@@ -206,24 +207,20 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     }
 
     // Directly compute the source terms, note that this may be problem in the future with multiple source terms on the same boundary cell
-    GetmdFdn(dim,
-             neq,
-             0,
-             0,
-             boundaryVelNormCord,
-             boundaryDensity,
-             boundaryTemperature,
-             boundaryCp,
-             boundaryCv,
-             boundarySpeedOfSound,
-             boundarySensibleEnthalpy,
-             velNormPrim,
-             speedOfSoundPrim,
-             nullptr /* PetscReal* Yi*/,
-             nullptr /* PetscReal* EV*/,
-             &scriptL[0],
-             transformationMatrix,
-             source + sOff[EULER]);
+    boundary->GetmdFdn(boundaryVelNormCord,
+                       boundaryDensity,
+                       boundaryTemperature,
+                       boundaryCp,
+                       boundaryCv,
+                       boundarySpeedOfSound,
+                       boundarySensibleEnthalpy,
+                       velNormPrim,
+                       speedOfSoundPrim,
+                       nullptr /* PetscReal* Yi*/,
+                       nullptr /* PetscReal* EV*/,
+                       &scriptL[0],
+                       transformationMatrix,
+                       source + sOff[EULER]);
 
     PetscFunctionReturn(0);
 }

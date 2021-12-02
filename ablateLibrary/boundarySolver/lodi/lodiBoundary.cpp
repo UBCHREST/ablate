@@ -1,8 +1,10 @@
 #include "lodiBoundary.hpp"
-#include "finiteVolume/processes/flowProcess.hpp"
+#include <finiteVolume/processes/evTransport.hpp>
+#include <finiteVolume/processes/speciesTransport.hpp>
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
 
-ablate::boundarySolver::lodi::LODIBoundary::LODIBoundary(const std::shared_ptr<eos::EOS> eos) : eos(eos) {}
+ablate::boundarySolver::lodi::LODIBoundary::LODIBoundary(const std::shared_ptr<eos::EOS> eos) : eos(eos), dims(0), nEqs(0), nSpecEqs(0), nEvEqs(0) {}
 
 void ablate::boundarySolver::lodi::LODIBoundary::GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal cp, PetscReal cv, PetscReal &velNormPrim, PetscReal &speedOfSoundPrim) {
     PetscReal ralpha2 = 1.;
@@ -20,55 +22,54 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetVelAndCPrims(PetscReal velNo
     speedOfSoundPrim = 0.5e+0 * (speedOfSound * PetscSqrtReal(gamm12 * tmp * M2 + fourralpha2));
 }
 
-void ablate::boundarySolver::lodi::LODIBoundary::GetEigenValues(PetscInt ndims, PetscInt nSpec, PetscInt nEV, PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal *lamda) {
+void ablate::boundarySolver::lodi::LODIBoundary::GetEigenValues(PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal *lamda) {
     lamda[0] = velnprm - cprm;
     lamda[1] = veln;
-    for (int ndim = 1; ndim < ndims; ndim++) {
+    for (int ndim = 1; ndim < dims; ndim++) {
         lamda[1 + ndim] = veln;
     }
-    lamda[1 + ndims] = velnprm + cprm;
-    for (int ns = 0; ns < nSpec; ns++) {
-        lamda[2 + ndims + ns] = veln;
+    lamda[1 + dims] = velnprm + cprm;
+    for (int ns = 0; ns < nSpecEqs; ns++) {
+        lamda[2 + dims + ns] = veln;
     }
-    for (int ne = 0; ne < nEV; ne++) {
-        lamda[2 + ndims + nSpec + ne] = veln;
+    for (int ne = 0; ne < nEvEqs; ne++) {
+        lamda[2 + dims + nSpecEqs + ne] = veln;
     }
 }
 
-void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(PetscInt ndims, PetscInt neqs, PetscInt nspeceq, PetscInt nEVeq, const PetscReal *vel, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv,
-                                                          PetscReal C, PetscReal Enth, PetscReal velnprm, PetscReal Cprm, const PetscReal *Yi, const PetscReal *EV, const PetscReal *sL,
-                                                          const PetscReal transformationMatrix[3][3], PetscReal *mdFdn) {
-    std::vector<PetscScalar> d(neqs);
-    auto fac = 0.5e+0 * (sL[0] - sL[1 + ndims]) * (velnprm - vel[0]) / Cprm;
+void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscReal *vel, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C, PetscReal Enth, PetscReal velnprm, PetscReal Cprm,
+                                                          const PetscReal *Yi, const PetscReal *EV, const PetscReal *sL, const PetscReal transformationMatrix[3][3], PetscReal *mdFdn) {
+    std::vector<PetscScalar> d(nEqs);
+    auto fac = 0.5e+0 * (sL[0] - sL[1 + dims]) * (velnprm - vel[0]) / Cprm;
     double C2 = C * C;
-    d[0] = (sL[1] + 0.5e+0 * (sL[1 + ndims] + sL[0]) + fac) / C2;
-    d[1] = 0.5e+0 * (sL[1 + ndims] + sL[0]) - fac;
-    d[2] = 0.5e+0 * (sL[1 + ndims] - sL[0]) / rho / Cprm;
-    for (int ndim = 1; ndim < ndims; ndim++) {
+    d[0] = (sL[1] + 0.5e+0 * (sL[1 + dims] + sL[0]) + fac) / C2;
+    d[1] = 0.5e+0 * (sL[1 + dims] + sL[0]) - fac;
+    d[2] = 0.5e+0 * (sL[1 + dims] - sL[0]) / rho / Cprm;
+    for (int ndim = 1; ndim < dims; ndim++) {
         d[2 + ndim] = sL[1 + ndim];
     }
-    for (int ns = 0; ns < nspeceq; ns++) {
-        d[2 + ndims + ns] = sL[2 + ndims + ns];
+    for (int ns = 0; ns < nSpecEqs; ns++) {
+        d[2 + dims + ns] = sL[2 + dims + ns];
     }
-    for (int ne = 0; ne < nEVeq; ne++) {
-        d[2 + ndims + nspeceq + ne] = sL[2 + ndims + nspeceq + ne];
+    for (int ne = 0; ne < nEvEqs; ne++) {
+        d[2 + dims + nSpecEqs + ne] = sL[2 + dims + nSpecEqs + ne];
     }
     mdFdn[RHO] = -d[0];
     mdFdn[RHOVELN] = -(vel[0] * d[0] + rho * d[2]);  // Wall normal component momentum, not really rho u
     double KE = vel[0] * vel[0];
     double dvelterm = vel[0] * d[2];
-    for (int ndim = 1; ndim < ndims; ndim++) {  // Tangential components for momentum
+    for (int ndim = 1; ndim < dims; ndim++) {  // Tangential components for momentum
         mdFdn[RHOVELN + ndim] = -(vel[ndim] * d[0] + rho * d[2 + ndim]);
         KE += vel[ndim] * vel[ndim];
         dvelterm = dvelterm + vel[ndim] * d[2 + ndim];
     }
     KE = 0.5e+0 * KE;
     mdFdn[RHOE] = -(d[0] * (KE + Enth - Cp * T) + d[1] / (Cp / Cv - 1.e+0 + 1.0E-30) + rho * dvelterm);
-    for (int ns = 0; ns < nspeceq; ns++) {
-        mdFdn[2 + ndims + ns] = -(Yi[ns] * d[0] + rho * d[2 + ndims + ns]);  // species
+    for (int ns = 0; ns < nSpecEqs; ns++) {
+        mdFdn[2 + dims + ns] = -(Yi[ns] * d[0] + rho * d[2 + dims + ns]);  // species
     }
-    for (int ne = 0; ne < nEVeq; ne++) {
-        mdFdn[2 + ndims + nspeceq + ne] = -(EV[ne] * d[0] + rho * d[2 + ndims + nspeceq + ne]);  // extra
+    for (int ne = 0; ne < nEvEqs; ne++) {
+        mdFdn[2 + dims + nSpecEqs + ne] = -(EV[ne] * d[0] + rho * d[2 + dims + nSpecEqs + ne]);  // extra
     }
 
     /*
@@ -82,9 +83,91 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(PetscInt ndims, PetscI
         data structure is used which is more general but also more expensive.
      */
     PetscReal mdFdntmp[3] = {0.0, 0.0, 0.0};
-    utilities::MathUtilities::MultiplyTranspose(ndims, transformationMatrix, mdFdn + RHOVELN, mdFdntmp);
+    utilities::MathUtilities::MultiplyTranspose(dims, transformationMatrix, mdFdn + RHOVELN, mdFdntmp);
     // Over-write source components
-    for (PetscInt nc = 0; nc < ndims; nc++) {
+    for (PetscInt nc = 0; nc < dims; nc++) {
         mdFdn[RHOVELN + nc] = mdFdntmp[nc];
     }
+}
+
+void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
+    // Compute the number of equations that need to be solve
+    dims = bSolver.GetSubDomain().GetDimensions();
+    if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::EULER_FIELD)) {
+        nEqs += bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD).numberComponents;
+
+        if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD)) {
+            updateTemperatureData.computeTemperatureFunction = eos->GetComputeTemperatureFunction();
+            updateTemperatureData.computeTemperatureContext = eos->GetComputeTemperatureContext();
+            updateTemperatureData.numberSpecies = eos->GetSpecies().size();
+
+            if (updateTemperatureData.numberSpecies > 0) {
+                // add in aux update variables
+                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
+                                               &updateTemperatureData,
+                                               finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD});
+            } else {
+                // add in aux update variables
+                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
+                                               &updateTemperatureData,
+                                               finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD});
+            }
+
+            if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::VELOCITY_FIELD)) {
+                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocityField,
+                                               nullptr,
+                                               finiteVolume::CompressibleFlowFields::VELOCITY_FIELD,
+                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD});
+            }
+        }
+
+        if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD)) {
+            updateTemperatureData.computeTemperatureFunction = eos->GetComputeTemperatureFunction();
+            updateTemperatureData.computeTemperatureContext = eos->GetComputeTemperatureContext();
+            updateTemperatureData.numberSpecies = eos->GetSpecies().size();
+
+            if (updateTemperatureData.numberSpecies > 0) {
+                // add in aux update variables
+                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
+                                               &updateTemperatureData,
+                                               finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD});
+            } else {
+                // add in aux update variables
+                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
+                                               &updateTemperatureData,
+                                               finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD});
+            }
+        }
+    }
+    if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {
+        nSpecEqs = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).numberComponents;
+        nEqs += nSpecEqs;
+
+        // Register an update for the yi field
+        bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::SpeciesTransport::UpdateAuxMassFractionField,
+                                       &nSpecEqs,
+                                       finiteVolume::CompressibleFlowFields::YI_FIELD,
+                                       {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD});
+    }
+    if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD)) {
+        nEvEqs = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD).numberComponents;
+        nEqs += nEvEqs;
+
+        // Register an update for the yi field
+        bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EVTransport::UpdateEVField,
+                                       &nEvEqs,
+                                       finiteVolume::CompressibleFlowFields::EV_FIELD,
+                                       {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD});
+    }
+}
+
+void ablate::boundarySolver::lodi::LODIBoundary::Initialize(PetscInt dimsIn, PetscInt nEqsIn, PetscInt nSpecEqsIn, PetscInt nEvEqsIn) {
+    dims = dimsIn;
+    nEqs = nEqsIn;
+    nSpecEqs = nSpecEqsIn;
+    nEvEqs = nEvEqsIn;
 }

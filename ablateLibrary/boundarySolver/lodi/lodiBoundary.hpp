@@ -3,6 +3,7 @@
 
 #include "boundarySolver/boundaryProcess.hpp"
 #include "eos/eos.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
 
 namespace ablate::boundarySolver::lodi {
@@ -20,16 +21,30 @@ class LODIBoundary : public BoundaryProcess {
 
     static void GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal Cp, PetscReal Cv, PetscReal& velNormPrim, PetscReal& speedOfSoundPrim);
 
-    static void GetEigenValues(PetscInt ndims, PetscInt nSpec, PetscInt nEV, PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal lamda[]);
+    void GetEigenValues(PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal lamda[]);
 
-    static void GetmdFdn(PetscInt ndims, PetscInt neqs, PetscInt nspeceq, PetscInt nEVeq, const PetscReal* velNormCord, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C,
-                         PetscReal Enth, PetscReal velnprm, PetscReal Cprm, const PetscReal* Yi, const PetscReal* EV, const PetscReal* sL, const PetscReal transformationMatrix[3][3],
-                         PetscReal* mdFdn);
+    void GetmdFdn(const PetscReal* velNormCord, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C, PetscReal Enth, PetscReal velnprm, PetscReal Cprm, const PetscReal* Yi,
+                  const PetscReal* EV, const PetscReal* sL, const PetscReal transformationMatrix[3][3], PetscReal* mdFdn);
+
+    // Compute known/shared values
+    PetscInt dims, nEqs, nSpecEqs, nEvEqs;
 
    public:
     explicit LODIBoundary(std::shared_ptr<eos::EOS> eos);
 
-    void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override = 0;
+    void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
+
+    /**
+     * This function directly sets the known values and is useful for testing
+     * @param dims
+     * @param nEqs
+     * @param nSpecEqs
+     * @param nEvEqs
+     */
+    void Initialize(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0);
+
+   private:
+    ablate::finiteVolume::processes::EulerTransport::UpdateTemperatureData updateTemperatureData;
 };
 
 }  // namespace ablate::boundarySolver::lodi

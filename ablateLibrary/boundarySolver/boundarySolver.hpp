@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_BOUNDARYSOLVER_HPP
 
 #include <memory>
-#include "solver/solver.hpp"
+#include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
 
 namespace ablate::boundarySolver {
@@ -10,7 +10,7 @@ namespace ablate::boundarySolver {
 // forward declare the boundaryProcess
 class BoundaryProcess;
 
-class BoundarySolver : public solver::Solver, public solver::RHSFunction {
+class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
    public:
     /**
      * Boundary information.

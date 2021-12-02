@@ -7,6 +7,9 @@
 
 struct IsothermalWallTestParameters {
     PetscInt dim;
+    PetscInt nEqs;
+    PetscInt nSpecEqs = 0;
+    PetscInt nEvEqs = 0;
     std::function<PetscErrorCode(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p,
                                  void* ctx)>
         decodeStateFunction;
@@ -63,7 +66,8 @@ TEST_P(IsothermalWallTestFixture, ShouldComputeCorrectSourceTerm) {
     EXPECT_CALL(*mockEOS, GetComputeSensibleEnthalpyContext).Times(::testing::Exactly(1)).WillOnce(::testing::Return((void*)&params.computeSensibleEnthalpy));
 
     // create the boundary
-    ablate::boundarySolver::lodi::IsothermalWall boundary(mockEOS);
+    std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary = std::make_shared<ablate::boundarySolver::lodi::IsothermalWall>(mockEOS);
+    boundary->Initialize(params.dim, params.nEqs, params.nEvEqs, params.nSpecEqs);
 
     PetscInt uOff[1] = {0};
     PetscInt aOff[1] = {0};
@@ -93,7 +97,7 @@ TEST_P(IsothermalWallTestFixture, ShouldComputeCorrectSourceTerm) {
                                                                          stencilWeights,
                                                                          sOff,
                                                                          &sourceResults[0],
-                                                                         &boundary);
+                                                                         boundary.get());
 
     // assert
     for (std::size_t i = 0; i < GetParam().expectedResults.size(); i++) {
@@ -114,6 +118,7 @@ INSTANTIATE_TEST_SUITE_P(
         // case 0
         (IsothermalWallTestParameters){
             .dim = 1,
+            .nEqs = 3,
             .decodeStateFunction =
                 [](PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx) {
                     static int count = 0;
@@ -174,6 +179,7 @@ INSTANTIATE_TEST_SUITE_P(
         // case 1
         (IsothermalWallTestParameters){
             .dim = 1,
+            .nEqs = 3,
             .decodeStateFunction =
                 [](PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx) {
                     static int count = 0;
@@ -234,6 +240,7 @@ INSTANTIATE_TEST_SUITE_P(
         // case 2
         (IsothermalWallTestParameters){
             .dim = 1,
+            .nEqs = 3,
             .decodeStateFunction =
                 [](PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx) {
                     static int count = 0;
@@ -294,6 +301,7 @@ INSTANTIATE_TEST_SUITE_P(
         // case 3
         (IsothermalWallTestParameters){
             .dim = 2,
+            .nEqs = 4,
             .decodeStateFunction =
                 [](PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx) {
                     static int count = 0;
@@ -357,6 +365,7 @@ INSTANTIATE_TEST_SUITE_P(
         // case 4
         (IsothermalWallTestParameters){
             .dim = 3,
+            .nEqs = 5,
             .decodeStateFunction =
                 [](PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx) {
                     static int count = 0;

@@ -8,6 +8,9 @@
 struct OpenBoundaryTestParameters {
     std::string name;
     PetscInt dim;
+    PetscInt nEqs;
+    PetscInt nSpecEqs = 0;
+    PetscInt nEvEqs = 0;
     double reflectFactor;
     double referencePressure;
     double maxAcousticsLength;
@@ -67,7 +70,9 @@ TEST_P(OpenBoundaryTestFixture, ShouldComputeCorrectSourceTerm) {
     EXPECT_CALL(*mockEOS, GetComputeSensibleEnthalpyContext).Times(::testing::Exactly(1)).WillOnce(::testing::Return((void*)&params.computeSensibleEnthalpy));
 
     // create the boundary
-    ablate::boundarySolver::lodi::OpenBoundary boundary(mockEOS, GetParam().reflectFactor, GetParam().referencePressure, GetParam().maxAcousticsLength);
+    std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary =
+        std::make_shared<ablate::boundarySolver::lodi::OpenBoundary>(mockEOS, GetParam().reflectFactor, GetParam().referencePressure, GetParam().maxAcousticsLength);
+    boundary->Initialize(params.dim, params.nEqs, params.nEvEqs, params.nSpecEqs);
 
     PetscInt uOff[1] = {0};
     PetscInt aOff[1] = {0};
@@ -97,7 +102,7 @@ TEST_P(OpenBoundaryTestFixture, ShouldComputeCorrectSourceTerm) {
                                                                      stencilWeights,
                                                                      sOff,
                                                                      &sourceResults[0],
-                                                                     &boundary);
+                                                                     boundary.get());
 
     // assert
     for (std::size_t i = 0; i < GetParam().expectedResults.size(); i++) {
@@ -118,6 +123,7 @@ INSTANTIATE_TEST_SUITE_P(
         (OpenBoundaryTestParameters){
             .name = "1D subsonic into the domain",
             .dim = 1,
+            .nEqs = 3,
             .reflectFactor = 0.0,
             .referencePressure = 101325.0,
             .maxAcousticsLength = 0.02,
@@ -181,6 +187,7 @@ INSTANTIATE_TEST_SUITE_P(
         (OpenBoundaryTestParameters){
             .name = "1D subsonic out of the domain",
             .dim = 1,
+            .nEqs = 3,
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
@@ -244,6 +251,7 @@ INSTANTIATE_TEST_SUITE_P(
         (OpenBoundaryTestParameters){
             .name = "1D supersonic out of the domain",
             .dim = 1,
+            .nEqs = 3,
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
@@ -307,6 +315,7 @@ INSTANTIATE_TEST_SUITE_P(
         (OpenBoundaryTestParameters){
             .name = "1D supersonic into the domain",
             .dim = 1,
+            .nEqs = 3,
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
@@ -370,6 +379,7 @@ INSTANTIATE_TEST_SUITE_P(
         (OpenBoundaryTestParameters){
             .name = "3D supersonic out of the domain",
             .dim = 3,
+            .nEqs = 5,
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,
@@ -444,6 +454,7 @@ INSTANTIATE_TEST_SUITE_P(
         (OpenBoundaryTestParameters){
             .name = "3D subsonic out of the domain",
             .dim = 3,
+            .nEqs = 5,
             .reflectFactor = 0.15,
             .referencePressure = 202650.0,
             .maxAcousticsLength = 0.02,

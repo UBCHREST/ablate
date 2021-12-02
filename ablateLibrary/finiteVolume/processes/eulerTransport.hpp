@@ -62,6 +62,7 @@ class EulerTransport : public FlowProcess {
     // static function to compute time step for euler advection
     static double ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
 
+   public:
     /**
      * Function to compute the temperature field. This function assumes that the input values will be {"euler", "densityYi"}
      */
@@ -73,7 +74,6 @@ class EulerTransport : public FlowProcess {
     static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
                                                  void* ctx);
 
-   public:
     /**
      *
      * public constructor for euler advection

@@ -6,7 +6,7 @@
 
 ablate::boundarySolver::BoundarySolver::BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
                                                        std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses, std::shared_ptr<parameters::Parameters> options)
-    : Solver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)), boundaryProcesses(std::move(boundaryProcesses)) {}
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)), boundaryProcesses(std::move(boundaryProcesses)) {}
 
 ablate::boundarySolver::BoundarySolver::~BoundarySolver() {
     if (gradientCalculator) {
@@ -230,6 +230,9 @@ void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySo
 }
 PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
+
+    // Update the aux fields
+    UpdateAuxFields(time, locXVec, subDomain->GetAuxVector());
 
     PetscErrorCode ierr;
 

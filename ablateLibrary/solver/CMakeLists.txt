@@ -9,4 +9,6 @@ target_sources(ablateLibrary
         iFunction.hpp
         rhsFunction.hpp
         boundaryFunction.hpp
+        cellSolver.hpp
+        cellSolver.cpp
         )

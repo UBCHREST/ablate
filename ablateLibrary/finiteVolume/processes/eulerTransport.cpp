@@ -87,7 +87,7 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
         flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, nullptr, CompressibleFlowFields::VELOCITY_FIELD, {CompressibleFlowFields::EULER_FIELD});
     }
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::TEMPERATURE_FIELD)) {
-        if (diffusionData.numberSpecies > 0) {
+        if (updateTemperatureData.numberSpecies > 0) {
             // add in aux update variables
             flow.RegisterAuxFieldUpdate(
                 UpdateAuxTemperatureField, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});

@@ -8,6 +8,7 @@ using fp = ablate::finiteVolume::processes::FlowProcess;
 ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos) : LODIBoundary(std::move(eos)) {}
 
 void ablate::boundarySolver::lodi::IsothermalWall::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
+    ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
     bSolver.RegisterFunction(IsothermalWallFunction, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {finiteVolume::CompressibleFlowFields::EULER_FIELD}, {});
 }
 
@@ -21,7 +22,6 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     auto isothermalWall = (IsothermalWall *)ctx;
     auto decodeStateFunction = isothermalWall->eos->GetDecodeStateFunction();
     auto decodeStateContext = isothermalWall->eos->GetDecodeStateContext();
-    const int neq = 2 + dim;
 
     // Compute the transformation matrix
     PetscReal transformationMatrix[3][3];
@@ -116,11 +116,11 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     GetVelAndCPrims(boundaryNormalVelocity, boundarySpeedOfSound, boundaryCp, boundaryCv, velNormPrim, speedOfSoundPrim);
 
     // get_eigenvalues
-    std::vector<PetscReal> lambda(neq);
-    GetEigenValues(dim, 0, 0, boundaryNormalVelocity, boundarySpeedOfSound, velNormPrim, speedOfSoundPrim, &lambda[0]);
+    std::vector<PetscReal> lambda(isothermalWall->nEqs);
+    isothermalWall->GetEigenValues(boundaryNormalVelocity, boundarySpeedOfSound, velNormPrim, speedOfSoundPrim, &lambda[0]);
 
     // Get scriptL
-    std::vector<PetscReal> scriptL(neq);
+    std::vector<PetscReal> scriptL(isothermalWall->nEqs);
     scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));  // Outgoing
     // acoustic
     // wave
@@ -139,24 +139,20 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     //    }
 
     // Directly compute the source terms, note that this may be problem in the future with multiple source terms on the same boundary cell
-    GetmdFdn(dim,
-             neq,
-             0,
-             0,
-             boundaryVelNormCord,
-             boundaryDensity,
-             boundaryTemperature,
-             boundaryCp,
-             boundaryCv,
-             boundarySpeedOfSound,
-             boundarySensibleEnthalpy,
-             velNormPrim,
-             speedOfSoundPrim,
-             nullptr /* PetscReal* Yi*/,
-             nullptr /* PetscReal* EV*/,
-             &scriptL[0],
-             transformationMatrix,
-             source + sOff[EULER]);
+    isothermalWall->GetmdFdn(boundaryVelNormCord,
+                             boundaryDensity,
+                             boundaryTemperature,
+                             boundaryCp,
+                             boundaryCv,
+                             boundarySpeedOfSound,
+                             boundarySensibleEnthalpy,
+                             velNormPrim,
+                             speedOfSoundPrim,
+                             nullptr /* PetscReal* Yi*/,
+                             nullptr /* PetscReal* EV*/,
+                             &scriptL[0],
+                             transformationMatrix,
+                             source + sOff[EULER]);
 
     PetscFunctionReturn(0);
 }
