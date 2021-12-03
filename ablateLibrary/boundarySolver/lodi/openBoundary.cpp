@@ -35,12 +35,15 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     PetscReal boundaryMach;
     PetscReal boundaryPressure;
 
+    // Get the densityYi pointer if available
+    const PetscScalar *boundaryDensityYi = boundary->nSpecEqs > 0 ? boundaryValues + uOff[boundary->speciesId] : nullptr;
+
     // Get the velocity and pressure on the surface
     finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                            decodeStateContext,
                                                            dim,
                                                            boundaryValues + uOff[boundary->eulerId],
-                                                           nullptr,
+                                                           boundaryDensityYi,
                                                            fg->normal,
                                                            &boundaryDensity,
                                                            &boundaryNormalVelocity,
@@ -65,13 +68,15 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     std::vector<PetscReal> stencilSpeedOfSound(stencilSize);
     std::vector<PetscReal> stencilMach(stencilSize);
     std::vector<PetscReal> stencilPressure(stencilSize);
+    std::vector<std::vector<PetscReal>> stencilYi(boundary->nSpecEqs, std::vector<PetscReal>(stencilSize));  // NOTE this is [sp][stencil]
+    std::vector<std::vector<PetscReal>> stencilEv(boundary->nEvEqs, std::vector<PetscReal>(stencilSize));    // NOTE this is [sp][stencil]
 
     for (PetscInt s = 0; s < stencilSize; s++) {
         finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                                decodeStateContext,
                                                                dim,
                                                                &stencilValues[s][uOff[boundary->eulerId]],
-                                                               nullptr,
+                                                               boundary->nSpecEqs > 0 ? &stencilValues[s][uOff[boundary->speciesId]] : nullptr,
                                                                fg->normal,
                                                                &stencilDensity[s],
                                                                &stencilNormalVelocity[s],
@@ -87,6 +92,14 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
 
         for (PetscInt d = 0; d < dim; d++) {
             stencilNormalCoordsVel[d][s] = normalCoordsVel[d];
+        }
+
+        // Compute each of the species and ev
+        for (PetscInt sp = 0; sp < boundary->nSpecEqs; sp++) {
+            stencilYi[sp][s] = stencilValues[s][uOff[boundary->speciesId] + sp] / stencilDensity[s];
+        }
+        for (PetscInt ev = 0; ev < boundary->nEvEqs; ev++) {
+            stencilEv[ev][s] = stencilValues[s][uOff[boundary->evId] + ev] / stencilDensity[s];
         }
     }
 
@@ -107,21 +120,33 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                                                    boundaryDensity,
                                                    boundaryValues[uOff[boundary->eulerId] + fp::RHOE] / boundaryDensity,
                                                    boundaryValues + uOff[boundary->eulerId] + fp::RHOU,
-                                                   nullptr,
+                                                   boundaryDensityYi,
                                                    &boundaryTemperature,
                                                    boundary->eos->GetComputeTemperatureContext()) >>
         checkError;
 
+    // compute boundary ev, yi
+    std::vector<PetscReal> boundaryYi(boundary->nSpecEqs);
+    for (PetscInt i = 0; i < boundary->nSpecEqs; i++) {
+        boundaryYi[i] = boundaryDensityYi[i] / boundaryDensity;
+    }
+    std::vector<PetscReal> boundaryEv(boundary->nEvEqs);
+    for (PetscInt i = 0; i < boundary->nEvEqs; i++) {
+        boundaryEv[i] = boundaryValues[uOff[boundary->evId] + i] / boundaryDensity;
+    }
+
     // Compute the cp, cv from the eos
     PetscReal boundaryCp, boundaryCv;
-    boundary->eos->GetComputeSpecificHeatConstantPressureFunction()(boundaryTemperature, boundaryDensity, nullptr, &boundaryCp, boundary->eos->GetComputeSpecificHeatConstantPressureContext()) >>
+    boundary->eos->GetComputeSpecificHeatConstantPressureFunction()(
+        boundaryTemperature, boundaryDensity, boundaryYi.data(), &boundaryCp, boundary->eos->GetComputeSpecificHeatConstantPressureContext()) >>
         checkError;
-    boundary->eos->GetComputeSpecificHeatConstantVolumeFunction()(boundaryTemperature, boundaryDensity, nullptr, &boundaryCv, boundary->eos->GetComputeSpecificHeatConstantVolumeContext()) >>
+    boundary->eos->GetComputeSpecificHeatConstantVolumeFunction()(boundaryTemperature, boundaryDensity, boundaryYi.data(), &boundaryCv, boundary->eos->GetComputeSpecificHeatConstantVolumeContext()) >>
         checkError;
 
     // Compute the enthalpy
     PetscReal boundarySensibleEnthalpy;
-    boundary->eos->GetComputeSensibleEnthalpyFunction()(boundaryTemperature, boundaryDensity, nullptr, &boundarySensibleEnthalpy, boundary->eos->GetComputeSensibleEnthalpyContext()) >> checkError;
+    boundary->eos->GetComputeSensibleEnthalpyFunction()(boundaryTemperature, boundaryDensity, boundaryYi.data(), &boundarySensibleEnthalpy, boundary->eos->GetComputeSensibleEnthalpyContext()) >>
+        checkError;
 
     // get_vel_and_c_prims(PGS, velwall[0], C, Cp, Cv, velnprm, Cprm);
     PetscReal velNormPrim, speedOfSoundPrim;
@@ -152,24 +177,29 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                 for (int d = 1; d < dim; d++) {
                     scriptL[1 + d] = lambda[1 + d] * dVeldNorm[d];  // Tangential velocities
                 };
-                //                                for (int ns = 0; ns < nspeceq; ns++) {
-                //                                    scriptL[2+dim+ns] = lambda[2+ndims+ns]*dYidn[ns][n1][n0];// Species
-                //                                }
-                //                                for (int ne = 0; ne < nEVeq; ne++) {
-                //                                    scriptL[2+dim+nspeceq+ne] = lambda[2+ndims+nspeceq+ne]*dEVdn[ne][n1][n0];// Scalars
-                //                                }
+                for (int ns = 0; ns < boundary->nSpecEqs; ns++) {
+                    PetscScalar dYidn;
+                    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryYi[ns], stencilSize, stencilYi[ns].data(), stencilWeights, dYidn);
+                    scriptL[2 + dim + ns] = lambda[2 + dim + ns] * dYidn;  // Species
+                }
+                for (int ne = 0; ne < boundary->nEvEqs; ne++) {
+                    PetscScalar dEvdn;
+                    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryEv[ne], stencilSize, stencilEv[ne].data(), stencilWeights, dEvdn);
+
+                    scriptL[2 + dim + boundary->nSpecEqs + ne] = lambda[2 + dim + boundary->nSpecEqs + ne] * dEvdn;  // Scalars
+                }
             } else {
                 // Coming into the domain (assume dP/dt = 0)
                 scriptL[1] = 0.;  // Entropy wave
                 for (int d = 1; d < dim; d++) {
                     scriptL[1 + d] = 0.e+0;  // Tangential velocities
                 };
-                //                for (int ns = 0; ns < nspeceq; ns++) {
-                //                    scriptL[2+ndims+ns][n1][n0] = 0.;// Species
-                //                }
-                //                for (int ne = 0; ne < nEVeq; ne++) {
-                //                    scriptL[2+ndims+nspeceq+ne][n1][n0] = 0.; // Scalars
-                //                }
+                for (int ns = 0; ns < boundary->nSpecEqs; ns++) {
+                    scriptL[2 + dim + ns] = 0.;  // Species
+                }
+                for (int ne = 0; ne < boundary->nEvEqs; ne++) {
+                    scriptL[2 + dim + boundary->nSpecEqs + ne] = 0.;  // Scalars
+                }
             }
         } else {
             // Supersonic
@@ -182,12 +212,18 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                     scriptL[1 + d] = lambda[1 + d] * dVeldNorm[d];
                 }
                 scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm[0] * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));
-                //                for (int ns = 0; ns < nspeceq; ns++) {
-                //                    sL[2+ndims+ns][n1][n0] = lam[2+ndims+ns]*dYidn[ns][n1][n0];// Species
-                //                }
-                //                for (int ne = 0; ne < nEVeq; ne++) {
-                //                    sL[2+ndims+nspeceq+ne][n1][n0] = lam[2+ndims+nspeceq+ne]*dEVdn[ne][n1][n0];// Scalars
-                //                }
+                for (int ns = 0; ns < boundary->nSpecEqs; ns++) {
+                    PetscScalar dYidn;
+                    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryYi[ns], stencilSize, stencilYi[ns].data(), stencilWeights, dYidn);
+
+                    scriptL[2 + dim + ns] = lambda[2 + dim + ns] * dYidn;  // Species
+                }
+                for (int ne = 0; ne < boundary->nEvEqs; ne++) {
+                    PetscScalar dEvdn;
+                    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryEv[ne], stencilSize, stencilEv[ne].data(), stencilWeights, dEvdn);
+
+                    scriptL[2 + dim + boundary->nSpecEqs + ne] = lambda[2 + dim + boundary->nSpecEqs + ne] * dEvdn;  // Scalars
+                }
             }
             // Coming into the domain
             else {
@@ -195,12 +231,12 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                 for (int d = 1; d < dim; d++) {
                     scriptL[1 + d] = 0.e+0;  // Tangential velocities
                 };
-                //                for (int ns = 0; ns < nspeceq; ns++) {
-                //                    sL[2+ndims+ns][n1][n0] = 0.;  					// Species
-                //                }
-                //                for (int ne = 0; ne < nEVeq; ne++) {
-                //                    sL[2+ndims+nspeceq+ne][n1][n0] = 0.;  			// Scalars
-                //                }
+                for (int ns = 0; ns < boundary->nSpecEqs; ns++) {
+                    scriptL[2 + dim + ns] = 0.;  // Species
+                }
+                for (int ne = 0; ne < boundary->nEvEqs; ne++) {
+                    scriptL[2 + dim + boundary->nSpecEqs + ne] = 0.;  // Scalars
+                }
             }
         }
     }
@@ -216,8 +252,8 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                        boundarySensibleEnthalpy,
                        velNormPrim,
                        speedOfSoundPrim,
-                       nullptr /* PetscReal* Yi*/,
-                       nullptr /* PetscReal* EV*/,
+                       boundaryDensityYi /* PetscReal* Yi*/,
+                       boundary->nEvEqs > 0 ? boundaryValues + uOff[boundary->evId] : nullptr /* PetscReal* EV*/,
                        &scriptL[0],
                        transformationMatrix,
                        source);

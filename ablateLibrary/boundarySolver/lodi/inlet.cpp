@@ -33,12 +33,15 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
     PetscReal boundaryMach;
     PetscReal boundaryPressure;
 
+    // Get the densityYi pointer if available
+    const PetscScalar *boundaryDensityYi = inletBoundary->nSpecEqs > 0 ? boundaryValues + uOff[inletBoundary->speciesId] : nullptr;
+
     // Get the velocity and pressure on the surface
     finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
                                                            decodeStateContext,
                                                            dim,
                                                            boundaryValues + uOff[inletBoundary->eulerId],
-                                                           nullptr,
+                                                           boundaryDensityYi,
                                                            fg->normal,
                                                            &boundaryDensity,
                                                            &boundaryNormalVelocity,
@@ -66,7 +69,7 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
                                                                decodeStateContext,
                                                                dim,
                                                                &stencilValues[s][uOff[inletBoundary->eulerId]],
-                                                               nullptr,
+                                                               inletBoundary->nSpecEqs > 0 ? &stencilValues[s][uOff[inletBoundary->speciesId]] : nullptr,
                                                                fg->normal,
                                                                &stencilDensity[s],
                                                                &stencilNormalVelocity[s],
@@ -89,22 +92,28 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
                                                         boundaryDensity,
                                                         boundaryValues[uOff[inletBoundary->eulerId] + fp::RHOE] / boundaryDensity,
                                                         boundaryValues + uOff[inletBoundary->eulerId] + fp::RHOU,
-                                                        nullptr,
+                                                        boundaryDensityYi,
                                                         &boundaryTemperature,
                                                         inletBoundary->eos->GetComputeTemperatureContext()) >>
         checkError;
 
     // Compute the cp, cv from the eos
+    std::vector<PetscReal> boundaryYi(inletBoundary->nSpecEqs);
+    for (PetscInt i = 0; i < inletBoundary->nSpecEqs; i++) {
+        boundaryYi[i] = boundaryDensityYi[i] / boundaryDensity;
+    }
     PetscReal boundaryCp, boundaryCv;
     inletBoundary->eos->GetComputeSpecificHeatConstantPressureFunction()(
-        boundaryTemperature, boundaryDensity, nullptr, &boundaryCp, inletBoundary->eos->GetComputeSpecificHeatConstantPressureContext()) >>
+        boundaryTemperature, boundaryDensity, boundaryYi.data(), &boundaryCp, inletBoundary->eos->GetComputeSpecificHeatConstantPressureContext()) >>
         checkError;
-    inletBoundary->eos->GetComputeSpecificHeatConstantVolumeFunction()(boundaryTemperature, boundaryDensity, nullptr, &boundaryCv, inletBoundary->eos->GetComputeSpecificHeatConstantVolumeContext()) >>
+    inletBoundary->eos->GetComputeSpecificHeatConstantVolumeFunction()(
+        boundaryTemperature, boundaryDensity, boundaryYi.data(), &boundaryCv, inletBoundary->eos->GetComputeSpecificHeatConstantVolumeContext()) >>
         checkError;
 
     // Compute the enthalpy
     PetscReal boundarySensibleEnthalpy;
-    inletBoundary->eos->GetComputeSensibleEnthalpyFunction()(boundaryTemperature, boundaryDensity, nullptr, &boundarySensibleEnthalpy, inletBoundary->eos->GetComputeSensibleEnthalpyContext()) >>
+    inletBoundary->eos->GetComputeSensibleEnthalpyFunction()(
+        boundaryTemperature, boundaryDensity, boundaryYi.data(), &boundarySensibleEnthalpy, inletBoundary->eos->GetComputeSensibleEnthalpyContext()) >>
         checkError;
 
     // get_vel_and_c_prims(PGS, velwall[0], C, Cp, Cv, velnprm, Cprm);
@@ -151,8 +160,8 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
                             boundarySensibleEnthalpy,
                             velNormPrim,
                             speedOfSoundPrim,
-                            nullptr /* PetscReal* Yi*/,
-                            nullptr /* PetscReal* EV*/,
+                            boundaryDensityYi /* PetscReal* Yi*/,
+                            inletBoundary->nEvEqs > 0 ? boundaryValues + uOff[inletBoundary->evId] : nullptr /* PetscReal* EV*/,
                             &scriptL[0],
                             transformationMatrix,
                             source);

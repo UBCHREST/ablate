@@ -39,8 +39,8 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetEigenValues(PetscReal veln, 
 }
 
 void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[], const PetscReal *vel, PetscReal rho, PetscReal T, PetscReal Cp, PetscReal Cv, PetscReal C, PetscReal Enth,
-                                                          PetscReal velnprm, PetscReal Cprm, const PetscReal *Yi, const PetscReal *EV, const PetscReal *sL, const PetscReal transformationMatrix[3][3],
-                                                          PetscReal *mdFdn) const {
+                                                          PetscReal velnprm, PetscReal Cprm, const PetscReal *rhoYi, const PetscReal *rhoEV, const PetscReal *sL,
+                                                          const PetscReal transformationMatrix[3][3], PetscReal *mdFdn) const {
     std::vector<PetscScalar> d(nEqs);
     auto fac = 0.5e+0 * (sL[0] - sL[1 + dims]) * (velnprm - vel[0]) / Cprm;
     double C2 = C * C;
@@ -68,10 +68,10 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
     KE = 0.5e+0 * KE;
     mdFdn[sOff[eulerId] + RHOE] = -(d[0] * (KE + Enth - Cp * T) + d[1] / (Cp / Cv - 1.e+0 + 1.0E-30) + rho * dvelterm);
     for (int ns = 0; ns < nSpecEqs; ns++) {
-        mdFdn[sOff[speciesId] + ns] = -(Yi[ns] * d[0] + rho * d[2 + dims + ns]);  // species
+        mdFdn[sOff[speciesId] + ns] = -(rhoYi[ns] / rho * d[0] + rho * d[2 + dims + ns]);  // species
     }
     for (int ne = 0; ne < nEvEqs; ne++) {
-        mdFdn[sOff[evId] + ne] = -(EV[ne] * d[0] + rho * d[2 + dims + nSpecEqs + ne]);  // extra
+        mdFdn[sOff[evId] + ne] = -(rhoEV[ne] / rho * d[0] + rho * d[2 + dims + nSpecEqs + ne]);  // extra
     }
 
     /*
