@@ -168,6 +168,16 @@ class SubDomain {
      * Support function to project the fields on to vector that lives only on the subDM
      */
     void ProjectFieldFunctionsToSubDM(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0);
+
+    /**
+     * Get a sub vector with only a single field
+     */
+    PetscErrorCode GetFieldSubVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);
+
+    /**
+     * Restore values
+     */
+    PetscErrorCode RestoreFieldSubVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);
 };
 
 }  // namespace ablate::domain

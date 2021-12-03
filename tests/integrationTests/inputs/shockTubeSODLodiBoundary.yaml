@@ -54,9 +54,6 @@ solvers:
     monitors:
       - !ablate::monitors::TimeStepMonitor
       - !ablate::monitors::CurveMonitor
-      - !ablate::monitors::DmViewFromOptions
-        scope: initial
-        options: "ascii::ascii_info_detail"
   - !ablate::boundarySolver::BoundarySolver
     id: isothermalWall
     region:
@@ -66,15 +63,15 @@ solvers:
     processes:
       - !ablate::boundarySolver::lodi::IsothermalWall
         eos: *eos
-  - !ablate::boundarySolver::BoundarySolver
-    id: openBoundary
-    region:
-      name: boundaryCellsLeft
-    fieldBoundary:
-      name: boundaryFace
-    processes:
-      - !ablate::boundarySolver::lodi::OpenBoundary
-        eos: *eos
-        reflectFactor: 0.0
-        referencePressure: 1
-        maxAcousticsLength: 1
+#  - !ablate::boundarySolver::BoundarySolver
+#    id: openBoundary
+#    region:
+#      name: boundaryCellsLeft
+#    fieldBoundary:
+#      name: boundaryFace
+#    processes:
+#      - !ablate::boundarySolver::lodi::OpenBoundary
+#        eos: *eos
+#        reflectFactor: 0.0
+#        referencePressure: 1
+#        maxAcousticsLength: 1

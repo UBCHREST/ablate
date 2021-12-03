@@ -1,27 +1,7 @@
 ---
-# This is the lodi validation case from Poinsot and Lele (Boundary Conditions for Direct Simulations of Compressible Viscous Flows)
-# parameters:
-#   l = .5
-#   L = 1
-#   pInf = 101325.0
-#   rhoInit = 1.0
-#   gamma = 1.4
-#   Rgas = 287.0
-#   c = sqrt(gamma*p/rho) ~ 376.6178434435
-#   uo = 1.1*c = 414.2796277878
-#   Re = uo * l/nu = rho * uo * l /mu = 10,000
-#       ... mu = (rho * uo * l)/Re = 0.02071398139
-# Vortex Params
-#   C/(cl) = -.0005 ... C = -0.09415446086
-#   Rc = 0.15*l = 0.075
-# Fields
-# u_x = uo - C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*y
-# u_y =  + C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*x
-# p = pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2))
-# T = p/(Rgas*rho) = 1/(Rgas*rho) * (pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2)))
-# timeEnd = 2*l/c = 0.002655211423
+# This is the lodi validation for what should be uniform flow
 environment:
-  title: compressibleFlowVortex
+  title: uniformFlow
   tagDirectory: false
 arguments:
   petsclimiter_type: none
@@ -30,8 +10,6 @@ arguments:
   temperature_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
-  io:
-    interval: 0
   arguments:
     ts_type: rk
     ts_adapt_type: none
@@ -80,7 +58,7 @@ solvers:
           eos: *eos
           pressure:
             !ablate::mathFunctions::Formula
-            formula: pinf + (rho*C^2)/Rc^2 * exp(-((x-l)^2 + (y)^2)/(2*Rc^2))
+            formula: pinf
             constants:
               # define the constants used by the formulas
               &constants
@@ -90,18 +68,17 @@ solvers:
               Rgas: 287.0
               Rc: 0.075
               C: -0.09415446086
-              uo:  414.2796277878
+              uo: 414.2796277878
               l: .5
           temperature:
             !ablate::mathFunctions::Formula
-            formula: 1/(Rgas*rho) * (pinf + (rho*C^2)/Rc^2 * exp(-((x-l)^2 +(y)^2)/(2*Rc^2)))
+            formula: 1/(Rgas*rho) * (pinf)
             constants: *constants
           velocity:
             !ablate::mathFunctions::Formula
-            formula: uo - C/(rho*Rc^2) * exp((-(x-l)^2 - (y)^2)/(2*Rc^2))*y, C/(rho*Rc^2) * exp((-(x-l)^2 - (y)^2)/(2*Rc^2))*(x-l)
+            formula: uo, 0.0
             constants: *constants
     monitors:
-      - !ablate::monitors::TimeStepMonitor
       - !ablate::monitors::MaxMinAverage
         field: euler
     eos: *eos

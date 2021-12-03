@@ -434,3 +434,31 @@ PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const ablate::domain:
             throw std::invalid_argument("Unknown field location for " + field.name);
     }
 }
+PetscErrorCode ablate::domain::SubDomain::GetFieldSubVector(const Field& field, IS* vecIs, Vec* vec, DM* subDm) {
+    PetscFunctionBeginUser;
+    // Get the correct tdm
+    auto entireDm = GetFieldDM(field);
+    auto entireVec = GetFieldVec(field);
+
+    PetscErrorCode ierr;
+    ierr = DMCreateSubDM(entireDm, 1, &field.id, vecIs, subDm);
+    CHKERRQ(ierr);
+
+    // Get the sub vector
+    ierr = VecGetSubVector(entireVec, *vecIs, vec);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::domain::SubDomain::RestoreFieldSubVector(const Field& field, IS* vecIs, Vec* vec, DM* subdm) {
+    PetscFunctionBeginUser;
+    auto entireVec = GetFieldVec(field);
+    PetscErrorCode ierr;
+    ierr = VecRestoreSubVector(entireVec, *vecIs, vec);
+    CHKERRQ(ierr);
+    ierr = ISDestroy(vecIs);
+    CHKERRQ(ierr);
+    ierr = DMDestroy(subdm);
+    CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}

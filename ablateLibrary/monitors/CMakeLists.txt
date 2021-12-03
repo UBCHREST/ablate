@@ -21,6 +21,8 @@ target_sources(ablateLibrary
         particleAverage.cpp
         curveMonitor.hpp
         curveMonitor.cpp
+        maxMinAverage.hpp
+        maxMinAverage.cpp
         )
 
 add_subdirectory(logs)
