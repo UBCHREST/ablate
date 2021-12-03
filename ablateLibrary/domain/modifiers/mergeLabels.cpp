@@ -29,7 +29,7 @@ void ablate::domain::modifiers::MergeLabels::Modify(DM& dm) {
     // check the size
     PetscInt newLabelSize;
     ISGetSize(mergedIS, &newLabelSize) >> checkError;
-    if(newLabelSize == 0){
+    if (newLabelSize == 0) {
         throw std::length_error("The new merged region " + mergedRegion->GetName() + " resulted in no points.");
     }
 

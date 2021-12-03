@@ -2,9 +2,9 @@
 #define ABLATELIBRARY_FORMULA_HPP
 #include <muParser.h>
 #include <memory>
-#include "parameters/parameters.hpp"
 #include <vector>
 #include "mathFunction.hpp"
+#include "parameters/parameters.hpp"
 
 namespace ablate::mathFunctions {
 class Formula : public MathFunction {

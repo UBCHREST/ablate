@@ -1,0 +1,105 @@
+MinMaxAvg euler for timestep 0000:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0001:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0002:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0003:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0004:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0005:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0006:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0007:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0008:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0009:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0010:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0011:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0012:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0013:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0014:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0015:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0016:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0017:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0018:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0019:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0020:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0021:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0022:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0023:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0024:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+MinMaxAvg euler for timestep 0025:
+	min: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+	max: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =415 <1
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects> =1 =3.39e+05 =414 <1
+ResultFiles:
