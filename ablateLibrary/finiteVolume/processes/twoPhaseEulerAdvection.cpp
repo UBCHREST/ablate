@@ -134,16 +134,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         *aL = a2;
         *MG = (*normalVelocity) / (*aG);
         *ML = (*normalVelocity) / (*aL);
-        if (densityVF/(*densityG) > 1.0)
-        {
-            *alpha = 1.0;
-        } else if (densityVF/(*densityG) < 0.0)
-        {
-            *alpha = 0.0;
-        } else
-        {
-            *alpha = densityVF / (*densityG);
-        }
+        *alpha = densityVF / (*densityG);
 
     }
     else {
@@ -384,7 +375,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal alphaDif = PetscAbs(alphaL - alphaR);
     if (directionG == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
                                                //        flux[RHO] = massFlux * areaMag;
-        flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin));
+        flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin - alphaDif));
         PetscReal velMagL = MagVector(dim, velocityL);
         PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
         PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
@@ -400,18 +391,18 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
             HGL_L = 0.0;
         }
         //        flux[RHOE] = HL * massFlux * areaMag;
-        flux[FlowProcess::RHOE] = (HG_L * massFluxGG * areaMag * alphaMin) + (HGL_L * massFluxGL * areaMag * alphaDif) + (HL_L * massFluxLL * areaMag * (1 - alphaMin));
+        flux[FlowProcess::RHOE] = (HG_L * massFluxGG * areaMag * alphaMin) + (HGL_L * massFluxGL * areaMag * alphaDif) + (HL_L * massFluxLL * areaMag * (1 - alphaMin - alphaDif));
         // gravity
         flux[FlowProcess::RHOE] -= densityL*(parameters->g[0]*velocityL[0]+parameters->g[1]*velocityL[1]+parameters->g[2]*velocityL[2]);
         for (PetscInt n = 0; n < dim; n++) {
             //            flux[RHOU + n] = velocityL[n] * massFlux * areaMag + p12 * fg->normal[n];
-            flux[FlowProcess::RHOU + n] = velocityL[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin)) + p12 * fg->normal[n];
+            flux[FlowProcess::RHOU + n] = velocityL[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin - alphaDif)) + p12 * fg->normal[n];
             // gravity
             flux[FlowProcess::RHOU + n] -= densityL*parameters->g[n];
         }
     } else if (directionG == fluxCalculator::RIGHT) {
         //        flux[RHO] = massFlux * areaMag;
-        flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin));
+        flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin - alphaDif));
         PetscReal velMagR = MagVector(dim, velocityR);
         PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
         PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
@@ -427,18 +418,18 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
             HGL_R = 0.0;
         }
         //        flux[RHOE] = HR * massFlux * areaMag;
-        flux[FlowProcess::RHOE] = (HG_R * massFluxGG * areaMag * alphaMin) + (HGL_R * massFluxGL * areaMag * alphaDif) + (HL_R * massFluxLL * areaMag * (1 - alphaMin));
+        flux[FlowProcess::RHOE] = (HG_R * massFluxGG * areaMag * alphaMin) + (HGL_R * massFluxGL * areaMag * alphaDif) + (HL_R * massFluxLL * areaMag * (1 - alphaMin - alphaDif));
         // gravity
         flux[FlowProcess::RHOE] -= densityR*(parameters->g[0]*velocityR[0]+parameters->g[1]*velocityR[1]+parameters->g[2]*velocityR[2]);
         for (PetscInt n = 0; n < dim; n++) {
             //            flux[RHOU + n] = velocityR[n] * massFlux * areaMag + p12 * fg->normal[n];
-            flux[FlowProcess::RHOU + n] = velocityR[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin)) + p12 * fg->normal[n];
+            flux[FlowProcess::RHOU + n] = velocityR[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin - alphaDif)) + p12 * fg->normal[n];
             // gravity
             flux[FlowProcess::RHOU + n] -= densityR*parameters->g[n];
         }
     } else {
         //        flux[RHO] = massFlux * areaMag;
-        flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin));
+        flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * (1 - alphaMin - alphaDif));
 
         PetscReal velMagL = MagVector(dim, velocityL);
         //        PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
@@ -473,14 +464,14 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         }
         //        flux[RHOE] = 0.5 * (HL + HR) * massFlux * areaMag;
         flux[FlowProcess::RHOE] =
-            (0.5 * (HG_L + HG_R) * massFluxGG * areaMag * alphaMin) + (0.5 * (HGL_L + HGL_R) * massFluxGL * areaMag * alphaDif) + (0.5 * (HL_L + HL_R) * massFluxLL * areaMag * (1 - alphaMin));
+            (0.5 * (HG_L + HG_R) * massFluxGG * areaMag * alphaMin) + (0.5 * (HGL_L + HGL_R) * massFluxGL * areaMag * alphaDif) + (0.5 * (HL_L + HL_R) * massFluxLL * areaMag * (1 - alphaMin - alphaDif));
         // gravity term, rho*dot(g,vel)
         PetscReal fdotL = densityL*(parameters->g[0]*velocityL[0]+parameters->g[1]*velocityL[1]+parameters->g[2]*velocityL[2]);
         PetscReal fdotR = densityR*(parameters->g[0]*velocityR[0]+parameters->g[1]*velocityR[1]+parameters->g[2]*velocityR[2]);
         flux[FlowProcess::RHOE] -= 0.5*(fdotL+fdotR);
         for (PetscInt n = 0; n < dim; n++) {
             //            flux[RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * massFlux * areaMag + p12 * fg->normal[n];
-            flux[FlowProcess::RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin)) + p12 * fg->normal[n];
+            flux[FlowProcess::RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin - alphaDif)) + p12 * fg->normal[n];
             // gravity
             flux[FlowProcess::RHOU + n] -= 0.5*(densityL+densityR)*parameters->g[n];
         }
@@ -577,11 +568,17 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal massFlux;
     PetscReal p12;
     // calculate gas sub-area of face (stratified flow model)
-    PetscReal alpha = PetscMin(alphaR, alphaL);
+//    PetscReal alpha = PetscMin(alphaR, alphaL);
 
-    twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorFunction()(
+    fluxCalculator::Direction directionG = twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorFunction()(
         twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFlux, &p12);
-    flux[0] = massFlux * areaMag * alpha;
+    if (directionG == fluxCalculator::LEFT) {
+        flux[0] = massFlux * areaMag * alphaL;
+    } else if (directionG == fluxCalculator::RIGHT) {
+        flux[0] = massFlux * areaMag * alphaR;
+    } else {
+        flux[0] = massFlux * areaMag * 0.5 * (alphaL + alphaR);
+    }
 
     PetscFunctionReturn(0);
 }
