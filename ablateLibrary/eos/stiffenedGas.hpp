@@ -30,7 +30,11 @@ class StiffenedGas : public EOS {
 
     static PetscErrorCode StiffenedGasComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
 
+    static PetscErrorCode StiffenedGasComputeSensibleEnthalpy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx);
+
     static PetscErrorCode StiffenedGasComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
+
+    static PetscErrorCode StiffenedGasComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
 
    public:
     explicit StiffenedGas(std::shared_ptr<ablate::parameters::Parameters>, std::vector<std::string> species = {});
@@ -45,8 +49,12 @@ class StiffenedGas : public EOS {
     void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return &parameters; }
     ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return StiffenedGasComputeSensibleInternalEnergy; }
     void* GetComputeSensibleInternalEnergyContext() override { return &parameters; }
-    ComputeSpecificHeatConstantPressureFunction GetComputeSpecificHeatConstantPressureFunction() override { return StiffenedGasComputeSpecificHeatConstantPressure; }
+    ComputeSensibleEnthalpyFunction GetComputeSensibleEnthalpyFunction() override { return StiffenedGasComputeSensibleEnthalpy; }
+    void* GetComputeSensibleEnthalpyContext() override { return &parameters; }
+    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() override { return StiffenedGasComputeSpecificHeatConstantPressure; }
     void* GetComputeSpecificHeatConstantPressureContext() override { return &parameters; }
+    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantVolumeFunction() override { return StiffenedGasComputeSpecificHeatConstantVolume; }
+    void* GetComputeSpecificHeatConstantVolumeContext() override { return &parameters; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };

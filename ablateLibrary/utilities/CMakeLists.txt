@@ -11,5 +11,6 @@ target_sources(ablateLibrary
         fileUtility.cpp
         loggable.hpp
         mathUtilities.hpp
+        mathUtilities.cpp
         vectorUtilities.hpp
         )

@@ -2,7 +2,7 @@
 #define ABLATELIBRARY_BOUNDARYSOLVER_HPP
 
 #include <memory>
-#include "solver/solver.hpp"
+#include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
 
 namespace ablate::boundarySolver {
@@ -10,13 +10,14 @@ namespace ablate::boundarySolver {
 // forward declare the boundaryProcess
 class BoundaryProcess;
 
-class BoundarySolver : public solver::Solver, public solver::RHSFunction {
+class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
    public:
     /**
      * Boundary information.
      */
     typedef struct {
         PetscReal normal[3];   /* Area-scaled normals */
+        PetscReal areas[3];    /* Area-scaled normals */
         PetscReal centroid[3]; /* Location of centroid (quadrature point) */
     } BoundaryFVFaceGeom;
 
@@ -33,6 +34,17 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
      * @param grad
      */
     static void ComputeGradient(PetscInt dim, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar* grad);
+
+    /**
+     * public helper function to compute dPhiDNorm
+     * @param dim
+     * @param boundaryValue
+     * @param stencilValues
+     * @param stencilWeights
+     * @param grad
+     */
+    static void ComputeGradientAlongNormal(PetscInt dim, const BoundaryFVFaceGeom* fg, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues,
+                                           const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm);
 
    private:
     /**
@@ -76,11 +88,19 @@ class BoundarySolver : public solver::Solver, public solver::RHSFunction {
     // keep track of maximumStencilSize
     PetscInt maximumStencilSize = -1;
 
-    // The PetscFV (usually least squares) is used to compute the gradient weights
+    // The PetscFV (usually the least squares method) is used to compute the gradient weights
     PetscFV gradientCalculator = nullptr;
 
    public:
-    BoundarySolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses,
+    /**
+     *
+     * @param solverId the id for this solver
+     * @param region the boundary cell region
+     * @param fieldBoundary the region describing the faces between the boundary and field
+     * @param boundaryProcesses a list of boundary processes
+     * @param options other options
+     */
+    BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses,
                    std::shared_ptr<parameters::Parameters> options);
     ~BoundarySolver() override;
 

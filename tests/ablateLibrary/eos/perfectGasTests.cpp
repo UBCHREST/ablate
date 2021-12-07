@@ -267,18 +267,18 @@ INSTANTIATE_TEST_SUITE_P(
     [](const testing::TestParamInfo<ComputeSensibleInternalEnergyParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Perfect Gas ComputeSpecificHeatConstantPressure
+/// Perfect Gas DensityFunctionFromTemperaturePressure
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct ComputeSpecificHeatConstantPressureParameters {
+struct ComputeSensibleEnthalpyParameters {
     std::map<std::string, std::string> options;
     PetscReal temperatureIn;
     PetscReal densityIn;
-    PetscReal expectedCp;
+    PetscReal expectedSensibleEnthalpy;
 };
 
-class ComputeSpecificHeatConstantPressureTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ComputeSpecificHeatConstantPressureParameters> {};
+class ComputeSensibleEnthalpyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ComputeSensibleEnthalpyParameters> {};
 
-TEST_P(ComputeSpecificHeatConstantPressureTestFixture, ShouldComputeCorrectEnergy) {
+TEST_P(ComputeSensibleEnthalpyTestFixture, ShouldComputeCorrectEnergy) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
@@ -287,18 +287,58 @@ TEST_P(ComputeSpecificHeatConstantPressureTestFixture, ShouldComputeCorrectEnerg
     const auto& params = GetParam();
 
     // Prepare outputs
-    PetscReal cp;
+    PetscReal sensibleEnthalpy;
 
     // act
-    PetscErrorCode ierr = eos->GetComputeSpecificHeatConstantPressureFunction()(params.temperatureIn, params.densityIn, nullptr, &cp, eos->GetComputeSensibleInternalEnergyContext());
+    PetscErrorCode ierr = eos->GetComputeSensibleEnthalpyFunction()(params.temperatureIn, params.densityIn, nullptr, &sensibleEnthalpy, eos->GetComputeSensibleEnthalpyContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
-    ASSERT_NEAR(cp, params.expectedCp, 1E-3);
+    ASSERT_NEAR(sensibleEnthalpy, params.expectedSensibleEnthalpy, 1E-3);
 }
 
-INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, ComputeSpecificHeatConstantPressureTestFixture,
-                         testing::Values((ComputeSpecificHeatConstantPressureParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 8.0},
-                                         (ComputeSpecificHeatConstantPressureParameters){
-                                             .options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 1004.5}),
-                         [](const testing::TestParamInfo<ComputeSpecificHeatConstantPressureParameters>& info) { return std::to_string(info.index); });
+INSTANTIATE_TEST_SUITE_P(
+    PerfectGasEOSTests, ComputeSensibleEnthalpyTestFixture,
+    testing::Values((ComputeSensibleEnthalpyParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = 39000, .densityIn = .9, .expectedSensibleEnthalpy = 312000},
+                    (ComputeSensibleEnthalpyParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 1.1, .expectedSensibleEnthalpy = 351575.0},
+                    (ComputeSensibleEnthalpyParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 350.0, .densityIn = 20.1, .expectedSensibleEnthalpy = 351575.0}),
+    [](const testing::TestParamInfo<ComputeSensibleEnthalpyParameters>& info) { return std::to_string(info.index); });
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// Perfect Gas ComputeSpecificHeatConstantPressure
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct ComputeSpecificHeatParameters {
+    std::map<std::string, std::string> options;
+    PetscReal temperatureIn;
+    PetscReal densityIn;
+    PetscReal expectedCp;
+    PetscReal expectedCv;
+};
+
+class ComputeSpecificHeatTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<ComputeSpecificHeatParameters> {};
+
+TEST_P(ComputeSpecificHeatTestFixture, ShouldComputeCorrectSpecificHeat) {
+    // arrange
+    auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // Prepare outputs
+    PetscReal cp, cv;
+
+    // act
+    eos->GetComputeSpecificHeatConstantPressureFunction()(params.temperatureIn, params.densityIn, nullptr, &cp, eos->GetComputeSpecificHeatConstantPressureContext()) >> errorChecker;
+    eos->GetComputeSpecificHeatConstantVolumeFunction()(params.temperatureIn, params.densityIn, nullptr, &cv, eos->GetComputeSpecificHeatConstantVolumeContext()) >> errorChecker;
+
+    // assert
+    ASSERT_NEAR(cp, params.expectedCp, 1E-3);
+    ASSERT_NEAR(cv, params.expectedCv, 1E-3);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    PerfectGasEOSTests, ComputeSpecificHeatTestFixture,
+    testing::Values((ComputeSpecificHeatParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 8.0, .expectedCv = 8.0 / 2.0},
+                    (ComputeSpecificHeatParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 1004.5, .expectedCv = 1004.5 / 1.4}),
+    [](const testing::TestParamInfo<ComputeSpecificHeatParameters>& info) { return std::to_string(info.index); });

@@ -1,12 +1,12 @@
 #include <memory>
 #include "gtest/gtest.h"
-#include "mathFunctions/parsedFunction.hpp"
+#include "mathFunctions/simpleFormula.hpp"
 #include "mockFactory.hpp"
 #include "registrar.hpp"
 
 namespace ablateTesting::mathFunctions {
 
-TEST(ParsedFunctionTests, ShouldBeCreatedFromRegistar) {
+TEST(SimpleFormulaTests, ShouldBeCreatedFromRegistar) {
     // arrange
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "";  // should be default class
@@ -18,17 +18,17 @@ TEST(ParsedFunctionTests, ShouldBeCreatedFromRegistar) {
 
     // assert
     ASSERT_TRUE(instance != nullptr) << " should create an instance of the Parameters";
-    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::mathFunctions::ParsedFunction>(instance) != nullptr) << " should be an instance of FactoryParameters";
+    ASSERT_TRUE(std::dynamic_pointer_cast<ablate::mathFunctions::SimpleFormula>(instance) != nullptr) << " should be an instance of FactoryParameters";
 }
 
-TEST(ParsedFunctionTests, ShouldThrowExceptionInvalidEquation) {
+TEST(SimpleFormulaTests, ShouldThrowExceptionInvalidEquation) {
     // arrange/act/assert
-    ASSERT_THROW(ablate::mathFunctions::ParsedFunction("x+y+z+t+c"), std::invalid_argument);
+    ASSERT_THROW(ablate::mathFunctions::SimpleFormula("x+y+z+t+c"), std::invalid_argument);
 }
 
-TEST(ParsedFunctionTests, ShouldEvalToScalarFromXYZ) {
+TEST(SimpleFormulaTests, ShouldEvalToScalarFromXYZ) {
     // arrange
-    auto function = ablate::mathFunctions::ParsedFunction("x+y+z+t");
+    auto function = ablate::mathFunctions::SimpleFormula("x+y+z+t");
 
     // act/assert
     ASSERT_DOUBLE_EQ(10.0, function.Eval(1.0, 2.0, 3.0, 4.0));
@@ -36,9 +36,9 @@ TEST(ParsedFunctionTests, ShouldEvalToScalarFromXYZ) {
     ASSERT_DOUBLE_EQ(0.0, function.Eval(5.0, 2.0, 3.0, -10.0));
 }
 
-TEST(ParsedFunctionTests, ShouldEvalToScalarFromCoord) {
+TEST(SimpleFormulaTests, ShouldEvalToScalarFromCoord) {
     // arrange
-    auto function = ablate::mathFunctions::ParsedFunction("x+y+z+t");
+    auto function = ablate::mathFunctions::SimpleFormula("x+y+z+t");
 
     // act/assert
     const double array1[3] = {1.0, 2.0, 3.0};
@@ -51,9 +51,9 @@ TEST(ParsedFunctionTests, ShouldEvalToScalarFromCoord) {
     ASSERT_DOUBLE_EQ(0.0, function.Eval(array3, 3, -5));
 }
 
-TEST(ParsedFunctionTests, ShouldEvalToVectorFromXYZ) {
+TEST(SimpleFormulaTests, ShouldEvalToVectorFromXYZ) {
     // arrange
-    auto function = ablate::mathFunctions::ParsedFunction("x+y+z+t,x*y*z,t");
+    auto function = ablate::mathFunctions::SimpleFormula("x+y+z+t,x*y*z,t");
 
     // act/assert
     std::vector<double> result1 = {0, 0, 0};
@@ -73,9 +73,9 @@ TEST(ParsedFunctionTests, ShouldEvalToVectorFromXYZ) {
     ASSERT_THROW(function.Eval(2.0, 2.0, 3.0, 4.0, result3), std::invalid_argument);
 }
 
-TEST(ParsedFunctionTests, ShouldEvalToVectorFromCoord) {
+TEST(SimpleFormulaTests, ShouldEvalToVectorFromCoord) {
     // arrange
-    auto function = ablate::mathFunctions::ParsedFunction("x+y+z+t,x*y*z,t");
+    auto function = ablate::mathFunctions::SimpleFormula("x+y+z+t,x*y*z,t");
 
     // act/assert
     const double array1[3] = {1.0, 2.0, 3.0};
@@ -98,9 +98,9 @@ TEST(ParsedFunctionTests, ShouldEvalToVectorFromCoord) {
     ASSERT_THROW(function.Eval(array3, 3, 4.0, result3), std::invalid_argument);
 }
 
-TEST(ParsedFunctionTests, ShouldProvideAndFunctionWithPetscFunction) {
+TEST(SimpleFormulaTests, ShouldProvideAndFunctionWithPetscFunction) {
     // arrange
-    auto function = std::make_shared<ablate::mathFunctions::ParsedFunction>("x+y+z+t,x*y*z");
+    auto function = std::make_shared<ablate::mathFunctions::SimpleFormula>("x+y+z+t,x*y*z");
 
     auto context = function->GetContext();
     auto functionPointer = function->GetPetscFunction();

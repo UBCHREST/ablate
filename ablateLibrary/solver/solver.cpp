@@ -260,13 +260,23 @@ void ablate::solver::Solver::GetRange(PetscInt depth, IS &pointIS, PetscInt &pSt
     }
 
     // Get the point range
-    ISGetPointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
+    if (pointIS == nullptr) {
+        // There are no points in this region, so skip
+        pStart = 0;
+        pEnd = 0;
+        points = nullptr;
+    } else {
+        // Get the range
+        ISGetPointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
+    }
 
     // Clean up the allCellIS
     ISDestroy(&allPointIS) >> checkError;
 }
 
 void ablate::solver::Solver::RestoreRange(IS &pointIS, PetscInt &pStart, PetscInt &pEnd, const PetscInt *&points) const {
-    ISRestorePointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
-    ISDestroy(&pointIS) >> checkError;
+    if (pointIS) {
+        ISRestorePointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
+        ISDestroy(&pointIS) >> checkError;
+    }
 }

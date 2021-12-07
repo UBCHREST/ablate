@@ -1,0 +1,125 @@
+---
+# This is the lodi validation case from Poinsot and Lele (Boundary Conditions for Direct Simulations of Compressible Viscous Flows)
+# parameters:
+#   l = .5
+#   L = 1
+#   pInf = 101325.0
+#   rhoInit = 1.0
+#   gamma = 1.4
+#   Rgas = 287.0
+#   c = sqrt(gamma*p/rho) ~ 376.6178434435
+#   uo = 1.1*c = 414.2796277878
+#   Re = uo * l/nu = rho * uo * l /mu = 10,000
+#       ... mu = (rho * uo * l)/Re = 0.02071398139
+# Vortex Params
+#   C/(cl) = -.0005 ... C = -0.09415446086
+#   Rc = 0.15*l = 0.075
+# Fields
+# u_x = uo - C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*y
+# u_y =  + C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*x
+# p = pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2))
+# T = p/(Rgas*rho) = 1/(Rgas*rho) * (pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2)))
+# timeEnd = 2*l/c = 0.002655211423
+environment:
+  title: compressibleFlowVortex
+  tagDirectory: false
+arguments:
+  petsclimiter_type: none
+  euler_petscfv_type: upwind
+  velocity_petscfv_type: leastsquares
+  temperature_petscfv_type: leastsquares
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_adapt_type: none
+    ts_max_steps: 25
+    ts_max_time: 0.002655211423
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [ 25, 25]
+    lower: [ 0.0, -.5 ]
+    upper: [ 1.0, .5 ]
+    simplex: false
+    mainRegion:
+      name: mainSolver
+    boundaryFaceRegion:
+      name: boundaryFaces
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+      - !ablate::domain::modifiers::MergeLabels
+        mergedRegion:
+          name: openBoundaryLabel
+        regions:
+          - name: boundaryCellsRight
+          - name: boundaryCellsTop
+          - name: boundaryCellsBottom
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas : 287.0
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    region:
+      name: mainSolver
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      mInf: .3
+    parameters:
+      cfl: 0.5
+    transport:
+      mu:  0.02071398139
+    initialization:
+      - !ablate::finiteVolume::fieldFunctions::Euler
+        state:
+          eos: *eos
+          pressure:
+            !ablate::mathFunctions::Formula
+            formula: pinf + (rho*C^2)/Rc^2 * exp(-((x-l)^2 + (y)^2)/(2*Rc^2))
+            constants:
+              # define the constants used by the formulas
+              &constants
+              pinf: 101325.0
+              rho: 1.0
+              gamma: 1.4
+              Rgas: 287.0
+              Rc: 0.075
+              C: -0.09415446086
+              uo:  414.2796277878
+              l: .5
+          temperature:
+            !ablate::mathFunctions::Formula
+            formula: 1/(Rgas*rho) * (pinf + (rho*C^2)/Rc^2 * exp(-((x-l)^2 +(y)^2)/(2*Rc^2)))
+            constants: *constants
+          velocity:
+            !ablate::mathFunctions::Formula
+            formula: uo - C/(rho*Rc^2) * exp((-(x-l)^2 - (y)^2)/(2*Rc^2))*y, C/(rho*Rc^2) * exp((-(x-l)^2 - (y)^2)/(2*Rc^2))*(x-l)
+            constants: *constants
+    monitors:
+      - !ablate::monitors::MaxMinAverage
+        field: euler
+    eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: boundaryCellsLeft
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: openBoundaryLabel
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 101325.0
+        maxAcousticsLength: 1

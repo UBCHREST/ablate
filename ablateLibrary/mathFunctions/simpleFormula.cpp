@@ -1,11 +1,11 @@
-#include "parsedFunction.hpp"
+#include "simpleFormula.hpp"
 #include <petscsys.h>
 #include <algorithm>
 #include <exception>
 
 static mu::value_type powerFunction(mu::value_type a, mu::value_type b) { return PetscPowReal(a, b); }
 
-ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString) : formula(functionString) {
+ablate::mathFunctions::SimpleFormula::SimpleFormula(std::string functionString) : formula(functionString) {
     // define the x,y,z and t variables
     parser.DefineVar("x", &coordinate[0]);
     parser.DefineVar("y", &coordinate[1]);
@@ -21,10 +21,10 @@ ablate::mathFunctions::ParsedFunction::ParsedFunction(std::string functionString
     try {
         parser.Eval();
     } catch (mu::Parser::exception_type& exception) {
-        throw ablate::mathFunctions::ParsedFunction::ConvertToException(exception);
+        throw ablate::mathFunctions::SimpleFormula::ConvertToException(exception);
     }
 }
-double ablate::mathFunctions::ParsedFunction::Eval(const double& x, const double& y, const double& z, const double& t) const {
+double ablate::mathFunctions::SimpleFormula::Eval(const double& x, const double& y, const double& z, const double& t) const {
     coordinate[0] = x;
     coordinate[1] = y;
     coordinate[2] = z;
@@ -32,7 +32,7 @@ double ablate::mathFunctions::ParsedFunction::Eval(const double& x, const double
     return parser.Eval();
 }
 
-double ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int& ndims, const double& t) const {
+double ablate::mathFunctions::SimpleFormula::Eval(const double* xyz, const int& ndims, const double& t) const {
     coordinate[0] = 0;
     coordinate[1] = 0;
     coordinate[2] = 0;
@@ -44,7 +44,7 @@ double ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int&
     return parser.Eval();
 }
 
-void ablate::mathFunctions::ParsedFunction::Eval(const double& x, const double& y, const double& z, const double& t, std::vector<double>& result) const {
+void ablate::mathFunctions::SimpleFormula::Eval(const double& x, const double& y, const double& z, const double& t, std::vector<double>& result) const {
     coordinate[0] = x;
     coordinate[1] = y;
     coordinate[2] = z;
@@ -63,7 +63,7 @@ void ablate::mathFunctions::ParsedFunction::Eval(const double& x, const double& 
     }
 }
 
-void ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const {
+void ablate::mathFunctions::SimpleFormula::Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const {
     coordinate[0] = 0;
     coordinate[1] = 0;
     coordinate[2] = 0;
@@ -86,11 +86,11 @@ void ablate::mathFunctions::ParsedFunction::Eval(const double* xyz, const int& n
     }
 }
 
-PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscInt dim, PetscReal time, const PetscReal* x, PetscInt nf, PetscScalar* u, void* ctx) {
+PetscErrorCode ablate::mathFunctions::SimpleFormula::ParsedPetscFunction(PetscInt dim, PetscReal time, const PetscReal* x, PetscInt nf, PetscScalar* u, void* ctx) {
     // wrap in try, so we return petsc error code instead of c++ exception
     PetscFunctionBeginUser;
     try {
-        auto parser = (ParsedFunction*)ctx;
+        auto parser = (SimpleFormula*)ctx;
 
         // update the coordinates
         parser->coordinate[0] = 0;
@@ -121,15 +121,15 @@ PetscErrorCode ablate::mathFunctions::ParsedFunction::ParsedPetscFunction(PetscI
     PetscFunctionReturn(0);
 }
 
-void ablate::mathFunctions::ParsedFunction::DefineAdditionalFunctions(mu::Parser& parser) {
+void ablate::mathFunctions::SimpleFormula::DefineAdditionalFunctions(mu::Parser& parser) {
     // define some helper functions
     parser.DefineFun("Power", powerFunction, true);
 }
 
-std::invalid_argument ablate::mathFunctions::ParsedFunction::ConvertToException(mu::Parser::exception_type& exception) {
+std::invalid_argument ablate::mathFunctions::SimpleFormula::ConvertToException(mu::Parser::exception_type& exception) {
     return std::invalid_argument("Unable to parser (" + exception.GetExpr() + "). " + exception.GetMsg());
 }
 
 #include "registrar.hpp"
-REGISTER_DEFAULT_PASS_THROUGH(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedFunction,
+REGISTER_DEFAULT_PASS_THROUGH(ablate::mathFunctions::MathFunction, ablate::mathFunctions::SimpleFormula,
                               "a string based function to be parsed with muparser. The (string) formula that may accept x, y, z, t as variables", std::string);

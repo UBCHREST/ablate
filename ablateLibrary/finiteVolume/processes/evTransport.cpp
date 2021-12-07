@@ -9,8 +9,7 @@ ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved,
       fluxCalculator(std::move(fluxCalcIn)),
       eos(std::move(eosIn)),
       transportModel(std::move(transportModelIn)),
-      advectionData(),
-      updateData() {
+      advectionData() {
     if (fluxCalculator) {
         // set the decode state function
         advectionData.decodeStateFunction = eos->GetDecodeStateFunction();
@@ -37,7 +36,7 @@ ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved,
         diffusionData.diffContext = nullptr;
     }
 
-    updateData.numberEV = 0;
+    numberEV = 0;
 }
 
 void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
@@ -45,7 +44,7 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
         // determine the number of components in the ev
         auto conservedForm = flow.GetSubDomain().GetField(conserved);
         advectionData.numberEV = conservedForm.numberComponents;
-        updateData.numberEV = conservedForm.numberComponents;
+        numberEV = conservedForm.numberComponents;
         diffusionData.numberEV = conservedForm.numberComponents;
         if (!flow.GetSubDomain().ContainsField(nonConserved)) {
             throw std::invalid_argument("The ablate::finiteVolume::processes::EVTransport process expects the conserved (" + conserved + ") and non-conserved (" + nonConserved +
@@ -68,7 +67,7 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
             }
         }
 
-        flow.RegisterAuxFieldUpdate(UpdateEVField, &updateData, nonConserved, {CompressibleFlowFields::EULER_FIELD, conserved});
+        flow.RegisterAuxFieldUpdate(UpdateEVField, &numberEV, nonConserved, {CompressibleFlowFields::EULER_FIELD, conserved});
     }
 }
 
@@ -77,9 +76,9 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdateEVField(Petsc
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + RHO];
 
-    auto flowParameters = (UpdateData *)ctx;
+    auto numberEV = (PetscInt *)ctx;
 
-    for (PetscInt e = 0; e < flowParameters->numberEV; e++) {
+    for (PetscInt e = 0; e < *numberEV; e++) {
         auxField[e] = conservedValues[uOff[1] + e] / density;
     }
 

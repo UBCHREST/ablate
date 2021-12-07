@@ -55,10 +55,7 @@ class EVTransport : public FlowProcess {
     DiffusionData diffusionData;
 
     // Store ctx needed for static function diffusion function passed to PETSc
-    struct UpdateData {
-        PetscInt numberEV;
-    };
-    UpdateData updateData;
+    PetscInt numberEV;
 
    public:
     explicit EVTransport(std::string conserved, std::string nonConserved, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
@@ -70,12 +67,12 @@ class EVTransport : public FlowProcess {
      */
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
 
-   private:
     /**
      * Function to compute the EV fraction. This function assumes that the input values will be {"euler", "densityYi"}
      */
     static PetscErrorCode UpdateEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
 
+   private:
     /**
      * This computes the species transfer for species diffusion fluxy
      * f = "densityYi"

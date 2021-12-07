@@ -7,6 +7,7 @@
 #include "eos/eos.hpp"
 #include "fvSupport.h"
 #include "mathFunctions/fieldFunction.hpp"
+#include "solver/cellSolver.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
 
@@ -17,11 +18,10 @@ namespace processes {
 class Process;
 }
 
-class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
+class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction {
    public:
     using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
-    using AuxFieldUpdateFunction = PetscErrorCode (*)(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* u, PetscScalar* auxField, void* ctx);
     using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
                                                   const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
                                                   const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void* ctx);
@@ -29,16 +29,6 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
                                                    const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    private:
-    /**
-     * struct to describe how to compute the aux variable update
-     */
-    struct AuxFieldUpdateFunctionDescription {
-        AuxFieldUpdateFunction function;
-        void* context;
-        std::vector<PetscInt> inputFields;
-        PetscInt auxField;
-    };
-
     /**
      * struct to describe how to compute RHS finite volume flux source terms
      */
@@ -66,7 +56,6 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     // hold the update functions for flux and point sources
     std::vector<FluxFunctionDescription> rhsFluxFunctionDescriptions;
     std::vector<PointFunctionDescription> rhsPointFunctionDescriptions;
-    std::vector<AuxFieldUpdateFunctionDescription> auxFieldUpdateFunctionDescriptions;
 
     // allow the use of any arbitrary rhs functions
     std::vector<std::pair<RHSArbitraryFunction, void*>> rhsArbitraryFunctions;
@@ -83,15 +72,6 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
-
-    /**
-     * Helper function to march over each cell and update the aux Fields
-     * @param flow
-     * @param time
-     * @param locXVec
-     * @param updateFunction
-     */
-    void UpdateAuxFields(PetscReal time, Vec locXVec, Vec locAuxField);
 
     /**
      * Computes the flux across each face in th region
@@ -172,16 +152,6 @@ class FiniteVolumeSolver : public solver::Solver, public solver::RHSFunction {
      * @param context
      */
     void RegisterRHSFunction(RHSArbitraryFunction function, void* context);
-
-    /**
-     * Register a auxFieldUpdate
-     * @param function
-     * @param context
-     * @param field
-     * @param inputFields
-     * @param auxFields
-     */
-    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, const std::string& auxField, const std::vector<std::string>& inputFields);
 
     /**
      * Register a dtCalculator

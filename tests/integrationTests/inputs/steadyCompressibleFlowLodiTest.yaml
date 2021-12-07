@@ -1,0 +1,105 @@
+---
+# This is the lodi validation for what should be uniform flow
+environment:
+  title: uniformFlow
+  tagDirectory: false
+arguments:
+  petsclimiter_type: none
+  euler_petscfv_type: upwind
+  velocity_petscfv_type: leastsquares
+  temperature_petscfv_type: leastsquares
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_adapt_type: none
+    ts_max_steps: 2500000
+    ts_max_time: 0.002655211423
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [ 10, 10 ]
+    lower: [ 0.0, -.5 ]
+    upper: [ 1.0, .5 ]
+    simplex: false
+    mainRegion:
+      name: mainSolver
+    boundaryFaceRegion:
+      name: boundaryFaces
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+      - !ablate::domain::modifiers::MergeLabels
+        mergedRegion:
+          name: openBoundaryLabel
+        regions:
+          - name: boundaryCellsRight
+          - name: boundaryCellsTop
+          - name: boundaryCellsBottom
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas : 287.0
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    region:
+      name: mainSolver
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      mInf: .3
+    parameters:
+      cfl: 0.5
+    transport:
+      mu:  0.02071398139
+    initialization:
+      - !ablate::finiteVolume::fieldFunctions::Euler
+        state:
+          eos: *eos
+          pressure:
+            !ablate::mathFunctions::Formula
+            formula: pinf
+            constants:
+              # define the constants used by the formulas
+              &constants
+              pinf: 101325.0
+              rho: 1.0
+              gamma: 1.4
+              Rgas: 287.0
+              Rc: 0.075
+              C: -0.09415446086
+              uo: 414.2796277878
+              l: .5
+          temperature:
+            !ablate::mathFunctions::Formula
+            formula: 1/(Rgas*rho) * (pinf)
+            constants: *constants
+          velocity:
+            !ablate::mathFunctions::Formula
+            formula: uo, 0.0
+            constants: *constants
+    monitors:
+      - !ablate::monitors::MaxMinAverage
+        field: euler
+    eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: boundaryCellsLeft
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: openBoundaryLabel
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 101325.0
+        maxAcousticsLength: 1

@@ -1,22 +1,23 @@
 #include <petsc.h>
-#include <boundarySolver/boundarySolver.hpp>
 #include <cmath>
-#include <domain/modifiers/createLabel.hpp>
-#include <domain/modifiers/mergeLabels.hpp>
-#include <domain/modifiers/tagLabelBoundary.hpp>
-#include <mathFunctions/geom/sphere.hpp>
 #include <memory>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
+#include "boundarySolver/boundarySolver.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/modifiers/createLabel.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "domain/modifiers/mergeLabels.hpp"
+#include "domain/modifiers/tagLabelBoundary.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "mathFunctions/geom/sphere.hpp"
+#include "utilities/mathUtilities.hpp"
 
 using namespace ablate;
 
@@ -152,16 +153,48 @@ TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundar
 
                 // Compute each field
                 FillStencilValues(uOff[fieldA], stencilValues, pointValues);
-                boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[fieldA]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset++ * dim));
+                boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[fieldA]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset * dim));
+
+                // Check this gradient with the dPhiDn Calc
+                PetscScalar dPhiDNorm;
+                boundarySolver::BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryValues[uOff[fieldA]], stencilSize, &pointValues[0], stencilWeights, dPhiDNorm);
+                if (PetscAbs(dPhiDNorm - (utilities::MathUtilities::DotVector(dim, source + sOff[sourceField] + (sourceOffset * dim), fg->normal))) > 1E-8) {
+                    throw std::runtime_error("The ComputeGradientAlongNormal function computed a wrong gradient for boundaryValues[uOff[fieldA]]");
+                }
 
                 FillStencilValues(uOff[fieldB], stencilValues, pointValues);
-                boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[fieldB]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset++ * dim));
+                sourceOffset++;
+                boundarySolver::BoundarySolver::ComputeGradient(dim, boundaryValues[uOff[fieldB]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset * dim));
+                boundarySolver::BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryValues[uOff[fieldB]], stencilSize, &pointValues[0], stencilWeights, dPhiDNorm);
+                if (PetscAbs(dPhiDNorm - (utilities::MathUtilities::DotVector(dim, source + sOff[sourceField] + (sourceOffset * dim), fg->normal))) > 1E-8) {
+                    throw std::runtime_error("The ComputeGradientAlongNormal function computed a wrong gradient for boundaryValues[uOff[fieldB]]");
+                }
 
                 FillStencilValues(uOff[auxA], stencilAuxValues, pointValues);
-                boundarySolver::BoundarySolver::ComputeGradient(dim, auxValues[aOff[auxA]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset++ * dim));
+                sourceOffset++;
+                boundarySolver::BoundarySolver::ComputeGradient(dim, auxValues[aOff[auxA]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset * dim));
+                boundarySolver::BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[auxA]], stencilSize, &pointValues[0], stencilWeights, dPhiDNorm);
+                if (PetscAbs(dPhiDNorm - (utilities::MathUtilities::DotVector(dim, source + sOff[sourceField] + (sourceOffset * dim), fg->normal))) > 1E-8) {
+                    throw std::runtime_error("The ComputeGradientAlongNormal function computed a wrong gradient for auxValues[aOff[auxA]]");
+                }
 
                 FillStencilValues(uOff[auxB], stencilAuxValues, pointValues);
-                boundarySolver::BoundarySolver::ComputeGradient(dim, auxValues[aOff[auxB]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset++ * dim));
+                sourceOffset++;
+                boundarySolver::BoundarySolver::ComputeGradient(dim, auxValues[aOff[auxB]], stencilSize, &pointValues[0], stencilWeights, source + sOff[sourceField] + (sourceOffset * dim));
+                boundarySolver::BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[auxB]], stencilSize, &pointValues[0], stencilWeights, dPhiDNorm);
+                if (PetscAbs(dPhiDNorm - (utilities::MathUtilities::DotVector(dim, source + sOff[sourceField] + (sourceOffset * dim), fg->normal))) > 1E-8) {
+                    throw std::runtime_error("The ComputeGradientAlongNormal function computed a wrong gradient for auxValues[aOff[auxB]]");
+                }
+
+                // The normal should point away from the center of the domain
+                PetscScalar center[3] = {.5, .5, .5};
+                PetscScalar outwardVector[3];
+                for (PetscInt d = 0; d < dim; d++) {
+                    outwardVector[d] = fg->centroid[d] - center[d];
+                }
+                if (utilities::MathUtilities::DotVector(dim, outwardVector, fg->normal) <= 0) {
+                    throw std::runtime_error("The Normal should face out from the inside region.");
+                }
 
                 return 0;
             },

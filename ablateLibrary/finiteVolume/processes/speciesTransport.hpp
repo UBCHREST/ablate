@@ -49,10 +49,7 @@ class SpeciesTransport : public FlowProcess {
     DiffusionData diffusionData;
 
     // Store ctx needed for static function diffusion function passed to PETSc
-    struct UpdateData {
-        PetscInt numberSpecies;
-    };
-    UpdateData updateData;
+    PetscInt numberSpecies;
 
    public:
     explicit SpeciesTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {});
@@ -63,13 +60,13 @@ class SpeciesTransport : public FlowProcess {
      */
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
 
-   private:
     /**
      * Function to compute the mass fraction. This function assumes that the input values will be {"euler", "densityYi"}
      */
     static PetscErrorCode UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
                                                      void* ctx);
 
+   private:
     /**
      * This computes the energy transfer for species diffusion flux for rhoE
      * f = "euler"
