@@ -1,4 +1,5 @@
 #include "twoPhaseEulerAdvection.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "flowProcess.hpp"
 #include "eos/perfectGas.hpp"
 // #include <petscsnes.h>
@@ -258,6 +259,18 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Initialize(ablate:
     // Currently, no option for species advection
     flow.RegisterRHSFunction(CompressibleFlowComputeEulerFlux, this, "euler", {"densityVF", "euler"}, {});
     flow.RegisterRHSFunction(CompressibleFlowComputeVFFlux, this, "densityVF", {"densityVF", "euler"}, {});
+
+    // check to see if auxFieldUpdates needed to be added
+    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VELOCITY_FIELD)) {
+        flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField2Gas, nullptr, CompressibleFlowFields::VELOCITY_FIELD, {CompressibleFlowFields::EULER_FIELD});
+    }
+//    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::TEMPERATURE_FIELD)) {
+//        // add in aux update variables
+//        flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField2Gas, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD});
+//    }
+//    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VF_FIELD)){
+//        flow.RegisterAuxFieldUpdate(UpdateAuxVolumeFractionField2Gas, nullptr, CompressibleFlowFields::VF_FIELD, {CompressibleFlowFields::VF_FIELD});
+//    }
 }
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
                                                                                                          const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscScalar *gradL,
@@ -583,7 +596,87 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAuxVelocityField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
+                                                                                       const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
+    PetscFunctionBeginUser;
+    PetscReal density = conservedValues[FlowProcess::RHO];
+
+    for (PetscInt d = 0; d < dim; d++) {
+        auxField[d] = conservedValues[FlowProcess::RHOU + d] / density;
+    }
+
+    PetscFunctionReturn(0);
+}
+
+//// When used, you must request euler, then densityYi
+//PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAuxTemperatureField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
+//                                                                                          const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
+//    PetscFunctionBeginUser;
+//    PetscReal density = conservedValues[uOff[0] + FlowProcess::RHO];
+//    PetscReal totalEnergy = conservedValues[uOff[0] + FlowProcess::RHOE] / density;
+//    auto flowParameters = (UpdateTemperatureData*)ctx;
+//    PetscErrorCode ierr = flowParameters->computeTemperatureFunction(
+//        dim, density, totalEnergy, conservedValues + uOff[0] + FlowProcess::RHOU, flowParameters->numberSpecies ? conservedValues + uOff[1] : NULL, auxField, flowParameters->computeTemperatureContext);
+//    CHKERRQ(ierr);
+//
+//    PetscFunctionReturn(0);
+//}
+
+//PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAuxVolumeFractionField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
+//                                                                                                         const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
+//    PetscFunctionBeginUser;
+//    auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
+//    const int EULER_FIELD = 1;
+//    const int VF_FIELD = 0;
+//    PetscReal density = conservedValues[FlowProcess::RHO];
+//
+//    for (PetscInt d = 0; d < dim; d++) {
+//        auxField[d] = conservedValues[FlowProcess::RHOU + d] / density;
+//    }
+//    // For cell center, the norm is unity
+//    PetscReal norm[3];
+//    norm[0]=1;
+//    norm[1]=1;
+//    norm[2]=1;
+//
+//    PetscReal densityG;
+//    PetscReal densityL;
+//    PetscReal normalVelocity;  // uniform velocity in cell
+//    PetscReal velocity[3];
+//    PetscReal internalEnergy;
+//    PetscReal internalEnergyG;
+//    PetscReal internalEnergyL;
+//    PetscReal aG;
+//    PetscReal aL;
+//    PetscReal MG;
+//    PetscReal ML;
+//    PetscReal p;  // pressure equilibrium
+//    PetscReal alpha;
+//    DecodeTwoPhaseEulerState(twoPhaseEulerAdvection->eosGas,
+//                             twoPhaseEulerAdvection->eosLiquid,
+//                             dim,
+//                             auxField + uOff[EULER_FIELD],// should be cell center fields
+//                             auxField[uOff[VF_FIELD]],// should be cell center fields
+//                             norm,
+//                             &density,
+//                             &densityG,
+//                             &densityL,
+//                             &normalVelocity,
+//                             velocity,
+//                             &internalEnergy,
+//                             &internalEnergyG,
+//                             &internalEnergyL,
+//                             &aG,
+//                             &aL,
+//                             &MG,
+//                             &ML,
+//                             &p,
+//                             &alpha);
+//
+//    PetscFunctionReturn(0);
+//}
+
+#include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eosGas", ""), ARG(ablate::eos::EOS, "eosLiquid", ""),
          ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasGas", ""), ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorGasLiquid", ""),
          ARG(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculatorLiquidLiquid", ""), ARG(ablate::parameters::Parameters, "parameters", "parameters for two phase advection"));
