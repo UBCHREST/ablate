@@ -228,8 +228,6 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 domain::Region::ENTIREDOMAIN,
                 nullptr,
                 parameters,
-                /* initialization functions */
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("wall velocity", std::vector<int>{3, 1, 2, 4}, velocityExact),
                                                                                     std::make_shared<boundaryConditions::Essential>("wall temp", std::vector<int>{3, 1, 2, 4}, temperatureExact)},
@@ -259,7 +257,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             auto particles = std::make_shared<ablate::particles::Inertial>(
                 "particle", ablate::domain::Region::ENTIREDOMAIN, particleOptions, 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction);
 
-            mesh->InitializeSubDomains({flowObject, particles});
+            mesh->InitializeSubDomains({flowObject, particles}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});
 
             // Override problem with source terms, boundary, and set the exact solution

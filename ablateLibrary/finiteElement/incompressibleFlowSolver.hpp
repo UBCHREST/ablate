@@ -16,8 +16,7 @@ class IncompressibleFlowSolver : public FiniteElementSolver {
 
    public:
     IncompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options = {},
-                             std::shared_ptr<parameters::Parameters> parameters = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {},
-                             std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
+                             std::shared_ptr<parameters::Parameters> parameters = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
 
     /** SubDomain Register and Setup **/

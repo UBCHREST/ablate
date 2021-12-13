@@ -124,7 +124,7 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     }
 }
 
-void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers) {
+void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations) {
     // determine the number of fields
     for (auto& solver : solvers) {
         solver->Register(GetSubDomain(solver->GetRegion()));
@@ -138,6 +138,36 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
     CreateStructures();
     for (auto& subDomain : subDomains) {
         subDomain->CreateSubDomainStructures();
+    }
+
+    // Set the initial conditions for each field specified
+    PetscInt numberFields;
+    DMGetNumFields(dm, &numberFields) >> checkError;
+    for (auto& initialization : initializations) {
+        // Size up the field projects
+        std::vector<mathFunctions::PetscFunction> fieldFunctions(numberFields, nullptr);
+        std::vector<void*> fieldContexts(numberFields, nullptr);
+
+        auto fieldId = GetField(initialization->GetName());
+        fieldContexts[fieldId.id] = initialization->GetSolutionField().GetContext();
+        fieldFunctions[fieldId.id] = initialization->GetSolutionField().GetPetscFunction();
+
+        // Determine where to apply this field
+        DMLabel fieldLabel = nullptr;
+        PetscInt fieldValue = 0;
+        if (const auto& region = initialization->GetRegion()) {
+            fieldValue = region->GetValue();
+            DMGetLabel(dm, region->GetName().c_str(), &fieldLabel) >> checkError;
+        } else {
+            PetscObject fieldTemp;
+            DMGetField(dm, fieldId.id, &fieldLabel, &fieldTemp) >> checkError;
+            if (fieldLabel) {
+                fieldValue = 1;  // this is temporary until petsc allows fields to be defined with values beside 1
+            }
+        }
+
+        // Project this field
+        DMProjectFunctionLabel(dm, 0.0, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctions.data(), fieldContexts.data(), INSERT_VALUES, solField) >> checkError;
     }
 
     // Initialize each solver

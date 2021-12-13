@@ -100,7 +100,7 @@ TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundar
             std::make_shared<boundarySolver::BoundarySolver>("testSolver", boundaryCellRegion, boundaryFaceRegion, std::vector<std::shared_ptr<boundarySolver::BoundaryProcess>>{}, nullptr);
 
         // Init the subDomain
-        mesh->InitializeSubDomains({boundarySolver});
+        mesh->InitializeSubDomains({boundarySolver}, {});
 
         // Get the global vectors
         auto globVec = mesh->GetSolutionVector();

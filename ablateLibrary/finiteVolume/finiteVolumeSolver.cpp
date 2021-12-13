@@ -5,12 +5,11 @@
 #include "utilities/petscError.hpp"
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                             std::vector<std::shared_ptr<processes::Process>> processes, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
+                                                             std::vector<std::shared_ptr<processes::Process>> processes,
                                                              std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
     : CellSolver(std::move(solverId), std::move(region), std::move(options)),
       processes(std::move(processes)),
-      initialization(std::move(initialization)),
       boundaryConditions(std::move(boundaryConditions)),
       exactSolutions(std::move(exactSolution)) {}
 
@@ -40,11 +39,13 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
         boundary->SetupBoundary(subDomain->GetDM(), subDomain->GetDiscreteSystem(), fieldId.id);
     }
 
-    // Initialize the flow field if provided
-    subDomain->ProjectFieldFunctions(initialization, subDomain->GetSolutionVector());
-
     // if an exact solution has been provided register it
     for (const auto& exactSolution : exactSolutions) {
+        // check to make sure that the exact solution is applicable everywhere or to this subDomain
+        if (exactSolution->GetRegion() != domain::Region::ENTIREDOMAIN) {
+            throw std::invalid_argument("Exact solutions should be applicable over the entire domain.");
+        }
+
         auto fieldId = subDomain->GetField(exactSolution->GetName());
 
         // Get the current field type
@@ -887,6 +888,5 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolumeSolver, "fini
          OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
          OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
          ARG(std::vector<ablate::finiteVolume::processes::Process>, "processes", "the processes used to describe the flow"),
-         OPT(std::vector<ablate::mathFunctions::FieldFunction>, "initialization", "the flow field initialization"),
          OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

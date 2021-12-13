@@ -5,8 +5,8 @@
 #include "utilities/petscOptions.hpp"
 
 ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments,
-                                         std::shared_ptr<ablate::io::Serializer> serializerIn)
-    : name(nameIn), domain(domain), serializer(serializerIn) {
+                                         std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations)
+    : name(nameIn), domain(domain), serializer(serializerIn), initializations(initializations) {
     // create an instance of the ts
     TSCreate(PETSC_COMM_WORLD, &ts) >> checkError;
 
@@ -43,7 +43,7 @@ void ablate::solver::TimeStepper::Solve() {
         throw std::runtime_error("No solvers have been set.");
     }
 
-    domain->InitializeSubDomains(solvers);
+    domain->InitializeSubDomains(solvers, initializations);
     TSSetDM(ts, domain->GetDM()) >> checkError;
 
     // Register any functions with the dm/ts
@@ -258,4 +258,5 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm,
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
                  ARG(ablate::domain::Domain, "domain", "the mesh used for the simulation"), ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
-                 OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"));
+                 OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"),
+                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "initialization", "initialization field functions"));

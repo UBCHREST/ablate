@@ -23,12 +23,6 @@ timestepper:
         eos: &eos !ablate::eos::TChem
           mechFile: grimech30.dat
           thermoFile: thermo30.dat
-solver: !ablate::finiteVolume::FiniteVolumeSolver
-  id: reactingFlowODE
-  options: {}
-  processes:
-    - !ablate::finiteVolume::processes::TChemReactions
-      eos: *eos
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
@@ -36,7 +30,7 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
         eos: *eos
         temperature: 1200.0
         pressure: 101325.0
-        velocity: [0.0]
+        velocity: [ 0.0 ]
         massFractions: !ablate::finiteVolume::fieldFunctions::MassFractions
           eos: *eos
           values:
@@ -48,6 +42,12 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
               field: 0.220141239
     - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
       state: *initState
+solver: !ablate::finiteVolume::FiniteVolumeSolver
+  id: reactingFlowODE
+  options: {}
+  processes:
+    - !ablate::finiteVolume::processes::TChemReactions
+      eos: *eos
   boundaryConditions: []
   monitors:
     - !ablate::monitors::IgnitionDelayPeakYi

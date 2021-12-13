@@ -1,14 +1,15 @@
 #ifndef ABLATELIBRARY_DOMAIN_H
 #define ABLATELIBRARY_DOMAIN_H
 #include <petsc.h>
-#include <domain/fieldDescriptor.hpp>
-#include <domain/modifiers/modifier.hpp>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
+#include "domain/fieldDescriptor.hpp"
+#include "domain/modifiers/modifier.hpp"
 #include "fieldDescription.hpp"
+#include "mathFunctions/fieldFunction.hpp"
 #include "region.hpp"
 
 namespace ablate::solver {
@@ -63,7 +64,7 @@ class Domain {
 
     PetscInt GetDimensions() const;
 
-    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers);
+    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations);
 
     std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
 
@@ -80,6 +81,15 @@ class Domain {
      * @return
      */
     inline const Field& GetField(int fieldId) const { return fields[fieldId]; }
+
+    inline const Field& GetField(const std::string& fieldName) const {
+        auto field = std::find_if(fields.begin(), fields.end(), [&fieldName](auto field) { return field.name == fieldName; });
+        if (field != fields.end()) {
+            return *field;
+        } else {
+            throw std::invalid_argument("Cannot locate field with name " + fieldName + " in domain " + name);
+        }
+    }
 
     /**
      *  returns all of the fields

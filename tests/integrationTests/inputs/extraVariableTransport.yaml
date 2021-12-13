@@ -37,17 +37,6 @@ timestepper:
             gamma: 1.4
             Rgas: 287
         extraVariables: ["ev1", "ev2"]
-solver: !ablate::finiteVolume::CompressibleFlowSolver
-  id: evExample
-  parameters:
-    cfl: .5
-  fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
-    mInf: .3
-  transport:
-    diff: 1E-4
-    k: 1E-4
-    mu: 1E-4
-  eos: *eos
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       &eulerFlowFieldState
@@ -62,10 +51,20 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
       functions:
         - .25
         - !ablate::mathFunctions::geom::Sphere
-          center: [.25, .25]
+          center: [ .25, .25 ]
           radius: .25
-          insideValues: [1.5]
-
+          insideValues: [ 1.5 ]
+solver: !ablate::finiteVolume::CompressibleFlowSolver
+  id: evExample
+  parameters:
+    cfl: .5
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+    mInf: .3
+  transport:
+    diff: 1E-4
+    k: 1E-4
+    mu: 1E-4
+  eos: *eos
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"

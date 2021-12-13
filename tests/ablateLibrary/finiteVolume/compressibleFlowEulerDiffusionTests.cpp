@@ -233,11 +233,10 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                              flowParameters,
                                                                                              transportModel,
                                                                                              std::make_shared<finiteVolume::fluxCalculator::OffFlux>(),
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
                                                                                              boundaryConditions /*boundary conditions*/,
                                                                                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
-            mesh->InitializeSubDomains({flowObject});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Name the flow field

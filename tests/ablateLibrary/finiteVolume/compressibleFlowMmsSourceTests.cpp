@@ -609,7 +609,6 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                                                                                              parameters,
                                                                                              transportModel,
                                                                                              GetParam().fluxCalculator,
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
                                                                                              boundaryConditions /*boundary conditions*/,
                                                                                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
@@ -619,7 +618,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             problemSetup.constants = constants;
 
             // Complete the problem setup
-            mesh->InitializeSubDomains({flowObject});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Add a point wise function that adds fluxes to euler.  It requires no input fields
