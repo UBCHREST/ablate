@@ -53,6 +53,28 @@ else()
                 IMPORTED_LOCATION ${TCHEM_LIBRARY})
 endif()
 
+### EGADS ###
+# EGADS should be built with petsc using the --download-egads flag
+FIND_LIBRARY(EGADS_LIBRARY
+        NAMES
+        egads
+        HINTS
+        ${CMAKE_FIND_ROOT_PATH}
+        ${PETSc_LIBRARY_DIRS}
+        PATHS
+        ${CMAKE_FIND_ROOT_PATH}
+        ${PETSc_LIBRARY_DIRS}
+        )
+if(NOT TCHEM_LIBRARY)
+    message(FATAL_ERROR "Cannot find EGADS library.  Please reconfigure PETSc with --download-egads flag." )
+else()
+    add_library(EGADS::EGADS UNKNOWN IMPORTED)
+    set_target_properties(
+            EGADS::EGADS
+            PROPERTIES
+            IMPORTED_LOCATION ${EGADS_LIBRARY})
+endif()
+
 ### Ablate Library Setup ###
 add_library(ablateLibrary SHARED "")
 
@@ -81,7 +103,7 @@ add_subdirectory(environment)
 add_subdirectory(io)
 
 # Add link to required libraries to the ablate library
-target_link_libraries(ablateLibrary PUBLIC ablateCore cppParserLibrary muparser petscXdmfGeneratorLibrary TChem::TChem)
+target_link_libraries(ablateLibrary PUBLIC ablateCore cppParserLibrary muparser petscXdmfGeneratorLibrary TChem::TChem EGADS::EGADS)
 
 # Add required warnings for the ablate library
 ablate_default_target_compile_options_cxx(ablateLibrary)
