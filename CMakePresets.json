@@ -1,0 +1,46 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "ablate-debug",
+      "displayName": "Debug Config",
+      "description": "Default build for ABLATE using PETSC",
+      "binaryDir": "${sourceDir}/cmake-build-debug-ablate/default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "environment": {
+        "PETSC_ARCH": "arch-ablate-debug",
+        "PKG_CONFIG_PATH":"$env{PETSC_DIR}/arch-ablate-debug/lib/pkgconfig:$penv{PKG_CONFIG_PATH}"
+      }
+    },
+    {
+      "name": "ablate-opt",
+      "displayName": "Opt Config",
+      "description": "Default build for ABLATE using PETSC",
+      "binaryDir": "${sourceDir}/cmake-build-optablate/default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "environment": {
+        "PETSC_ARCH": "arch-ablate-opt",
+        "PKG_CONFIG_PATH":"$env{PETSC_DIR}/arch-ablate-opt/lib/pkgconfig:$penv{PKG_CONFIG_PATH}"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "ablate-debug",
+      "configurePreset": "ablate-debug"
+    },
+    {
+      "name": "ablate-opt",
+      "configurePreset": "ablate-opt"
+    }
+  ]
+}

@@ -39,9 +39,15 @@ For the most recent development issues, notes, and workarounds for building ABLA
 ## Downloading and Building with CLion
 CLion is a C/C++ IDE that uses cmake files for configuration. These directions outline the steps to running the framework with CLion.
 1. Download and Install [CLion](https://www.jetbrains.com/clion/). For Windows users, follow the [CLion/WSL Instructions](https://www.jetbrains.com/help/clion/how-to-use-wsl-development-environment-in-clion.html) from JetBrains to setup CLion to work with WSL.
-1. Open CLion and select *Get From VCS* from the welcome window and either
+2. Open CLion and select *Get From VCS* from the welcome window and either
    - (recommended) Select GitHub and Login/Authorize access. Then follow on screen instructions to clone your [fork of ABLATE]({{ site.baseurl}}{%link content/development/UsingGitWithABLATE.md  %}#forking-ablate).
    - Select Git from the *Version Control* drop down and enter your [ABLATE fork url]({{ site.baseurl}}{%link content/development/UsingGitWithABLATE.md  %}#forking-ablate).
-1. Build and run all tests using the *All CTest* configuration.
+3. Enable the ablate-debug/ablate-opt build profiles.
+   - If not opened by default, open the  Settings / Preferences > Build, Execution, Deployment > CMake preference window from the menu bar.
+   - Select the ablate-debug  and click the "Enable profile". Repeat for the ablate-opt and apply/close the window.
+     ![clion cmake profiles](assets/clion_cmake_profiles.png)
+   - Select the ablate-opt or ablate-debug build profile under the build tool bar.  In short, the debug build makes it easier to debug but is slower.  The release/optimized build is faster to execute.
+     ![clion cmake select build profile](assets/clion_cmake_select_build_profile.png)
+4. Build and run all tests using the *All CTest* configuration.
    ![Clion All CTest configuration location](assets/clion_ctest_configuration.png)
-1. If you are new to CLion it is recommended that you read through the [CLion Quick Start Guide](https://www.jetbrains.com/help/clion/clion-quick-start-guide.html).
+5. If you are new to CLion it is recommended that you read through the [CLion Quick Start Guide](https://www.jetbrains.com/help/clion/clion-quick-start-guide.html).
