@@ -11,7 +11,9 @@
       "displayName": "Debug Config",
       "description": "Default build for ABLATE using PETSC",
       "binaryDir": "${sourceDir}/cmake-build-debug-ablate/default",
-      "cacheVariables": {},
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
       "environment": {
         "PETSC_ARCH": "arch-ablate-debug",
         "PKG_CONFIG_PATH":"$env{PETSC_DIR}/arch-ablate-debug/lib/pkgconfig:$penv{PKG_CONFIG_PATH}"
@@ -22,7 +24,9 @@
       "displayName": "Opt Config",
       "description": "Default build for ABLATE using PETSC",
       "binaryDir": "${sourceDir}/cmake-build-optablate/default",
-      "cacheVariables": {},
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
       "environment": {
         "PETSC_ARCH": "arch-ablate-opt",
         "PKG_CONFIG_PATH":"$env{PETSC_DIR}/arch-ablate-opt/lib/pkgconfig:$penv{PKG_CONFIG_PATH}"
