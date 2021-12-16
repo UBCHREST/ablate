@@ -26,8 +26,8 @@ timestepper:
     modifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 1
-      - !ablate::domain::modifiers::GhostBoundaryCells
       - !ablate::domain::modifiers::DistributeWithGhostCells
+      - !ablate::domain::modifiers::GhostBoundaryCells
       - !ablate::domain::modifiers::CreateLabel
         region:
           name: fluidFlow

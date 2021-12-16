@@ -7,8 +7,6 @@ ablate::domain::modifiers::MergeLabels::MergeLabels(std::shared_ptr<domain::Regi
 void ablate::domain::modifiers::MergeLabels::Modify(DM& dm) {
     // Create a new label for the merged region
     DMCreateLabel(dm, mergedRegion->GetName().c_str()) >> checkError;
-    DMLabel mergedLabel;
-    DMGetLabel(dm, mergedRegion->GetName().c_str(), &mergedLabel) >> checkError;
 
     // Get the label for each region
     std::vector<IS> regionISs(regions.size(), nullptr);
@@ -18,12 +16,19 @@ void ablate::domain::modifiers::MergeLabels::Modify(DM& dm) {
         auto& regionIS = regionISs[r];
         DMGetStratumIS(dm, regions[r]->GetName().c_str(), regions[r]->GetValue(), &regionIS) >> checkError;
     }
-
     // Create Concatenate IS
     IS mergedIS;
     ISConcatenate(PetscObjectComm((PetscObject)dm), regionISs.size(), &regionISs[0], &mergedIS) >> checkError;
     ISSortRemoveDups(mergedIS) >> checkError;
 
+    // cleanup
+    for (auto& is : regionISs) {
+        ISDestroy(&is) >> checkError;
+    }
+
+
+    DMLabel mergedLabel;
+    DMGetLabel(dm, mergedRegion->GetName().c_str(), &mergedLabel) >> checkError;
     DMLabelSetStratumIS(mergedLabel, mergedRegion->GetValue(), mergedIS) >> checkError;
 
     // check the size
@@ -35,10 +40,6 @@ void ablate::domain::modifiers::MergeLabels::Modify(DM& dm) {
 
     // cleanup
     ISDestroy(&mergedIS) >> checkError;
-    for (auto& is : regionISs) {
-        ISDestroy(&is) >> checkError;
-    }
-
     DMPlexLabelComplete(dm, mergedLabel) >> checkError;
 }
 

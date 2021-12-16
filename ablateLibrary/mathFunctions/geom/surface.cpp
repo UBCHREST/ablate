@@ -27,7 +27,6 @@ bool ablate::mathFunctions::geom::Surface::InsideGeometry(const double *xyz, con
     int oclass, mtype, *senses;
 
     EG_getTopology(model, &geom, &oclass, &mtype, nullptr, &numberBodies, &bodies, &senses) >> checkError;
-    PetscPrintf(PETSC_COMM_SELF, " Number of BODIES (nbodies): %d \n", numberBodies) >> checkError;
 
     // Make sure always supply 3D array
     double coord[3] = {0.0, 0.0, 0.0};
@@ -45,5 +44,12 @@ bool ablate::mathFunctions::geom::Surface::InsideGeometry(const double *xyz, con
     }
 
     return inside;
-    return false;
 }
+
+#include "registrar.hpp"
+REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::geom::Surface, "Assigned a unified number to all points inside of cad geometry file.",
+         ARG(std::filesystem::path, "path", "the path to the step/stp file"),
+         OPT(std::vector<double>, "insideValues", "the values for inside the sphere, defaults to 1"),
+         OPT(std::vector<double>, "outsideValues", "the outside values, defaults to zero"),
+         OPT(int, "egadsVerboseLevel", "the egads verbose level for output (default is 0, max is 3)" ));
+

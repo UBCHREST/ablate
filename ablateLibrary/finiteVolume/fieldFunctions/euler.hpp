@@ -12,7 +12,7 @@ class Euler : public ablate::mathFunctions::FieldFunction {
     const std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState;
 
    public:
-    explicit Euler(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState);
+    explicit Euler(std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState, std::shared_ptr<ablate::domain::Region> region = {});
 };
 
 }  // namespace ablate::finiteVolume::fieldFunctions

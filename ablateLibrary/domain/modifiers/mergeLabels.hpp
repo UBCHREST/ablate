@@ -17,8 +17,6 @@ class MergeLabels : public Modifier {
     MergeLabels(std::shared_ptr<domain::Region> mergedRegion, std::vector<std::shared_ptr<domain::Region>> regions);
 
     void Modify(DM&) override;
-
-    int Priority() const override { return 9; }
 };
 
 }  // namespace ablate::domain::modifiers
