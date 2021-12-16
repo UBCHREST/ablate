@@ -110,6 +110,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal gamma2 = perfectGasEos2->GetSpecificHeatRatio();
         PetscReal cv1 = R1/(gamma1-1);
         PetscReal cv2 = R2/(gamma2-1);
+//        PetscReal Ru = 8.3144598; // J/mol/K
+//        PetscReal Ng = Ru/R1; // molecular weight
+//        PetscReal Nl = Ru/R2; // kg/kmol
 
         PetscReal eG = (*internalEnergy)/(Yg + Yl*cv2/cv1);
         PetscReal etG = eG + ke;
@@ -130,7 +133,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         *densityL = rhoL;
         *internalEnergyG = eG;
         *internalEnergyL = eL;
-        *p = (pG + pL) / 2;
+//        *p = (pG + pL) / 2;
+        *p = Yg/28.966*pG + Yl/39.948*pL; // partial pressures
         *aG = a1;
         *aL = a2;
         *MG = (*normalVelocity) / (*aG);
@@ -268,9 +272,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Initialize(ablate:
 //        // add in aux update variables
 //        flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField2Gas, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD});
 //    }
-//    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VF_FIELD)){
-//        flow.RegisterAuxFieldUpdate(UpdateAuxVolumeFractionField2Gas, nullptr, CompressibleFlowFields::VF_FIELD, {CompressibleFlowFields::VF_FIELD});
-//    }
+    if (flow.GetSubDomain().ContainsField("volumeFraction")){
+        flow.RegisterAuxFieldUpdate(UpdateAuxVolumeFractionField2Gas, this, "volumeFraction", {"densityVF", "euler"});
+    }
 }
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
                                                                                                          const PetscScalar *fieldL, const PetscScalar *fieldR, const PetscScalar *gradL,
@@ -622,59 +626,56 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
 //    PetscFunctionReturn(0);
 //}
 
-//PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAuxVolumeFractionField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
-//                                                                                                         const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
-//    PetscFunctionBeginUser;
-//    auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
-//    const int EULER_FIELD = 1;
-//    const int VF_FIELD = 0;
-//    PetscReal density = conservedValues[FlowProcess::RHO];
-//
-//    for (PetscInt d = 0; d < dim; d++) {
-//        auxField[d] = conservedValues[FlowProcess::RHOU + d] / density;
-//    }
-//    // For cell center, the norm is unity
-//    PetscReal norm[3];
-//    norm[0]=1;
-//    norm[1]=1;
-//    norm[2]=1;
-//
-//    PetscReal densityG;
-//    PetscReal densityL;
-//    PetscReal normalVelocity;  // uniform velocity in cell
-//    PetscReal velocity[3];
-//    PetscReal internalEnergy;
-//    PetscReal internalEnergyG;
-//    PetscReal internalEnergyL;
-//    PetscReal aG;
-//    PetscReal aL;
-//    PetscReal MG;
-//    PetscReal ML;
-//    PetscReal p;  // pressure equilibrium
-//    PetscReal alpha;
-//    DecodeTwoPhaseEulerState(twoPhaseEulerAdvection->eosGas,
-//                             twoPhaseEulerAdvection->eosLiquid,
-//                             dim,
-//                             auxField + uOff[EULER_FIELD],// should be cell center fields
-//                             auxField[uOff[VF_FIELD]],// should be cell center fields
-//                             norm,
-//                             &density,
-//                             &densityG,
-//                             &densityL,
-//                             &normalVelocity,
-//                             velocity,
-//                             &internalEnergy,
-//                             &internalEnergyG,
-//                             &internalEnergyL,
-//                             &aG,
-//                             &aL,
-//                             &MG,
-//                             &ML,
-//                             &p,
-//                             &alpha);
-//
-//    PetscFunctionReturn(0);
-//}
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAuxVolumeFractionField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
+                                                                                                         const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
+    PetscFunctionBeginUser;
+    auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
+    const int EULER_FIELD = 1;
+    const int VF_FIELD = 0;
+
+    // For cell center, the norm is unity
+    PetscReal norm[3];
+    norm[0]=1;
+    norm[1]=1;
+    norm[2]=1;
+
+    PetscReal density;
+    PetscReal densityG;
+    PetscReal densityL;
+    PetscReal normalVelocity;  // uniform velocity in cell
+    PetscReal velocity[3];
+    PetscReal internalEnergy;
+    PetscReal internalEnergyG;
+    PetscReal internalEnergyL;
+    PetscReal aG;
+    PetscReal aL;
+    PetscReal MG;
+    PetscReal ML;
+    PetscReal p;  // pressure equilibrium
+    PetscReal alpha;
+    DecodeTwoPhaseEulerState(twoPhaseEulerAdvection->eosGas,
+                             twoPhaseEulerAdvection->eosLiquid,
+                             dim,
+                             conservedValues + uOff[EULER_FIELD],// should be cell center fields
+                             conservedValues[uOff[VF_FIELD]],// should be cell center fields
+                             norm,
+                             &density,
+                             &densityG,
+                             &densityL,
+                             &normalVelocity,
+                             velocity,
+                             &internalEnergy,
+                             &internalEnergyG,
+                             &internalEnergyL,
+                             &aG,
+                             &aL,
+                             &MG,
+                             &ML,
+                             &p,
+                             &alpha);
+    *auxField = alpha;
+    PetscFunctionReturn(0);
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eosGas", ""), ARG(ablate::eos::EOS, "eosLiquid", ""),
