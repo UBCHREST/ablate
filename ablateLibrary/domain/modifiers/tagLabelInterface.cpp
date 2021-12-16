@@ -131,5 +131,5 @@ REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::TagLabe
          "Class to label/tag all faces/cells on the interface between two labels.  The left/right designations are just used to separate the left/right labels.",
          ARG(ablate::domain::Region, "leftRegion", "the \"left\" region"), ARG(ablate::domain::Region, "rightRegion", "the \"right\" region"),
          ARG(ablate::domain::Region, "boundaryFaceRegion", "the new region for the newly tagged boundary faces"),
-         ARG(ablate::domain::Region, "leftBoundaryCellRegion", "optional new region to tag the boundary cells on the \"left\" of region"),
-         ARG(ablate::domain::Region, "rightBoundaryCellRegion", "optional new region to tag the boundary cells on the \"right\" of region"));
+         OPT(ablate::domain::Region, "leftBoundaryCellRegion", "optional new region to tag the boundary cells on the \"left\" of region"),
+         OPT(ablate::domain::Region, "rightBoundaryCellRegion", "optional new region to tag the boundary cells on the \"right\" of region"));
