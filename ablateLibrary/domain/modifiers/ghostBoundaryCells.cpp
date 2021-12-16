@@ -7,8 +7,8 @@ void ablate::domain::modifiers::GhostBoundaryCells::Modify(DM &dm) {
 
     // Copy over the options object
     PetscOptions options;
-    PetscObjectGetOptions((PetscObject)dm, &options)>> checkError;
-    PetscObjectSetOptions((PetscObject)gdm, options)>> checkError;
+    PetscObjectGetOptions((PetscObject)dm, &options) >> checkError;
+    PetscObjectSetOptions((PetscObject)gdm, options) >> checkError;
 
     // destroy the old dm
     DMDestroy(&dm) >> checkError;

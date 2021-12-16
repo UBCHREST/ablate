@@ -21,7 +21,7 @@ ablate::mathFunctions::geom::Surface::~Surface() {
     }
 }
 bool ablate::mathFunctions::geom::Surface::InsideGeometry(const double *xyz, const int &ndims, const double &time) const {
-    // Get all the bodies in this domain
+    // Get all the bod`ies in this domain
     ego geom, *bodies;
     int numberBodies;
     int oclass, mtype, *senses;
@@ -48,8 +48,5 @@ bool ablate::mathFunctions::geom::Surface::InsideGeometry(const double *xyz, con
 
 #include "registrar.hpp"
 REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::geom::Surface, "Assigned a unified number to all points inside of cad geometry file.",
-         ARG(std::filesystem::path, "path", "the path to the step/stp file"),
-         OPT(std::vector<double>, "insideValues", "the values for inside the sphere, defaults to 1"),
-         OPT(std::vector<double>, "outsideValues", "the outside values, defaults to zero"),
-         OPT(int, "egadsVerboseLevel", "the egads verbose level for output (default is 0, max is 3)" ));
-
+         ARG(std::filesystem::path, "path", "the path to the step/stp file"), OPT(std::vector<double>, "insideValues", "the values for inside the sphere, defaults to 1"),
+         OPT(std::vector<double>, "outsideValues", "the outside values, defaults to zero"), OPT(int, "egadsVerboseLevel", "the egads verbose level for output (default is 0, max is 3)"));

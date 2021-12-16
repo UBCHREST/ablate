@@ -45,9 +45,11 @@ timestepper:
       name: mainSolver
     boundaryFaceRegion:
       name: boundaryFaces
-    modifiers:
+    preModifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 0
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    postModifiers:
       - !ablate::domain::modifiers::MergeLabels
         mergedRegion:
           name: openBoundaryLabel
@@ -55,6 +57,7 @@ timestepper:
           - name: boundaryCellsRight
           - name: boundaryCellsTop
           - name: boundaryCellsBottom
+      - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::PerfectGas &eos

@@ -1,8 +1,7 @@
 #include "cutLabel.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::domain::modifiers::CutLabel::CutLabel(std::shared_ptr<domain::Region> cutRegion, std::vector<std::shared_ptr<domain::Region>> regions)
-    : cutRegion(cutRegion), regions(regions) {}
+ablate::domain::modifiers::CutLabel::CutLabel(std::shared_ptr<domain::Region> cutRegion, std::vector<std::shared_ptr<domain::Region>> regions) : cutRegion(cutRegion), regions(regions) {}
 
 void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
     // Get the label for each region

@@ -18,7 +18,7 @@ void ablate::domain::modifiers::IntersectLabels::Modify(DM& dm) {
 
         // Get the intersection
         IS newMergedIS;
-        ISIntersect(intersectIS, otherIS ,&newMergedIS) >> checkError;
+        ISIntersect(intersectIS, otherIS, &newMergedIS) >> checkError;
 
         // destroy the other and old is
         ISDestroy(&intersectIS) >> checkError;

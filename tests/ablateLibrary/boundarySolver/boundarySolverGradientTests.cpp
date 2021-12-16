@@ -83,12 +83,11 @@ TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundar
             "test",
             fieldDescriptors,
             std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
-
                 std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                std::make_shared<domain::modifiers::GhostBoundaryCells>(),
                 std::make_shared<ablate::domain::modifiers::CreateLabel>(insideRegion, std::make_shared<ablate::mathFunctions::geom::Sphere>(std::vector<double>(dim, .5), .25)),
                 std::make_shared<ablate::domain::modifiers::TagLabelBoundary>(insideRegion, boundaryFaceRegion, boundaryCellRegion),
-                std::make_shared<ablate::domain::modifiers::MergeLabels>(fieldRegion, std::vector<std::shared_ptr<domain::Region>>{insideRegion, boundaryCellRegion})},
+                std::make_shared<ablate::domain::modifiers::MergeLabels>(fieldRegion, std::vector<std::shared_ptr<domain::Region>>{insideRegion, boundaryCellRegion}),
+                std::make_shared<domain::modifiers::GhostBoundaryCells>()},
             std::vector<int>(dim, 5),
             std::vector<double>(dim, 0.0),
             std::vector<double>(dim, 1.0),

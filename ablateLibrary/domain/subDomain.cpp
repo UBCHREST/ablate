@@ -232,8 +232,8 @@ DM ablate::domain::SubDomain::GetSubDM() {
 
         // Copy over options
         PetscOptions options;
-        PetscObjectGetOptions((PetscObject)GetDM(), &options)>> checkError;
-        PetscObjectSetOptions((PetscObject)subDM, options)>> checkError;
+        PetscObjectGetOptions((PetscObject)GetDM(), &options) >> checkError;
+        PetscObjectSetOptions((PetscObject)subDM, options) >> checkError;
     }
 
     return subDM;

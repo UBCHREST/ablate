@@ -26,7 +26,6 @@ void ablate::domain::modifiers::MergeLabels::Modify(DM& dm) {
         ISDestroy(&is) >> checkError;
     }
 
-
     DMLabel mergedLabel;
     DMGetLabel(dm, mergedRegion->GetName().c_str(), &mergedLabel) >> checkError;
     DMLabelSetStratumIS(mergedLabel, mergedRegion->GetValue(), mergedIS) >> checkError;

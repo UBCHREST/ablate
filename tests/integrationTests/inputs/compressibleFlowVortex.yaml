@@ -22,8 +22,8 @@ timestepper:
     modifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 1
-      - !ablate::domain::modifiers::GhostBoundaryCells
       - !ablate::domain::modifiers::DistributeWithGhostCells
+      - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::PerfectGas &eos
