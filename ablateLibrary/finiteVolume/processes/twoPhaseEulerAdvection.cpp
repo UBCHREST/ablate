@@ -110,36 +110,41 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal gamma2 = perfectGasEos2->GetSpecificHeatRatio();
         PetscReal cv1 = R1/(gamma1-1);
         PetscReal cv2 = R2/(gamma2-1);
-//        PetscReal Ru = 8.3144598; // J/mol/K
-//        PetscReal Ng = Ru/R1; // molecular weight
-//        PetscReal Nl = Ru/R2; // kg/kmol
 
         PetscReal eG = (*internalEnergy)/(Yg + Yl*cv2/cv1);
-        PetscReal etG = eG + ke;
+//        PetscReal etG = eG + ke;
         PetscReal eL = cv2/cv1 * eG;
-        PetscReal etL = eL + ke;
+//        PetscReal eL = ((*internalEnergy)-(Yg*eG))/Yl;
+//        PetscReal etL = eL + ke;
         PetscReal rhoG = (*density)*(Yg + Yl*eL/eG*(gamma2-1)/(gamma1-1));
         PetscReal rhoL = rhoG*eG/eL*(gamma1-1)/(gamma2-1);
+//        PetscReal rhoL = Yl*((*density)-(rhoG/Yg));
 
-        PetscReal pG;
-        PetscReal pL;
-        PetscReal a1;
-        PetscReal a2;
-        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, &eG, &a1, &pG, eosGas->GetDecodeStateContext());
-        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, &eL, &a2, &pL, eosLiquid->GetDecodeStateContext());
+        PetscReal pG = (gamma1-1)*rhoG*eG;
+        PetscReal pL = (gamma2-1)*rhoL*eL;
+        PetscReal a1 = PetscSqrtReal(gamma1*pG/rhoG);
+        PetscReal a2 = PetscSqrtReal(gamma2*pL/rhoL);
+//        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, &eG, &a1, &pG, eosGas->GetDecodeStateContext());
+//        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, &eL, &a2, &pL, eosLiquid->GetDecodeStateContext());
 
         // once state defined
         *densityG = rhoG;
         *densityL = rhoL;
         *internalEnergyG = eG;
         *internalEnergyL = eL;
-//        *p = (pG + pL) / 2;
-        *p = Yg/28.966*pG + Yl/39.948*pL; // partial pressures
+        *alpha = densityVF / (*densityG);
+//        PetscReal Ru = 8.3144598; // J/mol/K
+        PetscReal Mog = 8.31432/R1; // molecular weight
+        PetscReal Mol = 8.31432/R2; // kg/kmol
+        PetscReal Ng = densityVF/Mog;
+        PetscReal Nl = (1-(*alpha))*rhoL/Mol;
+        *p = Nl/(Ng+Nl)*pL + Ng/(Ng+Nl)*pG;
+        //(pG + pL) / 2;
+//        *p = Yg/28.966*pG + Yl/39.948*pL; // partial pressures
         *aG = a1;
         *aL = a2;
         *MG = (*normalVelocity) / (*aG);
         *ML = (*normalVelocity) / (*aL);
-        *alpha = densityVF / (*densityG);
 
     }
     else {
