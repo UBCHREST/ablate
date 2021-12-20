@@ -135,7 +135,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         *alpha = densityVF / (*densityG);
 //        PetscReal Ru = 8.3144598; // J/mol/K
         PetscReal Mog = 8.31432/R1; // molecular weight
-        PetscReal Mol = 8.31432/R2; // kg/kmol
+        PetscReal Mol = 8.31432/R2; // kg/mol
         PetscReal Ng = densityVF/Mog;
         PetscReal Nl = (1-(*alpha))*rhoL/Mol;
         *p = Nl/(Ng+Nl)*pL + Ng/(Ng+Nl)*pG;
@@ -386,7 +386,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     } else if (alphaL < alphaR) {
         // liquid on left, gas on right
         twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(
-            twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGL, &p12);
+            twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorContext(), normalVelocityR, aG_R, densityG_R, pR, normalVelocityL, aL_L, densityL_L, pL, &massFluxGL, &p12);
     } else {
         // no discontinuous region
         massFluxGL = 0.0;
