@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_DOMAIN_H
 #define ABLATELIBRARY_DOMAIN_H
 #include <petsc.h>
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <string>
