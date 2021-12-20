@@ -1,4 +1,8 @@
 # Setup any ablateLibrary specific dependencies
+### Ablate Library Setup ###
+add_library(ablateLibrary SHARED "")
+target_link_libraries(ablateLibrary PUBLIC ablateCore)
+
 # Get the CPP dependency
 FetchContent_Declare(
         cppParser
@@ -6,6 +10,7 @@ FetchContent_Declare(
         GIT_TAG v0.1.2
 )
 FetchContent_MakeAvailable(cppParser)
+target_link_libraries(ablateLibrary PUBLIC cppParserLibrary)
 
 ### MuParser ###
 # install muparser for reading text equations
@@ -20,6 +25,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(mu-parser)
 FetchContent_GetProperties(mu-parser)
 target_include_directories(muparser SYSTEM PUBLIC ${mu-parser_SOURCE_DIR}/include)
+target_link_libraries(ablateLibrary PUBLIC muparser)
 
 ### XDMF Generation ###
 # install the library for generating xdmf files
@@ -30,6 +36,7 @@ FetchContent_Declare(
         GIT_TAG v0.0.10
 )
 FetchContent_MakeAvailable(petscXdmfGenerator)
+target_link_libraries(ablateLibrary PUBLIC petscXdmfGeneratorLibrary)
 
 ### TCHEM ###
 # TCHEM should be built with petsc using the --download-tchem flag
@@ -52,13 +59,15 @@ else()
             PROPERTIES
                 IMPORTED_LOCATION ${TCHEM_LIBRARY})
 endif()
+target_link_libraries(ablateLibrary PUBLIC TChem::TChem)
 
-### EGADS && OpenCASCADE ###
+###  OpenCASCADE ###
 # EGADS should be built with petsc using the --download-egads flag
-set(CMAKE_FIND_DEBUG_MODE TRUE)
 FIND_PACKAGE(OpenCASCADE CONFIG REQUIRED HINTS "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/cmake/opencascade/")
-set(CMAKE_FIND_DEBUG_MODE FALSE)
+target_link_libraries(ablateLibrary PUBLIC ${OpenCASCADE_LIBRARIES})
+target_link_directories(ablateCore PUBLIC ${OpenCASCADE_LIBRARY_DIR})
 
+### EGADS ###
 FIND_LIBRARY(EGADS_LIBRARY
         NAMES
         egads
@@ -72,20 +81,18 @@ FIND_LIBRARY(EGADS_LIBRARY
 if(NOT TCHEM_LIBRARY)
     message(FATAL_ERROR "Cannot find EGADS library.  Please reconfigure PETSc with --download-egads flag." )
 else()
-    message("EGADS_LIBRARY" ${EGADS_LIBRARY})
     add_library(EGADS::EGADS UNKNOWN IMPORTED)
     set_target_properties(
             EGADS::EGADS
             PROPERTIES
             IMPORTED_LOCATION ${EGADS_LIBRARY})
 endif()
+target_link_libraries(ablateLibrary PUBLIC EGADS::EGADS)
 
-# Load in threads
+### Load in threads ###
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-
-### Ablate Library Setup ###
-add_library(ablateLibrary SHARED "")
+target_link_libraries(ablateLibrary PUBLIC Threads::Threads)
 
 # Allow public access to the header files in the directory
 target_include_directories(ablateLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})
@@ -110,9 +117,6 @@ add_subdirectory(monitors)
 add_subdirectory(eos)
 add_subdirectory(environment)
 add_subdirectory(io)
-
-# Add link to required libraries to the ablate library
-target_link_libraries(ablateLibrary PUBLIC ablateCore cppParserLibrary muparser petscXdmfGeneratorLibrary TChem::TChem EGADS::EGADS Threads::Threads OpenCASCADE)
 
 # Add required warnings for the ablate library
 ablate_default_target_compile_options_cxx(ablateLibrary)
