@@ -119,7 +119,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
 
     // iterate over any arbitrary RHS functions
     for (const auto& rhsFunction : rhsArbitraryFunctions) {
-        ierr = rhsFunction.first(dm, time, locXVec, locFVec, rhsFunction.second);
+        ierr = rhsFunction.first(*this, dm, time, locXVec, locFVec, rhsFunction.second);
         CHKERRQ(ierr);
     }
 
