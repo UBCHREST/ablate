@@ -92,7 +92,9 @@ endfunction()
 
 
 # EGADS should be built with petsc using the --download-egads flag
-FIND_PACKAGE(opencascade)
+set(CMAKE_FIND_DEBUG_MODE TRUE)
+FIND_PACKAGE(OpenCASCADE)
+set(CMAKE_FIND_DEBUG_MODE FALSE)
 FIND_LIBRARY(EGADS_LIBRARY
         NAMES
         egads
