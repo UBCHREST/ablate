@@ -75,6 +75,10 @@ else()
             IMPORTED_LOCATION ${EGADS_LIBRARY})
 endif()
 
+# Load in threads
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 ### Ablate Library Setup ###
 add_library(ablateLibrary SHARED "")
 
@@ -103,7 +107,7 @@ add_subdirectory(environment)
 add_subdirectory(io)
 
 # Add link to required libraries to the ablate library
-target_link_libraries(ablateLibrary PUBLIC ablateCore cppParserLibrary muparser petscXdmfGeneratorLibrary TChem::TChem EGADS::EGADS)
+target_link_libraries(ablateLibrary PUBLIC ablateCore cppParserLibrary muparser petscXdmfGeneratorLibrary TChem::TChem EGADS::EGADS Threads::Threads)
 
 # Add required warnings for the ablate library
 ablate_default_target_compile_options_cxx(ablateLibrary)
