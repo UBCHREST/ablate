@@ -92,7 +92,7 @@ endfunction()
 
 
 # EGADS should be built with petsc using the --download-egads flag
-FIND_PACKAGE(OPENCASCADE)
+FIND_PACKAGE(opencascade)
 FIND_LIBRARY(EGADS_LIBRARY
         NAMES
         egads
@@ -146,7 +146,7 @@ add_subdirectory(environment)
 add_subdirectory(io)
 
 # Add link to required libraries to the ablate library
-target_link_libraries(ablateLibrary PUBLIC ablateCore cppParserLibrary muparser petscXdmfGeneratorLibrary TChem::TChem EGADS::EGADS Threads::Threads OPENCASCADE)
+target_link_libraries(ablateLibrary PUBLIC ablateCore cppParserLibrary muparser petscXdmfGeneratorLibrary TChem::TChem EGADS::EGADS Threads::Threads  opencascade)
 
 # Add required warnings for the ablate library
 ablate_default_target_compile_options_cxx(ablateLibrary)
