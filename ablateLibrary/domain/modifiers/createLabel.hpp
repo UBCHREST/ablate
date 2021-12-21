@@ -27,7 +27,7 @@ class CreateLabel : public Modifier {
 
     void Modify(DM&) override;
 
-    std::string ToString() const override { return "ablate::domain::modifiers::CreateLabel"; }
+    std::string ToString() const override;
 };
 
 }  // namespace ablate::domain::modifiers

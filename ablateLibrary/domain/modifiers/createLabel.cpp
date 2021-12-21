@@ -35,6 +35,7 @@ void ablate::domain::modifiers::CreateLabel::Modify(DM &dm) {
     }
     DMPlexLabelComplete(dm, newLabel) >> checkError;
 }
+std::string ablate::domain::modifiers::CreateLabel::ToString() const { return "ablate::domain::modifiers::CreateLabel: " + region->ToString(); }
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::CreateLabel, "Creates a new label for all positive points in the function",

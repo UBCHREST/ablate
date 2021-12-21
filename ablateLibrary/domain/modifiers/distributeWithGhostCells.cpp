@@ -13,7 +13,7 @@ void ablate::domain::modifiers::DistributeWithGhostCells::Modify(DM &dm) {
         dm = dmDist;
     }
 
-    DMView(dmDist, PETSC_VIEWER_STDOUT_WORLD);
+    DMView(dm, PETSC_VIEWER_STDOUT_WORLD);
 }
 
 #include "registrar.hpp"

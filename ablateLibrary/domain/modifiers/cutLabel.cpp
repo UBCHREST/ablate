@@ -39,6 +39,16 @@ void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
     ISDestroy(&mergedIS) >> checkError;
     DMPlexLabelComplete(dm, cutRegionLabel) >> checkError;
 }
+std::string ablate::domain::modifiers::CutLabel::ToString() const {
+    std::string string = "ablate::domain::modifiers::CutLabel\n";
+    string += "\tcutRegion: " + cutRegion->ToString() + "\n";
+    string += "\tregions:\n";
+    for (const auto& region : regions) {
+        string += "\t\t" + region->GetName() + "\n";
+    }
+    string.pop_back();
+    return string;
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::CutLabel, "Cuts/removes the given regions out of the cutRegion",

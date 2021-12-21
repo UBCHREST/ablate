@@ -18,7 +18,7 @@ class CutLabel : public Modifier {
 
     void Modify(DM&) override;
 
-    std::string ToString() const override { return "ablate::domain::modifiers::CutLabel"; }
+    std::string ToString() const override;
 };
 
 }  // namespace ablate::domain::modifiers
