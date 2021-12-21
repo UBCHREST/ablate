@@ -132,12 +132,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         *internalEnergyG = eG;
         *internalEnergyL = eL;
         *alpha = densityVF / (*densityG);
-        // molecular weights
-        PetscReal Mog = 8.31432 / R1;  // Ru = 8.3144598 J/mol/K, universal gas constant
-        PetscReal Mol = 8.31432 / R2;  // kg/mol
-        PetscReal Ng = densityVF / Mog;
-        PetscReal Nl = (1 - (*alpha)) * rhoL / Mol;
-        *p = Nl / (Ng + Nl) * pL + Ng / (Ng + Nl) * pG;  // partial pressures
+        *p = pG;  // pressure equilibrium, pG = pL
         *aG = a1;
         *aL = a2;
         *MG = (*normalVelocity) / (*aG);
@@ -685,13 +680,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
     for (PetscInt d = 0; d < dim; d++) {
         massfluxG[d] = velocity[d] * densityG;
     }
-    PetscReal Yg = alpha * densityG / density;
-    PetscReal Yl = (1 - alpha) * densityL / density;
+
     PetscReal Tg;
-    PetscReal Tl;
     twoPhaseEulerAdvection->eosGas->GetComputeTemperatureFunction()(dim, densityG, etG, massfluxG, NULL, &Tg, twoPhaseEulerAdvection->eosGas->GetDecodeStateContext());
-    twoPhaseEulerAdvection->eosLiquid->GetComputeTemperatureFunction()(dim, densityG, etG, massfluxG, NULL, &Tl, twoPhaseEulerAdvection->eosLiquid->GetDecodeStateContext());
-    PetscReal T = Yg * Tg + Yl * Tl;
+     PetscReal T = Tg; // temperature equilibrium, Tg = Tl
     *auxField = T;
     PetscFunctionReturn(0);
 }
