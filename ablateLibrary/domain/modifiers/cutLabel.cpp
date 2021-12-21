@@ -44,6 +44,7 @@ void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
     ISDestroy(&orgIS) >> checkError;
     ISDestroy(&mergedIS) >> checkError;
     DMPlexLabelComplete(dm, cutRegionLabel) >> checkError;
+    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line47\n");
 }
 std::string ablate::domain::modifiers::CutLabel::ToString() const {
     std::string string = "ablate::domain::modifiers::CutLabel\n";
