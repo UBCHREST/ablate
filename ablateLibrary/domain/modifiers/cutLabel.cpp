@@ -46,6 +46,9 @@ void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
     PetscPrintf(PetscObjectComm(PetscObject(dm)), "line46\n");
     ISDestroy(&mergedIS) >> checkError;
     PetscPrintf(PetscObjectComm(PetscObject(dm)), "line48\n");
+    int rank;
+    MPI_Comm_rank(PetscObjectComm(PetscObject(dm)), &rank);
+    std::cout << "rank " << rank << ": " << cutRegionLabel << std::endl;
     DMPlexLabelComplete(dm, cutRegionLabel) >> checkError;
     PetscPrintf(PetscObjectComm(PetscObject(dm)), "line50\n");
 }
