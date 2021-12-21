@@ -14,6 +14,7 @@ class TwoPhaseEulerAdvection : public Process {
     const std::shared_ptr<eos::EOS> eosLiquid;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid;
+    const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid;
     struct Parameters {
         // gravitational acceleration vector
@@ -32,7 +33,8 @@ class TwoPhaseEulerAdvection : public Process {
                                                         void* ctx);
 
     TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
-                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid,
+                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
+                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid,
                            std::shared_ptr<parameters::Parameters> parametersIn);
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver & flow) override;
 
