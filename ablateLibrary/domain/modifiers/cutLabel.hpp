@@ -17,6 +17,8 @@ class CutLabel : public Modifier {
     CutLabel(std::shared_ptr<domain::Region> cutRegion, std::vector<std::shared_ptr<domain::Region>> regions);
 
     void Modify(DM&) override;
+
+    std::string ToString() const override { return "ablate::domain::modifiers::CutLabel"; }
 };
 
 }  // namespace ablate::domain::modifiers

@@ -13,6 +13,8 @@ class GhostBoundaryCells : public Modifier {
     explicit GhostBoundaryCells(std::string labelName = {});
 
     void Modify(DM&) override;
+
+    std::string ToString() const override { return "ablate::domain::modifiers::GhostBoundaryCells"; }
 };
 
 }  // namespace ablate::domain::modifiers

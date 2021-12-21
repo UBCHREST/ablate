@@ -17,6 +17,8 @@ class IntersectLabels : public Modifier {
     IntersectLabels(std::shared_ptr<domain::Region> intersectRegion, std::vector<std::shared_ptr<domain::Region>> regions);
 
     void Modify(DM&) override;
+
+    std::string ToString() const override { return "ablate::domain::modifiers::IntersectLabels"; }
 };
 
 }  // namespace ablate::domain::modifiers

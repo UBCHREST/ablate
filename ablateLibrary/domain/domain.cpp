@@ -3,12 +3,18 @@
 #include "solver/solver.hpp"
 #include "subDomain.hpp"
 #include "utilities/petscError.hpp"
+#include "utilities/demangler.hpp"
+#include "monitors/logs/stdOut.hpp"
+#include <typeinfo>
 
 ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn)
     : dm(dmIn), name(name), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solField(nullptr), modifiers(std::move(modifiersIn)) {
     // update the dm with the modifiers
     for (auto& modifier : modifiers) {
+        auto modifierName = modifier->ToString();
+        PetscPrintf((PetscObjectComm((PetscObject)dm)), "starting: %s\n", modifierName.c_str());
         modifier->Modify(dm);
+        PetscPrintf((PetscObjectComm((PetscObject)dm)), "finish: %s\n", modifierName.c_str());
     }
 
     // register all the solution fields with the DM, store the aux fields for later

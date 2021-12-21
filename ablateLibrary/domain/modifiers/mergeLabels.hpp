@@ -17,6 +17,8 @@ class MergeLabels : public Modifier {
     MergeLabels(std::shared_ptr<domain::Region> mergedRegion, std::vector<std::shared_ptr<domain::Region>> regions);
 
     void Modify(DM&) override;
+
+    std::string ToString() const override { return "ablate::domain::modifiers::MergeLabels"; }
 };
 
 }  // namespace ablate::domain::modifiers

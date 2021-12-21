@@ -25,6 +25,8 @@ class TagLabelBoundary : public Modifier {
     explicit TagLabelBoundary(std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> boundaryFaceRegion, const std::shared_ptr<domain::Region> boundaryCellRegion = {});
 
     void Modify(DM&) override;
+
+    std::string ToString() const override { return "ablate::domain::modifiers::TagLabelBoundary"; }
 };
 
 }  // namespace ablate::domain::modifiers

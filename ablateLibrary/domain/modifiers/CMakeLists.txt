@@ -1,6 +1,7 @@
 target_sources(ablateLibrary
         PUBLIC
         modifier.hpp
+        modifier.cpp
         distributeWithGhostCells.hpp
         distributeWithGhostCells.cpp
         ghostBoundaryCells.hpp
