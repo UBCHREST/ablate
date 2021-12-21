@@ -1,0 +1,107 @@
+---
+environment:
+  title: Moving_2gas_10pts
+  tagDirectory: true
+arguments:
+  automaticTimeStepCalculator: on
+  euler_petscfv_type: upwind
+  temperature_petscfv_type: leastsquares
+  velocity_petscfv_type: leastsquares
+  densityVF_petscfv_type: upwind
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 0.03
+    ts_dt: 1e-4
+    ts_adapt_type: none
+  domain: !<!ablate::domain::BoxMesh>
+    name: simpleBoxField
+    faces: [10]
+    lower: [0]
+    upper: [10]
+    boundary: [NONE]
+    modifiers:
+      - !<!ablate::domain::modifiers::SetFromOptions>
+        dm_refine: 0
+      - !<!ablate::domain::modifiers::GhostBoundaryCells> ""
+      - !<!ablate::domain::modifiers::DistributeWithGhostCells> ""
+    fields:
+      - !<!ablate::finiteVolume::CompressibleFlowFields>
+        eos: !<!ablate::eos::PerfectGas>
+          parameters:
+            gamma: 0
+            Rgas: 0
+      - name: densityVF
+        type: FVM
+      - name: volumeFraction
+        location: AUX
+        type: FVM
+      - name: pressure
+        location: AUX
+        type: FVM
+solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
+  id: SOD Problem
+  parameters:
+    cfl: 0.25
+  processes:
+    - !<!ablate::finiteVolume::processes::TwoPhaseEulerAdvection>
+      parameters:
+        g: [0.0, 0.0, 0.0]
+      eosGas: !<!ablate::eos::PerfectGas> &4
+        parameters: # argon
+          gamma: 1.66
+          Rgas: 208.13
+      eosLiquid: !<!ablate::eos::PerfectGas> &1
+        parameters: # air
+          gamma: 1.4
+          Rgas: 287.0
+      fluxCalculatorGasGas: !<!ablate::finiteVolume::fluxCalculator::Riemann2Gas>
+        eosL: *4
+        eosR: *4
+      fluxCalculatorGasLiquid: !<!ablate::finiteVolume::fluxCalculator::Riemann2Gas>
+        eosL: *4
+        eosR: *1
+      fluxCalculatorLiquidGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *1
+        eosR: *4
+      fluxCalculatorLiquidLiquid: !<!ablate::finiteVolume::fluxCalculator::Riemann2Gas>
+        eosL: *1
+        eosR: *1
+  initialization:
+    - &2
+      fieldName: "euler" # T=300K, v=100m/s, p=100,000Pa
+      field: >-
+        x < 5.0 ? 1.1614401858304297 : 1.601563125610596,
+        x < 5.0 ? 255807.2009291522 : 159522.9671432045,
+        x < 5.0 ? -116.14401858304298 : -160.1563125610596
+
+    - &3
+      fieldName: densityVF
+      field: " x < 5.0 ? 0.0 : 1.601563125610596 "
+  boundaryConditions:
+    - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
+      boundaryName: air walls euler
+      labelIds: [1, 2]
+      boundaryValue: *2
+    - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
+      boundaryName: vf walls
+      labelIds: [1, 2]
+      boundaryValue: *3
+  exactSolution:
+    - fieldName: "euler" # T=300K, v=100m/s, p=100,000Pa
+      field: >-
+        x < 2.0 ? 1.1614401858304297 : 1.601563125610596,
+        x < 2.0 ? 255807.2009291522 : 159522.9671432045,
+        x < 2.0 ? -116.14401858304298 : -160.1563125610596
+    - fieldName: densityVF
+      field: " x < 2.0 ? 0.0 : 1.601563125610596 "
+  monitors:
+    - !<!ablate::monitors::TimeStepMonitor> ""
+    - !<!ablate::monitors::CurveMonitor>
+      interval: 10
+    - !<!ablate::monitors::SolutionErrorMonitor>
+      scope: component
+      type: l2_norm
+      log: !ablate::monitors::logs::CsvLog
+        name: L2.csv
