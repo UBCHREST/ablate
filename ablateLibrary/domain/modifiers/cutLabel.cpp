@@ -12,7 +12,7 @@ void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
         auto& regionIS = regionISs[r];
         DMGetStratumIS(dm, regions[r]->GetName().c_str(), regions[r]->GetValue(), &regionIS) >> checkError;
     }
-    std::cout << "line: 15" << std::endl;
+    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line15");
     // Create Concatenate IS that is all the cut regions
     IS mergedIS;
     ISConcatenate(PetscObjectComm((PetscObject)dm), regionISs.size(), regionISs.data(), &mergedIS) >> checkError;
@@ -28,14 +28,14 @@ void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
     IS orgIS;
     DMGetLabel(dm, cutRegion->GetName().c_str(), &cutRegionLabel) >> checkError;
     DMLabelGetStratumIS(cutRegionLabel, cutRegion->GetValue(), &orgIS) >> checkError;
-    std::cout << "line: 31" << std::endl;
+    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line31");
 
     // compute the new cut region
     IS cutIS;
     ISDifference(orgIS, mergedIS, &cutIS) >> checkError;
     DMLabelSetStratumIS(cutRegionLabel, cutRegion->GetValue(), cutIS) >> checkError;
 
-    std::cout << "line: 38" << std::endl;
+    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line38");
 
     // cleanup
     ISDestroy(&cutIS) >> checkError;
