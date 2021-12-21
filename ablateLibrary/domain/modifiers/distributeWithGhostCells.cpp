@@ -12,6 +12,8 @@ void ablate::domain::modifiers::DistributeWithGhostCells::Modify(DM &dm) {
         DMDestroy(&dm) >> checkError;
         dm = dmDist;
     }
+
+    DMView(dmDist, PETSC_VIEWER_STDOUT_WORLD);
 }
 
 #include "registrar.hpp"
