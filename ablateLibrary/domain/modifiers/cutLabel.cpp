@@ -35,9 +35,12 @@ void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
 
     PetscSF         sfPoint;
     PetscInt nroots;
+    int rank;
     DMGetPointSF(dm, &sfPoint);
     PetscSFGetGraph(sfPoint, &nroots, NULL, NULL, NULL) >> checkError;
-    printf("nroots: %d\n", (int)nroots) >> checkError;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)dm), &rank);
+    std::cout << "nroots (" << rank << "): " << nroots << std::endl;
+    MPI_Barrier(PetscObjectComm((PetscObject)dm));
 
     // cleanup
     ISDestroy(&cutIS) >> checkError;
