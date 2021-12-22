@@ -37,7 +37,7 @@ void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
     PetscInt nroots;
     DMGetPointSF(dm, &sfPoint);
     PetscSFGetGraph(sfPoint, &nroots, NULL, NULL, NULL) >> checkError;
-    PetscPrintf(PetscObjectComm((PetscObject)dm), "nroots: %d\n", nroots) >> checkError;
+    printf("nroots: %d\n", nroots) >> checkError;
 
     // cleanup
     ISDestroy(&cutIS) >> checkError;
