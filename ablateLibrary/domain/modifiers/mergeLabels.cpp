@@ -18,7 +18,7 @@ void ablate::domain::modifiers::MergeLabels::Modify(DM& dm) {
     }
     // Create Concatenate IS
     IS mergedIS;
-    ISConcatenate(PetscObjectComm((PetscObject)dm), regionISs.size(), &regionISs[0], &mergedIS) >> checkError;
+    ISConcatenate(PETSC_COMM_SELF, regionISs.size(), &regionISs[0], &mergedIS) >> checkError;
     ISSortRemoveDups(mergedIS) >> checkError;
 
     // cleanup
@@ -29,13 +29,6 @@ void ablate::domain::modifiers::MergeLabels::Modify(DM& dm) {
     DMLabel mergedLabel;
     DMGetLabel(dm, mergedRegion->GetName().c_str(), &mergedLabel) >> checkError;
     DMLabelSetStratumIS(mergedLabel, mergedRegion->GetValue(), mergedIS) >> checkError;
-
-    // check the size
-    PetscInt newLabelSize;
-    ISGetSize(mergedIS, &newLabelSize) >> checkError;
-    if (newLabelSize == 0) {
-        throw std::length_error("The new merged region " + mergedRegion->GetName() + " resulted in no points.");
-    }
 
     // cleanup
     ISDestroy(&mergedIS) >> checkError;

@@ -16,8 +16,8 @@ target_sources(ablateLibrary
         mergeLabels.cpp
         intersectLabels.hpp
         intersectLabels.cpp
-        cutLabel.hpp
-        cutLabel.cpp
+        subtractLabel.hpp
+        subtractLabel.cpp
         tagLabelInterface.hpp
         tagLabelInterface.cpp
         )
