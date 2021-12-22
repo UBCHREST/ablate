@@ -10,11 +10,8 @@ void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
     // Get the data
     for (std::size_t r = 0; r < regions.size(); r++) {
         auto& regionIS = regionISs[r];
-        PetscPrintf(PetscObjectComm(PetscObject(dm)), "line13 %d\n", r);
         DMGetStratumIS(dm, regions[r]->GetName().c_str(), regions[r]->GetValue(), &regionIS) >> checkError;
-        PetscPrintf(PetscObjectComm(PetscObject(dm)), "line15 %d\n", r);
     }
-    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line17\n");
     // Create Concatenate IS that is all the cut regions
     IS mergedIS;
     ISConcatenate(PetscObjectComm((PetscObject)dm), regionISs.size(), regionISs.data(), &mergedIS) >> checkError;
@@ -30,29 +27,23 @@ void ablate::domain::modifiers::CutLabel::Modify(DM& dm) {
     IS orgIS;
     DMGetLabel(dm, cutRegion->GetName().c_str(), &cutRegionLabel) >> checkError;
     DMLabelGetStratumIS(cutRegionLabel, cutRegion->GetValue(), &orgIS) >> checkError;
-    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line31\n");
 
     // compute the new cut region
     IS cutIS;
     ISDifference(orgIS, mergedIS, &cutIS) >> checkError;
     DMLabelSetStratumIS(cutRegionLabel, cutRegion->GetValue(), cutIS) >> checkError;
 
-    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line38\n");
-
-    int rank;
-    MPI_Comm_rank(PetscObjectComm(PetscObject(dm)), &rank);
+    PetscSF         sfPoint;
+    PetscInt nroots;
+    DMGetPointSF(dm, &sfPoint);
+    PetscSFGetGraph(sfPoint, &nroots, NULL, NULL, NULL) >> checkError;
+    PetscPrintf(PetscObjectComm((PetscObject)dm), "nroots: %d\n", nroots) >> checkError;
 
     // cleanup
     ISDestroy(&cutIS) >> checkError;
-    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line43\n");
     ISDestroy(&orgIS) >> checkError;
-    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line46\n");
     ISDestroy(&mergedIS) >> checkError;
-    std::cout << "line48 " << rank << ": " << cutRegionLabel << std::endl;
-    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line48\n");
-    std::cout << "rank " << rank << ": " << cutRegionLabel << std::endl;
     DMPlexLabelComplete(dm, cutRegionLabel) >> checkError;
-    PetscPrintf(PetscObjectComm(PetscObject(dm)), "line50\n");
 }
 std::string ablate::domain::modifiers::CutLabel::ToString() const {
     std::string string = "ablate::domain::modifiers::CutLabel\n";
