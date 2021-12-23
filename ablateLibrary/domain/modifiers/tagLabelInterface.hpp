@@ -4,13 +4,14 @@
 #include <memory>
 #include "domain/region.hpp"
 #include "modifier.hpp"
+#include "labelSupport.hpp"
 
 namespace ablate::domain::modifiers {
 
 /**
  * Class to label/tag all faces/cells on the interface between two labels.  The left/right designations are just used to separate the left/right labels.
  */
-class TagLabelInterface : public Modifier {
+class TagLabelInterface : public Modifier, private LabelSupport{
    private:
     const std::shared_ptr<domain::Region> leftRegion;
     const std::shared_ptr<domain::Region> rightRegion;

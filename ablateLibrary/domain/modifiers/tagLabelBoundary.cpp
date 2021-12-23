@@ -80,9 +80,9 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
         }
     }
 
-    DMPlexLabelComplete(dm, boundaryFaceLabel) >> checkError;
+    DistributeLabel(dm, boundaryFaceLabel);
     if(boundaryCellLabel) {
-        DMPlexLabelComplete(dm, boundaryCellLabel) >> checkError;
+        DistributeLabel(dm, boundaryCellLabel);
     }
 
     ISRestorePointRange(faceIS, &fStart, &fEnd, &faces) >> checkError;

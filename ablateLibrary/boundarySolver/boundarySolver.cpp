@@ -192,6 +192,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             PetscFVLeastSquaresSetMaxFaces(gradientCalculator, maxFaces) >> checkError;
         }
         PetscFVComputeGradient(gradientCalculator, (PetscInt)stencil.size(), &dx[0], &stencilWeights[0]) >> checkError;
+//        PetscErrorCode ierr = PetscFVComputeGradient(gradientCalculator, (PetscInt)stencil.size(), &dx[0], &stencilWeights[0])
 
         // Store the stencil
         gradientStencils.emplace_back(GradientStencil{.geometry = geom, .stencil = stencil, .weights = stencilWeights, .stencilSize = (PetscInt)stencil.size()});

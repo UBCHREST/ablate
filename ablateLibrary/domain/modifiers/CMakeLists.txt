@@ -20,4 +20,6 @@ target_sources(ablateLibrary
         subtractLabel.cpp
         tagLabelInterface.hpp
         tagLabelInterface.cpp
+        labelSupport.hpp
+        labelSupport.cpp
         )
