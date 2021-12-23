@@ -102,6 +102,10 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     // Keep track of the current maxFaces
     PetscInt maxFaces = 0;
 
+    // debug info
+    int numberRealCells = 0;
+    int numberGhostCells = 0;
+
     // March over each cell in this region to create the stencil
     IS cellIS;
     PetscInt cStart, cEnd;
@@ -117,12 +121,15 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             DMLabelGetValue(ghostLabel, cell, &ghost);
         }
         if (ghost >= 0) {
+            numberGhostCells++;
+
             // put in nan, should not be used
             gradientStencils.emplace_back(
                 GradientStencil{.geometry = {.normal = {NAN, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}}, .stencil = {}, .weights = {}, .stencilSize = 0});
             continue;
         }
 
+        numberRealCells++;
         // keep a list of cells in the stencil
         std::set<PetscInt> stencilSet{cell};
 
@@ -214,7 +221,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
 
         maximumStencilSize = PetscMax(maximumStencilSize, (PetscInt)stencil.size());
     }
-
+    PetscSynchronizedPrintf(PETSC_COMM_WORLD, "%d/%d/%d\n", (int)numberRealCells, (int)numberGhostCells, (int)maximumStencilSize);
     RestoreRange(cellIS, cStart, cEnd, cells);
 
     // clean up the geom
