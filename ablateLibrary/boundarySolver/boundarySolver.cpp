@@ -118,7 +118,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         }
         if (ghost >= 0) {
             std::cout << "working in ghost cell" << std::endl;
-            continue;
+//            continue;
         }
 
         // keep a list of cells in the stencil
