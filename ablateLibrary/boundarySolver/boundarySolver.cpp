@@ -95,6 +95,10 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     PetscInt boundaryValue = fieldBoundary->GetValue();
     DMGetLabel(subDomain->GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
 
+    // check to see if there is a ghost label
+    DMLabel ghostLabel;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+
     // Keep track of the current maxFaces
     PetscInt maxFaces = 0;
 
@@ -106,6 +110,16 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     for (PetscInt c = cStart; c < cEnd; ++c) {
         // if there is a cell array, use it, otherwise it is just c
         const PetscInt cell = cells ? cells[c] : c;
+
+        // make sure we are not working on a ghost cell
+        PetscInt ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, cell, &ghost);
+        }
+        if (ghost >= 0) {
+            std::cout << "working in ghost cell" << std::endl;
+            continue;
+        }
 
         // keep a list of cells in the stencil
         std::set<PetscInt> stencilSet{cell};
@@ -192,7 +206,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             PetscFVLeastSquaresSetMaxFaces(gradientCalculator, maxFaces) >> checkError;
         }
         PetscFVComputeGradient(gradientCalculator, (PetscInt)stencil.size(), &dx[0], &stencilWeights[0]) >> checkError;
-//        PetscErrorCode ierr = PetscFVComputeGradient(gradientCalculator, (PetscInt)stencil.size(), &dx[0], &stencilWeights[0])
 
         // Store the stencil
         gradientStencils.emplace_back(GradientStencil{.geometry = geom, .stencil = stencil, .weights = stencilWeights, .stencilSize = (PetscInt)stencil.size()});
