@@ -117,8 +117,10 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             DMLabelGetValue(ghostLabel, cell, &ghost);
         }
         if (ghost >= 0) {
-            std::cout << "working in ghost cell" << std::endl;
-//            continue;
+            // put in nan, should not be used
+            gradientStencils.emplace_back(
+                GradientStencil{.geometry = {.normal = {NAN, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}}, .stencil = {}, .weights = {}, .stencilSize = 0});
+            continue;
         }
 
         // keep a list of cells in the stencil
