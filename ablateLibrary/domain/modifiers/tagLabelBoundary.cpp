@@ -80,10 +80,15 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
         }
     }
 
+    DMPlexLabelComplete(dm, boundaryFaceLabel) >> checkError;
+    if(boundaryCellLabel) {
+        DMPlexLabelComplete(dm, boundaryCellLabel) >> checkError;
+    }
+
     ISRestorePointRange(faceIS, &fStart, &fEnd, &faces) >> checkError;
-    ISDestroy(&faceIS);
-    ISDestroy(&labelIS);
-    ISDestroy(&allFacesIS);
+    ISDestroy(&faceIS) >> checkError;
+    ISDestroy(&labelIS) >> checkError;
+    ISDestroy(&allFacesIS) >> checkError;
 }
 
 #include "registrar.hpp"

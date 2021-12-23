@@ -120,6 +120,13 @@ void ablate::domain::modifiers::TagLabelInterface::Modify(DM &dm) {
         }
     }
 
+    DMPlexLabelComplete(dm, boundaryFaceLabel) >> checkError;
+    if(rightBoundaryCellLabel) {
+        DMPlexLabelComplete(dm, rightBoundaryCellLabel) >> checkError;
+    }
+    if(leftBoundaryCellLabel) {
+        DMPlexLabelComplete(dm, leftBoundaryCellLabel) >> checkError;
+    }
     ISRestorePointRange(leftFaceIS, &fStart, &fEnd, &faces) >> checkError;
     ISDestroy(&leftFaceIS);
     ISDestroy(&leftLabelIS);

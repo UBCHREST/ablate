@@ -9,11 +9,14 @@ void ablate::domain::modifiers::DistributeWithGhostCells::Modify(DM &dm) {
     DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE) >> checkError;
     DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist) >> checkError;
     if (dmDist) {
+        // Copy over the options object
+        PetscOptions options;
+        PetscObjectGetOptions((PetscObject)dm, &options) >> checkError;
+        PetscObjectSetOptions((PetscObject)dmDist, options) >> checkError;
+
         DMDestroy(&dm) >> checkError;
         dm = dmDist;
     }
-
-    DMView(dm, PETSC_VIEWER_STDOUT_WORLD);
 }
 
 #include "registrar.hpp"
