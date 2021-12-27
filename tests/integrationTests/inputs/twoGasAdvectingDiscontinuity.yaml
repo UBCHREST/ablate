@@ -3,7 +3,6 @@ environment:
   title: Moving_2gas_10pts
   tagDirectory: true
 arguments:
-  automaticTimeStepCalculator: on
   euler_petscfv_type: upwind
   temperature_petscfv_type: leastsquares
   velocity_petscfv_type: leastsquares
@@ -42,8 +41,6 @@ timestepper:
         type: FVM
 solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
   id: SOD Problem
-  parameters:
-    cfl: 0.25
   processes:
     - !<!ablate::finiteVolume::processes::TwoPhaseEulerAdvection>
       parameters:

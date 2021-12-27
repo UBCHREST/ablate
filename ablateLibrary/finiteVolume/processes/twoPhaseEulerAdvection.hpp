@@ -3,7 +3,6 @@
 
 #include <petsc.h>
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
-#include "parameters/parameters.hpp"
 #include "process.hpp"
 
 namespace ablate::finiteVolume::processes {
