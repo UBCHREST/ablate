@@ -682,7 +682,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
 
     PetscReal Tg;
     twoPhaseEulerAdvection->eosGas->GetComputeTemperatureFunction()(dim, densityG, etG, massfluxG, NULL, &Tg, twoPhaseEulerAdvection->eosGas->GetDecodeStateContext());
-     PetscReal T = Tg; // temperature equilibrium, Tg = Tl
+    PetscReal T = Tg;  // temperature equilibrium, Tg = Tl
     *auxField = T;
     PetscFunctionReturn(0);
 }
