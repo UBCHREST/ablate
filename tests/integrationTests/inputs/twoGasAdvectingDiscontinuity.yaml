@@ -12,15 +12,15 @@ timestepper:
   name: theMainTimeStepper
   arguments:
     ts_type: rk
-    ts_max_time: 0.03
+    ts_max_time: 0.001
     ts_dt: 1e-4
     ts_adapt_type: none
   domain: !<!ablate::domain::BoxMesh>
     name: simpleBoxField
-    faces: [10]
-    lower: [0]
-    upper: [10]
-    boundary: [NONE]
+    faces: [ 10 ]
+    lower: [ 0 ]
+    upper: [ 10 ]
+    boundary: [ NONE ]
     modifiers:
       - !<!ablate::domain::modifiers::SetFromOptions>
         dm_refine: 0
@@ -47,7 +47,7 @@ solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
   processes:
     - !<!ablate::finiteVolume::processes::TwoPhaseEulerAdvection>
       parameters:
-        g: [0.0, 0.0, 0.0]
+        g: [ 0.0, 0.0, 0.0 ]
       eosGas: !<!ablate::eos::PerfectGas> &4
         parameters: # argon
           gamma: 1.66
@@ -82,11 +82,11 @@ solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
   boundaryConditions:
     - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
       boundaryName: air walls euler
-      labelIds: [1, 2]
+      labelIds: [ 1, 2 ]
       boundaryValue: *2
     - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
       boundaryName: vf walls
-      labelIds: [1, 2]
+      labelIds: [ 1, 2 ]
       boundaryValue: *3
   exactSolution:
     - fieldName: "euler" # T=300K, v=100m/s, p=100,000Pa

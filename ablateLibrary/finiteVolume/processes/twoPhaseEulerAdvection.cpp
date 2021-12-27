@@ -2,7 +2,6 @@
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "flowProcess.hpp"
-// #include <petscsnes.h>
 
 static inline void NormVector(PetscInt dim, const PetscReal *in, PetscReal *out) {
     PetscReal mag = 0.0;
