@@ -127,6 +127,55 @@ $$\begin{eqnarray}
 
 The default $$\mathcal{D}_i$$ implementation assumes the same $$\mathcal{D}_i$$ for each $$EV_i$$ and is equal to species diffusivity.   
 
+### Multiphase Flow
+Two phases can be solved for using Volume of Fluid method, where $$\alpha$$ represents the volume fraction of a given fluid.  The conserved equations are
+
+$$\begin{eqnarray}
+\vector{Q_t} = \begin{bmatrix} \alpha_g \rho_g \\ \rho \\ \rho u \\ \rho v \\ \rho w \\ \rho e_t \end{bmatrix}
+\end{eqnarray}$$
+
+The convective fluxes are
+
+$$\begin{eqnarray}
+\vector{F_c} = \begin{bmatrix} \alpha_g \rho_g u_n \\ \rho u_n \\ \rho u u_n + n_x p \\ \rho v u_n + n_y p \\ \rho w u_n + n_z p \\ \rho H u_n \end{bmatrix}
+\end{eqnarray}$$
+
+
+Where the velocity is assumed to be uniform throughout each volume. Each flux is calculated by a stratified flow model from Chang and Liou.
+
+$$\begin{eqnarray}\vector{F_c} = A_{g-g} \vector{F_{g-g}} + A_{g-l} \vector{F_{g-l}} + A_{l-l} \vector{F_{l-l}} \end{eqnarray}$$
+
+Where $$A_{g-g}, A_{g-l}, A_{l-l}$$ are sub-areas of the control volume based on the volume fraction
+The viscous fluxes are defined as:
+
+$$\begin{eqnarray}
+\vector{F_v} = \begin{bmatrix}
+0 \\
+0 \\
+n_x \tau_{xx}  + n_y \tau_{xy} + n_z \tau_{xz} \\
+n_x \tau_{yx}  + n_y \tau_{yy} + n_z \tau_{yz} \\
+n_x \tau_{zx}  + n_y \tau_{zy} + n_z \tau_{zz} \\
+n_x \Theta_x   + n_y \Theta_y  + n_z \Theta_z
+\end{bmatrix}
+\end{eqnarray}$$
+
+The vector of source terms is
+
+$$\begin{eqnarray}
+\vector{Q_s} = \begin{bmatrix}
+0 \\
+0 \\
+\rho f_x + CSF_x \\
+\rho f_y + CSF_y \\
+\rho f_z + CSF_z \\
+\rho \vector{f} \cdot \vector{u} + \dot{q_h} + \vector{CSF} \cdot \vector{u}
+\end{bmatrix}
+\end{eqnarray}$$
+
+Where $$\vector{CSF}$$ is the surface tension force, calculated using the continuum surface force model by Brackbill.
+
 ## References
+ - Brackbill, J. U., Kothe, D. B., and Zemach, C. (1992), "A continuum method for modeling surface tension." Journal of Computational Physics, 100, 335-354.
  - Blazek, J. (2001). Computational fluid dynamics: Principles and applications.
+ - Chang, C. H. and Liou, M. S. (2007), "A robust and accurate approach to computing compressible multiphase flow: Stratified flow model and AUSM+up scheme." Journal of Computational Physics, 225, 840-873.
  - Roy, Chris, Curt Ober, and Tom Smith. "Verification of a compressible CFD code using the method of manufactured solutions." 32nd AIAA Fluid Dynamics Conference and Exhibit. 2002.

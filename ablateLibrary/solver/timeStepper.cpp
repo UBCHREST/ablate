@@ -250,7 +250,6 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm,
 
     DMLocalToGlobalBegin(dm, locF, ADD_VALUES, F);
     DMLocalToGlobalEnd(dm, locF, ADD_VALUES, F);
-
     DMRestoreLocalVector(dm, &locF);
 
     PetscFunctionReturn(0);

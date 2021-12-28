@@ -11,4 +11,6 @@ target_sources(ablateLibrary
         evTransport.cpp
         tChemReactions.hpp
         tChemReactions.cpp
+        twoPhaseEulerAdvection.hpp
+        twoPhaseEulerAdvection.cpp
         )
