@@ -61,12 +61,6 @@ else()
 endif()
 target_link_libraries(ablateLibrary PUBLIC TChem::TChem)
 
-###  OpenCASCADE ###
-# EGADS should be built with petsc using the --download-egads flag
-FIND_PACKAGE(OpenCASCADE CONFIG REQUIRED HINTS "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/cmake/opencascade/")
-target_link_libraries(ablateLibrary PUBLIC ${OpenCASCADE_LIBRARIES})
-target_link_directories(ablateCore PUBLIC ${OpenCASCADE_LIBRARY_DIR})
-
 ### EGADS ###
 FIND_LIBRARY(EGADS_LIBRARY
         NAMES
@@ -78,7 +72,7 @@ FIND_LIBRARY(EGADS_LIBRARY
         ${CMAKE_FIND_ROOT_PATH}
         ${PETSc_LIBRARY_DIRS}
         )
-if(NOT TCHEM_LIBRARY)
+if(NOT EGADS_LIBRARY)
     message(FATAL_ERROR "Cannot find EGADS library.  Please reconfigure PETSc with --download-egads flag." )
 else()
     add_library(EGADS::EGADS UNKNOWN IMPORTED)
@@ -88,6 +82,12 @@ else()
             IMPORTED_LOCATION ${EGADS_LIBRARY})
 endif()
 target_link_libraries(ablateLibrary PUBLIC EGADS::EGADS)
+
+###  OpenCASCADE ###
+# OpenCASCADE should be built with petsc
+FIND_PACKAGE(OpenCASCADE CONFIG REQUIRED HINTS "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/cmake/opencascade/")
+target_link_libraries(ablateLibrary PUBLIC ${OpenCASCADE_LIBRARIES})
+target_link_directories(ablateCore PUBLIC ${OpenCASCADE_LIBRARY_DIR})
 
 ### Load in threads ###
 set(THREADS_PREFER_PTHREAD_FLAG ON)
