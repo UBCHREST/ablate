@@ -70,12 +70,6 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
 }
 
 ablate::eos::TChem::~TChem() {
-    libCount--;
-
-    /* Free memory and reset variables to allow TC_initchem to be called again */
-    if (libCount == 0) {
-        TC_reset();
-    }
 }
 
 const std::vector<std::string> &ablate::eos::TChem::GetSpecies() const { return species; }
