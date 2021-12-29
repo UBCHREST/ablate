@@ -46,7 +46,7 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
     - To checkout a specific version or commit ```git checkout release``` 
     - The latest version of ABLATE has been tested against PETSc {% include generated/petscVersion.html %}
 2. Configure PETSc to be built in both debug and optimized configurations
-   1. Configure PETSc with the following options from the petsc directory to build the debug configuration.  Run the following make command.
+   1. Configure PETSc with the following options from the petsc directory to build the debug configuration.  Visit the [ABLATE wiki](https://github.com/UBCHREST/ablate/wiki) for OS specific commands.  Run the following make command.
        ```bash
        # Configure debug PETSc
        ./configure PETSC_ARCH=arch-ablate-debug --download-mpich --download-fblaslapack --download-ctetgen \
@@ -54,7 +54,7 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
             --download-ml --download-mumps --download-netcdf --download-p4est \
             --download-parmetis --download-pnetcdf --download-scalapack \
             --download-slepc --download-suitesparse --download-superlu_dist \
-            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem --download-opencascade
+            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem=https://github.com/UBCHREST/tchemv1.git --download-tchem-commit=5877d14 --download-opencascade
     
        # Follow the on screen directions to make PETSc
        ```
@@ -67,7 +67,7 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
             --download-ml --download-mumps --download-netcdf --download-p4est \
             --download-parmetis --download-pnetcdf --download-scalapack \
             --download-slepc --download-suitesparse --download-superlu_dist \
-            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem --download-opencascade --with-debugging=0 
+            --download-triangle --with-slepc --download-zlib --with-libpng --download-tchem=https://github.com/UBCHREST/tchemv1.git --download-tchem-commit=5877d14 --download-opencascade --with-debugging=0 
     
        # Follow the on screen directions to make PETSc
        ```
