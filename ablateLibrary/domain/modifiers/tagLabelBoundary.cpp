@@ -81,7 +81,7 @@ void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
     }
 
     DistributeLabel(dm, boundaryFaceLabel);
-    if(boundaryCellLabel) {
+    if (boundaryCellLabel) {
         DistributeLabel(dm, boundaryCellLabel);
     }
 

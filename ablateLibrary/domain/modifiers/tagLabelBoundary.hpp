@@ -3,15 +3,15 @@
 
 #include <memory>
 #include "domain/region.hpp"
-#include "modifier.hpp"
 #include "labelSupport.hpp"
+#include "modifier.hpp"
 
 namespace ablate::domain::modifiers {
 
 /**
  * Class to label/tag all faces on a label boundary
  */
-class TagLabelBoundary : public Modifier, private LabelSupport{
+class TagLabelBoundary : public Modifier, private LabelSupport {
    private:
     // the label to tag
     const std::shared_ptr<domain::Region> region;

@@ -9,6 +9,6 @@ class LabelSupport {
    protected:
     void DistributeLabel(DM dm, DMLabel label);
 };
-}
+}  // namespace ablate::domain::modifiers
 
 #endif  // ABLATELIBRARY_LABELSUPPORT_HPP

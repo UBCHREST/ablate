@@ -120,10 +120,10 @@ void ablate::domain::modifiers::TagLabelInterface::Modify(DM &dm) {
         }
     }
     DistributeLabel(dm, boundaryFaceLabel);
-    if(rightBoundaryCellLabel) {
+    if (rightBoundaryCellLabel) {
         DistributeLabel(dm, rightBoundaryCellLabel);
     }
-    if(leftBoundaryCellLabel) {
+    if (leftBoundaryCellLabel) {
         DistributeLabel(dm, leftBoundaryCellLabel);
     }
     ISRestorePointRange(leftFaceIS, &fStart, &fEnd, &faces) >> checkError;
