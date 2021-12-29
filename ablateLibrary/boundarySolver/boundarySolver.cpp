@@ -221,7 +221,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
 
         maximumStencilSize = PetscMax(maximumStencilSize, (PetscInt)stencil.size());
     }
-    printf("%d/%d/%d\n", (int)numberRealCells, (int)numberGhostCells, (int)maximumStencilSize);
     RestoreRange(cellIS, cStart, cEnd, cells);
 
     // clean up the geom
