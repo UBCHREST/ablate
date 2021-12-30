@@ -15,7 +15,7 @@ on:
     branches:
       - main
 jobs:
-  test-matrix:
+  test:
     strategy:
       matrix:
         machineConfig: [ { runson: ARM64, arch: ARM64 }, { runson: ubuntu-latest, arch: AMD64 } ]
@@ -67,10 +67,6 @@ jobs:
 
       - name: Run tests
         run: docker run --rm framework-test-image-${{ matrix.petscConfig }}
-
-  test:
-    needs: test-matrix
-    runs-on: ${{ matrix.machineConfig.runson }}
 
   tag-version:
     # Ensure test job passes before pushing image.
