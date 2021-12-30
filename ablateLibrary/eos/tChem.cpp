@@ -69,8 +69,7 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
     }
 }
 
-ablate::eos::TChem::~TChem() {
-}
+ablate::eos::TChem::~TChem() {}
 
 const std::vector<std::string> &ablate::eos::TChem::GetSpecies() const { return species; }
 
