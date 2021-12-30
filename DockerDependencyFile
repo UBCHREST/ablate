@@ -6,7 +6,7 @@ RUN apt-get update
 RUN apt-get install -y clang-format gdb
 
 # Setup the petsc env
-ARG PETSC_BUILD_ARCH
+ARG PETSC_BUILD_ARCH=arch-ablate-debug
 ENV PETSC_ARCH=$PETSC_BUILD_ARCH
 ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
 ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
