@@ -10,7 +10,7 @@
       "name": "ablate-debug",
       "displayName": "Debug Config",
       "description": "Default build for ABLATE using PETSC",
-      "binaryDir": "${sourceDir}/cmake-build-debug-ablate",
+      "binaryDir": "${sourceDir}/cmake-build-debug-ablate/default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       },
@@ -23,7 +23,7 @@
       "name": "ablate-opt",
       "displayName": "Opt Config",
       "description": "Default build for ABLATE using PETSC",
-      "binaryDir": "${sourceDir}/cmake-build-opt-ablate",
+      "binaryDir": "${sourceDir}/cmake-build-opt-ablate/default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       },

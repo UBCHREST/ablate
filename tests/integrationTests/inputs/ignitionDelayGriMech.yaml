@@ -53,7 +53,8 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
     - !ablate::monitors::IgnitionDelayPeakYi
       species: OH
       location: [0.5]
-      log: !ablate::monitors::logs::StdOut {}
+      log: !ablate::monitors::logs::FileLog
+        name: ignitionDelayPeakYi.txt
       historyLog: !ablate::monitors::logs::CsvLog
         name: ignitionDelayPeakYi.csv
     - !ablate::monitors::IgnitionDelayTemperature

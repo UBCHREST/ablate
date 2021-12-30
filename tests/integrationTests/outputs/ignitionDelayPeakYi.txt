@@ -1,0 +1,1 @@
+Computed Ignition Delay \(OH\): (.*)<expects> <0.05
