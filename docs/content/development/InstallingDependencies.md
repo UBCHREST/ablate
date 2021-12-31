@@ -1,13 +1,15 @@
 ---
 layout: default
-title: Installing PETSc Locally
+title: Installing Dependencies Locally
 parent: Development Guides
 nav_order: 3
 ---
 
-For the most recent development issues, notes, and workarounds for building PETSc for ABLATE check the [ABLATE repo wiki](https://github.com/UBCHREST/ablate/wiki).
+For the most recent development issues, notes, and workarounds for building PETSc for ABLATE or other dependencies check the [ABLATE repo wiki](https://github.com/UBCHREST/ablate/wiki).
 
-## Install System Specific Prerequisites
+There are two main ways to install the required dependencies for ABLATE locally (directly or with docker).  Installing directly may result in more control of the dependencies and increased computational speed.  Using docker/CLion may allow you to get started faster.  If using docker/CLion skip to [Downloading and Building with CLion (with docker dependencies)]({{ site.baseurl}}{%link content/development/BuildingAblateLocally.md  %}#downloading-and-building-with-clion-with-docker-dependencies)
+
+## Install System Specific Dependencies
 ### macOS
 1. Install macOS Development Tools.  This can be done one of two ways:
    - Install [Xcode](https://apps.apple.com/us/app/xcode/id497799835) using the Mac AppStore

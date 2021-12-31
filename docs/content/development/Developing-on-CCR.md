@@ -18,7 +18,7 @@ The University at Buffalo Center for Computational Research [(CCR)](http://www.b
 
 1. Loading pre-built CHREST modules may also load any additional modules necessary to use the given software. This may change any preloaded modules you may have.
 
-1. You must have read-access to the CHREST project directory to use the all CHREST pre-built modules. If you do not have access to the project directory it will be necessary to either use the libraries generally available on CCR or build the libraries yourself and install in your home directory (see [Installing PETSc for ABLATE]({{ site.baseurl}}{%link content/development/InstallingPETSc.md  %})).
+1. You must have read-access to the CHREST project directory to use the all CHREST pre-built modules. If you do not have access to the project directory it will be necessary to either use the libraries generally available on CCR or build the libraries yourself and install in your home directory.
 
 1. To make CHREST pre-built libraries available during every login add
   ```bash
