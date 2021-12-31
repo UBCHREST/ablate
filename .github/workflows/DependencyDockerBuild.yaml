@@ -57,7 +57,6 @@ jobs:
           docker buildx build .\
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" \
-            --build-arg PETSC_BUILD_COMMIT=${{ needs.get-version.outputs.petsc_commit}} \
             --push \
             --tag $IMAGE_ID:latest \
             --file DockerDependencyFile \
