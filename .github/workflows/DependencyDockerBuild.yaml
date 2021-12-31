@@ -10,8 +10,12 @@ on:
     tags:
       - v*
 
-  workflow_dispatch:
   # Allow this event to be triggered in the github ui
+  workflow_dispatch:
+
+  # Allow to be triggered from an api
+  repository_dispatch:
+    types: [rebuild-dependencies]
 
 env:
   IMAGE_NAME: ablate-dependencies

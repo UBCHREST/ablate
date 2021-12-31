@@ -75,7 +75,6 @@ jobs:
 
   tag-version:
     # Ensure test job passes before pushing image.
-    needs: test-matrix
     strategy:
       matrix:
         machineConfig: [ { runson: ubuntu-latest, arch: AMD64 } ]
@@ -103,12 +102,12 @@ jobs:
       - name: Build the docker image
         run: |
           docker buildx build .\
-          --file DockerTestFile \
-          --tag framework-test-image-${{ matrix.petscConfig }} \
-          --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
-          --load \
-          --cache-from "type=local,src=/tmp/.buildx-cache" \
-          --cache-to "type=local,dest=/tmp/.buildx-cache"
+            --file DockerTestFile \
+            --tag framework-test-image-${{ matrix.petscConfig }} \
+            --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
+            --load \
+            --cache-from "type=local,src=/tmp/.buildx-cache" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache"
 
       - name: Get the version from the build file
         run: echo "VERSION=$(docker run --rm framework-test-image-${{ matrix.petscConfig }} awk -F= '/CMAKE_PROJECT_VERSION:/ {print $NF}' CMakeCache.txt )" >> $GITHUB_ENV
@@ -148,12 +147,12 @@ jobs:
       - name: Build the docker image
         run: |
           docker buildx build .\
-          --file DockerTestFile \
-          --tag framework-test-image-${{ matrix.petscConfig }} \
-          --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
-          --load \
-          --cache-from "type=local,src=/tmp/.buildx-cache" \
-          --cache-to "type=local,dest=/tmp/.buildx-cache"
+            --file DockerTestFile \
+            --tag framework-test-image-${{ matrix.petscConfig }} \
+            --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
+            --load \
+            --cache-from "type=local,src=/tmp/.buildx-cache" \
+            --cache-to "type=local,dest=/tmp/.buildx-cache"
 
       - name: Get the version from the build file
         run: docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --version > docs/_includes/generated/version.html
