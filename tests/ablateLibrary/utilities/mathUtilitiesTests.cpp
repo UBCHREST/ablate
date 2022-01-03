@@ -69,6 +69,5 @@ INSTANTIATE_TEST_SUITE_P(MathUtilititiesTests, TransformVectorTestFixture,
                                          (TransformVectorTestParameters){.normal = {0.0, 0.0, -1.0}, .cartBasisVector = {.3, .4, -2.5}, .expectedNormBasisVector = {2.5, .3, -.4}},
                                          (TransformVectorTestParameters){.normal = {0.23570226039552, 0.23570226039552, 0.94280904158206},
                                                                          .cartBasisVector = {.3, .4, -2.5},
-                                                                         .expectedNormBasisVector = {-2.1920310216782859, -0.89738181263444372, -0.94324221828380639}})
-
-);
+                                                                         .expectedNormBasisVector = {-2.1920310216782859, -0.89738181263444372, -0.94324221828380639}}),
+                         [](const testing::TestParamInfo<TransformVectorTestParameters>& info) { return std::to_string(info.param.normal.size()) + "_D_test" + std::to_string(info.index); });

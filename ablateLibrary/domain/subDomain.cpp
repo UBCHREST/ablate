@@ -507,14 +507,18 @@ void ablate::domain::SubDomain::Save(PetscViewer viewer, PetscInt sequenceNumber
     VecView(GetSubSolutionVector(), viewer) >> checkError;
 
     // If there is aux data output
-    if (auto subAuxVector = GetSubAuxVector()) {
-        // copy over the sequence data from the main dm
-        PetscReal dmTime;
-        PetscInt dmSequence;
-        DMGetOutputSequenceNumber(locSubDm, &dmSequence, &dmTime) >> checkError;
-        DMSetOutputSequenceNumber(locAuxDM, dmSequence, dmTime) >> checkError;
+    PetscBool outputAuxVector = PETSC_TRUE;
+    PetscOptionsGetBool(nullptr, nullptr, "-outputAuxVector", &outputAuxVector, nullptr) >> checkError;
+    if (outputAuxVector) {
+        if (auto subAuxVector = GetSubAuxVector()) {
+            // copy over the sequence data from the main dm
+            PetscReal dmTime;
+            PetscInt dmSequence;
+            DMGetOutputSequenceNumber(locSubDm, &dmSequence, &dmTime) >> checkError;
+            DMSetOutputSequenceNumber(locAuxDM, dmSequence, dmTime) >> checkError;
 
-        VecView(subAuxVector, viewer) >> checkError;
+            VecView(subAuxVector, viewer) >> checkError;
+        }
     }
 
     // If there is an exact solution save it
