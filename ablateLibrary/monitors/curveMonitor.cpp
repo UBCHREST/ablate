@@ -36,12 +36,12 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
     if (monitor->interval->Check(comm, steps, time)) {
         // Open a new file
         std::filesystem::path outputFile =
-            ablate::environment::RunEnvironment::Get().GetOutputDirectory() / (monitor->filePrefix + monitor->GetSolver()->GetId() + "." + std::to_string(steps) + monitor->fileExtension);
+            ablate::environment::RunEnvironment::Get().GetOutputDirectory() / (monitor->filePrefix + monitor->GetSolver()->GetSolverId() + "." + std::to_string(steps) + monitor->fileExtension);
         std::ofstream curveFile;
         curveFile.open(outputFile);
 
         // March over each solution vector
-        curveFile << "#title=" << monitor->GetSolver()->GetId() << std::endl;
+        curveFile << "#title=" << monitor->GetSolver()->GetSolverId() << std::endl;
         curveFile << "##time=" << time << std::endl << std::endl;
 
         // build the list of local coordinates

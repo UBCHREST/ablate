@@ -35,8 +35,8 @@ Timestep: 0010 time = 0.1      dt = 0.01
 flowTracerParticles Count: 1
 flowTracerParticles Avg: [0.955505, 0.955505]
 ResultFiles:
+domain.hdf5
+domain.xmf
 flowTracerParticles.hdf5
 flowTracerParticles.xmf
 restart.rst
-theFlowField.hdf5
-theFlowField.xmf

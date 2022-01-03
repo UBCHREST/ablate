@@ -65,10 +65,6 @@ void ablate::finiteElement::FiniteElementSolver::UpdateAuxFields(TS ts, ablate::
     DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> checkError;
 }
 
-void ablate::finiteElement::FiniteElementSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
-    Solver::Save(viewer, sequenceNumber, time);
-}
-
 PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIFunction(PetscReal time, Vec locX, Vec locX_t, Vec locF) {
     PetscFunctionBegin;
     DM plex;

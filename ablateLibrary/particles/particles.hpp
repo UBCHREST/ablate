@@ -11,7 +11,7 @@
 
 namespace ablate::particles {
 
-class Particles : public solver::Solver {
+class Particles : public solver::Solver, public io::Serializable {
    protected:
     // particle domain
     DM swarmDm;
@@ -111,7 +111,7 @@ class Particles : public solver::Solver {
      * @param time
      * @param u
      */
-    void Save(PetscViewer viewer, PetscInt steps, PetscReal time) const override;
+    void Save(PetscViewer viewer, PetscInt steps, PetscReal time) override;
 
     /**
      * shared function to view all particles;
@@ -121,6 +121,12 @@ class Particles : public solver::Solver {
      * @param u
      */
     void Restore(PetscViewer viewer, PetscInt steps, PetscReal time) override;
+
+    /**
+     * Get an id for serialization
+     * @return
+     */
+    inline const std::string& GetId() const override { return GetSolverId(); }
 
     /** common field names for particles **/
     inline static const char ParticleVelocity[] = "ParticleVelocity";

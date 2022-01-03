@@ -167,7 +167,7 @@ PetscErrorCode ablate::monitors::ExtractLineMonitor::OutputCurve(TS ts, PetscInt
         curveFile.open(outputFile);
 
         // March over each solution vector
-        curveFile << "#title=" << flow->GetId() << std::endl;
+        curveFile << "#title=" << flow->GetSolverId() << std::endl;
         curveFile << "##time=" << time << std::endl << std::endl;
 
         // output each solution variable

@@ -33,8 +33,6 @@ class FiniteElementSolver : public solver::Solver, public solver::IFunction, pub
      */
     static void UpdateAuxFields(TS ts, FiniteElementSolver& fe);
 
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
-
     /** Functions to compute F and and jacobian for the fintie element method over this subDomain/DS. **/
     PetscErrorCode ComputeIFunction(PetscReal time, Vec locX, Vec locX_t, Vec locF) override;
     PetscErrorCode ComputeIJacobian(PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP) override;

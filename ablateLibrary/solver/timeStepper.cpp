@@ -62,15 +62,24 @@ void ablate::solver::TimeStepper::Solve() {
     // Register the monitors
     for (auto& solver : solvers) {
         // Get any monitors
-        auto& monitorsList = monitors[solver->GetId()];
+        auto& monitorsList = monitors[solver->GetSolverId()];
         for (auto& monitor : monitorsList) {
             monitor->Register(solver);
         }
     }
-    // Register the solver with the serializer
+
     if (serializer) {
+        // Register any subdomain with the serializer
+        for (auto& subDomain : domain->GetSerializableSubDomains()) {
+            serializer->Register(subDomain);
+        }
+
+        // Register the solver with the serializer
         for (auto& solver : solvers) {
-            serializer->Register(solver);
+            auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
+            if (serializable) {
+                serializer->Register(serializable);
+            }
         }
     }
 
@@ -113,7 +122,7 @@ void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solve
     // Register the monitors
     for (auto& monitor : solverMonitors) {
         // store a reference to the monitor
-        monitors[solver->GetId()].push_back(monitor);
+        monitors[solver->GetSolverId()].push_back(monitor);
 
         // register the monitor with the ts
         TSMonitorSet(ts, monitor->GetPetscFunction(), monitor->GetContext(), NULL) >> checkError;

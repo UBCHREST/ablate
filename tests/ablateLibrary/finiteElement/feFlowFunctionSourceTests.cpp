@@ -671,8 +671,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-gravityDirection 1"},
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                                      return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(
-                                          name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                                      return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                                   },
                               .uExact = lowMach_quadratic_u,
                               .pExact = lowMach_quadratic_p,
@@ -697,8 +696,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                                      return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(
-                                          name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                                      return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                                   },
                               .uExact = lowMach_quadratic_u,
                               .pExact = lowMach_quadratic_p,
@@ -721,8 +719,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-gravityDirection 1 "},
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                                      return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(
-                                          name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                                      return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                                   },
                               .uExact = lowMach_cubic_u,
                               .pExact = lowMach_cubic_p,
@@ -747,8 +744,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                                 "-heatRelease 0.00831162126672484 -gamma 0.285337972166998 -mu 1.1 -k 1.2 -cp 1.3 "},
                               .createMethod =
                                   [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                                      return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(
-                                          name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                                      return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                                   },
                               .uExact = lowMach_cubic_u,
                               .pExact = lowMach_cubic_p,
@@ -771,8 +767,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                 },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -795,8 +790,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                 },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -820,8 +814,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                 },
             .uExact = incompressible_cubic_trig_u,
             .pExact = incompressible_cubic_trig_p,
@@ -845,8 +838,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                 },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
@@ -870,8 +862,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                 },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,
@@ -896,8 +887,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-mu 1.1 -k 1.2 -cp 1.3 "},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                 },
             .uExact = incompressible_quadratic_u,
             .pExact = incompressible_quadratic_p,
@@ -923,8 +913,7 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-mu 1.1 -k 1.2 -cp 1.3 "},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
                 },
             .uExact = incompressible_cubic_u,
             .pExact = incompressible_cubic_p,

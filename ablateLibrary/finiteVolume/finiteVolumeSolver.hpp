@@ -159,14 +159,6 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param auxFields
      */
     void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx);
-
-    /**
-     * Function to save the subDomain flowField to a viewer
-     * @param viewer
-     * @param sequenceNumber
-     * @param time
-     */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
 };
 }  // namespace ablate::finiteVolume
 
