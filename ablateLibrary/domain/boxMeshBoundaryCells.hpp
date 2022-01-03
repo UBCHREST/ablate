@@ -13,7 +13,8 @@ class BoxMeshBoundaryCells : public Domain {
 
     static std::vector<std::shared_ptr<modifiers::Modifier>> AddBoundaryModifiers(std::vector<double> lower, std::vector<double> upper, const std::shared_ptr<domain::Region>& mainRegion,
                                                                                   const std::shared_ptr<domain::Region>& boundaryFaceRegion,
-                                                                                  std::vector<std::shared_ptr<modifiers::Modifier>> modifiers);
+                                                                                  std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
+                                                                                  std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers);
 
     inline const static std::string boundaryCellsLabel = "boundaryCells";
     inline const static std::string boundaryCellsLeft = "boundaryCellsLeft";
@@ -24,9 +25,9 @@ class BoxMeshBoundaryCells : public Domain {
     inline const static std::string boundaryCellsBack = "boundaryCellsBack";
 
    public:
-    BoxMeshBoundaryCells(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers, std::vector<int> faces,
-                         const std::vector<double>& lower, const std::vector<double>& upper, std::shared_ptr<domain::Region> mainRegion, const std::shared_ptr<domain::Region>& boundaryFaceRegion,
-                         bool simplex = true);
+    BoxMeshBoundaryCells(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
+                         std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers, std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper,
+                         std::shared_ptr<domain::Region> mainRegion, const std::shared_ptr<domain::Region>& boundaryFaceRegion, bool simplex = true);
 
     ~BoxMeshBoundaryCells();
 };

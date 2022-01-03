@@ -3,11 +3,10 @@
 #include "utilities/petscError.hpp"
 
 ablate::finiteElement::LowMachFlowSolver::LowMachFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                            std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization,
-                                                            std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                            std::shared_ptr<parameters::Parameters> parameters, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : FiniteElementSolver(solverId, region, options, initialization, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {}
+    : FiniteElementSolver(solverId, region, options, boundaryConditions, auxiliaryFields, exactSolutions), parameters(parameters) {}
 
 void ablate::finiteElement::LowMachFlowSolver::Setup() {
     FiniteElementSolver::Setup();
@@ -146,7 +145,6 @@ void ablate::finiteElement::LowMachFlowSolver::CompleteFlowInitialization(DM dm,
 REGISTER(ablate::solver::Solver, ablate::finiteElement::LowMachFlowSolver, "incompressible FE flow", ARG(std::string, "id", "the name of the flow field"),
          OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
          OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"), ARG(ablate::parameters::Parameters, "parameters", "the flow field parameters"),
-         ARG(std::vector<ablate::mathFunctions::FieldFunction>, "initialization", "the solution used to initialize the flow field"),
          ARG(std::vector<ablate::finiteElement::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
          ARG(std::vector<ablate::mathFunctions::FieldFunction>, "auxFields", "enables and sets the update functions for the auxFields"),
          OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));

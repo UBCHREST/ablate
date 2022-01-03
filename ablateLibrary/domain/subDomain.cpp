@@ -229,6 +229,11 @@ DM ablate::domain::SubDomain::GetSubDM() {
         }
 
         DMCreateDS(subDM) >> checkError;
+
+        // Copy over options
+        PetscOptions options;
+        PetscObjectGetOptions((PetscObject)GetDM(), &options) >> checkError;
+        PetscObjectSetOptions((PetscObject)subDM, options) >> checkError;
     }
 
     return subDM;

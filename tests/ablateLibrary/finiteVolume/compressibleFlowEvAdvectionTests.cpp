@@ -91,20 +91,18 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, exactEulerSolution),
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{1, 2, 3, 4}, evExactSolution)};
 
-            auto flowObject =
-                std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
-                                                                               ablate::domain::Region::ENTIREDOMAIN,
-                                                                               nullptr /*options*/,
-                                                                               eos,
-                                                                               parameters,
-                                                                               nullptr /*transportModel*/,
-                                                                               std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
-                                                                               std::vector<std::shared_ptr<processes::Process>>(),
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution} /*initialization*/,
-                                                                               boundaryConditions /*boundary conditions*/,
-                                                                               std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
+                                                                                             ablate::domain::Region::ENTIREDOMAIN,
+                                                                                             nullptr /*options*/,
+                                                                                             eos,
+                                                                                             parameters,
+                                                                                             nullptr /*transportModel*/,
+                                                                                             std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
+                                                                                             std::vector<std::shared_ptr<processes::Process>>(),
+                                                                                             boundaryConditions /*boundary conditions*/,
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
 
-            mesh->InitializeSubDomains({flowObject});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 

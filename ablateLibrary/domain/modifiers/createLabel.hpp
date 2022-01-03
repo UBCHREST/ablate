@@ -26,6 +26,8 @@ class CreateLabel : public Modifier {
     explicit CreateLabel(std::shared_ptr<domain::Region>, std::shared_ptr<mathFunctions::MathFunction> function, int dmDepth = {});
 
     void Modify(DM&) override;
+
+    std::string ToString() const override;
 };
 
 }  // namespace ablate::domain::modifiers

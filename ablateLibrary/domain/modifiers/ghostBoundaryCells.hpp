@@ -14,7 +14,7 @@ class GhostBoundaryCells : public Modifier {
 
     void Modify(DM&) override;
 
-    int Priority() const override { return 5; }
+    std::string ToString() const override { return "ablate::domain::modifiers::GhostBoundaryCells"; }
 };
 
 }  // namespace ablate::domain::modifiers

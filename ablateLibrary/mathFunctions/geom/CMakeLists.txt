@@ -6,4 +6,6 @@ target_sources(ablateLibrary
         sphere.cpp
         box.hpp
         box.cpp
+        surface.hpp
+        surface.cpp
         )

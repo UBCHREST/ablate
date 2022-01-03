@@ -25,9 +25,11 @@ timestepper:
       name: mainSolver
     boundaryFaceRegion:
       name: boundaryFaces
-    modifiers:
+    preModifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 0
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    postModifiers:
       - !ablate::domain::modifiers::MergeLabels
         mergedRegion:
           name: openBoundaryLabel
@@ -35,12 +37,39 @@ timestepper:
           - name: boundaryCellsRight
           - name: boundaryCellsTop
           - name: boundaryCellsBottom
+      - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::PerfectGas &eos
           parameters:
             gamma: 1.4
             Rgas : 287.0
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        eos: *eos
+        pressure:
+          !ablate::mathFunctions::Formula
+          formula: pinf
+          constants:
+            # define the constants used by the formulas
+            &constants
+            pinf: 101325.0
+            rho: 1.0
+            gamma: 1.4
+            Rgas: 287.0
+            Rc: 0.075
+            C: -0.09415446086
+            uo: 414.2796277878
+            l: .5
+        temperature:
+          !ablate::mathFunctions::Formula
+          formula: 1/(Rgas*rho) * (pinf)
+          constants: *constants
+        velocity:
+          !ablate::mathFunctions::Formula
+          formula: uo, 0.0
+          constants: *constants
 solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: vortexFlowField
@@ -52,32 +81,6 @@ solvers:
       cfl: 0.5
     transport:
       mu:  0.02071398139
-    initialization:
-      - !ablate::finiteVolume::fieldFunctions::Euler
-        state:
-          eos: *eos
-          pressure:
-            !ablate::mathFunctions::Formula
-            formula: pinf
-            constants:
-              # define the constants used by the formulas
-              &constants
-              pinf: 101325.0
-              rho: 1.0
-              gamma: 1.4
-              Rgas: 287.0
-              Rc: 0.075
-              C: -0.09415446086
-              uo: 414.2796277878
-              l: .5
-          temperature:
-            !ablate::mathFunctions::Formula
-            formula: 1/(Rgas*rho) * (pinf)
-            constants: *constants
-          velocity:
-            !ablate::mathFunctions::Formula
-            formula: uo, 0.0
-            constants: *constants
     monitors:
       - !ablate::monitors::MaxMinAverage
         field: euler

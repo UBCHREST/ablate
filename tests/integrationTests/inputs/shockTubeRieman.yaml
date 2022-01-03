@@ -32,13 +32,6 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas: 287
-solver: !ablate::finiteVolume::CompressibleFlowSolver
-  id: SOD Problem
-  parameters:
-    cfl: .25
-  eos: *eos
-  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
-    eos: *eos
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       &eulerFlowFieldState
@@ -47,6 +40,13 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
         temperature: "x < .5 ? 0.00348 : 0.00279"
         pressure: "x < 0.5 ? 1 : 0.1"
         velocity: "0"
+solver: !ablate::finiteVolume::CompressibleFlowSolver
+  id: SOD Problem
+  parameters:
+    cfl: .25
+  eos: *eos
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
+    eos: *eos
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "air walls euler"

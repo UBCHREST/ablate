@@ -28,5 +28,9 @@ class Region {
     inline const std::string ToString() const { return name + ":" + std::to_string(value); };
 };
 
+std::ostream& operator<<(std::ostream& os, const Region& region);
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Region>& region);
+
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_REGION_HPP

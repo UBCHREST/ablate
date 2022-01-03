@@ -60,7 +60,7 @@ class TChemReactions : public Process {
      */
     PetscErrorCode ChemistryFlowPreStage(TS flowTs, ablate::solver::Solver &flow, PetscReal stagetime);
 
-    static PetscErrorCode AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
+    static PetscErrorCode AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
     explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {});

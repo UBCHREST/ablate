@@ -38,6 +38,13 @@ timestepper:
         dm_refine: 0
       - !ablate::domain::modifiers::GhostBoundaryCells
       - !ablate::domain::modifiers::DistributeWithGhostCells
+  initialization:
+    - fieldName: "euler" #for euler all components are in a single field
+      field: >-
+        1.0,
+        215250.0,
+        0.0,
+        0.0
 solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: compressibleFlowField
   processes:
@@ -52,13 +59,6 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       transport:
         k: 0.0
         mu: 1.0
-  initialization:
-    - fieldName: "euler" #for euler all components are in a single field
-      field: >-
-        1.0,
-        215250.0,
-        0.0,
-        0.0
   exactSolution:
     - fieldName: "euler" # rho, rho_e = rho*(CvT + u^2/2), rho_u, rho_v
       field: >-

@@ -37,6 +37,19 @@ timestepper:
         dm_distribute: true
     fields:
       - !ablate::finiteElement::LowMachFlowFields
+  initialization:
+    - &velocityField
+      fieldName: "velocity"
+      field: "t + 7, t + 7"
+      timeDerivative: "1.0, 1.0"
+    - &pressureField
+      fieldName: "pressure"
+      field: "1.0 "
+      timeDerivative: "0.0"
+    - &temperatureField
+      fieldName: "temperature"
+      field: "1.0"
+      timeDerivative: "0.0"
 solvers:
   - !ablate::finiteElement::IncompressibleFlowSolver
     id: theFlowField
@@ -48,19 +61,6 @@ solvers:
       mu: 1.0
       k: 1.0
       cp: 1.0
-    initialization:
-      - &velocityField
-        fieldName: "velocity"
-        field: "t + 7, t + 7"
-        timeDerivative: "1.0, 1.0"
-      - &pressureField
-        fieldName: "pressure"
-        field: "1.0 "
-        timeDerivative: "0.0"
-      - &temperatureField
-        fieldName: "temperature"
-        field: "1.0"
-        timeDerivative:  "0.0"
     boundaryConditions:
       - !ablate::finiteElement::boundaryConditions::Essential
         boundaryName: "wall velocity"

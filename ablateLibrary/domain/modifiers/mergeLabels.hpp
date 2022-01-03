@@ -18,7 +18,7 @@ class MergeLabels : public Modifier {
 
     void Modify(DM&) override;
 
-    int Priority() const override { return 9; }
+    std::string ToString() const override { return "ablate::domain::modifiers::MergeLabels"; }
 };
 
 }  // namespace ablate::domain::modifiers
