@@ -6,12 +6,10 @@
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes,
-                                                             std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
+                                                             std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions)
     : CellSolver(std::move(solverId), std::move(region), std::move(options)),
       processes(std::move(processes)),
-      boundaryConditions(std::move(boundaryConditions)),
-      exactSolutions(std::move(exactSolution)) {}
+      boundaryConditions(std::move(boundaryConditions)) {}
 
 void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     // march over process and link to the flow
@@ -37,25 +35,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
 
         // Setup the boundary condition
         boundary->SetupBoundary(subDomain->GetDM(), subDomain->GetDiscreteSystem(), fieldId.id);
-    }
-
-    // if an exact solution has been provided register it
-    for (const auto& exactSolution : exactSolutions) {
-        // check to make sure that the exact solution is applicable everywhere or to this subDomain
-        if (exactSolution->GetRegion() != domain::Region::ENTIREDOMAIN) {
-            throw std::invalid_argument("Exact solutions should be applicable over the entire domain.");
-        }
-
-        auto fieldId = subDomain->GetField(exactSolution->GetName());
-
-        // Get the current field type
-        if (exactSolution->HasSolutionField()) {
-            PetscDSSetExactSolution(subDomain->GetDiscreteSystem(), fieldId.id, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
-        }
-        if (exactSolution->HasTimeDerivative()) {
-            PetscDSSetExactSolutionTimeDerivative(subDomain->GetDiscreteSystem(), fieldId.id, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >>
-                checkError;
-        }
     }
 
     // copy over any boundary information from the dm, to the aux dm and set the sideset
@@ -207,17 +186,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.emplace_back(function, ctx); }
 void ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
     Solver::Save(viewer, sequenceNumber, time);
-
-    if (!exactSolutions.empty()) {
-        Vec exactVec;
-        DMGetGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
-
-        subDomain->ProjectFieldFunctionsToSubDM(exactSolutions, exactVec, time);
-
-        PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
-        VecView(exactVec, viewer) >> checkError;
-        DMRestoreGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
-    }
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
@@ -888,5 +856,4 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolumeSolver, "fini
          OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
          OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
          ARG(std::vector<ablate::finiteVolume::processes::Process>, "processes", "the processes used to describe the flow"),
-         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));
+         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"));

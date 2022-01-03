@@ -335,9 +335,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                                                                                     std::make_shared<boundaryConditions::Essential>("right wall temp", 2, temperatureExact),
                                                                                     std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
                 /* aux updates*/
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{},
-                /* exact solutions*/
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
 
             // Create the particle domain
             // pass all options with the particles prefix to the particle object
@@ -346,7 +344,11 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto particles = std::make_shared<ablate::particles::Tracer>(
                 "particle", ablate::domain::Region::ENTIREDOMAIN, particleOptions, 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact));
 
-            mesh->InitializeSubDomains({flowObject, particles}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
+            mesh->InitializeSubDomains({flowObject, particles},
+                                       /* init*/
+                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
+                                       /* exact solutions*/
+                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});
 
             // Override problem with source terms, boundary, and set the exact solution

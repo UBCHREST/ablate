@@ -170,6 +170,11 @@ class SubDomain {
     void ProjectFieldFunctionsToSubDM(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0);
 
     /**
+     * set exactSolutions if the fields live in the ds
+     */
+    void SetsExactSolutions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions);
+
+    /**
      * Get a sub vector with only a single field
      */
     PetscErrorCode GetFieldSubVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);

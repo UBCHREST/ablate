@@ -99,10 +99,9 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                                              nullptr /*transportModel*/,
                                                                                              std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
                                                                                              std::vector<std::shared_ptr<processes::Process>>(),
-                                                                                             boundaryConditions /*boundary conditions*/,
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
+                                                                                             boundaryConditions /*boundary conditions*/);
 
-            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, evExactSolution});
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 

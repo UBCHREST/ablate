@@ -65,7 +65,8 @@ class Domain {
 
     PetscInt GetDimensions() const;
 
-    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations);
+    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+                              const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
 
     std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
 

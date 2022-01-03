@@ -52,6 +52,10 @@ timestepper:
       fieldName: "temperature"
       field: "t + x + y"
       timeDerivative: "1.0"
+  exactSolution:
+    - *velocityField
+    - *pressureField
+    - *temperatureField
 solvers:
   - !ablate::finiteElement::IncompressibleFlowSolver
     id: theFlowField
@@ -63,10 +67,6 @@ solvers:
       mu: 1.0
       k: 1.0
       cp: 1.0
-    exactSolution:
-      - *velocityField
-      - *pressureField
-      - *temperatureField
     boundaryConditions:
       - !ablate::finiteElement::boundaryConditions::Essential
         boundaryName: "wall velocity"

@@ -467,3 +467,22 @@ PetscErrorCode ablate::domain::SubDomain::RestoreFieldSubVector(const Field& fie
 
     PetscFunctionReturn(0);
 }
+
+void ablate::domain::SubDomain::SetsExactSolutions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions) {
+    // if an exact solution has been provided register it
+    for (const auto& exactSolution : exactSolutions) {
+        // check to see if this field in is in this subDomain
+        if (ContainsField(exactSolution->GetName())) {
+            // Get the field information
+            auto fieldInfo = GetField(exactSolution->GetName());
+
+            if (exactSolution->HasSolutionField()) {
+                PetscDSSetExactSolution(GetDiscreteSystem(), fieldInfo.subId, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
+            }
+            if (exactSolution->HasTimeDerivative()) {
+                PetscDSSetExactSolutionTimeDerivative(GetDiscreteSystem(), fieldInfo.subId, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >>
+                    checkError;
+            }
+        }
+    }
+}

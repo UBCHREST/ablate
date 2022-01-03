@@ -9,8 +9,7 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                      std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> parameters,
                                                                      std::shared_ptr<eos::transport::TransportModel> transport, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn,
                                                                      std::vector<std::shared_ptr<processes::Process>> additionalProcesses,
-                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
+                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions)
     : FiniteVolumeSolver(solverId, region, options,
                          utilities::VectorUtilities::Merge(
                              {
@@ -21,14 +20,13 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                                                                                                 eosIn, fluxCalculatorIn, transport),
                              },
                              additionalProcesses),
-                         boundaryConditions, exactSolutions) {}
+                         boundaryConditions) {}
 
 ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                                      std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> parameters,
                                                                      std::shared_ptr<eos::transport::TransportModel> transport, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn,
-                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                     std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : CompressibleFlowSolver(solverId, region, options, eosIn, parameters, transport, fluxCalculatorIn, {}, boundaryConditions, exactSolutions) {}
+                                                                     std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions)
+    : CompressibleFlowSolver(solverId, region, options, eosIn, parameters, transport, fluxCalculatorIn, {}, boundaryConditions) {}
 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "compressible finite volume flow", ARG(std::string, "id", "the name of the flow field"),
@@ -37,5 +35,4 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::CompressibleFlowSolver, "
          OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculators (defaults to none)"),
          OPT(std::vector<ablate::finiteVolume::processes::Process>, "additionalProcesses", "any additional processes besides euler/yi/ev transport"),
-         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
-         OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"));
+         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"));

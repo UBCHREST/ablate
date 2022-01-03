@@ -602,15 +602,8 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, PhysicsBoundary_Euler, &constants),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
-                                                                                             domain::Region::ENTIREDOMAIN,
-                                                                                             nullptr /*options*/,
-                                                                                             eos,
-                                                                                             parameters,
-                                                                                             transportModel,
-                                                                                             GetParam().fluxCalculator,
-                                                                                             boundaryConditions /*boundary conditions*/,
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>(
+                "testFlow", domain::Region::ENTIREDOMAIN, nullptr /*options*/, eos, parameters, transportModel, GetParam().fluxCalculator, boundaryConditions /*boundary conditions*/);
 
             // Combine the flow data
             ProblemSetup problemSetup;
@@ -618,7 +611,8 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             problemSetup.constants = constants;
 
             // Complete the problem setup
-            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
+            mesh->InitializeSubDomains(
+                {flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Add a point wise function that adds fluxes to euler.  It requires no input fields

@@ -146,7 +146,12 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization{eulerExactField, evExactField};
 
             // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}, {}, initialization);
+            auto timeStepper = ablate::solver::TimeStepper("timeStepper",
+                                                           mesh,
+                                                           {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}},
+                                                           {},
+                                                           initialization,
+                                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});
 
             // setup a flow parameters
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(0.0, 0.0, parameters.diff);
@@ -168,8 +173,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                              transportModel,
                                                                                              nullptr /*no advection */,
                                                                                              std::vector<std::shared_ptr<finiteVolume::processes::Process>>(),
-                                                                                             boundaryConditions /*boundary conditions*/,
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, evExactField});
+                                                                                             boundaryConditions /*boundary conditions*/);
 
             timeStepper.Register(flowObject);
 

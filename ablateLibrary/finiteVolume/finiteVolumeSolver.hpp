@@ -70,7 +70,6 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     static void ComputeTimeStep(TS, ablate::solver::Solver&);
 
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
-    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
     /**
      * Computes the flux across each face in th region
@@ -106,7 +105,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
-                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
+                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions);
 
     /** SubDomain Register and Setup **/
     void Setup() override;

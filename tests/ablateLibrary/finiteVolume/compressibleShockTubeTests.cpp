@@ -192,10 +192,9 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                                                                                              parameters,
                                                                                              nullptr /*transportModel*/,
                                                                                              testingParam.fluxCalculator,
-                                                                                             boundaryConditions /*boundary conditions*/,
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{} /*exactSolution*/);
+                                                                                             boundaryConditions /*boundary conditions*/);
 
-            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Setup the TS

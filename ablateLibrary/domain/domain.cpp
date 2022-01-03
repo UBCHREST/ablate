@@ -124,7 +124,7 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     }
 }
 
-void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations) {
+void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions) {
     // determine the number of fields
     for (auto& solver : solvers) {
         solver->Register(GetSubDomain(solver->GetRegion()));
@@ -173,5 +173,10 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
     // Initialize each solver
     for (auto& solver : solvers) {
         solver->Initialize();
+    }
+
+    // Set the exact solutions if the field in lives in each subDomain
+    for (auto& subDomain : subDomains) {
+        subDomain->SetsExactSolutions(exactSolutions);
     }
 }
