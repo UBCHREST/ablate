@@ -4,7 +4,9 @@ environment:
   tagDirectory: false
 arguments: 
   automaticTimeStepCalculator: on
-
+  euler_petscfv_type: upwind
+  temperature_petscfv_type: leastsquares
+  velocity_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -13,31 +15,23 @@ timestepper:
     ts_dt: 1e-6
     ts_max_steps: 100
     ts_adapt_type: none
-  io: 
-    interval: 0
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
-    faces: [ 5, 5 ]
-    lower: [ 0, 0 ]
-    upper: [ 1, 1 ]
-    boundary: [ 'NONE', "PERIODIC" ]
-    options:
-      dm_refine: 1
-solver: !ablate::finiteVolume::CompressibleFlow
-  id: SOD Problem
-  options:
-    eulerpetscfv_type: upwind
-    Tpetscfv_type: leastsquares
-    velpetscfv_type: leastsquares
-  parameters:
-    cfl: .25
-  eos: &eos 
-    !ablate::eos::PerfectGas
-    parameters:
-        gamma: 1.4
-        Rgas: 287
-  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
-    eos: *eos
+    faces: [ 5 ]
+    lower: [ 0 ]
+    upper: [ 1 ]
+    boundary: [ 'NONE' ]
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 1
+      - !ablate::domain::modifiers::GhostBoundaryCells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       &eulerFlowFieldState
@@ -45,12 +39,20 @@ solver: !ablate::finiteVolume::CompressibleFlow
         eos: *eos
         temperature: "x < .5 ? 0.00348 : 0.00279"
         pressure: "x < 0.5 ? 1 : 0.1"
-        velocity: "0, 0"     
+        velocity: "0"
+solver: !ablate::finiteVolume::CompressibleFlowSolver
+  id: SOD Problem
+  parameters:
+    cfl: .25
+  eos: *eos
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
+    eos: *eos
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "air walls euler"
-      labelIds: [2, 4]
+      labelIds: [1, 2]
       boundaryValue: *eulerFlowFieldState
   monitors:
     - !ablate::monitors::TimeStepMonitor
+    - !ablate::monitors::CurveMonitor
 

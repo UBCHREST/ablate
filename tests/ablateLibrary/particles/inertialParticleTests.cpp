@@ -1,18 +1,19 @@
-#include <inttypes.h>
 #include <petsc.h>
-#include <finiteElement/boundaryConditions/essential.hpp>
-#include <finiteElement/incompressibleFlow.hpp>
-#include <parameters/mapParameters.hpp>
-#include <parameters/petscOptionParameters.hpp>
-#include <parameters/petscPrefixOptions.hpp>
-#include <particles/initializers/boxInitializer.hpp>
-#include <solver/directSolverTsInterface.hpp>
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/modifiers/setFromOptions.hpp"
+#include "finiteElement/boundaryConditions/essential.hpp"
+#include "finiteElement/incompressibleFlowSolver.hpp"
+#include "finiteElement/lowMachFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "incompressibleFlow.h"
 #include "mathFunctions/functionFactory.hpp"
+#include "parameters/mapParameters.hpp"
+#include "parameters/petscOptionParameters.hpp"
+#include "parameters/petscPrefixOptions.hpp"
 #include "particles/inertial.hpp"
+#include "particles/initializers/boxInitializer.hpp"
+#include "solver/directSolverTsInterface.hpp"
 
 using namespace ablate;
 using namespace ablate::finiteElement;
@@ -198,9 +199,17 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             // initialize petsc and mpi
             PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
+            // setup the required fields for the flow
+            std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
+
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>("mesh",
+                                                                  fieldDescriptors,
+                                                                  std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::SetFromOptions>()},
+                                                                  std::vector<int>{2, 2},
+                                                                  std::vector<double>{0.0, 0.0},
+                                                                  std::vector<double>{1.0, 1.0});
 
             TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
@@ -214,13 +223,11 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>(
                 "temperature", ablate::mathFunctions::Create(testingParam.TExact, &testingParam.parameters), ablate::mathFunctions::Create(testingParam.T_tExact, &testingParam.parameters));
 
-            auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlow>(
+            auto flowObject = std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
                 "testFlow",
                 domain::Region::ENTIREDOMAIN,
                 nullptr,
                 parameters,
-                /* initialization functions */
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("wall velocity", std::vector<int>{3, 1, 2, 4}, velocityExact),
                                                                                     std::make_shared<boundaryConditions::Essential>("wall temp", std::vector<int>{3, 1, 2, 4}, temperatureExact)},
@@ -250,7 +257,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             auto particles = std::make_shared<ablate::particles::Inertial>(
                 "particle", ablate::domain::Region::ENTIREDOMAIN, particleOptions, 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction);
 
-            mesh->InitializeSubDomains({flowObject, particles});
+            mesh->InitializeSubDomains({flowObject, particles}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});
 
             // Override problem with source terms, boundary, and set the exact solution

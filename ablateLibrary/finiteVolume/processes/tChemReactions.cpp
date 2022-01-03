@@ -10,7 +10,7 @@
 #endif
 #include <TC_interface.h>
 #include <TC_params.h>
-#include <finiteVolume/processes/eulerAdvection.hpp>
+#include <finiteVolume/processes/eulerTransport.hpp>
 #include <utilities/petscOptions.hpp>
 #else
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
@@ -44,12 +44,12 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
     PetscMalloc3(numberSpecies + 1, &tchemScratch, PetscSqr(numberSpecies + 1), &jacobianScratch, numberSpecies + 1, &rows) >> checkError;
     // The rows will not change, so set them once
     for (std::size_t i = 0; i < numberSpecies + 1; i++) {
-        rows[i] = i;
+        rows[i] = (PetscInt)i;
     }
 
     // Create a vector and mat for local ode calculation
-    VecCreateSeq(PETSC_COMM_SELF, numberSpecies + 1, &pointData) >> checkError;
-    MatCreateSeqDense(PETSC_COMM_SELF, numberSpecies + 1, numberSpecies + 1, NULL, &jacobian) >> checkError;
+    VecCreateSeq(PETSC_COMM_SELF, (PetscInt)numberSpecies + 1, &pointData) >> checkError;
+    MatCreateSeqDense(PETSC_COMM_SELF, (PetscInt)numberSpecies + 1, (PetscInt)numberSpecies + 1, nullptr, &jacobian) >> checkError;
     MatSetFromOptions(jacobian) >> checkError;
 
     /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -60,7 +60,7 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
     TSSetType(ts, TSARKIMEX) >> checkError;
     TSARKIMEXSetFullyImplicit(ts, PETSC_TRUE) >> checkError;
     TSARKIMEXSetType(ts, TSARKIMEX4) >> checkError;
-    TSSetRHSFunction(ts, NULL, SinglePointChemistryRHS, this) >> checkError;
+    TSSetRHSFunction(ts, nullptr, SinglePointChemistryRHS, this) >> checkError;
     TSSetRHSJacobian(ts, jacobian, jacobian, SinglePointChemistryJacobian, this) >> checkError;
     TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> checkError;
 
@@ -96,7 +96,7 @@ ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {
     PetscFree3(tchemScratch, jacobianScratch, rows) >> checkError;
 }
 
-void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FiniteVolume& flow) {
+void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Create a copy of the dm for the solver
     DM coordDM;
     DMGetCoordinateDM(flow.GetSubDomain().GetDM(), &coordDM) >> checkError;
@@ -110,8 +110,14 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     PetscFVCreate(PetscObjectComm((PetscObject)fieldDm), &fvm) >> checkError;
     PetscObjectSetName((PetscObject)fvm, "chemistrySource") >> checkError;
     PetscFVSetFromOptions(fvm) >> checkError;
-    PetscFVSetNumComponents(fvm, ablate::finiteVolume::processes::EulerAdvection::RHOU + dim + numberSpecies) >> checkError;
-    DMAddField(fieldDm, NULL, (PetscObject)fvm) >> checkError;
+    PetscFVSetNumComponents(fvm, ablate::finiteVolume::processes::FlowProcess::RHOU + dim + (PetscInt)numberSpecies) >> checkError;
+
+    // Only define the new field over the region used by this solver
+    DMLabel regionLabel = nullptr;
+    if (auto region = flow.GetRegion()) {
+        DMGetLabel(fieldDm, region->GetName().c_str(), &regionLabel);
+    }
+    DMAddField(fieldDm, regionLabel, (PetscObject)fvm) >> checkError;
     PetscFVDestroy(&fvm) >> checkError;
 
     // create a vector to hold the source terms
@@ -126,7 +132,7 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
 }
 
 PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemistryRHS(TS ts, PetscReal t, Vec X, Vec F, void* ptr) {
-    ablate::finiteVolume::processes::TChemReactions* solver = (ablate::finiteVolume::processes::TChemReactions*)ptr;
+    auto solver = (ablate::finiteVolume::processes::TChemReactions*)ptr;
     PetscErrorCode ierr;
     PetscScalar* fArray;
     const PetscScalar* xArray;
@@ -142,7 +148,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     CHKERRQ(ierr);
 
     // get the source (assuming constant pressure/mass)
-    ierr = TC_getSrc(solver->tchemScratch, solver->numberSpecies + 1, fArray);
+    ierr = TC_getSrc(solver->tchemScratch, (PetscInt)solver->numberSpecies + 1, fArray);
     TCCHKERRQ(ierr);
 
     ierr = VecRestoreArrayRead(X, &xArray);
@@ -152,9 +158,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemistryJacobian(TS ts, PetscReal t, Vec X, Mat aMat, Mat pMat, void* ptr) {
-    ablate::finiteVolume::processes::TChemReactions* solver = (ablate::finiteVolume::processes::TChemReactions*)ptr;
+    auto solver = (ablate::finiteVolume::processes::TChemReactions*)ptr;
     PetscErrorCode ierr;
-    const PetscInt nEeq = solver->numberSpecies + 1;
+    const PetscInt nEeq = (PetscInt)solver->numberSpecies + 1;
 
     PetscFunctionBeginUser;
     // copy over the XVec to the scratch variable for now
@@ -167,7 +173,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     CHKERRQ(ierr);
 
     // compute the analytical jacobian assuming constant pressure
-    ierr = TC_getJacTYN(solver->tchemScratch, solver->numberSpecies, solver->jacobianScratch, 1);
+    ierr = TC_getJacTYN(solver->tchemScratch, (int)solver->numberSpecies, solver->jacobianScratch, 1);
     CHKERRQ(ierr);
 
     // Load the matrix
@@ -205,25 +211,11 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
         PetscFunctionReturn(0);
     }
 
+    // Get the valid cell range over this region
     IS cellIS;
-    DM plex;
-    PetscInt depth;
-    ierr = DMConvert(flow.GetSubDomain().GetDM(), DMPLEX, &plex);
-    CHKERRQ(ierr);
-    ierr = DMPlexGetDepth(plex, &depth);
-    CHKERRQ(ierr);
-    ierr = DMGetStratumIS(plex, "dim", depth, &cellIS);
-    CHKERRQ(ierr);
-    if (!cellIS) {
-        ierr = DMGetStratumIS(plex, "depth", depth, &cellIS);
-        CHKERRQ(ierr);
-    }
-
-    // Get the sell range
     PetscInt cStart, cEnd;
-    const PetscInt* cells = NULL;
-    ierr = ISGetPointRange(cellIS, &cStart, &cEnd, &cells);
-    CHKERRQ(ierr);
+    const PetscInt* cells;
+    flow.GetCellRange(cellIS, cStart, cEnd, cells);
 
     // get the dim
     PetscInt dim;
@@ -256,9 +248,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     eos::ComputeTemperatureFunction temperatureFunction = eos->GetComputeTemperatureFunction();
     void* temperatureContext = eos->GetComputeTemperatureContext();
 
-    //    eos::ComputeSensibleInternalEnergyFunction sensibleInternalEnergyFunction = eos->GetComputeSensibleInternalEnergyFunction();
-    //    void* sensibleInternalEnergyContext = eos->GetComputeSensibleInternalEnergyContext();
-
     // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
         // if there is a cell array, use it, otherwise it is just c
@@ -277,9 +266,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
             // store the data for the chemistry ts (T, Yi...)
             PetscReal temperature;
             ierr = temperatureFunction(dim,
-                                       euler[ablate::finiteVolume::processes::EulerAdvection::RHO],
-                                       euler[ablate::finiteVolume::processes::EulerAdvection::RHOE] / euler[ablate::finiteVolume::processes::EulerAdvection::RHO],
-                                       euler + ablate::finiteVolume::processes::EulerAdvection::RHOU,
+                                       euler[ablate::finiteVolume::processes::FlowProcess::RHO],
+                                       euler[ablate::finiteVolume::processes::FlowProcess::RHOE] / euler[ablate::finiteVolume::processes::FlowProcess::RHO],
+                                       euler + ablate::finiteVolume::processes::FlowProcess::RHOU,
                                        densityYi,
                                        &temperature,
                                        temperatureContext);
@@ -291,24 +280,24 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
             CHKERRQ(ierr);
             pointArray[0] = temperature;
             for (std::size_t s = 0; s < numberSpecies; s++) {
-                pointArray[s + 1] = PetscMin(PetscMax(0.0, densityYi[s] / euler[ablate::finiteVolume::processes::EulerAdvection::RHO]), 1.0);
+                pointArray[s + 1] = PetscMin(PetscMax(0.0, densityYi[s] / euler[ablate::finiteVolume::processes::FlowProcess::RHO]), 1.0);
             }
 
             // precompute some values with the point array
             double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-            int err = TC_getMs2Wmix(pointArray + 1, numberSpecies, &mwMix);
+            int err = TC_getMs2Wmix(pointArray + 1, (int)numberSpecies, &mwMix);
             TCCHKERRQ(err);
 
             // compute the pressure as this node from T, Yi
             double R = 1000.0 * RUNIV / mwMix;
-            PetscReal pressure = euler[ablate::finiteVolume::processes::EulerAdvection::RHO] * temperature * R;
+            PetscReal pressure = euler[ablate::finiteVolume::processes::FlowProcess::RHO] * temperature * R;
             TC_setThermoPres(pressure);
 
             // Compute the total energy sen + hof
             PetscReal hof;
-            err = eos::TChem::ComputeEnthalpyOfFormation(numberSpecies, pointArray, hof);
+            err = eos::TChem::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, hof);
             TCCHKERRQ(err);
-            PetscReal enerTotal = hof + euler[ablate::finiteVolume::processes::EulerAdvection::RHOE] / euler[ablate::finiteVolume::processes::EulerAdvection::RHO];
+            PetscReal enerTotal = hof + euler[ablate::finiteVolume::processes::FlowProcess::RHOE] / euler[ablate::finiteVolume::processes::FlowProcess::RHO];
 
             ierr = VecRestoreArray(pointData, &pointArray);
             CHKERRQ(ierr);
@@ -341,14 +330,14 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
                 ierr = DMPlexPointLocalRef(fieldDm, cell, sourceArray, &fieldSource);
                 CHKERRQ(ierr);
 
-                fieldSource[ablate::finiteVolume::processes::EulerAdvection::RHO] = 0.0;
-                fieldSource[ablate::finiteVolume::processes::EulerAdvection::RHOE] = 0.0;
+                fieldSource[ablate::finiteVolume::processes::FlowProcess::RHO] = 0.0;
+                fieldSource[ablate::finiteVolume::processes::FlowProcess::RHOE] = 0.0;
                 for (PetscInt d = 0; d < dim; d++) {
-                    fieldSource[ablate::finiteVolume::processes::EulerAdvection::RHOU + d] = 0.0;
+                    fieldSource[ablate::finiteVolume::processes::FlowProcess::RHOU + d] = 0.0;
                 }
                 for (std::size_t sp = 0; sp < numberSpecies; sp++) {
                     // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                    fieldSource[ablate::finiteVolume::processes::EulerAdvection::RHOU + dim + sp] = 0.0;
+                    fieldSource[ablate::finiteVolume::processes::FlowProcess::RHOU + dim + sp] = 0.0;
                 }
 
                 continue;
@@ -364,21 +353,21 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
 
             // Use the point array to compute the hof
             double updatedHof;
-            err = eos::TChem::ComputeEnthalpyOfFormation(numberSpecies, pointArray, updatedHof);
+            err = eos::TChem::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, updatedHof);
             TCCHKERRQ(err);
             double updatedInternalEnergy = enerTotal - updatedHof;
 
             // store the computed source terms
-            fieldSource[ablate::finiteVolume::processes::EulerAdvection::RHO] = 0.0;
-            fieldSource[ablate::finiteVolume::processes::EulerAdvection::RHOE] =
-                (euler[ablate::finiteVolume::processes::EulerAdvection::RHO] * updatedInternalEnergy - euler[ablate::finiteVolume::processes::EulerAdvection::RHOE]) / dt;
+            fieldSource[ablate::finiteVolume::processes::FlowProcess::RHO] = 0.0;
+            fieldSource[ablate::finiteVolume::processes::FlowProcess::RHOE] =
+                (euler[ablate::finiteVolume::processes::FlowProcess::RHO] * updatedInternalEnergy - euler[ablate::finiteVolume::processes::FlowProcess::RHOE]) / dt;
             for (PetscInt d = 0; d < dim; d++) {
-                fieldSource[ablate::finiteVolume::processes::EulerAdvection::RHOU + d] = 0.0;
+                fieldSource[ablate::finiteVolume::processes::FlowProcess::RHOU + d] = 0.0;
             }
             for (std::size_t sp = 0; sp < numberSpecies; sp++) {
                 // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                fieldSource[ablate::finiteVolume::processes::EulerAdvection::RHOU + dim + sp] =
-                    (euler[ablate::finiteVolume::processes::EulerAdvection::RHO] * PetscMin(1.0, PetscMax(pointArray[sp + 1], 0.0)) - densityYi[sp]) / dt;
+                fieldSource[ablate::finiteVolume::processes::FlowProcess::RHOU + dim + sp] =
+                    (euler[ablate::finiteVolume::processes::FlowProcess::RHO] * PetscMin(1.0, PetscMax(pointArray[sp + 1], 0.0)) - densityYi[sp]) / dt;
             }
 
             VecRestoreArray(pointData, &pointArray);
@@ -386,44 +375,29 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     }
 
     // cleanup
+    flow.RestoreRange(cellIS, cStart, cEnd, cells);
     ierr = VecRestoreArray(sourceVec, &sourceArray);
     CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(globFlowVec, &flowArray);
-    CHKERRQ(ierr);
-    ierr = DMDestroy(&plex);
-    CHKERRQ(ierr);
-    ierr = ISDestroy(&cellIS);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
-    IS cellIS;
-    DM plex;
-    PetscInt depth;
+PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = DMConvert(dm, DMPLEX, &plex);
-    CHKERRQ(ierr);
-    ierr = DMPlexGetDepth(plex, &depth);
-    CHKERRQ(ierr);
-    ierr = DMGetStratumIS(plex, "dim", depth, &cellIS);
-    CHKERRQ(ierr);
-    if (!cellIS) {
-        ierr = DMGetStratumIS(plex, "depth", depth, &cellIS);
-        CHKERRQ(ierr);
-    }
+    auto process = (ablate::finiteVolume::processes::TChemReactions*)ctx;
 
     // get the cell range
+    IS cellIS;
     PetscInt cStart, cEnd;
-    const PetscInt* cells = NULL;
-    ierr = ISGetPointRange(cellIS, &cStart, &cEnd, &cells);
-    CHKERRQ(ierr);
+    const PetscInt* cells;
+    solver.GetCellRange(cellIS, cStart, cEnd, cells);
 
     // get the dm for this
-    PetscDS ds = NULL;
+    PetscDS ds = nullptr;
     ierr = DMGetCellDS(dm, cells ? cells[cStart] : cStart, &ds);
     CHKERRQ(ierr);
 
@@ -438,9 +412,8 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
     CHKERRQ(ierr);
 
     // get access to the source array in the solver
-    ablate::finiteVolume::processes::TChemReactions* solver = (ablate::finiteVolume::processes::TChemReactions*)ctx;
     const PetscScalar* sourceArray;
-    ierr = VecGetArrayRead(solver->sourceVec, &sourceArray);
+    ierr = VecGetArrayRead(process->sourceVec, &sourceArray);
     CHKERRQ(ierr);
 
     // March over each cell
@@ -457,7 +430,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
         if (rhs) {
             // read the source from the local calc
             const PetscScalar* source;
-            ierr = DMPlexPointLocalRead(solver->fieldDm, cell, sourceArray, &source);
+            ierr = DMPlexPointLocalRead(process->fieldDm, cell, sourceArray, &source);
             CHKERRQ(ierr);
 
             // copy over and add to rhs
@@ -468,17 +441,16 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
         }
     }
 
+    solver.RestoreRange(cellIS, cStart, cEnd, cells);
     ierr = VecRestoreArray(locFVec, &fArray);
     CHKERRQ(ierr);
-    ierr = VecGetArrayRead(solver->sourceVec, &sourceArray);
+    ierr = VecGetArrayRead(process->sourceVec, &sourceArray);
     CHKERRQ(ierr);
     ierr = ISDestroy(&cellIS);
-    CHKERRQ(ierr);
-    ierr = DMDestroy(&plex);
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem v1 library", ARG(eos::EOS, "eos", "the tChem v1 eos"),
+#include "registrar.hpp"
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem v1 library", ARG(ablate::eos::EOS, "eos", "the tChem v1 eos"),
          OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"));

@@ -1,23 +1,23 @@
 #ifndef ABLATELIBRARY_FIELDDESCRIPTOR_HPP
 #define ABLATELIBRARY_FIELDDESCRIPTOR_HPP
 
-#include <petsc.h>
-#include <string>
+#include <memory>
 #include <vector>
-#include "field.hpp"
-#include "parser/factory.hpp"
 
 namespace ablate::domain {
 
-struct FieldDescriptor {
-    // Helper variable, replaces any components with this value with one for each dimension
-    inline const static std::string DIMENSION = "_DIMENSION_";
+// forward declare FieldDescription to prevent circular reference
+struct FieldDescription;
 
-    std::string name;
-    std::string prefix;
-    std::vector<std::string> components = {"_"};
-    enum FieldType type = FieldType::SOL;
+/**
+ * interface that lists the fields needed for the domain
+ */
+class FieldDescriptor {
+   public:
+    virtual std::vector<std::shared_ptr<FieldDescription>> GetFields() = 0;
+    virtual ~FieldDescriptor() = default;
 };
 
 }  // namespace ablate::domain
-#endif  // ABLATELIBRARY_FIELDDESCRIPTOR_HPP
+
+#endif  // ABLATELIBRARY_FIELDINITIALIZER_HPP

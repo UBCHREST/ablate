@@ -2,16 +2,17 @@ static char help[] =
     "Time-dependent Low Mach Flow in 2d channels with finite elements. We solve the Low Mach flow problem in a rectangular domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 
 #include <petsc.h>
-#include <mathFunctions/parsedFunction.hpp>
-#include <parameters/petscOptionParameters.hpp>
-#include <solver/directSolverTsInterface.hpp>
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
-#include "domain/dmWrapper.hpp"
+#include "domain/modifiers/setFromOptions.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
-#include "finiteElement/incompressibleFlow.hpp"
-#include "finiteElement/lowMachFlow.hpp"
+#include "finiteElement/incompressibleFlowSolver.hpp"
+#include "finiteElement/lowMachFlowFields.hpp"
+#include "finiteElement/lowMachFlowSolver.hpp"
 #include "gtest/gtest.h"
+#include "mathFunctions/simpleFormula.hpp"
+#include "parameters/petscOptionParameters.hpp"
+#include "solver/directSolverTsInterface.hpp"
 
 // We can define them because they are the same between fe flows
 #define VTEST 0
@@ -27,10 +28,10 @@ using namespace ablate::finiteElement;
 
 struct FEFlowDynamicSourceMMSParameters {
     testingResources::MpiTestParameter mpiTestParameter;
-    std::function<std::shared_ptr<ablate::finiteElement::FiniteElement>(std::string name, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
-                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializationAndExact,
-                                                                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)>
+    std::function<std::shared_ptr<ablate::finiteElement::FiniteElementSolver>(std::string name, std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<parameters::Parameters> options,
+                                                                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializationAndExact,
+                                                                              std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
+                                                                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)>
         createMethod;
     std::string uExact;
     std::string uDerivativeExact;
@@ -71,7 +72,7 @@ static PetscErrorCode SetInitialConditions(TS ts, Vec u) {
     CHKERRQ(ierr);
 
     // Get the flowData
-    ablate::finiteElement::FiniteElement *flow;
+    ablate::finiteElement::FiniteElementSolver *flow;
     ierr = DMGetApplicationContext(dm, &flow);
     CHKERRQ(ierr);
 
@@ -125,8 +126,16 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
 
+            // setup the required fields for the flow
+            std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>(ablate::domain::Region::ENTIREDOMAIN, true)};
+
             // Create a simple test mesh
-            auto mesh = std::make_shared<domain::BoxMesh>("mesh", std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<domain::BoxMesh>("mesh",
+                                                          fieldDescriptors,
+                                                          std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::SetFromOptions>()},
+                                                          std::vector<int>{2, 2},
+                                                          std::vector<double>{0.0, 0.0},
+                                                          std::vector<double>{1.0, 1.0});
 
             TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
@@ -136,14 +145,14 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             auto parameters = std::make_shared<ablate::parameters::PetscOptionParameters>();
 
             auto velocityExact = std::make_shared<mathFunctions::FieldFunction>(
-                "velocity", std::make_shared<mathFunctions::ParsedFunction>(testingParam.uExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.uDerivativeExact));
+                "velocity", std::make_shared<mathFunctions::SimpleFormula>(testingParam.uExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.uDerivativeExact));
             auto pressureExact = std::make_shared<mathFunctions::FieldFunction>(
-                "pressure", std::make_shared<mathFunctions::ParsedFunction>(testingParam.pExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.pDerivativeExact));
+                "pressure", std::make_shared<mathFunctions::SimpleFormula>(testingParam.pExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.pDerivativeExact));
             auto temperatureExact = std::make_shared<mathFunctions::FieldFunction>(
-                "temperature", std::make_shared<mathFunctions::ParsedFunction>(testingParam.TExact), std::make_shared<mathFunctions::ParsedFunction>(testingParam.TDerivativeExact));
+                "temperature", std::make_shared<mathFunctions::SimpleFormula>(testingParam.TExact), std::make_shared<mathFunctions::SimpleFormula>(testingParam.TDerivativeExact));
 
             // Create the flow object
-            std::shared_ptr<ablate::finiteElement::FiniteElement> flowObject =
+            std::shared_ptr<ablate::finiteElement::FiniteElementSolver> flowObject =
                 testingParam.createMethod("testFlow",
                                           nullptr,
                                           parameters,
@@ -160,12 +169,12 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                                                                                                               std::make_shared<boundaryConditions::Essential>("left wall temp", 4, temperatureExact)},
                                           /* aux field updates */
                                           std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{
-                                              std::make_shared<mathFunctions::FieldFunction>("momentum_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.vSource)),
-                                              std::make_shared<mathFunctions::FieldFunction>("mass_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.qSource)),
-                                              std::make_shared<mathFunctions::FieldFunction>("energy_source", std::make_shared<mathFunctions::ParsedFunction>(testingParam.wSource))});
+                                              std::make_shared<mathFunctions::FieldFunction>("momentum_source", std::make_shared<mathFunctions::SimpleFormula>(testingParam.vSource)),
+                                              std::make_shared<mathFunctions::FieldFunction>("mass_source", std::make_shared<mathFunctions::SimpleFormula>(testingParam.qSource)),
+                                              std::make_shared<mathFunctions::FieldFunction>("energy_source", std::make_shared<mathFunctions::SimpleFormula>(testingParam.wSource))});
 
             DMSetApplicationContext(mesh->GetDM(), flowObject.get()) >> testErrorChecker;
-            mesh->InitializeSubDomains({flowObject});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Name the flow field
@@ -174,7 +183,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
 
             // set the initial time step to 0 for the initial UpdateSourceTerms run
             TSSetTimeStep(ts, 0.0) >> testErrorChecker;
-            ablate::finiteElement::FiniteElement::UpdateAuxFields(ts, *flowObject);
+            ablate::finiteElement::FiniteElementSolver::UpdateAuxFields(ts, *flowObject);
 
             // Setup the TS
             TSSetFromOptions(ts) >> testErrorChecker;
@@ -218,8 +227,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::LowMachFlow>(
-                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(
+                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^2 + y^2, t + 2*x^2 + 2*x*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -246,8 +255,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 8 -mass_source_petscspace_degree 8  -energy_source_petscspace_degree 8"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::LowMachFlow>(
-                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(
+                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^3 + y^3, t + 2*x^3 + 3*x^2*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -275,8 +284,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
+                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -301,8 +310,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 2 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 2"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
+                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -328,8 +337,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               "-momentum_source_petscspace_degree 5 -mass_source_petscspace_degree 1 -energy_source_petscspace_degree 5"},
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlow>(
-                        name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
+                        name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y",
             .uDerivativeExact = "1.0, 1.0",

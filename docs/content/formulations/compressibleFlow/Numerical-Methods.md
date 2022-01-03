@@ -78,11 +78,69 @@ M_{1/2}=\mathcal{M}_{(4)}^+(M_L)+\mathcal{M}_{(4)}^-(M_R)\\
 \dot{m} = a_{mix} M_{1/2} \rho_{L/R} + D_p\\
 D_p = K_p \frac{\Delta M \max(1-\bar{M}^2,0)(p_L-p_R)}{a_{1/2}} \\
 \Delta M = \mathcal{M}_{(4)}^+(M_L) - \mathcal{M}_{(1)}^+(M_L) -\mathcal{M}_{(4)}^-(M_R)+\mathcal{M}_{(1)}^+(M_R)\\
-P_u= K_u \mathcal{P}_{(5)}^+(\bar{M}) \mathcal{P}_{(5)}^-(\bar{M}) \rho_{1/2} a_{1/2}(u_L-u_R)\\
-\end{eqnarray}$$
+  P_u= K_u \mathcal{P}_{(5)}^+(\bar{M}) \mathcal{P}_{(5)}^-(\bar{M}) \rho_{1/2} a_{1/2}(u_L-u_R)\\
+  \end{eqnarray}$$
 
 where $$\bar{M}$$ is the average between $$M_L$$ and $$M_R$$.
+
+### Riemann Flux
+
+Riemann problem is a classic 1D initial value problem. The exact solution can be used as a means to calculate the fluxes in each cell. Based on the adjacent cell's state, $$ W_{L/R} = \{\rho_{L/R},\ u_{L/R},\ p_{L/R}\}$$, an iterative scheme can be used to achieve exact solution.
+The initial condition is set as
+
+$$ \begin{equation}
+W(x,0) = \begin{cases}
+W_L, & \text{ if  } 1 < x \\
+W_R, & \text{ if  } x \geq 1
+\end{cases}
+\end{equation}$$
+
+The pressure $$p^*$$ can be found by solving the root for the following equation
+
+$$
+f(p, W_L, W_R) \equiv f_L(p, W_L) + f_R(p, W_R) + (u_R-u_L) =0
+$$
+
+where $$f_L$$ is given as
+$$
+f_L(p, W_L) = \begin{cases}
+(p-p_L)\left[ \frac{A_L}{p+B_L}\right]^{1/2}, & \text{ if } p>p_L (Shock) \\
+\frac{2a_L}{\gamma-1}\left[\left(\frac{p}{p_L}^\frac{\gamma-1}{2\gamma}\right) -1\right], &\text{ if }p\leq p_L (Rarefaction)
+\end{cases}
+$$
+
+$$f_R$$ is given as
+
+$$
+f_R(p, W_R) = \begin{cases}
+\frac{2a_R}{\gamma-1}\left[\left(\frac{p}{p_R}^\frac{\gamma-1}{2\gamma}\right) -1\right], &\text{ if }p\leq p_R (Rarefaction) \\
+(p-p_R)\left[ \frac{A_R}{p+B_R}\right]^{1/2}, &\text{ if }p> p_R (Shock)
+\end{cases}
+$$
+
+$$A_L=\frac{2}{(\gamma+1)\rho_L},\ B_L=\frac{\gamma-1}{\gamma+1}p_L\\
+A_R=\frac{2}{(\gamma+1)\rho_R},\ B_R=\frac{\gamma-1}{\gamma+1}p_R  \\
+u_*=\frac{1}{2}(u_L+u_R)+\frac{1}{2}[f_R(p_*)-f_L(p_*)]
+$$
+
+After solving for the stared region properties, we can then back out the flow properties via the following logics.
+
+|     if     |  $$u_{*} \geq 0$$  |               |                              |                              |                |
+|:----------:|:---------------:|:-------------:|:----------------------------:|:----------------------------:|:--------------:|
+|            |    $$p_* > p_L$$ (Left Shock)   |               | $$p_*\leq p_L$$ (Left Expansion)        |                              |                |
+|            |      $$S_L \geq 0 $$   |  $$S_L < 0$$  | $$S_{TL} \geq 0 \& S_{HL} \geq 0$$ | $$S_{TL} \geq 0 \& S_{HL} < 0$$ | $$S_{TL} < 0$$ |
+|   $$u(x=0) $$  |      $$ u_L $$      |   $$u_{*L}$$  |            $$u_L$$           | $$\frac{2}{\gamma+1}\left[ a_L+\frac{\gamma-1}{2}u_L\right] $$ |   $$u_{*L}$$   |
+|  $$\rho(x=0)$$ |    $$\rho_L$$   | $$\rho_{*L}$$ |          $$\rho_L$$          | $$\rho_L\left[\frac{2}{\gamma+1}+\frac{\gamma-1}{(\gamma+1)a_L}u_L \right]^{\frac{2}{\gamma-1}}$$  |  $$\rho_{*L}$$ |
+| $$p(x=0)$$ |     $$p_L$$     |   $$p_{*L}$$  |            $$p_L$$           |$$p_L\left[ \frac{2}{\gamma+1}+\frac{\gamma-1}{(\gamma+1)a_L}u_L\right]^{\frac{2\gamma}{\gamma-1}}$$|   $$p_{*L}$$   |
+|     if     |   $$u_{*} < 0 $$  |             |                              |                              |                |
+|            |  $$p_* < p_R$$ (Right Shock)  |             |  $$p_*\geq p_R$$ (Right Expansion)                       |                              |                |
+|            |  $$S_R \geq 0$$  | $$S_R < 0$$ | $$S_{HR} \geq 0 \& S_{TR} \geq 0$$ | $$S_{HR} \geq 0 \& S_{TR} < 0$$ | $$S_{HR} < 0$$ |
+| $$  u(x=0)  $$ |   $$u_{*R}$$  |  $$ u_R $$  |          $$u_{*R}$$          | $$\frac{2}{\gamma+1}\left[-a_R+\frac{\gamma-1}{2}u_R\right] $$ |     $$u_R$$    |
+|  $$\rho(x=0)$$ | $$\rho_{*R}$$ |  $$\rho_R$$ |         $$\rho_{*R}$$        |$$\rho_R\left[\frac{2}{\gamma+1}-\frac{\gamma-1}{(\gamma+1)a_R}u_R \right]^{\frac{2}{\gamma-1}}$$|   $$\rho_R$$   |
+| $$p(x=0)$$ |   $$p_{*R}$$  |   $$p_R$$   |          $$p_{*R}$$          |$$p_R\left[ \frac{2}{\gamma+1}-\frac{\gamma-1}{(\gamma+1)a_R}u_R\right]^{\frac{2\gamma}{\gamma-1}}$$|     $$p_R$$    |
+
 
 ## References
 - Liou, M. S. (2006). "A sequel to AUSM, Part II: AUSM+-up for all speeds." Journal of Computational Physics, 214, 137-170.
 - Chang, C. H. and Liou, M. S. (2007), "A robust and accurate approach to computing compressible multiphase flow: Stratified flow model and AUSM+up scheme." Journal of Computational Physics, 225, 840-873.
+- Toro, E. F. (2009). "Riemann Solvers and Numerical Methods for Fluid Dynamics - A PracticalIntroduction. International series of monographs on physics." Springer. ISBN: 978-3-540-49834-6

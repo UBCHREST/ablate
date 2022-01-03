@@ -20,6 +20,6 @@ void ablate::eos::transport::Sutherland::SutherlandComputeDiffusivityFunction(Pe
     diffusivity = mu / density / sc;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::eos::transport::TransportModel, ablate::eos::transport::Sutherland, "Sutherland Transport model",
          ARG(ablate::eos::EOS, "eos", "The EOS used to compute Cp (needed for Conductivity)"));

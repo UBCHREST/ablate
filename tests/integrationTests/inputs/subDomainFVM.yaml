@@ -1,0 +1,81 @@
+---
+environment:
+  title: subDomainFVM
+  tagDirectory: false
+arguments: 
+  dm_plex_separate_marker: ""
+  petsclimiter_type: none
+  euler_petscfv_type: leastsquares
+  temperature_petscfv_type: leastsquares
+  velocity_petscfv_type: leastsquares
+timestepper:
+  name: theMainTimeStepper
+  io:
+    interval: 0
+  arguments:
+    ts_type: rk
+    ts_adapt_type: none
+    ts_max_steps: 10
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 6, 6 ]
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
+    boundary: [ "NONE", "NONE" ]
+    simplex: false
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 1
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+      - !ablate::domain::modifiers::CreateLabel
+        region:
+          name: fluidFlow
+        function: !ablate::mathFunctions::geom::Sphere
+          center: [.5, .5]
+          radius: .25
+      - !ablate::domain::modifiers::TagLabelBoundary
+        region:
+          name: fluidFlow
+        boundaryFaceRegion:
+          name: fluidFlowBoundary
+        boundaryCellRegion:
+          name: fluidBoundaryCell
+      - !ablate::domain::modifiers::MergeLabels
+        mergedRegion:
+          name: fluidField
+        regions:
+          - name: fluidFlow
+          - name: fluidBoundaryCell
+      - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        region:
+          name: fluidField
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        eos: *eos
+        temperature: "300"
+        pressure: !ablate::mathFunctions::geom::Sphere
+          center: [ .5, .5 ]
+          radius: .1
+          insideValues: [ 201325.0 ]
+          outsideValues: [ 101325.0 ]
+        velocity: "0, 0"
+solver: !ablate::finiteVolume::CompressibleFlowSolver
+  id: subDomainFVMSolver
+  region: 
+    name: fluidFlow
+  parameters:
+    cfl: 0.25
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
+  transport: !ablate::eos::transport::Sutherland
+    eos: *eos
+  eos: *eos
+  boundaryConditions: []
+  monitors:
+    - !ablate::monitors::TimeStepMonitor

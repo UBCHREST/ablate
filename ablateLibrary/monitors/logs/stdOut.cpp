@@ -19,5 +19,5 @@ void ablate::monitors::logs::StdOut::Printf(const char* format, ...) {
     }
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER_WITHOUT_ARGUMENTS(ablate::monitors::logs::Log, ablate::monitors::logs::StdOut, "Writes to the standard out");

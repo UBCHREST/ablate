@@ -44,7 +44,7 @@ void ablate::finiteElement::boundaryConditions::Essential::SetupBoundary(DM dm, 
         checkError;
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::finiteElement::boundaryConditions::BoundaryCondition, ablate::finiteElement::boundaryConditions::Essential, "essential (Dirichlet condition) for FE based problems",
          ARG(std::string, "boundaryName", "the name for this boundary condition"), ARG(std::vector<int>, "labelIds", "the ids on the mesh to apply the boundary condition"),
          ARG(ablate::mathFunctions::FieldFunction, "boundaryValue", "the field function used to describe the boundary"),

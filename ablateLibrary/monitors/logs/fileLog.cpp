@@ -27,5 +27,5 @@ void ablate::monitors::logs::FileLog::Printf(const char* format, ...) {
     }
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::logs::Log, ablate::monitors::logs::FileLog, "Writes the result of the log to a file", ARG(std::string, "name", "the name of the log file"));

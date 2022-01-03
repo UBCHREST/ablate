@@ -1,14 +1,15 @@
 static char help[] = "Integration Level Testing";
 
 #include <filesystem>
+#include <utilities/fileUtility.hpp>
 #include "MpiTestFixture.hpp"
 #include "MpiTestParamFixture.hpp"
 #include "builder.hpp"
 #include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
-#include "parser/yamlParser.hpp"
 #include "petscsys.h"
+#include "yamlParser.hpp"
 
 /**
  * Note: the test name is assumed to be the relative path to the yaml file
@@ -29,12 +30,8 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
             // precompute the resultDirectory directory so we can remove it if it here
-            auto testName = GetParam().getTestName();
-            std::filesystem::path resultDirectory = std::filesystem::current_path() / testName;
-            if (rank == 0) {
-                std::filesystem::remove_all(resultDirectory);
-            }
-            MPI_Barrier(PETSC_COMM_WORLD);
+            std::filesystem::path resultDirectory = BuildResultDirectory();
+            auto testName = TestName();
 
             // get the file
             std::filesystem::path inputPath = GetParam().testName;
@@ -44,7 +41,8 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // load a yaml file
-            std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath);
+            ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
+            std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction());
 
             // run with the parser
             ablate::Builder::Run(parser);
@@ -89,12 +87,8 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
         MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
         // precompute the resultDirectory directory so we can remove it if it is here
-        auto testName = GetParam().mpiTestParameter.getTestName();
-        std::filesystem::path resultDirectory = std::filesystem::current_path() / testName;
-        if (rank == 0) {
-            std::filesystem::remove_all(resultDirectory);
-        }
-        MPI_Barrier(PETSC_COMM_WORLD);
+        std::filesystem::path resultDirectory = BuildResultDirectory();
+        auto testName = TestName();
 
         // Perform the initial run
         {
@@ -106,7 +100,8 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
             // load a yaml file
-            std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath);
+            ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
+            std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction());
 
             // run with the parser
             ablate::Builder::Run(parser);
@@ -123,10 +118,10 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
 
             // override some parameters
             auto overrideMap = GetParam().restartOverrides;
-            auto overrideParams = std::make_shared<ablate::parameters::MapParameters>(overrideMap);
 
             // load a yaml file
-            std::shared_ptr<ablate::parser::Factory> parser = std::make_shared<ablate::parser::YamlParser>(inputPath, false, overrideParams);
+            ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
+            std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction(), overrideMap);
 
             // run with the parser
             ablate::Builder::Run(parser);
@@ -155,14 +150,33 @@ INSTANTIATE_TEST_SUITE_P(
     Tests, IntegrationTestsSpecifier,
     testing::Values((MpiTestParameter){.testName = "inputs/compressibleCouetteFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleCouetteFlow.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/incompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/incompressibleFlow.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/tracerParticles2DHDF5Monitor.yaml", .nproc = 2, .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/tracerParticles2DHDF5Monitor.yaml",
+                                       .nproc = 2,
+                                       .expectedOutputFile = "outputs/tracerParticles2DHDF5Monitor.txt",
+                                       .arguments = "",
+                                       .expectedFiles{{"outputs/tracerParticles2DHDF5Monitor/flowTracerParticles.xmf", "flowTracerParticles.xmf"},
+                                                      {"outputs/tracerParticles2DHDF5Monitor/theFlowField.xmf", "theFlowField.xmf"}}},
                     (MpiTestParameter){.testName = "inputs/tracerParticles3D.yaml", .nproc = 1, .expectedOutputFile = "outputs/tracerParticles3D.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/shockTubeRieman.yaml", .nproc = 1, .expectedOutputFile = "outputs/shockTubeRieman.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/compressibleFlowVortex.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlowVortex.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/compressibleFlowVortex.yaml",
+                                       .nproc = 1,
+                                       .expectedOutputFile = "outputs/compressibleFlowVortex.txt",
+                                       .arguments = "",
+                                       .expectedFiles{{"outputs/compressibleFlowVortex/vortexFlowField.xmf", "vortexFlowField.xmf"}}},
                     (MpiTestParameter){.testName = "inputs/customCouetteCompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/customCouetteCompressibleFlow.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/simpleReactingFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/simpleReactingFlow.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/ignitionDelayGriMech.yaml", .nproc = 1, .expectedOutputFile = "outputs/ignitionDelayGriMech.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/dmViewFromOptions.yaml", .nproc = 1, .expectedOutputFile = "outputs/dmViewFromOptions.txt", .arguments = ""}),
+                    (MpiTestParameter){.testName = "inputs/ignitionDelayGriMech.yaml", .nproc = 1, .arguments = "", .expectedFiles{{"outputs/ignitionDelayPeakYi.txt", "ignitionDelayPeakYi.txt"}}},
+                    (MpiTestParameter){.testName = "inputs/dmViewFromOptions.yaml", .nproc = 1, .expectedOutputFile = "outputs/dmViewFromOptions.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/extraVariableTransport.yaml", .nproc = 1, .expectedOutputFile = "outputs/extraVariableTransport.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/subDomainFVM.yaml",
+                                       .nproc = 1,
+                                       .expectedOutputFile = "outputs/subDomainFVM/subDomainFVM.txt",
+                                       .arguments = "",
+                                       .expectedFiles{{"outputs/subDomainFVM/subDomainFVMSolver.xmf", "subDomainFVMSolver.xmf"}}},
+                    (MpiTestParameter){.testName = "inputs/shockTubeSODLodiBoundary.yaml", .nproc = 1, .expectedOutputFile = "outputs/shockTubeSODLodiBoundary.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/steadyCompressibleFlowLodiTest.yaml", .nproc = 2, .expectedOutputFile = "outputs/steadyCompressibleFlowLodiTest.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/compressibleFlowVortexLodi.yaml", .nproc = 2, .expectedOutputFile = "outputs/compressibleFlowVortexLodi.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/twoGasAdvectingDiscontinuity.yaml", .nproc = 1, .expectedOutputFile = "outputs/twoGasAdvectingDiscontinuity.txt", .arguments = ""}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(

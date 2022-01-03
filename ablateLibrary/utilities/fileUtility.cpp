@@ -3,6 +3,9 @@
 #include "mpiError.hpp"
 #include "petscError.hpp"
 
+ablate::utilities::FileUtility::FileUtility(MPI_Comm comm, std::vector<std::filesystem::path> searchPaths, std::filesystem::path remoteRelocatePath)
+    : comm(comm), searchPaths(searchPaths), remoteRelocatePath(remoteRelocatePath) {}
+
 std::filesystem::path ablate::utilities::FileUtility::LocateFile(std::string file, MPI_Comm com, std::vector<std::filesystem::path> searchPaths, std::filesystem::path remoteRelocatePath) {
     // check to see if the path exists
     if (std::filesystem::exists(file)) {
@@ -49,4 +52,13 @@ std::filesystem::path ablate::utilities::FileUtility::LocateFile(std::string fil
     }
 
     throw std::runtime_error("unable to locate file " + file);
+}
+
+std::filesystem::path ablate::utilities::FileUtility::Locate(std::string name) { return LocateFile(name, comm, searchPaths, remoteRelocatePath); }
+
+std::function<std::filesystem::path(std::string)> ablate::utilities::FileUtility::GetLocateFileFunction() {
+    auto commLocal = comm;
+    auto searchPathsLocal = searchPaths;
+    auto remoteRelocatePathLocal = remoteRelocatePath;
+    return [commLocal, searchPathsLocal, remoteRelocatePathLocal](std::string name) { return LocateFile(name, commLocal, searchPathsLocal, remoteRelocatePathLocal); };
 }

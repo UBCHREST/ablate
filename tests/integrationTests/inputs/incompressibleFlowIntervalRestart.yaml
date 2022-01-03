@@ -33,18 +33,11 @@ timestepper:
     faces: [ 2, 2 ]
     lower: [ 0, 0 ]
     upper: [ 1, 1 ]
-    options:
-      dm_refine: 2
-solver: !ablate::finiteElement::IncompressibleFlow
-  id: theFlowField
-  options: {}
-  parameters:
-    strouhal: 1.0
-    reynolds: 1.0
-    peclet: 1.0
-    mu: 1.0
-    k: 1.0
-    cp: 1.0
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 2
+    fields:
+      - !ablate::finiteElement::LowMachFlowFields
   initialization:
     - &velocityField
       fieldName: "velocity"
@@ -58,6 +51,16 @@ solver: !ablate::finiteElement::IncompressibleFlow
       fieldName: "temperature"
       field: "t + x + y"
       timeDerivative: "1.0"
+solver: !ablate::finiteElement::IncompressibleFlowSolver
+  id: theFlowField
+  options: {}
+  parameters:
+    strouhal: 1.0
+    reynolds: 1.0
+    peclet: 1.0
+    mu: 1.0
+    k: 1.0
+    cp: 1.0
   exactSolution:
     - *velocityField
     - *pressureField

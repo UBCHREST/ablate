@@ -1,8 +1,9 @@
 ---
 environment:
-  title: eulerVortex
+  title: compressibleFlowVortex
   tagDirectory: false
-arguments: {}
+arguments:
+  euler_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   io:
@@ -18,16 +19,17 @@ timestepper:
     upper: [ 1, 1 ]
     boundary: [ "PERIODIC", "PERIODIC" ]
     simplex: false
-    options:
-      dm_refine: 1
-solver: !ablate::finiteVolume::CompressibleFlow
-  id: vortexFlowField
-  options:
-    eulerpetscfv_type: leastsquares
-  parameters:
-    cfl: 0.5
-    k: 0.0
-    mu: 0.0
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 1
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+      - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas : 287.0
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
       field: >-
@@ -36,10 +38,15 @@ solver: !ablate::finiteVolume::CompressibleFlow
         1.*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004)*(103.80884355390921 - 102.88699047707759*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + y)),
         1.*(0. + 1028.869904770776*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + x))*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004)
       timeDerivative: "0.0, 0.0, 0.0, 0.0"
+solver: !ablate::finiteVolume::CompressibleFlowSolver
+  id: vortexFlowField
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
+  parameters:
+    cfl: 0.5
+  transport:
+    k: 0.0
+    mu: 0.0
   monitors:
     - !ablate::monitors::TimeStepMonitor
 
-  eos: !ablate::eos::PerfectGas
-    parameters:
-      gamma: 1.4
-      Rgas : 287.0
+  eos: *eos

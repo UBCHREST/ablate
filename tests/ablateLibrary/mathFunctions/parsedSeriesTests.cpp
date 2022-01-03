@@ -1,19 +1,19 @@
 #include <memory>
 #include "gtest/gtest.h"
 #include "mathFunctions/parsedSeries.hpp"
-#include "parser/mockFactory.hpp"
-#include "parser/registrar.hpp"
+#include "mockFactory.hpp"
+#include "registrar.hpp"
 
 namespace ablateTesting::mathFunctions {
 
 TEST(ParsedSeriesTests, ShouldBeCreatedFromRegistar) {
     // arrange
-    std::shared_ptr<ablateTesting::parser::MockFactory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
+    std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "ablate::mathFunctions::ParsedSeries";
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
-    EXPECT_CALL(*mockFactory, Get(ablate::parser::ArgumentIdentifier<std::string>{.inputName = "formula"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("x+y+z+t"));
-    EXPECT_CALL(*mockFactory, Get(ablate::parser::ArgumentIdentifier<int>{.inputName = "lowerBound"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(1));
-    EXPECT_CALL(*mockFactory, Get(ablate::parser::ArgumentIdentifier<int>{.inputName = "upperBound"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(10));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::string>{.inputName = "formula"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("x+y+z+t"));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "lowerBound"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(1));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<int>{.inputName = "upperBound"})).Times(::testing::Exactly(1)).WillOnce(::testing::Return(10));
 
     // act
     auto instance = ResolveAndCreate<ablate::mathFunctions::MathFunction>(mockFactory);

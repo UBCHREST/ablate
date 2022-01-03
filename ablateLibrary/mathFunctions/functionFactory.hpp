@@ -6,15 +6,15 @@
 #include "functionPointer.hpp"
 #include "functionWrapper.hpp"
 #include "mathFunction.hpp"
-#include "parsedFunction.hpp"
+#include "simpleFormula.hpp"
 
 namespace ablate::mathFunctions {
 
-inline std::shared_ptr<MathFunction> Create(std::string func) { return std::make_shared<ParsedFunction>(func); }
+inline std::shared_ptr<MathFunction> Create(std::string func) { return std::make_shared<SimpleFormula>(func); }
 
-inline std::shared_ptr<MathFunction> Create(char* func) { return std::make_shared<ParsedFunction>(func); }
+inline std::shared_ptr<MathFunction> Create(char* func) { return std::make_shared<SimpleFormula>(func); }
 
-inline std::shared_ptr<MathFunction> Create(const char* func) { return std::make_shared<ParsedFunction>(func); }
+inline std::shared_ptr<MathFunction> Create(const char* func) { return std::make_shared<SimpleFormula>(func); }
 
 inline std::shared_ptr<MathFunction> Create(double value) { return std::make_shared<ConstantValue>(value); }
 

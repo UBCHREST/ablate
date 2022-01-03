@@ -26,5 +26,5 @@ void ablate::monitors::logs::StreamLog::Printf(const char* format, ...) {
     va_end(argsCopy);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER_WITHOUT_ARGUMENTS(ablate::monitors::logs::Log, ablate::monitors::logs::StreamLog, "Writes to the std::cout stream");

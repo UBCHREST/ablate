@@ -1,4 +1,5 @@
 #include "mapParameters.hpp"
+#include <utility>
 
 ablate::parameters::MapParameters::MapParameters(std::map<std::string, std::string> values) : values(values) {}
 
@@ -22,4 +23,8 @@ ablate::parameters::MapParameters::MapParameters(std::initializer_list<std::pair
     for (const auto& pair : list) {
         values[pair.first] = pair.second;
     }
+}
+
+std::shared_ptr<ablate::parameters::MapParameters> ablate::parameters::MapParameters::Create(std::initializer_list<std::pair<std::string, std::string>> values) {
+    return std::make_shared<ablate::parameters::MapParameters>(values);
 }

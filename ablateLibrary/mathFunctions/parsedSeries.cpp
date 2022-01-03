@@ -2,7 +2,7 @@
 #include <petscsys.h>
 #include <algorithm>
 #include <exception>
-#include "parsedFunction.hpp"
+#include "simpleFormula.hpp"
 
 ablate::mathFunctions::ParsedSeries::ParsedSeries(std::string functionString, int lowerBound, int upperBound) : formula(functionString), lowerBound(lowerBound), upperBound(upperBound) {
     // define the x,y,z and t variables
@@ -13,7 +13,7 @@ ablate::mathFunctions::ParsedSeries::ParsedSeries(std::string functionString, in
     parser.DefineVar("i", &i);
 
     // define any additional helper functions
-    ablate::mathFunctions::ParsedFunction::DefineAdditionalFunctions(parser);
+    ablate::mathFunctions::SimpleFormula::DefineAdditionalFunctions(parser);
 
     parser.SetExpr(formula);
 
@@ -21,7 +21,7 @@ ablate::mathFunctions::ParsedSeries::ParsedSeries(std::string functionString, in
     try {
         parser.Eval();
     } catch (mu::Parser::exception_type& exception) {
-        throw ablate::mathFunctions::ParsedFunction::ConvertToException(exception);
+        throw ablate::mathFunctions::SimpleFormula::ConvertToException(exception);
     }
 }
 
@@ -153,7 +153,7 @@ PetscErrorCode ablate::mathFunctions::ParsedSeries::ParsedPetscSeries(PetscInt d
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedSeries,
          " computes a series result from a string function with variables x, y, z, t, and i where i index of summation. $$\\sum_{i = m}^n formula(x, y, z, t, n)$$",
          ARG(std::string, "formula", "see ParsedFunction for details on the string formatting."), ARG(int, "lowerBound", "the inclusive lower bound of summation (m)"),

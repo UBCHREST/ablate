@@ -1,5 +1,5 @@
 #include "ignitionDelayPeakYi.hpp"
-#include "finiteVolume/processes/eulerAdvection.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
@@ -26,7 +26,7 @@ void ablate::monitors::IgnitionDelayPeakYi::Register(std::shared_ptr<solver::Sol
     ablate::monitors::Monitor::Register(monitorableObject);
 
     // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate
-    auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolume>(monitorableObject);
+    auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolumeSolver>(monitorableObject);
     if (!flow) {
         throw std::invalid_argument("The IgnitionDelay monitor can only be used with ablate::finiteVolume::FiniteVolume");
     }
@@ -120,7 +120,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
     CHKERRQ(ierr);
 
     // Store the result
-    double yi = densityYiValues[monitor->yiOffset] / eulerValues[ablate::finiteVolume::processes::EulerAdvection::RHO];
+    double yi = densityYiValues[monitor->yiOffset] / eulerValues[ablate::finiteVolume::processes::FlowProcess::RHO];
     monitor->timeHistory.push_back(crtime);
     monitor->yiHistory.push_back(yi);
 
@@ -133,7 +133,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::IgnitionDelayPeakYi, "Compute the ignition time based upon peak mass fraction",
          ARG(std::string, "species", "the species used to determine the peak Yi"), ARG(std::vector<double>, "location", "the monitor location"),
          OPT(ablate::monitors::logs::Log, "log", "where to record the final ignition time (default is stdout)"),

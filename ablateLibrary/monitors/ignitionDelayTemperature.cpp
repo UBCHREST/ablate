@@ -1,5 +1,5 @@
 #include "ignitionDelayTemperature.hpp"
-#include "finiteVolume/processes/eulerAdvection.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
@@ -21,7 +21,7 @@ void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<solver
     ablate::monitors::Monitor::Register(monitorableObject);
 
     // this probe will only work with fV flow with a single mpi rank for now.  It should be replaced with DMInterpolationEvaluate
-    auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolume>(monitorableObject);
+    auto flow = std::dynamic_pointer_cast<ablate::finiteVolume::FiniteVolumeSolver>(monitorableObject);
     if (!flow) {
         throw std::invalid_argument("The IgnitionDelay monitor can only be used with ablate::finiteVolume::FiniteVolume");
     }
@@ -107,11 +107,11 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     // compute the temperature
     // using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
     double T;
-    const double density = eulerValues[ablate::finiteVolume::processes::EulerAdvection::RHO];
+    const double density = eulerValues[ablate::finiteVolume::processes::FlowProcess::RHO];
     monitor->eos->GetComputeTemperatureFunction()(dim,
                                                   density,
-                                                  eulerValues[ablate::finiteVolume::processes::EulerAdvection::RHOE] / density,
-                                                  eulerValues + ablate::finiteVolume::processes::EulerAdvection::RHOU,
+                                                  eulerValues[ablate::finiteVolume::processes::FlowProcess::RHOE] / density,
+                                                  eulerValues + ablate::finiteVolume::processes::FlowProcess::RHOU,
                                                   densityYiValues,
                                                   &T,
                                                   monitor->eos->GetComputeTemperatureContext());
@@ -129,8 +129,8 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
-REGISTER(ablate::monitors::Monitor, ablate::monitors::IgnitionDelayTemperature, "Compute the ignition time based upon temperature change", ARG(eos::EOS, "eos", "the eos used to compute temperature"),
-         ARG(std::vector<double>, "location", "the monitor location"), ARG(double, "thresholdTemperature", "the temperature used to define ignition delay"),
-         OPT(ablate::monitors::logs::Log, "log", "where to record the final ignition time (default is stdout)"),
+#include "registrar.hpp"
+REGISTER(ablate::monitors::Monitor, ablate::monitors::IgnitionDelayTemperature, "Compute the ignition time based upon temperature change",
+         ARG(ablate::eos::EOS, "eos", "the eos used to compute temperature"), ARG(std::vector<double>, "location", "the monitor location"),
+         ARG(double, "thresholdTemperature", "the temperature used to define ignition delay"), OPT(ablate::monitors::logs::Log, "log", "where to record the final ignition time (default is stdout)"),
          OPT(ablate::monitors::logs::Log, "historyLog", "where to record the time and yi history (default is none)"));

@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_GHOST_HPP
 #define ABLATELIBRARY_GHOST_HPP
 
+#include <domain/subDomain.hpp>
 #include "boundaryCondition.hpp"
 
 namespace ablate::finiteVolume::boundaryConditions {

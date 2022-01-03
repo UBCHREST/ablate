@@ -1,0 +1,11 @@
+target_sources(ablateLibrary
+        PUBLIC
+        geometry.hpp
+        geometry.cpp
+        sphere.hpp
+        sphere.cpp
+        box.hpp
+        box.cpp
+        surface.hpp
+        surface.cpp
+        )

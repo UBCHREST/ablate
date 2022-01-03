@@ -1,12 +1,16 @@
 target_sources(ablateLibrary
         PUBLIC
         process.hpp
-        eulerAdvection.hpp
-        eulerAdvection.cpp
-        eulerDiffusion.hpp
-        eulerDiffusion.cpp
+        flowProcess.hpp
+        flowProcess.cpp
+        eulerTransport.hpp
+        eulerTransport.cpp
+        speciesTransport.hpp
+        speciesTransport.cpp
+        evTransport.hpp
+        evTransport.cpp
         tChemReactions.hpp
         tChemReactions.cpp
-        speciesDiffusion.hpp
-        speciesDiffusion.cpp
+        twoPhaseEulerAdvection.hpp
+        twoPhaseEulerAdvection.cpp
         )

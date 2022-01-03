@@ -30,6 +30,6 @@ PetscErrorCode ablate::monitors::ParticleCount::OutputParticleCount(TS ts, Petsc
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::ParticleCount, "Outputs the total number of particles in the domain", OPT(int, "interval", "output interval"),
          OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

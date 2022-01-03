@@ -11,4 +11,6 @@ target_sources(ablateLibrary
         ausmpUp.cpp
         rieman.cpp
         rieman.hpp
+        riemann2Gas.cpp
+        riemann2Gas.hpp
         )

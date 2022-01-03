@@ -1,5 +1,5 @@
 add_executable(libraryTests "")
-target_link_libraries(libraryTests PUBLIC gtest gmock ablateLibrary testingResources)
+target_link_libraries(libraryTests PUBLIC gtest gmock ablateLibrary testingResources cppParserTestLibrary)
 
 target_sources(libraryTests
         PRIVATE
@@ -18,6 +18,7 @@ add_subdirectory(domain)
 add_subdirectory(utilities)
 add_subdirectory(monitors)
 add_subdirectory(io)
+add_subdirectory(boundarySolver)
 
 gtest_discover_tests(libraryTests
         # set a working directory so your project root so that you can find test data via paths relative to the project root

@@ -35,6 +35,6 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::MassFractions::ComputeYiFun
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::mathFunctions::FieldFunction, ablate::finiteVolume::fieldFunctions::MassFractions, "initializes the yi field function variables based upon a the list of functions and eos",
-         ARG(ablate::eos::EOS, "eos", "The eos with the list of species"), ARG(std::vector<mathFunctions::FieldFunction>, "values", "The list of mass fraction functions"));
+         ARG(ablate::eos::EOS, "eos", "The eos with the list of species"), ARG(std::vector<ablate::mathFunctions::FieldFunction>, "values", "The list of mass fraction functions"));

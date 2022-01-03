@@ -6,12 +6,12 @@ nav_order: 2
 ---
 ## Registering Your Class
 
-The ablateLibrary uses a factory/parser paradigm that allows you to register that your class meets an interface requirement.  When registering your class you must describe how to build your class (the arguments, their names, and a brief description).  To access the registrar you must  ```#include "parser/registrar.hpp"```.
+The ablateLibrary uses a factory/parser paradigm that allows you to register that your class meets an interface requirement.  When registering your class you must describe how to build your class (the arguments, their names, and a brief description).  To access the registrar you must  ```#include "registrar.hpp"```.
 
-For instance, in the following example the ParsedFunction implements MathFunction where it takes a single string argument for the formula.
+For instance, in the following example the SimpleFormula implements MathFunction where it takes a single string argument for the formula.
 
 ```c++
-REGISTERDEFAULT(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedFunction, "a string based function to be parsed with muparser",
+REGISTERDEFAULT(ablate::mathFunctions::MathFunction, ablate::mathFunctions::SimpleFormula, "a string based function to be parsed with muparser",
 ARG(std::string, "formula", "the formula that may accept x, y, z, t"));
 ```
 

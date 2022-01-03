@@ -1,5 +1,5 @@
 #include "compressibleFlowState.hpp"
-#include <finiteVolume/processes/eulerAdvection.hpp>
+#include <finiteVolume/processes/eulerTransport.hpp>
 
 ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<mathFunctions::MathFunction> temperatureFunctionIn,
                                                                                    std::shared_ptr<mathFunctions::MathFunction> pressureFunctionIn,
@@ -25,6 +25,7 @@ ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowSta
         }
     }
 }
+
 PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeEulerFromState(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
@@ -53,13 +54,13 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::Comp
 
     // compute the density
     ierr = flowState->eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(
-        temperature, pressure, &yi[0], u + ablate::finiteVolume::processes::EulerAdvection::RHO, flowState->eos->GetComputeDensityFunctionFromTemperaturePressureContext());
+        temperature, pressure, &yi[0], u + ablate::finiteVolume::processes::FlowProcess::RHO, flowState->eos->GetComputeDensityFunctionFromTemperaturePressureContext());
     CHKERRQ(ierr);
 
     // compute the internal energy
     PetscReal sensibleInternalEnergy;
     ierr = flowState->eos->GetComputeSensibleInternalEnergyFunction()(
-        temperature, u[ablate::finiteVolume::processes::EulerAdvection::RHO], &yi[0], &sensibleInternalEnergy, flowState->eos->GetComputeSensibleInternalEnergyContext());
+        temperature, u[ablate::finiteVolume::processes::FlowProcess::RHO], &yi[0], &sensibleInternalEnergy, flowState->eos->GetComputeSensibleInternalEnergyContext());
     CHKERRQ(ierr);
 
     // convert to total sensibleEnergy
@@ -68,11 +69,11 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::Comp
         kineticEnergy += PetscSqr(velocity[d]);
     }
     kineticEnergy *= 0.5;
-    u[ablate::finiteVolume::processes::EulerAdvection::RHOE] = u[ablate::finiteVolume::processes::EulerAdvection::RHO] * (kineticEnergy + sensibleInternalEnergy);
+    u[ablate::finiteVolume::processes::FlowProcess::RHOE] = u[ablate::finiteVolume::processes::FlowProcess::RHO] * (kineticEnergy + sensibleInternalEnergy);
 
     // Set the vel*rho term
     for (PetscInt d = 0; d < dim; d++) {
-        u[ablate::finiteVolume::processes::EulerAdvection::RHOU + d] = u[ablate::finiteVolume::processes::EulerAdvection::RHO] * velocity[d];
+        u[ablate::finiteVolume::processes::FlowProcess::RHOU + d] = u[ablate::finiteVolume::processes::FlowProcess::RHO] * velocity[d];
     }
     PetscFunctionReturn(0);
 }
@@ -115,10 +116,31 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::Comp
 
     PetscFunctionReturn(0);
 }
+PetscReal ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeDensityFromState(PetscInt dim, PetscReal time, const PetscReal x[]) {
+    PetscErrorCode ierr;
 
-#include "parser/registrar.hpp"
-REGISTERDEFAULT(ablate::finiteVolume::fieldFunctions::CompressibleFlowState, ablate::finiteVolume::fieldFunctions::CompressibleFlowState,
-                "a simple structure used to describe a compressible flow field using an EOS, T, pressure, vel, Yi", ARG(ablate::eos::EOS, "eos", "the eos used for the flow field"),
-                ARG(ablate::mathFunctions::MathFunction, "temperature", "the temperature field (K)"), ARG(ablate::mathFunctions::MathFunction, "pressure", "the pressure field (Pa)"),
-                ARG(ablate::mathFunctions::MathFunction, "velocity", "the velocity field (m/2)"),
-                OPT(ablate::mathFunctions::FieldFunction, "massFractions", "a fieldFunctions used to describe all mass fractions"));
+    // get the temperature, pressure, and velocity
+    PetscReal temperature = temperatureFunction->Eval(x, dim, time);
+    PetscReal pressure = pressureFunction->Eval(x, dim, time);
+
+    // compute the mass fraction at this location
+    std::vector<PetscReal> yi(eos->GetSpecies().size());
+    if (massFractionFunction) {
+        ierr = massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], massFractionFunction->GetSolutionField().GetContext());
+        CHKERRQ(ierr);
+    }
+
+    // compute the density
+    PetscReal density;
+    ierr = eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(temperature, pressure, &yi[0], &density, eos->GetComputeDensityFunctionFromTemperaturePressureContext());
+    CHKERRQ(ierr);
+
+    return density;
+}
+
+#include "registrar.hpp"
+REGISTER_DEFAULT(ablate::finiteVolume::fieldFunctions::CompressibleFlowState, ablate::finiteVolume::fieldFunctions::CompressibleFlowState,
+                 "a simple structure used to describe a compressible flow field using an EOS, T, pressure, vel, Yi", ARG(ablate::eos::EOS, "eos", "the eos used for the flow field"),
+                 ARG(ablate::mathFunctions::MathFunction, "temperature", "the temperature field (K)"), ARG(ablate::mathFunctions::MathFunction, "pressure", "the pressure field (Pa)"),
+                 ARG(ablate::mathFunctions::MathFunction, "velocity", "the velocity field (m/2)"),
+                 OPT(ablate::mathFunctions::FieldFunction, "massFractions", "a fieldFunctions used to describe all mass fractions"));

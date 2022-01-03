@@ -23,7 +23,6 @@ class Particles : public solver::Solver {
     PetscReal timeFinal;   /* The time for uf, at the end of the advection solve */
 
     // flow coupling data
-    domain::Field flowVelocityField;
     Vec flowInitial; /* The PDE solution field at ti */
     Vec flowFinal;   /* The PDE solution field at tf */
 

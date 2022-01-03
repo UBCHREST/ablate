@@ -48,8 +48,12 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
     static PetscErrorCode SolverComputeIJacobianLocal(DM dm, PetscReal time, Vec locX, Vec locX_t, PetscReal X_tShift, Mat Jac, Mat JacP, void *domainCtx);
     static PetscErrorCode SolverComputeRHSFunctionLocal(DM, PetscReal, Vec, Vec, void *);
 
+    // store the list of field initializations
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations;
+
    public:
-    TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments = {}, std::shared_ptr<io::Serializer> serializer = {});
+    TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> = {});
     ~TimeStepper();
 
     TS &GetTS() { return ts; }

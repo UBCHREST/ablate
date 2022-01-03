@@ -11,14 +11,18 @@ target_sources(ablateLibrary
         ignitionDelayPeakYi.cpp
         ignitionDelayTemperature.hpp
         ignitionDelayTemperature.cpp
-        curveMonitor.hpp
-        curveMonitor.cpp
+        extractLineMonitor.hpp
+        extractLineMonitor.cpp
         dmViewFromOptions.hpp
         dmViewFromOptions.cpp
         particleCount.hpp
         particleCount.cpp
         particleAverage.hpp
         particleAverage.cpp
+        curveMonitor.hpp
+        curveMonitor.cpp
+        maxMinAverage.hpp
+        maxMinAverage.cpp
         )
 
 add_subdirectory(logs)

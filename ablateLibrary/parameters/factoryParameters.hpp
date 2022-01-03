@@ -3,18 +3,18 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include "factory.hpp"
 #include "parameterException.hpp"
 #include "parameters.hpp"
-#include "parser/factory.hpp"
 
 namespace ablate::parameters {
 
 class FactoryParameters : public Parameters {
    private:
-    std::shared_ptr<ablate::parser::Factory> factory;
+    std::shared_ptr<cppParser::Factory> factory;
 
    public:
-    explicit FactoryParameters(std::shared_ptr<ablate::parser::Factory> factory);
+    explicit FactoryParameters(std::shared_ptr<cppParser::Factory> factory);
 
     std::optional<std::string> GetString(std::string paramName) const override;
 

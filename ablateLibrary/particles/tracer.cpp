@@ -4,8 +4,9 @@
 
 ablate::particles::Tracer::Tracer(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, int ndims,
                                   std::shared_ptr<particles::initializers::Initializer> initializer, std::shared_ptr<mathFunctions::MathFunction> exactSolution)
-    : Particles(solverId, region, options, ndims, {ParticleField{.name = ParticleVelocity, .components = CreateDimensionVector("VEL_", ndims), .type = domain::FieldType::AUX, .dataType = PETSC_REAL}},
-                initializer, {}, exactSolution) {}
+    : Particles(solverId, region, options, ndims,
+                {ParticleField{.name = ParticleVelocity, .components = CreateDimensionVector("VEL_", ndims), .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL}}, initializer, {},
+                exactSolution) {}
 
 ablate::particles::Tracer::~Tracer() {}
 
@@ -37,7 +38,8 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
     DMInterpolationInfo ictx;
     const PetscScalar *coords, *v;
     PetscScalar *f;
-    PetscInt vf[1] = {particles->flowVelocityField.id};
+    const auto &flowVelocityField = particles->subDomain->GetField("velocity");
+    PetscInt vf[1] = {flowVelocityField.id};
     PetscInt dim, Np;
     PetscErrorCode ierr;
 
@@ -118,8 +120,9 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
     PetscFunctionReturn(0);
 }
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::particles::Tracer, "massless particles that advect with the flow", ARG(std::string, "id", "the name of this particle solver"),
-         OPT(domain::Region, "region", "the region to apply this solver.  Default is entire domain"), OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"),
-         ARG(int, "ndims", "the number of dimensions for the particle"), ARG(particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
-         OPT(mathFunctions::MathFunction, "exactSolution", "the particle location exact solution"));
+         OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
+         OPT(ablate::parameters::Parameters, "options", "options for the flow passed directly to PETSc"), ARG(int, "ndims", "the number of dimensions for the particle"),
+         ARG(ablate::particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
+         OPT(ablate::mathFunctions::MathFunction, "exactSolution", "the particle location exact solution"));

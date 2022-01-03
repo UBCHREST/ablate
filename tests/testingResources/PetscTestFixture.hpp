@@ -20,7 +20,15 @@ class PetscTestFixture : public ::testing::Test {
             PetscInitializeNoArguments() >> errorChecker;
         }
     }
+
+   public:
+    static std::string SanitizeTestName(std::string s) {
+        std::replace(s.begin(), s.end(), ' ', '_');
+        std::replace(s.begin(), s.end(), '/', '_');
+        std::replace(s.begin(), s.end(), '.', '_');
+        return s;
+    }
 };
 
 };      // namespace testingResources
-#endif  // mpitestfixture_h
+#endif  // mpitestfixture_h`

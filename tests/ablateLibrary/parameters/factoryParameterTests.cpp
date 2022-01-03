@@ -1,8 +1,8 @@
 #include <memory>
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "mockFactory.hpp"
 #include "parameters/factoryParameters.hpp"
-#include "parser/mockFactory.hpp"
 using ::testing::AtLeast;
 
 namespace ablateTesting::parameters {
@@ -11,7 +11,7 @@ using namespace ablate::parameters;
 
 TEST(FactoryParameterTests, ShouldCreateFactoryParameters) {
     // arrange
-    std::shared_ptr<ablate::parser::Factory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
+    std::shared_ptr<cppParser::Factory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
 
     // act
     auto factoryParameters = std::make_shared<ablate::parameters::FactoryParameters>(mockFactory);
@@ -22,7 +22,7 @@ TEST(FactoryParameterTests, ShouldCreateFactoryParameters) {
 
 TEST(FactoryParameterTests, ShouldCreateFromRegistar) {
     // arrange
-    std::shared_ptr<ablateTesting::parser::MockFactory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
+    std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "";
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
@@ -38,10 +38,10 @@ TEST(FactoryParameterTests, ShouldGetValuesFromFactory) {
     // arrange
     const std::string paramName = "parm123";
 
-    std::shared_ptr<ablateTesting::parser::MockFactory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
+    std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "";
     EXPECT_CALL(*mockFactory, Contains(paramName)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(true));
-    EXPECT_CALL(*mockFactory, Get(ablate::parser::ArgumentIdentifier<std::string>{.inputName = paramName})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("123"));
+    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::string>{.inputName = paramName})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("123"));
 
     auto factoryParameters = std::make_shared<ablate::parameters::FactoryParameters>(mockFactory);
 
@@ -56,7 +56,7 @@ TEST(FactoryParameterTests, ShouldReturnEmptyValueWhenNotThere) {
     // arrange
     const std::string paramName = "parm123";
 
-    std::shared_ptr<ablateTesting::parser::MockFactory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
+    std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "";
     EXPECT_CALL(*mockFactory, Contains(paramName)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
 
@@ -71,7 +71,7 @@ TEST(FactoryParameterTests, ShouldReturnEmptyValueWhenNotThere) {
 
 TEST(FactoryParameterTests, ShouldGetAllKeys) {
     // arrange
-    std::shared_ptr<ablateTesting::parser::MockFactory> mockFactory = std::make_shared<ablateTesting::parser::MockFactory>();
+    std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     std::unordered_set<std::string> expectedKeys = {"key1", "key2"};
     EXPECT_CALL(*mockFactory, GetKeys()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedKeys));
 

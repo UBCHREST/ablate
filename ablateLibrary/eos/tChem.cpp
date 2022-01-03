@@ -315,6 +315,33 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSensibleInternalEnergy(PetscReal 
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode ablate::eos::TChem::TChemComputeSensibleEnthalpy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleEnthalpy, void *ctx) {
+    PetscFunctionBeginUser;
+
+    TChem *tChem = (TChem *)ctx;
+
+    // Fill the working array
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
+    tempYiWorkingArray[0] = T;
+    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
+        tempYiWorkingArray[sp + 1] = yi[sp];
+    }
+
+    // get the required values
+    double totalEnthalpy;
+    int err = TC_getMs2HmixMs(tempYiWorkingArray, tChem->numberSpecies + 1, &totalEnthalpy);
+    if (err != 0) {
+        return err;
+    }
+
+    // compute the heat of formation
+    double enthalpyOfFormation;
+    err = ComputeEnthalpyOfFormation(tChem->numberSpecies, tempYiWorkingArray, enthalpyOfFormation);
+
+    *sensibleEnthalpy = totalEnthalpy - enthalpyOfFormation;
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode ablate::eos::TChem::TChemComputeSpecificHeatConstantPressure(PetscReal T, PetscReal, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
     PetscFunctionBeginUser;
     TChem *tChem = (TChem *)ctx;
@@ -328,6 +355,24 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSpecificHeatConstantPressure(Pets
 
     // call the tChem library
     int err = TC_getMs2CpMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, specificHeat);
+    TCCHKERRQ(err);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::TChemComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    TChem *tChem = (TChem *)ctx;
+
+    // Fill the working array
+    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
+    tempYiWorkingArray[0] = T;
+    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
+        tempYiWorkingArray[sp + 1] = yi[sp];
+    }
+
+    // call the tChem library
+    int err = TC_getMs2CvMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, specificHeat);
     TCCHKERRQ(err);
 
     PetscFunctionReturn(0);
@@ -359,6 +404,6 @@ const char *ablate::eos::TChem::periodicTable =
     "  2.01410    5.45E-4  \n"
     "";
 
-#include "parser/registrar.hpp"
+#include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::TChem, "TChem ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format)"),
          ARG(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format)"));

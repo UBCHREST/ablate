@@ -1,11 +1,13 @@
 target_sources(libraryTests
         PRIVATE
-        parsedFunctionTests.cpp
+        simpleFormulaTests.cpp
         functionWrapperTests.cpp
         functionPointerTests.cpp
         functionFactoryTests.cpp
         constantValueTests.cpp
         parsedSeriesTests.cpp
         linearInterpolatorTests.cpp
-        parsedNestedTests.cpp
+        formulaTests.cpp
         )
+
+add_subdirectory(geom)

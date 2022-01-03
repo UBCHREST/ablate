@@ -1,19 +1,22 @@
 #include <petsc.h>
-#include <domain/dmWrapper.hpp>
-#include <eos/transport/constant.hpp>
-#include <finiteVolume/processes/eulerAdvection.hpp>
-#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
+#include "domain/dmWrapper.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "eos/perfectGas.hpp"
+#include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
-#include "finiteVolume/compressibleFlow.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/fluxCalculator/ausmpUp.hpp"
 #include "finiteVolume/fluxCalculator/averageFlux.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
+#include "solver/directSolverTsInterface.hpp"
 
 #define Pi PETSC_PI
 #define Sin PetscSinReal
@@ -58,7 +61,7 @@ struct CompressibleFlowMmsTestParameters {
 
 typedef struct {
     Constants constants;
-    std::shared_ptr<ablate::finiteVolume::CompressibleFlow> flowData;
+    std::shared_ptr<ablate::finiteVolume::CompressibleFlowSolver> flowData;
 } ProblemSetup;
 
 class CompressibleFlowMmsTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<CompressibleFlowMmsTestParameters> {
@@ -117,23 +120,23 @@ static PetscErrorCode EulerExact(PetscInt dim, PetscReal time, const PetscReal x
     PetscReal y = xyz[1];
     PetscReal z = dim > 2 ? xyz[2] : 0.0;
 
-    u[ablate::finiteVolume::processes::EulerAdvection::RHO] = rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L);
-    u[ablate::finiteVolume::processes::EulerAdvection::RHOE] = (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                                                               ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
-                                                                    ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
-                                                                (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
-                                                                 Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
-                                                                 Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
-                                                                    2.);
+    u[ablate::finiteVolume::processes::FlowProcess::RHO] = rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L);
+    u[ablate::finiteVolume::processes::FlowProcess::RHOE] = (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+                                                            ((pO + pX * Cos((aPX * Pi * x) / L) + pZ * Cos((aPZ * Pi * z) / L) + pY * Sin((aPY * Pi * y) / L)) /
+                                                                 ((-1. + gamma) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) +
+                                                             (Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2) +
+                                                              Power(wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L), 2) +
+                                                              Power(vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L), 2)) /
+                                                                 2.);
 
-    u[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] = (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
-                                                                   (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L));
-    u[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] = (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
-                                                                   (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L));
+    u[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
+                                                                (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L));
+    u[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) *
+                                                                (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L));
 
     if (dim > 2) {
-        u[ablate::finiteVolume::processes::EulerAdvection::RHOU + 2] = (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
-                                                                       (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L));
+        u[ablate::finiteVolume::processes::FlowProcess::RHOU + 2] = (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) *
+                                                                    (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L));
     }
 
     PetscFunctionReturn(0);
@@ -154,7 +157,8 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx) {
+static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar *const uGrad[], const PetscInt aOff[], const PetscScalar a[],
+                                const PetscScalar *const auxGrad[], PetscScalar f[], void *ctx) {
     PetscFunctionBeginUser;
 
     Constants *constants = (Constants *)ctx;
@@ -208,7 +212,7 @@ static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const P
     PetscReal y = cg->centroid[1];
     PetscReal z = dim > 2 ? cg->centroid[2] : 0.0;
 
-    f[ablate::finiteVolume::processes::EulerAdvection::RHO] =
+    f[ablate::finiteVolume::processes::FlowProcess::RHO] =
         (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
         (aRhoZ * Pi * rhoZ * Cos((aRhoZ * Pi * z) / L) * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L))) / L +
         (aUX * Pi * uX * Cos((aUX * Pi * x) / L) * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L))) / L +
@@ -216,7 +220,7 @@ static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const P
         (aRhoY * Pi * rhoY * Sin((aRhoY * Pi * y) / L) * (vO + vX * Cos((aVX * Pi * x) / L) + vY * Sin((aVY * Pi * y) / L) + vZ * Sin((aVZ * Pi * z) / L))) / L -
         (aWZ * Pi * wZ * (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) / L;
 
-    f[ablate::finiteVolume::processes::EulerAdvection::RHOE] =
+    f[ablate::finiteVolume::processes::FlowProcess::RHOE] =
         -((aWY * mu * Pi * wY * Cos((aWY * Pi * y) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L) -
         (aVZ * mu * Pi * vZ * Cos((aVZ * Pi * z) / L) * ((aWY * Pi * wY * Cos((aWY * Pi * y) / L)) / L + (aVZ * Pi * vZ * Cos((aVZ * Pi * z) / L)) / L)) / L +
         (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / Power(L, 2) +
@@ -357,7 +361,7 @@ static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const P
               (2 * aWZ * Pi * wZ * (wO + wZ * Cos((aWZ * Pi * z) / L) + wX * Sin((aWX * Pi * x) / L) + wY * Sin((aWY * Pi * y) / L)) * Sin((aWZ * Pi * z) / L)) / L) /
                  2.);
 
-    f[ablate::finiteVolume::processes::EulerAdvection::RHOU + 0] =
+    f[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] =
         (Power(aUY, 2) * mu * Power(Pi, 2) * uY * Cos((aUY * Pi * y) / L)) / Power(L, 2) + (Power(aUZ, 2) * mu * Power(Pi, 2) * uZ * Cos((aUZ * Pi * z) / L)) / Power(L, 2) -
         (aPX * Pi * pX * Sin((aPX * Pi * x) / L)) / L + (4 * Power(aUX, 2) * mu * Power(Pi, 2) * uX * Sin((aUX * Pi * x) / L)) / (3. * Power(L, 2)) +
         (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * Power(uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L), 2)) / L +
@@ -383,7 +387,7 @@ static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const P
          (rhoO + rhoY * Cos((aRhoY * Pi * y) / L) + rhoX * Sin((aRhoX * Pi * x) / L) + rhoZ * Sin((aRhoZ * Pi * z) / L)) * Sin((aWZ * Pi * z) / L)) /
             L;
 
-    f[ablate::finiteVolume::processes::EulerAdvection::RHOU + 1] =
+    f[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] =
         (Power(aVX, 2) * mu * Power(Pi, 2) * vX * Cos((aVX * Pi * x) / L)) / Power(L, 2) + (aPY * Pi * pY * Cos((aPY * Pi * y) / L)) / L +
         (4 * Power(aVY, 2) * mu * Power(Pi, 2) * vY * Sin((aVY * Pi * y) / L)) / (3. * Power(L, 2)) -
         (aVX * Pi * vX * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) * Sin((aVX * Pi * x) / L) *
@@ -411,7 +415,7 @@ static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const P
             L;
 
     if (dim > 2) {
-        f[ablate::finiteVolume::processes::EulerAdvection::RHOU + 2] =
+        f[ablate::finiteVolume::processes::FlowProcess::RHOU + 2] =
             (4 * Power(aWZ, 2) * mu * Power(Pi, 2) * wZ * Cos((aWZ * Pi * z) / L)) / (3. * Power(L, 2)) + (Power(aWX, 2) * mu * Power(Pi, 2) * wX * Sin((aWX * Pi * x) / L)) / Power(L, 2) +
             (Power(aWY, 2) * mu * Power(Pi, 2) * wY * Sin((aWY * Pi * y) / L)) / Power(L, 2) +
             (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L)) *
@@ -578,10 +582,17 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, constants.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // Setup the flow data
-            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
-
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(constants.gamma)}, {"Rgas", std::to_string(constants.R)}}));
+
+            std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+
+            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
+                                                                    fieldDescriptors,
+                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                      std::make_shared<domain::modifiers::GhostBoundaryCells>()});
+
+            auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
 
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &constants));
 
@@ -591,18 +602,15 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, PhysicsBoundary_Euler, &constants),
             };
 
-            auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate);
-
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlow>("testFlow",
-                                                                                       domain::Region::ENTIREDOMAIN,
-                                                                                       nullptr /*options*/,
-                                                                                       eos,
-                                                                                       parameters,
-                                                                                       transportModel,
-                                                                                       GetParam().fluxCalculator,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
-                                                                                       boundaryConditions /*boundary conditions*/,
-                                                                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
+                                                                                             domain::Region::ENTIREDOMAIN,
+                                                                                             nullptr /*options*/,
+                                                                                             eos,
+                                                                                             parameters,
+                                                                                             transportModel,
+                                                                                             GetParam().fluxCalculator,
+                                                                                             boundaryConditions /*boundary conditions*/,
+                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
             // Combine the flow data
             ProblemSetup problemSetup;
@@ -610,7 +618,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             problemSetup.constants = constants;
 
             // Complete the problem setup
-            mesh->InitializeSubDomains({flowObject});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Add a point wise function that adds fluxes to euler.  It requires no input fields
@@ -670,7 +678,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    CompressibleFlow, CompressibleFlowMmsTestFixture,
+    CompressibleFlowSolver, CompressibleFlowMmsTestFixture,
     testing::Values((CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average", .nproc = 1, .arguments = "-dm_plex_separate_marker"},
                                                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
                                                         .constants = {.dim = 2,
@@ -779,7 +787,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .expectedL2Convergence = {1.0, 1.0, 1.0, 1.0},
                                                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){
-                        .mpiTestParameter = {.testName = "low speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker  -eulerpetscfv_type leastsquares"},
+                        .mpiTestParameter = {.testName = "low speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker  -euler_petscfv_type leastsquares"},
                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
 
                         .constants = {.dim = 2,
@@ -798,7 +806,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .expectedL2Convergence = {1.5, 1.5, 1.5, 1.5},
                         .expectedLInfConvergence = {1.0, 1.0, 1.0, 1.0}},
                     (CompressibleFlowMmsTestParameters){
-                        .mpiTestParameter = {.testName = "high speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker -eulerpetscfv_type leastsquares"},
+                        .mpiTestParameter = {.testName = "high speed ausm leastsquares", .nproc = 1, .arguments = "-dm_plex_separate_marker -euler_petscfv_type leastsquares"},
                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
 
                         .constants = {.dim = 2,
@@ -816,30 +824,31 @@ INSTANTIATE_TEST_SUITE_P(
                         .levels = 4,
                         .expectedL2Convergence = {1.5, 1.5, 1.5, 1.5},
                         .expectedLInfConvergence = {1.0, 0.5, 1.0, 1.0}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction",
-                                                                             .nproc = 1,
-                                                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
-                                                        .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
+                    (CompressibleFlowMmsTestParameters){
+                        .mpiTestParameter = {.testName = "low speed average with conduction",
+                                             .nproc = 1,
+                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none"},
+                        .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
-                                                        .constants = {.dim = 2,
-                                                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
-                                                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
-                                                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
-                                                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
-                                                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
-                                                                      .L = 1.0,
-                                                                      .gamma = 1.4,
-                                                                      .R = 287.0,
-                                                                      .mu = 0.0,
-                                                                      .k = 1000.0},
-                                                        .initialNx = 4,
-                                                        .levels = 4,
-                                                        .expectedL2Convergence = {2, 2, 2, 2},
-                                                        .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
+                        .constants = {.dim = 2,
+                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
+                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
+                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
+                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
+                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
+                                      .L = 1.0,
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 0.0,
+                                      .k = 1000.0},
+                        .initialNx = 4,
+                        .levels = 4,
+                        .expectedL2Convergence = {2, 2, 2, 2},
+                        .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
                     (CompressibleFlowMmsTestParameters){
                         .mpiTestParameter = {.testName = "high speed average with conduction",
                                              .nproc = 1,
-                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none "},
+                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none "},
                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                         .constants = {.dim = 2,
@@ -857,30 +866,31 @@ INSTANTIATE_TEST_SUITE_P(
                         .levels = 4,
                         .expectedL2Convergence = {2, 2, 2, 2},
                         .expectedLInfConvergence = {1.9, 1.8, 1.8, 1.8}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction and diffusion",
-                                                                             .nproc = 1,
-                                                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
-                                                        .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
+                    (CompressibleFlowMmsTestParameters){
+                        .mpiTestParameter = {.testName = "low speed average with conduction and diffusion",
+                                             .nproc = 1,
+                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none"},
+                        .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
-                                                        .constants = {.dim = 2,
-                                                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
-                                                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
-                                                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
-                                                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
-                                                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
-                                                                      .L = 1.0,
-                                                                      .gamma = 1.4,
-                                                                      .R = 287.0,
-                                                                      .mu = 300.0,
-                                                                      .k = 1000.0},
-                                                        .initialNx = 4,
-                                                        .levels = 4,
-                                                        .expectedL2Convergence = {2, 2, 2, 2.2},
-                                                        .expectedLInfConvergence = {1.9, 1.8, 1.8, 2.0}},
+                        .constants = {.dim = 2,
+                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = 0.0},
+                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 0., .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.0},
+                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 0.0, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.0},
+                                      .w = {.phiO = 0.0, .phiX = 0.0, .phiY = 0.0, .phiZ = 0.0, .aPhiX = 0.0, .aPhiY = 0.0, .aPhiZ = 0.0},
+                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.0, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.0},
+                                      .L = 1.0,
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 300.0,
+                                      .k = 1000.0},
+                        .initialNx = 4,
+                        .levels = 4,
+                        .expectedL2Convergence = {2, 2, 2, 2.2},
+                        .expectedLInfConvergence = {1.9, 1.8, 1.8, 2.0}},
                     (CompressibleFlowMmsTestParameters){
                         .mpiTestParameter = {.testName = "high speed average with conduction and diffusion",
                                              .nproc = 1,
-                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none "},
+                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none "},
                         .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
                         .constants = {.dim = 2,
@@ -898,24 +908,25 @@ INSTANTIATE_TEST_SUITE_P(
                         .levels = 4,
                         .expectedL2Convergence = {2, 2, 2, 2.0},
                         .expectedLInfConvergence = {1.9, 2.0, 1.8, 1.8}},
-                    (CompressibleFlowMmsTestParameters){.mpiTestParameter = {.testName = "low speed average with conduction and diffusion 3D",
-                                                                             .nproc = 1,
-                                                                             .arguments = "-dm_plex_separate_marker -Tpetscfv_type leastsquares -velpetscfv_type leastsquares -petsclimiter_type none"},
-                                                        .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
+                    (CompressibleFlowMmsTestParameters){
+                        .mpiTestParameter = {.testName = "low speed average with conduction and diffusion 3D",
+                                             .nproc = 1,
+                                             .arguments = "-dm_plex_separate_marker -temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -petsclimiter_type none"},
+                        .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::AverageFlux>(),
 
-                                                        .constants = {.dim = 3,
-                                                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = .4},
-                                                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 5, .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.5},
-                                                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 6.5, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.6},
-                                                                      .w = {.phiO = 80, .phiX = -25, .phiY = 8.2, .phiZ = -10, .aPhiX = .75, .aPhiY = .2, .aPhiZ = 0.7},
-                                                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.4e5, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.8},
-                                                                      .L = 1.0,
-                                                                      .gamma = 1.4,
-                                                                      .R = 287.0,
-                                                                      .mu = 300.0,
-                                                                      .k = 1000.0},
-                                                        .initialNx = 10,
-                                                        .levels = 2,
-                                                        .expectedL2Convergence = {2, 2.2, 2.2, 2.2, 2.},
-                                                        .expectedLInfConvergence = {1.9, 2.2, 2.0, 2.0, 2.}}),
+                        .constants = {.dim = 3,
+                                      .rho = {.phiO = 1.0, .phiX = 0.15, .phiY = -0.1, .phiZ = 0.0, .aPhiX = 1.0, .aPhiY = 0.5, .aPhiZ = .4},
+                                      .u = {.phiO = 70, .phiX = 5, .phiY = -7, .phiZ = 5, .aPhiX = 1.5, .aPhiY = 0.6, .aPhiZ = 0.5},
+                                      .v = {.phiO = 90, .phiX = -15, .phiY = -8.5, .phiZ = 6.5, .aPhiX = 0.5, .aPhiY = 2.0 / 3.0, .aPhiZ = 0.6},
+                                      .w = {.phiO = 80, .phiX = -25, .phiY = 8.2, .phiZ = -10, .aPhiX = .75, .aPhiY = .2, .aPhiZ = 0.7},
+                                      .p = {.phiO = 1E5, .phiX = 0.2E5, .phiY = 0.5E5, .phiZ = 0.4e5, .aPhiX = 2.0, .aPhiY = 1.0, .aPhiZ = 0.8},
+                                      .L = 1.0,
+                                      .gamma = 1.4,
+                                      .R = 287.0,
+                                      .mu = 300.0,
+                                      .k = 1000.0},
+                        .initialNx = 10,
+                        .levels = 2,
+                        .expectedL2Convergence = {2, 2.2, 2.2, 2.2, 2.},
+                        .expectedLInfConvergence = {1.9, 2.2, 2.0, 2.0, 2.}}),
     [](const testing::TestParamInfo<CompressibleFlowMmsTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
