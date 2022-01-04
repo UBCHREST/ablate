@@ -211,8 +211,8 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
             auto mesh = std::make_shared<ablate::domain::DMWrapper>(dmCreate,
                                                                     fieldDescriptors,
-                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::GhostBoundaryCells>(),
-                                                                                                                                      std::make_shared<domain::modifiers::DistributeWithGhostCells>()});
+                                                                    std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                      std::make_shared<domain::modifiers::GhostBoundaryCells>()});
 
             // Setup the flow data
             auto flowParameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", "0.5"}});
@@ -233,11 +233,10 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                              flowParameters,
                                                                                              transportModel,
                                                                                              std::make_shared<finiteVolume::fluxCalculator::OffFlux>(),
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*initialization*/,
                                                                                              boundaryConditions /*boundary conditions*/,
                                                                                              std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
 
-            mesh->InitializeSubDomains({flowObject});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Name the flow field

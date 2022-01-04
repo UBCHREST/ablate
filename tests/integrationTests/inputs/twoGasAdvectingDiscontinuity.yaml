@@ -1,6 +1,6 @@
 ---
 environment:
-  title: Moving_2gas_10pts
+  title: _Moving_2gas_10pts
   tagDirectory: true
 arguments:
   euler_petscfv_type: upwind
@@ -39,6 +39,17 @@ timestepper:
       - name: pressure
         location: AUX
         type: FVM
+  initialization:
+    - &2
+      fieldName: "euler" # T=300K, v=100m/s, p=100,000Pa
+      field: >-
+        x < 5.0 ? 1.1614401858304297 : 1.601563125610596,
+        x < 5.0 ? 255807.2009291522 : 159522.9671432045,
+        x < 5.0 ? -116.14401858304298 : -160.1563125610596
+
+    - &3
+      fieldName: densityVF
+      field: " x < 5.0 ? 0.0 : 1.601563125610596 "
 solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
   id: SOD Problem
   processes:
@@ -65,17 +76,6 @@ solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
       fluxCalculatorLiquidLiquid: !<!ablate::finiteVolume::fluxCalculator::Riemann2Gas>
         eosL: *1
         eosR: *1
-  initialization:
-    - &2
-      fieldName: "euler" # T=300K, v=100m/s, p=100,000Pa
-      field: >-
-        x < 5.0 ? 1.1614401858304297 : 1.601563125610596,
-        x < 5.0 ? 255807.2009291522 : 159522.9671432045,
-        x < 5.0 ? -116.14401858304298 : -160.1563125610596
-
-    - &3
-      fieldName: densityVF
-      field: " x < 5.0 ? 0.0 : 1.601563125610596 "
   boundaryConditions:
     - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
       boundaryName: air walls euler

@@ -1,13 +1,15 @@
 ---
 layout: default
-title: Installing PETSc Locally
+title: Installing Dependencies Locally
 parent: Development Guides
 nav_order: 3
 ---
 
-For the most recent development issues, notes, and workarounds for building PETSc for ABLATE check the [ABLATE repo wiki](https://github.com/UBCHREST/ablate/wiki).
+For the most recent development issues, notes, and workarounds for building PETSc for ABLATE or other dependencies check the [ABLATE repo wiki](https://github.com/UBCHREST/ablate/wiki).
 
-## Install System Specific Prerequisites
+There are two main ways to install the required dependencies for ABLATE locally (directly or with docker).  Installing directly may result in more control of the dependencies and increased computational speed.  Using docker/CLion may allow you to get started faster.  If using docker/CLion skip to [Downloading and Building with CLion (with docker dependencies)]({{ site.baseurl}}{%link content/development/BuildingAblateLocally.md  %}#downloading-and-building-with-clion-with-docker-dependencies)
+
+## Install System Specific Dependencies
 ### macOS
 1. Install macOS Development Tools.  This can be done one of two ways:
    - Install [Xcode](https://apps.apple.com/us/app/xcode/id497799835) using the Mac AppStore
@@ -44,7 +46,7 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
     - To checkout a specific version or commit ```git checkout release``` 
     - The latest version of ABLATE has been tested against PETSc {% include generated/petscVersion.html %}
 2. Configure PETSc to be built in both debug and optimized configurations
-   1. Configure PETSc with the following options from the petsc directory to build the debug configuration.  Run the following make command.
+   1. Configure PETSc with the following options from the petsc directory to build the debug configuration.  Visit the [ABLATE wiki](https://github.com/UBCHREST/ablate/wiki) for OS specific commands.  Run the following make command.
        ```bash
        # Configure debug PETSc
        ./configure PETSC_ARCH=arch-ablate-debug --download-mpich --download-fblaslapack --download-ctetgen \

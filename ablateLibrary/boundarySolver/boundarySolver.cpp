@@ -95,6 +95,10 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     PetscInt boundaryValue = fieldBoundary->GetValue();
     DMGetLabel(subDomain->GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
 
+    // check to see if there is a ghost label
+    DMLabel ghostLabel;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+
     // Keep track of the current maxFaces
     PetscInt maxFaces = 0;
 
@@ -106,6 +110,18 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     for (PetscInt c = cStart; c < cEnd; ++c) {
         // if there is a cell array, use it, otherwise it is just c
         const PetscInt cell = cells ? cells[c] : c;
+
+        // make sure we are not working on a ghost cell
+        PetscInt ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, cell, &ghost);
+        }
+        if (ghost >= 0) {
+            // put in nan, should not be used
+            gradientStencils.emplace_back(
+                GradientStencil{.geometry = {.normal = {NAN, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}}, .stencil = {}, .weights = {}, .stencilSize = 0});
+            continue;
+        }
 
         // keep a list of cells in the stencil
         std::set<PetscInt> stencilSet{cell};
@@ -198,7 +214,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
 
         maximumStencilSize = PetscMax(maximumStencilSize, (PetscInt)stencil.size());
     }
-
     RestoreRange(cellIS, cStart, cEnd, cells);
 
     // clean up the geom

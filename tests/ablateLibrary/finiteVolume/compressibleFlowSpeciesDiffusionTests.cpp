@@ -135,6 +135,15 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             };
 
+            // create a constant density field
+            auto eulerExact = mathFunctions::Create(ComputeEulerExact, &parameters);
+            auto eulerExactField = std::make_shared<mathFunctions::FieldFunction>("euler", eulerExact);
+
+            // Create the yi field solutions
+            auto yiExact = ablate::mathFunctions::Create(ComputeDensityYiExact, &parameters);
+            auto yiExactField = std::make_shared<mathFunctions::FieldFunction>("densityYi", yiExact);
+            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions{eulerExactField, yiExactField};
+
             PetscInt initialNx = GetParam().initialNx;
             auto mesh = std::make_shared<ablate::domain::BoxMesh>(
                 "simpleMesh",
@@ -153,7 +162,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 false /*simplex*/);
 
             // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}});
+            auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}, nullptr, exactSolutions);
 
             // setup a flow parameters
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(0.0, 0.0, parameters.diff);
@@ -161,14 +170,6 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             // create an eos with three species
             auto eosParameters = std::make_shared<ablate::parameters::MapParameters>();
-
-            // create a constant density field
-            auto eulerExact = mathFunctions::Create(ComputeEulerExact, &parameters);
-            auto eulerExactField = std::make_shared<mathFunctions::FieldFunction>("euler", eulerExact);
-
-            // Create the yi field solutions
-            auto yiExact = ablate::mathFunctions::Create(ComputeDensityYiExact, &parameters);
-            auto yiExactField = std::make_shared<mathFunctions::FieldFunction>("densityYi", yiExact);
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
                 std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{4, 2}, eulerExactField),
@@ -183,7 +184,6 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                                                                                          domain::Region::ENTIREDOMAIN,
                                                                                          petscFlowOptions /*options*/,
                                                                                          flowProcesses,
-                                                                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField} /*initialization*/,
                                                                                          boundaryConditions /*boundary conditions*/,
                                                                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
 

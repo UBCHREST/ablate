@@ -13,6 +13,8 @@ class DistributeWithGhostCells : public Modifier {
     explicit DistributeWithGhostCells(int ghostCellDepth = {});
 
     void Modify(DM&) override;
+
+    std::string ToString() const override { return "ablate::domain::modifiers::DistributeWithGhostCells"; }
 };
 
 }  // namespace ablate::domain::modifiers

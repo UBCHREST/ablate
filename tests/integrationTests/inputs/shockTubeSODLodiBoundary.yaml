@@ -24,15 +24,25 @@ timestepper:
       name: mainSolver
     boundaryFaceRegion:
       name: boundaryFace
-    modifiers:
+    preModifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 0
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    postModifiers:
+      - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::PerfectGas &eos
           parameters:
             gamma: 1.4
             Rgas: 287
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state: &flowFieldState
+        eos: *eos
+        temperature: "x < .5 ? 0.00348 : 0.00279"
+        pressure: "x < 0.5 ? 1 : 0.1"
+        velocity: "0"
 solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: flow solver
@@ -43,14 +53,6 @@ solvers:
     eos: *eos
     fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
       eos: *eos
-    initialization:
-      - !ablate::finiteVolume::fieldFunctions::Euler
-        &eulerFlowFieldState
-        state: &flowFieldState
-          eos: *eos
-          temperature: "x < .5 ? 0.00348 : 0.00279"
-          pressure: "x < 0.5 ? 1 : 0.1"
-          velocity: "0"
     monitors:
       - !ablate::monitors::TimeStepMonitor
       - !ablate::monitors::CurveMonitor

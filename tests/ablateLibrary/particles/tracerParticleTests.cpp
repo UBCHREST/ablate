@@ -325,8 +325,6 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
                 domain::Region::ENTIREDOMAIN,
                 nullptr,
                 parameters,
-                /* initialization functions */
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
                 /* boundary conditions */
                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>>{std::make_shared<boundaryConditions::Essential>("top wall velocity", 3, velocityExact),
                                                                                     std::make_shared<boundaryConditions::Essential>("bottom wall velocity", 1, velocityExact),
@@ -348,7 +346,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             auto particles = std::make_shared<ablate::particles::Tracer>(
                 "particle", ablate::domain::Region::ENTIREDOMAIN, particleOptions, 2, initializer, ablate::mathFunctions::Create(testingParam.particleExact));
 
-            mesh->InitializeSubDomains({flowObject, particles});
+            mesh->InitializeSubDomains({flowObject, particles}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, {flowObject, particles});
 
             // Override problem with source terms, boundary, and set the exact solution

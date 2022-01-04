@@ -26,7 +26,6 @@ timestepper:
     modifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 1
-      - !ablate::domain::modifiers::GhostBoundaryCells
       - !ablate::domain::modifiers::DistributeWithGhostCells
       - !ablate::domain::modifiers::CreateLabel
         region:
@@ -47,6 +46,7 @@ timestepper:
         regions:
           - name: fluidFlow
           - name: fluidBoundaryCell
+      - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         region:
@@ -55,6 +55,17 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas: 287.0
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        eos: *eos
+        temperature: "300"
+        pressure: !ablate::mathFunctions::geom::Sphere
+          center: [ .5, .5 ]
+          radius: .1
+          insideValues: [ 201325.0 ]
+          outsideValues: [ 101325.0 ]
+        velocity: "0, 0"
 solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: subDomainFVMSolver
   region: 
@@ -65,20 +76,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
   transport: !ablate::eos::transport::Sutherland
     eos: *eos
   eos: *eos
-  initialization:
-    - !ablate::finiteVolume::fieldFunctions::Euler
-      state:
-        eos: *eos
-        temperature: "300"
-        pressure: !ablate::mathFunctions::geom::Sphere
-          center: [.5, .5]
-          radius: .1
-          insideValues: [201325.0]
-          outsideValues: [101325.0]
-        velocity: "0, 0"
   boundaryConditions: []
   monitors:
     - !ablate::monitors::TimeStepMonitor
-    - !ablate::monitors::DmViewFromOptions
-      scope: initial
-      options: ascii::ascii_info_detail

@@ -86,7 +86,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     std::vector<GradientStencil> gradientStencils;
 
     // keep track of maximumStencilSize
-    PetscInt maximumStencilSize = -1;
+    PetscInt maximumStencilSize = 0;
 
     // The PetscFV (usually the least squares method) is used to compute the gradient weights
     PetscFV gradientCalculator = nullptr;

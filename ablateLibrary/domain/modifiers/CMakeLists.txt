@@ -1,6 +1,7 @@
 target_sources(ablateLibrary
         PUBLIC
         modifier.hpp
+        modifier.cpp
         distributeWithGhostCells.hpp
         distributeWithGhostCells.cpp
         ghostBoundaryCells.hpp
@@ -13,4 +14,12 @@ target_sources(ablateLibrary
         tagLabelBoundary.cpp
         mergeLabels.hpp
         mergeLabels.cpp
+        intersectLabels.hpp
+        intersectLabels.cpp
+        subtractLabel.hpp
+        subtractLabel.cpp
+        tagLabelInterface.hpp
+        tagLabelInterface.cpp
+        labelSupport.hpp
+        labelSupport.cpp
         )

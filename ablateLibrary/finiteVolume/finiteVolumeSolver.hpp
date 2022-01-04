@@ -20,7 +20,7 @@ class Process;
 
 class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction {
    public:
-    using RHSArbitraryFunction = PetscErrorCode (*)(DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
+    using RHSArbitraryFunction = PetscErrorCode (*)(const FiniteVolumeSolver&, DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
     using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
                                                   const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
@@ -69,7 +69,6 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     // static function to update the flowfield
     static void ComputeTimeStep(TS, ablate::solver::Solver&);
 
-    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization;
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
@@ -107,8 +106,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
-                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
+                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
 
     /** SubDomain Register and Setup **/
     void Setup() override;

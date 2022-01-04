@@ -23,13 +23,47 @@
       "name": "ablate-opt",
       "displayName": "Opt Config",
       "description": "Default build for ABLATE using PETSC",
-      "binaryDir": "${sourceDir}/cmake-build-optablate/default",
+      "binaryDir": "${sourceDir}/cmake-build-opt-ablate/default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       },
       "environment": {
         "PETSC_ARCH": "arch-ablate-opt",
-        "PKG_CONFIG_PATH":"$env{PETSC_DIR}/arch-ablate-opt/lib/pkgconfig:$penv{PKG_CONFIG_PATH}"
+        "PKG_CONFIG_PATH": "$env{PETSC_DIR}/arch-ablate-opt/lib/pkgconfig:$penv{PKG_CONFIG_PATH}"
+      }
+    },
+    {
+      "name": "docker-ablate-debug",
+      "displayName": "Debug Docker Config",
+      "description": "Default build for ABLATE using Docker Dependencies",
+      "binaryDir": "${sourceDir}/cmake-build-debug-ablate-docker/default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      },
+      "environment": {
+        "PETSC_ARCH": "arch-ablate-debug"
+      },
+      "vendor": {
+        "jetbrains.com/clion": {
+          "toolchain": "Docker"
+        }
+      }
+    },
+    {
+      "name": "docker-ablate-opt",
+      "displayName": "Opt Docker Config",
+      "description": "Default build for ABLATE using Docker Dependencies",
+      "binaryDir": "${sourceDir}/cmake-build-opt-ablate-docker/default",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "environment": {
+        "PETSC_ARCH": "arch-ablate-opt"
+      },
+      "vendor": {
+        "jetbrains.com/clion": {
+          "toolchain": "Docker"
+        }
       }
     }
   ],
@@ -41,6 +75,14 @@
     {
       "name": "ablate-opt",
       "configurePreset": "ablate-opt"
+    },
+    {
+      "name": "docker-ablate-debug",
+      "configurePreset": "docker-ablate-debug"
+    },
+    {
+      "name": "docker-ablate-opt",
+      "configurePreset": "docker-ablate-opt"
     }
   ]
 }

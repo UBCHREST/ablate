@@ -16,6 +16,8 @@ class SetFromOptions : public Modifier {
     ~SetFromOptions() override;
 
     void Modify(DM&) override;
+
+    std::string ToString() const override { return "ablate::domain::modifiers::SetFromOptions"; }
 };
 
 }  // namespace ablate::domain::modifiers

@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "domain/region.hpp"
+#include "labelSupport.hpp"
 #include "modifier.hpp"
 
 namespace ablate::domain::modifiers {
@@ -10,7 +11,7 @@ namespace ablate::domain::modifiers {
 /**
  * Class to label/tag all faces on a label boundary
  */
-class TagLabelBoundary : public Modifier {
+class TagLabelBoundary : public Modifier, private LabelSupport {
    private:
     // the label to tag
     const std::shared_ptr<domain::Region> region;
@@ -25,6 +26,8 @@ class TagLabelBoundary : public Modifier {
     explicit TagLabelBoundary(std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> boundaryFaceRegion, const std::shared_ptr<domain::Region> boundaryCellRegion = {});
 
     void Modify(DM&) override;
+
+    std::string ToString() const override { return "ablate::domain::modifiers::TagLabelBoundary"; }
 };
 
 }  // namespace ablate::domain::modifiers

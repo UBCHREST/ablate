@@ -384,29 +384,17 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
-    IS cellIS;
-    DM plex;
-    PetscInt depth;
+PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    ierr = DMConvert(dm, DMPLEX, &plex);
-    CHKERRQ(ierr);
-    ierr = DMPlexGetDepth(plex, &depth);
-    CHKERRQ(ierr);
-    ierr = DMGetStratumIS(plex, "dim", depth, &cellIS);
-    CHKERRQ(ierr);
-    if (!cellIS) {
-        ierr = DMGetStratumIS(plex, "depth", depth, &cellIS);
-        CHKERRQ(ierr);
-    }
+    auto process = (ablate::finiteVolume::processes::TChemReactions*)ctx;
 
     // get the cell range
+    IS cellIS;
     PetscInt cStart, cEnd;
-    const PetscInt* cells = nullptr;
-    ierr = ISGetPointRange(cellIS, &cStart, &cEnd, &cells);
-    CHKERRQ(ierr);
+    const PetscInt* cells;
+    solver.GetCellRange(cellIS, cStart, cEnd, cells);
 
     // get the dm for this
     PetscDS ds = nullptr;
@@ -424,9 +412,8 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
     CHKERRQ(ierr);
 
     // get access to the source array in the solver
-    ablate::finiteVolume::processes::TChemReactions* solver = (ablate::finiteVolume::processes::TChemReactions*)ctx;
     const PetscScalar* sourceArray;
-    ierr = VecGetArrayRead(solver->sourceVec, &sourceArray);
+    ierr = VecGetArrayRead(process->sourceVec, &sourceArray);
     CHKERRQ(ierr);
 
     // March over each cell
@@ -443,7 +430,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
         if (rhs) {
             // read the source from the local calc
             const PetscScalar* source;
-            ierr = DMPlexPointLocalRead(solver->fieldDm, cell, sourceArray, &source);
+            ierr = DMPlexPointLocalRead(process->fieldDm, cell, sourceArray, &source);
             CHKERRQ(ierr);
 
             // copy over and add to rhs
@@ -454,13 +441,12 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
         }
     }
 
+    solver.RestoreRange(cellIS, cStart, cEnd, cells);
     ierr = VecRestoreArray(locFVec, &fArray);
     CHKERRQ(ierr);
-    ierr = VecGetArrayRead(solver->sourceVec, &sourceArray);
+    ierr = VecGetArrayRead(process->sourceVec, &sourceArray);
     CHKERRQ(ierr);
     ierr = ISDestroy(&cellIS);
-    CHKERRQ(ierr);
-    ierr = DMDestroy(&plex);
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }

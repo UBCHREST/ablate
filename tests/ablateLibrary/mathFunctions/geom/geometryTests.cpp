@@ -1,10 +1,12 @@
 #include <functional>
 #include <memory>
+#include "PetscTestFixture.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/constantValue.hpp"
 #include "mathFunctions/geom/box.hpp"
 #include "mathFunctions/geom/geometry.hpp"
 #include "mathFunctions/geom/sphere.hpp"
+#include "mathFunctions/geom/surface.hpp"
 
 using namespace ablate::mathFunctions::geom;
 namespace ablateTesting::mathFunctions::geom {
@@ -15,7 +17,7 @@ struct GeometryTestScalarParameters {
     double expectedResult;
 };
 
-class GeometryTestScalarFixture : public ::testing::TestWithParam<GeometryTestScalarParameters> {};
+class GeometryTestScalarFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<GeometryTestScalarParameters> {};
 
 TEST_P(GeometryTestScalarFixture, ShouldComputeCorrectAnswerFromXYZ) {
     // arrange
@@ -42,67 +44,78 @@ TEST_P(GeometryTestScalarFixture, ShouldComputeCorrectAnswerFromCoord) {
 
 INSTANTIATE_TEST_SUITE_P(
     GeometryTests, GeometryTestScalarFixture,
-    testing::Values((GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Sphere>(std::vector<double>{.2, .2}, .1, std::vector<double>{10});
-                                                       },
-                                                   .xyz = {.25, .25},
-                                                   .expectedResult = 10},
-                    (GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Sphere>(std::vector<double>{.2, .2}, .1, std::vector<double>{10});
-                                                       },
-                                                   .xyz = {.3, .3},
-                                                   .expectedResult = 0},
-                    (GeometryTestScalarParameters){.createGeom = []() { return std::make_shared<Sphere>(std::vector<double>{0.0}, .1, std::vector<double>{10}); }, .xyz = {.1}, .expectedResult = 10},
-                    (GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Sphere>(std::vector<double>{-1, -2, -3}, 2, std::vector<double>{10}, std::vector<double>{4.2});
-                                                       },
-                                                   .xyz = {10, 11, 12},
-                                                   .expectedResult = 4.2},
-                    (GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Sphere>(std::vector<double>{0.0, 0.0, 1.99}, 2, std::vector<double>{20}, std::vector<double>{4.2});
-                                                       },
-                                                   .xyz = {0.0, 0.0, 2.0},
-                                                   .expectedResult = 20},
-                    (GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Box>(std::vector<double>{.2, .1}, std::vector<double>{.3, .2}, std::vector<double>{10});
-                                                       },
-                                                   .xyz = {.25, .15},
-                                                   .expectedResult = 10},
-                    (GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Box>(std::vector<double>{.2, .1}, std::vector<double>{.3, .2}, std::vector<double>{10});
-                                                       },
-                                                   .xyz = {.15, .15},
-                                                   .expectedResult = 0},
-                    (GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Box>(std::vector<double>{.2, .1}, std::vector<double>{.3, .2}, std::vector<double>{10}, std::vector<double>{4.2});
-                                                       },
-                                                   .xyz = {.25, .25},
-                                                   .expectedResult = 4.2},
-                    (GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Box>(std::vector<double>{-2, -2}, std::vector<double>{-1, -1}, std::vector<double>{10}, std::vector<double>{4.2});
-                                                       },
-                                                   .xyz = {-1.5, -1.0000001},
-                                                   .expectedResult = 10},
-                    (GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Box>(std::vector<double>{-2, -2}, std::vector<double>{-1, -1});
-                                                       },
-                                                   .xyz = {-1.5, -1.0000001, 2},
-                                                   .expectedResult = 1},
-                    (GeometryTestScalarParameters){.createGeom =
-                                                       []() {
-                                                           return std::make_shared<Box>(std::vector<double>{-2, -2}, std::vector<double>{-1, -1});
-                                                       },
-                                                   .xyz = {-1.5, -2.0000001, 2},
-                                                   .expectedResult = 0}));
+    testing::Values(
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Sphere>(std::vector<double>{.2, .2}, .1, std::vector<double>{10});
+                                           },
+                                       .xyz = {.25, .25},
+                                       .expectedResult = 10},
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Sphere>(std::vector<double>{.2, .2}, .1, std::vector<double>{10});
+                                           },
+                                       .xyz = {.3, .3},
+                                       .expectedResult = 0},
+        (GeometryTestScalarParameters){.createGeom = []() { return std::make_shared<Sphere>(std::vector<double>{0.0}, .1, std::vector<double>{10}); }, .xyz = {.1}, .expectedResult = 10},
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Sphere>(std::vector<double>{-1, -2, -3}, 2, std::vector<double>{10}, std::vector<double>{4.2});
+                                           },
+                                       .xyz = {10, 11, 12},
+                                       .expectedResult = 4.2},
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Sphere>(std::vector<double>{0.0, 0.0, 1.99}, 2, std::vector<double>{20}, std::vector<double>{4.2});
+                                           },
+                                       .xyz = {0.0, 0.0, 2.0},
+                                       .expectedResult = 20},
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Box>(std::vector<double>{.2, .1}, std::vector<double>{.3, .2}, std::vector<double>{10});
+                                           },
+                                       .xyz = {.25, .15},
+                                       .expectedResult = 10},
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Box>(std::vector<double>{.2, .1}, std::vector<double>{.3, .2}, std::vector<double>{10});
+                                           },
+                                       .xyz = {.15, .15},
+                                       .expectedResult = 0},
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Box>(std::vector<double>{.2, .1}, std::vector<double>{.3, .2}, std::vector<double>{10}, std::vector<double>{4.2});
+                                           },
+                                       .xyz = {.25, .25},
+                                       .expectedResult = 4.2},
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Box>(std::vector<double>{-2, -2}, std::vector<double>{-1, -1}, std::vector<double>{10}, std::vector<double>{4.2});
+                                           },
+                                       .xyz = {-1.5, -1.0000001},
+                                       .expectedResult = 10},
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Box>(std::vector<double>{-2, -2}, std::vector<double>{-1, -1});
+                                           },
+                                       .xyz = {-1.5, -1.0000001, 2},
+                                       .expectedResult = 1},
+        (GeometryTestScalarParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Box>(std::vector<double>{-2, -2}, std::vector<double>{-1, -1});
+                                           },
+                                       .xyz = {-1.5, -2.0000001, 2},
+                                       .expectedResult = 0},
+        (GeometryTestScalarParameters){.createGeom = []() { return std::make_shared<Surface>("inputs/mathFunctions/geom/testShape_m.step"); }, .xyz = {0.0, 0.0, 0.0}, .expectedResult = 1},
+        (GeometryTestScalarParameters){.createGeom = []() { return std::make_shared<Surface>("inputs/mathFunctions/geom/testShape_m.step"); },
+                                       .xyz = {0.0, 0.041, 0.0}, /**41 mm should be outside ***/
+                                       .expectedResult = 0},
+        (GeometryTestScalarParameters){.createGeom = []() { return std::make_shared<Surface>("inputs/mathFunctions/geom/testShape_m.step", std::vector<double>{10}, std::vector<double>{4.2}); },
+                                       .xyz = {0.005, 0.035, 0.005},
+                                       .expectedResult = 10},
+        (GeometryTestScalarParameters){.createGeom = []() { return std::make_shared<Surface>("inputs/mathFunctions/geom/testShape_m.step", std::vector<double>{10}, std::vector<double>{4.2}); },
+                                       .xyz = {0.01, 0.035, 0.01},
+                                       .expectedResult = 4.2}));
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct GeometryTestVectorParameters {
@@ -111,7 +124,7 @@ struct GeometryTestVectorParameters {
     std::vector<double> expectedResult;
 };
 
-class GeometryTestVectorFixture : public ::testing::TestWithParam<GeometryTestVectorParameters> {};
+class GeometryTestVectorFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<GeometryTestVectorParameters> {};
 
 TEST_P(GeometryTestVectorFixture, ShouldComputeCorrectAnswerFromXYZ) {
     // arrange
@@ -231,6 +244,22 @@ INSTANTIATE_TEST_SUITE_P(
                                                return std::make_shared<Box>(std::vector<double>{-2, -2}, std::vector<double>{-1, -1}, std::vector<double>{3, 3, 3, 3}, std::vector<double>{0, 1, 2, 3});
                                            },
                                        .xyz = {-1.5, -2.0000001, 2},
-                                       .expectedResult = {0, 1, 2, 3}}));
+                                       .expectedResult = {0, 1, 2, 3}},
+        (GeometryTestVectorParameters){.createGeom = []() { return std::make_shared<Surface>("inputs/mathFunctions/geom/testShape_m.step"); }, .xyz = {0.0, 0.0, 0.0}, .expectedResult = {1}},
+        (GeometryTestVectorParameters){.createGeom = []() { return std::make_shared<Surface>("inputs/mathFunctions/geom/testShape_m.step"); },
+                                       .xyz = {0.0, 0.041, 0.0}, /**41 mm should be outside ***/
+                                       .expectedResult = {0}},
+        (GeometryTestVectorParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Surface>("inputs/mathFunctions/geom/testShape_m.step", std::vector<double>{10, 23, 22, 11}, std::vector<double>{0, 1, 2, 3});
+                                           },
+                                       .xyz = {0.005, 0.035, 0.005},
+                                       .expectedResult = {10, 23, 22, 11}},
+        (GeometryTestVectorParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Surface>("inputs/mathFunctions/geom/testShape_m.step", std::vector<double>{4.2, 0.0}, std::vector<double>{1, 2});
+                                           },
+                                       .xyz = {0.01, 0.035, 0.01},
+                                       .expectedResult = {1, 2}}));
 
 }  // namespace ablateTesting::mathFunctions::geom

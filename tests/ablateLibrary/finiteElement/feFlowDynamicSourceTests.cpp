@@ -174,7 +174,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
                                               std::make_shared<mathFunctions::FieldFunction>("energy_source", std::make_shared<mathFunctions::SimpleFormula>(testingParam.wSource))});
 
             DMSetApplicationContext(mesh->GetDM(), flowObject.get()) >> testErrorChecker;
-            mesh->InitializeSubDomains({flowObject});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Name the flow field
@@ -228,7 +228,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(
-                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^2 + y^2, t + 2*x^2 + 2*x*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -256,7 +256,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::LowMachFlowSolver>(
-                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^3 + y^3, t + 2*x^3 + 3*x^2*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -285,7 +285,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -311,7 +311,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, ablate::domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^2 + y^2, t + 2*x^2 - 2*x*y",
             .uDerivativeExact = "1.0, 1.0",
@@ -338,7 +338,7 @@ INSTANTIATE_TEST_SUITE_P(
             .createMethod =
                 [](auto name, auto parameters, auto options, auto initializationAndExact, auto boundaryConditions, auto auxiliaryFields) {
                     return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(
-                        name, domain::Region::ENTIREDOMAIN, parameters, options, initializationAndExact, boundaryConditions, auxiliaryFields, initializationAndExact);
+                        name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields, initializationAndExact);
                 },
             .uExact = "t + x^3 + y^3, t + 2*x^3 - 3*x^2*y",
             .uDerivativeExact = "1.0, 1.0",

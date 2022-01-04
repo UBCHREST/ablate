@@ -165,7 +165,7 @@ INSTANTIATE_TEST_SUITE_P(
                                        .expectedFiles{{"outputs/compressibleFlowVortex/vortexFlowField.xmf", "vortexFlowField.xmf"}}},
                     (MpiTestParameter){.testName = "inputs/customCouetteCompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/customCouetteCompressibleFlow.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/simpleReactingFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/simpleReactingFlow.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/ignitionDelayGriMech.yaml", .nproc = 1, .expectedOutputFile = "outputs/ignitionDelayGriMech.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/ignitionDelayGriMech.yaml", .nproc = 1, .arguments = "", .expectedFiles{{"outputs/ignitionDelayPeakYi.txt", "ignitionDelayPeakYi.txt"}}},
                     (MpiTestParameter){.testName = "inputs/dmViewFromOptions.yaml", .nproc = 1, .expectedOutputFile = "outputs/dmViewFromOptions.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/extraVariableTransport.yaml", .nproc = 1, .expectedOutputFile = "outputs/extraVariableTransport.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/subDomainFVM.yaml",

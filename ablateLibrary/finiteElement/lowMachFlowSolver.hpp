@@ -16,8 +16,8 @@ class LowMachFlowSolver : public FiniteElementSolver {
 
    public:
     LowMachFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options = {}, std::shared_ptr<parameters::Parameters> parameters = {},
-                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
-                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
+                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields = {},
+                      std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
     virtual ~LowMachFlowSolver() = default;
 
     /** SubDomain Register and Setup **/

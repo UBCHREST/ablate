@@ -32,6 +32,14 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas: 287.0
+  initialization:
+    - fieldName: "euler" #for euler all components are in a single field
+      field: >-
+        1.0,
+        215250.0,
+        0.0,
+        0.0
+      timeDerivative: "0.0, 0.0, 0.0, 0.0"
 solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: vortexFlowField
   parameters:
@@ -41,14 +49,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     k: 0.0
     mu: 1.0
   eos: *eos
-  initialization:
-    - fieldName: "euler" #for euler all components are in a single field
-      field: >-
-          1.0,
-          215250.0,
-          0.0,
-          0.0
-      timeDerivative: "0.0, 0.0, 0.0, 0.0"
   exactSolution:
     - fieldName: "euler" # rho, rho_e = rho*(CvT + u^2/2), rho_u, rho_v
       field: >-
