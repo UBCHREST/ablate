@@ -10,7 +10,7 @@ namespace ablate::monitors {
 class SolutionErrorMonitor : public Monitor {
    public:
     enum class Scope { VECTOR, COMPONENT };
-    enum class Norm { L2, LINF, L2_NORM };
+    enum class Norm { L1, L1_NORM, L2, LINF, L2_NORM };
 
    private:
     static PetscErrorCode MonitorError(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
