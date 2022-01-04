@@ -73,14 +73,27 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
   monitors:
     - !ablate::monitors::SolutionErrorMonitor
       scope: component
+      type: l1_norm
+    - !ablate::monitors::SolutionErrorMonitor
+      scope: component
+      type: l1_norm
+      log: !ablate::monitors::logs::FileLog
+        name: L1_solutionMonitor.log
+    - !ablate::monitors::SolutionErrorMonitor
+      scope: component
+      type: l1_norm
+      log: !ablate::monitors::logs::CsvLog
+        name: L1_solutionMonitor.csv
+    - !ablate::monitors::SolutionErrorMonitor
+      scope: component
       type: l2_norm
     - !ablate::monitors::SolutionErrorMonitor
       scope: component
       type: l2_norm
       log: !ablate::monitors::logs::FileLog
-        name: solutionMonitor.log
+        name: L2_solutionMonitor.log
     - !ablate::monitors::SolutionErrorMonitor
       scope: component
       type: l2_norm
       log: !ablate::monitors::logs::CsvLog
-        name: solutionMonitor.csv
+        name: L2_solutionMonitor.csv
