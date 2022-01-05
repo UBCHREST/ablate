@@ -2,11 +2,7 @@
 environment:
   title: _Moving_2gas_10pts
   tagDirectory: true
-arguments:
-  euler_petscfv_type: upwind
-  temperature_petscfv_type: leastsquares
-  velocity_petscfv_type: leastsquares
-  densityVF_petscfv_type: upwind
+arguments: {}
 timestepper:
   name: theMainTimeStepper
   arguments:

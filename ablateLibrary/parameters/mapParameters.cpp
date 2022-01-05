@@ -28,3 +28,7 @@ ablate::parameters::MapParameters::MapParameters(std::initializer_list<std::pair
 std::shared_ptr<ablate::parameters::MapParameters> ablate::parameters::MapParameters::Create(std::initializer_list<std::pair<std::string, std::string>> values) {
     return std::make_shared<ablate::parameters::MapParameters>(values);
 }
+
+std::shared_ptr<ablate::parameters::MapParameters> ablate::parameters::MapParameters::Create(const std::map<std::string, std::string>& values) {
+    return std::make_shared<ablate::parameters::MapParameters>(values);
+}

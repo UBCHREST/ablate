@@ -5,9 +5,6 @@ environment:
 arguments: 
   dm_plex_separate_marker: ""
   petsclimiter_type: none
-  euler_petscfv_type: leastsquares
-  temperature_petscfv_type: leastsquares
-  velocity_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   io:
@@ -55,6 +52,9 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas: 287.0
+        conservedFieldOptions:
+          petsclimiter_type: none
+          petscfv_type: leastsquares
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:

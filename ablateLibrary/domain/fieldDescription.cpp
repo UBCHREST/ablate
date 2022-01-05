@@ -63,9 +63,14 @@ PetscObject ablate::domain::FieldDescription::CreatePetscField(DM dm) const {
             PetscObjectSetName((PetscObject)fvm, name.c_str()) >> checkError;
             PetscObjectSetOptions((PetscObject)fvm, options) >> checkError;
 
-            PetscObjectSetOptionsPrefix((PetscObject)fvm, prefix.c_str()) >> checkError;
             PetscFVSetFromOptions(fvm) >> checkError;
             PetscFVSetNumComponents(fvm, components.size()) >> checkError;
+
+            // Get the limiter
+            PetscLimiter limiter;
+            PetscFVGetLimiter(fvm, &limiter) >> checkError;
+            PetscObjectSetOptions((PetscObject)limiter, options) >> checkError;
+            PetscLimiterSetFromOptions(limiter) >> checkError;
 
             // Determine the number of dims
             PetscInt dim;

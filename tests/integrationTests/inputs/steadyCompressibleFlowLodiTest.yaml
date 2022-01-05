@@ -5,9 +5,6 @@ environment:
   tagDirectory: false
 arguments:
   petsclimiter_type: none
-  euler_petscfv_type: upwind
-  velocity_petscfv_type: leastsquares
-  temperature_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   arguments:

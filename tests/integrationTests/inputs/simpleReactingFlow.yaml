@@ -4,9 +4,6 @@ environment:
   tagDirectory: false
 arguments: 
   dm_plex_separate_marker: ""
-  petsclimiter_type: none
-  temperature_petscfv_type: leastsquares
-  velocity_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   io:
