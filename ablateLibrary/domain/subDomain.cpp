@@ -3,7 +3,7 @@
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, std::vector<std::shared_ptr<FieldDescription>> allAuxFields)
     : domain(domainIn),
-      name(""),
+      name(defaultName),
       label(nullptr),
       labelValue(0),
       fieldMap(nullptr),
@@ -133,8 +133,7 @@ void ablate::domain::SubDomain::CreateSubDomainStructures() {
 
         // attach this field as aux vector to the dm
         DMSetAuxiliaryVec(domain.GetDM(), label, labelValue, auxVec) >> checkError;
-        auto vecName = "aux" + (name.empty() ? "_" + name : "");
-        PetscObjectSetName((PetscObject)auxVec, vecName.c_str()) >> checkError;
+        PetscObjectSetName((PetscObject)auxVec, "aux") >> checkError;
 
         // add the names to each of the components in the dm section
         PetscSection section;
@@ -466,4 +465,76 @@ PetscErrorCode ablate::domain::SubDomain::RestoreFieldSubVector(const Field& fie
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
+}
+
+void ablate::domain::SubDomain::SetsExactSolutions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutionsIn) {
+    // if an exact solution has been provided register it
+    for (const auto& exactSolution : exactSolutionsIn) {
+        // check to see if this field in is in this subDomain
+        if (ContainsField(exactSolution->GetName())) {
+            // store it
+            exactSolutions.push_back(exactSolution);
+
+            // Get the field information
+            auto fieldInfo = GetField(exactSolution->GetName());
+
+            if (exactSolution->HasSolutionField()) {
+                PetscDSSetExactSolution(GetDiscreteSystem(), fieldInfo.subId, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
+            }
+            if (exactSolution->HasTimeDerivative()) {
+                PetscDSSetExactSolutionTimeDerivative(GetDiscreteSystem(), fieldInfo.subId, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >>
+                    checkError;
+            }
+        }
+    }
+}
+void ablate::domain::SubDomain::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    auto locSubDm = GetSubDM();
+    auto locAuxDM = GetSubAuxDM();
+    // If this is the first output, save the mesh
+    if (sequenceNumber == 0) {
+        // Print the initial mesh
+        DMView(locSubDm, viewer) >> checkError;
+    }
+
+    // set the dm sequence number, because we may be skipping outputs
+    DMSetOutputSequenceNumber(locSubDm, sequenceNumber, time) >> checkError;
+    if (locAuxDM) {
+        DMSetOutputSequenceNumber(locAuxDM, sequenceNumber, time) >> checkError;
+    }
+
+    // Always save the main flowField
+    VecView(GetSubSolutionVector(), viewer) >> checkError;
+
+    // If there is aux data output
+    PetscBool outputAuxVector = PETSC_TRUE;
+    PetscOptionsGetBool(nullptr, nullptr, "-outputAuxVector", &outputAuxVector, nullptr) >> checkError;
+    if (outputAuxVector) {
+        if (auto subAuxVector = GetSubAuxVector()) {
+            // copy over the sequence data from the main dm
+            PetscReal dmTime;
+            PetscInt dmSequence;
+            DMGetOutputSequenceNumber(locSubDm, &dmSequence, &dmTime) >> checkError;
+            DMSetOutputSequenceNumber(locAuxDM, dmSequence, dmTime) >> checkError;
+
+            VecView(subAuxVector, viewer) >> checkError;
+        }
+    }
+
+    // If there is an exact solution save it
+    if (!exactSolutions.empty()) {
+        Vec exactVec;
+        DMGetGlobalVector(GetSubDM(), &exactVec) >> checkError;
+
+        ProjectFieldFunctionsToSubDM(exactSolutions, exactVec, time);
+
+        PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
+        VecView(exactVec, viewer) >> checkError;
+        DMRestoreGlobalVector(GetSubDM(), &exactVec) >> checkError;
+    }
+}
+void ablate::domain::SubDomain::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    // The only item that needs to be explicitly restored is the flowField
+    DMSetOutputSequenceNumber(GetDM(), sequenceNumber, time) >> checkError;
+    VecLoad(GetSolutionVector(), viewer) >> checkError;
 }

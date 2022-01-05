@@ -13,7 +13,7 @@ namespace ablate::solver {
 
 class TimeStepper;
 
-class Solver : public io::Serializable {
+class Solver {
    private:
     // pre and post step functions for the flow
     std::vector<std::function<void(TS ts, Solver&)>> preStepFunctions;
@@ -53,6 +53,8 @@ class Solver : public io::Serializable {
     /** Finalize the Setup of the subDomain before running **/
     virtual void Initialize() = 0;
 
+    inline const std::string& GetSolverId() const { return solverId; }
+
     /**
      * Get the sub domain used in this solver
      * @return
@@ -64,8 +66,6 @@ class Solver : public io::Serializable {
      * @return
      */
     inline std::shared_ptr<domain::Region> GetRegion() const noexcept { return region; }
-
-    inline const std::string& GetId() const override { return solverId; }
 
     // Support for timestepping calls
     void PreStage(TS ts, PetscReal stagetime);
@@ -96,9 +96,6 @@ class Solver : public io::Serializable {
      * @param postStep
      */
     inline void RegisterPostEvaluate(std::function<void(TS ts, Solver&)> postEval) { this->postEvaluateFunctions.push_back(postEval); }
-
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
-    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 
     /**
      * Get the cellIS and range over valid cells in this region

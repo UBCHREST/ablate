@@ -550,7 +550,7 @@ static PetscErrorCode DMSequenceViewTimeHDF5(DM dm, PetscViewer viewer) {
     PetscFunctionReturn(0);
 }
 
-void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, PetscReal time) const {
+void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, PetscReal time) {
     DMSetOutputSequenceNumber(GetParticleDM(), steps, time) >> checkError;
     Vec particleVector;
 

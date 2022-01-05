@@ -13,6 +13,6 @@ Timestep: 0008 time = 0.8      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006
 Timestep: 0009 time = 0.9      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
 Timestep: 0010 time = 1        	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <0.006 <2 <.3
 ResultFiles:
+domain.hdf5
+domain.xmf
 restart.rst
-theFlowField.hdf5
-theFlowField.xmf

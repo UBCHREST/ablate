@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" [
-<!ENTITY HeavyData "theFlowField.hdf5">
+<!ENTITY HeavyData "domain.hdf5">
 ]>
 <Xdmf>
   <Domain Name="domain">

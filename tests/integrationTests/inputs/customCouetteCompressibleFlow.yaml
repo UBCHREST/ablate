@@ -45,6 +45,13 @@ timestepper:
         215250.0,
         0.0,
         0.0
+  exactSolution:
+    - fieldName: "euler" # rho, rho_e = rho*(CvT + u^2/2), rho_u, rho_v
+      field: >-
+        1.0,
+        1.0 * (215250.0 + (0.5 * (50 * y)^2)),
+        1.0 * 50 * y,
+        1.0 * 0.0
 solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: compressibleFlowField
   processes:
@@ -59,13 +66,6 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       transport:
         k: 0.0
         mu: 1.0
-  exactSolution:
-    - fieldName: "euler" # rho, rho_e = rho*(CvT + u^2/2), rho_u, rho_v
-      field: >-
-        1.0,
-        1.0 * (215250.0 + (0.5 * (50 * y)^2)),
-        1.0 * 50 * y,
-        1.0 * 0.0
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"

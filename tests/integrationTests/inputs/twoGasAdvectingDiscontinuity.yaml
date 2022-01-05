@@ -50,6 +50,14 @@ timestepper:
     - &3
       fieldName: densityVF
       field: " x < 5.0 ? 0.0 : 1.601563125610596 "
+  exactSolution:
+    - fieldName: "euler" # T=300K, v=100m/s, p=100,000Pa
+      field: >-
+        x < 2.0 ? 1.1614401858304297 : 1.601563125610596,
+        x < 2.0 ? 255807.2009291522 : 159522.9671432045,
+        x < 2.0 ? -116.14401858304298 : -160.1563125610596
+    - fieldName: densityVF
+      field: " x < 2.0 ? 0.0 : 1.601563125610596 "
 solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
   id: SOD Problem
   processes:
@@ -85,14 +93,6 @@ solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
       boundaryName: vf walls
       labelIds: [ 1, 2 ]
       boundaryValue: *3
-  exactSolution:
-    - fieldName: "euler" # T=300K, v=100m/s, p=100,000Pa
-      field: >-
-        x < 2.0 ? 1.1614401858304297 : 1.601563125610596,
-        x < 2.0 ? 255807.2009291522 : 159522.9671432045,
-        x < 2.0 ? -116.14401858304298 : -160.1563125610596
-    - fieldName: densityVF
-      field: " x < 2.0 ? 0.0 : 1.601563125610596 "
   monitors:
     - !<!ablate::monitors::TimeStepMonitor> ""
     - !<!ablate::monitors::CurveMonitor>

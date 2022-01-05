@@ -124,7 +124,8 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     }
 }
 
-void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations) {
+void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+                                                  const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions) {
     // determine the number of fields
     for (auto& solver : solvers) {
         solver->Register(GetSubDomain(solver->GetRegion()));
@@ -174,4 +175,16 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
     for (auto& solver : solvers) {
         solver->Initialize();
     }
+
+    // Set the exact solutions if the field in lives in each subDomain
+    for (auto& subDomain : subDomains) {
+        subDomain->SetsExactSolutions(exactSolutions);
+    }
+}
+std::vector<std::weak_ptr<ablate::io::Serializable>> ablate::domain::Domain::GetSerializableSubDomains() {
+    std::vector<std::weak_ptr<io::Serializable>> serializables;
+    for (auto& serializable : subDomains) {
+        serializables.push_back(serializable);
+    }
+    return serializables;
 }

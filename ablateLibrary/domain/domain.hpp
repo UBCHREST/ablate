@@ -10,6 +10,7 @@
 #include "domain/fieldDescriptor.hpp"
 #include "domain/modifiers/modifier.hpp"
 #include "fieldDescription.hpp"
+#include "io/serializable.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "region.hpp"
 
@@ -65,9 +66,15 @@ class Domain {
 
     PetscInt GetDimensions() const;
 
-    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations);
+    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+                              const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
 
     std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
+
+    /**
+     * Provide a list of serialize subDomains
+     */
+    std::vector<std::weak_ptr<io::Serializable>> GetSerializableSubDomains();
 
     /**
      * Get the petscField object from the dm or auxDm for this region

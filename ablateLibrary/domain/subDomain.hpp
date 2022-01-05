@@ -9,11 +9,15 @@
 #include <utilities/petscError.hpp>
 #include "domain.hpp"
 #include "fieldDescription.hpp"
+#include "io/serializable.hpp"
 
 namespace ablate::domain {
 
-class SubDomain {
+class SubDomain : public io::Serializable {
    private:
+    // store the default name of the domain
+    inline static const std::string defaultName = "domain";
+
     // const reference to the parent domain/dm
     Domain& domain;
 
@@ -46,6 +50,9 @@ class SubDomain {
     Vec subSolutionVec;
     DM subAuxDM;
     Vec subAuxVec;
+
+    // store any exact solutions for io
+    std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
     // support call to copy from global to sub vec
     void CopyGlobalToSubVector(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
@@ -170,6 +177,11 @@ class SubDomain {
     void ProjectFieldFunctionsToSubDM(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0);
 
     /**
+     * set exactSolutions if the fields live in the ds
+     */
+    void SetsExactSolutions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions);
+
+    /**
      * Get a sub vector with only a single field
      */
     PetscErrorCode GetFieldSubVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);
@@ -178,6 +190,17 @@ class SubDomain {
      * Restore values
      */
     PetscErrorCode RestoreFieldSubVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);
+
+    /**
+     * Serialization save/restore
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    inline const std::string& GetId() const override { return name; }
 };
 
 }  // namespace ablate::domain

@@ -15,8 +15,8 @@ Timestep: 0013 time = 0.13     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1
 Timestep: 0014 time = 0.14     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
 Timestep: 0015 time = 0.15     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
 ResultFiles:
+domain.hdf5
+domain.xmf
 flowTracerParticles.hdf5
 flowTracerParticles.xmf
 restart.rst
-theFlowField.hdf5
-theFlowField.xmf

@@ -162,7 +162,8 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 false /*simplex*/);
 
             // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}, nullptr, exactSolutions);
+            auto timeStepper =
+                ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}, nullptr, exactSolutions, exactSolutions);
 
             // setup a flow parameters
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(0.0, 0.0, parameters.diff);
@@ -180,12 +181,8 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eos, nullptr, transportModel),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>("testFlow",
-                                                                                         domain::Region::ENTIREDOMAIN,
-                                                                                         petscFlowOptions /*options*/,
-                                                                                         flowProcesses,
-                                                                                         boundaryConditions /*boundary conditions*/,
-                                                                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
+            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>(
+                "testFlow", domain::Region::ENTIREDOMAIN, petscFlowOptions /*options*/, flowProcesses, boundaryConditions /*boundary conditions*/);
 
             timeStepper.Register(flowObject);
 

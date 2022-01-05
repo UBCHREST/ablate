@@ -26,6 +26,6 @@ Timestep: 0023 time = 2.3e-05  dt = 1e-06
 Timestep: 0024 time = 2.4e-05  dt = 1e-06
 Timestep: 0025 time = 2.5e-05  dt = 1e-06
 ResultFiles:
+domain.hdf5
+domain.xmf
 restart.rst
-vortexFlowField.hdf5
-vortexFlowField.xmf

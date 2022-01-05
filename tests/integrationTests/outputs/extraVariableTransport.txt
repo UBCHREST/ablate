@@ -20,6 +20,6 @@ Timestep: 0018 time = (.*) dt = (.*)<expects> <.1 <.1
 Timestep: 0019 time = (.*) dt = (.*)<expects> <.1 <.1
 Timestep: 0020 time = (.*) dt = (.*)<expects> <.1 <.1
 ResultFiles:
-evExample.hdf5
-evExample.xmf
+domain.hdf5
+domain.xmf
 restart.rst

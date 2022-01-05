@@ -50,10 +50,11 @@ class TimeStepper : public std::enable_shared_from_this<TimeStepper>, private ut
 
     // store the list of field initializations
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations;
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
     TimeStepper(std::string name, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments = {}, std::shared_ptr<io::Serializer> serializer = {},
-                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> = {});
+                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initialization = {}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
     ~TimeStepper();
 
     TS &GetTS() { return ts; }

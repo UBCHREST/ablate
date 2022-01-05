@@ -42,42 +42,6 @@ void ablate::solver::Solver::PostEvaluate(TS ts) {
     }
 }
 
-void ablate::solver::Solver::Save(PetscViewer viewer, PetscInt steps, PetscReal time) const {
-    auto subDm = subDomain->GetSubDM();
-    auto auxDM = subDomain->GetSubAuxDM();
-    // If this is the first output, save the mesh
-    if (steps == 0) {
-        // Print the initial mesh
-        DMView(subDm, viewer) >> checkError;
-    }
-
-    // set the dm sequence number, because we may be skipping outputs
-    DMSetOutputSequenceNumber(subDm, steps, time) >> checkError;
-    if (auxDM) {
-        DMSetOutputSequenceNumber(auxDM, steps, time) >> checkError;
-    }
-
-    // Always save the main flowField
-    VecView(subDomain->GetSubSolutionVector(), viewer) >> checkError;
-
-    // If there is aux data output
-    if (auto subAuxVector = subDomain->GetSubAuxVector()) {
-        // copy over the sequence data from the main dm
-        PetscReal dmTime;
-        PetscInt dmSequence;
-        DMGetOutputSequenceNumber(subDm, &dmSequence, &dmTime) >> checkError;
-        DMSetOutputSequenceNumber(auxDM, dmSequence, dmTime) >> checkError;
-
-        VecView(subAuxVector, viewer) >> checkError;
-    }
-}
-
-void ablate::solver::Solver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
-    // The only item that needs to be explicitly restored is the flowField
-    DMSetOutputSequenceNumber(subDomain->GetDM(), sequenceNumber, time) >> checkError;
-    VecLoad(subDomain->GetSolutionVector(), viewer) >> checkError;
-}
-
 static PetscErrorCode zero(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nc, PetscScalar *u, void *ctx) {
     PetscInt c;
     for (c = 0; c < Nc; ++c) u[c] = 0.0;
