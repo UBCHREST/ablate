@@ -5,6 +5,12 @@
 namespace ablate::utilities {
 class MathUtilities {
    public:
+    static inline void ScaleVector(PetscInt dim, PetscReal* vec, PetscReal alpha) {
+        for (PetscInt d = 0; d < dim; d++) {
+            vec[d] *= alpha;
+        }
+    }
+
     static inline void NormVector(PetscInt dim, PetscReal* vec) {
         auto mag = MagVector(dim, vec);
         for (PetscInt d = 0; d < dim; d++) {

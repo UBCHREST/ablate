@@ -19,14 +19,14 @@ class Gravity : public FlowProcess {
      * @param flow
      * @return
      */
-    PetscErrorCode UpdateAverageDensity(TS flowTs, ablate::solver::Solver &flow);
+    PetscErrorCode UpdateAverageDensity(TS flowTs, ablate::solver::Solver& flow);
 
     /**
      * private function to compute gravity source
      * @return
      */
     static PetscErrorCode ComputeGravitySource(PetscInt dim, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[], const PetscInt aOff[],
-                          const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
+                                               const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    public:
     explicit Gravity(std::vector<double> gravityVector);

@@ -26,6 +26,11 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
                                                       PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[], PetscScalar source[], void* ctx);
 
     /**
+     * Boundaries can be treated in two different ways, point source on the boundary or distributed in the other phase
+     */
+    enum class BoundarySourceType { Point, Distributed };
+
+    /**
      * public helper function to compute the gradient
      * @param dim
      * @param boundaryValue
@@ -56,9 +61,11 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
         /** The points in the stencil*/
         std::vector<PetscInt> stencil;
         /** The weights in [point*dim + dir] order */
-        std::vector<PetscScalar> weights;
+        std::vector<PetscScalar> gradientWeights;
         /** store the stencil size for easy access */
         PetscInt stencilSize;
+        /** The distribution weights in  order */
+        std::vector<PetscScalar> distributionWeights;
     };
 
     /**
@@ -67,6 +74,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     struct BoundaryFunctionDescription {
         BoundarySourceFunction function;
         void* context;
+        BoundarySourceType type;
 
         std::vector<PetscInt> sourceFields;
         std::vector<PetscInt> inputFields;
@@ -114,7 +122,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * @param context
      */
     void RegisterFunction(BoundarySourceFunction function, void* context, const std::vector<std::string>& sourceFields, const std::vector<std::string>& inputFields,
-                          const std::vector<std::string>& auxFields);
+                          const std::vector<std::string>& auxFields, BoundarySourceType type = BoundarySourceType::Point);
 
     /**
      * Function passed into PETSc to compute the FV RHS
