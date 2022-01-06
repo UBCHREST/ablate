@@ -195,6 +195,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         std::vector<PetscInt> stencil(stencilSet.begin(), stencilSet.end());
         std::vector<PetscScalar> gradientWeights(stencil.size() * dim, 0.0);
         std::vector<PetscScalar> dx(stencil.size() * dim);
+        std::vector<PetscScalar> volume(stencil.size());
 
         // Use a Reciprocal distance interpolate for the distribution weights.  This can be abstracted away in the future.
         std::vector<PetscScalar> distributionWeights(stencil.size(), 0.0);
@@ -208,6 +209,9 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             }
             distributionWeights[n] = 1.0 / PetscSqrtScalar(distributionWeights[n]);
             distributionWeightSum += distributionWeights[n];
+
+            // store the volume
+            volume[n] = cg->volume;
         }
 
         // normalize the distributionWeights
@@ -221,8 +225,8 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         PetscFVComputeGradient(gradientCalculator, (PetscInt)stencil.size(), &dx[0], &gradientWeights[0]) >> checkError;
 
         // Store the stencil
-        gradientStencils.emplace_back(
-            GradientStencil{.geometry = geom, .stencil = stencil, .gradientWeights = gradientWeights, .stencilSize = (PetscInt)stencil.size(), .distributionWeights = distributionWeights});
+        gradientStencils.emplace_back(GradientStencil{
+            .geometry = geom, .stencil = stencil, .gradientWeights = gradientWeights, .stencilSize = (PetscInt)stencil.size(), .distributionWeights = distributionWeights, .volumes = volume});
 
         maximumStencilSize = PetscMax(maximumStencilSize, (PetscInt)stencil.size());
     }
@@ -449,7 +453,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
 
                             // Now over the entire rhs, the function should have added the values correctly using the sourceOffsetsPointer
                             for (PetscInt sc = 0; sc < scratchSize; sc++) {
-                                rhs[sc] += distributedSourceScratch[sc] * stencilInfo.distributionWeights[s];
+                                rhs[sc] += (distributedSourceScratch[sc] * stencilInfo.distributionWeights[s]) / stencilInfo.volumes[s];
                             }
                         }
 

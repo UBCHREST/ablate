@@ -318,35 +318,36 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
                 if (hasValue) {
                     // Get the centroid
                     PetscReal centroid[3];
-                    DMPlexComputeCellGeometryFVM(boundarySolver->GetSubDomain().GetDM(), testCell, nullptr, centroid, nullptr) >> checkError;
+                    PetscReal volume;
+                    DMPlexComputeCellGeometryFVM(boundarySolver->GetSubDomain().GetDM(), testCell, &volume, centroid, nullptr) >> checkError;
 
                     PetscReal distance = 0.0;
                     for (PetscInt d = 0; d < dim; d++) {
                         distance += PetscSqr(centroid[d] - face.centroid[d]);
                     }
                     ASSERT_LT(PetscSqrtReal(distance), stencilRadius) << "Source terms should only be within the stencilRadius";
-                }
 
-                // All the fluxes before the offset should be zero
-                for (PetscInt i = 0; i < resultGradOffset; i++) {
-                    ASSERT_DOUBLE_EQ(0.0, data[i]) << "All values not in the 'resultGrad' field should be zero.  Not zero at cell " << cell;
-                }
+                    // All the fluxes before the offset should be zero
+                    for (PetscInt i = 0; i < resultGradOffset; i++) {
+                        ASSERT_DOUBLE_EQ(0.0, data[i]) << "All values not in the 'resultGrad' field should be zero.  Not zero at cell " << cell;
+                    }
 
-                // Now add up the contributions for each cell
-                PetscInt offset = resultGradOffset;
+                    // Now add up the contributions for each cell
+                    PetscInt offset = resultGradOffset;
 
-                // March over each field
-                for (PetscInt d = 0; d < dim; d++) {
-                    sumGradA[d] += data[offset++];
-                }
-                for (PetscInt d = 0; d < dim; d++) {
-                    sumGradB[d] += data[offset++];
-                }
-                for (PetscInt d = 0; d < dim; d++) {
-                    sumGradAuxA[d] += data[offset++];
-                }
-                for (PetscInt d = 0; d < dim; d++) {
-                    sumGradAuxA[d] += data[offset++];
+                    // March over each field
+                    for (PetscInt d = 0; d < dim; d++) {
+                        sumGradA[d] += data[offset++] * volume;
+                    }
+                    for (PetscInt d = 0; d < dim; d++) {
+                        sumGradB[d] += data[offset++] * volume;
+                    }
+                    for (PetscInt d = 0; d < dim; d++) {
+                        sumGradAuxA[d] += data[offset++] * volume;
+                    }
+                    for (PetscInt d = 0; d < dim; d++) {
+                        sumGradAuxA[d] += data[offset++] * volume;
+                    }
                 }
             }
 

@@ -26,7 +26,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
                                                       PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[], PetscScalar source[], void* ctx);
 
     /**
-     * Boundaries can be treated in two different ways, point source on the boundary or distributed in the other phase
+     * Boundaries can be treated in two different ways, point source on the boundary or distributed in the other phase.  For the Distributed model, the source is divided by volume in each case
      */
     enum class BoundarySourceType { Point, Distributed };
 
@@ -64,8 +64,10 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
         std::vector<PetscScalar> gradientWeights;
         /** store the stencil size for easy access */
         PetscInt stencilSize;
-        /** The distribution weights in  order */
+        /** The distribution weights in order */
         std::vector<PetscScalar> distributionWeights;
+        /** Store the volume for each stencil cell */
+        std::vector<PetscScalar> volumes;
     };
 
     /**
