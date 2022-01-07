@@ -2,12 +2,14 @@
 #include "PetscTestFixture.hpp"
 #include "boundarySolver/physics/sublimation.hpp"
 #include "gtest/gtest.h"
+#include "mathFunctions/functionFactory.hpp"
 
 struct SublimationTestParameters {
     std::string description;
     // Setup
     PetscReal latentHeatOfFusion;
     PetscReal effectiveConductivity;
+    std::shared_ptr<ablate::mathFunctions::MathFunction> additionalHeatTransfer = {};
 
     // Geometry
     PetscInt dim;
@@ -28,7 +30,7 @@ TEST_P(SublimationTestFixture, ShouldComputeCorrectSourceTerm) {
     const auto& params = GetParam();
 
     // create the boundary
-    auto boundary = std::make_shared<ablate::boundarySolver::physics::Sublimation>(params.latentHeatOfFusion, params.effectiveConductivity);
+    auto boundary = std::make_shared<ablate::boundarySolver::physics::Sublimation>(params.latentHeatOfFusion, params.effectiveConductivity, "", params.additionalHeatTransfer);
 
     // initialization is not needed for testing if species are not set
     // boundary->Initialize();
@@ -95,6 +97,19 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .boundaryTemperature = 300,
                                                 .stencilTemperature = 150,  // delta T = stencil-boundary ... stencil = boundary+deltaT
                                                 .expectedResults = {0.0, 0.0, 0.0}},
+                    (SublimationTestParameters){.description = "1D left boundary with heating and additional heat transfer",
+                                                // setup
+                                                .latentHeatOfFusion = 2.0e+5,
+                                                .effectiveConductivity = 2.5,
+                                                .additionalHeatTransfer = ablate::mathFunctions::Create(25.0 * 2.5),
+                                                // geometry
+                                                .dim = 1,
+                                                .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                                // values
+                                                .boundaryValues = {1.2, NAN, NAN},
+                                                .boundaryTemperature = 300,
+                                                .stencilTemperature = 325,  // delta T = stencil-boundary ... stencil = boundary+deltaT
+                                                .expectedResults = {0.0003125, -62.5, 0.000000162760417}},
                     (SublimationTestParameters){.description = "1D right boundary with heating",
                                                 // setup
                                                 .latentHeatOfFusion = 2.0e+5,

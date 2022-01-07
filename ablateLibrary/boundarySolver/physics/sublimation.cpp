@@ -5,8 +5,9 @@
 
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
-ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::string offGasSpecies)
-    : latentHeatOfFusion(latentHeatOfFusion), effectiveConductivity(effectiveConductivity), offGasSpecies(offGasSpecies) {}
+ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::string offGasSpecies,
+                                                          std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux)
+    : latentHeatOfFusion(latentHeatOfFusion), effectiveConductivity(effectiveConductivity), offGasSpecies(offGasSpecies), additionalHeatFlux(additionalHeatFlux) {}
 
 void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
@@ -34,6 +35,17 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
                                  {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                  BoundarySolver::BoundarySourceType::Distributed);
     }
+
+    // If there is a additionalHeatFlux function, we need to update time
+    if (additionalHeatFlux) {
+        bSolver.RegisterPreStep([this](auto ts, auto &solver) {
+            PetscFunctionBeginUser;
+            PetscErrorCode ierr = TSGetTime(ts, &(this->currentTime));
+            CHKERRQ(ierr);
+
+            PetscFunctionReturn(0);
+        });
+    }
 }
 
 PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
@@ -60,6 +72,11 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 
     // compute the heat flux
     PetscReal heatFluxIntoSolid = dTdn * sublimation->effectiveConductivity;  // note that q = dTdn and not -dTdn.  This is because of the direction of the normal faces into the gas phase
+
+    // If there is an additional heat flux compute and add value
+    if (sublimation->additionalHeatFlux) {
+        heatFluxIntoSolid += sublimation->additionalHeatFlux->Eval(fg->centroid, (int)dim, sublimation->currentTime);
+    }
 
     // Compute the massFlux (we can only remove mass)
     PetscReal massFlux = PetscMax(heatFluxIntoSolid / sublimation->latentHeatOfFusion, 0.0);
@@ -91,4 +108,5 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physics::Sublimation, "Adds in the euler/yi sources for a sublimating material.  Should be used with a LODI boundary.",
          ARG(double, "latentHeatOfFusion", "the latent heat of fusion [J/kg]"), ARG(double, "effectiveConductivity", "the effective conductivity to compute heat flux to the surface [W/(m⋅K)]"),
-         OPT(std::string, "offGasSpecies", "the species to deposit the off gas mass to (required if solving species)."));
+         OPT(std::string, "offGasSpecies", "the species to deposit the off gas mass to (required if solving species)"),
+         OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"));

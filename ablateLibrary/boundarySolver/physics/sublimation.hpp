@@ -12,10 +12,12 @@ class Sublimation : public BoundaryProcess {
     const PetscReal latentHeatOfFusion;
     const PetscReal effectiveConductivity;
     const std::string offGasSpecies;
+    const std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux;
     PetscInt speciesLoc = -1;
+    PetscReal currentTime = 0.0;
 
    public:
-    explicit Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::string offGasSpecies = "");
+    explicit Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::string offGasSpecies = "", std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {});
 
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
 
