@@ -54,11 +54,15 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
         stencilTemperature[s] = stencilAuxValues[s][aOff[TEMPERATURE_LOC]];
     }
 
-    PetscScalar dTdn;
+    // compute dTdn
+    PetscReal dTdn;
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[TEMPERATURE_LOC]], stencilSize, stencilTemperature.data(), stencilWeights, dTdn);
 
-    // Compute the massFlux
-    PetscReal massFlux = -dTdn * sublimation->effectiveConductivity / sublimation->latentHeatOfFusion;
+    // compute the heat flux
+    PetscReal heatFluxIntoSolid = dTdn * sublimation->effectiveConductivity;  // note that q = dTdn and not -dTdn.  This is because of the direction of the normal faces into the gas phase
+
+    // Compute the massFlux (we can only remove mass)
+    PetscReal massFlux = PetscMax(heatFluxIntoSolid / sublimation->latentHeatOfFusion, 0.0);
 
     // Compute the area
     PetscReal area = utilities::MathUtilities::MagVector(dim, fg->areas);
@@ -70,7 +74,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     PetscReal momentumFlux = massFlux * massFlux / boundaryValues[uOff[EULER_LOC] + fp::RHO];
     // And the mom flux for each dir by g
     for (PetscInt dir = 0; dir < dim; dir++) {
-        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * fg->areas[dim];
+        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * fg->areas[dir];
     }
 
     // Energy term

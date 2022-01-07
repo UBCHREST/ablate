@@ -5,3 +5,4 @@ target_sources(libraryTests
         )
 
 add_subdirectory(lodi)
+add_subdirectory(physics)
