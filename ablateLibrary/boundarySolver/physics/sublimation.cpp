@@ -71,7 +71,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[TEMPERATURE_LOC]], stencilSize, stencilTemperature.data(), stencilWeights, dTdn);
 
     // compute the heat flux
-    PetscReal heatFluxIntoSolid = dTdn * sublimation->effectiveConductivity;  // note that q = dTdn and not -dTdn.  This is because of the direction of the normal faces into the gas phase
+    PetscReal heatFluxIntoSolid = -dTdn * sublimation->effectiveConductivity;  // note that q = -dTdn as dTdN faces into the solid
 
     // If there is an additional heat flux compute and add value
     if (sublimation->additionalHeatFlux) {
@@ -91,7 +91,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     PetscReal momentumFlux = massFlux * massFlux / boundaryValues[uOff[EULER_LOC] + fp::RHO];
     // And the mom flux for each dir by g
     for (PetscInt dir = 0; dir < dim; dir++) {
-        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * fg->areas[dir];
+        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir];
     }
 
     // Energy term

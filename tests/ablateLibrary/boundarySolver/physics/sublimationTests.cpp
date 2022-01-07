@@ -79,7 +79,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 1,
-                                                .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN},
                                                 .boundaryTemperature = 300,
@@ -91,7 +91,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 1,
-                                                .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN},
                                                 .boundaryTemperature = 300,
@@ -104,7 +104,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .additionalHeatTransfer = ablate::mathFunctions::Create(25.0 * 2.5),
                                                 // geometry
                                                 .dim = 1,
-                                                .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN},
                                                 .boundaryTemperature = 300,
@@ -116,7 +116,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 1,
-                                                .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN},
                                                 .boundaryTemperature = 300,
@@ -128,7 +128,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 1,
-                                                .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN},
                                                 .boundaryTemperature = 300,
@@ -140,7 +140,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 3,
-                                                .fvFaceGeom = {.normal = {0.0, 0.0, 1.0}, .areas = {0.0, 0.0, 0.5}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {0.0, 0.0, -0.5}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN, NAN, NAN},
                                                 .boundaryTemperature = 300,
@@ -152,7 +152,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 3,
-                                                .fvFaceGeom = {.normal = {0.0, 0.0, 1.0}, .areas = {0.0, 0.0, 0.5}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {0.0, 0.0, -0.5}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN, NAN, NAN},
                                                 .boundaryTemperature = 300,
@@ -164,7 +164,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 3,
-                                                .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {0.0, 0.0, -0.5}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {0.0, 0.0, 1.0}, .areas = {0.0, 0.0, 0.5}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN, NAN, NAN},
                                                 .boundaryTemperature = 300,
@@ -176,7 +176,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 3,
-                                                .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {0.0, 0.0, -0.5}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {0.0, 0.0, 1.0}, .areas = {0.0, 0.0, 0.5}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN, NAN, NAN},
                                                 .boundaryTemperature = 300,
@@ -188,43 +188,13 @@ INSTANTIATE_TEST_SUITE_P(
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 2,
-                                                .fvFaceGeom = {.normal = {0.70710678118655, 0.70710678118655}, .areas = {0.3535533906, 0.3535533906}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {-0.70710678118655, -0.70710678118655}, .areas = {-0.3535533906, -0.3535533906}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN, NAN},
                                                 .boundaryTemperature = 300,
                                                 .stencilTemperature = 335.3553390593,  // note for this case a dT/dn of 50 is need on the diagonal
                                                 .expectedResults = {0.0003125, -62.5, 1.1508899433575995E-7, 1.1508899433575995E-7}},
                     (SublimationTestParameters){.description = "2D lower left corner boundary with cooling",
-                                                // setup
-                                                .latentHeatOfFusion = 2.0e+5,
-                                                .effectiveConductivity = 2.5,
-                                                // geometry
-                                                .dim = 3,
-                                                .fvFaceGeom = {.normal =
-                                                                   {
-                                                                       0.70710678118655,
-                                                                       0.70710678118655,
-                                                                   },
-                                                               .areas = {0.3535533906, 0.3535533906},
-                                                               .centroid = {NAN, NAN, NAN}},
-                                                // values
-                                                .boundaryValues = {1.2, NAN, NAN, NAN},
-                                                .boundaryTemperature = 300,
-                                                .stencilTemperature = 250,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                                .expectedResults = {0.0, 0.0, 0.0, 0.0}},
-                    (SublimationTestParameters){.description = "2D upper right corner boundary with heating",
-                                                // setup
-                                                .latentHeatOfFusion = 2.0e+5,
-                                                .effectiveConductivity = 2.5,
-                                                // geometry
-                                                .dim = 2,
-                                                .fvFaceGeom = {.normal = {-0.70710678118655, -0.70710678118655}, .areas = {-0.3535533906, -0.3535533906}, .centroid = {NAN, NAN, NAN}},
-                                                // values
-                                                .boundaryValues = {1.2, NAN, NAN, NAN},
-                                                .boundaryTemperature = 300,
-                                                .stencilTemperature = 264.6446609407,  // note for this case a dT/dn of 50 is need on the diagonal
-                                                .expectedResults = {0.0003125, -62.5, -1.1508899433575995E-7, -1.1508899433575995E-7}},
-                    (SublimationTestParameters){.description = "2D upper right corner boundary with cooling",
                                                 // setup
                                                 .latentHeatOfFusion = 2.0e+5,
                                                 .effectiveConductivity = 2.5,
@@ -240,15 +210,45 @@ INSTANTIATE_TEST_SUITE_P(
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN, NAN},
                                                 .boundaryTemperature = 300,
-                                                .stencilTemperature = 350,  // delta T = stencil-boundary ... stencil = boundary+deltaT
+                                                .stencilTemperature = 250,  // delta T = stencil-boundary ... stencil = boundary+deltaT
                                                 .expectedResults = {0.0, 0.0, 0.0, 0.0}},
-                    (SublimationTestParameters){.description = "2D upper right no gradient",
+                    (SublimationTestParameters){.description = "2D upper right corner boundary with heating",
                                                 // setup
                                                 .latentHeatOfFusion = 2.0e+5,
                                                 .effectiveConductivity = 2.5,
                                                 // geometry
                                                 .dim = 2,
-                                                .fvFaceGeom = {.normal = {-0.70710678118655, -0.70710678118655}, .areas = {-0.3535533906, -0.3535533906}, .centroid = {NAN, NAN, NAN}},
+                                                .fvFaceGeom = {.normal = {0.70710678118655, 0.70710678118655}, .areas = {0.3535533906, 0.3535533906}, .centroid = {NAN, NAN, NAN}},
+                                                // values
+                                                .boundaryValues = {1.2, NAN, NAN, NAN},
+                                                .boundaryTemperature = 300,
+                                                .stencilTemperature = 264.6446609407,  // note for this case a dT/dn of 50 is need on the diagonal
+                                                .expectedResults = {0.0003125, -62.5, -1.1508899433575995E-7, -1.1508899433575995E-7}},
+                    (SublimationTestParameters){.description = "2D upper right corner boundary with cooling",
+                                                // setup
+                                                .latentHeatOfFusion = 2.0e+5,
+                                                .effectiveConductivity = 2.5,
+                                                // geometry
+                                                .dim = 3,
+                                                .fvFaceGeom = {.normal =
+                                                                   {
+                                                                       0.70710678118655,
+                                                                       0.70710678118655,
+                                                                   },
+                                                               .areas = {0.3535533906, 0.3535533906},
+                                                               .centroid = {NAN, NAN, NAN}},
+                                                // values
+                                                .boundaryValues = {1.2, NAN, NAN, NAN},
+                                                .boundaryTemperature = 300,
+                                                .stencilTemperature = 350,  // delta T = stencil-boundary ... stencil = boundary+deltaT
+                                                .expectedResults = {0.0, 0.0, 0.0, 0.0}},
+                    (SublimationTestParameters){.description = "2D lower left no gradient",
+                                                // setup
+                                                .latentHeatOfFusion = 2.0e+5,
+                                                .effectiveConductivity = 2.5,
+                                                // geometry
+                                                .dim = 2,
+                                                .fvFaceGeom = {.normal = {0.70710678118655, -0.70710678118655}, .areas = {-0.3535533906, -0.3535533906}, .centroid = {NAN, NAN, NAN}},
                                                 // values
                                                 .boundaryValues = {1.2, NAN, NAN, NAN},
                                                 .boundaryTemperature = 300,

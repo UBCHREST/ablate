@@ -170,7 +170,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             PetscFVFaceGeom* fg;
             DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
 
-            // The normal should be pointing away from the boundary domain.  The current fg support points from cell[0] -> cell[1]
+            // The normal should be pointing away from the other phase into the boundary solver domain.  The current fg support points from cell[0] -> cell[1]
             // If the neighborCells[0] is in the boundary (this cell), flip the normal
             if (neighborCells[0] == cell) {
                 for (PetscInt d = 0; d < dim; d++) {

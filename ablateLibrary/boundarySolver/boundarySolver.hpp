@@ -16,7 +16,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * Boundary information.
      */
     typedef struct {
-        PetscReal normal[3];   /* Area-scaled normals */
+        PetscReal normal[3];   /* normals (pointing into the boundary from the other region) */
         PetscReal areas[3];    /* Area-scaled normals */
         PetscReal centroid[3]; /* Location of centroid (quadrature point) */
     } BoundaryFVFaceGeom;
