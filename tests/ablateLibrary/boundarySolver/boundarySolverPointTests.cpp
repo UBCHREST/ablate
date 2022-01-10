@@ -32,9 +32,9 @@ typedef struct {
     std::string expectedFieldBGradient;
     std::string expectedAuxAGradient;
     std::string expectedAuxBGradient;
-} BoundarySolverGradientTestParameters;
+} BoundarySolverPointTestParameters;
 
-class BoundarySolverGradientTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<BoundarySolverGradientTestParameters> {
+class BoundarySolverPointTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<BoundarySolverPointTestParameters> {
    public:
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
@@ -45,7 +45,7 @@ static void FillStencilValues(PetscInt loc, const PetscScalar* stencilValues[], 
     }
 }
 
-TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
+TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
     StartWithMPI
         // initialize petsc and mpi
         PetscInitialize(argc, argv, nullptr, "HELP") >> testErrorChecker;
@@ -282,9 +282,9 @@ TEST_P(BoundarySolverGradientTestFixture, ShouldComputeCorrectGradientsOnBoundar
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverGradientTestFixture,
+INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverPointTestFixture,
                          testing::Values(
-                             (BoundarySolverGradientTestParameters){
+                             (BoundarySolverPointTestParameters){
                                  .mpiTestParameter = {.testName = "1D BoundarySolver", .nproc = 1, .arguments = ""},
                                  .dim = 1,
                                  .fieldAFunction = "x + x*y+ y + z",
@@ -297,7 +297,7 @@ INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverGradientTestFixture,
                                  .expectedAuxBGradient = "-y*z, -x*z, -x*y",
 
                              },
-                             (BoundarySolverGradientTestParameters){
+                             (BoundarySolverPointTestParameters){
                                  .mpiTestParameter = {.testName = "2D BoundarySolver", .nproc = 1, .arguments = ""},
                                  .dim = 2,
                                  .fieldAFunction = "x + y + z",
@@ -310,7 +310,7 @@ INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverGradientTestFixture,
                                  .expectedAuxBGradient = "-2,0, 0",
 
                              },
-                             (BoundarySolverGradientTestParameters){
+                             (BoundarySolverPointTestParameters){
                                  .mpiTestParameter = {.testName = "3D BoundarySolver", .nproc = 1, .arguments = ""},
                                  .dim = 3,
                                  .fieldAFunction = "x + y + z",
@@ -323,4 +323,4 @@ INSTANTIATE_TEST_SUITE_P(BoundarySolver, BoundarySolverGradientTestFixture,
                                  .expectedAuxBGradient = "-2,0, 0",
 
                              }),
-                         [](const testing::TestParamInfo<BoundarySolverGradientTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
+                         [](const testing::TestParamInfo<BoundarySolverPointTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });

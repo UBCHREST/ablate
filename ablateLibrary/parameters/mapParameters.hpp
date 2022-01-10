@@ -21,6 +21,8 @@ class MapParameters : public Parameters {
     const std::map<std::string, std::string>& GetMap() const { return values; }
 
     static std::shared_ptr<MapParameters> Create(std::initializer_list<std::pair<std::string, std::string>>);
+
+    static std::shared_ptr<MapParameters> Create(const std::map<std::string, std::string>& values);
 };
 }  // namespace ablate::parameters
 

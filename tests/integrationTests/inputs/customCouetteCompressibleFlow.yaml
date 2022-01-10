@@ -5,10 +5,6 @@ environment:
   tagDirectory: false
 arguments: 
   dm_plex_separate_marker: ""
-  petsclimiter_type: none
-  euler_petscfv_type: leastsquares
-  temperature_petscfv_type: leastsquares
-  velocity_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -26,13 +22,22 @@ timestepper:
       - name: euler
         components: [ "rho", "rhoE", "rhoVel0", "rhoVel1" ]
         type: FVM
+        options:
+          petscfv_type: leastsquares
+          petsclimiter_type: none
       - name: temperature
         location: AUX
         type: FVM
+        options:
+          petscfv_type: leastsquares
+          petsclimiter_type: none
       - name: velocity
         components: [ "vel0", "vel1" ]
         location: AUX
         type: FVM
+        options:
+          petscfv_type: leastsquares
+          petsclimiter_type: none
     modifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 0

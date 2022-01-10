@@ -4,9 +4,6 @@ environment:
   tagDirectory: false
 arguments: 
   automaticTimeStepCalculator: on
-  euler_petscfv_type: upwind
-  temperature_petscfv_type: leastsquares
-  velocity_petscfv_type: leastsquares
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -65,15 +62,15 @@ solvers:
     processes:
       - !ablate::boundarySolver::lodi::IsothermalWall
         eos: *eos
-#  - !ablate::boundarySolver::BoundarySolver
-#    id: openBoundary
-#    region:
-#      name: boundaryCellsLeft
-#    fieldBoundary:
-#      name: boundaryFace
-#    processes:
-#      - !ablate::boundarySolver::lodi::OpenBoundary
-#        eos: *eos
-#        reflectFactor: 0.0
-#        referencePressure: 1
-#        maxAcousticsLength: 1
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: boundaryCellsLeft
+    fieldBoundary:
+      name: boundaryFace
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 1
+        maxAcousticsLength: 1

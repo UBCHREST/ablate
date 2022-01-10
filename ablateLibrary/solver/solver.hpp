@@ -80,7 +80,7 @@ class Solver {
     inline void RegisterPreStep(std::function<void(TS ts, Solver&)> preStep) { this->preStepFunctions.push_back(preStep); }
 
     /**
-     * Adds function to be called before each flow step
+     * Adds function to be called before each flow stage
      * @param preStep
      */
     inline void RegisterPreStage(std::function<void(TS ts, Solver&, PetscReal)> preStage) { this->preStageFunctions.push_back(preStage); }

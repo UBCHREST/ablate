@@ -6,3 +6,4 @@ target_sources(ablateLibrary
         )
 
 add_subdirectory(lodi)
+add_subdirectory(physics)

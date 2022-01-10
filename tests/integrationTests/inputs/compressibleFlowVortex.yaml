@@ -2,8 +2,7 @@
 environment:
   title: compressibleFlowVortex
   tagDirectory: false
-arguments:
-  euler_petscfv_type: leastsquares
+arguments: {}
 timestepper:
   name: theMainTimeStepper
   io:
@@ -30,6 +29,8 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas : 287.0
+        conservedFieldOptions:
+          petscfv_type: leastsquares
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
       field: >-

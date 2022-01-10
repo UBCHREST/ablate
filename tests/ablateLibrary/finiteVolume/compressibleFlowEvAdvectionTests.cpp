@@ -148,29 +148,27 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowEvAdvectionFixture,
-                         testing::Values(
-                             (CompressibleFlowEvAdvectionTestParameters){
-                                 .mpiTestParameter = {.testName = "ev advection",
-                                                      .nproc = 1,
-                                                      .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                   "-euler_petscfv_type upwind -densityEV_petscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
-                                 .initialNx = 5,
-                                 .levels = 4,
-                                 .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
-                                 .densityEvExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2"),
-                                 .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1},
-                                 .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1}},
-                             (CompressibleFlowEvAdvectionTestParameters){
-                                 .mpiTestParameter = {.testName = "mpi ev advection",
-                                                      .nproc = 2,
-                                                      .arguments = "-dm_plex_separate_marker -dm_distribute -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                   "-euler_petscfv_type upwind -densityEV_petscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
-                                 .initialNx = 5,
-                                 .levels = 4,
-                                 .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
-                                 .densityEvExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2"),
-                                 .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1},
-                                 .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1}}),
-                         [](const testing::TestParamInfo<CompressibleFlowEvAdvectionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+INSTANTIATE_TEST_SUITE_P(
+    CompressibleFlow, CompressibleFlowEvAdvectionFixture,
+    testing::Values((CompressibleFlowEvAdvectionTestParameters){.mpiTestParameter = {.testName = "ev advection",
+                                                                                     .nproc = 1,
+                                                                                     .arguments = "-dm_plex_separate_marker -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                                                                  "-ts_max_steps 50 -ts_dt 5e-05  "},
+                                                                .initialNx = 5,
+                                                                .levels = 4,
+                                                                .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
+                                                                .densityEvExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2"),
+                                                                .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1},
+                                                                .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1}},
+                    (CompressibleFlowEvAdvectionTestParameters){.mpiTestParameter = {.testName = "mpi ev advection",
+                                                                                     .nproc = 2,
+                                                                                     .arguments = "-dm_plex_separate_marker -dm_distribute -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                                                                  "-ts_max_steps 50 -ts_dt 5e-05  "},
+                                                                .initialNx = 5,
+                                                                .levels = 4,
+                                                                .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
+                                                                .densityEvExact = ablate::mathFunctions::Create("2*.2*(1 + sin(2*_pi*(x-4*t)/.01))/2, 2*.3*(1 + sin(2*_pi*(x-4*t)/.01))/2"),
+                                                                .expectedL2Convergence = {NAN, NAN, NAN, NAN, 1, 1},
+                                                                .expectedLInfConvergence = {NAN, NAN, NAN, NAN, 1, 1}}),
+    [](const testing::TestParamInfo<CompressibleFlowEvAdvectionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

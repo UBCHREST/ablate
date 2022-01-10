@@ -16,7 +16,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * Boundary information.
      */
     typedef struct {
-        PetscReal normal[3];   /* Area-scaled normals */
+        PetscReal normal[3];   /* normals (pointing into the boundary from the other region) */
         PetscReal areas[3];    /* Area-scaled normals */
         PetscReal centroid[3]; /* Location of centroid (quadrature point) */
     } BoundaryFVFaceGeom;
@@ -24,6 +24,11 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     using BoundarySourceFunction = PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[], const PetscScalar* boundaryValues,
                                                       const PetscScalar* stencilValues[], const PetscInt aOff[], const PetscScalar* auxValues, const PetscScalar* stencilAuxValues[],
                                                       PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[], PetscScalar source[], void* ctx);
+
+    /**
+     * Boundaries can be treated in two different ways, point source on the boundary or distributed in the other phase.  For the Distributed model, the source is divided by volume in each case
+     */
+    enum class BoundarySourceType { Point, Distributed };
 
     /**
      * public helper function to compute the gradient
@@ -56,9 +61,13 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
         /** The points in the stencil*/
         std::vector<PetscInt> stencil;
         /** The weights in [point*dim + dir] order */
-        std::vector<PetscScalar> weights;
+        std::vector<PetscScalar> gradientWeights;
         /** store the stencil size for easy access */
         PetscInt stencilSize;
+        /** The distribution weights in order */
+        std::vector<PetscScalar> distributionWeights;
+        /** Store the volume for each stencil cell */
+        std::vector<PetscScalar> volumes;
     };
 
     /**
@@ -67,6 +76,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     struct BoundaryFunctionDescription {
         BoundarySourceFunction function;
         void* context;
+        BoundarySourceType type;
 
         std::vector<PetscInt> sourceFields;
         std::vector<PetscInt> inputFields;
@@ -114,7 +124,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * @param context
      */
     void RegisterFunction(BoundarySourceFunction function, void* context, const std::vector<std::string>& sourceFields, const std::vector<std::string>& inputFields,
-                          const std::vector<std::string>& auxFields);
+                          const std::vector<std::string>& auxFields, BoundarySourceType type = BoundarySourceType::Point);
 
     /**
      * Function passed into PETSc to compute the FV RHS

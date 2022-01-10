@@ -40,11 +40,11 @@ docker run -v $PWD/docs:/docs -p 4000:4000 --rm docs_image
 The tests can be run locally using an IDE or cmake directly (ctest command).  You may also use the ```--keepOutputFile=true```  command line argument to preserve output files.  To run the tests using the testing environment (docker), first make sure that [Docker](https://www.docker.com) installed.
 
 ```bash
-# Login to github to access base image (follow prompt instructions)
-docker login ghcr.io
-
 # Build the docker testing image
-docker build -t testing_image --build-arg PETSC_BUILD_ARCH='arch-opt' -f DockerTestFile .
+docker build -t testing_image -f DockerTestFile .
+
+# or for 64 bit ints
+docker build -t testing_image --build-arg PETSC_BUILD_ARCH='arch-ablate-opt-64' -f DockerTestFile .
 
 # Run the built tests and view results
 docker run --rm testing_image 
