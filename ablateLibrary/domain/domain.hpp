@@ -69,6 +69,13 @@ class Domain {
     void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
                               const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
 
+    /**
+     * project the list of field function into the provided global vector
+     * @param fieldFunctions
+     * @param globVec
+     */
+    void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time = 0.0);
+
     std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
 
     /**

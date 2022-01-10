@@ -9,8 +9,9 @@ namespace ablate::mathFunctions {
 class ConstantValue : public MathFunction {
    private:
     const std::vector<double> value;
-
+    const bool uniformValue;
     static PetscErrorCode ConstantValuePetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
+    static PetscErrorCode ConstantValueUniformPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
    public:
     explicit ConstantValue(double value);
@@ -25,9 +26,9 @@ class ConstantValue : public MathFunction {
 
     void Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const override;
 
-    PetscFunction GetPetscFunction() override { return ConstantValuePetscFunction; }
+    PetscFunction GetPetscFunction() override { return uniformValue? ConstantValueUniformPetscFunction :ConstantValuePetscFunction; }
 
-    void* GetContext() override { return (void*)&value; }
+    void* GetContext() override { return (void*)value.data(); }
 };
 
 }  // namespace ablate::mathFunctions

@@ -167,11 +167,6 @@ class SubDomain : public io::Serializable {
     }
 
     /**
-     * Support function to project the fields on to the global vector
-     */
-    void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0, const std::shared_ptr<domain::Region> region = {});
-
-    /**
      * Support function to project the fields on to vector that lives only on the subDM
      */
     void ProjectFieldFunctionsToSubDM(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0);
