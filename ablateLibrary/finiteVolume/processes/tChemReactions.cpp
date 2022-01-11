@@ -122,6 +122,7 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
 
     // create a vector to hold the source terms
     DMCreateLocalVector(fieldDm, &sourceVec) >> checkError;
+    VecZeroEntries(sourceVec) >> checkError;
 
     // Before each step, compute the source term over the entire dt
     auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
