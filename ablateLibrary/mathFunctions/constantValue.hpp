@@ -26,7 +26,7 @@ class ConstantValue : public MathFunction {
 
     void Eval(const double* xyz, const int& ndims, const double& t, std::vector<double>& result) const override;
 
-    PetscFunction GetPetscFunction() override { return uniformValue? ConstantValueUniformPetscFunction :ConstantValuePetscFunction; }
+    PetscFunction GetPetscFunction() override { return uniformValue ? ConstantValueUniformPetscFunction : ConstantValuePetscFunction; }
 
     void* GetContext() override { return (void*)value.data(); }
 };

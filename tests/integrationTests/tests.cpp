@@ -40,13 +40,14 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"directory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
-            // load a yaml file
-            ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
-            std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction());
+            {
+                // load a yaml file
+                ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
+                std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction());
 
-            // run with the parser
-            ablate::Builder::Run(parser);
-
+                // run with the parser
+                ablate::Builder::Run(parser);
+            }
             // print all files in the directory so that they are compared with expected
             if (rank == 0) {
                 std::vector<std::string> resultFileInfo;

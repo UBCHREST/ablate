@@ -103,7 +103,7 @@ void ablate::solver::TimeStepper::Solve() {
     }
 
     // set time stepper individual tolerances if specified
-    if(!absoluteTolerances.empty() || !relativeTolerances.empty()){
+    if (!absoluteTolerances.empty() || !relativeTolerances.empty()) {
         Vec vatol = nullptr;
         Vec vrtol = nullptr;
 
@@ -123,7 +123,7 @@ void ablate::solver::TimeStepper::Solve() {
         domain->ProjectFieldFunctions(relativeTolerances, vrtol);
 
         // Set the values
-        TSSetTolerances(ts, PETSC_DECIDE, vatol, PETSC_DECIDE, vrtol ) >> checkError;
+        TSSetTolerances(ts, PETSC_DECIDE, vatol, PETSC_DECIDE, vrtol) >> checkError;
         VecDestroy(&vatol);
         VecDestroy(&vrtol);
     }

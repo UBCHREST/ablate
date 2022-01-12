@@ -35,13 +35,16 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
         MPI_Barrier(PETSC_COMM_WORLD);
         MPI_Comm_size(PETSC_COMM_WORLD, &size) >> checkMpiError;
     }
+
+    if (libUsed) {
+        throw std::runtime_error("Only a single instance of the TChem EOS can be instance at a time");
+    }
+    libUsed = true;
+
     // initialize TChem (with tabulation off?).  TChem init reads/writes file it can only be done one at a time
     for (int r = 0; r < size; r++) {
         if (r == rank) {
-            if (libCount == 0) {
-                TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
-            }
-            libCount++;
+            TC_initChem((char *)mechFile.c_str(), (char *)thermoFile.c_str(), 0, 1.0) >> errorChecker;
 
             // Perform the local init
             // March over and get each species name
@@ -70,12 +73,11 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
 }
 
 ablate::eos::TChem::~TChem() {
-    libCount--;
-
     /* Free memory and reset variables to allow TC_initchem to be called again */
-    if (libCount == 0) {
+    if (libUsed) {
         TC_reset();
     }
+    libUsed = false;
 }
 
 const std::vector<std::string> &ablate::eos::TChem::GetSpecies() const { return species; }

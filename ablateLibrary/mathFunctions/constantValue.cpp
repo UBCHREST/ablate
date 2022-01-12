@@ -20,7 +20,6 @@ PetscErrorCode ablate::mathFunctions::ConstantValue::ConstantValueUniformPetscFu
     PetscFunctionReturn(0);
 }
 
-
 ablate::mathFunctions::ConstantValue::ConstantValue(double value) : value(std::vector<double>{value}), uniformValue(true) {}
 
 ablate::mathFunctions::ConstantValue::ConstantValue(std::vector<double> values) : value(values), uniformValue(false) {}
