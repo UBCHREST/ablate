@@ -117,7 +117,7 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
             std::make_shared<mathFunctions::FieldFunction>("auxA", ablate::mathFunctions::Create(GetParam().auxAFunction)),
             std::make_shared<mathFunctions::FieldFunction>("auxB", ablate::mathFunctions::Create(GetParam().auxBFunction)),
         };
-        mesh->ProjectFieldFunctions(auxFieldFunctions, auxVec);
+        subDomain->ProjectFieldFunctionsToLocalVector(auxFieldFunctions, auxVec);
 
         // Set the boundary cells values so that they are the correct value on the centroid of the face
         boundarySolver->InsertFieldFunctions(fieldFunctions);

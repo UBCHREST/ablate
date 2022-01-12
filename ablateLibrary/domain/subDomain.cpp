@@ -513,3 +513,43 @@ void ablate::domain::SubDomain::Restore(PetscViewer viewer, PetscInt sequenceNum
     DMSetOutputSequenceNumber(GetDM(), sequenceNumber, time) >> checkError;
     VecLoad(GetSolutionVector(), viewer) >> checkError;
 }
+void ablate::domain::SubDomain::ProjectFieldFunctionsToLocalVector(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec locVec, PetscReal time) {
+    PetscInt numberFields;
+    DM dm;
+
+    VecGetDM(locVec, &dm) >> checkError;
+    DMGetNumFields(dm, &numberFields) >> checkError;
+
+    for (auto& fieldFunction : fieldFunctions) {
+        // Size up the field projects
+        std::vector<mathFunctions::PetscFunction> fieldFunctionsPts(numberFields, nullptr);
+        std::vector<void*> fieldContexts(numberFields, nullptr);
+
+        auto fieldId = GetField(fieldFunction->GetName());
+        fieldContexts[fieldId.id] = fieldFunction->GetSolutionField().GetContext();
+        fieldFunctionsPts[fieldId.id] = fieldFunction->GetSolutionField().GetPetscFunction();
+
+        // Determine where to apply this field
+        DMLabel fieldLabel = nullptr;
+        PetscInt fieldValue = 0;
+        if (const auto& region = fieldFunction->GetRegion()) {
+            fieldValue = region->GetValue();
+            DMGetLabel(dm, region->GetName().c_str(), &fieldLabel) >> checkError;
+        } else {
+            PetscObject fieldTemp;
+            DMGetField(dm, fieldId.id, &fieldLabel, &fieldTemp) >> checkError;
+            if (fieldLabel) {
+                fieldValue = 1;  // this is temporary until petsc allows fields to be defined with values beside 1
+            }
+        }
+
+        // Note the global DMProjectFunctionLabel can't be used because it overwrites unwritten values.
+
+        // Project this field
+        if (fieldLabel) {
+            DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
+        } else {
+            DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
+        }
+    }
+}

@@ -195,7 +195,6 @@ void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared
         }
 
         // Note the global DMProjectFunctionLabel can't be used because it overwrites unwritten values.
-
         // Project this field
         if(fieldLabel) {
             DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;

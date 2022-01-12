@@ -173,13 +173,13 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
     MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
 
     // don't override the first time step if bigger
-    PetscPrintf(PetscObjectComm((PetscObject)ts), "\tComputedDt: %g\n", (double)dtMin);
-//    if (timeStep > 0 || dtMinGlobal < currentDt) {
-//        TSSetTimeStep(ts, dtMinGlobal) >> checkError;
-//        if (PetscIsNanReal(dtMinGlobal)) {
-//            throw std::runtime_error("Invalid timestep selected for flow");
-//        }
-//    }
+//    PetscPrintf(PetscObjectComm((PetscObject)ts), "\tComputedDt: %g\n", (double)dtMin);
+        if (timeStep > 0 || dtMinGlobal < currentDt) {
+            TSSetTimeStep(ts, dtMinGlobal) >> checkError;
+            if (PetscIsNanReal(dtMinGlobal)) {
+                throw std::runtime_error("Invalid timestep selected for flow");
+            }
+        }
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.emplace_back(function, ctx); }
@@ -466,7 +466,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
         PetscReal* cellPhi;
         DMGetWorkArray(dm, dof, MPIU_REAL, &cellPhi) >> checkError;
 
-
         for (PetscInt c = cStart; c < cEnd; ++c) {
             PetscInt cell = cells ? cells[c] : c;
 
@@ -658,11 +657,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
         DMGetLabel(dm, region->GetName().c_str(), &regionLabel) >> checkError;
     }
 
-
-    // only project
-    DMLabel label;
-    DMGetLabel(dm, "flowRegion", &label);
-
     // March over each face in this region
     IS faceIS;
     PetscInt fStart, fEnd;
@@ -687,14 +681,15 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
         DMPlexPointLocalRead(cellDM, faceCells[0], cellGeomArray, &cgL) >> checkError;
         DMPlexPointLocalRead(cellDM, faceCells[1], cellGeomArray, &cgR) >> checkError;
 
-        PetscInt leftFlowLabel;
-        DMLabelGetValue(label, faceCells[0], &leftFlowLabel);
-        PetscInt rightFlowLabel;
-        DMLabelGetValue(label, faceCells[1], &rightFlowLabel);
-
+        PetscInt leftFlowLabelValue = regionValue;
+        PetscInt rightFlowLabelValue = regionValue;
+        if (regionLabel) {
+            DMLabelGetValue(regionLabel, faceCells[0], &leftFlowLabelValue);
+            DMLabelGetValue(regionLabel, faceCells[1], &rightFlowLabelValue);
+        }
         // compute the left/right face values
-        ProjectToFace(subDomain->GetFields(), ds, *fg, faceCells[0], *cgL, dm, xArray, dmGrads, locGradArrays, uL, gradL, leftFlowLabel ==1);
-        ProjectToFace(subDomain->GetFields(), ds, *fg, faceCells[1], *cgR, dm, xArray, dmGrads, locGradArrays, uR, gradR, rightFlowLabel == 1);
+        ProjectToFace(subDomain->GetFields(), ds, *fg, faceCells[0], *cgL, dm, xArray, dmGrads, locGradArrays, uL, gradL, leftFlowLabelValue == regionValue);
+        ProjectToFace(subDomain->GetFields(), ds, *fg, faceCells[1], *cgR, dm, xArray, dmGrads, locGradArrays, uR, gradR, rightFlowLabelValue == regionValue);
 
         // determine the left/right cells
         if (auxArray) {

@@ -167,6 +167,13 @@ class SubDomain : public io::Serializable {
     }
 
     /**
+     * project the list of field function into the provided local vector.  Allows solution and aux vectors
+     * @param fieldFunctions
+     * @param globVec
+     */
+    void ProjectFieldFunctionsToLocalVector(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec locVec, PetscReal time = 0.0);
+
+    /**
      * Support function to project the fields on to vector that lives only on the subDM
      */
     void ProjectFieldFunctionsToSubDM(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initialization, Vec globVec, PetscReal time = 0.0);
