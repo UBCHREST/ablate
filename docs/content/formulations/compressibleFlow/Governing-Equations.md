@@ -7,7 +7,7 @@ nav_order: 1
 ---
 
 ### Governing Equations
-The compressible flow formulation is solved using a finite volume formulation where the conserved values $$(\rho, \rho\boldsymbol{u}, \rho e_t,)$$ are computed for each volume.  Writen in terms of volumes and fluxes boundaries:
+The compressible flow formulation is solved using a finite volume formulation where the conserved values $$(\rho, \rho\boldsymbol{u}, \rho e_t,)$$ are computed for each volume.  Written in terms of volumes and fluxes boundaries:
 
 $$\begin{eqnarray}
 \frac{\partial}{\partial t} \int_\Omega \vector{Q_t} d \Omega + \int_{\partial \Omega} \left (\vector{F_c} - \vector{F_v} \right) dS = \int_\Omega \vector{Q_s} d \Omega
