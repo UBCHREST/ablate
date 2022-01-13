@@ -75,7 +75,7 @@ PetscErrorCode ablate::finiteVolume::resources::PressureGradientScaling::UpdateP
         CHKERRQ(ierr);
 
         // If valid cell
-        if(euler) {
+        if (euler) {
             const PetscScalar *densityYi = nullptr;
             if (flowDensityYiId >= 0) {
                 ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowDensityYiId, flowArray, &euler);

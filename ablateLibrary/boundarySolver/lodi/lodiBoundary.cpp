@@ -5,18 +5,26 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
 
-ablate::boundarySolver::lodi::LODIBoundary::LODIBoundary(std::shared_ptr<eos::EOS> eos) : eos(std::move(eos)), dims(0), nEqs(0), nSpecEqs(0), nEvEqs(0), eulerId(-1), speciesId(-1), evId(-1) {}
+ablate::boundarySolver::lodi::LODIBoundary::LODIBoundary(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::resources::PressureGradientScaling> pressureGradientScaling)
+    : eos(std::move(eos)), pressureGradientScaling(std::move(pressureGradientScaling)), dims(0), nEqs(0), nSpecEqs(0), nEvEqs(0), eulerId(-1), speciesId(-1), evId(-1) {}
 
 void ablate::boundarySolver::lodi::LODIBoundary::GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal cp, PetscReal cv, PetscReal &velNormPrim, PetscReal &speedOfSoundPrim) {
+    PetscReal alpha2 = 1.0;
     PetscReal ralpha2 = 1.;
     PetscReal fourralpha2 = 4;
+
+    if (pressureGradientScaling) {
+        alpha2 = PetscSqr(pressureGradientScaling->GetAlpha());
+        ralpha2 = 1.0 / alpha2;
+        fourralpha2 = 4.0 / alpha2;
+    }
 
     double gam = cp / cv;
     double gamm1 = gam - 1.e+0;
     double gamp1 = gam + 1.e+0;
     double M2 = velNorm / speedOfSound;
     M2 = M2 * M2;
-    velNormPrim = 0.5e+0 * (velNorm * (gamp1 - gamm1));
+    velNormPrim = 0.5e+0 * (velNorm * (gamp1 - gamm1 / alpha2));
     double gamm12 = gamm1 * gamm1;
     double tmp = 1.e+0 - ralpha2;
     tmp = tmp * tmp;
@@ -42,11 +50,16 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
                                                           PetscReal velnprm, PetscReal Cprm, const PetscReal *rhoYi, const PetscReal *rhoEV, const PetscReal *sL,
                                                           const PetscReal transformationMatrix[3][3], PetscReal *mdFdn) const {
     std::vector<PetscScalar> d(nEqs);
+    PetscReal alpha2 = 1.0;
+    if (pressureGradientScaling) {
+        alpha2 = PetscSqr(pressureGradientScaling->GetAlpha());
+    }
+
     auto fac = 0.5e+0 * (sL[0] - sL[1 + dims]) * (velnprm - vel[0]) / Cprm;
     double C2 = C * C;
     d[0] = (sL[1] + 0.5e+0 * (sL[1 + dims] + sL[0]) + fac) / C2;
     d[1] = 0.5e+0 * (sL[1 + dims] + sL[0]) - fac;
-    d[2] = 0.5e+0 * (sL[1 + dims] - sL[0]) / rho / Cprm;
+    d[2] = 0.5e+0 * (sL[1 + dims] - sL[0]) / rho / Cprm / alpha2;
     for (int ndim = 1; ndim < dims; ndim++) {
         d[2 + ndim] = sL[1 + ndim];
     }

@@ -4,8 +4,12 @@
 
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
-ablate::boundarySolver::lodi::OpenBoundary::OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure, double maxAcousticsLength)
-    : LODIBoundary(std::move(eos)), reflectFactor((PetscReal)reflectFactor), referencePressure((PetscReal)referencePressure), maxAcousticsLength((PetscReal)maxAcousticsLength) {}
+ablate::boundarySolver::lodi::OpenBoundary::OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure, double maxAcousticsLength,
+                                                         std::shared_ptr<finiteVolume::resources::PressureGradientScaling> pressureGradientScaling)
+    : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)),
+      reflectFactor((PetscReal)reflectFactor),
+      referencePressure((PetscReal)referencePressure),
+      maxAcousticsLength((PetscReal)maxAcousticsLength) {}
 
 void ablate::boundarySolver::lodi::OpenBoundary::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
@@ -150,7 +154,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
 
     // get_vel_and_c_prims(PGS, velwall[0], C, Cp, Cv, velnprm, Cprm);
     PetscReal velNormPrim, speedOfSoundPrim;
-    GetVelAndCPrims(boundaryNormalVelocity, boundarySpeedOfSound, boundaryCp, boundaryCv, velNormPrim, speedOfSoundPrim);
+    boundary->GetVelAndCPrims(boundaryNormalVelocity, boundarySpeedOfSound, boundaryCp, boundaryCv, velNormPrim, speedOfSoundPrim);
 
     // get_eigenvalues
     std::vector<PetscReal> lambda(boundary->nEqs);
@@ -161,19 +165,25 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     // kFac = rf/L
     PetscReal kFac = boundary->reflectFactor / boundary->maxAcousticsLength;
 
+    // Compute alpha2
+    PetscReal alpha2 = 1.0;
+    if (boundary->pressureGradientScaling) {
+        alpha2 = PetscSqr(boundary->pressureGradientScaling->GetAlpha());
+    }
+
     // Compute scriptL
     std::vector<PetscReal> scriptL(boundary->nEqs);
     {
         if (boundaryMach < 1.0) {
             // Subsonic
             // Outgoing acoustic wave
-            scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm[0] * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));
+            scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * alpha2 * dVeldNorm[0] * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));
             // Incoming acoustic wave
             scriptL[0] = kFac * speedOfSoundPrim * (boundaryPressure - boundary->referencePressure);
 
             if (boundaryNormalVelocity >= 0.0) {
                 // If going out of the domain
-                scriptL[1] = lambda[1] * (PetscSqr(boundarySpeedOfSound) * dRhodNorm - dPdNorm + 2.e+0 * boundaryDensity * (velNormPrim - boundaryNormalVelocity) * dVeldNorm[0]);
+                scriptL[1] = lambda[1] * (PetscSqr(boundarySpeedOfSound) * dRhodNorm - dPdNorm + 2.e+0 * boundaryDensity * alpha2 * (velNormPrim - boundaryNormalVelocity) * dVeldNorm[0]);
                 for (int d = 1; d < dim; d++) {
                     scriptL[1 + d] = lambda[1 + d] * dVeldNorm[d];  // Tangential velocities
                 };
@@ -205,13 +215,13 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
             // Supersonic
             // Going out of the domain
             if (boundaryNormalVelocity >= 0.e+0) {
-                scriptL[0] = lambda[0] * (dPdNorm - boundaryDensity * dVeldNorm[0] * (velNormPrim - boundaryNormalVelocity + speedOfSoundPrim));  // Outgoing acoustic wave
+                scriptL[0] = lambda[0] * (dPdNorm - boundaryDensity * alpha2 * dVeldNorm[0] * (velNormPrim - boundaryNormalVelocity + speedOfSoundPrim));  // Outgoing acoustic wave
                 double tmp2 = boundarySpeedOfSound * boundarySpeedOfSound;
-                scriptL[1] = lambda[1] * (tmp2 * dRhodNorm - dPdNorm + 2.0 * boundaryDensity * (velNormPrim - boundaryNormalVelocity) * dVeldNorm[0]);
+                scriptL[1] = lambda[1] * (tmp2 * dRhodNorm - dPdNorm + 2.0 * boundaryDensity * alpha2 * (velNormPrim - boundaryNormalVelocity) * dVeldNorm[0]);
                 for (int d = 1; d < dim; d++) {
                     scriptL[1 + d] = lambda[1 + d] * dVeldNorm[d];
                 }
-                scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm[0] * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));
+                scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * alpha2 * dVeldNorm[0] * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));
                 for (int ns = 0; ns < boundary->nSpecEqs; ns++) {
                     PetscScalar dYidn;
                     BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryYi[ns], stencilSize, stencilYi[ns].data(), stencilWeights, dYidn);
@@ -264,4 +274,5 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::OpenBoundary, "Treats boundary as open.",
          ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the boundary"), ARG(double, "reflectFactor", "boundary reflection factor"),
-         ARG(double, "referencePressure", "reference pressure"), ARG(double, "maxAcousticsLength", "maximum length in the domain for acoustics to propagate "));
+         ARG(double, "referencePressure", "reference pressure"), ARG(double, "maxAcousticsLength", "maximum length in the domain for acoustics to propagate "),
+         OPT(ablate::finiteVolume::resources::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));

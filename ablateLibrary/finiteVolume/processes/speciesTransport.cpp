@@ -3,8 +3,9 @@
 #include "utilities/mathUtilities.hpp"
 
 ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
-                                                                    std::shared_ptr<eos::transport::TransportModel> transportModelIn)
-    : fluxCalculator(std::move(fluxCalcIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)), advectionData() {
+                                                                    std::shared_ptr<eos::transport::TransportModel> transportModelIn,
+                                                                    std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling)
+    : FlowProcess(pressureGradientScaling), fluxCalculator(std::move(fluxCalcIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)), advectionData() {
     if (fluxCalculator) {
         // set the decode state function
         advectionData.decodeStateFunction = eos->GetDecodeStateFunction();
@@ -14,6 +15,10 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
         // extract the difference function from fluxDifferencer object
         advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
         advectionData.fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
+
+        if (pressureGradientScaling) {
+            advectionData.pgsAlpha = &pressureGradientScaling->GetAlpha();
+        }
     }
 
     if (transportModel) {
@@ -250,6 +255,12 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
     // get the face values
     PetscReal massFlux;
 
+    // If a pgs, update the speed of sound
+    if (eulerAdvectionData->pgsAlpha) {
+        aL /= *eulerAdvectionData->pgsAlpha;
+        aR /= *eulerAdvectionData->pgsAlpha;
+    }
+
     if (eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, NULL) ==
         fluxCalculator::LEFT) {
         // march over each gas species
@@ -272,4 +283,5 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SpeciesTransport, "diffusion/advection for the species yi field",
          ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (default is no advection)"),
-         OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"));
+         OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"),
+         OPT(ablate::finiteVolume::resources::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));

@@ -18,6 +18,8 @@ struct IsothermalWallTestParameters {
     std::function<PetscErrorCode(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx)> computeCvFunction;
     std::function<PetscErrorCode(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx)> computeSensibleEnthalpy;
     ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom fvFaceGeom;
+    std::function<std::shared_ptr<ablate::finiteVolume::resources::PressureGradientScaling>()> getPgs = []() { return nullptr; };
+
     std::vector<PetscScalar> boundaryValues;
     std::vector<PetscScalar> stencilValues; /* the grad is (boundary-stencil)/1.0*/
     std::vector<PetscScalar> expectedResults;
@@ -66,7 +68,7 @@ TEST_P(IsothermalWallTestFixture, ShouldComputeCorrectSourceTerm) {
     EXPECT_CALL(*mockEOS, GetComputeSensibleEnthalpyContext).Times(::testing::Exactly(1)).WillOnce(::testing::Return((void*)&params.computeSensibleEnthalpy));
 
     // create the boundary
-    std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary = std::make_shared<ablate::boundarySolver::lodi::IsothermalWall>(mockEOS);
+    std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary = std::make_shared<ablate::boundarySolver::lodi::IsothermalWall>(mockEOS, params.getPgs());
     boundary->Initialize(params.dim, params.nEqs, params.nSpecEqs, params.nEvEqs);
 
     PetscInt uOff[3] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs};
@@ -516,5 +518,94 @@ INSTANTIATE_TEST_SUITE_P(
                                0.25 * 1.783191515808363,
                                0.5 * 1.783191515808363},
             .stencilValues = {20, 3000 * 20, (40000.000 - 3.5) * 20, .2 * 20, .3 * 20, .4 * 20, .5 * 20, .6 * 20},
-            .expectedResults = {-94962.06945150577, 1.2986328812551773E10, 332367.2430802702, -9496.206945150578, -47481.034725752885, -37984.82778060231, -23740.517362876442, -47481.034725752885}}),
+            .expectedResults = {-94962.06945150577, 1.2986328812551773E10, 332367.2430802702, -9496.206945150578, -47481.034725752885, -37984.82778060231, -23740.517362876442, -47481.034725752885}},
+        // case 6 with ev/yi and alpha
+        (IsothermalWallTestParameters){
+            .dim = 1,
+            .nEqs = 8,
+            .nSpecEqs = 3,
+            .nEvEqs = 2,
+            .decodeStateFunction =
+                [](PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx) {
+                    static int count = 0;
+                    if (count == 0) {
+                        CHECK_EXPECT("dim", 1, dim);
+                        CHECK_EXPECT("density", 1.783191515808363, density);
+                        CHECK_EXPECT("velocity0", -3.5, velocity[0]);
+                        CHECK_EXPECT("densityYi0", 0.1 * 1.783191515808363, densityYi[0]);
+                        CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, densityYi[1]);
+                        CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, densityYi[2]);
+                        CHECK_EXPECT("totalEnergy", -136708.9241708678, totalEnergy, 1E-3);
+                        *internalEnergy = NAN;
+                        *a = 431.6854962124021;
+                        *p = 251619.82076699706;
+                    } else {
+                        CHECK_EXPECT("dim", 1, dim);
+                        CHECK_EXPECT("density", 20, density);
+                        CHECK_EXPECT("velocity0", 39996.500000, velocity[0]);
+                        CHECK_EXPECT("densityYi0", 0.2 * 20, densityYi[0]);
+                        CHECK_EXPECT("densityYi1", 0.3 * 20, densityYi[1]);
+                        CHECK_EXPECT("densityYi2", 0.4 * 20, densityYi[2]);
+                        CHECK_EXPECT("totalEnergy", 3000, totalEnergy, 1E-3);
+                        *internalEnergy = NAN;
+                        *a = NAN,
+                        *p = 251619.82076699706 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
+                    }
+                    count++;
+                    return 0;
+                },
+            .computeTemperatureFunction =
+                [](PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx) {
+                    CHECK_EXPECT("dim", 1, dim);
+                    CHECK_EXPECT("density", 1.783191515808363, density);
+                    CHECK_EXPECT("densityYi0", 0.1 * 1.783191515808363, densityYi[0]);
+                    CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, densityYi[1]);
+                    CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, densityYi[2]);
+                    CHECK_EXPECT("totalEnergy", -136708.9241708678, totalEnergy, 1E-3);
+                    CHECK_EXPECT("massFlux", -6.241170, massFlux[0]);
+                    *T = 300.4;
+                    return 0;
+                },
+            .computeCpFunction =
+                [](PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx) {
+                    CHECK_EXPECT("T", 300.4, T);
+                    CHECK_EXPECT("yi0", 0.1, yi[0]);
+                    CHECK_EXPECT("yi1", 0.5, yi[1]);
+                    CHECK_EXPECT("yi2", 0.4, yi[2]);
+                    CHECK_EXPECT("density", 1.783191515808363, density);
+                    *specificHeat = 1934.650079471233;
+                    return 0;
+                },
+            .computeCvFunction =
+                [](PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx) {
+                    CHECK_EXPECT("T", 300.4, T);
+                    CHECK_EXPECT("yi0", 0.1, yi[0]);
+                    CHECK_EXPECT("yi1", 0.5, yi[1]);
+                    CHECK_EXPECT("yi2", 0.4, yi[2]);
+                    CHECK_EXPECT("density", 1.783191515808363, density);
+                    *specificHeat = 1464.9215577478003;
+                    return 0;
+                },
+            .computeSensibleEnthalpy =
+                [](PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx) {
+                    CHECK_EXPECT("T", 300.4, T);
+                    CHECK_EXPECT("yi0", 0.1, yi[0]);
+                    CHECK_EXPECT("yi1", 0.5, yi[1]);
+                    CHECK_EXPECT("yi2", 0.4, yi[2]);
+                    CHECK_EXPECT("density", 1.783191515808363, density);
+                    *sensibleEnthalpy = 4347.52375485136;
+                    return 0;
+                },
+            .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+            .getPgs = []() { return std::make_shared<ablate::finiteVolume::resources::PressureGradientScaling>(std::shared_ptr<ablate::eos::EOS>{}, 125.0, 1.0); },
+            .boundaryValues = {1.783191515808363,
+                               -243778.19371678037,
+                               -3.5 * 1.783191515808363,
+                               0.1 * 1.783191515808363,
+                               0.5 * 1.783191515808363,
+                               0.4 * 1.783191515808363,
+                               0.25 * 1.783191515808363,
+                               0.5 * 1.783191515808363},
+            .stencilValues = {20, 3000 * 20, (40000.000 - 3.5) * 20, .2 * 20, .3 * 20, .4 * 20, .5 * 20, .6 * 20},
+            .expectedResults = {-175407.46347393887, 2.398746162552289E10, 613926.122158786, -17540.746347393888, -87703.73173696944, -70162.98538957555, -43851.86586848472, -87703.73173696944}}),
     [](const testing::TestParamInfo<IsothermalWallTestParameters>& info) { return std::to_string(info.index); });

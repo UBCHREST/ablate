@@ -5,7 +5,8 @@
 
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
-ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos) : LODIBoundary(std::move(eos)) {}
+ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::resources::PressureGradientScaling> pressureGradientScaling)
+    : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)) {}
 
 void ablate::boundarySolver::lodi::IsothermalWall::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
@@ -121,15 +122,21 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
 
     // get_vel_and_c_prims(PGS, velwall[0], C, Cp, Cv, velnprm, Cprm);
     PetscReal velNormPrim, speedOfSoundPrim;
-    GetVelAndCPrims(boundaryNormalVelocity, boundarySpeedOfSound, boundaryCp, boundaryCv, velNormPrim, speedOfSoundPrim);
+    isothermalWall->GetVelAndCPrims(boundaryNormalVelocity, boundarySpeedOfSound, boundaryCp, boundaryCv, velNormPrim, speedOfSoundPrim);
 
     // get_eigenvalues
     std::vector<PetscReal> lambda(isothermalWall->nEqs);
     isothermalWall->GetEigenValues(boundaryNormalVelocity, boundarySpeedOfSound, velNormPrim, speedOfSoundPrim, &lambda[0]);
 
+    // Compute alpha2
+    PetscReal alpha2 = 1.0;
+    if (isothermalWall->pressureGradientScaling) {
+        alpha2 = PetscSqr(isothermalWall->pressureGradientScaling->GetAlpha());
+    }
+
     // Get scriptL
     std::vector<PetscReal> scriptL(isothermalWall->nEqs);
-    scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));  // Outgoing
+    scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm * alpha2 * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));  // Outgoing
     // acoustic
     // wave
     scriptL[0] = scriptL[1 + dim];  // Incoming acoustic wave
@@ -170,4 +177,5 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
 
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::IsothermalWall, "Enforces a isothermal wall with fixed velocity/temperature",
-         ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the wall"));
+         ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the wall"),
+         OPT(ablate::finiteVolume::resources::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));

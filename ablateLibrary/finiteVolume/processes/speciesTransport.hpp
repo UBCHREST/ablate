@@ -26,6 +26,9 @@ class SpeciesTransport : public FlowProcess {
         /* store method used for flux calculator */
         ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
         void* fluxCalculatorCtx;
+
+        /* store the pgs alpha */
+        const PetscReal* pgsAlpha = nullptr;
     };
     AdvectionData advectionData;
 
@@ -52,7 +55,8 @@ class SpeciesTransport : public FlowProcess {
     PetscInt numberSpecies;
 
    public:
-    explicit SpeciesTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {});
+    explicit SpeciesTransport(std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {}, std::shared_ptr<eos::transport::TransportModel> transportModel = {},
+                              std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling = {});
 
     /**
      * public function to link this process with the flow
