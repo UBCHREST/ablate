@@ -173,13 +173,13 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
     MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
 
     // don't override the first time step if bigger
-    //    PetscPrintf(PetscObjectComm((PetscObject)ts), "\tComputedDt: %g\n", (double)dtMin);
-    if (timeStep > 0 || dtMinGlobal < currentDt) {
-        TSSetTimeStep(ts, dtMinGlobal) >> checkError;
-        if (PetscIsNanReal(dtMinGlobal)) {
-            throw std::runtime_error("Invalid timestep selected for flow");
-        }
-    }
+        PetscPrintf(PetscObjectComm((PetscObject)ts), "\tComputedDt: %g\n", (double)dtMin);
+//    if (timeStep > 0 || dtMinGlobal < currentDt) {
+//        TSSetTimeStep(ts, dtMinGlobal) >> checkError;
+//        if (PetscIsNanReal(dtMinGlobal)) {
+//            throw std::runtime_error("Invalid timestep selected for flow");
+//        }
+//    }
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.emplace_back(function, ctx); }

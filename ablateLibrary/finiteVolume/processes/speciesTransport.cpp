@@ -42,6 +42,8 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
 }
 
 void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
+    ablate::finiteVolume::processes::FlowProcess::Initialize(flow);
+
     if (!eos->GetSpecies().empty()) {
         if (fluxCalculator) {
             flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {});

@@ -45,6 +45,8 @@ ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved,
 }
 
 void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
+    ablate::finiteVolume::processes::FlowProcess::Initialize(flow);
+
     if (flow.GetSubDomain().ContainsField(conserved)) {
         // determine the number of components in the ev
         auto conservedForm = flow.GetSubDomain().GetField(conserved);

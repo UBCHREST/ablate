@@ -16,6 +16,12 @@ class FlowProcess : public Process {
     explicit FlowProcess(std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling);
 
     /**
+     * Should be called by any derived class
+     * @param fv
+     */
+    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
+
+    /**
      * Private function to decode the euler fields
      * @param flowData
      * @param dim

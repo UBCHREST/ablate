@@ -39,3 +39,9 @@ void ablate::finiteVolume::processes::FlowProcess::DecodeEulerState(eos::DecodeS
     decodeStateFunction(dim, *density, totalEnergy, velocity, densityYi, internalEnergy, a, p, decodeStateContext);
     *M = PetscSqrtReal(velMag) / (*a);
 }
+
+void ablate::finiteVolume::processes::FlowProcess::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
+    if(pressureGradientScaling){
+        pressureGradientScaling->Register(fv);
+    }
+}

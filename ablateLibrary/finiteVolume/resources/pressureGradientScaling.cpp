@@ -140,3 +140,18 @@ PetscErrorCode ablate::finiteVolume::resources::PressureGradientScaling::UpdateP
     PetscSynchronizedPrintf(comm, "PGS: %g (alpha), %g maxMach \n", alpha, maxMach);
     PetscFunctionReturn(0);
 }
+
+void ablate::finiteVolume::resources::PressureGradientScaling::Register(ablate::finiteVolume::FiniteVolumeSolver &fv) {
+    if (!registered) {
+        auto preStep = std::bind(&ablate::finiteVolume::resources::PressureGradientScaling::UpdatePreconditioner, this, std::placeholders::_1, std::placeholders::_2);
+        fv.RegisterPreStep(preStep);
+        registered = true;
+    }
+}
+
+#include "registrar.hpp"
+REGISTER_DEFAULT(ablate::finiteVolume::resources::PressureGradientScaling, ablate::finiteVolume::resources::PressureGradientScaling,
+                 "Rescales the thermodynamic pressure gradient scaling the acoustic propagation speeds to allow for a larger time step.",
+                 ARG(ablate::eos::EOS, "eos", "the equation of state used for the flow"), ARG(double, "alphaInit", "the initial alpha"),
+                 ARG(double, "domainLength", "the reference length of the domain"), OPT(double, "maxAlphaAllowed", "the maximum allowed alpha during the simulation (default 100)"),
+                 OPT(double, "maxDeltaPressureFac", "max variation from mean pressure (default 0.05)"));

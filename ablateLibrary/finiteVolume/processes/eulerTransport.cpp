@@ -53,6 +53,8 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<
 }
 
 void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
+    ablate::finiteVolume::processes::FlowProcess::Initialize(flow);
+
     // Register the euler source terms
     if (fluxCalculator) {
         if (eos->GetSpecies().empty()) {
