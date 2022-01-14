@@ -3,12 +3,13 @@
 ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUp(double mInf) : mInf(mInf) {}
 
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUpFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
-                                                                                                               PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal* massFlux, PetscReal* p12) {
+                                                                                                               PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal pgsAlpha, PetscReal* massFlux,
+                                                                                                               PetscReal* p12) {
     // Compute the density at the interface
     PetscReal rho12 = (0.5) * (rhoL + rhoR);
 
     // compute the speed of sound at a12
-    PetscReal a12 = 0.5 * (aL + aR);  // Simple average of aL and aR.  This can be replaced with eq. 30;
+    PetscReal a12 = 0.5 * (aL + aR) / pgsAlpha;  // Simple average of aL and aR.  This can be replaced with eq. 30;
 
     // Compute the left and right mach numbers
     PetscReal mL = uL / a12;
@@ -25,7 +26,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     PetscReal fa = mO * (2.0 - mO);
 
     // compute the mach number on the interface
-    PetscReal m12 = M4Plus(mL) + M4Minus(mR) - (Kp / fa) * PetscMax(1.0 - (sigma * mBar2), 0) * (pR - pL) / (rho12 * a12 * a12);
+    PetscReal m12 = M4Plus(mL) + M4Minus(mR) - (Kp / fa) * PetscMax(1.0 - (sigma * mBar2), 0) * (pR - pL) / (rho12 * a12 * a12 * pgsAlpha * pgsAlpha);
 
     // store the mass flux;
     Direction direction;
@@ -42,7 +43,8 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         double p5Plus = P5Plus(mL, fa);
         double p5Minus = P5Minus(mR, fa);
 
-        *p12 = p5Plus * pL + p5Minus * pR - Ku * p5Plus * p5Minus * (rhoL + rhoR) * fa * a12 * (uR - uL);
+        *p12 = p5Plus * pL + p5Minus * pR - Ku * p5Plus * p5Minus * rho12 * fa * a12 * a12 * pgsAlpha * pgsAlpha * (mR - mL);
+        *p12 /= PetscSqr(pgsAlpha);
     }
     return direction;
 }

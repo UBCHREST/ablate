@@ -10,7 +10,7 @@ namespace ablate::finiteVolume::fluxCalculator {
  * < 0 right to left
  */
 enum Direction { LEFT = 1, RIGHT = 2, NA = 0 };
-using FluxCalculatorFunction = Direction (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal* massFlux,
+using FluxCalculatorFunction = Direction (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal pgsAlpha, PetscReal* massFlux,
                                              PetscReal* p12);
 
 class FluxCalculator {

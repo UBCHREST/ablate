@@ -169,11 +169,14 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
     PetscMPIInt rank;
     MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
 
-    PetscReal dtMinGlobal;
-    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+//    PetscReal dtMinGlobal;
+//    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
 
     // don't override the first time step if bigger
         PetscPrintf(PetscObjectComm((PetscObject)ts), "\tComputedDt: %g\n", (double)dtMin);
+    // Set the cfl time step in the ts
+    TSSetCFLTimeLocal(ts, dtMin);
+
 //    if (timeStep > 0 || dtMinGlobal < currentDt) {
 //        TSSetTimeStep(ts, dtMinGlobal) >> checkError;
 //        if (PetscIsNanReal(dtMinGlobal)) {

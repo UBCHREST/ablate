@@ -9,7 +9,7 @@ namespace ablate::finiteVolume::fluxCalculator {
  */
 class AusmpUp : public fluxCalculator::FluxCalculator {
    private:
-    static Direction AusmpUpFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal* massFlux, PetscReal* p12);
+    static Direction AusmpUpFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,PetscReal pgsAlpha, PetscReal* massFlux, PetscReal* p12);
 
     static PetscReal M1Plus(PetscReal m);
     static PetscReal M2Plus(PetscReal m);
@@ -18,7 +18,7 @@ class AusmpUp : public fluxCalculator::FluxCalculator {
     const inline static PetscReal beta = 1.e+0 / 8.e+0;
     const inline static PetscReal Kp = 0.25;
     const inline static PetscReal Ku = 0.75;
-    const inline static PetscReal sigma = 1.0;
+    const inline static PetscReal sigma = 0.25;
 
     // The reference infinity mach number
     const double mInf;

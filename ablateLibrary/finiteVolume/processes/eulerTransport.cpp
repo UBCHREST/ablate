@@ -172,21 +172,10 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(Pe
     PetscReal p12;
 
     // If a pgs, update the speed of sound
-    if (eulerAdvectionData->pgsAlpha) {
-        aL /= *eulerAdvectionData->pgsAlpha;
-        aR /= *eulerAdvectionData->pgsAlpha;
-    }
+    PetscReal pgsAlpha = eulerAdvectionData->pgsAlpha ? *eulerAdvectionData->pgsAlpha : 1.0;
 
-    /*void (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-        PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-        PetscReal * m12, PetscReal *p12);*/
     fluxCalculator::Direction direction =
-        eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, &p12);
-
-    // If a pgs, update pressure on the interface
-    if (eulerAdvectionData->pgsAlpha) {
-        p12 /= PetscSqr(*eulerAdvectionData->pgsAlpha);
-    }
+        eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, pgsAlpha, &massFlux, &p12);
 
     if (direction == fluxCalculator::LEFT) {
         flux[RHO] = massFlux * areaMag;

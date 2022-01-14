@@ -2,7 +2,7 @@
 #include "rieman.hpp"
 #include <eos/perfectGas.hpp>
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::Rieman::RiemanFluxFunction(void *ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
-                                                                                                                 PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
+                                                                                                                 PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal pgsAlpha, PetscReal *massFlux,
 
                                                                                                                  PetscReal *p12) {
     /*

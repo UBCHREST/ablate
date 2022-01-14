@@ -78,7 +78,7 @@ PetscErrorCode ablate::finiteVolume::resources::PressureGradientScaling::UpdateP
         if (euler) {
             const PetscScalar *densityYi = nullptr;
             if (flowDensityYiId >= 0) {
-                ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowDensityYiId, flowArray, &euler);
+                ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowDensityYiId, flowArray, &densityYi);
                 CHKERRQ(ierr);
             }
 
@@ -137,7 +137,7 @@ PetscErrorCode ablate::finiteVolume::resources::PressureGradientScaling::UpdateP
     alpha = PetscMax(alpha, 1.e+0);
 
     // Update
-    PetscSynchronizedPrintf(comm, "PGS: %g (alpha), %g maxMach \n", alpha, maxMach);
+    PetscSynchronizedPrintf(comm, "PGS: %g (alpha), %g (maxMach),  %g (maxMach') \n", alpha, maxMach, alpha*maxMach);
     PetscFunctionReturn(0);
 }
 

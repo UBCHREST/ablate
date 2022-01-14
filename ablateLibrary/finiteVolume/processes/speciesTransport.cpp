@@ -258,12 +258,9 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
     PetscReal massFlux;
 
     // If a pgs, update the speed of sound
-    if (eulerAdvectionData->pgsAlpha) {
-        aL /= *eulerAdvectionData->pgsAlpha;
-        aR /= *eulerAdvectionData->pgsAlpha;
-    }
+    PetscReal alpha = eulerAdvectionData->pgsAlpha ? *eulerAdvectionData->pgsAlpha : 1.0;
 
-    if (eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, NULL) ==
+    if (eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, alpha, &massFlux, NULL) ==
         fluxCalculator::LEFT) {
         // march over each gas species
         for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
