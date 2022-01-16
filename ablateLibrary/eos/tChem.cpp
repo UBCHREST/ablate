@@ -99,7 +99,6 @@ int ablate::eos::TChem::ComputeEnthalpyOfFormation(int numSpec, double *tempYiWo
     double currentT = tempYiWorkingArray[0];
     tempYiWorkingArray[0] = TREF;
     int err = TC_getMs2HmixMs(tempYiWorkingArray, numSpec + 1, &enthalpyOfFormation);
-
     tempYiWorkingArray[0] = currentT;
     return err;
 }
@@ -139,6 +138,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperatureInternal(int numSpec, doubl
     // compute the first error
     double e2;
     tempYiWorkingArray[0] = t2;
+
     int err = ComputeSensibleInternalEnergyInternal(numSpec, tempYiWorkingArray, mwMix, e2);
     TCCHKERRQ(err);
     double f2 = internalEnergyRef - e2;
@@ -189,10 +189,8 @@ PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(PetscInt dim, PetscRe
     PetscReal internalEnergyRef = (totalEnergy)-0.5 * speedSquare;
 
     // Fill the working array
-    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
-    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
-        tempYiWorkingArray[sp + 1] = densityYi[sp] / density;
-    }
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, NAN, densityYi, tempYiWorkingArray);
 
     // precompute some values
     double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
@@ -220,10 +218,8 @@ PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal d
     (*internalEnergy) = (totalEnergy)-ke;
 
     // Fill the working array
-    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
-    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
-        tempYiWorkingArray[sp + 1] = densityYi[sp] / density;
-    }
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, NAN, densityYi, tempYiWorkingArray);
 
     // precompute some values
     double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
@@ -273,11 +269,8 @@ PetscErrorCode ablate::eos::TChem::TChemComputeDensityFunctionFromTemperaturePre
     TChem *tChem = (TChem *)ctx;
 
     // Fill the working array
-    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
-    tempYiWorkingArray[0] = temperature;
-    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
-        tempYiWorkingArray[sp + 1] = yi[sp];
-    }
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromMassFractions(tChem->numberSpecies, temperature, yi, tempYiWorkingArray);
 
     // precompute some values
     double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
@@ -297,11 +290,8 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSensibleInternalEnergy(PetscReal 
     TChem *tChem = (TChem *)ctx;
 
     // Fill the working array
-    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
-    tempYiWorkingArray[0] = T;
-    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
-        tempYiWorkingArray[sp + 1] = yi[sp];
-    }
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromMassFractions(tChem->numberSpecies, T, yi, tempYiWorkingArray);
 
     // precompute some values
     double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
@@ -323,11 +313,8 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSensibleEnthalpy(PetscReal T, Pet
     TChem *tChem = (TChem *)ctx;
 
     // Fill the working array
-    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
-    tempYiWorkingArray[0] = T;
-    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
-        tempYiWorkingArray[sp + 1] = yi[sp];
-    }
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromMassFractions(tChem->numberSpecies, T, yi, tempYiWorkingArray);
 
     // get the required values
     double totalEnthalpy;
@@ -349,11 +336,8 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSpecificHeatConstantPressure(Pets
     TChem *tChem = (TChem *)ctx;
 
     // Fill the working array
-    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
-    tempYiWorkingArray[0] = T;
-    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
-        tempYiWorkingArray[sp + 1] = yi[sp];
-    }
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromMassFractions(tChem->numberSpecies, T, yi, tempYiWorkingArray);
 
     // call the tChem library
     int err = TC_getMs2CpMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, specificHeat);
@@ -367,17 +351,59 @@ PetscErrorCode ablate::eos::TChem::TChemComputeSpecificHeatConstantVolume(PetscR
     TChem *tChem = (TChem *)ctx;
 
     // Fill the working array
-    double *tempYiWorkingArray = &tChem->tempYiWorkingVector[0];
-    tempYiWorkingArray[0] = T;
-    for (auto sp = 0; sp < tChem->numberSpecies; sp++) {
-        tempYiWorkingArray[sp + 1] = yi[sp];
-    }
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromMassFractions(tChem->numberSpecies, T, yi, tempYiWorkingArray);
 
     // call the tChem library
     int err = TC_getMs2CvMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, specificHeat);
     TCCHKERRQ(err);
 
     PetscFunctionReturn(0);
+}
+
+void ablate::eos::TChem::FillWorkingVectorFromMassFractions(int numSpec, double temperature, const double *yi, double *workingVector) {
+    workingVector[0] = temperature;
+    PetscScalar yiSum = 0.0;
+    for (PetscInt sp = 0; sp < numSpec - 1; sp++) {
+        // Limit the bounds
+        workingVector[sp + 1] = PetscMax(0.0, yi[sp]);
+        workingVector[sp + 1] = PetscMin(1.0, workingVector[sp + 1]);
+        yiSum += workingVector[sp + 1];
+    }
+    if (yiSum > 1.0) {
+        for (PetscInt sp = 0; sp < numSpec - 1; sp++) {
+            // Limit the bounds
+            workingVector[sp + 1] /= yiSum;
+        }
+        workingVector[numSpec] = 0.0;
+    } else {
+        workingVector[numSpec] = 1.0 - yiSum;
+    }
+}
+
+/**
+ * Fill and Normalize the density species mass fractions
+ * @param numSpec
+ * @param yi
+ */
+void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(int numSpec, double density, double temperature, const double *densityYi, double *workingVector) {
+    workingVector[0] = temperature;
+    PetscScalar yiSum = 0.0;
+    for (PetscInt sp = 0; sp < numSpec - 1; sp++) {
+        // Limit the bounds
+        workingVector[sp + 1] = PetscMax(0.0, densityYi[sp] / density);
+        workingVector[sp + 1] = PetscMin(1.0, workingVector[sp + 1]);
+        yiSum += workingVector[sp + 1];
+    }
+    if (yiSum > 1.0) {
+        for (PetscInt sp = 0; sp < numSpec - 1; sp++) {
+            // Limit the bounds
+            workingVector[sp + 1] /= yiSum;
+        }
+        workingVector[numSpec] = 0.0;
+    } else {
+        workingVector[numSpec] = 1.0 - yiSum;
+    }
 }
 
 const char *ablate::eos::TChem::periodicTable =

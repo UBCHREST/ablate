@@ -15,16 +15,19 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     PetscReal mL = uL / a12;
     PetscReal mR = uR / a12;
 
-    // compute mInf2
-    double* mInf = (double*)ctx;
-    PetscReal mInf2 = PetscSqr(*mInf);
-
     // Compute mBar2 (eq 70)
     PetscReal mBar2 = (PetscSqr(uL) + PetscSqr(uR)) / (2.0 * a12 * a12);
-    PetscReal mO2 = PetscMin(1.0, PetscMax(mBar2, mInf2));
-    PetscReal mO = PetscSqrtReal(mO2);
-    PetscReal fa = mO * (2.0 - mO);
 
+    // compute mInf2 or set fa to unity
+    PetscReal fa = 1.0;
+    double* mInf = (double*)ctx;
+    if (*mInf > 0) {
+        PetscReal mInf2 = PetscSqr(*mInf);
+
+        PetscReal mO2 = PetscMin(1.0, PetscMax(mBar2, mInf2));
+        PetscReal mO = PetscSqrtReal(mO2);
+        fa = mO * (2.0 - mO);
+    }
     // compute the mach number on the interface
     PetscReal m12 = M4Plus(mL) + M4Minus(mR) - (Kp / fa) * PetscMax(1.0 - (sigma * mBar2), 0) * (pR - pL) / (rho12 * a12 * a12 * pgsAlpha * pgsAlpha);
 

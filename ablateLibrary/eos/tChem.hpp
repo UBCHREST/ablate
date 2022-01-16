@@ -71,6 +71,20 @@ class TChem : public EOS {
      */
     static int ComputeSensibleInternalEnergyInternal(int numSpec, double* tempYiWorkingArray, double mwMix, double& internalEnergy);
 
+    /**
+     * Fill and normalize the species mass fractions
+     * @param numSpec
+     * @param yi
+     */
+    static void FillWorkingVectorFromMassFractions(int numSpec, double temperature, const double* yi, double* workingVector);
+
+    /**
+     * Fill and Normalize the density species mass fractions
+     * @param numSpec
+     * @param yi
+     */
+    static void FillWorkingVectorFromDensityMassFractions(int numSpec, double density, double temperature, const double* densityYi, double* workingVector);
+
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);
     ~TChem();

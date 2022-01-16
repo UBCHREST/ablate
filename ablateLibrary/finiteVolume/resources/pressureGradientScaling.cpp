@@ -12,7 +12,7 @@ ablate::finiteVolume::resources::PressureGradientScaling::PressureGradientScalin
 PetscErrorCode ablate::finiteVolume::resources::PressureGradientScaling::UpdatePreconditioner(TS flowTs, ablate::solver::Solver &flow) {
     PetscFunctionBeginUser;
 
-    // Compute global maximum values
+    // Compute global maximum valuesfluxCalculator
     PetscReal pAvgLocal = 0.e+0;
     PetscReal pMinLocal = PETSC_MAX_REAL;
     PetscReal pMaxLocal = 0.e+0;
@@ -137,7 +137,7 @@ PetscErrorCode ablate::finiteVolume::resources::PressureGradientScaling::UpdateP
     alpha = PetscMax(alpha, 1.e+0);
 
     // Update
-    PetscSynchronizedPrintf(comm, "PGS: %g (alpha), %g (maxMach),  %g (maxMach') \n", alpha, maxMach, alpha*maxMach);
+    PetscSynchronizedPrintf(comm, "PGS: %g (alpha), %g (maxMach),  %g (maxMach') \n", alpha, maxMach, alpha * maxMach);
     PetscFunctionReturn(0);
 }
 

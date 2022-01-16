@@ -3,8 +3,8 @@
 
 #include <memory>
 #include "eos/eos.hpp"
-#include "solver/solver.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
+#include "solver/solver.hpp"
 
 namespace ablate::finiteVolume::resources {
 /**
@@ -54,7 +54,7 @@ class PressureGradientScaling {
     /**
      * store if this instance has been registered
      */
-     bool registered = false;
+    bool registered = false;
 
    public:
     PressureGradientScaling(std::shared_ptr<eos::EOS> eos, double alphaInit, double domainLength, double maxAlphaAllowed = {}, double maxDeltaPressureFac = {});
@@ -71,7 +71,7 @@ class PressureGradientScaling {
      * Function to setup timestepping with the PressureGradientScaling.  This can be called multiple times and will only be registered once
      * @return
      */
-     void Register(ablate::finiteVolume::FiniteVolumeSolver& fv);
+    void Register(ablate::finiteVolume::FiniteVolumeSolver& fv);
 
     // Alpha accessor
     inline const PetscReal& GetAlpha() { return alpha; }

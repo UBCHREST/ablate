@@ -167,6 +167,8 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
                                        &nSpecEqs,
                                        finiteVolume::CompressibleFlowFields::YI_FIELD,
                                        {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD});
+
+        bSolver.RegisterPostEvaluate(ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies);
     }
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD)) {
         nEvEqs = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD).numberComponents;

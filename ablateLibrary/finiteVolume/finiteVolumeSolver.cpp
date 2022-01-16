@@ -169,20 +169,16 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
     PetscMPIInt rank;
     MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank);
 
-//    PetscReal dtMinGlobal;
-//    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+    PetscReal dtMinGlobal;
+    MPI_Allreduce(&dtMin, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
 
     // don't override the first time step if bigger
-        PetscPrintf(PetscObjectComm((PetscObject)ts), "\tComputedDt: %g\n", (double)dtMin);
-    // Set the cfl time step in the ts
-    TSSetCFLTimeLocal(ts, dtMin);
-
-//    if (timeStep > 0 || dtMinGlobal < currentDt) {
-//        TSSetTimeStep(ts, dtMinGlobal) >> checkError;
-//        if (PetscIsNanReal(dtMinGlobal)) {
-//            throw std::runtime_error("Invalid timestep selected for flow");
-//        }
-//    }
+    if (timeStep > 0 || dtMinGlobal < currentDt) {
+        TSSetTimeStep(ts, dtMinGlobal) >> checkError;
+        if (PetscIsNanReal(dtMinGlobal)) {
+            throw std::runtime_error("Invalid timestep selected for flow");
+        }
+    }
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.emplace_back(function, ctx); }
@@ -356,7 +352,7 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablate::domain::Field& field, Vec xGlobVec, Vec& gradLocVec, DM& dmGrad) {
+void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablate::domain::Field& field, Vec xLocalVec, Vec& gradLocVec, DM& dmGrad) {
     // get the FVM petsc field associated with this field
     auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
     auto dm = subDomain->GetFieldDM(field);
@@ -389,8 +385,8 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
     VecGetArrayRead(faceGeometryVec, &faceGeometryArray);
 
     // extract the global x array
-    const PetscScalar* xGlobArray;
-    VecGetArrayRead(xGlobVec, &xGlobArray);
+    const PetscScalar* xLocalArray;
+    VecGetArrayRead(xLocalVec, &xLocalArray);
 
     // extract the global grad array
     PetscScalar* gradGlobArray;
@@ -436,7 +432,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
         DMPlexGetSupport(dm, face, &cells);
         DMPlexPointLocalRead(dmFace, face, faceGeometryArray, &fg);
         for (PetscInt c = 0; c < 2; ++c) {
-            DMPlexPointLocalFieldRead(dm, cells[c], field.id, xGlobArray, &cx[c]) >> checkError;
+            DMPlexPointLocalFieldRead(dm, cells[c], field.id, xLocalArray, &cx[c]) >> checkError;
             DMPlexPointGlobalRef(dmGrad, cells[c], gradGlobArray, &cgrad[c]) >> checkError;
         }
         for (PetscInt pd = 0; pd < dof; ++pd) {
@@ -480,7 +476,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
 
             DMPlexGetConeSize(dm, cell, &coneSize) >> checkError;
             DMPlexGetCone(dm, cell, &cellFaces) >> checkError;
-            DMPlexPointLocalFieldRead(dm, cell, field.id, xGlobArray, &cx) >> checkError;
+            DMPlexPointLocalFieldRead(dm, cell, field.id, xLocalArray, &cx) >> checkError;
             DMPlexPointLocalRead(dmCell, cell, cellGeometryArray, &cg) >> checkError;
             DMPlexPointGlobalRef(dmGrad, cell, gradGlobArray, &cgrad) >> checkError;
 
@@ -493,14 +489,17 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
                 cellPhi[d] = PETSC_MAX_REAL;
             }
             for (PetscInt f = 0; f < coneSize; ++f) {
-                DMPlexApplyLimiter_Internal(dm, dmCell, lim, dim, dof, cell, field.id, cellFaces[f], fStart, fEnd, cellPhi, xGlobArray, cellGeometryArray, cg, cx, cgrad) >> checkError;
+                DMPlexApplyLimiter_Internal(dm, dmCell, lim, dim, dof, cell, field.id, cellFaces[f], fStart, fEnd, cellPhi, xLocalArray, cellGeometryArray, cg, cx, cgrad) >> checkError;
             }
             /* Apply limiter to gradient */
             for (PetscInt pd = 0; pd < dof; ++pd) {
                 /* Scalar limiter applied to each component separately */
+                //                std::cout << "cGrad[" << cell << "]: ";
                 for (PetscInt d = 0; d < dim; ++d) {
+                    //                    std::cout << cgrad[pd * dim + d] << ",";
                     cgrad[pd * dim + d] *= cellPhi[pd];
                 }
+                //                std::cout << std::endl << "cellPhi[" << cell <<"][" <<  pd <<"]: " << cellPhi[pd] << std::endl;
             }
         }
 
@@ -515,7 +514,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
     DMGlobalToLocalEnd(dmGrad, gradGlobVec, INSERT_VALUES, gradLocVec) >> checkError;
 
     // cleanup
-    VecRestoreArrayRead(xGlobVec, &xGlobArray) >> checkError;
+    VecRestoreArrayRead(xLocalVec, &xLocalArray) >> checkError;
     VecRestoreArrayRead(faceGeometryVec, &faceGeometryArray) >> checkError;
     RestoreRange(faceIS, fStart, fEnd, faces);
     DMRestoreGlobalVector(dmGrad, &gradGlobVec) >> checkError;

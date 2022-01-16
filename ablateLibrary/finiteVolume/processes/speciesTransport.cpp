@@ -55,10 +55,26 @@ void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finit
                                      CompressibleFlowFields::EULER_FIELD,
                                      {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
                                      {CompressibleFlowFields::YI_FIELD});
-            flow.RegisterRHSFunction(DiffusionSpeciesFlux, &diffusionData, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::YI_FIELD});
+            flow.RegisterRHSFunction(DiffusionSpeciesFlux,
+                                     &diffusionData,
+                                     CompressibleFlowFields::DENSITY_YI_FIELD,
+                                     {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                     {CompressibleFlowFields::YI_FIELD});
         }
 
         flow.RegisterAuxFieldUpdate(UpdateAuxMassFractionField, &numberSpecies, CompressibleFlowFields::YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
+
+        // check to see if the inert species was is listed
+        if (!inertSpeciesName.empty()) {
+            const auto &speciesList = eos->GetSpecies();
+            auto specIt = std::find(speciesList.begin(), speciesList.end(), inertSpeciesName);
+            if (specIt != speciesList.end()) {
+                inertSpecies = std::distance(speciesList.begin(), specIt);
+            }
+        }
+
+        // clean up the species
+        flow.RegisterPostEvaluate(NormalizeSpecies);
     }
 }
 
@@ -83,6 +99,7 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnerg
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;
+    const int densityYi = 1;
     const int euler = 0;
 
     auto flowParameters = (DiffusionData *)ctx;
@@ -97,7 +114,7 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnerg
                                                       fieldL[uOff[euler] + RHO],
                                                       fieldL[uOff[euler] + RHOE] / fieldL[uOff[euler] + RHO],
                                                       fieldL + uOff[euler] + RHOU,
-                                                      auxL + aOff[yi],
+                                                      fieldL + uOff[densityYi],
                                                       &temperatureLeft,
                                                       flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
@@ -107,7 +124,7 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnerg
                                                       fieldR[uOff[euler] + RHO],
                                                       fieldR[uOff[euler] + RHOE] / fieldR[uOff[euler] + RHO],
                                                       fieldR + uOff[euler] + RHOU,
-                                                      auxR + aOff[yi],
+                                                      fieldR + uOff[densityYi],
                                                       &temperatureRight,
                                                       flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
@@ -148,6 +165,7 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeci
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;
+    const int densityYi = 1;
     const int euler = 0;
 
     auto flowParameters = (DiffusionData *)ctx;
@@ -161,7 +179,7 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeci
                                                       fieldL[uOff[euler] + RHO],
                                                       fieldL[uOff[euler] + RHOE] / fieldL[uOff[euler] + RHO],
                                                       fieldL + uOff[euler] + RHOU,
-                                                      auxL + aOff[yi],
+                                                      fieldL + uOff[densityYi],
                                                       &temperatureLeft,
                                                       flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
@@ -171,7 +189,7 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeci
                                                       fieldR[uOff[euler] + RHO],
                                                       fieldR[uOff[euler] + RHOE] / fieldR[uOff[euler] + RHO],
                                                       fieldR + uOff[euler] + RHOU,
-                                                      auxR + aOff[yi],
+                                                      fieldR + uOff[densityYi],
                                                       &temperatureRight,
                                                       flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
@@ -277,6 +295,70 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
 
     PetscFunctionReturn(0);
 }
+
+void ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies(TS ts, ablate::solver::Solver &solver) {
+    // Get the density and densityYi field info
+    const auto &eulerFieldInfo = solver.GetSubDomain().GetField(CompressibleFlowFields::EULER_FIELD);
+    const auto &densityYiFieldInfo = solver.GetSubDomain().GetField(CompressibleFlowFields::DENSITY_YI_FIELD);
+
+    // Get the solution vec and dm
+    auto dm = solver.GetSubDomain().GetDM();
+    auto solVec = solver.GetSubDomain().GetSolutionVector();
+
+    // Get the array vector
+    PetscScalar *solutionArray;
+    VecGetArray(solVec, &solutionArray) >> checkError;
+
+    // March over each cell in this domain
+    IS cellIS;
+    PetscInt cStart, cEnd;
+    const PetscInt *cells;
+    solver.GetCellRange(cellIS, cStart, cEnd, cells);
+
+    for (PetscInt c = cStart; c < cEnd; ++c) {
+        PetscInt cell = cells ? cells[c] : c;
+
+        // Get the euler and density field
+        const PetscScalar *euler = nullptr;
+        DMPlexPointGlobalFieldRead(dm, cell, eulerFieldInfo.id, solutionArray, &euler) >> checkError;
+        PetscScalar *densityYi;
+        DMPlexPointGlobalFieldRef(dm, cell, densityYiFieldInfo.id, solutionArray, &densityYi) >> checkError;
+
+        // Only update if in the global vector
+        if (euler) {
+            // Get density
+            const PetscScalar density = euler[RHO];
+
+            PetscScalar yiSum = 0.0;
+            for (PetscInt sp = 0; sp < densityYiFieldInfo.numberComponents - 1; sp++) {
+                // Limit the bounds
+                PetscScalar yi = densityYi[sp] / density;
+                yi = PetscMax(0.0, yi);
+                yi = PetscMin(1.0, yi);
+                yiSum += yi;
+
+                // Set it back
+                densityYi[sp] = yi * density;
+            }
+
+            // Now cleanup yi
+            if (yiSum > 1.0) {
+                for (PetscInt sp = 0; sp < densityYiFieldInfo.numberComponents; sp++) {
+                    PetscScalar yi = densityYi[sp] / density;
+                    yi /= yiSum;
+                    densityYi[sp] = density * yi;
+                }
+                densityYi[densityYiFieldInfo.numberComponents - 1] = 0.0;
+            } else {
+                densityYi[densityYiFieldInfo.numberComponents - 1] = density * (1.0 - yiSum);
+            }
+        }
+    }
+
+    // cleanup
+    VecRestoreArray(solVec, &solutionArray) >> checkError;
+    solver.RestoreRange(cellIS, cStart, cEnd, cells);
+};
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SpeciesTransport, "diffusion/advection for the species yi field",

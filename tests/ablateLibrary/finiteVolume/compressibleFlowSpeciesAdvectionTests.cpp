@@ -110,7 +110,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             // Name the flow field
             PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
 
-            // Setup the TS
+            // Set up the TS
             TSSetFromOptions(ts) >> testErrorChecker;
 
             // advance to the end time

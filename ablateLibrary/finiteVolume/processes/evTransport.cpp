@@ -68,7 +68,8 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
 
         if (diffusionData.diffFunction) {
             if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::YI_FIELD)) {
-                flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, conserved, {CompressibleFlowFields::EULER_FIELD}, {nonConserved, CompressibleFlowFields::YI_FIELD});
+                flow.RegisterRHSFunction(
+                    DiffusionEVFlux, &diffusionData, conserved, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {nonConserved, CompressibleFlowFields::YI_FIELD});
             } else {
                 flow.RegisterRHSFunction(DiffusionEVFlux, &diffusionData, conserved, {CompressibleFlowFields::EULER_FIELD}, {nonConserved});
             }
@@ -182,6 +183,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int EULER_FIELD = 0;
+    const int DENSITY_YI_FIELD = 1;
     const int YI_FIELD = 1;
     const int EV_FIELD = 0;
 
@@ -196,7 +198,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
                                                       fieldL[uOff[EULER_FIELD] + RHO],
                                                       fieldL[uOff[EULER_FIELD] + RHOE] / fieldL[uOff[EULER_FIELD] + RHO],
                                                       fieldL + uOff[EULER_FIELD] + RHOU,
-                                                      auxL + aOff[YI_FIELD],
+                                                      fieldL + uOff[DENSITY_YI_FIELD],
                                                       &temperatureLeft,
                                                       flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
@@ -206,7 +208,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
                                                       fieldR[uOff[EULER_FIELD] + RHO],
                                                       fieldR[uOff[EULER_FIELD] + RHOE] / fieldR[uOff[EULER_FIELD] + RHO],
                                                       fieldR + uOff[EULER_FIELD] + RHOU,
-                                                      auxR + aOff[YI_FIELD],
+                                                      fieldR + uOff[DENSITY_YI_FIELD],
                                                       &temperatureRight,
                                                       flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);

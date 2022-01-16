@@ -41,7 +41,7 @@ void ablate::finiteVolume::processes::FlowProcess::DecodeEulerState(eos::DecodeS
 }
 
 void ablate::finiteVolume::processes::FlowProcess::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
-    if(pressureGradientScaling){
+    if (pressureGradientScaling) {
         pressureGradientScaling->Register(fv);
     }
 }

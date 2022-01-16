@@ -9,7 +9,8 @@ namespace ablate::finiteVolume::fluxCalculator {
  */
 class AusmpUp : public fluxCalculator::FluxCalculator {
    private:
-    static Direction AusmpUpFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,PetscReal pgsAlpha, PetscReal* massFlux, PetscReal* p12);
+    static Direction AusmpUpFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal pgsAlpha, PetscReal* massFlux,
+                                     PetscReal* p12);
 
     static PetscReal M1Plus(PetscReal m);
     static PetscReal M2Plus(PetscReal m);

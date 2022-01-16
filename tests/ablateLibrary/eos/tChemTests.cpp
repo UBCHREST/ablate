@@ -86,9 +86,9 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemGetSpeciesFixture,
                          testing::Values((TChemGetSpeciesParameters){
                              .mechFile = "inputs/eos/grimech30.dat",
                              .thermoFile = "inputs/eos/thermo30.dat",
-                             .expectedSpecies = {"H2",    "H",    "O",     "O2",  "OH",   "H2O",  "HO2",  "H2O2", "C",    "CH",   "CH2",   "CH2(S)", "CH3", "CH4",  "CO",   "CO2",    "HCO",   "CH2O",
-                                                 "CH2OH", "CH3O", "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO", "HCCOH",  "N",   "NH",   "NH2",  "NH3",    "NNH",   "NO",
-                                                 "NO2",   "N2O",  "HNO",   "CN",  "HCN",  "H2CN", "HCNN", "HCNO", "HOCN", "HNCO", "NCO",   "N2",     "AR",  "C3H7", "C3H8", "CH2CHO", "CH3CHO"}}),
+                             .expectedSpecies = {"H2",    "H",    "O",     "O2",  "OH",   "H2O",  "HO2",  "H2O2", "C",    "CH",   "CH2",   "CH2(S)", "CH3",  "CH4",  "CO",     "CO2",    "HCO", "CH2O",
+                                                 "CH2OH", "CH3O", "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO", "HCCOH",  "N",    "NH",   "NH2",    "NH3",    "NNH", "NO",
+                                                 "NO2",   "N2O",  "HNO",   "CN",  "HCN",  "H2CN", "HCNN", "HCNO", "HOCN", "HNCO", "NCO",   "AR",     "C3H7", "C3H8", "CH2CHO", "CH3CHO", "N2"}}),
                          [](const testing::TestParamInfo<TChemGetSpeciesParameters>& info) { return info.param.mechFile.stem().string() + "_" + info.param.thermoFile.stem().string(); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,7 +137,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                             8.324871e+04, 6.636699e+04, 7.404635e+04, 8.828951e+04, 9.116586e+04, 8.561139e+04, 8.372083e+04, 9.475268e+04, 9.592900e+04,
                                                             6.316233e+04, 6.639892e+04, 7.465792e+04, 7.694628e+04, 1.007995e+05, 1.101965e+05, 1.106852e+05, 6.281819e+04, 5.155943e+04,
                                                             4.282066e+04, 4.682740e+04, 5.720448e+04, 5.820967e+04, 7.055767e+04, 7.307891e+04, 6.404595e+04, 5.831064e+04, 5.708868e+04,
-                                                            5.750638e+04, 5.076174e+04, 5.392193e+04, 2.697916e+04, 9.164036e+04, 9.281967e+04, 6.885935e+04, 6.825274e+04}},
+                                                            5.750638e+04, 5.076174e+04, 2.697916e+04, 9.164036e+04, 9.281967e+04, 6.885935e+04, 6.825274e+04, 5.392193e+04}},
                     (TChemSensibleSpeciesEnthalpyParameters){
                         .mechFile = "inputs/eos/grimech30.dat",
                         .thermoFile = "inputs/eos/thermo30.dat",
@@ -147,7 +147,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                             7.376036e+06, 7.489415e+06, 8.456529e+06, 6.201523e+06, 7.700047e+06, 8.726732e+06, 1.006060e+07, 1.118903e+07, 1.239586e+07,
                                                             4.817136e+06, 5.843981e+06, 6.082402e+06, 4.013085e+06, 6.105222e+06, 8.300475e+06, 1.027588e+07, 4.726630e+06, 3.168311e+06,
                                                             3.227706e+06, 3.530461e+06, 4.750059e+06, 3.741030e+06, 5.402331e+06, 6.678596e+06, 4.877817e+06, 4.658460e+06, 4.383264e+06,
-                                                            4.569753e+06, 3.683059e+06, 3.310248e+06, 1.405856e+06, 1.109638e+07, 1.193612e+07, 6.659771e+06, 7.583124e+06}}),
+                                                            4.569753e+06, 3.683059e+06, 1.405856e+06, 1.109638e+07, 1.193612e+07, 6.659771e+06, 7.583124e+06, 3.310248e+06}}),
     [](const testing::TestParamInfo<TChemSensibleSpeciesEnthalpyParameters>& info) {
         return info.param.mechFile.stem().string() + "_" + info.param.thermoFile.stem().string() + "_Temp_" + std::to_string((int)info.param.temperature);
     });

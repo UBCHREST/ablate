@@ -95,24 +95,6 @@ void ablate::solver::TimeStepper::Solve() {
 
     // set the ts from options
     TSSetFromOptions(ts) >> checkError;
-
-    // If a cfl adapt is being used, we need to clean the candidates and set always accept to true
-    TSAdapt adapt;
-    TSAdaptType type;
-    TSGetAdapt(ts, &adapt) >> checkError;
-    if(adapt) {
-        TSAdaptGetType(adapt, &type) >> checkError;
-        PetscBool isCFL;
-        PetscStrcmp(TSADAPTCFL, type, &isCFL) >> checkError;
-        if(isCFL){
-            // The cfl time step must always accept
-            TSAdaptSetAlwaysAccept(adapt, PETSC_TRUE) >> checkError;
-            TSAdaptCandidatesClear(adapt) >> checkError;
-        }
-    }
-
-
-
     TSSetSolution(ts, solutionVec) >> checkError;
 
     // If there was a serializer, restore the ts
