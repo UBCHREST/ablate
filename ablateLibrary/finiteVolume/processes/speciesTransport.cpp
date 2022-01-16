@@ -64,15 +64,6 @@ void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finit
 
         flow.RegisterAuxFieldUpdate(UpdateAuxMassFractionField, &numberSpecies, CompressibleFlowFields::YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
 
-        // check to see if the inert species was is listed
-        if (!inertSpeciesName.empty()) {
-            const auto &speciesList = eos->GetSpecies();
-            auto specIt = std::find(speciesList.begin(), speciesList.end(), inertSpeciesName);
-            if (specIt != speciesList.end()) {
-                inertSpecies = std::distance(speciesList.begin(), specIt);
-            }
-        }
-
         // clean up the species
         flow.RegisterPostEvaluate(NormalizeSpecies);
     }

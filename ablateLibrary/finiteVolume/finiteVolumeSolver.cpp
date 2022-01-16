@@ -494,12 +494,9 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
             /* Apply limiter to gradient */
             for (PetscInt pd = 0; pd < dof; ++pd) {
                 /* Scalar limiter applied to each component separately */
-                //                std::cout << "cGrad[" << cell << "]: ";
                 for (PetscInt d = 0; d < dim; ++d) {
-                    //                    std::cout << cgrad[pd * dim + d] << ",";
                     cgrad[pd * dim + d] *= cellPhi[pd];
                 }
-                //                std::cout << std::endl << "cellPhi[" << cell <<"][" <<  pd <<"]: " << cellPhi[pd] << std::endl;
             }
         }
 
