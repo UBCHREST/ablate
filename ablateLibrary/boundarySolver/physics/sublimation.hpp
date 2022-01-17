@@ -11,15 +11,26 @@ class Sublimation : public BoundaryProcess {
    private:
     const PetscReal latentHeatOfFusion;
     const PetscReal effectiveConductivity;
-    const std::string offGasSpecies;
     const std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux;
-    PetscInt speciesLoc = -1;
     PetscReal currentTime = 0.0;
 
+    // Store the mass fractions if provided
+    const std::shared_ptr<ablate::mathFunctions::FieldFunction> massFractions;
+    const mathFunctions::PetscFunction massFractionsFunction;
+    void *massFractionsContext;
+    PetscInt numberSpecies = 0;
+
    public:
-    explicit Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::string offGasSpecies = "", std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {});
+    explicit Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::shared_ptr<ablate::mathFunctions::FieldFunction> = {},
+                         std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {});
 
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
+
+    /**
+     * manual Initialize used for testing
+     * @param numberSpecies
+     */
+    void Initialize(PetscInt numberSpecies);
 
     static PetscErrorCode SublimationFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell, const PetscInt uOff[],
                                               const PetscScalar *boundaryValues, const PetscScalar *stencilValues[], const PetscInt aOff[], const PetscScalar *auxValues,

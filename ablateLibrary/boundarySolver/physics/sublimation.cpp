@@ -5,9 +5,14 @@
 
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
-ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::string offGasSpecies,
+ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::shared_ptr<ablate::mathFunctions::FieldFunction> massFractions,
                                                           std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux)
-    : latentHeatOfFusion(latentHeatOfFusion), effectiveConductivity(effectiveConductivity), offGasSpecies(offGasSpecies), additionalHeatFlux(additionalHeatFlux) {}
+    : latentHeatOfFusion(latentHeatOfFusion),
+      effectiveConductivity(effectiveConductivity),
+      additionalHeatFlux(additionalHeatFlux),
+      massFractions(massFractions),
+      massFractionsFunction(massFractions ? massFractions->GetFieldFunction()->GetPetscFunction() : nullptr),
+      massFractionsContext(massFractions ? massFractions->GetFieldFunction()->GetContext() : nullptr) {}
 
 void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
@@ -19,14 +24,8 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
                                  {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                  BoundarySolver::BoundarySourceType::Distributed);
 
-        // find the location of the species
-        const auto &species = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).components;
-        auto speciesLocIt = std::find(species.begin(), species.end(), offGasSpecies);
-        if (speciesLocIt != species.end()) {
-            speciesLoc = std::distance(species.begin(), speciesLocIt);
-        } else {
-            throw std::invalid_argument("Unable to locate species " + offGasSpecies);
-        }
+        numberSpecies = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).numberComponents;
+
     } else {
         bSolver.RegisterFunction(SublimationFunction,
                                  this,
@@ -37,7 +36,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
     }
 
     // If there is a additionalHeatFlux function, we need to update time
-    if (additionalHeatFlux) {
+    if (additionalHeatFlux || massFractions) {
         bSolver.RegisterPreStep([this](auto ts, auto &solver) {
             PetscFunctionBeginUser;
             PetscErrorCode ierr = TSGetTime(ts, &(this->currentTime));
@@ -98,15 +97,24 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     source[sOff[EULER_LOC] + fp::RHOE] = -massFlux * sublimation->latentHeatOfFusion * area;
 
     // Add in species
-    if (sublimation->speciesLoc > 0) {
-        source[sOff[DENSITY_YI_LOC] + sublimation->speciesLoc] = massFlux * area;
+    if (sublimation->massFractionsContext) {
+        // Fill the source with the mass fractions
+        PetscErrorCode ierr =
+            sublimation->massFractionsFunction(dim, sublimation->currentTime, fg->centroid, sublimation->numberSpecies, source + sOff[DENSITY_YI_LOC], sublimation->massFractionsContext);
+        CHKERRQ(ierr);
+
+        // Scale the mass fractions by massFlux*area
+        for (PetscInt sp = 0; sp < sublimation->numberSpecies; sp++) {
+            source[sOff[DENSITY_YI_LOC] + sp] *= massFlux * area;
+        }
     }
 
     PetscFunctionReturn(0);
 }
+void ablate::boundarySolver::physics::Sublimation::Initialize(PetscInt numberSpeciesIn) { numberSpecies = numberSpeciesIn; }
 
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physics::Sublimation, "Adds in the euler/yi sources for a sublimating material.  Should be used with a LODI boundary.",
          ARG(double, "latentHeatOfFusion", "the latent heat of fusion [J/kg]"), ARG(double, "effectiveConductivity", "the effective conductivity to compute heat flux to the surface [W/(m⋅K)]"),
-         OPT(std::string, "offGasSpecies", "the species to deposit the off gas mass to (required if solving species)"),
+         OPT(ablate::mathFunctions::FieldFunction, "massFractions", "the species to deposit the off gas mass to (required if solving species)"),
          OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"));

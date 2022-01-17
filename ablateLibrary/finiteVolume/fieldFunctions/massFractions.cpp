@@ -26,8 +26,16 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::MassFractions::ComputeYiFun
     auto massFractions = (ablate::finiteVolume::fieldFunctions::MassFractions *)ctx;
     // compute the mass fraction at this location
     try {
+        // Take the norm of the species
+        PetscScalar yiSum = 0.0;
+
         for (PetscInt s = 0; s < PetscMin(Nf, (PetscInt)massFractions->massFractionFunctions.size()); s++) {
             yi[s] = massFractions->massFractionFunctions[s] ? massFractions->massFractionFunctions[s]->Eval(x, dim, time) : 0.0;
+            yiSum += yi[s];
+        }
+
+        for (PetscInt s = 0; s < PetscMin(Nf, (PetscInt)massFractions->massFractionFunctions.size()); s++) {
+            yi[s] /= yiSum;
         }
     } catch (std::exception &exp) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
