@@ -13,4 +13,6 @@ target_sources(ablateLibrary
         rieman.hpp
         riemann2Gas.cpp
         riemann2Gas.hpp
+        riemannStiff.cpp
+        riemannStiff.hpp
         )
