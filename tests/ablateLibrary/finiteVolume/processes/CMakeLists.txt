@@ -3,4 +3,5 @@ target_sources(libraryTests
         eulerTransportTests.cpp
         twoPhaseEulerAdvectionTests.cpp
         gravityTests.cpp
+        pressureGradientScalingTests.cpp
         )

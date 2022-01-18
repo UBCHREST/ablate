@@ -12,4 +12,3 @@ target_sources(libraryTests
 add_subdirectory(fluxCalculator)
 add_subdirectory(fieldFunctions)
 add_subdirectory(processes)
-add_subdirectory(resources)

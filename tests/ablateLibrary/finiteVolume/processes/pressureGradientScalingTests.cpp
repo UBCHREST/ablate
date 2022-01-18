@@ -1,27 +1,24 @@
 #include <petsc.h>
 #include <cmath>
-#include <domain/dmWrapper.hpp>
-#include <domain/modifiers/distributeWithGhostCells.hpp>
-#include <domain/modifiers/ghostBoundaryCells.hpp>
-#include <finiteVolume/compressibleFlowFields.hpp>
 #include <memory>
-#include <solver/directSolverTsInterface.hpp>
 #include <vector>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "domain/boxMesh.hpp"
+#include "domain/modifiers/distributeWithGhostCells.hpp"
+#include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
-#include "finiteVolume/compressibleFlowSolver.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/fieldFunctions/compressibleFlowState.hpp"
 #include "finiteVolume/fieldFunctions/euler.hpp"
-#include "finiteVolume/processes/eulerTransport.hpp"
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "mathFunctions/geom/sphere.hpp"
 #include "parameters/mapParameters.hpp"
+#include "solver/directSolverTsInterface.hpp"
 
 typedef struct {
     testingResources::MpiTestParameter mpiTestParameter;
