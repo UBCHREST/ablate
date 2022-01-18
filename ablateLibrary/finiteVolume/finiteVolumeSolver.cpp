@@ -384,7 +384,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
     VecGetDM(faceGeometryVec, &dmFace) >> checkError;
     VecGetArrayRead(faceGeometryVec, &faceGeometryArray);
 
-    // extract the global x array
+    // extract the local x array
     const PetscScalar* xLocalArray;
     VecGetArrayRead(xLocalVec, &xLocalArray);
 
