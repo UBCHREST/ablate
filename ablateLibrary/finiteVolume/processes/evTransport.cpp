@@ -3,9 +3,8 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 
 ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved, std::string nonConserved, std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
-                                                          std::shared_ptr<eos::transport::TransportModel> transportModelIn, std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling)
-    : FlowProcess(pressureGradientScaling),
-      conserved(std::move(conserved)),
+                                                          std::shared_ptr<eos::transport::TransportModel> transportModelIn)
+    : conserved(std::move(conserved)),
       nonConserved(std::move(nonConserved)),
       fluxCalculator(std::move(fluxCalcIn)),
       eos(std::move(eosIn)),
@@ -20,10 +19,6 @@ ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved,
         // extract the difference function from fluxDifferencer object
         advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
         advectionData.fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
-
-        if (pressureGradientScaling) {
-            advectionData.pgsAlpha = &pressureGradientScaling->GetAlpha();
-        }
     }
 
     if (transportModel) {
@@ -45,8 +40,6 @@ ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved,
 }
 
 void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
-    ablate::finiteVolume::processes::FlowProcess::Initialize(flow);
-
     if (flow.GetSubDomain().ContainsField(conserved)) {
         // determine the number of components in the ev
         auto conservedForm = flow.GetSubDomain().GetField(conserved);
@@ -155,10 +148,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
     // get the face values
     PetscReal massFlux;
 
-    // Update the speed of sound if pgs is provided
-    PetscReal pgsAlpha = eulerAdvectionData->pgsAlpha ? *eulerAdvectionData->pgsAlpha : 1.0;
-
-    if (eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, pgsAlpha, &massFlux, NULL) ==
+    if (eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, NULL) ==
         fluxCalculator::LEFT) {
         // march over each gas species
         for (PetscInt ev = 0; ev < eulerAdvectionData->numberEV; ev++) {
@@ -239,5 +229,4 @@ REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::process
          ARG(std::string, "conserved", "the name of the conserved (density*ev) of the variable"), ARG(std::string, "nonConserved", "the name of the non-conserved (ev) of the variable"),
          ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (default is no advection)"),
-         OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"),
-         OPT(ablate::finiteVolume::resources::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));
+         OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"));

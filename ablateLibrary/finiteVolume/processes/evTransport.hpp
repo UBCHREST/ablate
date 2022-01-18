@@ -34,9 +34,6 @@ class EVTransport : public FlowProcess {
         /* store method used for flux calculator */
         ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
         void* fluxCalculatorCtx;
-
-        /* store the pgs alpha */
-        const PetscReal* pgsAlpha = nullptr;
     };
     AdvectionData advectionData;
 
@@ -62,7 +59,7 @@ class EVTransport : public FlowProcess {
 
    public:
     explicit EVTransport(std::string conserved, std::string nonConserved, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
-                         std::shared_ptr<eos::transport::TransportModel> transportModel = {}, std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling = {});
+                         std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
     /**
      * public function to link this process with the flow

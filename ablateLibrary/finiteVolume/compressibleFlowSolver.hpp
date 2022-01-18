@@ -8,7 +8,7 @@
 #include "eos/eos.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
-#include "finiteVolume/resources/pressureGradientScaling.hpp"
+#include "finiteVolume/processes/pressureGradientScaling.hpp"
 #include "parameters/parameters.hpp"
 
 namespace ablate::finiteVolume {
@@ -31,8 +31,7 @@ class CompressibleFlowSolver : public FiniteVolumeSolver {
     CompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, const std::shared_ptr<eos::EOS>& eos,
                            const std::shared_ptr<parameters::Parameters>& parameters, const std::shared_ptr<eos::transport::TransportModel>& transport,
                            const std::shared_ptr<fluxCalculator::FluxCalculator>& = {}, std::vector<std::shared_ptr<processes::Process>> additionalProcesses = {},
-                           std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
-                           const std::shared_ptr<resources::PressureGradientScaling>& pressureGradientScaling = {});
+                           std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {});
 
     /**
      * Constructor without ev or additional processes
@@ -48,8 +47,7 @@ class CompressibleFlowSolver : public FiniteVolumeSolver {
      */
     CompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, const std::shared_ptr<eos::EOS>& eos,
                            const std::shared_ptr<parameters::Parameters>& parameters, const std::shared_ptr<eos::transport::TransportModel>& transport,
-                           const std::shared_ptr<fluxCalculator::FluxCalculator>& = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {},
-                           const std::shared_ptr<resources::PressureGradientScaling>& pressureGradientScaling = {});
+                           const std::shared_ptr<fluxCalculator::FluxCalculator>& = {}, std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions = {});
     ~CompressibleFlowSolver() override = default;
 };
 }  // namespace ablate::finiteVolume

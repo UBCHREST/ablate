@@ -1,7 +1,5 @@
 #include "flowProcess.hpp"
 
-ablate::finiteVolume::processes::FlowProcess::FlowProcess(std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling) : pressureGradientScaling(pressureGradientScaling) {}
-
 void ablate::finiteVolume::processes::FlowProcess::DecodeEulerState(eos::DecodeStateFunction decodeStateFunction, void *decodeStateContext, PetscInt dim, const PetscReal *conservedValues,
                                                                     const PetscReal *densityYi, const PetscReal *normal, PetscReal *density, PetscReal *normalVelocity, PetscReal *velocity,
                                                                     PetscReal *internalEnergy, PetscReal *a, PetscReal *M, PetscReal *p) {
@@ -38,10 +36,4 @@ void ablate::finiteVolume::processes::FlowProcess::DecodeEulerState(eos::DecodeS
     // decode the state in the eos
     decodeStateFunction(dim, *density, totalEnergy, velocity, densityYi, internalEnergy, a, p, decodeStateContext);
     *M = PetscSqrtReal(velMag) / (*a);
-}
-
-void ablate::finiteVolume::processes::FlowProcess::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
-    if (pressureGradientScaling) {
-        pressureGradientScaling->Register(fv);
-    }
 }

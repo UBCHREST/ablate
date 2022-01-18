@@ -1,10 +1,14 @@
 #include "ausmpUp.hpp"
 
-ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUp(double mInf) : mInf(mInf) {}
+ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUp(double mInf, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs) : pgs(pgs), mInf(mInf) {}
 
 ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalculator::AusmpUp::AusmpUpFunction(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR,
-                                                                                                               PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal pgsAlpha, PetscReal* massFlux,
-                                                                                                               PetscReal* p12) {
+                                                                                                               PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal* massFlux, PetscReal* p12) {
+    // extract pgs/minf if provided
+    auto ausmUp = (ablate::finiteVolume::fluxCalculator::AusmpUp*)ctx;
+    PetscReal pgsAlpha = ausmUp->pgs ? ausmUp->pgs->GetAlpha() : 1.0;
+    PetscReal mInf = ausmUp->mInf;
+
     // Compute the density at the interface
     PetscReal rho12 = (0.5) * (rhoL + rhoR);
 
@@ -20,9 +24,8 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
 
     // compute mInf2 or set fa to unity
     PetscReal fa = 1.0;
-    double* mInf = (double*)ctx;
-    if (*mInf > 0) {
-        PetscReal mInf2 = PetscSqr(*mInf);
+    if (mInf > 0) {
+        PetscReal mInf2 = PetscSqr(mInf);
 
         PetscReal mO2 = PetscMin(1.0, PetscMax(mBar2, mInf2));
         PetscReal mO = PetscSqrtReal(mO2);
@@ -94,4 +97,5 @@ PetscReal ablate::finiteVolume::fluxCalculator::AusmpUp::P5Minus(PetscReal m, do
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::fluxCalculator::FluxCalculator, ablate::finiteVolume::fluxCalculator::AusmpUp, "A sequel to AUSM, Part II: AUSM+-up for all speeds, Meng-Sing Liou, Pages 137-170, 2006",
-         ARG(double, "mInf", "the reference mach number"));
+         OPT(double, "mInf", "the reference mach number"),
+         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));

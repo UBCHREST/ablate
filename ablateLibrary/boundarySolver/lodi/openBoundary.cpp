@@ -5,7 +5,7 @@
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
 ablate::boundarySolver::lodi::OpenBoundary::OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure, double maxAcousticsLength,
-                                                         std::shared_ptr<finiteVolume::resources::PressureGradientScaling> pressureGradientScaling)
+                                                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
     : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)),
       reflectFactor((PetscReal)reflectFactor),
       referencePressure((PetscReal)referencePressure),
@@ -275,4 +275,4 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::OpenBoundary, "Treats boundary as open.",
          ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the boundary"), ARG(double, "reflectFactor", "boundary reflection factor"),
          ARG(double, "referencePressure", "reference pressure"), ARG(double, "maxAcousticsLength", "maximum length in the domain for acoustics to propagate "),
-         OPT(ablate::finiteVolume::resources::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));
+         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));

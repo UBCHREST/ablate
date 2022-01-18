@@ -3,9 +3,8 @@
 #include "utilities/mathUtilities.hpp"
 
 ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn,
-                                                                    std::shared_ptr<eos::transport::TransportModel> transportModelIn,
-                                                                    std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling)
-    : FlowProcess(pressureGradientScaling), fluxCalculator(std::move(fluxCalcIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)), advectionData() {
+                                                                    std::shared_ptr<eos::transport::TransportModel> transportModelIn)
+    : fluxCalculator(std::move(fluxCalcIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)), advectionData() {
     if (fluxCalculator) {
         // set the decode state function
         advectionData.decodeStateFunction = eos->GetDecodeStateFunction();
@@ -15,10 +14,6 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
         // extract the difference function from fluxDifferencer object
         advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
         advectionData.fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
-
-        if (pressureGradientScaling) {
-            advectionData.pgsAlpha = &pressureGradientScaling->GetAlpha();
-        }
     }
 
     if (transportModel) {
@@ -42,8 +37,6 @@ ablate::finiteVolume::processes::SpeciesTransport::SpeciesTransport(std::shared_
 }
 
 void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
-    ablate::finiteVolume::processes::FlowProcess::Initialize(flow);
-
     if (!eos->GetSpecies().empty()) {
         if (fluxCalculator) {
             flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::DENSITY_YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
@@ -266,10 +259,7 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(
     // get the face values
     PetscReal massFlux;
 
-    // If a pgs, update the speed of sound
-    PetscReal alpha = eulerAdvectionData->pgsAlpha ? *eulerAdvectionData->pgsAlpha : 1.0;
-
-    if (eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, alpha, &massFlux, NULL) ==
+    if (eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, nullptr) ==
         fluxCalculator::LEFT) {
         // march over each gas species
         for (PetscInt sp = 0; sp < eulerAdvectionData->numberSpecies; sp++) {
@@ -355,5 +345,4 @@ void ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies(TS ts, 
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::SpeciesTransport, "diffusion/advection for the species yi field",
          ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (default is no advection)"),
-         OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"),
-         OPT(ablate::finiteVolume::resources::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));
+         OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"));

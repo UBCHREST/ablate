@@ -4,16 +4,17 @@
 #include <memory>
 #include "eos/eos.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
-#include "solver/solver.hpp"
+#include "flowProcess.hpp"
+#include "monitors/logs/log.hpp"
 
-namespace ablate::finiteVolume::resources {
+namespace ablate::finiteVolume::processes {
 /**
  * Rescales the thermodynamic pressure gradient scaling the acoustic propagation speeds to allow for a larger time step.
  * See:
  *   DesJardin, Paul E., Timothy J. O’Hern, and Sheldon R. Tieszen. "Large eddy simulation and experimental measurements of the near-field of a large turbulent helium plume." Physics of fluids 16.6
  * (2004): 1866-1883.
  */
-class PressureGradientScaling {
+class PressureGradientScaling : public FlowProcess {
    private:
     /**
      * Store the equation of state to compute pressure
@@ -46,18 +47,19 @@ class PressureGradientScaling {
     const PetscReal domainLength;
 
     /**
+     * Store a log used to output the required information
+     */
+    const std::shared_ptr<ablate::monitors::logs::Log> log;
+
+    /**
      * Store current updated components
      */
     PetscReal maxMach = 0.0;
     PetscReal alpha;
 
-    /**
-     * store if this instance has been registered
-     */
-    bool registered = false;
-
    public:
-    PressureGradientScaling(std::shared_ptr<eos::EOS> eos, double alphaInit, double domainLength, double maxAlphaAllowed = {}, double maxDeltaPressureFac = {});
+    PressureGradientScaling(std::shared_ptr<eos::EOS> eos, double alphaInit, double domainLength, double maxAlphaAllowed = {}, double maxDeltaPressureFac = {},
+                            std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     /**
      * function to compute the average density in the domain
@@ -71,7 +73,7 @@ class PressureGradientScaling {
      * Function to setup timestepping with the PressureGradientScaling.  This can be called multiple times and will only be registered once
      * @return
      */
-    void Register(ablate::finiteVolume::FiniteVolumeSolver& fv);
+    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
 
     // Alpha accessor
     inline const PetscReal& GetAlpha() { return alpha; }
@@ -79,5 +81,5 @@ class PressureGradientScaling {
     // Alpha accessor
     inline const PetscReal& GetMaxMach() { return maxMach; }
 };
-}  // namespace ablate::finiteVolume::resources
+}  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_PRESSUREGRADIENTSCALING_HPP

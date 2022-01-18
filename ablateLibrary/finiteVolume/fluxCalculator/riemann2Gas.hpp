@@ -10,8 +10,8 @@ namespace ablate::finiteVolume::fluxCalculator {
  */
 class Riemann2Gas : public fluxCalculator::FluxCalculator {
    private:
-    static Direction Riemann2GasFluxFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal pgsAlpha,
-                                             PetscReal *massFlux, PetscReal *p12);
+    static Direction Riemann2GasFluxFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
+                                             PetscReal *p12);
     PetscReal gammaVec[2];
 
    public:

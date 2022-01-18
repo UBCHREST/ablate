@@ -1,0 +1,99 @@
+---
+# This test show the use of a PGS with the compressible flow field and lodi boundaries.
+#
+environment:
+  title: _compressibleFlowPgsLodi
+  tagDirectory: false
+arguments:
+  automaticTimeStepCalculator: on
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_steps: 25
+    ts_max_time: 0.002655211423
+  io:
+    interval: 0
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [ 25, 25]
+    lower: [ 0.0, -.5 ]
+    upper: [ 1.0, .5 ]
+    simplex: false
+    mainRegion:
+      name: mainSolver
+    boundaryFaceRegion:
+      name: boundaryFaces
+    preModifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    postModifiers:
+      - !ablate::domain::modifiers::MergeLabels
+        mergedRegion:
+          name: openBoundaryLabel
+        regions:
+          - name: boundaryCellsRight
+          - name: boundaryCellsTop
+          - name: boundaryCellsBottom
+      - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas : 287.0
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        eos: *eos
+        pressure: 101325.0
+        temperature: 300
+        velocity: !ablate::mathFunctions::geom::Sphere
+          center: [0.0, 0.0]
+          radius: 0.1
+          insideValues: [5, 0]
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    region:
+      name: mainSolver
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::PressureGradientScaling
+        &pgs
+        eos: *eos
+        alphaInit: 1.0
+        maxAlphaAllowed: 100.0
+        domainLength: 0.165354
+        log: !ablate::monitors::logs::StdOut
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      mInf: .3
+      pgs: *pgs
+    parameters:
+      cfl: 0.5
+    transport:
+      mu:  0.02071398139
+    eos: *eos
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: boundaryCellsLeft
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+        pgs: *pgs
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: openBoundaryLabel
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 101325.0
+        maxAcousticsLength: 1
+        pgs: *pgs

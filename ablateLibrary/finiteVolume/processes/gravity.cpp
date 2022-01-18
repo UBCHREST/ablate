@@ -1,6 +1,6 @@
 #include "gravity.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-ablate::finiteVolume::processes::Gravity::Gravity(std::vector<double> gravityVector) : FlowProcess(nullptr), gravityVector(gravityVector) {}
+ablate::finiteVolume::processes::Gravity::Gravity(std::vector<double> gravityVector) : gravityVector(gravityVector) {}
 
 void ablate::finiteVolume::processes::Gravity::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
     // Before each step, update the avg density

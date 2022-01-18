@@ -18,7 +18,7 @@ struct InletTestParameters {
     std::function<PetscErrorCode(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx)> computeCvFunction;
     std::function<PetscErrorCode(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx)> computeSensibleEnthalpy;
     ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom fvFaceGeom;
-    std::function<std::shared_ptr<ablate::finiteVolume::resources::PressureGradientScaling>()> getPgs = []() { return nullptr; };
+    std::function<std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling>()> getPgs = []() { return nullptr; };
 
     std::vector<PetscScalar> boundaryValues;
     std::vector<PetscScalar> stencilValues; /* the grad is (boundary-stencil)/1.0*/
@@ -411,7 +411,7 @@ INSTANTIATE_TEST_SUITE_P(
                     return 0;
                 },
             .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
-            .getPgs = []() { return std::make_shared<ablate::finiteVolume::resources::PressureGradientScaling>(std::shared_ptr<ablate::eos::EOS>{}, 125, 1.0); },
+            .getPgs = []() { return std::make_shared<ablate::finiteVolume::processes::PressureGradientScaling>(std::shared_ptr<ablate::eos::EOS>{}, 125, 1.0); },
             .boundaryValues = {1.783191515808363,
                                -243778.19371678037,
                                10 * 1.783191515808363,

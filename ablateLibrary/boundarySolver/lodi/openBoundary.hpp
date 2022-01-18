@@ -15,7 +15,7 @@ class OpenBoundary : public LODIBoundary {
 
    public:
     OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure, double maxAcousticsLength,
-                 std::shared_ptr<finiteVolume::resources::PressureGradientScaling> pressureGradientScaling = {});
+                 std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
 
     void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
 

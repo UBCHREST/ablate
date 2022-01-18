@@ -1,15 +1,19 @@
 #include "pressureGradientScaling.hpp"
+
+#include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
-ablate::finiteVolume::resources::PressureGradientScaling::PressureGradientScaling(std::shared_ptr<eos::EOS> eos, double alphaInit, double domainLength, double maxAlphaAllowedIn,
-                                                                                  double maxDeltaPressureFacIn)
-    : eos(eos),
-      maxAlphaAllowed(maxAlphaAllowedIn ? maxAlphaAllowedIn : 100.0),
-      maxDeltaPressureFac(maxDeltaPressureFacIn ? maxDeltaPressureFacIn : 0.05),
+
+ablate::finiteVolume::processes::PressureGradientScaling::PressureGradientScaling(std::shared_ptr<eos::EOS> eos, double alphaInit, double domainLength, double maxAlphaAllowedIn,
+                                                                                  double maxDeltaPressureFacIn, std::shared_ptr<ablate::monitors::logs::Log> log)
+    : eos(std::move(eos)),
+      maxAlphaAllowed(maxAlphaAllowedIn > 1.0 ? maxAlphaAllowedIn : 100.0),
+      maxDeltaPressureFac(maxDeltaPressureFacIn > 0.0 ? maxDeltaPressureFacIn : 0.05),
       domainLength(domainLength),
+      log(std::move(log)),
       alpha(alphaInit) {}
 
-PetscErrorCode ablate::finiteVolume::resources::PressureGradientScaling::UpdatePreconditioner(TS flowTs, ablate::solver::Solver &flow) {
+PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdatePreconditioner(TS flowTs, ablate::solver::Solver &flow) {
     PetscFunctionBeginUser;
 
     // Compute global maximum valuesfluxCalculator
@@ -104,6 +108,9 @@ PetscErrorCode ablate::finiteVolume::resources::PressureGradientScaling::UpdateP
         }
     }
 
+    // return the cell range
+    flow.RestoreRange(cellIS, cStart, cEnd, cells);
+
     // Take the global values
     auto comm = flow.GetSubDomain().GetComm();
     PetscReal sumValues[2] = {pAvgLocal, (PetscReal)countLocal};
@@ -136,22 +143,32 @@ PetscErrorCode ablate::finiteVolume::resources::PressureGradientScaling::UpdateP
     alpha = PetscMin(alpha, maxAlphaAllowed);
     alpha = PetscMax(alpha, 1.e+0);
 
-    // Update
-    PetscSynchronizedPrintf(comm, "PGS: %g (alpha), %g (maxMach),  %g (maxMach') \n", alpha, maxMach, alpha * maxMach);
+    // Update log
+    if (log) {
+        log->Printf("PGS: %g (alpha), %g (maxMach),  %g (maxMach') \n", alpha, maxMach, alpha * maxMach);
+    }
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::resources::PressureGradientScaling::Register(ablate::finiteVolume::FiniteVolumeSolver &fv) {
-    if (!registered) {
-        auto preStep = std::bind(&ablate::finiteVolume::resources::PressureGradientScaling::UpdatePreconditioner, this, std::placeholders::_1, std::placeholders::_2);
-        fv.RegisterPreStep(preStep);
-        registered = true;
+void ablate::finiteVolume::processes::PressureGradientScaling::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
+    auto preStep = std::bind(&ablate::finiteVolume::processes::PressureGradientScaling::UpdatePreconditioner, this, std::placeholders::_1, std::placeholders::_2);
+    fv.RegisterPreStep(preStep);
+
+    // initialize the log if provided
+    if (log) {
+        log->Initialize(fv.GetSubDomain().GetComm());
     }
 }
 
 #include "registrar.hpp"
-REGISTER_DEFAULT(ablate::finiteVolume::resources::PressureGradientScaling, ablate::finiteVolume::resources::PressureGradientScaling,
+REGISTER_DEFAULT(ablate::finiteVolume::processes::PressureGradientScaling, ablate::finiteVolume::processes::PressureGradientScaling,
                  "Rescales the thermodynamic pressure gradient scaling the acoustic propagation speeds to allow for a larger time step.",
                  ARG(ablate::eos::EOS, "eos", "the equation of state used for the flow"), ARG(double, "alphaInit", "the initial alpha"),
                  ARG(double, "domainLength", "the reference length of the domain"), OPT(double, "maxAlphaAllowed", "the maximum allowed alpha during the simulation (default 100)"),
-                 OPT(double, "maxDeltaPressureFac", "max variation from mean pressure (default 0.05)"));
+                 OPT(double, "maxDeltaPressureFac", "max variation from mean pressure (default 0.05)"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
+
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::PressureGradientScaling,
+         "Rescales the thermodynamic pressure gradient scaling the acoustic propagation speeds to allow for a larger time step.",
+         ARG(ablate::eos::EOS, "eos", "the equation of state used for the flow"), ARG(double, "alphaInit", "the initial alpha"), ARG(double, "domainLength", "the reference length of the domain"),
+         OPT(double, "maxAlphaAllowed", "the maximum allowed alpha during the simulation (default 100)"), OPT(double, "maxDeltaPressureFac", "max variation from mean pressure (default 0.05)"),
+         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

@@ -25,9 +25,6 @@ class EulerTransport : public FlowProcess {
         /* store method used for flux calculator */
         ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
         void* fluxCalculatorCtx;
-
-        /* store the pgs alpha */
-        const PetscReal* pgsAlpha = nullptr;
     };
 
     // Store ctx needed for static function diffusion function passed to PETSc
@@ -82,7 +79,7 @@ class EulerTransport : public FlowProcess {
      * public constructor for euler advection
      */
     EulerTransport(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
-                   std::shared_ptr<eos::transport::TransportModel> transportModel = {}, std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling = {});
+                   std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
     /**
      * public function to link this process with the flow

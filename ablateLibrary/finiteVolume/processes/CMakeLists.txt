@@ -15,4 +15,6 @@ target_sources(ablateLibrary
         twoPhaseEulerAdvection.cpp
         gravity.hpp
         gravity.cpp
+        pressureGradientScaling.hpp
+        pressureGradientScaling.cpp
         )

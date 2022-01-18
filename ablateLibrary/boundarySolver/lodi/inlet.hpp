@@ -7,7 +7,7 @@ namespace ablate::boundarySolver::lodi {
 
 class Inlet : public LODIBoundary {
    public:
-    explicit Inlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::resources::PressureGradientScaling> pressureGradientScaling = {});
+    explicit Inlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
 
     void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
 

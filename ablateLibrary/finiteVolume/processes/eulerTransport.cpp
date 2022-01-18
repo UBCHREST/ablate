@@ -5,9 +5,8 @@
 #include "utilities/petscError.hpp"
 
 ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<parameters::Parameters> parametersIn, std::shared_ptr<eos::EOS> eosIn,
-                                                                std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn,
-                                                                std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling)
-    : FlowProcess(pressureGradientScaling), fluxCalculator(std::move(fluxCalculatorIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)), advectionData(), updateTemperatureData() {
+                                                                std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn)
+    : fluxCalculator(std::move(fluxCalculatorIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)), advectionData(), updateTemperatureData() {
     // If there is a flux calculator assumed advection
     if (fluxCalculator) {
         // cfl
@@ -21,10 +20,6 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<
         // extract the difference function from fluxDifferencer object
         advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
         advectionData.fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
-
-        if (pressureGradientScaling) {
-            advectionData.pgsAlpha = &pressureGradientScaling->GetAlpha();
-        }
     }
 
     // If there is a transport model, assumed diffusion
@@ -53,8 +48,6 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<
 }
 
 void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
-    ablate::finiteVolume::processes::FlowProcess::Initialize(flow);
-
     // Register the euler source terms
     if (fluxCalculator) {
         if (eos->GetSpecies().empty()) {
@@ -171,11 +164,8 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(Pe
     PetscReal massFlux;
     PetscReal p12;
 
-    // If a pgs, update the speed of sound
-    PetscReal pgsAlpha = eulerAdvectionData->pgsAlpha ? *eulerAdvectionData->pgsAlpha : 1.0;
-
     fluxCalculator::Direction direction =
-        eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, pgsAlpha, &massFlux, &p12);
+        eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, &p12);
 
     if (direction == fluxCalculator::LEFT) {
         flux[RHO] = massFlux * areaMag;
@@ -411,5 +401,4 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTempera
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::EulerTransport, "build advection/diffusion for the euler field",
          OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (default is no advection)"),
-         OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"),
-         OPT(ablate::finiteVolume::resources::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));
+         OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"));

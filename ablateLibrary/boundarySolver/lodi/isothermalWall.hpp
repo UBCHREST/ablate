@@ -6,7 +6,7 @@ namespace ablate::boundarySolver::lodi {
 
 class IsothermalWall : public LODIBoundary {
    public:
-    explicit IsothermalWall(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::resources::PressureGradientScaling> pressureGradientScaling = {});
+    explicit IsothermalWall(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
 
     void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
 

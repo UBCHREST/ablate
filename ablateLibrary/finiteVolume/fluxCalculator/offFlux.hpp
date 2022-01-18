@@ -8,8 +8,8 @@ namespace ablate::finiteVolume::fluxCalculator {
  */
 class OffFlux : public fluxCalculator::FluxCalculator {
    private:
-    static Direction OffCalculatorFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal pgsAlpha,
-                                           PetscReal *massFlux, PetscReal *p12);
+    static Direction OffCalculatorFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
+                                           PetscReal *p12);
 
    public:
     FluxCalculatorFunction GetFluxCalculatorFunction() override { return OffCalculatorFunction; }

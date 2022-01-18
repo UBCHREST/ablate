@@ -17,7 +17,7 @@
 #include "finiteVolume/fieldFunctions/compressibleFlowState.hpp"
 #include "finiteVolume/fieldFunctions/euler.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
-#include "finiteVolume/resources/pressureGradientScaling.hpp"
+#include "finiteVolume/processes/pressureGradientScaling.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "mathFunctions/geom/sphere.hpp"
@@ -71,7 +71,7 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
 
         // Create the pgs
         auto pgs =
-            std::make_shared<ablate::finiteVolume::resources::PressureGradientScaling>(eos, parameters.alphaInit, parameters.domainLength, parameters.maxAlphaAllowed, parameters.maxDeltaPressureFac);
+            std::make_shared<ablate::finiteVolume::processes::PressureGradientScaling>(eos, parameters.alphaInit, parameters.domainLength, parameters.maxAlphaAllowed, parameters.maxDeltaPressureFac);
 
         // Create a fV for testing
         // Make a finite volume with only a gravity

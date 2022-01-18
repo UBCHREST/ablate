@@ -1,25 +1,13 @@
 #ifndef ABLATELIBRARY_FLOWPROCESS_HPP
 #define ABLATELIBRARY_FLOWPROCESS_HPP
 
-#include "finiteVolume/resources/pressureGradientScaling.hpp"
 #include "process.hpp"
 
 namespace ablate::finiteVolume::processes {
 
 class FlowProcess : public Process {
-   private:
-    const std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling;
-
    public:
     typedef enum { RHO, RHOE, RHOU, RHOV, RHOW } Components;
-
-    explicit FlowProcess(std::shared_ptr<resources::PressureGradientScaling> pressureGradientScaling);
-
-    /**
-     * Should be called by any derived class
-     * @param fv
-     */
-    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
 
     /**
      * Private function to decode the euler fields
