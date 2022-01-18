@@ -139,8 +139,11 @@ After solving for the stared region properties, we can then back out the flow pr
 |  $$\rho(x=0)$$ | $$\rho_{*R}$$ |  $$\rho_R$$ |         $$\rho_{*R}$$        |$$\rho_R\left[\frac{2}{\gamma+1}-\frac{\gamma-1}{(\gamma+1)a_R}u_R \right]^{\frac{2}{\gamma-1}}$$|   $$\rho_R$$   |
 | $$p(x=0)$$ |   $$p_{*R}$$  |   $$p_R$$   |          $$p_{*R}$$          |$$p_R\left[ \frac{2}{\gamma+1}-\frac{\gamma-1}{(\gamma+1)a_R}u_R\right]^{\frac{2\gamma}{\gamma-1}}$$|     $$p_R$$    |
 
+### Pressure Gradient Scaling (PGS)
+Pressure Gradient Scaling (PGS) is a technique to address the very small-time steps sometimes associated with compressible low-speed flows.  In this approach the acoustic wave speeds are artificially reduce thereby increasing the allowable step size.  Implementation details and the affects on the LODI and AUSM+ flux vector splits methods are available in DesJardin et al. [4].
 
 ## References
-- Liou, M. S. (2006). "A sequel to AUSM, Part II: AUSM+-up for all speeds." Journal of Computational Physics, 214, 137-170.
-- Chang, C. H. and Liou, M. S. (2007), "A robust and accurate approach to computing compressible multiphase flow: Stratified flow model and AUSM+up scheme." Journal of Computational Physics, 225, 840-873.
-- Toro, E. F. (2009). "Riemann Solvers and Numerical Methods for Fluid Dynamics - A PracticalIntroduction. International series of monographs on physics." Springer. ISBN: 978-3-540-49834-6
+- [1] Liou, M. S. (2006). "A sequel to AUSM, Part II: AUSM+-up for all speeds." Journal of Computational Physics, 214, 137-170.
+- [2] Chang, C. H. and Liou, M. S. (2007), "A robust and accurate approach to computing compressible multiphase flow: Stratified flow model and AUSM+up scheme." Journal of Computational Physics, 225, 840-873.
+- [3] Toro, E. F. (2009). "Riemann Solvers and Numerical Methods for Fluid Dynamics - A PracticalIntroduction. International series of monographs on physics." Springer. ISBN: 978-3-540-49834-6
+- [4] DesJardin, Paul E., Timothy J. O’Hern, and Sheldon R. Tieszen. "Large eddy simulation and experimental measurements of the near-field of a large turbulent helium plume." Physics of fluids 16.6 (2004): 1866-1883.

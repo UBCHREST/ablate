@@ -51,6 +51,7 @@ PetscErrorCode ablate::finiteVolume::processes::Gravity::UpdateAverageDensity(TS
     PetscInt cellCount = 0;
     auto comm = flow.GetSubDomain().GetComm();
     ierr = MPIU_Allreduce(&locDensitySum, &densitySum, 1, MPIU_REAL, MPIU_SUM, comm);
+    CHKERRMPI(ierr);
     ierr = MPIU_Allreduce(&locCellCount, &cellCount, 1, MPIU_INT, MPIU_SUM, comm);
     CHKERRMPI(ierr);
 

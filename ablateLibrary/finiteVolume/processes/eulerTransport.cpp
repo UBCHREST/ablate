@@ -164,9 +164,6 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(Pe
     PetscReal massFlux;
     PetscReal p12;
 
-    /*void (*)(void* ctx, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL,
-        PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR,
-        PetscReal * m12, PetscReal *p12);*/
     fluxCalculator::Direction direction =
         eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, &p12);
 

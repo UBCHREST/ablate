@@ -14,8 +14,8 @@ namespace ablate::eos {
 
 class TChem : public EOS {
    private:
-    // this is bad practice but only one instance of of the TCHEM library can be inited at at once, so keep track of the number of classes using the library
-    inline static int libCount = 0;
+    // this is bad practice but only one instance of the TCHEM library can be inited at once, so keep track of the number of classes using the library and prevent multiple uses
+    inline static bool libUsed = false;
 
     // hold an error checker for the tchem outside library
     const utilities::IntErrorChecker errorChecker;
@@ -70,6 +70,20 @@ class TChem : public EOS {
      * @return
      */
     static int ComputeSensibleInternalEnergyInternal(int numSpec, double* tempYiWorkingArray, double mwMix, double& internalEnergy);
+
+    /**
+     * Fill and normalize the species mass fractions
+     * @param numSpec
+     * @param yi
+     */
+    static void FillWorkingVectorFromMassFractions(int numSpec, double temperature, const double* yi, double* workingVector);
+
+    /**
+     * Fill and Normalize the density species mass fractions
+     * @param numSpec
+     * @param yi
+     */
+    static void FillWorkingVectorFromDensityMassFractions(int numSpec, double density, double temperature, const double* densityYi, double* workingVector);
 
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);

@@ -186,6 +186,9 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             timeStepper.Register(flowObject);
 
+            // prevent the normalization of species
+            TSSetPostEvaluate(timeStepper.GetTS(), nullptr) >> testErrorChecker;
+
             // run
             timeStepper.Solve();
 

@@ -1,19 +1,21 @@
 #include "reactingCompressibleFlowSolver.hpp"
+
+#include <utility>
 #include "finiteVolume/processes/tChemReactions.hpp"
 #include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::ReactingCompressibleFlowSolver::ReactingCompressibleFlowSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                                                     std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> parameters,
+                                                                                     const std::shared_ptr<eos::EOS>& eosIn, std::shared_ptr<parameters::Parameters> parameters,
                                                                                      std::shared_ptr<eos::transport::TransportModel> transport,
                                                                                      std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn,
                                                                                      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
                                                                                      std::vector<std::shared_ptr<processes::Process>> additionalProcesses)
-    : CompressibleFlowSolver(solverId, region, options, eosIn, parameters, transport, fluxCalculatorIn,
+    : CompressibleFlowSolver(std::move(solverId), std::move(region), std::move(options), eosIn, std::move(parameters), std::move(transport), std::move(fluxCalculatorIn),
                              ablate::utilities::VectorUtilities::Merge(
                                  {std::make_shared<ablate::finiteVolume::processes::TChemReactions>(
                                      std::dynamic_pointer_cast<eos::TChem>(eosIn) ? std::dynamic_pointer_cast<eos::TChem>(eosIn) : throw std::invalid_argument("The eos must of type eos::TChem"))},
                                  additionalProcesses),
-                             boundaryConditions) {}
+                             std::move(boundaryConditions)) {}
 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::ReactingCompressibleFlowSolver, "reacting compressible finite volume flow", ARG(std::string, "id", "the name of the flow field"),

@@ -1,7 +1,6 @@
 #ifndef ABLATELIBRARY_SPECIESTRANSPORT_HPP
 #define ABLATELIBRARY_SPECIESTRANSPORT_HPP
 
-#include <eos/transport/transportModel.hpp>
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "flowProcess.hpp"
@@ -65,6 +64,12 @@ class SpeciesTransport : public FlowProcess {
      */
     static PetscErrorCode UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
                                                      void* ctx);
+
+    /**
+     * Normalize and cleanup the species mass fractions in the solution vector
+     * @param ts
+     */
+    static void NormalizeSpecies(TS ts, ablate::solver::Solver&);
 
    private:
     /**

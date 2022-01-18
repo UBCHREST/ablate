@@ -142,34 +142,7 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
     }
 
     // Set the initial conditions for each field specified
-    PetscInt numberFields;
-    DMGetNumFields(dm, &numberFields) >> checkError;
-    for (auto& initialization : initializations) {
-        // Size up the field projects
-        std::vector<mathFunctions::PetscFunction> fieldFunctions(numberFields, nullptr);
-        std::vector<void*> fieldContexts(numberFields, nullptr);
-
-        auto fieldId = GetField(initialization->GetName());
-        fieldContexts[fieldId.id] = initialization->GetSolutionField().GetContext();
-        fieldFunctions[fieldId.id] = initialization->GetSolutionField().GetPetscFunction();
-
-        // Determine where to apply this field
-        DMLabel fieldLabel = nullptr;
-        PetscInt fieldValue = 0;
-        if (const auto& region = initialization->GetRegion()) {
-            fieldValue = region->GetValue();
-            DMGetLabel(dm, region->GetName().c_str(), &fieldLabel) >> checkError;
-        } else {
-            PetscObject fieldTemp;
-            DMGetField(dm, fieldId.id, &fieldLabel, &fieldTemp) >> checkError;
-            if (fieldLabel) {
-                fieldValue = 1;  // this is temporary until petsc allows fields to be defined with values beside 1
-            }
-        }
-
-        // Project this field
-        DMProjectFunctionLabel(dm, 0.0, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctions.data(), fieldContexts.data(), INSERT_VALUES, solField) >> checkError;
-    }
+    ProjectFieldFunctions(initializations, solField);
 
     // Initialize each solver
     for (auto& solver : solvers) {
@@ -187,4 +160,50 @@ std::vector<std::weak_ptr<ablate::io::Serializable>> ablate::domain::Domain::Get
         serializables.push_back(serializable);
     }
     return serializables;
+}
+
+void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time) {
+    PetscInt numberFields;
+    DMGetNumFields(dm, &numberFields) >> checkError;
+
+    // get a local vector for the work
+    Vec locVec;
+    DMGetLocalVector(dm, &locVec) >> checkError;
+    DMGlobalToLocal(dm, globVec, INSERT_VALUES, locVec) >> checkError;
+
+    for (auto& fieldFunction : fieldFunctions) {
+        // Size up the field projects
+        std::vector<mathFunctions::PetscFunction> fieldFunctionsPts(numberFields, nullptr);
+        std::vector<void*> fieldContexts(numberFields, nullptr);
+
+        auto fieldId = GetField(fieldFunction->GetName());
+        fieldContexts[fieldId.id] = fieldFunction->GetSolutionField().GetContext();
+        fieldFunctionsPts[fieldId.id] = fieldFunction->GetSolutionField().GetPetscFunction();
+
+        // Determine where to apply this field
+        DMLabel fieldLabel = nullptr;
+        PetscInt fieldValue = 0;
+        if (const auto& region = fieldFunction->GetRegion()) {
+            fieldValue = region->GetValue();
+            DMGetLabel(dm, region->GetName().c_str(), &fieldLabel) >> checkError;
+        } else {
+            PetscObject fieldTemp;
+            DMGetField(dm, fieldId.id, &fieldLabel, &fieldTemp) >> checkError;
+            if (fieldLabel) {
+                fieldValue = 1;  // this is temporary until petsc allows fields to be defined with values beside 1
+            }
+        }
+
+        // Note the global DMProjectFunctionLabel can't be used because it overwrites unwritten values.
+        // Project this field
+        if (fieldLabel) {
+            DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
+        } else {
+            DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
+        }
+    }
+
+    // push the results back to the global vector
+    DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec) >> checkError;
+    DMRestoreLocalVector(dm, &locVec) >> checkError;
 }

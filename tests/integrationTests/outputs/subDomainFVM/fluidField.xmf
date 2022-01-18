@@ -13,7 +13,7 @@
     <Grid CollectionType="Temporal" GridType="Collection" Name="TimeSeries">
       <Time TimeType="List">
         <DataItem Dimensions="11" Format="XML" NumberType="Float">
-          0 6.00058e-05 0.000114253 0.000165019 0.000213947 0.000262174 0.000310521 0.000359633 0.000410047 0.00046204 0.000513962
+          0 6.00058e-05 0.000114251 0.000165011 0.000213928 0.000262139 0.000310471 0.000359575 0.000410002 0.000461818 0.000513562
         </DataItem>
       </Time>
       <Grid GridType="Uniform" Name="domain">

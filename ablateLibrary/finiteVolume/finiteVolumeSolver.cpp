@@ -352,7 +352,7 @@ static PetscErrorCode DMPlexApplyLimiter_Internal(DM dm, DM dmCell, PetscLimiter
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablate::domain::Field& field, Vec xGlobVec, Vec& gradLocVec, DM& dmGrad) {
+void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablate::domain::Field& field, Vec xLocalVec, Vec& gradLocVec, DM& dmGrad) {
     // get the FVM petsc field associated with this field
     auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
     auto dm = subDomain->GetFieldDM(field);
@@ -384,9 +384,9 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
     VecGetDM(faceGeometryVec, &dmFace) >> checkError;
     VecGetArrayRead(faceGeometryVec, &faceGeometryArray);
 
-    // extract the global x array
-    const PetscScalar* xGlobArray;
-    VecGetArrayRead(xGlobVec, &xGlobArray);
+    // extract the local x array
+    const PetscScalar* xLocalArray;
+    VecGetArrayRead(xLocalVec, &xLocalArray);
 
     // extract the global grad array
     PetscScalar* gradGlobArray;
@@ -432,7 +432,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
         DMPlexGetSupport(dm, face, &cells);
         DMPlexPointLocalRead(dmFace, face, faceGeometryArray, &fg);
         for (PetscInt c = 0; c < 2; ++c) {
-            DMPlexPointLocalFieldRead(dm, cells[c], field.id, xGlobArray, &cx[c]) >> checkError;
+            DMPlexPointLocalFieldRead(dm, cells[c], field.id, xLocalArray, &cx[c]) >> checkError;
             DMPlexPointGlobalRef(dmGrad, cells[c], gradGlobArray, &cgrad[c]) >> checkError;
         }
         for (PetscInt pd = 0; pd < dof; ++pd) {
@@ -476,7 +476,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
 
             DMPlexGetConeSize(dm, cell, &coneSize) >> checkError;
             DMPlexGetCone(dm, cell, &cellFaces) >> checkError;
-            DMPlexPointLocalFieldRead(dm, cell, field.id, xGlobArray, &cx) >> checkError;
+            DMPlexPointLocalFieldRead(dm, cell, field.id, xLocalArray, &cx) >> checkError;
             DMPlexPointLocalRead(dmCell, cell, cellGeometryArray, &cg) >> checkError;
             DMPlexPointGlobalRef(dmGrad, cell, gradGlobArray, &cgrad) >> checkError;
 
@@ -489,7 +489,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
                 cellPhi[d] = PETSC_MAX_REAL;
             }
             for (PetscInt f = 0; f < coneSize; ++f) {
-                DMPlexApplyLimiter_Internal(dm, dmCell, lim, dim, dof, cell, field.id, cellFaces[f], fStart, fEnd, cellPhi, xGlobArray, cellGeometryArray, cg, cx, cgrad) >> checkError;
+                DMPlexApplyLimiter_Internal(dm, dmCell, lim, dim, dof, cell, field.id, cellFaces[f], fStart, fEnd, cellPhi, xLocalArray, cellGeometryArray, cg, cx, cgrad) >> checkError;
             }
             /* Apply limiter to gradient */
             for (PetscInt pd = 0; pd < dof; ++pd) {
@@ -511,7 +511,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
     DMGlobalToLocalEnd(dmGrad, gradGlobVec, INSERT_VALUES, gradLocVec) >> checkError;
 
     // cleanup
-    VecRestoreArrayRead(xGlobVec, &xGlobArray) >> checkError;
+    VecRestoreArrayRead(xLocalVec, &xLocalArray) >> checkError;
     VecRestoreArrayRead(faceGeometryVec, &faceGeometryArray) >> checkError;
     RestoreRange(faceIS, fStart, fEnd, faces);
     DMRestoreGlobalVector(dmGrad, &gradGlobVec) >> checkError;
@@ -680,9 +680,15 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
         DMPlexPointLocalRead(cellDM, faceCells[0], cellGeomArray, &cgL) >> checkError;
         DMPlexPointLocalRead(cellDM, faceCells[1], cellGeomArray, &cgR) >> checkError;
 
+        PetscInt leftFlowLabelValue = regionValue;
+        PetscInt rightFlowLabelValue = regionValue;
+        if (regionLabel) {
+            DMLabelGetValue(regionLabel, faceCells[0], &leftFlowLabelValue);
+            DMLabelGetValue(regionLabel, faceCells[1], &rightFlowLabelValue);
+        }
         // compute the left/right face values
-        ProjectToFace(subDomain->GetFields(), ds, *fg, faceCells[0], *cgL, dm, xArray, dmGrads, locGradArrays, uL, gradL);
-        ProjectToFace(subDomain->GetFields(), ds, *fg, faceCells[1], *cgR, dm, xArray, dmGrads, locGradArrays, uR, gradR);
+        ProjectToFace(subDomain->GetFields(), ds, *fg, faceCells[0], *cgL, dm, xArray, dmGrads, locGradArrays, uL, gradL, leftFlowLabelValue == regionValue);
+        ProjectToFace(subDomain->GetFields(), ds, *fg, faceCells[1], *cgR, dm, xArray, dmGrads, locGradArrays, uR, gradR, rightFlowLabelValue == regionValue);
 
         // determine the left/right cells
         if (auxArray) {

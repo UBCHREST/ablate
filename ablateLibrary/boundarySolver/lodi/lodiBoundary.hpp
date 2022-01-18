@@ -5,6 +5,7 @@
 #include "eos/eos.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
+#include "finiteVolume/processes/pressureGradientScaling.hpp"
 
 namespace ablate::boundarySolver::lodi {
 class LODIBoundary : public BoundaryProcess {
@@ -17,9 +18,11 @@ class LODIBoundary : public BoundaryProcess {
         RHOVELT2 = finiteVolume::processes::FlowProcess::RHOW
     } BoundaryEulerComponents;
 
+    // Global parameters
     const std::shared_ptr<eos::EOS> eos;
+    const std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling;
 
-    static void GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal Cp, PetscReal Cv, PetscReal& velNormPrim, PetscReal& speedOfSoundPrim);
+    void GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal Cp, PetscReal Cv, PetscReal& velNormPrim, PetscReal& speedOfSoundPrim);
 
     void GetEigenValues(PetscReal veln, PetscReal c, PetscReal velnprm, PetscReal cprm, PetscReal lamda[]) const;
 
@@ -33,7 +36,7 @@ class LODIBoundary : public BoundaryProcess {
     std::vector<std::string> fieldNames;
 
    public:
-    explicit LODIBoundary(std::shared_ptr<eos::EOS> eos);
+    explicit LODIBoundary(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
 
     void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
 

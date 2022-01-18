@@ -40,13 +40,14 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             ablate::parameters::MapParameters runEnvironmentParameters(std::map<std::string, std::string>{{"directory", resultDirectory}, {"tagDirectory", "false"}, {"title", testName}});
             ablate::environment::RunEnvironment::Setup(runEnvironmentParameters, inputPath);
 
-            // load a yaml file
-            ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
-            std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction());
+            {
+                // load a yaml file
+                ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {inputPath.parent_path()});
+                std::shared_ptr<cppParser::Factory> parser = std::make_shared<cppParser::YamlParser>(inputPath, fileLocator.GetLocateFileFunction());
 
-            // run with the parser
-            ablate::Builder::Run(parser);
-
+                // run with the parser
+                ablate::Builder::Run(parser);
+            }
             // print all files in the directory so that they are compared with expected
             if (rank == 0) {
                 std::vector<std::string> resultFileInfo;
@@ -176,7 +177,8 @@ INSTANTIATE_TEST_SUITE_P(
                     (MpiTestParameter){.testName = "inputs/shockTubeSODLodiBoundary.yaml", .nproc = 1, .expectedOutputFile = "outputs/shockTubeSODLodiBoundary.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/steadyCompressibleFlowLodiTest.yaml", .nproc = 2, .expectedOutputFile = "outputs/steadyCompressibleFlowLodiTest.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/compressibleFlowVortexLodi.yaml", .nproc = 2, .expectedOutputFile = "outputs/compressibleFlowVortexLodi.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/twoGasAdvectingDiscontinuity.yaml", .nproc = 1, .expectedOutputFile = "outputs/twoGasAdvectingDiscontinuity.txt", .arguments = ""}),
+                    (MpiTestParameter){.testName = "inputs/twoGasAdvectingDiscontinuity.yaml", .nproc = 1, .expectedOutputFile = "outputs/twoGasAdvectingDiscontinuity.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/compressibleFlowPgsLodi.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlowPgsLodi.txt", .arguments = ""}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(

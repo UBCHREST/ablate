@@ -4,7 +4,8 @@
 
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
-ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos) : LODIBoundary(std::move(eos)) {}
+ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
+    : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)) {}
 
 void ablate::boundarySolver::lodi::Inlet::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
@@ -118,16 +119,19 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
 
     // get_vel_and_c_prims(PGS, velwall[0], C, Cp, Cv, velnprm, Cprm);
     PetscReal velNormPrim, speedOfSoundPrim;
-    GetVelAndCPrims(boundaryNormalVelocity, boundarySpeedOfSound, boundaryCp, boundaryCv, velNormPrim, speedOfSoundPrim);
+    inletBoundary->GetVelAndCPrims(boundaryNormalVelocity, boundarySpeedOfSound, boundaryCp, boundaryCv, velNormPrim, speedOfSoundPrim);
 
     // get_eigenvalues
     std::vector<PetscReal> lambda(inletBoundary->nEqs);
     inletBoundary->GetEigenValues(boundaryNormalVelocity, boundarySpeedOfSound, velNormPrim, speedOfSoundPrim, &lambda[0]);
 
+    // Get alpha
+    PetscReal pgsAlpha = inletBoundary->pressureGradientScaling ? inletBoundary->pressureGradientScaling->GetAlpha() : 1.0;
+
     // Get scriptL
     std::vector<PetscReal> scriptL(inletBoundary->nEqs);
     // Outgoing acoustic wave
-    scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * dVeldNorm * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));
+    scriptL[1 + dim] = lambda[1 + dim] * (dPdNorm - boundaryDensity * PetscSqr(pgsAlpha) * dVeldNorm * (velNormPrim - boundaryNormalVelocity - speedOfSoundPrim));
 
     // Incoming acoustic wave
     scriptL[0] = scriptL[1 + dim];
@@ -171,4 +175,5 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
 
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::Inlet, "Enforces an inlet with specified velocity",
-         ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the wall"));
+         ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the wall"),
+         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));
