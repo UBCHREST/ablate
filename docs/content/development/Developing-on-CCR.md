@@ -9,7 +9,7 @@ The University at Buffalo Center for Computational Research [(CCR)](http://www.b
 
 * [CCR Getting Started](http://www.buffalo.edu/ccr/support/getting-started.html)
 * [CCR Knowledge Base](https://ubccr.freshdesk.com/support/home)
-* [CCR OnDemand](https://ondemand.ccr.buffalo.edu) - an integrated, single access point for all of your HPC processes
+* [CCR OnDemand](https://ondemand.ccr.buffalo.edu) - an integrated, single access point for all of your HPC resources
 * [CCR Coldfront](https://coldfront.ccr.buffalo.edu) - resource allocation management tool built
 
 ## Notes:
