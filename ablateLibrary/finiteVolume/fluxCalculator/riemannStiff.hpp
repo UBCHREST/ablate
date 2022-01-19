@@ -12,8 +12,8 @@ namespace ablate::finiteVolume::fluxCalculator {
 class RiemannStiff : public fluxCalculator::FluxCalculator {
    private:
     static Direction RiemannStiffFluxFunction(void *, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal *massFlux,
-                                             PetscReal *p12);
-    PetscReal gammaVec[4];// gamma_L, gamma_R, p0_L, p0_R
+                                              PetscReal *p12);
+    PetscReal gammaVec[4];  // gamma_L, gamma_R, p0_L, p0_R
 
    public:
     FluxCalculatorFunction GetFluxCalculatorFunction() override { return RiemannStiffFluxFunction; }

@@ -11,7 +11,7 @@ ablate::eos::StiffenedGas::StiffenedGas(std::shared_ptr<ablate::parameters::Para
 void ablate::eos::StiffenedGas::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;
     stream << "\tgamma: " << parameters.gamma << std::endl;
-    stream << "\tCv: " << parameters.Cp << std::endl;
+    stream << "\tCp: " << parameters.Cp << std::endl;
     stream << "\tp0: " << parameters.p0 << std::endl;
     if (!species.empty()) {
         stream << "\tspecies: " << species.front();
@@ -58,7 +58,7 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeTemperature(PetscIn
     PetscReal pinf = parameters->p0;
     PetscReal gam = parameters->gamma;
 
-    (*T) = (internalEnergy - pinf/density) * gam / cp ;
+    (*T) = (internalEnergy - pinf / density) * gam / cp;
     PetscFunctionReturn(0);
 }
 
@@ -83,7 +83,7 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSensibleInternalEne
     PetscReal cp = parameters->Cp;
     PetscReal gam = parameters->gamma;
     PetscReal pinf = parameters->p0;
-    *sensibleInternalEnergy = T * cp/gam + pinf/density;
+    *sensibleInternalEnergy = T * cp / gam + pinf / density;
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
@@ -95,7 +95,7 @@ PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpecificHeatConstan
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
     PetscFunctionBeginUser;
     Parameters *parameters = (Parameters *)ctx;
-    (*specificHeat) = parameters->Cp/parameters->gamma;
+    (*specificHeat) = parameters->Cp / parameters->gamma;
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::StiffenedGas::StiffenedGasComputeSensibleEnthalpy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleEnthalpy, void *ctx) {
