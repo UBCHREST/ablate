@@ -51,8 +51,11 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     pstar = aL + aR - (0.5 * gamLm1 * (uR - uL));
     pstar = pstar / ((aL / PetscPowReal(pL, 0.5 * gamLm1 / gammaL)) + (aR / PetscPowReal(pR, 0.5 * gamRm1 / gammaR)));
     pstar = PetscPowReal(pstar, 2.0 * gammaL / gamLm1);
-    //    pstar = 0.5 * (pR + pL);
-    pstar = PetscMin(pR, pL) + 1;  // new, average didn't converge
+    if (p0L == 0 && p0R == 0) {
+        pstar = 0.5 * (pR + pL);  // same as riemann2gas
+    } else {
+        pstar = PetscMin(pR, pL) + 1;  // new, average didn't converge
+    }
 
     if (pstar <= pL)  // expansion wave equation from Toro
     {
