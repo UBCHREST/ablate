@@ -154,22 +154,21 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal cv1 = R1 / (gamma1 - 1);
 
         PetscReal etot = (*internalEnergy);
-        PetscReal A = cp2/cv1/gamma2;
-        PetscReal B = Yg+Yl*A;
-        PetscReal D = p02/(*density) - etot;
-        PetscReal a = B * (Yg*(gamma2-1) - Yg*(gamma1-1) - gamma2*B);
-        PetscReal b = etot*Yg*(gamma1-1) - (gamma2-1)*etot*B + Yg*(gamma2-1)*D + gamma2*B*etot;
-        PetscReal c = etot*D;
-        PetscReal root1 = (-b+PetscSqrtReal(PetscSqr(b)-4*a*c))/(2*a);
-        PetscReal root2 = (-b-PetscSqrtReal(PetscSqr(b)-4*a*c))/(2*a);
-        PetscReal eG = PetscMax(root1,root2); // take positive root
+        PetscReal A = cp2 / cv1 / gamma2;
+        PetscReal B = Yg + Yl * A;
+        PetscReal D = p02 / (*density) - etot;
+        PetscReal a = B * (Yg * (gamma2 - 1) - Yg * (gamma1 - 1) - gamma2 * B);
+        PetscReal b = etot * Yg * (gamma1 - 1) - (gamma2 - 1) * etot * B + Yg * (gamma2 - 1) * D - gamma2 * D * B + gamma2 * B * etot;
+        PetscReal c = etot * D;
+        PetscReal root1 = (-b + PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
+        PetscReal root2 = (-b - PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
+        PetscReal eG = PetscMax(root1, root2);  // take positive root
         PetscReal etG = eG + ke;
-        PetscReal eL = ((*internalEnergy)-Yg*eG)/Yl;
+        PetscReal eL = ((*internalEnergy) - Yg * eG) / Yl;
 
         PetscReal etL = eL + ke;
-        PetscReal rhoL = p02/(eL-A*eG);
-        PetscReal rhoG = Yg/(1/(*density)-Yl/rhoL);
-
+        PetscReal rhoL = p02 / (eL - A * eG);
+        PetscReal rhoG = Yg / (1 / (*density) - Yl / rhoL);
 
         PetscReal pG;
         PetscReal pL;
