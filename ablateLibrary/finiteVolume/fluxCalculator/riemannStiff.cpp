@@ -51,7 +51,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     pstar = aL + aR - (0.5 * gamLm1 * (uR - uL));
     pstar = pstar / ((aL / PetscPowReal(pL, 0.5 * gamLm1 / gammaL)) + (aR / PetscPowReal(pR, 0.5 * gamRm1 / gammaR)));
     pstar = PetscPowReal(pstar, 2.0 * gammaL / gamLm1);
-    pstar = 0.5 * (pR + pL);
+    pstar = pR+1;//0.5 * (pR + pL);
 
     if (pstar <= pL)  // expansion wave equation from Toro
     {
@@ -160,7 +160,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
                     A = rhoL * PetscPowReal((2 / gamp1) + ((gamm1 * uL) / (gamp1 * aL)), (2 / gamm1));
                     uX = 2 / gamp1 * (aL + (gamm1 * uL / 2));
                     *massFlux = A * uX;
-                    *p12 = pL * PetscPowReal((2 / gamp1) + ((gamm1 * uL) / (gamp1 * aL)), (2 * gamma / gamm1));
+                    *p12 = (pL+p0L) * PetscPowReal((2 / gamp1) + ((gamm1 * uL) / (gamp1 * aL)), (2 * gamma / gamm1)) - p0L;
                 }
             } else {
                 gamma = gammaL;
@@ -217,7 +217,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
                     A = rhoR * PetscPowReal((2 / gamp1) - ((gamm1 * uR) / (gamp1 * aR)), (2 / gamm1));
                     uX = 2 / gamp1 * (-aR + (gamm1 * uR / 2));
                     *massFlux = A * uX;
-                    *p12 = pR * PetscPowReal((2 / gamp1) - ((gamm1 * uR) / (gamp1 * aR)), (2 * gamma / gamm1));
+                    *p12 = (pR+p0R) * PetscPowReal((2 / gamp1) - ((gamm1 * uR) / (gamp1 * aR)), (2 * gamma / gamm1)) - p0R;
                 }
             } else  // negative head wave
             {
