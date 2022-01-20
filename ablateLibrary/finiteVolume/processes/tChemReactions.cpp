@@ -16,7 +16,8 @@
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
 #endif
 
-ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> options)
+ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> options, std::vector<std::string> inertSpecies,
+                                                                double minimumMassFraction)
     : fieldDm(nullptr),
       sourceVec(nullptr),
       petscOptions(nullptr),
@@ -28,7 +29,8 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
       jacobian(nullptr),
       tchemScratch(nullptr),
       jacobianScratch(nullptr),
-      rows(nullptr) {
+      rows(nullptr),
+      minimumMassFraction(minimumMassFraction) {
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
         throw std::invalid_argument("ablate::finiteVolume::processes::TChemReactions only accepts EOS of type eos::TChem");
@@ -73,6 +75,17 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
     TSSetMaxSNESFailures(ts, -1) >> checkError;             /* Retry step an unlimited number of times */
     TSSetFromOptions(ts) >> checkError;
     TSGetTimeStep(ts, &dtInit) >> checkError;
+
+    // look up inert species locations
+    const auto& speciesList = eos->GetSpecies();
+    for (const auto& speciesName : inertSpecies) {
+        auto specIt = std::find(speciesList.begin(), speciesList.end(), speciesName);
+        if (specIt != speciesList.end()) {
+            inertSpeciesIds.push_back(std::distance(speciesList.begin(), specIt));
+        } else {
+            throw std::invalid_argument("Unable to locate specified inert species " + speciesName + " for ablate::finiteVolume::processes::TChemReactions.");
+        }
+    }
 }
 ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {
     if (fieldDm) {
@@ -148,6 +161,11 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     ierr = PetscArraycpy(solver->tchemScratch, xArray, solver->numberSpecies + 1);
     CHKERRQ(ierr);
 
+    // make sure yi is in bounds
+    for (std::size_t i = 0; i < solver->numberSpecies; i++) {
+        solver->tchemScratch[i + 1] = PetscMin(PetscMax(solver->tchemScratch[i + 1], solver->minimumMassFraction), 1);
+    }
+
     // get the source (assuming constant pressure/mass)
     ierr = TC_getSrc(solver->tchemScratch, (PetscInt)solver->numberSpecies + 1, fArray);
     TCCHKERRQ(ierr);
@@ -173,9 +191,22 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     ierr = VecRestoreArrayRead(X, &xArray);
     CHKERRQ(ierr);
 
+    // make sure yi is in bounds
+    for (std::size_t i = 0; i < solver->numberSpecies; i++) {
+        solver->tchemScratch[i + 1] = PetscMin(PetscMax(solver->tchemScratch[i + 1], solver->minimumMassFraction), 1);
+    }
+
     // compute the analytical jacobian assuming constant pressure
     ierr = TC_getJacTYN(solver->tchemScratch, (int)solver->numberSpecies, solver->jacobianScratch, 1);
     CHKERRQ(ierr);
+
+    // Set the Jacobian value to unity in the diagonal for any inert species
+    for (const auto& inertSpeciesId : solver->inertSpeciesIds) {
+        // get the location in the jac
+        auto speciesJac = inertSpeciesId + 1; /* the +1 offset is from temperature being in first location */
+        auto loc = (solver->numberSpecies + 1) * speciesJac + speciesJac;
+        solver->jacobianScratch[loc] = 1.0;
+    }
 
     // Load the matrix
     ierr = MatSetOption(pMat, MAT_ROW_ORIENTED, PETSC_FALSE);
@@ -454,4 +485,5 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem v1 library", ARG(ablate::eos::EOS, "eos", "the tChem v1 eos"),
-         OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"));
+         OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"), OPT(std::vector<std::string>, "inertSpecies", "fix the Jacobian for any undetermined inertSpecies"),
+         OPT(double, "minimumMassFraction", "sets the minimum mass fraction passed to TChem Library (default 0)"));
