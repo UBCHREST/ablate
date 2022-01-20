@@ -53,7 +53,6 @@ static PetscErrorCode SetInitialCondition(PetscInt dim, PetscReal time, const Pe
     if (x[0] < initialConditions->length / 2.0) {
         u[ablate::finiteVolume::processes::FlowProcess::RHO] = initialConditions->rhoL;
         u[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
-        u[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
@@ -62,7 +61,6 @@ static PetscErrorCode SetInitialCondition(PetscInt dim, PetscReal time, const Pe
     } else {
         u[ablate::finiteVolume::processes::FlowProcess::RHO] = initialConditions->rhoR;
         u[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
-        u[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
@@ -122,7 +120,6 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
         a_xG[ablate::finiteVolume::processes::FlowProcess::RHO] = initialConditions->rhoL;
 
         a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
-        a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
@@ -131,7 +128,6 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
         a_xG[ablate::finiteVolume::processes::FlowProcess::RHO] = initialConditions->rhoR;
 
         a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
-        a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
