@@ -69,7 +69,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
         }
     }
     if (!timeStepFunctions.empty() && computePhysicsTimeStep) {
-        RegisterPreStep(ComputeTimeStep);
+        RegisterPreStep(EnforceTimeStep);
     }
 }
 
@@ -152,7 +152,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSPointFu
 
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.emplace_back(function, context); }
 
-void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::solver::Solver& solver) {
+void ablate::finiteVolume::FiniteVolumeSolver::EnforceTimeStep(TS ts, ablate::solver::Solver& solver) {
     auto& flowFV = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
     // Get the dm and current solution vector
     DM dm;
@@ -855,6 +855,19 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
     }
 
     RestoreRange(cellIS, cStart, cEnd, cells);
+}
+std::map<std::string, double> ablate::finiteVolume::FiniteVolumeSolver::ComputePhysicsTimeSteps(TS ts) {
+    // time steps
+    std::map<std::string, double> timeSteps;
+
+    // march over each calculator
+    for (const auto& dtFunction : timeStepFunctions) {
+        double dt = dtFunction.function(ts, *this, dtFunction.context);
+        MPI_Reduce(MPI_IN_PLACE, &dt, 1, MPI_DOUBLE, MPI_MIN, 0, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+        timeSteps[dtFunction.name] = dt;
+    }
+
+    return timeSteps;
 }
 
 #include "registrar.hpp"

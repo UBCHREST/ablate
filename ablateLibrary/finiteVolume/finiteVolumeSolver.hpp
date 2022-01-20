@@ -77,7 +77,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     std::vector<std::shared_ptr<processes::Process>> processes;
 
     // static function to update the flowfield
-    static void ComputeTimeStep(TS, ablate::solver::Solver&);
+    static void EnforceTimeStep(TS ts, ablate::solver::Solver& solver);
 
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
 
@@ -169,6 +169,11 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param auxFields
      */
     void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx, std::string name);
+
+    /**
+     * Computes the individual time steps useful for output/debugging.  This does not enforce the time step
+     */
+    std::map<std::string, double> ComputePhysicsTimeSteps(TS);
 };
 }  // namespace ablate::finiteVolume
 
