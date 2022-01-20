@@ -1,12 +1,14 @@
 #include <petsc.h>
 #include <vector>
 #include "eos/perfectGas.hpp"
+#include "eos/stiffenedGas.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/fluxCalculator/ausmpUp.hpp"
 #include "finiteVolume/fluxCalculator/averageFlux.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
 #include "finiteVolume/fluxCalculator/rieman.hpp"
 #include "finiteVolume/fluxCalculator/riemann2Gas.hpp"
+#include "finiteVolume/fluxCalculator/riemannStiff.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
 
@@ -204,6 +206,94 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedInterfacePressure = {0.28296141, 0.000676, 430.992964, 47.5230682, 1758.5562536},  // pressure at x=0
             .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                       // Upwind direction based on velocity at x = 0
         },
+        // Riemann2Gas flux testing, same gamma L/R
+        (FluxCalculatorTestParameters){
+            .testName = "RiemannStiffFlux",
+            .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::RiemannStiff>(
+                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}})),
+                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}))),
+            .uL = {0.0, -2.0, 0.0, 0.0, 19.5975},
+            .aL = {1.18321596, 0.74833148, 37.4165739, 0.1183216, 10.3708995},  // gam=1.4 a = \gam * p / \rho
+            .rhoL = {1.0, 1.0, 1.0, 1.0, 5.99924},
+            .pL = {1.0, 0.4, 1000.0, 0.01, 460.894},
+            .uR = {0.0, 2.0, 0.0, 0.0, -6.19633},
+            .aR = {1.05830052, 0.74833148, 0.1183216, 11.8321596, 3.28163145},  // gam=1.4 a = \gam * p / \rho
+            .rhoR = {0.125, 1.0, 1.0, 1.0, 5.99242},
+            .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
+            .expectedMassFlux = {0.39539107, 0, 11.2697554, -3.56358518796, 117.5701},           // status at x =0
+            .expectedInterfacePressure = {0.30313018, 0.00189387, 460.893787, 46.095, 460.894},  // pressure at x=0
+            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                // Upwind direction based on velocity at x = 0
+        },
+        // RiemannStiff flux testing, same gamma 1.4 L/ gamma 1.667 R
+        (FluxCalculatorTestParameters){
+            .testName = "RiemannStiffFluxT2",
+            .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::RiemannStiff>(
+                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}})),
+                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.667"}}))),
+            .uL = {0.0, -2.0, 0.0, 0.0, 19.5975},
+            .aL = {1.18321596, 0.74833148, 37.4165739, 0.1183216, 10.3708995},  // gam=1.4 a = \gam * p / \rho
+            .rhoL = {1.0, 1.0, 1.0, 1.0, 5.99924},
+            .pL = {1.0, 0.4, 1000.0, 0.01, 460.894},
+            .uR = {0.0, 2.0, 0.0, 0.0, -6.19633},
+            .aR = {1.15481600, 0.81657823, 0.12911235, 12.91123542, 3.58091149},  // gam=1.667 a = \gam * p / \rho
+            .rhoR = {0.125, 1.0, 1.0, 1.0, 5.99242},
+            .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
+            .expectedMassFlux = {0.39442313, 0.00001119, 11.0900218667, -3.61787265, 117.570105900},    // status at x =0
+            .expectedInterfacePressure = {0.314396658, 0.000506098, 475.022995502, 43.1357, 460.8940},  // pressure at x=0
+            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                       // Upwind direction based on velocity at x = 0
+        },
+        // Riemann2Gas flux testing, same gamma 1.667 L/ gamma 1.4 R
+        (FluxCalculatorTestParameters){
+            .testName = "RiemannStiffFluxT3",
+            .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::RiemannStiff>(
+                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.667"}})),
+                std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}))),
+            .uL = {0.0, -2.0, 0.0, 0.0, 19.5975},
+            .aL = {1.2911235, 0.816578, 40.828911, 0.12911235, 11.3167106},  // gam=1.667 a = \gam * p / \rho
+            .rhoL = {1.0, 1.0, 1.0, 1.0, 5.99924},
+            .pL = {1.0, 0.4, 1000.0, 0.01, 460.894},
+            .uR = {0.0, 2.0, 0.0, 0.0, -6.19633},
+            .aR = {1.05830052, 0.74833148, 0.1183216, 11.8321596, 3.28163145},  // gam=1.4 a = \gam * p / \rho
+            .rhoR = {0.125, 1.0, 1.0, 1.0, 5.99242},
+            .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
+            .expectedMassFlux = {0.405243, -0.005215, 11.4486735, -3.5061155, 112.3130},                // status at x =0
+            .expectedInterfacePressure = {0.28296141, 0.000676, 430.992964, 47.5230682, 1758.5562536},  // pressure at x=0
+            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                       // Upwind direction based on velocity at x = 0
+        },
+        // RiemannStiff flux testing, water/air
+        (FluxCalculatorTestParameters){.testName = "RiemannStiffFluxT4",
+                                       .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::RiemannStiff>(
+                                           std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                                               {"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645e9"}})),
+                                           std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}))),
+                                       .uL = {0.0},
+                                       .aL = {2044.9484101072085},
+                                       .rhoL = {1000.0},
+                                       .pL = {1000000000.0},
+                                       .uR = {0.0},
+                                       .aR = {52.91502622129181},
+                                       .rhoR = {50},
+                                       .pR = {100000.0},
+                                       .expectedMassFlux = {434205.19124982634},
+                                       .expectedInterfacePressure = {21306365.4962665},
+                                       .expectedDirection = {LEFT}},
+        // RiemannStiff flux testing, air/water
+        (FluxCalculatorTestParameters){.testName = "RiemannStiffFluxT5",
+                                       .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::RiemannStiff>(
+                                           std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}})),
+                                           std::make_shared<ablate::eos::StiffenedGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
+                                               {"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645e9"}}))),
+                                       .uL = {0.0},
+                                       .aL = {52.91502622129181},
+                                       .rhoL = {50},
+                                       .pL = {100000.0},
+                                       .uR = {0.0},
+                                       .aR = {2044.9484101072085},
+                                       .rhoR = {1000},
+                                       .pR = {1000000000.0},
+                                       .expectedMassFlux = {-434205.19124982634},
+                                       .expectedInterfacePressure = {21306365.4962665},
+                                       .expectedDirection = {RIGHT}},
         (FluxCalculatorTestParameters){.testName = "OffFlux",
                                        .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::OffFlux>(),
                                        .uL = {80, 168.5, -161.4, 76},

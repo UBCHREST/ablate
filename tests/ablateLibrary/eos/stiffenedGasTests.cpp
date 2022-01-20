@@ -29,15 +29,13 @@ TEST_P(StiffenedGasTestCreateAndViewFixture, ShouldCreateAndView) {
 }
 
 INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasTestCreateAndViewFixture,
-                         testing::Values((StiffenedGasEOSTestCreateAndViewParameters){.options = {},
-                                                                                      .expectedView = "EOS: stiffenedGas\n\tgamma: 2.4\n\tCv: 3030\n\tp0: 1e+07\n\tT0: 584.25\n\te0: 1.393e+06\n"},
-                                         (StiffenedGasEOSTestCreateAndViewParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
-                                                                                      .expectedView = "EOS: stiffenedGas\n\tgamma: 3.2\n\tCv: 100.2\n\tp0: 3.5e+06\n\tT0: 654.32\n\te0: 1.482e+06\n"},
-                                         (StiffenedGasEOSTestCreateAndViewParameters){
-                                             .options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},  // need to replace with real state for expected
-                                                                                                                                                      // internal energy, speed of sound, pressure
-                                             .species = {"O2", "N2"},
-                                             .expectedView = "EOS: stiffenedGas\n\tgamma: 3.2\n\tCv: 100.2\n\tp0: 3.5e+06\n\tT0: 654.32\n\te0: 1.482e+06\n\tspecies: O2, N2\n"}),
+                         testing::Values((StiffenedGasEOSTestCreateAndViewParameters){.options = {}, .expectedView = "EOS: stiffenedGas\n\tgamma: 1.932\n\tCp: 8095.08\n\tp0: 1.1645e+09\n"},
+                                         (StiffenedGasEOSTestCreateAndViewParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
+                                                                                      .expectedView = "EOS: stiffenedGas\n\tgamma: 3.2\n\tCp: 100.2\n\tp0: 3.5e+06\n"},
+                                         (StiffenedGasEOSTestCreateAndViewParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},  // need to replace with real state for expected
+                                                                                                                                                        // internal energy, speed of sound, pressure
+                                                                                      .species = {"O2", "N2"},
+                                                                                      .expectedView = "EOS: stiffenedGas\n\tgamma: 3.2\n\tCp: 100.2\n\tp0: 3.5e+06\n\tspecies: O2, N2\n"}),
                          [](const testing::TestParamInfo<StiffenedGasEOSTestCreateAndViewParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -81,15 +79,15 @@ TEST_P(StiffenedGasTestDecodeStateFixture, ShouldDecodeState) {
 }
 
 INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasTestDecodeStateFixture,
-                         testing::Values((StiffenedGasEOSTestDecodeStateParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
+                         testing::Values((StiffenedGasEOSTestDecodeStateParameters){.options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}},
                                                                                     .densityYiIn = {},
                                                                                     .densityIn = 998.7,
-                                                                                    .totalEnergyIn = 1E5,
+                                                                                    .totalEnergyIn = 2.5E6,
                                                                                     .velocityIn = {10, -20, 30},
-                                                                                    .expectedInternalEnergy = 99300,
-                                                                                    .expectedSpeedOfSound = 547.7264492,
-                                                                                    .expectedPressure = 114839274},
-                                         (StiffenedGasEOSTestDecodeStateParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
+                                                                                    .expectedInternalEnergy = 2499300.0,
+                                                                                    .expectedSpeedOfSound = 1549.4332810120738,
+                                                                                    .expectedPressure = 76505448.11999989},
+                                         (StiffenedGasEOSTestDecodeStateParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
                                                                                     .densityYiIn = {},
                                                                                     .densityIn = 800,
                                                                                     .totalEnergyIn = 1.2E5,
@@ -134,18 +132,18 @@ TEST_P(StiffenedGasTestTemperatureFixture, ShouldComputeTemperature) {
 }
 
 INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasTestTemperatureFixture,
-                         testing::Values((StiffenedGasEOSTestTemperatureParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
+                         testing::Values((StiffenedGasEOSTestTemperatureParameters){.options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}},
                                                                                     .densityYiIn = {},
                                                                                     .densityIn = 998.7,
-                                                                                    .totalEnergyIn = 1.5E+05,
+                                                                                    .totalEnergyIn = 2.5E+06,
                                                                                     .massFluxIn = {998.7 * 10, -998.7 * 20, 998.7 * 30},
-                                                                                    .expectedTemperature = 173.7879538},
-                                         (StiffenedGasEOSTestTemperatureParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
+                                                                                    .expectedTemperature = 318.2062480747645},
+                                         (StiffenedGasEOSTestTemperatureParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
                                                                                     .densityYiIn = {},
                                                                                     .densityIn = 800,
-                                                                                    .totalEnergyIn = 1.45E6,
+                                                                                    .totalEnergyIn = 1.2E5,
                                                                                     .massFluxIn = {0.0},
-                                                                                    .expectedTemperature = 334.9497405}),
+                                                                                    .expectedTemperature = 3692.6147704590817}),
                          [](const testing::TestParamInfo<StiffenedGasEOSTestTemperatureParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -229,14 +227,12 @@ TEST_P(StiffenedGasTestComputeDensityTestFixture, ShouldComputeCorrectTemperatur
 }
 
 INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasTestComputeDensityTestFixture,
-                         testing::Values((StiffenedGasTestComputeDensityParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
+                         testing::Values((StiffenedGasTestComputeDensityParameters){.options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}},
                                                                                     .temperatureIn = 300.0,
                                                                                     .pressureIn = 101325.0,
-                                                                                    .expectedDensity = 32.37634695},
-                                         (StiffenedGasTestComputeDensityParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
-                                                                                    .temperatureIn = 1000.0,
-                                                                                    .pressureIn = 1013250.0,
-                                                                                    .expectedDensity = 3.660383784}),
+                                                                                    .expectedDensity = 994.090880767274},
+                                         (StiffenedGasTestComputeDensityParameters){
+                                             .options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}}, .temperatureIn = 1000.0, .pressureIn = 1013250.0, .expectedDensity = 65.51624024677916}),
                          [](const testing::TestParamInfo<StiffenedGasTestComputeDensityParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -270,20 +266,17 @@ TEST_P(StiffenedGasComputeSensibleInternalEnergyTestFixture, ShouldComputeCorrec
     ASSERT_NEAR(internalEnergy, params.expectedSensibleInternalEnergy, 1E-3);
 }
 
-INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasComputeSensibleInternalEnergyTestFixture,
-                         testing::Values((StiffenedGasComputeSensibleInternalEnergyParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
-                                                                                               .temperatureIn = 39000,
-                                                                                               .densityIn = 800,
-                                                                                               .expectedSensibleInternalEnergy = 5324238.036},
-                                         (StiffenedGasComputeSensibleInternalEnergyParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
-                                                                                               .temperatureIn = 350.0,
-                                                                                               .densityIn = 998.7,
-                                                                                               .expectedSensibleInternalEnergy = 683222.50},
-                                         (StiffenedGasComputeSensibleInternalEnergyParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
-                                                                                               .temperatureIn = 350.0,
-                                                                                               .densityIn = 20.1,
-                                                                                               .expectedSensibleInternalEnergy = 683222.50}),
-                         [](const testing::TestParamInfo<StiffenedGasComputeSensibleInternalEnergyParameters>& info) { return std::to_string(info.index); });
+INSTANTIATE_TEST_SUITE_P(
+    StiffenedGasEOSTests, StiffenedGasComputeSensibleInternalEnergyTestFixture,
+    testing::Values((StiffenedGasComputeSensibleInternalEnergyParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
+                                                                          .temperatureIn = 39000,
+                                                                          .densityIn = 800,
+                                                                          .expectedSensibleInternalEnergy = 1225562.5},
+                    (StiffenedGasComputeSensibleInternalEnergyParameters){
+                        .options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}}, .temperatureIn = 350.0, .densityIn = 998.7, .expectedSensibleInternalEnergy = 2632515.8205667366},
+                    (StiffenedGasComputeSensibleInternalEnergyParameters){
+                        .options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}}, .temperatureIn = 350.0, .densityIn = 20.1, .expectedSensibleInternalEnergy = 59401823.38308457}),
+    [](const testing::TestParamInfo<StiffenedGasComputeSensibleInternalEnergyParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Stiffened Gas SensibleEnthalpy
@@ -317,18 +310,14 @@ TEST_P(StiffenedGasComputeSensibleEnthalpyTestFixture, ShouldComputeCorrectEntha
 }
 
 INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasComputeSensibleEnthalpyTestFixture,
-                         testing::Values((StiffenedGasComputeSensibleEnthalpyParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
+                         testing::Values((StiffenedGasComputeSensibleEnthalpyParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
                                                                                          .temperatureIn = 39000,
                                                                                          .densityIn = 800,
-                                                                                         .expectedSensibleEnthalpy = 1.7023561715E+07},
-                                         (StiffenedGasComputeSensibleEnthalpyParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
-                                                                                         .temperatureIn = 350.0,
-                                                                                         .densityIn = 998.7,
-                                                                                         .expectedSensibleEnthalpy = 1.6157027594E+06},
-                                         (StiffenedGasComputeSensibleEnthalpyParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
-                                                                                         .temperatureIn = 350.0,
-                                                                                         .densityIn = 20.1,
-                                                                                         .expectedSensibleEnthalpy = 4.4570414925E+05}),
+                                                                                         .expectedSensibleEnthalpy = 3907800.0000000005},
+                                         (StiffenedGasComputeSensibleEnthalpyParameters){
+                                             .options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}}, .temperatureIn = 350.0, .densityIn = 998.7, .expectedSensibleEnthalpy = 2833278.0},
+                                         (StiffenedGasComputeSensibleEnthalpyParameters){
+                                             .options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}}, .temperatureIn = 350.0, .densityIn = 20.1, .expectedSensibleEnthalpy = 2833278.0}),
                          [](const testing::TestParamInfo<StiffenedGasComputeSensibleEnthalpyParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -365,14 +354,9 @@ TEST_P(StiffenedGasComputeSpecificHeatTestFixture, ShouldComputeCorrectCpAndCv) 
 }
 
 INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasComputeSpecificHeatTestFixture,
-                         testing::Values((StiffenedGasComputeSpecificHeatParameters){.options = {{"gamma", "3.2"}, {"Cv", "100.2"}, {"p0", "3.5e6"}, {"T0", "654.32"}, {"e0", "1482000.9"}},
-                                                                                     .temperatureIn = NAN,
-                                                                                     .densityIn = NAN,
-                                                                                     .expectedCp = 320.64,
-                                                                                     .expectedCv = 100.2},
-                                         (StiffenedGasComputeSpecificHeatParameters){.options = {{"gamma", "2.4"}, {"Cv", "3030.0"}, {"p0", "1.0e7"}, {"T0", "584.25"}, {"e0", "1393000.0"}},
-                                                                                     .temperatureIn = NAN,
-                                                                                     .densityIn = NAN,
-                                                                                     .expectedCp = 7272.0,
-                                                                                     .expectedCv = 3030.0}),
+                         testing::Values(
+                             (StiffenedGasComputeSpecificHeatParameters){
+                                 .options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 100.2, .expectedCv = 31.3125},
+                             (StiffenedGasComputeSpecificHeatParameters){
+                                 .options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}}, .temperatureIn = NAN, .densityIn = NAN, .expectedCp = 8095.08, .expectedCv = 4190.0}),
                          [](const testing::TestParamInfo<StiffenedGasComputeSpecificHeatParameters>& info) { return std::to_string(info.index); });
