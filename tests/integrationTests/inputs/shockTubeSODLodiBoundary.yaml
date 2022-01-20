@@ -2,8 +2,7 @@
 environment:
   title: _SOD Problem with LODI Boundaries
   tagDirectory: false
-arguments: 
-  automaticTimeStepCalculator: on
+arguments: {}
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -48,6 +47,7 @@ solvers:
     parameters:
       cfl: .25
     eos: *eos
+    computePhysicsTimeStep: true
     fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
       eos: *eos
     monitors:

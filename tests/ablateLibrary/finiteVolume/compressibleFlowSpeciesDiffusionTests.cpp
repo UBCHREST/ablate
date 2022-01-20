@@ -117,7 +117,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d\n", l);
 
             // setup any global arguments
-            ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"automaticTimeStepCalculator", "off"}, {"petsclimiter_type", "none"}});
+            ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"petsclimiter_type", "none"}});
 
             // create a mock eos
             std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();

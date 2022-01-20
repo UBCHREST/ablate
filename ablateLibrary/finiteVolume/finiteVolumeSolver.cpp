@@ -6,8 +6,11 @@
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes,
-                                                             std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)), processes(std::move(processes)), boundaryConditions(std::move(boundaryConditions)) {}
+                                                             std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep)
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)),
+      computePhysicsTimeStep(computePhysicsTimeStep),
+      processes(std::move(processes)),
+      boundaryConditions(std::move(boundaryConditions)) {}
 
 void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     // march over process and link to the flow
@@ -65,7 +68,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
             }
         }
     }
-    if (!timeStepFunctions.empty()) {
+    if (!timeStepFunctions.empty() && computePhysicsTimeStep) {
         RegisterPreStep(ComputeTimeStep);
     }
 }
@@ -162,7 +165,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
     // march over each calculator
     PetscReal dtMin = 1000.0;
     for (const auto& dtFunction : flowFV.timeStepFunctions) {
-        dtMin = PetscMin(dtMin, dtFunction.first(ts, flowFV, dtFunction.second));
+        dtMin = PetscMin(dtMin, dtFunction.function(ts, flowFV, dtFunction.context));
     }
 
     // take the min across all ranks
@@ -181,7 +184,9 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
     }
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.emplace_back(function, ctx); }
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx, std::string name) {
+    timeStepFunctions.emplace_back(ComputeTimeStepDescription{.function = function, .context = ctx, .name = name});
+}
 
 void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
     auto dm = subDomain->GetDM();
@@ -857,4 +862,5 @@ REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolumeSolver, "fini
          OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
          OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
          ARG(std::vector<ablate::finiteVolume::processes::Process>, "processes", "the processes used to describe the flow"),
-         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"));
+         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+         OPT(bool, "computePhysicsTimeStep", "determines if a physics based time step is used to control the FVM time stepping (default is false)"));

@@ -153,7 +153,7 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowAdvectionFixture,
                              (CompressibleFlowAdvectionTestParameters){
                                  .mpiTestParameter = {.testName = "yi advection",
                                                       .nproc = 1,
-                                                      .arguments = "-dm_plex_separate_marker -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                      .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
                                                                    " -ts_max_steps 50 -ts_dt 5e-05  "},
                                  .initialNx = 5,
                                  .levels = 4,
@@ -164,7 +164,7 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowAdvectionFixture,
                              (CompressibleFlowAdvectionTestParameters){
                                  .mpiTestParameter = {.testName = "mpi yi advection",
                                                       .nproc = 2,
-                                                      .arguments = "-dm_plex_separate_marker -dm_distribute -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                      .arguments = "-dm_plex_separate_marker -dm_distribute -ts_adapt_type none "
                                                                    "-ts_max_steps 50 -ts_dt 5e-05  "},
                                  .initialNx = 5,
                                  .levels = 4,

@@ -53,6 +53,15 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
         std::vector<PetscInt> auxFields;
     };
 
+    /**
+     * struct to describe the compute timestamp functions
+     */
+    struct ComputeTimeStepDescription {
+        ComputeTimeStepFunction function;
+        void* context;
+        std::string name; /**used for output**/
+    };
+
     // hold the update functions for flux and point sources
     std::vector<FluxFunctionDescription> rhsFluxFunctionDescriptions;
     std::vector<PointFunctionDescription> rhsPointFunctionDescriptions;
@@ -61,7 +70,8 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     std::vector<std::pair<RHSArbitraryFunction, void*>> rhsArbitraryFunctions;
 
     // functions to update the timestep
-    std::vector<std::pair<ComputeTimeStepFunction, void*>> timeStepFunctions;
+    const bool computePhysicsTimeStep;
+    std::vector<ComputeTimeStepDescription> timeStepFunctions;
 
     // Hold the flow processes.  This is mostly just to hold a pointer to them
     std::vector<std::shared_ptr<processes::Process>> processes;
@@ -105,7 +115,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
-                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions);
+                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep = false);
 
     /** SubDomain Register and Setup **/
     void Setup() override;
@@ -158,7 +168,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param inputFields
      * @param auxFields
      */
-    void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx);
+    void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx, std::string name);
 };
 }  // namespace ablate::finiteVolume
 

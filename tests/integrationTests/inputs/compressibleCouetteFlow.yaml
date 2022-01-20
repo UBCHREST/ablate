@@ -53,6 +53,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     k: 0.0
     mu: 1.0
   eos: *eos
+  computePhysicsTimeStep: true
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"

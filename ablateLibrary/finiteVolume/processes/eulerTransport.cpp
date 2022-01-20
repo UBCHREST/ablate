@@ -57,11 +57,7 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
         }
 
         // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
-        PetscBool automaticTimeStepCalculator = PETSC_TRUE;
-        PetscOptionsGetBool(nullptr, nullptr, "-automaticTimeStepCalculator", &automaticTimeStepCalculator, nullptr);
-        if (automaticTimeStepCalculator) {
-            flow.RegisterComputeTimeStepFunction(ComputeTimeStep, &advectionData);
-        }
+        flow.RegisterComputeTimeStepFunction(ComputeTimeStep, &advectionData, "cfl");
     }
 
     // if there are any coefficients for diffusion, compute diffusion

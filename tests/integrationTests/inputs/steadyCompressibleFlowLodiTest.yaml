@@ -78,6 +78,7 @@ solvers:
       cfl: 0.5
     transport:
       mu:  0.02071398139
+    computePhysicsTimeStep: true
     monitors:
       - !ablate::monitors::MaxMinAverage
         field: euler

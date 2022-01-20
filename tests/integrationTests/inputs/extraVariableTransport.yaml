@@ -55,6 +55,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     cfl: .5
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
     mInf: .3
+  computePhysicsTimeStep: true
   transport:
     diff: 1E-4
     k: 1E-4
