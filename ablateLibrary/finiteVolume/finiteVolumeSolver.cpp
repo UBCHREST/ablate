@@ -863,7 +863,8 @@ std::map<std::string, double> ablate::finiteVolume::FiniteVolumeSolver::ComputeP
     // march over each calculator
     for (const auto& dtFunction : timeStepFunctions) {
         double dt = dtFunction.function(ts, *this, dtFunction.context);
-        MPI_Reduce(MPI_IN_PLACE, &dt, 1, MPI_DOUBLE, MPI_MIN, 0, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+        PetscReal dtMinGlobal;
+        MPI_Reduce(&dt, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, 0, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
         timeSteps[dtFunction.name] = dt;
     }
 
