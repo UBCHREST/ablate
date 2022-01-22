@@ -2,8 +2,7 @@
 environment:
   title: SOD_Problem
   tagDirectory: false
-arguments: 
-  automaticTimeStepCalculator: on
+arguments: {}
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -41,6 +40,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: SOD Problem
   parameters:
     cfl: .25
+  computePhysicsTimeStep: true
   eos: *eos
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::Rieman
     eos: *eos

@@ -30,6 +30,12 @@ class TChemReactions : public Process {
     /* Dense array for the local Jacobian rows */
     PetscInt *rows;
 
+    // store any inert species
+    std::vector<std::size_t> inertSpeciesIds;
+
+    // Set a minimum value of mass fractions
+    const double minimumMassFraction;
+
     /**
      * Private function to integrate single point chemistry in time
      * @param ts
@@ -63,7 +69,7 @@ class TChemReactions : public Process {
     static PetscErrorCode AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
-    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {});
+    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::string> inertSpecies = {}, double minimumMassFraction = 0);
     ~TChemReactions() override;
     /**
      * public function to link this process with the flow

@@ -305,7 +305,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowDiffusionTestFixture,
                          testing::Values((CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
                                                                                                         .nproc = 1,
-                                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
                                                                                                                      "-ts_max_steps 600 -ts_dt 0.00000625 "},
                                                                                    .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                                                    .initialNx = 3,
@@ -314,7 +314,7 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowDiffusionTestFixture,
                                                                                    .expectedLInfConvergence = {NAN, 1.3, NAN, NAN}},
                                          (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
                                                                                                         .nproc = 2,
-                                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none -automaticTimeStepCalculator off "
+                                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
                                                                                                                      " -ts_max_steps 600 -ts_dt 0.00000625 "},
                                                                                    .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                                                    .initialNx = 9,

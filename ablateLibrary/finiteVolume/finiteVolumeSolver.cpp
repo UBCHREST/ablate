@@ -6,8 +6,11 @@
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes,
-                                                             std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)), processes(std::move(processes)), boundaryConditions(std::move(boundaryConditions)) {}
+                                                             std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep)
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)),
+      computePhysicsTimeStep(computePhysicsTimeStep),
+      processes(std::move(processes)),
+      boundaryConditions(std::move(boundaryConditions)) {}
 
 void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     // march over process and link to the flow
@@ -65,8 +68,8 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
             }
         }
     }
-    if (!timeStepFunctions.empty()) {
-        RegisterPreStep(ComputeTimeStep);
+    if (!timeStepFunctions.empty() && computePhysicsTimeStep) {
+        RegisterPreStep(EnforceTimeStep);
     }
 }
 
@@ -149,7 +152,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSPointFu
 
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.emplace_back(function, context); }
 
-void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::solver::Solver& solver) {
+void ablate::finiteVolume::FiniteVolumeSolver::EnforceTimeStep(TS ts, ablate::solver::Solver& solver) {
     auto& flowFV = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
     // Get the dm and current solution vector
     DM dm;
@@ -162,7 +165,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
     // march over each calculator
     PetscReal dtMin = 1000.0;
     for (const auto& dtFunction : flowFV.timeStepFunctions) {
-        dtMin = PetscMin(dtMin, dtFunction.first(ts, flowFV, dtFunction.second));
+        dtMin = PetscMin(dtMin, dtFunction.function(ts, flowFV, dtFunction.context));
     }
 
     // take the min across all ranks
@@ -181,7 +184,9 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeTimeStep(TS ts, ablate::so
     }
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx) { timeStepFunctions.emplace_back(function, ctx); }
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx, std::string name) {
+    timeStepFunctions.emplace_back(ComputeTimeStepDescription{.function = function, .context = ctx, .name = name});
+}
 
 void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
     auto dm = subDomain->GetDM();
@@ -851,10 +856,25 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
 
     RestoreRange(cellIS, cStart, cEnd, cells);
 }
+std::map<std::string, double> ablate::finiteVolume::FiniteVolumeSolver::ComputePhysicsTimeSteps(TS ts) {
+    // time steps
+    std::map<std::string, double> timeSteps;
+
+    // march over each calculator
+    for (const auto& dtFunction : timeStepFunctions) {
+        double dt = dtFunction.function(ts, *this, dtFunction.context);
+        PetscReal dtMinGlobal;
+        MPI_Reduce(&dt, &dtMinGlobal, 1, MPIU_REAL, MPI_MIN, 0, PetscObjectComm((PetscObject)ts)) >> checkMpiError;
+        timeSteps[dtFunction.name] = dt;
+    }
+
+    return timeSteps;
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolumeSolver, "finite volume solver", ARG(std::string, "id", "the name of the flow field"),
          OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
          OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
          ARG(std::vector<ablate::finiteVolume::processes::Process>, "processes", "the processes used to describe the flow"),
-         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"));
+         OPT(std::vector<ablate::finiteVolume::boundaryConditions::BoundaryCondition>, "boundaryConditions", "the boundary conditions for the flow field"),
+         OPT(bool, "computePhysicsTimeStep", "determines if a physics based time step is used to control the FVM time stepping (default is false)"));

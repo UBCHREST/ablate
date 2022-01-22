@@ -4,8 +4,7 @@
 environment:
   title: _compressibleFlowPgsLodi
   tagDirectory: false
-arguments:
-  automaticTimeStepCalculator: on
+arguments: {}
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -58,6 +57,7 @@ solvers:
     id: vortexFlowField
     region:
       name: mainSolver
+    computePhysicsTimeStep: true
     additionalProcesses:
       - !ablate::finiteVolume::processes::PressureGradientScaling
         &pgs

@@ -71,6 +71,7 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       transport:
         k: 0.0
         mu: 1.0
+  computePhysicsTimeStep: true
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"

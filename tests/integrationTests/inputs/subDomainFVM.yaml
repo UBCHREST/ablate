@@ -72,6 +72,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     name: fluidFlow
   parameters:
     cfl: 0.25
+  computePhysicsTimeStep: true
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
   transport: !ablate::eos::transport::Sutherland
     eos: *eos

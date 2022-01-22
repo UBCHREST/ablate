@@ -101,6 +101,7 @@ solvers:
       - !ablate::monitors::MaxMinAverage
         field: euler
     eos: *eos
+    computePhysicsTimeStep: true
   - !ablate::boundarySolver::BoundarySolver
     id: inlet
     region:
