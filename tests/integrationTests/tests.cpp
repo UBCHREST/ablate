@@ -181,7 +181,8 @@ INSTANTIATE_TEST_SUITE_P(
         (MpiTestParameter){.testName = "inputs/steadyCompressibleFlowLodiTest.yaml", .nproc = 2, .expectedOutputFile = "outputs/steadyCompressibleFlowLodiTest.txt", .arguments = ""},
         (MpiTestParameter){.testName = "inputs/compressibleFlowVortexLodi.yaml", .nproc = 2, .expectedOutputFile = "outputs/compressibleFlowVortexLodi.txt", .arguments = ""},
         (MpiTestParameter){.testName = "inputs/twoGasAdvectingDiscontinuity.yaml", .nproc = 1, .expectedOutputFile = "outputs/twoGasAdvectingDiscontinuity.txt", .arguments = ""},
-        (MpiTestParameter){.testName = "inputs/compressibleFlowPgsLodi.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlowPgsLodi.txt", .arguments = ""}),
+        (MpiTestParameter){.testName = "inputs/compressibleFlowPgsLodi.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlowPgsLodi.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/shockTube2Gas2D.yaml", .nproc = 1, .expectedOutputFile = "outputs/shockTube2Gas2D.txt", .arguments = ""}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(
