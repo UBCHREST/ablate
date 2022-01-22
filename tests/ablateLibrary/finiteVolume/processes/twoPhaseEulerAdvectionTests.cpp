@@ -172,11 +172,12 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                              (TwoPhaseEulerAdvectionTestDecodeStateParameters){
                                  // perfect gas + stiffened gas
                                  .eosGas = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
-                                 .eosLiquid = std::make_shared<eos::StiffenedGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.932"},{"Cp", "8095.08"},  {"p0", "1.1645E9"}})),
+                                 .eosLiquid = std::make_shared<eos::StiffenedGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{
+                                     {"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}})),
                                  .dim = 3,
                                  .conservedValuesIn = {340.4, 851000000.0, 3404.0, -6808.0, 10212.0},  // RHO, RHOE, RHOU, RHOV, RHOW
-                                 .densityVFIn = 0.8,                                        // RHOALPHA
-                                 .normalIn = {0.5, 0.5, 0.7071},                            // x, y, z
+                                 .densityVFIn = 0.8,                                                   // RHOALPHA
+                                 .normalIn = {0.5, 0.5, 0.7071},                                       // x, y, z
                                  .expectedDensity = 340.4,
                                  .expectedDensityG = 1.2352213315429057,
                                  .expectedDensityL = 963.834108739261,
