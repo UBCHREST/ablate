@@ -96,7 +96,7 @@ void ablate::monitors::CurveMonitor::WriteToCurveFile(std::ostream& curveFile, P
 
                 if (values) {
                     curveFile << cellGeom->centroid[0] << " ";
-                    curveFile << values[comp] << std::endl;
+                    curveFile << ((PetscAbs(values[comp]) < minimumOutputValue) ? 0.0 : values[comp]) << std::endl;
                 }
             }
         }

@@ -145,7 +145,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
 
     // Update log
     if (log) {
-        log->Printf("PGS: %g (alpha), %g (maxMach),  %g (maxMach') \n", alpha, maxMach, alpha * maxMach);
+        log->Printf("PGS: %g (alpha), %g (maxMach),  %g (maxMach'), %g (maxDeltaP)\n", alpha, maxMach, alpha * maxMach, maxDeltaP);
     }
     PetscFunctionReturn(0);
 }
