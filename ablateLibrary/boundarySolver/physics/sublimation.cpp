@@ -70,7 +70,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[TEMPERATURE_LOC]], stencilSize, stencilTemperature.data(), stencilWeights, dTdn);
 
     // compute the heat flux
-    PetscReal heatFluxIntoSolid = -dTdn * sublimation->effectiveConductivity;  // note that q = -dTdn as dTdN faces into the solid
+    PetscReal heatFluxIntoSolid = PetscMax(0.0, -dTdn * sublimation->effectiveConductivity);  // note that q = -dTdn as dTdN faces into the solid
 
     // If there is an additional heat flux compute and add value
     if (sublimation->additionalHeatFlux) {
@@ -78,7 +78,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     }
 
     // Compute the massFlux (we can only remove mass)
-    PetscReal massFlux = PetscMax(heatFluxIntoSolid / sublimation->latentHeatOfFusion, 0.0);
+    PetscReal massFlux = heatFluxIntoSolid / sublimation->latentHeatOfFusion;
 
     // Compute the area
     PetscReal area = utilities::MathUtilities::MagVector(dim, fg->areas);
