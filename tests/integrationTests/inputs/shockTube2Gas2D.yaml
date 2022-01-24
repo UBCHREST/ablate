@@ -1,0 +1,90 @@
+---
+environment:
+  title: SOD_2Gas_6x6_ArAir
+  tagDirectory: true
+arguments: {}
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 0.01
+    ts_dt: 1e-3
+    ts_adapt_type: none
+  io:
+    interval: 10
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 3,3 ]
+    lower: [ 0,0 ]
+    upper: [ 1,1 ]
+    boundary: [ 'NONE','PERIODIC' ]
+    modifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 1
+      - !ablate::domain::modifiers::GhostBoundaryCells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas
+          parameters:
+            gamma: 0
+            Rgas: 0
+      - name: densityVF
+        type: FVM
+      - name: volumeFraction
+        location: AUX
+        type: FVM
+      - name: pressure
+        location: AUX
+        type: FVM
+  initialization:
+    - &2
+      fieldName: "euler" # rho, rhoE, rhoU: sod rho/p 1.0/1.0 - 0.125/0.1
+      field: >-
+        x < 0.5 ? 1.0 : 0.125,
+        x < 0.5 ? 1.492537313432836 : 0.25,
+        0,
+        0
+    - &3
+      fieldName: densityVF
+      field: "x < 0.5 ? 0.0 : 0.125"
+solver: !ablate::finiteVolume::FiniteVolumeSolver
+  id: SOD Problem
+  processes:
+    - !ablate::finiteVolume::processes::TwoPhaseEulerAdvection
+      parameters:
+        g: [0.0, 0.0, 0.0]
+      eosGas: !ablate::eos::PerfectGas &4
+        parameters: # air
+          gamma: 1.4
+          Rgas : 287.0
+      eosLiquid: !ablate::eos::PerfectGas &1
+        parameters: # argon
+          gamma: 1.67
+          Rgas : 208.1
+      fluxCalculatorGasGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *4
+        eosR: *4
+      fluxCalculatorGasLiquid: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *4
+        eosR: *1
+      fluxCalculatorLiquidGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *1
+        eosR: *4
+      fluxCalculatorLiquidLiquid: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *1
+        eosR: *1
+
+  boundaryConditions:
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "air walls euler"
+      labelIds: [2, 4]
+      boundaryValue: *2
+    - !ablate::finiteVolume::boundaryConditions::EssentialGhost
+      boundaryName: "vf walls"
+      labelIds: [2, 4]
+      boundaryValue: *3
+
+  monitors:
+    - !ablate::monitors::TimeStepMonitor
+

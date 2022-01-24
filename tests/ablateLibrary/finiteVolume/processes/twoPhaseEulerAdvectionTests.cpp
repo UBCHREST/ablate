@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include "eos/perfectGas.hpp"
+#include "eos/stiffenedGas.hpp"
 #include "finiteVolume/processes/twoPhaseEulerAdvection.hpp"
 #include "gtest/gtest.h"
 #include "parameters/mapParameters.hpp"
@@ -167,5 +168,28 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                                  .expectedMG = 0.02237877442505955,
                                  .expectedML = 0.0250514238512503,
                                  .expectedPressure = 705691.5126557435,
-                                 .expectedAlpha = 0.425012032}),
+                                 .expectedAlpha = 0.425012032},
+                             (TwoPhaseEulerAdvectionTestDecodeStateParameters){
+                                 // perfect gas + stiffened gas
+                                 .eosGas = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
+                                 .eosLiquid = std::make_shared<eos::StiffenedGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{
+                                     {"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}})),
+                                 .dim = 3,
+                                 .conservedValuesIn = {340.4, 851000000.0, 3404.0, -6808.0, 10212.0},  // RHO, RHOE, RHOU, RHOV, RHOW
+                                 .densityVFIn = 0.8,                                                   // RHOALPHA
+                                 .normalIn = {0.5, 0.5, 0.7071},                                       // x, y, z
+                                 .expectedDensity = 340.4,
+                                 .expectedDensityG = 1.2352213315429057,
+                                 .expectedDensityL = 963.834108739261,
+                                 .expectedNormalVelocity = 16.213,
+                                 .expectedVelocity = {10.0, -20.0, 30.0},
+                                 .expectedInternalEnergy = 2499300.0,
+                                 .expectedInternalEnergyG = 222008.74346659306,
+                                 .expectedInternalEnergyL = 2504664.64371386,
+                                 .expectedSoundSpeedG = 352.5973572522802,
+                                 .expectedSoundSpeedL = 1527.8918538107569,
+                                 .expectedMG = 0.045981626539531174,
+                                 .expectedML = 0.010611353126572876,
+                                 .expectedPressure = 109691.97428758896,
+                                 .expectedAlpha = 0.6476572089317192}),
                          [](const testing::TestParamInfo<TwoPhaseEulerAdvectionTestDecodeStateParameters>& info) { return std::to_string(info.index); });

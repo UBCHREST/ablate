@@ -54,6 +54,7 @@ class StiffenedGas : public EOS {
     ComputeSpecificHeatFunction GetComputeSpecificHeatConstantVolumeFunction() override { return StiffenedGasComputeSpecificHeatConstantVolume; }
     void* GetComputeSpecificHeatConstantVolumeContext() override { return &parameters; }
     PetscReal GetSpecificHeatRatio() const { return parameters.gamma; }
+    PetscReal GetSpecificHeatCp() const { return parameters.Cp; }
     PetscReal GetReferencePressure() const { return parameters.p0; }
 
     const std::vector<std::string>& GetSpecies() const override { return species; }
