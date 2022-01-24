@@ -1,6 +1,6 @@
 ---
 environment:
-  title: _ignitionDelay2S_CH4_CM2
+  title: _ignitionDelayGriMech
   tagDirectory: false
 arguments: 
   petsclimiter_type: none
@@ -9,8 +9,7 @@ timestepper:
   arguments:
     ts_type: rk
     ts_max_time: 0.1
-    ts_dt: 1E-6
-    ts_max_steps: 25
+    ts_dt: 1E-4
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 1 ]
@@ -22,8 +21,8 @@ timestepper:
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: &eos !ablate::eos::TChem
-          mechFile: mechanisms/2S_CH4_CM2.mech.dat
-          thermoFile: mechanisms/2S_CH4_CM2.thermo.dat
+          mechFile: ../mechanisms/grimech30.mech.dat
+          thermoFile: ../mechanisms/grimech30.thermo.dat
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
@@ -49,13 +48,19 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
   processes:
     - !ablate::finiteVolume::processes::TChemReactions
       eos: *eos
-      inertSpecies: [ N2 ]
-      minimumMassFraction: 1E-10
   boundaryConditions: []
   monitors:
+    - !ablate::monitors::IgnitionDelayPeakYi
+      species: OH
+      location: [0.5]
+      log: !ablate::monitors::logs::FileLog
+        name: ignitionDelayPeakYi.txt
+      historyLog: !ablate::monitors::logs::CsvLog
+        name: ignitionDelayPeakYi.csv
     - !ablate::monitors::IgnitionDelayTemperature
       eos: *eos
       location: [0.5]
       thresholdTemperature: 1500
-      log: !ablate::monitors::logs::FileLog
-        name: ignitionDelayTemperature.txt
+      log: !ablate::monitors::logs::CsvLog
+        name: ignitionDelayTemperature.csv
+

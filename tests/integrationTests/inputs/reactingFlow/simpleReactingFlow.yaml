@@ -29,8 +29,8 @@ timestepper:
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: &eos !ablate::eos::TChem
-          mechFile: mechanisms/grimech30.mech.dat
-          thermoFile: mechanisms/grimech30.thermo.dat
+          mechFile: ../mechanisms/grimech30.mech.dat
+          thermoFile: ../mechanisms/grimech30.thermo.dat
   initialization:
     - &eulerField
       fieldName: "euler" #for euler all components are in a single field
