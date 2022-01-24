@@ -163,7 +163,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal root1 = (-b + PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
         PetscReal root2 = (-b - PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
         PetscReal eG = PetscMax(root1, root2);  // take positive root
-        if (eG < 0) { // negative internal energy not physical
+        if (eG < 0) {                           // negative internal energy not physical
             throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy");
         }
         PetscReal etG = eG + ke;
