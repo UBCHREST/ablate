@@ -33,8 +33,8 @@ class TChemReactions : public Process {
     // store any inert species
     std::vector<std::size_t> inertSpeciesIds;
 
-    // Set a minimum value of mass fractions
-    const double minimumMassFraction;
+    // Set a minimum/maximum value of mass fractions
+    const std::vector<double> massFractionBounds;
 
     /**
      * Private function to integrate single point chemistry in time
@@ -69,7 +69,8 @@ class TChemReactions : public Process {
     static PetscErrorCode AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
-    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::string> inertSpecies = {}, double minimumMassFraction = 0);
+    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::string> inertSpecies = {},
+                            std::vector<double> massFractionBounds = {});
     ~TChemReactions() override;
     /**
      * public function to link this process with the flow
