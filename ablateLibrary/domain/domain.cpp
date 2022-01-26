@@ -80,7 +80,7 @@ void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptio
     fields.push_back(Field::FromFieldDescription(fieldDescription, fields.size()));
 }
 
-PetscInt ablate::domain::Domain::GetDimensions() const {
+PetscInt ablate::domain::Domain::GetDimensions() const noexcept {
     PetscInt dim;
     DMGetDimension(dm, &dim) >> checkError;
     return dim;

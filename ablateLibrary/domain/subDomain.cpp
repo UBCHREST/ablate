@@ -9,7 +9,8 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, std::v
       fieldMap(nullptr),
       discreteSystem(nullptr),
       auxDM(nullptr),
-      auxVec(nullptr),
+      auxLocalVec(nullptr),
+      auxGlobalVec(nullptr),
       subDM(nullptr),
       subSolutionVec(nullptr),
       subAuxDM(nullptr),
@@ -97,8 +98,12 @@ ablate::domain::SubDomain::~SubDomain() {
         DMDestroy(&auxDM) >> checkError;
     }
 
-    if (auxVec) {
-        VecDestroy(&auxVec) >> checkError;
+    if (auxLocalVec) {
+        VecDestroy(&auxLocalVec) >> checkError;
+    }
+
+    if (auxGlobalVec) {
+        VecDestroy(&auxGlobalVec) >> checkError;
     }
 
     if (subDM) {
@@ -118,22 +123,18 @@ ablate::domain::SubDomain::~SubDomain() {
     }
 }
 
-Vec ablate::domain::SubDomain::GetSolutionVector() noexcept { return domain.GetSolutionVector(); }
-
-Vec ablate::domain::SubDomain::GetAuxVector() noexcept { return auxVec; }
-
-PetscInt ablate::domain::SubDomain::GetDimensions() const { return domain.GetDimensions(); }
-
 void ablate::domain::SubDomain::CreateSubDomainStructures() {
     if (auxDM) {
         DMCreateDS(auxDM) >> checkError;
-        DMCreateLocalVector(auxDM, &(auxVec)) >> checkError;
+        DMCreateLocalVector(auxDM, &(auxLocalVec)) >> checkError;
+        DMCreateGlobalVector(auxDM, &(auxGlobalVec)) >> checkError;
 
         DMGetRegionDS(auxDM, label, nullptr, &auxDiscreteSystem) >> checkError;
 
         // attach this field as aux vector to the dm
-        DMSetAuxiliaryVec(domain.GetDM(), label, labelValue, auxVec) >> checkError;
-        PetscObjectSetName((PetscObject)auxVec, "aux") >> checkError;
+        DMSetAuxiliaryVec(domain.GetDM(), label, labelValue, auxLocalVec) >> checkError;
+        PetscObjectSetName((PetscObject)auxLocalVec, "aux") >> checkError;
+        PetscObjectSetName((PetscObject)auxGlobalVec, "aux") >> checkError;
 
         // add the names to each of the components in the dm section
         PetscSection section;
@@ -183,6 +184,11 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToSubDM(const std::vector<s
     // push the results back to the global vector
     DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec) >> checkError;
     DMRestoreLocalVector(dm, &locVec) >> checkError;
+}
+
+Vec ablate::domain::SubDomain::GetAuxGlobalVector() {
+    DMLocalToGlobal(auxDM, auxLocalVec, INSERT_VALUES, auxGlobalVec) >> checkError;
+    return auxGlobalVec;
 }
 
 DM ablate::domain::SubDomain::GetSubDM() {
@@ -271,23 +277,14 @@ DM ablate::domain::SubDomain::GetSubAuxDM() {
 
 Vec ablate::domain::SubDomain::GetSubAuxVector() {
     // If there is no auxVector, return null
-    if (!auxVec) {
+    if (!auxLocalVec) {
         return nullptr;
     }
 
     // If there is no label, just return the entire solution vector
     if (!label) {
         // The subAuxVector is always treated as a global vector
-        if (!subAuxVec) {
-            DMCreateGlobalVector(auxDM, &subAuxVec) >> checkError;
-            // copy over the name of the auxFieldVector
-            const char* tempName;
-            PetscObjectGetName((PetscObject)auxVec, &tempName) >> checkError;
-            PetscObjectSetName((PetscObject)subAuxVec, tempName) >> checkError;
-        }
-
-        DMLocalToGlobal(auxDM, auxVec, INSERT_VALUES, subAuxVec) >> checkError;
-        return subAuxVec;
+        return GetAuxGlobalVector();
     }
 
     if (!subAuxVec) {
@@ -413,14 +410,15 @@ PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const ablate::domain:
             throw std::invalid_argument("Unknown field location for " + field.name);
     }
 }
-PetscErrorCode ablate::domain::SubDomain::GetFieldSubVector(const Field& field, IS* vecIs, Vec* vec, DM* subDm) {
+
+PetscErrorCode ablate::domain::SubDomain::GetFieldVector(const Field& field, IS* vecIs, Vec* vec, DM* subdm) {
     PetscFunctionBeginUser;
     // Get the correct tdm
     auto entireDm = GetFieldDM(field);
-    auto entireVec = GetFieldVec(field);
+    auto entireVec = GetGlobalVec(field);
 
     PetscErrorCode ierr;
-    ierr = DMCreateSubDM(entireDm, 1, &field.id, vecIs, subDm);
+    ierr = DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm);
     CHKERRQ(ierr);
 
     // Get the sub vector
@@ -428,9 +426,10 @@ PetscErrorCode ablate::domain::SubDomain::GetFieldSubVector(const Field& field, 
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::domain::SubDomain::RestoreFieldSubVector(const Field& field, IS* vecIs, Vec* vec, DM* subdm) {
+
+PetscErrorCode ablate::domain::SubDomain::RestoreFieldVector(const Field& field, IS* vecIs, Vec* vec, DM* subdm) {
     PetscFunctionBeginUser;
-    auto entireVec = GetFieldVec(field);
+    auto entireVec = GetGlobalVec(field);
     PetscErrorCode ierr;
     ierr = VecRestoreSubVector(entireVec, *vecIs, vec);
     CHKERRQ(ierr);
@@ -544,7 +543,6 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToLocalVector(const std::ve
         }
 
         // Note the global DMProjectFunctionLabel can't be used because it overwrites unwritten values.
-
         // Project this field
         if (fieldLabel) {
             DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;

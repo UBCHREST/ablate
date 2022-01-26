@@ -82,6 +82,8 @@ solvers:
     monitors:
       - !ablate::monitors::MaxMinAverage
         field: euler
+      - !ablate::monitors::MaxMinAverage
+        field: temperature
     eos: *eos
   - !ablate::boundarySolver::BoundarySolver
     id: inlet
