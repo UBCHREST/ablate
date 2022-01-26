@@ -101,11 +101,14 @@ jobs:
       - name: Write the component docs
         run: docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --help > docs/_includes/generated/components.md
 
+      - name: Update the doxyfile.config with the version
+        run:  echo "PROJECT_NUMBER = $(docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --version)" >> doxyfile.config
+
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
           default_author: github_actions
           pull_strategy: 'NO-PULL'
           message: 'auto-generated documentation'
-          add: 'docs/_includes/generated/*'
+          add: 'docs/* --force'
           push:  'origin HEAD:gh-pages --force'
