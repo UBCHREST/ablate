@@ -64,7 +64,7 @@ class Domain {
 
     void RegisterField(const ablate::domain::FieldDescription& fieldDescription);
 
-    PetscInt GetDimensions() const;
+    PetscInt GetDimensions() const noexcept;
 
     void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
                               const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});

@@ -488,7 +488,7 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
         const auto& field = subDomain->GetField(fieldFunction->GetName());
 
         // Get the vec that goes with the field
-        auto vec = subDomain->GetFieldVec(field);
+        auto vec = subDomain->GetVec(field);
         auto dm = subDomain->GetFieldDM(field);
 
         // Get the raw array
