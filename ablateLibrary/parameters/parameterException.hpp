@@ -1,6 +1,8 @@
 #ifndef ABLATELIBRARY_PARAMETEREXCEPTION_HPP
 #define ABLATELIBRARY_PARAMETEREXCEPTION_HPP
 
+namespace ablate::parameters {
+
 struct ParameterException : public std::exception {
    private:
     std::string message;
@@ -10,4 +12,6 @@ struct ParameterException : public std::exception {
 
     const char* what() const throw() override { return message.c_str(); }
 };
+
+}  // namespace ablate::parameters
 #endif  // ABLATELIBRARY_PARAMETEREXCEPTION_HPP

@@ -23,19 +23,7 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal *in) {
     return PetscSqrtReal(mag);
 }
 
-struct DecodeDataStruct {
-    std::shared_ptr<ablate::eos::EOS> eosGas;
-    std::shared_ptr<ablate::eos::EOS> eosLiquid;
-    PetscReal ke;
-    PetscReal e;
-    PetscReal rho;
-    PetscReal Yg;
-    PetscReal Yl;
-    PetscInt dim;
-    PetscReal *vel;
-};
-
-PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunction(SNES snes, Vec x, Vec F, void *ctx) {
     auto decodeDataStruct = (DecodeDataStruct *)ctx;
     const PetscReal *ax;
     PetscReal *aF;

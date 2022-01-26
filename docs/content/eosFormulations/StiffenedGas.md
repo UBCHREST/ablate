@@ -1,5 +1,8 @@
 ---
-layout: default title: Stiffened Gas parent: EOS Formulations nav_order: 2
+layout: default
+title: Stiffened Gas
+parent: EOS Formulations 
+nav_order: 2
 ---
 
 The stiffened gas equation of state models liquids using assumptions of an ideal gas with respect to a reference
