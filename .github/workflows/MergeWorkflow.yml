@@ -104,6 +104,11 @@ jobs:
       - name: Update the doxyfile.config with the version
         run:  echo "PROJECT_NUMBER = $(docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --version)" >> doxyfile.config
 
+      - name: Generate Source File Documetnation
+        uses: mattnotmitt/doxygen-action@v1.9.2
+        with:
+          doxyfile-path: 'doxyfile.config'
+
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
