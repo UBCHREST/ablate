@@ -193,16 +193,17 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal etG = eG + ke;
         PetscReal etL = eL + ke;
         PetscReal ar = -(gamma2-1)*eL;
-        PetscReal br = (gamma1-1)*Yg*(*density) + (gamma2-1)*eL*(*density) + gamma2*p02;
+        PetscReal br = (gamma1-1)*Yg*(*density)*eG + (gamma2-1)*eL*(*density)*Yl + gamma2*p02;
         PetscReal cr = -gamma2*p02*Yl*(*density);
         PetscReal root1r = (-br + PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
         PetscReal root2r = (-br - PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
         PetscReal rhoL;
-        if (root1r>1E-5 && root2r>1E-5){
-            rhoL = PetscMin(root1r, root2r);
-        } else{
-            rhoL = PetscMax(root1r,root2r);
-        }
+        rhoL = PetscMax(root1r,root2r);
+//        if (root1r>1E-5 && root2r>1E-5){
+//            rhoL = PetscMin(root1r, root2r);
+//        } else{
+//            rhoL = PetscMax(root1r,root2r);
+//        }
 
 //        PetscReal rhoL = p02 / (eL - A * eG);
         PetscReal rhoG = ( (gamma2-1)*eL*rhoL -gamma2*p02 )/ (gamma1-1)/eG;
