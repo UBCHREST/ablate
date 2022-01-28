@@ -13,7 +13,7 @@ class ChemistryModel {
     /**
      * Function pointer allowing the computing of mass functions from progress variables
      */
-    using ComputeMassFractionsFunction = void (*)(const PetscReal progressVariables[], PetscReal* massFractions, void* ctx);
+    using ComputeMassFractionsFunction = void (*)(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* massFractions, const std::size_t massFractionsSize, void* ctx);
     /**
      * Function pointer allowing the computing of energy*density source function and functions for each progress variable
      */
@@ -34,7 +34,7 @@ class ChemistryModel {
      * Computes the progresses variables for a given mass fraction
      * @return
      */
-    virtual void ComputeProgressVariables(const PetscReal massFractions[], PetscReal* progressVariables) const = 0;
+    virtual void ComputeProgressVariables(const PetscReal massFractions[], const std::size_t massFractionsSize, PetscReal* progressVariables, const std::size_t progressVariablesSize) const = 0;
 
     /**
      * Support functions to get access to c-style pointer functions

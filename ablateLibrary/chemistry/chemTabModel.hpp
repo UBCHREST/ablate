@@ -3,6 +3,8 @@
 
 #include <tensorflow/c/c_api.h>
 #include <filesystem>
+#include <istream>
+#include <petscmat.h>
 #include "chemistryModel.hpp"
 
 namespace ablate::chemistry {
@@ -15,12 +17,19 @@ class ChemTabModel : public ChemistryModel {
     TF_SessionOptions* sessionOpts = nullptr;
     TF_Buffer* runOpts = nullptr;
     TF_Session* session = nullptr;
+    std::vector<std::string> speciesNames = std::vector<std::string>(0);
+    std::vector<std::string> progressVariablesNames = std::vector<std::string>(0);
 
+    PetscReal** Wmat = nullptr;
+    PetscReal** iWmat = nullptr;
     /**
      * private implementations of support functions
      */
-    static void ChemTabModelComputeMassFractionsFunction(const PetscReal progressVariables[], PetscReal* massFractions, void* ctx);
-    static void ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], PetscReal& densityEnergySource, PetscReal* progressVariableSource, void* ctx);
+    static void ChemTabModelComputeMassFractionsFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* massFractions, const std::size_t massFractionsSize, void* ctx);
+    static void ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal ZMix, PetscReal *predictedSourceEnergy, PetscReal* progressVariableSource, const std::size_t progressVariableSourceSize, void* ctx);
+    void ExtractMetaData(std::istream& inputStream);
+    void LoadBasisVectors(std::istream& inputStream, std::size_t columns, PetscReal** W);
+
 
    public:
     explicit ChemTabModel(std::filesystem::path path);
@@ -42,7 +51,7 @@ class ChemTabModel : public ChemistryModel {
      * Computes the progresses variables for a given mass fraction
      * @return
      */
-    void ComputeProgressVariables(const PetscReal massFractions[], PetscReal* progressVariables) const override;
+    void ComputeProgressVariables(const PetscReal massFractions[], const std::size_t massFractionsSize, PetscReal* progressVariables, const std::size_t progressVariablesSize) const override;
 
     /**
      * Support functions to get access to c-style pointer functions
