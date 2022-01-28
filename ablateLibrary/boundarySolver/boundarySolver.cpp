@@ -513,7 +513,7 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
             const PetscInt cell = cells ? cells[c] : c;
 
             // Get pointers to sol, aux, and f vectors
-            PetscScalar* pt;
+            PetscScalar* pt = nullptr;
             switch (field.location) {
                 case domain::FieldLocation::SOL:
                     DMPlexPointGlobalFieldRef(dm, cell, field.id, array, &pt) >> checkError;
@@ -522,8 +522,9 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
                     DMPlexPointLocalFieldRef(dm, cell, field.id, array, &pt) >> checkError;
                     break;
             }
-
-            petscFunction(dim, time, gradientStencils[cOffset].geometry.centroid, field.numberComponents, pt, context);
+            if(pt) {
+                petscFunction(dim, time, gradientStencils[cOffset].geometry.centroid, field.numberComponents, pt, context);
+            }
         }
 
         RestoreRange(cellIS, cStart, cEnd, cells);
