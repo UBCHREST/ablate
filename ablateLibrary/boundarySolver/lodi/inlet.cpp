@@ -1,16 +1,33 @@
 #include "inlet.hpp"
 #include <utilities/mathUtilities.hpp>
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "mathFunctions/functionFactory.hpp"
 
 using fp = ablate::finiteVolume::processes::FlowProcess;
 
-ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
-    : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)) {}
+ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling,
+                                           std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedVelocity)
+    : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)), prescribedVelocity(std::move(prescribedVelocity)) {}
 
 void ablate::boundarySolver::lodi::Inlet::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
 
     bSolver.RegisterFunction(InletFunction, this, fieldNames, fieldNames, {});
+
+    // Register a pre function step to update velocity over this solver if specified
+    if (prescribedVelocity) {
+        // define an update field function
+        auto updateFieldFunction =
+            std::make_shared<mathFunctions::FieldFunction>(finiteVolume::CompressibleFlowFields::EULER_FIELD, ablate::mathFunctions::Create(UpdateVelocityFunction, prescribedVelocity.get()));
+
+        bSolver.RegisterPreStep([&bSolver, updateFieldFunction](auto ts, auto &solver) {
+            // Get the current time
+            PetscReal time;
+            TSGetTime(ts, &time) >> checkError;
+
+            bSolver.InsertFieldFunctions({updateFieldFunction}, time);
+        });
+    }
 }
 PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell,
                                                                   const PetscInt *uOff, const PetscScalar *boundaryValues, const PetscScalar **stencilValues, const PetscInt *aOff,
@@ -173,7 +190,46 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
     PetscFunctionReturn(0);
 }
 
+PetscErrorCode ablate::boundarySolver::lodi::Inlet::UpdateVelocityFunction(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
+    PetscFunctionBeginUser;
+
+    auto velocityFunction = (ablate::mathFunctions::MathFunction *)ctx;
+
+    // Get the current velocity
+    PetscScalar velocity[3];
+    PetscScalar kineticEnergy = 0.0;
+    PetscScalar density = u[fp::RHO];
+    for (PetscInt d = 0; d < dim; d++) {
+        velocity[d] = u[fp::RHOU + d] / density;
+        kineticEnergy += PetscSqr(velocity[d]);
+    }
+    kineticEnergy *= 0.5;
+
+    // Get the internal energy
+    PetscScalar internalEnergy = u[fp::RHOE] / density;
+
+    // Compute the sensible energy
+    PetscScalar sensibleEnergy = internalEnergy - kineticEnergy;
+
+    // Update velocity
+    velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, velocityFunction->GetContext()) >> checkError;
+
+    // Update the momentum terms
+    kineticEnergy = 0.0;
+    for (PetscInt d = 0; d < dim; d++) {
+        u[fp::RHOU + d] = velocity[d] * density;
+        kineticEnergy += PetscSqr(velocity[d]);
+    }
+    kineticEnergy *= 0.5;
+
+    // Update the new internal energy
+    u[fp::RHOE] = (sensibleEnergy + kineticEnergy) * density;
+
+    PetscFunctionReturn(0);
+}
+
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::Inlet, "Enforces an inlet with specified velocity",
          ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the wall"),
-         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));
+         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
+         OPT(ablate::mathFunctions::MathFunction, "velocity", "optional velocity function that can change over time"));

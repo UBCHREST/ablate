@@ -8,11 +8,19 @@ namespace ablate::mathFunctions::geom {
 
 class Geometry : public MathFunction {
    private:
-    const std::vector<double> insideValues;
-    const std::vector<double> outsideValues;
+    const std::shared_ptr<mathFunctions::MathFunction> insideValues;
+    const std::shared_ptr<mathFunctions::MathFunction> outsideValues;
+
+    //! Store a reference to the inside petsc function
+    const PetscFunction insidePetscFunction;
+    void* insidePetscContext;
+
+    //! Store a reference to the outside petsc function
+    const PetscFunction outsidePetscFunction;
+    void* outsidePetscContext;
 
    protected:
-    explicit Geometry(std::vector<double> insideValues, std::vector<double> outsideValues = {});
+    explicit Geometry(const std::shared_ptr<mathFunctions::MathFunction>& insideValues, const std::shared_ptr<mathFunctions::MathFunction>& outsideValues);
 
     virtual bool InsideGeometry(const double* xyz, const int& ndims, const double& time) const = 0;
 
