@@ -184,12 +184,58 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                                  .expectedNormalVelocity = 16.213,
                                  .expectedVelocity = {10.0, -20.0, 30.0},
                                  .expectedInternalEnergy = 2499300.0,
-                                 .expectedInternalEnergyG = 222008.74346659306,
-                                 .expectedInternalEnergyL = 2504664.64371386,
-                                 .expectedSoundSpeedG = 352.5973572522802,
-                                 .expectedSoundSpeedL = 1527.8918538107569,
-                                 .expectedMG = 0.045981626539531174,
-                                 .expectedML = 0.010611353126572876,
-                                 .expectedPressure = 109691.97428758896,
-                                 .expectedAlpha = 0.6476572089317192}),
+                                 .expectedInternalEnergyG = 222008.74197557007,
+                                 .expectedInternalEnergyL = 2504664.643717372,
+                                 .expectedSoundSpeedG = 352.5973560682485,
+                                 .expectedSoundSpeedL = 1527.8918538115954,
+                                 .expectedMG = 0.04598162669393875,
+                                 .expectedML = 0.01061135312656705,
+                                 .expectedPressure = 109691.9735517502,
+                                 .expectedAlpha = 0.6476572089266498},
+                             (TwoPhaseEulerAdvectionTestDecodeStateParameters){
+                                 // perfect gas + stiffened gas, all water
+                                 .eosGas = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
+                                 .eosLiquid = std::make_shared<eos::StiffenedGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{
+                                     {"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}})),
+                                 .dim = 3,
+                                 .conservedValuesIn = {994.0897497618486, 2414070815.4506435, 0.0, 0.0, 0.0},  // RHO, RHOE, RHOU, RHOV, RHOW
+                                 .densityVFIn = 0.0,                                                           // RHOALPHA
+                                 .normalIn = {0.5, 0.5, 0.7071},                                               // x, y, z
+                                 .expectedDensity = 994.0897497618486,
+                                 .expectedDensityG = 1.161488313443748,
+                                 .expectedDensityL = 994.0897497624699,
+                                 .expectedNormalVelocity = 0.0,
+                                 .expectedVelocity = {0.0, 0.0, 0.0},
+                                 .expectedInternalEnergy = 2428423.4054611027,
+                                 .expectedInternalEnergyG = 215241.08389368636,
+                                 .expectedInternalEnergyL = 2428423.4054611027,
+                                 .expectedSoundSpeedG = 347.18151877723034,
+                                 .expectedSoundSpeedL = 1504.4548407982602,
+                                 .expectedMG = 0.0,
+                                 .expectedML = 0.0,
+                                 .expectedPressure = 100000.0014061928,
+                                 .expectedAlpha = 0.0},
+                             (TwoPhaseEulerAdvectionTestDecodeStateParameters){
+                                 // perfect gas + stiffened gas, all air
+                                 .eosGas = std::make_shared<eos::PerfectGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}, {"Rgas", "287.0"}})),
+                                 .eosLiquid = std::make_shared<eos::StiffenedGas>(std::make_shared<parameters::MapParameters>(std::map<std::string, std::string>{
+                                     {"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}})),
+                                 .dim = 3,
+                                 .conservedValuesIn = {1.1614401858304297, 250000.0, 0.0, 0.0, 0.0},  // RHO, RHOE, RHOU, RHOV, RHOW
+                                 .densityVFIn = 1.1614401858304297,                                   // RHOALPHA
+                                 .normalIn = {0.5, 0.5, 0.7071},                                      // x, y, z
+                                 .expectedDensity = 1.1614401858304297,
+                                 .expectedDensityG = 1.16144018583043,
+                                 .expectedDensityL = 994.089749761849,
+                                 .expectedNormalVelocity = 0.0,
+                                 .expectedVelocity = {0.0, 0.0, 0.0},
+                                 .expectedInternalEnergy = 215250.0,
+                                 .expectedInternalEnergyG = 215250.0,
+                                 .expectedInternalEnergyL = 2428423.405461102,
+                                 .expectedSoundSpeedG = 347.1887094938428,
+                                 .expectedSoundSpeedL = 1504.4548407978218,
+                                 .expectedMG = 0.0,
+                                 .expectedML = 0.0,
+                                 .expectedPressure = 100000.0,
+                                 .expectedAlpha = 1.0}),
                          [](const testing::TestParamInfo<TwoPhaseEulerAdvectionTestDecodeStateParameters>& info) { return std::to_string(info.index); });

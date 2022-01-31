@@ -168,9 +168,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
 
             eL = ((*internalEnergy) - Yg * eG) / Yl;
         } else {  // else if Yl<10e-5,
-            a = B * Yl * ((gamma2 - 1) - gamma2 * B - (gamma1 - 1));
-            b = (gamma1 - 1) * B * etot + (gamma1 - 1) * Yl * A * etot - (gamma2 - 1) * E + gamma2 * E * B + gamma2 * Yl * B * A * etot;
-            c = (-A) * etot * ((gamma1 - 1) * etot + gamma2 * E);
+            a = B * Yl * (Yg * (gamma2 - 1) - gamma2 * B - Yg * (gamma1 - 1));
+            b = Yg * (gamma1 - 1) * B * etot + Yg * (gamma1 - 1) * Yl * A * etot - Yg * (gamma2 - 1) * E + gamma2 * E * B + gamma2 * Yl * B * A * etot;
+            c = (-A) * etot * (Yg * (gamma1 - 1) * etot + gamma2 * E);
             if (a == 0) {
                 eL = -c / b;
             } else {
