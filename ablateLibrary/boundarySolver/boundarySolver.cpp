@@ -522,7 +522,7 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
                     DMPlexPointLocalFieldRef(dm, cell, field.id, array, &pt) >> checkError;
                     break;
             }
-            if(pt) {
+            if (pt) {
                 petscFunction(dim, time, gradientStencils[cOffset].geometry.centroid, field.numberComponents, pt, context);
             }
         }
@@ -531,6 +531,7 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
         VecRestoreArray(vec, &array);
     }
 }
+
 void ablate::boundarySolver::BoundarySolver::ComputeGradient(PetscInt dim, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights,
                                                              PetscScalar* grad) {
     PetscArrayzero(grad, dim);

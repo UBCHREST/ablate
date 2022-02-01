@@ -31,6 +31,10 @@ timestepper:
             Rgas : 287.0
         conservedFieldOptions:
           petscfv_type: leastsquares
+      - !ablate::domain::FieldDescription
+        name: pressure
+        type: FV
+        location: aux
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
       field: >-
