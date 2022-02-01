@@ -17,7 +17,7 @@
 #endif
 
 ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> options, std::vector<std::string> inertSpecies,
-                                                                double minimumMassFraction)
+                                                                std::vector<double> massFractionBounds)
     : fieldDm(nullptr),
       sourceVec(nullptr),
       petscOptions(nullptr),
@@ -30,7 +30,7 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
       tchemScratch(nullptr),
       jacobianScratch(nullptr),
       rows(nullptr),
-      minimumMassFraction(minimumMassFraction) {
+      massFractionBounds(massFractionBounds) {
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
         throw std::invalid_argument("ablate::finiteVolume::processes::TChemReactions only accepts EOS of type eos::TChem");
@@ -85,6 +85,11 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
         } else {
             throw std::invalid_argument("Unable to locate specified inert species " + speciesName + " for ablate::finiteVolume::processes::TChemReactions.");
         }
+    }
+
+    // Make sure the massFractionBounds are valid
+    if (!(massFractionBounds.empty() || massFractionBounds.size() == 2)) {
+        throw std::invalid_argument("If specified, the massFractionBounds must be of length 2.");
     }
 }
 ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {
@@ -162,8 +167,12 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     CHKERRQ(ierr);
 
     // make sure yi is in bounds
-    for (std::size_t i = 0; i < solver->numberSpecies; i++) {
-        solver->tchemScratch[i + 1] = PetscMin(PetscMax(solver->tchemScratch[i + 1], solver->minimumMassFraction), 1);
+    if (!solver->massFractionBounds.empty()) {
+        const double minimum = solver->massFractionBounds[0];
+        const double maximum = solver->massFractionBounds[1];
+        for (std::size_t i = 0; i < solver->numberSpecies; i++) {
+            solver->tchemScratch[i + 1] = PetscMin(PetscMax(solver->tchemScratch[i + 1], minimum), maximum);
+        }
     }
 
     // get the source (assuming constant pressure/mass)
@@ -192,8 +201,12 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     CHKERRQ(ierr);
 
     // make sure yi is in bounds
-    for (std::size_t i = 0; i < solver->numberSpecies; i++) {
-        solver->tchemScratch[i + 1] = PetscMin(PetscMax(solver->tchemScratch[i + 1], solver->minimumMassFraction), 1);
+    if (!solver->massFractionBounds.empty()) {
+        const double minimum = solver->massFractionBounds[0];
+        const double maximum = solver->massFractionBounds[1];
+        for (std::size_t i = 0; i < solver->numberSpecies; i++) {
+            solver->tchemScratch[i + 1] = PetscMin(PetscMax(solver->tchemScratch[i + 1], minimum), maximum);
+        }
     }
 
     // compute the analytical jacobian assuming constant pressure
@@ -486,4 +499,4 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem v1 library", ARG(ablate::eos::EOS, "eos", "the tChem v1 eos"),
          OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"), OPT(std::vector<std::string>, "inertSpecies", "fix the Jacobian for any undetermined inertSpecies"),
-         OPT(double, "minimumMassFraction", "sets the minimum mass fraction passed to TChem Library (default 0)"));
+         OPT(std::vector<double>, "massFractionBounds", "sets the minimum/maximum mass fraction passed to TChem Library. Must be a vector of size two [min,max] (default is no bounds)"));

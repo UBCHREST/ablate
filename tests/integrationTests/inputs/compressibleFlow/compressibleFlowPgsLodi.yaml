@@ -51,7 +51,7 @@ timestepper:
         velocity: !ablate::mathFunctions::geom::Sphere
           center: [0.0, 0.0]
           radius: 0.1
-          insideValues: [5, 0]
+          insideValues: "5, 0"
 solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: vortexFlowField

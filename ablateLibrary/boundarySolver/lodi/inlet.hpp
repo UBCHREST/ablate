@@ -6,8 +6,15 @@
 namespace ablate::boundarySolver::lodi {
 
 class Inlet : public LODIBoundary {
+   private:
+    //! The prescribed velocity in normal cartesian components (vx, vy, vz)
+    std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedVelocity;
+
+    static PetscErrorCode UpdateVelocityFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
+
    public:
-    explicit Inlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
+    explicit Inlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {},
+                   std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedVelocity = {});
 
     void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
 

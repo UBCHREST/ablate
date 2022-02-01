@@ -75,6 +75,12 @@ class EulerTransport : public FlowProcess {
                                                  void* ctx);
 
     /**
+     * Function to compute the velocity. This function assumes that the input values will be {"euler", "densityYi }
+     */
+    static PetscErrorCode UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
+                                                 void* ctx);
+
+    /**
      *
      * public constructor for euler advection
      */

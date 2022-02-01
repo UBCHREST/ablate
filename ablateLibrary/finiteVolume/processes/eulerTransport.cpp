@@ -12,15 +12,14 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(std::shared_ptr<
         // cfl
         advectionData.cfl = parametersIn->Get<PetscReal>("cfl", 0.5);
 
-        // set the decode state function
-        advectionData.decodeStateFunction = eos->GetDecodeStateFunction();
-        advectionData.decodeStateContext = eos->GetDecodeStateContext();
-        advectionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
-
         // extract the difference function from fluxDifferencer object
         advectionData.fluxCalculatorFunction = fluxCalculator->GetFluxCalculatorFunction();
         advectionData.fluxCalculatorCtx = fluxCalculator->GetFluxCalculatorContext();
     }
+    // set the decode state function
+    advectionData.decodeStateFunction = eos->GetDecodeStateFunction();
+    advectionData.decodeStateContext = eos->GetDecodeStateContext();
+    advectionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
 
     // If there is a transport model, assumed diffusion
     if (transportModel) {
@@ -90,6 +89,17 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
         } else {
             // add in aux update variables
             flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD});
+        }
+    }
+
+    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::PRESSURE_FIELD)) {
+        if (advectionData.numberSpecies > 0) {
+            // add in aux update variables
+            flow.RegisterAuxFieldUpdate(
+                UpdateAuxPressureField, &advectionData, CompressibleFlowFields::PRESSURE_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
+        } else {
+            // add in aux update variables
+            flow.RegisterAuxFieldUpdate(UpdateAuxPressureField, &advectionData, CompressibleFlowFields::PRESSURE_FIELD, {CompressibleFlowFields::EULER_FIELD});
         }
     }
 }
@@ -389,6 +399,32 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTempera
     PetscErrorCode ierr = flowParameters->computeTemperatureFunction(
         dim, density, totalEnergy, conservedValues + uOff[0] + RHOU, flowParameters->numberSpecies ? conservedValues + uOff[1] : NULL, auxField, flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
+// When used, you must request euler, then densityYi
+PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
+                                                                                       const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
+    PetscFunctionBeginUser;
+    PetscReal density;
+    PetscReal velocity[3];
+    PetscReal internalEnergy;
+    PetscReal a;
+    PetscReal M;
+    auto eulerAdvectionData = (AdvectionData*)ctx;
+
+    DecodeEulerState(eulerAdvectionData->decodeStateFunction,
+                     eulerAdvectionData->decodeStateContext,
+                     dim,
+                     conservedValues + uOff[0],
+                     eulerAdvectionData->numberSpecies > 0 ? conservedValues + uOff[1] : nullptr,
+                     &density,
+                     velocity,
+                     &internalEnergy,
+                     &a,
+                     &M,
+                     auxField);
 
     PetscFunctionReturn(0);
 }

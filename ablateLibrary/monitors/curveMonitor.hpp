@@ -13,6 +13,10 @@ class CurveMonitor : public Monitor {
     const std::shared_ptr<io::interval::Interval> interval;
     const std::string filePrefix;
     inline static const std::string fileExtension = ".curve";
+    /**
+     * Curve output values cannot be lessthan the this minimum in order to be read into visit
+     */
+    inline static const PetscReal minimumOutputValue = 1E-64;
 
     static PetscErrorCode OutputCurve(TS ts, PetscInt steps, PetscReal time, Vec u, void* mctx);
 

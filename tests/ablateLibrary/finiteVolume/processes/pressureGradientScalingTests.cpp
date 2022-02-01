@@ -198,8 +198,9 @@ INSTANTIATE_TEST_SUITE_P(
                     auto flowState = std::make_shared<ablate::finiteVolume::fieldFunctions::CompressibleFlowState>(
                         eos,
                         ablate::mathFunctions::Create(300.0),
-                        std::make_shared<ablate::mathFunctions::geom::Sphere>(std::vector<double>{.75, .75}, .15, std::vector<double>{101325 * 1.5}, std::vector<double>{101325}),
-                        std::make_shared<ablate::mathFunctions::geom::Sphere>(std::vector<double>{.75, .75}, .15, std::vector<double>{10, 10.0}, std::vector<double>{0.0, 0.0}));
+                        std::make_shared<ablate::mathFunctions::geom::Sphere>(std::vector<double>{.75, .75}, .15, ablate::mathFunctions::Create(101325 * 1.5), ablate::mathFunctions::Create(101325.0)),
+                        std::make_shared<ablate::mathFunctions::geom::Sphere>(
+                            std::vector<double>{.75, .75}, .15, ablate::mathFunctions::Create(std::vector<double>{10, 10.0}), ablate::mathFunctions::Create(std::vector<double>{0.0, 0.0})));
 
                     return std::shared_ptr<ablate::mathFunctions::FieldFunction>{std::make_shared<ablate::finiteVolume::fieldFunctions::Euler>(flowState)};
                 },
