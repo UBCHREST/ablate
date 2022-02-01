@@ -91,8 +91,8 @@ TEST_P(TwoPhaseEulerAdvectionTestDecodeStateFixture, ShouldDecodeState) {
     ASSERT_NEAR(velocity[1], params.expectedVelocity[1], 1E-6);
     ASSERT_NEAR(velocity[2], params.expectedVelocity[2], 1E-6);
     ASSERT_NEAR(internalEnergy, params.expectedInternalEnergy, 1E-6);
-    ASSERT_NEAR(internalEnergyG, params.expectedInternalEnergyG, 1E-3);
-    ASSERT_NEAR(internalEnergyL, params.expectedInternalEnergyL, 1E-3);
+    ASSERT_NEAR(internalEnergyG, params.expectedInternalEnergyG, params.expectedInternalEnergyG * 1E-6);
+    ASSERT_NEAR(internalEnergyL, params.expectedInternalEnergyL, params.expectedInternalEnergyL * 1E-6);
     ASSERT_NEAR(soundSpeedG, params.expectedSoundSpeedG, 1E-6);
     ASSERT_NEAR(soundSpeedL, params.expectedSoundSpeedL, 1E-6);
     ASSERT_NEAR(MG, params.expectedMG, 1E-6);
