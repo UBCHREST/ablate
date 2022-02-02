@@ -47,8 +47,11 @@ class Domain {
     // This domain can be partitions into multiple subdomains
     std::vector<std::shared_ptr<SubDomain>> subDomains;
 
-    // The solution to the flow
-    Vec solField;
+    //! The global solution vector defined over the entire dm. This is the canonical source of information
+    Vec solGlobalField;
+
+    //! The local solution vector defined over the dm.  This is only used for scratch
+    Vec solLocalField;
 
     void CreateStructures();
 
@@ -60,8 +63,16 @@ class Domain {
 
     inline DM& GetDM() noexcept { return dm; }
 
-    Vec GetSolutionVector() { return solField; }
+    /**
+     * Returns access to the global solution field
+     * @return
+     */
+    inline Vec GetSolutionVector() { return solGlobalField; }
 
+    /**
+     * Register the field with the dm
+     * @param fieldDescription
+     */
     void RegisterField(const ablate::domain::FieldDescription& fieldDescription);
 
     PetscInt GetDimensions() const noexcept;

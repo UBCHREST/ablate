@@ -22,10 +22,6 @@ class Particles : public solver::Solver, public io::Serializable {
     PetscReal timeInitial; /* The time for ui, at the beginning of the advection solve */
     PetscReal timeFinal;   /* The time for uf, at the end of the advection solve */
 
-    // flow coupling data
-    Vec flowInitial; /* The PDE solution field at ti */
-    Vec flowFinal;   /* The PDE solution field at tf */
-
     // all fields stored in the particle domain
     std::vector<ParticleField> particleFieldDescriptors;
     std::vector<ParticleField> particleSolutionFieldDescriptors;
