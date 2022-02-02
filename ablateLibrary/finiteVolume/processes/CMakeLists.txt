@@ -17,4 +17,6 @@ target_sources(ablateLibrary
         gravity.cpp
         pressureGradientScaling.hpp
         pressureGradientScaling.cpp
+        arbitrarySource.hpp
+        arbitrarySource.cpp
         )

@@ -25,8 +25,8 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
                                                   const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
                                                   const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void* ctx);
-    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[], const PetscInt aOff[],
-                                                   const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
+    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
+                                                   const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    private:
     /**
@@ -109,7 +109,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     /**
      * Function to compute the point source terms
      */
-    void ComputePointSourceTerms(DM dm, PetscDS ds, PetscInt totDim, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux, const PetscScalar* auxArray, DM faceDM,
+    void ComputePointSourceTerms(DM dm, PetscDS ds, PetscInt totDim, PetscReal time, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux, const PetscScalar* auxArray, DM faceDM,
                                  const PetscScalar* faceGeomArray, DM cellDM, const PetscScalar* cellGeomArray, std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays,
                                  std::vector<DM>& dmAuxGrads, std::vector<const PetscScalar*>& locAuxGradArrays, PetscScalar* locFArray);
 
