@@ -31,15 +31,13 @@ void ablate::particles::Tracer::Initialize() {
 */
 PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
     ablate::particles::Tracer *particles = (ablate::particles::Tracer *)ctx;
-    Vec u = particles->flowFinal;
+    //    Vec u = particles->flowFinal;
     DM sdm, dm, vdm;
-    Vec vel, locvel, pvel;
+    Vec locvel, pvel;
     IS vis;
     DMInterpolationInfo ictx;
     const PetscScalar *coords, *v;
     PetscScalar *f;
-    const auto &flowVelocityField = particles->subDomain->GetField("velocity");
-    PetscInt vf[1] = {flowVelocityField.id};
     PetscInt dim, Np;
     PetscErrorCode ierr;
 
@@ -55,22 +53,9 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
     ierr = DMGetDimension(dm, &dim);
     CHKERRQ(ierr);
 
-    /* Get local velocity */
-    ierr = DMCreateSubDM(dm, 1, vf, &vis, &vdm);
-    CHKERRQ(ierr);
-    ierr = VecGetSubVector(u, vis, &vel);
-    CHKERRQ(ierr);
-    ierr = DMGetLocalVector(vdm, &locvel);
-    CHKERRQ(ierr);
-    ierr = DMPlexInsertBoundaryValues(vdm, PETSC_TRUE, locvel, particles->timeInitial, NULL, NULL, NULL);
-    CHKERRQ(ierr);
-    ierr = DMGlobalToLocalBegin(vdm, vel, INSERT_VALUES, locvel);
-    CHKERRQ(ierr);
-    ierr = DMGlobalToLocalEnd(vdm, vel, INSERT_VALUES, locvel);
-    CHKERRQ(ierr);
-    ierr = VecRestoreSubVector(u, vis, &vel);
-    CHKERRQ(ierr);
-    ierr = ISDestroy(&vis);
+    /* Get local flow velocity */
+    const auto &flowVelocityField = particles->subDomain->GetField("velocity");
+    ierr = particles->subDomain->GetFieldLocalVector(flowVelocityField, particles->timeInitial, &vis, &locvel, &vdm);
     CHKERRQ(ierr);
 
     /* Interpolate velocity */
@@ -98,9 +83,7 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
     CHKERRQ(ierr);
     ierr = DMInterpolationDestroy(&ictx);
     CHKERRQ(ierr);
-    ierr = DMRestoreLocalVector(vdm, &locvel);
-    CHKERRQ(ierr);
-    ierr = DMDestroy(&vdm);
+    ierr = particles->subDomain->RestoreFieldLocalVector(flowVelocityField, &vis, &locvel, &vdm);
     CHKERRQ(ierr);
 
     // right hand side storing

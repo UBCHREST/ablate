@@ -41,7 +41,7 @@ class SubDomain : public io::Serializable {
 
     //! Each subDomain will operate over a ds
     PetscDS discreteSystem;
-    PetscDS auxDiscreteSystem;
+    PetscDS auxDiscreteSystem{};
 
     //! The auxDm and auxVec are for only this subDomain
     DM auxDM;
@@ -74,7 +74,7 @@ class SubDomain : public io::Serializable {
     void CopyGlobalToSubVector(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
 
    public:
-    SubDomain(Domain& domain, PetscInt dsNumber, std::vector<std::shared_ptr<FieldDescription>> allAuxFields);
+    SubDomain(Domain& domain, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields);
     ~SubDomain() override;
 
     /**
@@ -304,7 +304,7 @@ class SubDomain : public io::Serializable {
      * @param fieldFunctions
      * @param globVec
      */
-    void ProjectFieldFunctionsToLocalVector(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec locVec, PetscReal time = 0.0);
+    void ProjectFieldFunctionsToLocalVector(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec locVec, PetscReal time = 0.0) const;
 
     /**
      * Support function to project the fields on to vector that lives only on the subDM
@@ -321,18 +321,41 @@ class SubDomain : public io::Serializable {
     void SetsExactSolutions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions);
 
     /**
-     * Get a vector with only a single field
+     * Get a global vector with only a single field
      * @param vecIs
      * @param vec
      * @param subdm
      * @return
      */
-    PetscErrorCode GetFieldVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);
+    PetscErrorCode GetFieldGlobalVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);
 
     /**
-     * Restore a vector with only a single field
+     * Restore a global vector with only a single field
+     * @param vecIs
+     * @param vec
+     * @param subdm
+     * @return
      */
-    PetscErrorCode RestoreFieldVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);
+    PetscErrorCode RestoreFieldGlobalVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);
+
+    /**
+     * Get a local vector (with boundary values)  with only a single field
+     * @param vecIs
+     * @param time time is ued to insert boundary conditions for the global solution vector
+     * @param vec
+     * @param subdm
+     * @return
+     */
+    PetscErrorCode GetFieldLocalVector(const Field&, PetscReal time, IS* vecIs, Vec* vec, DM* subdm);
+
+    /**
+     * Restore a local vector with only a single field
+     * @param vecIs
+     * @param vec
+     * @param subdm
+     * @return
+     */
+    PetscErrorCode RestoreFieldLocalVector(const Field&, IS* vecIs, Vec* vec, DM* subdm);
 
     /**
      * Serialization save

@@ -8,7 +8,7 @@
 #include "utilities/petscError.hpp"
 
 ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn)
-    : dm(dmIn), name(name), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solField(nullptr), modifiers(std::move(modifiersIn)) {
+    : dm(dmIn), name(name), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solGlobalField(nullptr), modifiers(std::move(modifiersIn)) {
     // update the dm with the modifiers
     for (auto& modifier : modifiers) {
         modifier->Modify(dm);
@@ -47,8 +47,8 @@ ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::share
 
 ablate::domain::Domain::~Domain() {
     // clean up the petsc objects
-    if (solField) {
-        VecDestroy(&solField) >> checkError;
+    if (solGlobalField) {
+        VecDestroy(&solGlobalField) >> checkError;
     }
 }
 
@@ -89,8 +89,8 @@ PetscInt ablate::domain::Domain::GetDimensions() const noexcept {
 void ablate::domain::Domain::CreateStructures() {
     // Setup the solve with the ts
     DMPlexCreateClosureIndex(dm, NULL) >> checkError;
-    DMCreateGlobalVector(dm, &(solField)) >> checkError;
-    PetscObjectSetName((PetscObject)solField, "solution") >> checkError;
+    DMCreateGlobalVector(dm, &(solGlobalField)) >> checkError;
+    PetscObjectSetName((PetscObject)solGlobalField, "solution") >> checkError;
 
     // add the names to each of the components in the dm section
     PetscSection section;
@@ -142,7 +142,7 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
     }
 
     // Set the initial conditions for each field specified
-    ProjectFieldFunctions(initializations, solField);
+    ProjectFieldFunctions(initializations, solGlobalField);
 
     // Initialize each solver
     for (auto& solver : solvers) {
