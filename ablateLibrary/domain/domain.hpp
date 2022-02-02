@@ -50,9 +50,6 @@ class Domain {
     //! The global solution vector defined over the entire dm. This is the canonical source of information
     Vec solGlobalField;
 
-    //! The local solution vector defined over the dm.  This is only used for scratch
-    Vec solLocalField;
-
     void CreateStructures();
 
     // keep a list of functions that modify the dm
