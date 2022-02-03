@@ -204,14 +204,14 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal rhoL;
         if (PetscAbs(ar) < 1E-5) {
             rhoL = -cr / br;
-        } else{
+        } else {
             rhoL = PetscMax(root1r, root2r);
-            if (rhoL < 1E-5) {                 // negative density not physical
+            if (rhoL < 1E-5) {  // negative density not physical
                 throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative density rhoL");
             }
         }
         PetscReal rhoG = ((gamma2 - 1) * eL * rhoL - gamma2 * p02) / (gamma1 - 1) / eG;
-        if (rhoG < 1E-5) {                 // negative internal energy not physical
+        if (rhoG < 1E-5) {  // negative density not physical
             throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative density rhoG");
         }
         PetscReal pG;
