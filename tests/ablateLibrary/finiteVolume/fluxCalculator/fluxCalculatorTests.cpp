@@ -170,7 +170,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedInterfacePressure = {0.30313018, 0.00189387, 460.893787, 46.095, 460.894},  // pressure at x=0
             .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                // Upwind direction based on velocity at x = 0
         },
-        // Riemann2Gas flux testing, same gamma 1.4 L/ gamma 1.667 R
+        // Riemann2Gas flux testing, gamma 1.4 L/ gamma 1.667 R
         (FluxCalculatorTestParameters){
             .testName = "Riemann2GasFluxT2",
             .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Riemann2Gas>(
@@ -188,7 +188,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedInterfacePressure = {0.314396658, 0.000506098, 475.022995502, 43.1357, 460.8940},  // pressure at x=0
             .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                       // Upwind direction based on velocity at x = 0
         },
-        // Riemann2Gas flux testing, same gamma 1.667 L/ gamma 1.4 R
+        // Riemann2Gas flux testing, gamma 1.667 L/ gamma 1.4 R
         (FluxCalculatorTestParameters){
             .testName = "Riemann2GasFluxT3",
             .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::Riemann2Gas>(
@@ -224,7 +224,7 @@ INSTANTIATE_TEST_SUITE_P(
             .expectedInterfacePressure = {0.30313018, 0.00189387, 460.893787, 46.095, 460.894},  // pressure at x=0
             .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                // Upwind direction based on velocity at x = 0
         },
-        // RiemannStiff flux testing, same gamma 1.4 L/ gamma 1.667 R
+        // RiemannStiff flux testing, gamma 1.4 L/ gamma 1.667 R
         (FluxCalculatorTestParameters){
             .testName = "RiemannStiffFluxT2",
             .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::RiemannStiff>(
@@ -240,9 +240,9 @@ INSTANTIATE_TEST_SUITE_P(
             .pR = {0.1, 0.4, 0.01, 100.0, 46.0950},
             .expectedMassFlux = {0.39442313, 0.00001119, 11.0900218667, -3.61787265, 117.570105900},    // status at x =0
             .expectedInterfacePressure = {0.314396658, 0.000506098, 475.022995502, 43.1357, 460.8940},  // pressure at x=0
-            .expectedDirection = {LEFT, RIGHT, LEFT, RIGHT, LEFT}                                       // Upwind direction based on velocity at x = 0
+            .expectedDirection = {LEFT, RIGHT,  LEFT, RIGHT, LEFT}                                       // Upwind direction based on velocity at x = 0
         },
-        // Riemann2Gas flux testing, same gamma 1.667 L/ gamma 1.4 R
+        // Riemann2Gas flux testing, gamma 1.667 L/ gamma 1.4 R
         (FluxCalculatorTestParameters){
             .testName = "RiemannStiffFluxT3",
             .fluxCalculator = std::make_shared<ablate::finiteVolume::fluxCalculator::RiemannStiff>(
