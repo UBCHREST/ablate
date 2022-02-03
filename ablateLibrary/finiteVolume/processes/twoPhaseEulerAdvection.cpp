@@ -151,7 +151,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
             a = B * (Yg * (gamma2 - 1) - Yg * (gamma1 - 1) - gamma2 * B);
             b = etot * Yg * (gamma1 - 1) + etot * B + Yg * (gamma2 - 1) * D - gamma2 * D * B;
             c = etot * D;
-            if (a == 0) {
+            if (PetscAbs(a) < 1E-5) {
                 eG = -c / b;
             } else {
                 root1 = (-b + PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
@@ -161,17 +161,20 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
                 } else {
                     eG = PetscMax(root1, root2);  // take positive root
                     if (eG < 0) {                 // negative internal energy not physical
-                        throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy");
+                        throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eG");
                     }
                 }
             }
 
             eL = ((*internalEnergy) - Yg * eG) / Yl;
+            if (eL < 0) {
+                throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eL");
+            }
         } else {  // else if Yl<10e-5,
             a = B * Yl * (Yg * (gamma2 - 1) - gamma2 * B - Yg * (gamma1 - 1));
             b = Yg * (gamma1 - 1) * B * etot + Yg * (gamma1 - 1) * Yl * A * etot - Yg * (gamma2 - 1) * E + gamma2 * E * B + gamma2 * Yl * B * A * etot;
             c = (-A) * etot * (Yg * (gamma1 - 1) * etot + gamma2 * E);
-            if (a == 0) {
+            if (PetscAbs(a) < 1E-5) {
                 eL = -c / b;
             } else {
                 root1 = (-b + PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
@@ -181,11 +184,14 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
                 } else {
                     eL = PetscMax(root1, root2);  // take positive root
                     if (eL < 0) {                 // negative internal energy not physical
-                        throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy");
+                        throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eL");
                     }
                 }
             }
             eG = ((*internalEnergy) - Yl * eL) / Yg;
+            if (eG < 0) {
+                throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eG");
+            }
         }
 
         PetscReal etG = eG + ke;
@@ -196,9 +202,18 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal root1r = (-br + PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
         PetscReal root2r = (-br - PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
         PetscReal rhoL;
-        rhoL = PetscMax(root1r, root2r);
+        if (PetscAbs(ar) < 1E-5) {
+            rhoL = -cr / br;
+        } else{
+            rhoL = PetscMax(root1r, root2r);
+            if (rhoL < 1E-5) {                 // negative density not physical
+                throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative density rhoL");
+            }
+        }
         PetscReal rhoG = ((gamma2 - 1) * eL * rhoL - gamma2 * p02) / (gamma1 - 1) / eG;
-
+        if (rhoG < 1E-5) {                 // negative internal energy not physical
+            throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative density rhoG");
+        }
         PetscReal pG;
         PetscReal pL;
         PetscReal a1;
