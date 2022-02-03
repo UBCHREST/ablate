@@ -47,8 +47,16 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     PetscReal A, B, sqterm;
     PetscReal astar, STLR, SHLR, uX;
 
-    // Here is the initial guess for pstar - average of left and right pressures
+    // Here is the initial guess for pstar - assuming two exapansion wave (might need to change for gas/liquid)
+//    pstar = aL + aR - (0.5 * gamLm1 * (uR - uL));
+//    pstar = pstar / ((aL / PetscPowReal(pL, 0.5 * gamLm1 / gammaL)) + (aR / PetscPowReal(pR, 0.5 * gamRm1 / gammaR)));
+//    pstar = PetscPowReal(pstar, 2.0 * gammaL / gamLm1);
     pstar = 0.5 * (pR + pL);
+//    if (p0L == 0 && p0R == 0) {
+//        pstar = 0.5 * (pR + pL);  // same as riemann2gas
+//    } else {
+//        pstar = PetscMin(pR, pL) + 1;  // new, average didn't converge
+//    }
 
     if (pstar <= pL)  // expansion wave equation from Toro
     {
@@ -92,13 +100,11 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     {
         pold = pstar;
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
-        if (p0L > 0 || p0R > 0) {
-            if (pstar < 0) {
-                pstar = err;
-            }
+        if (pstar<0){
+            pstar=err;
         }
 
-        if (pstar <= pL)  // expansion wave equation from Toto
+        if (pstar <= pL)                                           // expansion wave equation from Toto
         {
             gamma = gammaL;
             gamm1 = gamLm1;
