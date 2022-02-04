@@ -78,8 +78,8 @@ void ablate::solver::TimeStepper::Solve() {
     if (serializer) {
         // Register any subdomain with the serializer
         for (auto& subDomain : domain->GetSerializableSubDomains()) {
-            if(auto subDomainPtr = subDomain.lock()){
-                if(subDomainPtr->Serialize()){
+            if (auto subDomainPtr = subDomain.lock()) {
+                if (subDomainPtr->Serialize()) {
                     serializer->Register(subDomain);
                 }
             }

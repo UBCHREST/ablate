@@ -19,7 +19,7 @@ class PressureGradientScaling : public FlowProcess, public io::Serializable {
     /**
      * store an id for serialization
      */
-     const std::string id = "PressureGradientScaling";
+    const std::string id = "PressureGradientScaling";
 
     /**
      * Store the equation of state to compute pressure
@@ -90,9 +90,7 @@ class PressureGradientScaling : public FlowProcess, public io::Serializable {
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    const std::string& GetId() const override {
-        return id;
-    }
+    const std::string& GetId() const override { return id; }
 
     /**
      * Save the state to the PetscViewer

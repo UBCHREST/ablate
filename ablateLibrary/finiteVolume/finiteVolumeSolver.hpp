@@ -185,9 +185,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    const std::string& GetId() const override{
-        return GetSolverId();
-    }
+    const std::string& GetId() const override { return GetSolverId(); }
 
     /**
      * Save the state to the PetscViewer
