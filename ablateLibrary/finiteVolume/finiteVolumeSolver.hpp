@@ -18,7 +18,7 @@ namespace processes {
 class Process;
 }
 
-class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction {
+class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction, public io::Serializable {
    public:
     using RHSArbitraryFunction = PetscErrorCode (*)(const FiniteVolumeSolver&, DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
@@ -174,6 +174,36 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * Computes the individual time steps useful for output/debugging.  This does not enforce the time step
      */
     std::map<std::string, double> ComputePhysicsTimeSteps(TS);
+
+    /**
+     * Returns true if any of the processes are marked as serializable
+     * @return
+     */
+    bool Serialize() const override;
+
+    /**
+     * only required function, returns the id of the object.  Should be unique for the simulation
+     * @return
+     */
+    const std::string& GetId() const override{
+        return GetSolverId();
+    }
+
+    /**
+     * Save the state to the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * Restore the state from the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 }  // namespace ablate::finiteVolume
 

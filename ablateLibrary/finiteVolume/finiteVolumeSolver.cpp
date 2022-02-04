@@ -870,6 +870,32 @@ std::map<std::string, double> ablate::finiteVolume::FiniteVolumeSolver::ComputeP
 
     return timeSteps;
 }
+bool ablate::finiteVolume::FiniteVolumeSolver::Serialize() const {
+    return std::count_if(processes.begin(), processes.end(), [](auto& testProcess) {
+        auto serializable = std::dynamic_pointer_cast<ablate::io::Serializable>(testProcess);
+        return serializable != nullptr && serializable->Serialize();
+    });
+}
+
+void ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    for (auto& process : processes) {
+        if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
+            if (serializablePtr->Serialize()) {
+                serializablePtr->Save(viewer, sequenceNumber, time);
+            }
+        }
+    }
+}
+
+void ablate::finiteVolume::FiniteVolumeSolver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    for (auto& process : processes) {
+        if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
+            if (serializablePtr->Serialize()) {
+                serializablePtr->Restore(viewer, sequenceNumber, time);
+            }
+        }
+    }
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::finiteVolume::FiniteVolumeSolver, "finite volume solver", ARG(std::string, "id", "the name of the flow field"),

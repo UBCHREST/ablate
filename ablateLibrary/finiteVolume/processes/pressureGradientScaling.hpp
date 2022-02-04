@@ -14,8 +14,13 @@ namespace ablate::finiteVolume::processes {
  *   DesJardin, Paul E., Timothy J. O’Hern, and Sheldon R. Tieszen. "Large eddy simulation and experimental measurements of the near-field of a large turbulent helium plume." Physics of fluids 16.6
  * (2004): 1866-1883.
  */
-class PressureGradientScaling : public FlowProcess {
+class PressureGradientScaling : public FlowProcess, public io::Serializable {
    private:
+    /**
+     * store an id for serialization
+     */
+     const std::string id = "PressureGradientScaling";
+
     /**
      * Store the equation of state to compute pressure
      */
@@ -80,6 +85,30 @@ class PressureGradientScaling : public FlowProcess {
 
     // Alpha accessor
     inline const PetscReal& GetMaxMach() { return maxMach; }
+
+    /**
+     * only required function, returns the id of the object.  Should be unique for the simulation
+     * @return
+     */
+    const std::string& GetId() const override {
+        return id;
+    }
+
+    /**
+     * Save the state to the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * Restore the state from the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 }  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_PRESSUREGRADIENTSCALING_HPP
