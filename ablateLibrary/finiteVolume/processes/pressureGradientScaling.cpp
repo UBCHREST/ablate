@@ -1,8 +1,9 @@
 #include "pressureGradientScaling.hpp"
-
+#include <petscviewerhdf5.h>
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
+#include "utilities/mpiError.hpp"
 
 ablate::finiteVolume::processes::PressureGradientScaling::PressureGradientScaling(std::shared_ptr<eos::EOS> eos, double alphaInit, double domainLength, double maxAlphaAllowedIn,
                                                                                   double maxDeltaPressureFacIn, std::shared_ptr<ablate::monitors::logs::Log> log)
@@ -158,6 +159,41 @@ void ablate::finiteVolume::processes::PressureGradientScaling::Initialize(ablate
     if (log) {
         log->Initialize(fv.GetSubDomain().GetComm());
     }
+}
+
+void ablate::finiteVolume::processes::PressureGradientScaling::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    // Use time stepping.
+    Vec pgsAlphaVec;
+    VecCreateMPI(PetscObjectComm((PetscObject)viewer), PETSC_DECIDE, 1, &pgsAlphaVec) >> checkError;
+    PetscObjectSetName((PetscObject)pgsAlphaVec, "pressureGradientScalingAlpha") >> checkError;
+    VecSetValue(pgsAlphaVec, 0, alpha, INSERT_VALUES) >> checkError;
+    VecAssemblyBegin(pgsAlphaVec) >> checkError;
+    VecAssemblyEnd(pgsAlphaVec) >> checkError;
+    VecView(pgsAlphaVec, viewer);
+    VecDestroy(&pgsAlphaVec) >> checkError;
+}
+
+void ablate::finiteVolume::processes::PressureGradientScaling::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    int rank;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)viewer), &rank) >> checkMpiError;
+
+    // load in the old alpha
+    Vec pgsAlphaVec;
+    VecCreateMPI(PetscObjectComm((PetscObject)viewer), rank == 0 ? 1 : 0, 1, &pgsAlphaVec) >> checkError;
+    PetscObjectSetName((PetscObject)pgsAlphaVec, "pressureGradientScalingAlpha") >> checkError;
+    VecLoad(pgsAlphaVec, viewer) >> checkError;
+
+    // Load in alpha
+    if (rank == 0) {
+        PetscScalar alphaScalar;
+        PetscInt index[1] = {0};
+        VecGetValues(pgsAlphaVec, 1, index, &alphaScalar) >> checkError;
+        alpha = (PetscReal)alphaScalar;
+    }
+
+    // Broadcast everywhere
+    MPI_Bcast(&alpha, 1, MPIU_REAL, 0, PetscObjectComm((PetscObject)viewer)) >> checkMpiError;
+    VecDestroy(&pgsAlphaVec) >> checkError;
 }
 
 #include "registrar.hpp"

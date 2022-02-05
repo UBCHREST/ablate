@@ -21,9 +21,7 @@ INSTANTIATE_TEST_SUITE_P(
                            .expectedOutputFile = "outputs/compressibleFlow/steadyCompressibleFlowLodiTest.txt",
                            .arguments = ""},
         (MpiTestParameter){
-            .testName = "inputs/compressibleFlow/compressibleFlowVortexLodi.yaml", .nproc = 2, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowVortexLodi.txt", .arguments = ""},
-        (MpiTestParameter){
-            .testName = "inputs/compressibleFlow/compressibleFlowPgsLodi.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowPgsLodi.txt", .arguments = ""}),
+            .testName = "inputs/compressibleFlow/compressibleFlowVortexLodi.yaml", .nproc = 2, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowVortexLodi.txt", .arguments = ""}),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
@@ -87,24 +85,15 @@ INSTANTIATE_TEST_SUITE_P(ShockTube, IntegrationTestsSpecifier,
 
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
-INSTANTIATE_TEST_SUITE_P(
-    Tests, IntegrationRestartTestsSpecifier,
-    testing::Values(
-        (IntegrationRestartTestsParameters){
-            .mpiTestParameter = {.testName = "inputs/feFlow/incompressibleFlowRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/feFlow/incompressibleFlowRestart.txt", .arguments = ""},
-            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
-        (IntegrationRestartTestsParameters){
-            .mpiTestParameter = {.testName = "inputs/feFlow/incompressibleFlowRestart.yaml", .nproc = 2, .expectedOutputFile = "outputs/feFlow/incompressibleFlowRestart.txt", .arguments = ""},
-            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
-        (IntegrationRestartTestsParameters){
-            .mpiTestParameter = {.testName = "inputs/particles/tracerParticles2DRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/particles/tracerParticles2DRestart.txt", .arguments = ""},
-            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}},
-        (IntegrationRestartTestsParameters){.mpiTestParameter = {.testName = "inputs/feFlow/incompressibleFlowIntervalRestart.yaml",
-                                                                 .nproc = 1,
-                                                                 .expectedOutputFile = "outputs/feFlow/incompressibleFlowIntervalRestart.txt",
-                                                                 .arguments = ""},
-                                            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
-    [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
+INSTANTIATE_TEST_SUITE_P(CompressibleFlowRestart, IntegrationRestartTestsSpecifier,
+                         testing::Values((IntegrationRestartTestsParameters){.mpiTestParameter = {.testName = "inputs/compressibleFlow/compressibleFlowPgsLodi.yaml",
+                                                                                                  .nproc = 2,
+                                                                                                  .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowPgsLodi.txt",
+                                                                                                  .arguments = ""},
+                                                                             .restartOverrides = {{"timestepper::arguments::ts_max_steps", "50"}}}),
+                         [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) {
+                             return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc);
+                         });
 
 INSTANTIATE_TEST_SUITE_P(
     RestartFEFlow, IntegrationRestartTestsSpecifier,
