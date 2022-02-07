@@ -48,7 +48,7 @@ timestepper:
         - !ablate::mathFunctions::geom::Sphere
           center: [ .25, .25 ]
           radius: .25
-          insideValues: [ 1.5 ]
+          insideValues:  1.5 
 solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: evExample
   parameters:
@@ -61,6 +61,13 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     k: 1E-4
     mu: 1E-4
   eos: *eos
+  additionalProcesses:
+    - !ablate::finiteVolume::processes::ArbitrarySource
+      densityEV:
+        !ablate::mathFunctions::geom::Sphere
+        radius: .1
+        center: [0.75, 0.75]
+        insideValues: "0.0, 100"
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"
@@ -70,8 +77,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
       boundaryName: "walls"
       labelIds: [ 1, 2, 3, 4 ]
       boundaryValue: *densityEVFlowFieldState
-
-  
   monitors:
     - !ablate::monitors::TimeStepMonitor
 

@@ -66,8 +66,9 @@ PetscErrorCode ablate::finiteVolume::processes::Gravity::UpdateAverageDensity(TS
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::Gravity::ComputeGravitySource(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u, const PetscScalar *const *gradU,
-                                                                              const PetscInt *aOff, const PetscScalar *a, const PetscScalar *const *gradA, PetscScalar *f, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::Gravity::ComputeGravitySource(PetscInt dim, PetscReal time, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u,
+                                                                              const PetscScalar *const *gradU, const PetscInt *aOff, const PetscScalar *a, const PetscScalar *const *gradA,
+                                                                              PetscScalar *f, void *ctx) {
     PetscFunctionBeginUser;
     const int EULER_FIELD = 0;
     auto gravityProcess = (ablate::finiteVolume::processes::Gravity *)ctx;
