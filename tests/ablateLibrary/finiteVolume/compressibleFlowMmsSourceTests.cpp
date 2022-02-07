@@ -12,6 +12,7 @@
 #include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/fluxCalculator/ausmpUp.hpp"
 #include "finiteVolume/fluxCalculator/averageFlux.hpp"
+#include "finiteVolume/processes/arbitrarySource.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
@@ -158,8 +159,17 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscFunctionReturn(0);
 }
 
-static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar *const uGrad[], const PetscInt aOff[], const PetscScalar a[],
-                                const PetscScalar *const auxGrad[], PetscScalar f[], void *ctx) {
+/**
+ * Math function to be used with the arbitrary source processes
+ * @param dim
+ * @param time
+ * @param x
+ * @param Nf
+ * @param u
+ * @param ctx
+ * @return
+ */
+static PetscErrorCode SourceMMS(PetscInt dim, PetscReal time, const PetscReal xyz[], PetscInt Nf, PetscScalar *f, void *ctx) {
     PetscFunctionBeginUser;
 
     Constants *constants = (Constants *)ctx;
@@ -209,9 +219,9 @@ static PetscErrorCode SourceMMS(PetscInt dim, const PetscFVCellGeom *cg, const P
     PetscReal aPY = constants->p.aPhiY;
     PetscReal aPZ = constants->p.aPhiZ;
 
-    PetscReal x = cg->centroid[0];
-    PetscReal y = cg->centroid[1];
-    PetscReal z = dim > 2 ? cg->centroid[2] : 0.0;
+    PetscReal x = xyz[0];
+    PetscReal y = xyz[1];
+    PetscReal z = dim > 2 ? xyz[2] : 0.0;
 
     f[ablate::finiteVolume::processes::FlowProcess::RHO] =
         (aRhoX * Pi * rhoX * Cos((aRhoX * Pi * x) / L) * (uO + uY * Cos((aUY * Pi * y) / L) + uZ * Cos((aUZ * Pi * z) / L) + uX * Sin((aUX * Pi * x) / L))) / L +
@@ -605,8 +615,22 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
                 std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "walls", std::vector<int>{1, 2, 3, 4}, PhysicsBoundary_Euler, &constants),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>(
-                "testFlow", domain::Region::ENTIREDOMAIN, nullptr /*options*/, eos, parameters, transportModel, GetParam().fluxCalculator, boundaryConditions /*boundary conditions*/);
+            // convert the function to a mathFunction
+            auto sourceMathFunction = ablate::mathFunctions::Create(SourceMMS, &constants);
+
+            // Create a ArbitrarySource processes
+            auto arbitrarySource =
+                std::make_shared<ablate::finiteVolume::processes::ArbitrarySource>(std::map<std::string, std::shared_ptr<ablate::mathFunctions::MathFunction>>{{"euler", sourceMathFunction}});
+
+            auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
+                                                                                             domain::Region::ENTIREDOMAIN,
+                                                                                             nullptr /*options*/,
+                                                                                             eos,
+                                                                                             parameters,
+                                                                                             transportModel,
+                                                                                             GetParam().fluxCalculator,
+                                                                                             std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{arbitrarySource},
+                                                                                             boundaryConditions /*boundary conditions*/);
 
             // Combine the flow data
             ProblemSetup problemSetup;
@@ -617,9 +641,6 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             mesh->InitializeSubDomains(
                 {flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
-
-            // Add a point wise function that adds fluxes to euler.  It requires no input fields
-            flowObject->RegisterRHSFunction(SourceMMS, &problemSetup, {"euler"}, {}, {});
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
