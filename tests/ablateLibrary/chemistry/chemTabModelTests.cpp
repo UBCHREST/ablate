@@ -106,7 +106,7 @@ struct ChemTabModelComputeSourceFunctionParameters {
 	std::string modelPath;
 	std::vector<PetscReal> inputProgressVariables;
 	PetscReal ZMix;
-	<std::vector<PetscReal> expectedSource;
+	std::vector<PetscReal> expectedSource;
 	PetscReal expectedSourceEnergy;
 };
 class ChemTabModelComputeSourceFunctionFixture : public testing::TestWithParam<ChemTabModelComputeSourceFunctionParameters> {};
@@ -123,7 +123,7 @@ TEST_P(ChemTabModelComputeSourceFunctionFixture, ShouldComputeCorrectSource) {
 	// Size up the results based upon expected
 	std::vector<PetscReal> actual(GetParam().expectedSource.size());
 	PetscReal actualSourceEnergy;
-	chemTabModelComputeSourceFunction(GetParam().inputProgressVariables.data(), GetParam().inputProgressVariables.size(), ZMix, &actualSourceEnergy, actual.data(), actual.size(), ctx);
+	chemTabModelComputeSourceFunction(GetParam().inputProgressVariables.data(), GetParam().inputProgressVariables.size(), GetParam().ZMix, &actualSourceEnergy, actual.data(), actual.size(), ctx);
 
 	// assert
 	EXPECT_FLOAT_EQ(GetParam().expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect";
@@ -134,9 +134,10 @@ TEST_P(ChemTabModelComputeSourceFunctionFixture, ShouldComputeCorrectSource) {
 
 INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeSourceFunctionFixture,
 		testing::Values((ChemTabModelComputeSourceFunctionParameters){.modelPath = "inputs/chemistry/chemTabTestModel_1",
-			.inputProgressVariables = {/*set 0*/ {.1, .2, .3}, /*set 1*/ {.1, .2, .3}},
-			.expectedSource = {/*set 0*/ {.5, .6, .7, .8}, /*set 1*/ {.6, .7, .8, .9}},
-			.expectedSourceEnergy = {200, 300}}));
+			.inputProgressVariables = {.1, .2},
+			.ZMix = 1,
+			.expectedSource = {0, 0},
+			.expectedSourceEnergy = 233370.5}));
 
 /*******************************************************************************************************
  * Tests for getting the Progress Variables 

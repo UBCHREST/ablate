@@ -17,7 +17,7 @@ class ChemistryModel {
     /**
      * Function pointer allowing the computing of energy*density source function and functions for each progress variable
      */
-    using ComputeSourceFunction = void (*)(const PetscReal progressVariables[], PetscReal& densityEnergySource, PetscReal* progressVariableSource, void* ctx);
+    using ComputeSourceFunction = void (*)(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal ZMix, PetscReal *predictedSourceEnergy, PetscReal* progressVariableSource, const std::size_t progressVariableSourceSize, void* ctx);
 
     /**
      * Returns a vector of all species required for this model.  The species order indicates the correct order for other functions

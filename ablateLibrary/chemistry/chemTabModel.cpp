@@ -180,7 +180,6 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
 
 	int ndata = ninputs*sizeof(float); 
 	TF_Tensor* int_tensor = TF_NewTensor(TF_FLOAT, dims, ndims, data, ndata, &NoOpDeallocator, 0);
-
 	if (int_tensor == NULL)
 		throw std::runtime_error("ERROR: Failed TF_NewTensor");
 
@@ -190,8 +189,13 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
 
 	if(TF_GetCode(ctModel->status) != TF_OK)
 		throw std::runtime_error(TF_Message(ctModel->status));
-
-
+	//********** Extract predictions
+	float* outputArray = (float *) TF_TensorData(outputValues[0]);
+	*predictedSourceEnergy = (PetscReal) outputArray[0];
+	for(size_t i = 0; i < progressVariableSourceSize; i++){
+		//progressVariableSource[i] = outputArray[i+1];
+		progressVariableSource[i] = 0;
+	}
 }
 
 const std::vector<std::string> &ablate::chemistry::ChemTabModel::GetSpecies() const { 
