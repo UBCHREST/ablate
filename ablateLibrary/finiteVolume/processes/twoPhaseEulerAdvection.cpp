@@ -147,7 +147,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal D = p02 / (*density) - etot;
         PetscReal E = Yg * p02 / (*density) + Yl * A * etot;
         PetscReal eG, eL, a, b, c, root1, root2;
-        if (Yg < 1E-5) {  // avoid divide by zero
+        if (Yg < 0.5) {  // avoid divide by zero
             a = B * (Yg * (gamma2 - 1) - Yg * (gamma1 - 1) - gamma2 * B);
             b = etot * Yg * (gamma1 - 1) + etot * B + Yg * (gamma2 - 1) * D - gamma2 * D * B;
             c = etot * D;
@@ -472,26 +472,40 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     // call flux calculator 3 times, gas-gas, gas-liquid, liquid-liquid regions
     fluxCalculator::Direction directionG = twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorFunction()(
         twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGG, &p12);
-    //    fluxCalculator::Direction directionL =  // should be same direction, if not, big problem
-    twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
+    // should be same direction, if not, big problem
+    fluxCalculator::Direction directionL = twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
         twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxLL, &p12);
+    fluxCalculator::Direction directionC;
+    if (directionG==directionL){
+        directionC = directionG;
+    }  else if (directionG != directionL){
+        directionC = fluxCalculator::LEFT;
+    }
+
     if (alphaL > alphaR) {
         // gas on left, liquid on right
-        twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(
+        fluxCalculator::Direction directionGL = twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(
             twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxGL, &p12);
+        if (directionGL != directionC){
+            directionC = fluxCalculator::LEFT;
+        }
     } else if (alphaL < alphaR) {
         // liquid on left, gas on right
-        twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorFunction()(
+        fluxCalculator::Direction directionLG = twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorFunction()(
             twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGL, &p12);
+        if (directionLG != directionC){
+            directionC = fluxCalculator::LEFT;
+        }
     } else {
         // no discontinuous region
         massFluxGL = 0.0;
     }
 
+
     // Calculate total flux
     PetscReal alphaMin = PetscMin(alphaR, alphaL);
     PetscReal alphaDif = PetscAbs(alphaL - alphaR);
-    if (directionG == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
+    if (directionC == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
                                                //        flux[RHO] = massFlux * areaMag;
         flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * areaMag * (1 - alphaMin - alphaDif));
         PetscReal velMagL = MagVector(dim, velocityL);
@@ -518,7 +532,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
             // gravity
             flux[FlowProcess::RHOU + n] -= densityL * parameters->g[n];
         }
-    } else if (directionG == fluxCalculator::RIGHT) {
+    } else if (directionC == fluxCalculator::RIGHT) {
         //        flux[RHO] = massFlux * areaMag;
         flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * areaMag * (1 - alphaMin - alphaDif));
         PetscReal velMagR = MagVector(dim, velocityR);
