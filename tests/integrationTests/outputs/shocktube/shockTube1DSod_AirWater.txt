@@ -1,14 +1,14 @@
-Timestep: 0000 time = 0          dt = 1e-10
-Timestep: 0001 time = 1e-10      dt = (.*)<expects> <0.01
-Timestep: 0002 time = 2.386e-10  dt = (.*)<expects> <0.01
-Timestep: 0003 time = 5.588e-10  dt = (.*)<expects> <0.01
-Timestep: 0004 time = 1.07e-09   dt = (.*)<expects> <0.01
-Timestep: 0005 time = 1.863e-09  dt = (.*)<expects> <0.01
-Timestep: 0006 time = 3.059e-09  dt = (.*)<expects> <0.01
-Timestep: 0007 time = 4.866e-09  dt = (.*)<expects> <0.01
-Timestep: 0008 time = 7.604e-09  dt = (.*)<expects> <0.01
-Timestep: 0009 time = 1.142e-08  dt = (.*)<expects> <0.01
-Timestep: 0010 time = 1.762e-08  dt = (.*)<expects> <0.01
+Timestep: 0000 time = 0        dt = 1e-10
+Timestep: 0001 time = 1e-10    dt = (.*)<expects> <0.01
+Timestep: 0002 time = 2.386e-10 dt = (.*)<expects> <0.01
+Timestep: 0003 time = 5.588e-10 dt = (.*)<expects> <0.01
+Timestep: 0004 time = 1.07e-09 dt = (.*)<expects> <0.01
+Timestep: 0005 time = 1.863e-09 dt = (.*)<expects> <0.01
+Timestep: 0006 time = 3.059e-09 dt = (.*)<expects> <0.01
+Timestep: 0007 time = 4.866e-09 dt = (.*)<expects> <0.01
+Timestep: 0008 time = 7.604e-09 dt = (.*)<expects> <0.01
+Timestep: 0009 time = 1.142e-08 dt = (.*)<expects> <0.01
+Timestep: 0010 time = 1.762e-08 dt = (.*)<expects> <0.01
 ResultFiles:
 SOD Problem.0.curve
 SOD Problem.1.curve
