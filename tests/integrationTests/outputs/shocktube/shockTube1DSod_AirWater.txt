@@ -1,0 +1,23 @@
+Timestep: 0000 time = 0        dt = 1e-10
+Timestep: 0001 time = 1e-10    dt = (.*)<expects> <1e-9
+Timestep: 0002 time = 2.386e-10  dt = (.*)<expects> <1e-9
+Timestep: 0003 time = 5.588e-10  dt = (.*)<expects> <1e-9
+Timestep: 0004 time = 1.07e-09  dt = (.*)<expects> <1e-9
+Timestep: 0005 time = 1.863e-09  dt = (.*)<expects> <2e-9
+Timestep: 0006 time = 3.059e-09  dt = (.*)<expects> <3e-9
+Timestep: 0007 time = 4.866e-09  dt = (.*)<expects> <5e-9
+Timestep: 0008 time = 7.604e-09  dt = (.*)<expects> <1e-8
+Timestep: 0009 time = 1.142e-08  dt = (.*)<expects> <1e-8
+Timestep: 0010 time = 1.762e-08  dt = (.*)<expects> <1e-8
+ResultFiles:
+SOD Problem.0.curve
+SOD Problem.1.curve
+SOD Problem.10.curve
+SOD Problem.2.curve
+SOD Problem.3.curve
+SOD Problem.4.curve
+SOD Problem.5.curve
+SOD Problem.6.curve
+SOD Problem.7.curve
+SOD Problem.8.curve
+SOD Problem.9.curve
