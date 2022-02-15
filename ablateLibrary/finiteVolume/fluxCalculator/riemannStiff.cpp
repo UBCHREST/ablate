@@ -92,11 +92,11 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     {
         pold = pstar;
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
-//        if (p0L > 0 || p0R > 0) {
+                                                                   //        if (p0L > 0 || p0R > 0) {
         if (pstar < 0) {
             pstar = err;
         }
-//        }
+        //        }
 
         if (pstar <= pL)  // expansion wave equation from Toto
         {
