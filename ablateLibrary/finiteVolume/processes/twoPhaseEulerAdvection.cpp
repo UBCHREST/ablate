@@ -147,7 +147,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal D = p02 / (*density) - etot;
         PetscReal E = Yg * p02 / (*density) + Yl * A * etot;
         PetscReal eG, eL, a, b, c, root1, root2;
-        if (Yg < 0.5) {  // avoid divide by zero
+        if (Yg < 1E-3) {  // avoid divide by zero
             a = B * (Yg * (gamma2 - 1) - Yg * (gamma1 - 1) - gamma2 * B);
             b = etot * Yg * (gamma1 - 1) + etot * B + Yg * (gamma2 - 1) * D - gamma2 * D * B;
             c = etot * D;
@@ -476,9 +476,9 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     fluxCalculator::Direction directionL = twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
         twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxLL, &p12);
     fluxCalculator::Direction directionC;
-    if (directionG==directionL){
+    if (directionG == directionL) {
         directionC = directionG;
-    }  else if (directionG != directionL){
+    } else if (directionG != directionL) {
         directionC = fluxCalculator::LEFT;
     }
 
@@ -486,21 +486,20 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         // gas on left, liquid on right
         fluxCalculator::Direction directionGL = twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(
             twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxGL, &p12);
-        if (directionGL != directionC){
+        if (directionGL != directionC) {
             directionC = fluxCalculator::LEFT;
         }
     } else if (alphaL < alphaR) {
         // liquid on left, gas on right
         fluxCalculator::Direction directionLG = twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorFunction()(
             twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGL, &p12);
-        if (directionLG != directionC){
+        if (directionLG != directionC) {
             directionC = fluxCalculator::LEFT;
         }
     } else {
         // no discontinuous region
         massFluxGL = 0.0;
     }
-
 
     // Calculate total flux
     PetscReal alphaMin = PetscMin(alphaR, alphaL);
