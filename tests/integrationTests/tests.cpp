@@ -81,7 +81,8 @@ INSTANTIATE_TEST_SUITE_P(ShockTube, IntegrationTestsSpecifier,
                              (MpiTestParameter){
                                  .testName = "inputs/shocktube/shockTubeSODLodiBoundary.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTubeSODLodiBoundary.txt", .arguments = ""},
                              (MpiTestParameter){.testName = "inputs/shocktube/shockTube2Gas2D.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTube2Gas2D.txt", .arguments = ""},
-                             (MpiTestParameter){.testName = "inputs/shocktube/shockTubeRieman.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTubeRieman.txt", .arguments = ""}),
+                             (MpiTestParameter){.testName = "inputs/shocktube/shockTubeRieman.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTubeRieman.txt", .arguments = ""},
+                             (MpiTestParameter){.testName = "inputs/shocktube/shockTube1DSod_AirWater.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTube1DSod_AirWater.txt", .arguments = ""}),
 
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
