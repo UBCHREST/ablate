@@ -29,9 +29,9 @@ jobs:
         id: cache
         with:
           path: /tmp/.buildx-cache
-          key: ${{ matrix.machineConfig.arch }}-${{matrix.petscConfig}}-${{matrix.tensorFlowConfig}}-${{ runner.os }}-buildx-${{ github.sha }}
+          key: ${{ matrix.machineConfig.arch }}-${{matrix.tensorFlowConfig}}-${{matrix.petscConfig}}-${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
-            ${{ matrix.machineConfig.arch }}-${{matrix.petscConfig}}-${{matrix.tensorFlowConfig}}-${{ runner.os }}-buildx-
+            ${{ matrix.machineConfig.arch }}-${{matrix.tensorFlowConfig}}-${{matrix.petscConfig}}-${{ runner.os }}-buildx-
 
       - name: Building tests
         run: |
