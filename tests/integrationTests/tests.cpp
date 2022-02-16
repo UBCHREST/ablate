@@ -76,15 +76,15 @@ INSTANTIATE_TEST_SUITE_P(
                                        .expectedFiles{{"outputs/machinery/subDomainFVM/fluidField.xmf", "fluidField.xmf"}}}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
-INSTANTIATE_TEST_SUITE_P(ShockTube, IntegrationTestsSpecifier,
-                         testing::Values(
-                             (MpiTestParameter){
-                                 .testName = "inputs/shocktube/shockTubeSODLodiBoundary.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTubeSODLodiBoundary.txt", .arguments = ""},
-                             (MpiTestParameter){.testName = "inputs/shocktube/shockTube2Gas2D.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTube2Gas2D.txt", .arguments = ""},
-                             (MpiTestParameter){.testName = "inputs/shocktube/shockTubeRieman.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTubeRieman.txt", .arguments = ""},
-                             (MpiTestParameter){.testName = "inputs/shocktube/shockTube1DSod_AirWater.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTube1DSod_AirWater.txt", .arguments = ""}),
+INSTANTIATE_TEST_SUITE_P(
+    ShockTube, IntegrationTestsSpecifier,
+    testing::Values(
+        (MpiTestParameter){.testName = "inputs/shocktube/shockTubeSODLodiBoundary.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTubeSODLodiBoundary.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/shocktube/shockTube2Gas2D.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTube2Gas2D.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/shocktube/shockTubeRieman.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTubeRieman.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/shocktube/shockTube1DSod_AirWater.yaml", .nproc = 1, .expectedOutputFile = "outputs/shocktube/shockTube1DSod_AirWater.txt", .arguments = ""}),
 
-                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
+    [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(CompressibleFlowRestart, IntegrationRestartTestsSpecifier,
                          testing::Values((IntegrationRestartTestsParameters){.mpiTestParameter = {.testName = "inputs/compressibleFlow/compressibleFlowPgsLodi.yaml",

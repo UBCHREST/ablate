@@ -2,7 +2,7 @@
 environment:
   title: SOD_120pts_AirWater
   tagDirectory: true
-arguments: {}
+arguments: { }
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -12,10 +12,10 @@ timestepper:
     ts_max_steps: 10
   domain: !<!ablate::domain::BoxMesh>
     name: simpleBoxField
-    faces: [120]
-    lower: [0]
-    upper: [1]
-    boundary: [NONE]
+    faces: [ 120 ]
+    lower: [ 0 ]
+    upper: [ 1 ]
+    boundary: [ NONE ]
     modifiers:
       - !<!ablate::domain::modifiers::SetFromOptions>
         dm_refine: 0
@@ -50,7 +50,7 @@ solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
   processes:
     - !<!ablate::finiteVolume::processes::TwoPhaseEulerAdvection>
       parameters:
-        g: [0.0, 0.0, 0.0]
+        g: [ 0.0, 0.0, 0.0 ]
       eosGas: !<!ablate::eos::PerfectGas> &3
         parameters:
           gamma: 1.4
@@ -76,11 +76,11 @@ solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
   boundaryConditions:
     - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
       boundaryName: air walls euler
-      labelIds: [1, 2]
+      labelIds: [ 1, 2 ]
       boundaryValue: *1
     - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
       boundaryName: vf walls
-      labelIds: [1, 2]
+      labelIds: [ 1, 2 ]
       boundaryValue: *2
   monitors:
     - !<!ablate::monitors::TimeStepMonitor>
