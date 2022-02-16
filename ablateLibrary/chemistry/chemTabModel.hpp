@@ -1,11 +1,13 @@
 #ifndef ABLATELIBRARY_CHEMTABMODEL_HPP
 #define ABLATELIBRARY_CHEMTABMODEL_HPP
 
-#include <tensorflow/c/c_api.h>
+#include <petscmat.h>
 #include <filesystem>
 #include <istream>
-#include <petscmat.h>
 #include "chemistryModel.hpp"
+#ifdef WITH_TENSORFLOW
+#include <tensorflow/c/c_api.h>
+#endif
 
 namespace ablate::chemistry {
 
@@ -25,11 +27,12 @@ class ChemTabModel : public ChemistryModel {
     /**
      * private implementations of support functions
      */
-    static void ChemTabModelComputeMassFractionsFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* massFractions, const std::size_t massFractionsSize, void* ctx);
-    static void ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal ZMix, PetscReal *predictedSourceEnergy, PetscReal* progressVariableSource, const std::size_t progressVariableSourceSize, void* ctx);
+    static void ChemTabModelComputeMassFractionsFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* massFractions, const std::size_t massFractionsSize,
+                                                         void* ctx);
+    static void ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal ZMix, PetscReal* predictedSourceEnergy,
+                                                  PetscReal* progressVariableSource, const std::size_t progressVariableSourceSize, void* ctx);
     void ExtractMetaData(std::istream& inputStream);
     void LoadBasisVectors(std::istream& inputStream, std::size_t columns, PetscReal** W);
-
 
    public:
     explicit ChemTabModel(std::filesystem::path path);
@@ -71,7 +74,9 @@ class ChemTabModel : public ChemistryModel {
     const std::vector<std::string>& GetSpecies() const override { throw std::runtime_error(errorMessage); }
     const std::vector<std::string>& GetProgressVariables() const override { throw std::runtime_error(errorMessage); }
 
-    void ComputeProgressVariables(const PetscReal massFractions[], PetscReal* progressVariables) const override { throw std::runtime_error(errorMessage); }
+    void ComputeProgressVariables(const PetscReal massFractions[], const std::size_t massFractionsSize, PetscReal* progressVariables, const std::size_t progressVariablesSize) const override {
+        throw std::runtime_error(errorMessage);
+    }
 
     ComputeMassFractionsFunction GetComputeMassFractionsFunction() override { throw std::runtime_error(errorMessage); }
     ComputeSourceFunction GetComputeSourceFunction() override { throw std::runtime_error(errorMessage); }
