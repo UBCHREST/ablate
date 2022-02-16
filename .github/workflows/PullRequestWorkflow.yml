@@ -39,7 +39,7 @@ jobs:
             --file DockerTestFile \
             --tag framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }} \
             --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
-            --build-arg DISABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
+            --build-arg ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
             --load \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" 
