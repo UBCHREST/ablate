@@ -11,7 +11,7 @@ jobs:
       matrix:
         machineConfig: [ { runson: ARM64, arch: ARM64 }, { runson: ubuntu-latest, arch: AMD64 } ]
         petscConfig: [arch-ablate-opt, arch-ablate-opt-64]
-        tensorFlowConfig: ["", "disable_tf"]
+        tensorFlowConfig: ["", "enabled_tf"]
     runs-on: ${{ matrix.machineConfig.runson }}
     timeout-minutes: 90
 
