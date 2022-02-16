@@ -6,14 +6,20 @@ ENV PETSC_ARCH=$PETSC_BUILD_ARCH
 ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
 ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
 
-# Copy over the source
-COPY . /source
-WORKDIR /build
+# provide hook to disable tensorflow
+ARG DISABLE_TENSOR_FLOW
+ENV TENSORFLOW_DIR=${DISABLE_TENSOR_FLOW:-${TENSORFLOW_DIR}}
+RUN echo TENSORFLOW_DIR $TENSORFLOW_DIR
 
-# Configure & build
-run cmake -DCMAKE_BUILD_TYPE=Release -S /source/ -B .
-run make -j $(nproc)
-
-# Specify Entry Point for tests
-CMD ["ctest"]
-CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest"
+## Copy over the source
+#COPY . /source
+#WORKDIR /build
+#
+## Configure & build
+#run cmake -DCMAKE_BUILD_TYPE=Release -S /source/ -B .
+#run make -j $(nproc)
+#
+## Specify Entry Point for tests
+#CMD ["ctest"]
+#CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest"
+#

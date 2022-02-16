@@ -94,6 +94,49 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 target_link_libraries(ablateLibrary PUBLIC Threads::Threads)
 
+### Tensorflow ###
+pkg_check_modules(TensorFlow QUIET tensorflow)
+if(TensorFlow_FOUND)
+    target_link_directories(${TensorFlow_LIBRARY_DIRS})
+    include_directories(${TensorFlow_INCLUDE_DIRS})
+    add_compile_definitions(${TensorFlow_CFLAGS_OTHER})
+    message(STATUS "Tensorflow library has been found using package modules")
+    target_link_libraries(ablateLibrary PUBLIC TensorFlow)
+    target_compile_definitions(ablateLibrary PUBLIC WITH_TENSORFLOW)
+elseif(DEFINED ENV{TENSORFLOW_DIR} AND (NOT $ENV{TENSORFLOW_DIR} STREQUAL ""))
+    if(NOT DEFINED TENSORFLOW_DIR)
+        set(TENSORFLOW_DIR $ENV{TENSORFLOW_DIR})
+    endif()
+
+    # manually specify the tensor flow directory with TENSORFLOW_DIR
+    FIND_LIBRARY(TensorFlowLibrary
+            NAMES
+            tensorflow
+            HINTS
+            ${TENSORFLOW_DIR}
+            ${TENSORFLOW_DIR}/lib
+            )
+    if(NOT TensorFlowLibrary)
+        message(FATAL_ERROR "Cannot find TensorFlow library. " )
+    else()
+        add_library(TensorFlow UNKNOWN IMPORTED)
+        set_target_properties(
+                TensorFlow
+                PROPERTIES
+                IMPORTED_LOCATION ${TensorFlowLibrary})
+        set_target_properties(
+                TensorFlow
+                PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES ${TENSORFLOW_DIR}/include)
+        message(STATUS "Tensorflow library has been found at the specified TENSORFLOW_DIR location " ${TENSORFLOW_DIR})
+        target_compile_definitions(ablateLibrary PUBLIC WITH_TENSORFLOW)
+        target_link_libraries(ablateLibrary PUBLIC TensorFlow)
+    endif()
+else()
+    message(STATUS "Tensorflow could not be located and will be skipped. It can be specified with TENSORFLOW_DIR CMAKE variable or env variable ")
+endif()
+
+
 # Allow public access to the header files in the directory
 target_include_directories(ablateLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 

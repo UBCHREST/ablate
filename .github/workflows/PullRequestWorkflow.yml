@@ -11,6 +11,7 @@ jobs:
       matrix:
         machineConfig: [ { runson: ARM64, arch: ARM64 }, { runson: ubuntu-latest, arch: AMD64 } ]
         petscConfig: [arch-ablate-opt, arch-ablate-opt-64]
+        tensorFlowConfig: ["", "disabledTF"]
     runs-on: ${{ matrix.machineConfig.runson }}
     timeout-minutes: 90
 
@@ -28,22 +29,23 @@ jobs:
         id: cache
         with:
           path: /tmp/.buildx-cache
-          key: ${{ matrix.machineConfig.arch }}-${{matrix.petscConfig}}-${{ runner.os }}-buildx-${{ github.sha }}
+          key: ${{ matrix.machineConfig.arch }}-${{matrix.petscConfig}}-${matrix.tensorFlowConfig}-${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
-            ${{ matrix.machineConfig.arch }}-${{matrix.petscConfig}}-${{ runner.os }}-buildx-
+            ${{ matrix.machineConfig.arch }}-${{matrix.petscConfig}}-${matrix.tensorFlowConfig}-${{ runner.os }}-buildx-
 
       - name: Building tests
         run: |
           docker buildx build .\
             --file DockerTestFile \
-            --tag framework-test-image-${{ matrix.petscConfig }} \
+            --tag framework-test-image-${matrix.tensorFlowConfig}-${{ matrix.petscConfig }} \
             --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
+            --build-arg DISABLE_TENSOR_FLOW=='${{ matrix.tensorFlowConfig }}' \
             --load \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" 
 
       - name: Get the version from the build file
-        run: echo "VERSION=$(docker run --rm framework-test-image-${{ matrix.petscConfig }} awk -F= '/CMAKE_PROJECT_VERSION:/ {print $NF}' CMakeCache.txt )" >> $GITHUB_ENV
+        run: echo "VERSION=$(docker run --rm framework-test-image-${matrix.tensorFlowConfig}-${{ matrix.petscConfig }} awk -F= '/CMAKE_PROJECT_VERSION:/ {print $NF}' CMakeCache.txt )" >> $GITHUB_ENV
 
       - name: Check for version
         run: |
@@ -56,7 +58,7 @@ jobs:
           fi
 
       - name: Run tests
-        run: docker run --rm framework-test-image-${{ matrix.petscConfig }}
+        run: docker run --rm framework-test-image-${matrix.tensorFlowConfig}-${{ matrix.petscConfig }}
 
   test:
     runs-on: ubuntu-latest

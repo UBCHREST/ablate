@@ -13,17 +13,20 @@ class ChemistryModel {
     /**
      * Function pointer allowing the computing of mass functions from progress variables
      */
-    using ComputeMassFractionsFunction = void (*)(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* massFractions, const std::size_t massFractionsSize, void* ctx);
+    using ComputeMassFractionsFunction = void (*)(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* massFractions, const std::size_t massFractionsSize,
+                                                  void* ctx);
     /**
      * Function pointer allowing the computing of energy*density source function and functions for each progress variable
      */
-    using ComputeSourceFunction = void (*)(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal ZMix, PetscReal *predictedSourceEnergy, PetscReal* progressVariableSource, const std::size_t progressVariableSourceSize, void* ctx);
+    using ComputeSourceFunction = void (*)(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal* predictedSourceEnergy, PetscReal* progressVariableSource,
+                                           const std::size_t progressVariableSourceSize, void* ctx);
 
     /**
      * Returns a vector of all species required for this model.  The species order indicates the correct order for other functions
      * @return
      */
     virtual const std::vector<std::string>& GetSpecies() const = 0;
+
     /**
      * Returns a vector of all progress variables (including zMix) required for this model.  The progress variable order indicates the correct order for other functions
      * @return
