@@ -473,29 +473,17 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     fluxCalculator::Direction directionG = twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorFunction()(
         twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGG, &p12);
     // should be same direction, if not, big problem
-    fluxCalculator::Direction directionL = twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
+    twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
         twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxLL, &p12);
-    fluxCalculator::Direction directionC;
-    if (directionG == directionL) {
-        directionC = directionG;
-    } else if (directionG != directionL) {
-        directionC = fluxCalculator::LEFT;
-    }
 
     if (alphaL > alphaR) {
         // gas on left, liquid on right
         fluxCalculator::Direction directionGL = twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(
             twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxGL, &p12);
-        if (directionGL != directionC) {
-            directionC = fluxCalculator::LEFT;
-        }
     } else if (alphaL < alphaR) {
         // liquid on left, gas on right
         fluxCalculator::Direction directionLG = twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorFunction()(
             twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGL, &p12);
-        if (directionLG != directionC) {
-            directionC = fluxCalculator::LEFT;
-        }
     } else {
         // no discontinuous region
         massFluxGL = 0.0;
@@ -504,7 +492,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     // Calculate total flux
     PetscReal alphaMin = PetscMin(alphaR, alphaL);
     PetscReal alphaDif = PetscAbs(alphaL - alphaR);
-    if (directionC == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
+    if (directionG == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
                                                //        flux[RHO] = massFlux * areaMag;
         flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * areaMag * (1 - alphaMin - alphaDif));
         PetscReal velMagL = MagVector(dim, velocityL);
@@ -531,7 +519,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
             // gravity
             flux[FlowProcess::RHOU + n] -= densityL * parameters->g[n];
         }
-    } else if (directionC == fluxCalculator::RIGHT) {
+    } else if (directionG == fluxCalculator::RIGHT) {
         //        flux[RHO] = massFlux * areaMag;
         flux[FlowProcess::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * areaMag * (1 - alphaMin - alphaDif));
         PetscReal velMagR = MagVector(dim, velocityR);
