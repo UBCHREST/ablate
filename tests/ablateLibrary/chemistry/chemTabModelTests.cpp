@@ -100,7 +100,7 @@ TEST_P(ChemTabModelComputeMassFractionsFunctionFixture, ShouldComputeCorrectMass
 INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeMassFractionsFunctionFixture,
                          testing::Values((ChemTabModelComputeMassFractionsFunctionParameters){
                              .modelPath = "inputs/chemistry/chemTabTestModel_1",
-                             .inputProgressVariables = {.0, .1, .2},
+                             .inputProgressVariables = {.1, .2},
                              .expectedMassFractions = {
                                  -0.00140725565130274,    -0.00045837323449758003, -0.00035455781428995987, -0.0013910013371491,    -0.0002487882385107601, -2.04598882374001e-06,
                                  -0.00038961941524638996, -2.7069681346739975e-05, -0.0005482163425314899,  0.00105295943562432,    -0.0035183326637905103, -0.0005537085981488,
