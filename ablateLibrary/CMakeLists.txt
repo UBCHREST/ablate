@@ -117,7 +117,7 @@ elseif(DEFINED ENV{TENSORFLOW_DIR} AND (NOT $ENV{TENSORFLOW_DIR} STREQUAL ""))
             ${TENSORFLOW_DIR}/lib
             )
     if(NOT TensorFlowLibrary)
-        message(FATAL_ERROR "Cannot find TensorFlow library. " )
+        message(FATAL_ERROR "Cannot find TensorFlow library at " ${TENSORFLOW_DIR} )
     else()
         add_library(TensorFlow UNKNOWN IMPORTED)
         set_target_properties(
