@@ -9,3 +9,7 @@ RUN apt-get install -y clang-format gdb
 ENV PETSC_ARCH=arch-ablate-debug
 ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
 ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
+
+# Copy over the tensorflow build
+COPY --from=ghcr.io/ubchrest/tensorflow-docker/tensorflow-build:latest /tensorflow /tensorflow
+ENV TENSORFLOW_DIR=/tensorflow
