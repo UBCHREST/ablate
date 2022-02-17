@@ -95,7 +95,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
             pstar = err;
         }
 
-        if (pstar <= pL)                                           // expansion wave equation from Toto
+        if (pstar <= pL)  // expansion wave equation from Toto
         {
             gamma = gammaL;
             gamm1 = gamLm1;
