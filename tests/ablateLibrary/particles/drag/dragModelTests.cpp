@@ -45,7 +45,19 @@ INSTANTIATE_TEST_SUITE_P(
                                        .muF = 0.0,
                                        .rhoF = 1.2,
                                        .partDiam = 300.0e-6,
-                                       .expectedDragForce = {1.0e-4, 0.0}
-                                       }));
+                                       .expectedDragForce = {-7.4644241449293487335e-8, 0.0}
+                                       },
+        (DragModelTestParameters){.createDragModel =
+                                           []() {
+                                               return std::make_shared<ablate::particles::drag::Linear>();
+                                           },
+                                       .partVel = {2.0, 0.0},
+                                       .flowVel = {0.0, 0.0},
+                                       .muF = 1.0,
+                                       .rhoF = 1.2,
+                                       .partDiam = 1.0,
+                                       .expectedDragForce = {-18.849555921538759428, 0.0}
+                                       }
+                                       ));
 
 }
