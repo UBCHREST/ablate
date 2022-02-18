@@ -1,0 +1,88 @@
+---
+environment:
+  title: SOD_120pts_AirWater
+  tagDirectory: true
+arguments: { }
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 0.00024
+    ts_dt: 1e-10
+    ts_max_steps: 10
+  domain: !<!ablate::domain::BoxMesh>
+    name: simpleBoxField
+    faces: [ 120 ]
+    lower: [ 0 ]
+    upper: [ 1 ]
+    boundary: [ NONE ]
+    modifiers:
+      - !<!ablate::domain::modifiers::SetFromOptions>
+        dm_refine: 0
+      - !<!ablate::domain::modifiers::GhostBoundaryCells> ""
+      - !<!ablate::domain::modifiers::DistributeWithGhostCells> ""
+    fields:
+      - !<!ablate::finiteVolume::CompressibleFlowFields>
+        eos: !<!ablate::eos::PerfectGas>
+          parameters:
+            gamma: 0
+            Rgas: 0
+      - name: densityVF
+        type: FVM
+      - name: volumeFraction
+        location: AUX
+        type: FVM
+      - name: pressure
+        location: AUX
+        type: FVM
+  initialization:
+    - &1
+      fieldName: euler # air/water changliou2007
+      field: >-
+        x < 0.5 ? 11307.222318647702 : 967.7979066316877,
+        x < 0.5 ? 2500000000.0 : 2414070815.450644,
+        0
+    - &2
+      fieldName: densityVF
+      field: "x < 0.5 ? 11307.222318647702 : 0.0"
+solver: !<!ablate::finiteVolume::FiniteVolumeSolver>
+  id: SOD Problem
+  processes:
+    - !<!ablate::finiteVolume::processes::TwoPhaseEulerAdvection>
+      parameters:
+        g: [ 0.0, 0.0, 0.0 ]
+      eosGas: !<!ablate::eos::PerfectGas> &3
+        parameters:
+          gamma: 1.4
+          Rgas: 287.0
+      eosLiquid: !<!ablate::eos::StiffenedGas> &4
+        parameters:
+          gamma: 1.932
+          Cp: 8095.08
+          p0: 1164500000.0
+      fluxCalculatorGasGas: !<!ablate::finiteVolume::fluxCalculator::RiemannStiff>
+        eosL: *3
+        eosR: *3
+      fluxCalculatorGasLiquid: !<!ablate::finiteVolume::fluxCalculator::RiemannStiff>
+        eosL: *3
+        eosR: *4
+      fluxCalculatorLiquidGas: !<!ablate::finiteVolume::fluxCalculator::RiemannStiff>
+        eosL: *4
+        eosR: *3
+      fluxCalculatorLiquidLiquid: !<!ablate::finiteVolume::fluxCalculator::RiemannStiff>
+        eosL: *4
+        eosR: *4
+  computePhysicsTimeStep: true
+  boundaryConditions:
+    - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
+      boundaryName: air walls euler
+      labelIds: [ 1, 2 ]
+      boundaryValue: *1
+    - !<!ablate::finiteVolume::boundaryConditions::EssentialGhost>
+      boundaryName: vf walls
+      labelIds: [ 1, 2 ]
+      boundaryValue: *2
+  monitors:
+    - !<!ablate::monitors::TimeStepMonitor>
+    - !<!ablate::monitors::CurveMonitor>
+      interval: 0
