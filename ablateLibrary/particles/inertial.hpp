@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_INERTIAL_HPP
 #define ABLATELIBRARY_INERTIAL_HPP
-#include "particles.hpp"
 #include "drag/dragModel.hpp"
+#include "particles.hpp"
 
 namespace ablate::particles {
 
