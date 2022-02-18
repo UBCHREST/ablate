@@ -147,7 +147,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal D = p02 / (*density) - etot;
         PetscReal E = Yg * p02 / (*density) + Yl * A * etot;
         PetscReal eG, eL, a, b, c, root1, root2;
-        if (Yg < 1E-5) {  // avoid divide by zero
+        if (Yg < 1E-3) {  // avoid divide by zero
             a = B * (Yg * (gamma2 - 1) - Yg * (gamma1 - 1) - gamma2 * B);
             b = etot * Yg * (gamma1 - 1) + etot * B + Yg * (gamma2 - 1) * D - gamma2 * D * B;
             c = etot * D;
@@ -472,9 +472,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     // call flux calculator 3 times, gas-gas, gas-liquid, liquid-liquid regions
     fluxCalculator::Direction directionG = twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorFunction()(
         twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGG, &p12);
-    //    fluxCalculator::Direction directionL =  // should be same direction, if not, big problem
+    // should be same direction, if not, big problem
     twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
         twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxLL, &p12);
+
     if (alphaL > alphaR) {
         // gas on left, liquid on right
         twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(
