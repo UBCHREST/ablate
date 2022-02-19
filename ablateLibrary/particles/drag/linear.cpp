@@ -8,7 +8,8 @@ void ablate::particles::drag::Linear::ComputeDragForce(const PetscInt dim, const
      *
      * where \f$\vec{V}\f$ is the relative velocity: \f$\vec{V} = \vec{V}_p - \vec{V}_f\f$. The subscript p refers to a particle. The subscript f refers to the ambient fluid.
      *
-     * References: E. Loth, “Quasi-steady shape and drag of deformable bubbles and drops,” International Journal of Multiphase Flow, vol. 34, no. 6, pp. 523–546, Jun. 2008, doi: 10.1016/j.ijmultiphaseflow.2007.08.010. (See eq. 3.)
+     * References: E. Loth, “Quasi-steady shape and drag of deformable bubbles and drops,” International Journal of Multiphase Flow, vol. 34, no. 6, pp. 523–546, Jun. 2008,
+     * doi: 10.1016/j.ijmultiphaseflow.2007.08.010. (See eq. 3.)
      */
 
     PetscReal dragForcePrefactor = -3.0 * PETSC_PI * partDiam * muF;

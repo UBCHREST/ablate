@@ -11,7 +11,8 @@ void ablate::particles::drag::Quadratic::ComputeDragForce(const PetscInt dim, co
      *
      * The specific value of \f$C_d\f$ chosen here is the high Reynolds number limit of equation 8 of Loth.
      *
-     * References: E. Loth, “Quasi-steady shape and drag of deformable bubbles and drops,” International Journal of Multiphase Flow, vol. 34, no. 6, pp. 523–546, Jun. 2008, doi: 10.1016/j.ijmultiphaseflow.2007.08.010. (See eq. 4.)
+     * References: E. Loth, “Quasi-steady shape and drag of deformable bubbles and drops,” International Journal of Multiphase Flow, vol. 34, no. 6, pp. 523–546, Jun. 2008,
+     * doi: 10.1016/j.ijmultiphaseflow.2007.08.010. (See eq. 4.)
      */
 
     PetscReal relVel[3];
