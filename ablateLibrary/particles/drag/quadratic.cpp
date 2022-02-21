@@ -5,7 +5,7 @@ void ablate::particles::drag::Quadratic::ComputeDragForce(const PetscInt dim, co
                                                           PetscReal *dragForce) {
     /** \brief Quadratic drag formula for a solid sphere at high Reynolds numbers.
      *
-     * \details \f$\vec{F}_d = -C_d \frac{\pi}{8} d^2 \cdot \frac{1}{2} \rho_f |\vec{V}| \vec{V}$
+     * \details \f$\vec{F}_d = -C_d \frac{\pi}{8} d^2 \cdot \frac{1}{2} \rho_f |\vec{V}| \vec{V}\f$
      *
      * where \f$\vec{V}\f$ is the relative velocity: \f$\vec{V} = \vec{V}_p - \vec{V}_f\f$. The subscript p refers to a particle. The subscript f refers to the ambient fluid.
      *

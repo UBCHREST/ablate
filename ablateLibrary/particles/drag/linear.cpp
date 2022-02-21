@@ -4,7 +4,7 @@ void ablate::particles::drag::Linear::ComputeDragForce(const PetscInt dim, const
                                                        PetscReal *dragForce) {
     /** \brief Linear drag formula for a solid sphere at low Reynolds numbers.
      *
-     * \details \f$\vec{F}_d = -3 \pi d^2 \mu_f \vec{V}$
+     * \details \f$\vec{F}_d = -3 \pi d^2 \mu_f \vec{V}\f$
      *
      * where \f$\vec{V}\f$ is the relative velocity: \f$\vec{V} = \vec{V}_p - \vec{V}_f\f$. The subscript p refers to a particle. The subscript f refers to the ambient fluid.
      *
