@@ -28,3 +28,6 @@ void ablate::particles::drag::Quadratic::ComputeDragForce(const PetscInt dim, co
         dragForce[n] = dragForcePrefactor * relVel[n];
     }
 };
+
+#include "registrar.hpp"
+REGISTER_WITHOUT_ARGUMENTS(ablate::particles::drag::DragModel, ablate::particles::drag::Quadratic, "Computes drag according to a high Reynolds number drag model for solid spheres.");
