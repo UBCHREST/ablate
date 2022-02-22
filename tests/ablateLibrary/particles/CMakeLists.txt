@@ -3,3 +3,5 @@ target_sources(libraryTests
         tracerParticleTests.cpp
         inertialParticleTests.cpp
         )
+
+add_subdirectory(drag)
