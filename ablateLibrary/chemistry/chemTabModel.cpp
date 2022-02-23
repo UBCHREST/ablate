@@ -19,6 +19,17 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     const std::string wpath = path / "weights.csv";
     const std::string ipath = path / "weights_inv.csv";
 
+    // Check for missing files
+    if(!std::filesystem::exists(rpath)){
+        throw std::runtime_error("The 'regressor' file cannot be located in the specified ChemTabModel Folder " + path.string());
+    }
+    if(!std::filesystem::exists(wpath)){
+        throw std::runtime_error("The 'weights.csv' file cannot be located in the specified ChemTabModel Folder " + path.string());
+    }
+    if(!std::filesystem::exists(ipath)){
+        throw std::runtime_error("The 'weights_inv.csv' file cannot be located in the specified ChemTabModel Folder " + path.string());
+    }
+
     // Create a new graph and status
     graph = TF_NewGraph();
     status = TF_NewStatus();
