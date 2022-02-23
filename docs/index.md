@@ -46,6 +46,4 @@ Status of the automated build/development/deployment pipelines for ABLATE and as
 | [ABLATE.dev](ABLATE.dev) Deployment | Deploys the latest documentation to [ABLATE.dev](ABLATE.dev)                                                                     | [![ABLATE.dev Deployment](https://github.com/UBCHREST/ablate/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/UBCHREST/ablate/actions/workflows/pages/pages-build-deployment)          |
 
 ## Acknowledgements
-This research is funded by the United States Department of Energy’s (DoE) National Nuclear Security Administration
-(NNSA) under the Predictive Science Academic Alliance Program III (PSAAP III) at the University at Buffalo, under
-contract number DE-NA000396
+This research is funded by the United States Department of Energy’s (DoE) National Nuclear Security Administration (NNSA) under the Predictive Science Academic Alliance Program III (PSAAP III) at the University at Buffalo, under contract number DE-NA000396
