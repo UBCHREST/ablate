@@ -100,7 +100,7 @@ TEST_P(ChemTabModelComputeMassFractionsFunctionFixture, ShouldComputeCorrectMass
 INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeMassFractionsFunctionFixture,
                          testing::Values((ChemTabModelComputeMassFractionsFunctionParameters){
                              .modelPath = "inputs/chemistry/chemTabTestModel_1",
-                             .inputProgressVariables = {.1, .2},
+                             .inputProgressVariables = {0,.1, .2},
                              .expectedMassFractions = {
                                  -0.00140725565130274,    -0.00045837323449758003, -0.00035455781428995987, -0.0013910013371491,    -0.0002487882385107601, -2.04598882374001e-06,
                                  -0.00038961941524638996, -2.7069681346739975e-05, -0.0005482163425314899,  0.00105295943562432,    -0.0035183326637905103, -0.0005537085981488,
@@ -180,7 +180,8 @@ INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeProgressVariables
                              .modelPath = "inputs/chemistry/chemTabTestModel_1",
                              .inputMassFractions = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.,  1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.,  2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7,
                                                     2.8, 2.9, 3.,  3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.,  4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.,  5.1, 5.2, 5.3},
-                             .expectedProgressVariables = {-17.845192, 47.81491243, -58.08515966}}));
+                             //.expectedProgressVariables = {-17.845192, 47.81491243, -58.08515966}}));
+                             .expectedProgressVariables = {0, 47.81491243, -58.08515966}}));
 
 /*********************************************************************************************************
  * Test for when tensorflow is not available

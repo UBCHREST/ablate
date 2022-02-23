@@ -85,6 +85,8 @@ void ablate::chemistry::ChemTabModel::ExtractMetaData(std::istream &inputStream)
     std::getline(inputStream, line);
     int i = 0;
 
+    // push the Zmix name as the first "progress variables" name
+    progressVariablesNames.push_back("zmix");
     // get the progress variable names (skipping the first one)
     std::stringstream headerStream(line);
     while (headerStream.good()) {
@@ -128,8 +130,7 @@ void ablate::chemistry::ChemTabModel::LoadBasisVectors(std::istream &inputStream
     }
 }
 
-void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions,
-                                                                               std::size_t massFractionsSize, void *ctx) {
+void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions,std::size_t massFractionsSize, void *ctx) {
     // y = inv(W)'C
     // for now the mass fractions will be obtained using the inverse of the weights. Will be replaced by a ML predictive model in the next iteration
     auto ctModel = (ChemTabModel *)ctx;
@@ -143,15 +144,15 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(c
     }
     for (size_t i = 0; i < ctModel->speciesNames.size(); i++) {
         PetscReal v = 0;
-        for (size_t j = 0; j < ctModel->progressVariablesNames.size(); j++) {
-            v += ctModel->iWmat[j][i] * progressVariables[j];
+	//j starts from 1 because the first entry in progressVariables is assumed to be zMix
+        for (size_t j = 1; j < ctModel->progressVariablesNames.size(); j++) {
+            v += ctModel->iWmat[j-1][i] * progressVariables[j];
         }
         massFractions[i] = v;
     }
 }
 
-void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
-                                                                        PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize, void *ctx) {
+void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize, void *ctx) {
     auto ctModel = (ChemTabModel *)ctx;
     // size of progressVariables should match the expected number of progressVariables
     if (progressVariablesSize != ctModel->progressVariablesNames.size()) {
@@ -201,6 +202,7 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     *predictedSourceEnergy = (PetscReal)outputArray[0];
     for (size_t i = 0; i < progressVariableSourceSize; i++) {
         // progressVariableSource[i] = outputArray[i+1];
+	// TODO - Replace the following line with the actual source predictions
         progressVariableSource[i] = 0;
     }
 }
@@ -218,10 +220,12 @@ void ablate::chemistry::ChemTabModel::ComputeProgressVariables(const PetscReal *
     if (massFractionsSize != speciesNames.size()) {
         throw std::invalid_argument("The massFractions size does not match the supported number of species");
     }
-    for (size_t i = 0; i < progressVariablesNames.size(); i++) {
+    //the first entry in progressVariables corresponds to zMix and is fixed to 0
+    progressVariables[0] = 0;
+    for (size_t i = 1; i < progressVariablesNames.size(); i++) {
         PetscReal v = 0;
         for (size_t j = 0; j < speciesNames.size(); j++) {
-            v += Wmat[j][i] * massFractions[j];
+            v += Wmat[j][i-1] * massFractions[j];
         }
         progressVariables[i] = v;
     }
