@@ -83,3 +83,8 @@ PETSc can be built in two primary configurations, optimized/release and debug.  
     export PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
     ```
    Specify either the arch-ablate-opt or arch-ablate-debug for PETSC_ARCH depending on what you are running.  If you are developing new capabilities you may want to specify debug.  If you are running large simulations specify opt. This can be changed at any time (may require restarting the terminal/IDE/CLion).
+
+## Install TensorFlow (Optional)
+Some packages in ABLATE require that [TensorFlow](https://www.tensorflow.org) be available, specially the c library must be available.  For most systems this is available as a [download](https://www.tensorflow.org/install/lang_c), but can be build from source when not available (such as m1 macOS).  Follow the directions [Build from source](https://www.tensorflow.org/install/source) and [Install TensorFlow for C](https://www.tensorflow.org/install/lang_c) for step-by-step directions.  Specific condition should be paid to python and the python environment.  On macOS [virtualenv](https://virtualenv.pypa.io/en/latest/index.html) been shown to work.
+
+Once TensorFlow is installed ablate must be reconfigured using cmake with the ```TENSORFLOW_DIR=/path/to/tensor/flow``` option.  The directory should be the directory with the include and library directories.  This can be set as an environmental variable (.bashrc, .profile, .zshrc, .etc) or passed to cmake configure directly ```-DENSORFLOW_DIR=/path/to/tensor/flow```. 
