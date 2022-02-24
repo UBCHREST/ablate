@@ -57,7 +57,7 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
         iWmat[i] = (PetscReal *)malloc(speciesNames.size() * sizeof(PetscReal));
     }
     inputFileStream.open(wpath.c_str(), std::ios::in);
-    LoadBasisVectors(inputFileStream, progressVariablesNames.size(), Wmat);
+    LoadBasisVectors(inputFileStream, progressVariablesNames.size() - 1, Wmat);
     inputFileStream.close();
     inputFileStream.open(ipath.c_str(), std::ios::in);
     LoadBasisVectors(inputFileStream, speciesNames.size(), iWmat);
