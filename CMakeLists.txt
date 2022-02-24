@@ -17,7 +17,7 @@ if(NOT DEFINED CMAKE_CXX_COMPILER)
 endif()
 
 # Set the project details
-project(ablateLibrary VERSION 0.7.40)
+project(ablateLibrary VERSION 0.7.41)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -70,5 +70,3 @@ endif()
 add_executable(ablate main.cpp)
 target_link_libraries(ablate PRIVATE ablateLibrary)
 ablate_default_target_compile_options_cxx(ablate)
-
-target_link_directories(ablateCore PUBLIC /opt/homebrew/Cellar/gcc/11.2.0_3/lib/gcc/11)
