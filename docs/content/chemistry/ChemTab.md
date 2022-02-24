@@ -1,7 +1,7 @@
 ---
 layout: default
 title: ChemTab 
-parent: ChemTab
+parent: Chemistry
 nav_order: 1
 ---
 
