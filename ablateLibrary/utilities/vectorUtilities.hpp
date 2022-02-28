@@ -27,6 +27,21 @@ class VectorUtilities {
         return result;
     }
 
+    /**
+     * Makes a copy of the supplied vector components from the shared ptr
+     * @tparam T
+     * @param list
+     * @return
+     */
+    template <class T>
+    static inline std::vector<T> Copy(const std::vector<std::shared_ptr<T>>& vector) {
+        std::vector<T> result;
+        for(const auto& ptr : vector){
+            result.push_back(*ptr);
+        }
+        return result;
+    }
+
    private:
     VectorUtilities() = delete;
 };
