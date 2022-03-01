@@ -79,5 +79,14 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
       boundaryValue: *densityEVFlowFieldState
   monitors:
     - !ablate::monitors::TimeStepMonitor
-
+    - !ablate::monitors::Probes
+      probes:
+        - name: a
+          location: [.25, .25]
+        - name: b
+          location: [.75, .25]
+        - name: c
+          location: [ .25, .75 ]
+      bufferSize: 10
+      variables:  [velocity, densityEV, ev ]
    

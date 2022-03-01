@@ -118,8 +118,8 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
 
         // Finish the one time set up
         // The redundantPoints flag should not really matter because PETSC_COMM_SELF was used to init the interpolant
-//        DMInterpolationSetUp(interpolant, solver->GetSubDomain().GetDM(), PETSC_FALSE, PETSC_FALSE) >> checkError;
-//        interpolants.push_back(interpolant);
+        DMInterpolationSetUp(interpolant, subDm, PETSC_FALSE, PETSC_FALSE) >> checkError;
+        interpolants.push_back(interpolant);
 
         // restore
         solver->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm) >> checkError;
