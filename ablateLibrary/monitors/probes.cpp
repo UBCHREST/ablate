@@ -1,15 +1,20 @@
-
 #include "probes.hpp"
+#include <fstream>
+#include <regex>
+#include "environment/runEnvironment.hpp"
 #include "io/interval/fixedInterval.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/vectorUtilities.hpp"
-#include <fstream>
 
-ablate::monitors::Probes::Probes(std::vector<Probe> probes, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval> &intervalIn)
-    : allProbes(std::move(probes)), variableNames(std::move(variableNames)), interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()) {}
+ablate::monitors::Probes::Probes(std::vector<Probe> probes, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval> &intervalIn, const int bufferSize)
+    : allProbes(std::move(probes)),
+      variableNames(std::move(variableNames)),
+      interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()),
+      bufferSize(bufferSize == 0 ? 100 : bufferSize) {}
 
-ablate::monitors::Probes::Probes(std::vector<std::shared_ptr<Probe>> allProbesPtrs, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval> &interval)
-    : Probes(utilities::VectorUtilities::Copy(allProbesPtrs), std::move(variableNames), interval) {}
+ablate::monitors::Probes::Probes(const std::vector<std::shared_ptr<Probe>> &allProbesPtrs, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval> &interval,
+                                 const int bufferSize)
+    : Probes(utilities::VectorUtilities::Copy(allProbesPtrs), std::move(variableNames), interval, bufferSize) {}
 
 void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) {
     Monitor::Register(solver);
@@ -84,6 +89,10 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
         }
     }
 
+    // convert the variable names to the variable names with components
+    PetscInt variableFieldOffset = 0;
+    std::vector<std::string> componentNames;
+
     // Create an interpolant for each variable
     for (const auto &variableName : variableNames) {
         // Get the field information
@@ -101,10 +110,36 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
         // Add all local points to the interpolant
         DMInterpolationAddPoints(interpolant, (PetscInt)localProbes.size(), coordinates.data()) >> checkError;
 
+        // Get the subfield dm
+        IS subIs;
+        DM subDm;
+        Vec locVec;
+        solver->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm) >> checkError;
+
         // Finish the one time set up
         // The redundantPoints flag should not really matter because PETSC_COMM_SELF was used to init the interpolant
-        DMInterpolationSetUp(interpolant, solver->GetSubDomain().GetDM(), PETSC_FALSE, PETSC_FALSE) >> checkError;
-        interpolants.push_back(interpolant);
+//        DMInterpolationSetUp(interpolant, solver->GetSubDomain().GetDM(), PETSC_FALSE, PETSC_FALSE) >> checkError;
+//        interpolants.push_back(interpolant);
+
+        // restore
+        solver->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm) >> checkError;
+
+        // convert the variable names to the variable names with components
+        if (field.numberComponents > 0) {
+            for (const auto &componentName : field.components) {
+                componentNames.push_back(variableName + "_" + componentName);
+            }
+        } else {
+            componentNames.push_back(variableName);
+        }
+        fieldOffset.push_back(variableFieldOffset);
+        variableFieldOffset += field.numberComponents;
+    }
+
+    // Build a ProbeRecorder for each probe
+    for (const auto &probe : localProbes) {
+        std::filesystem::path probePath = ablate::environment::RunEnvironment::Get().GetOutputDirectory() / (probe.name + ".csv");
+        recorders.emplace_back(bufferSize, variableNames, probePath);
     }
 }
 
@@ -114,33 +149,132 @@ ablate::monitors::Probes::~Probes() {
     }
 }
 
-PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) { return 0; }
+PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, PetscReal time, Vec u, void *ctx) {
+    PetscFunctionBegin;
+    auto monitor = (ablate::monitors::Probes *)ctx;
+    auto comm = PetscObjectComm((PetscObject)ts);
+    PetscErrorCode ierr;
 
-ablate::monitors::Probes::ProbeRecorder::ProbeRecorder(int bufferSize, const std::vector<std::string> &variables, std::filesystem::path outputPath) : bufferSize(bufferSize), outputPath(outputPath) {
-    // size up the buffer
-    buffer = std::vector<std::vector<double>>(bufferSize, std::vector<double>(variables.size()));
-
-    // check to see if the file exists
-    if(std::filesystem::exists(outputPath)){
-        std::fstream oldFile;
-        oldFile.open(outputPath, std::ios::in);
-        if (oldFile.is_open()){
-            std::string line;
-            getline(oldFile, line);
-            while(getline(oldFile, line)){
-                if
-            }
-            oldFile.close(); //close the file object.
+    if (monitor->interval->Check(comm, step, time)) {
+        // set the current time for each recorder
+        for (auto &recorder : monitor->recorders) {
+            recorder.AdvanceTime(time);
         }
 
+        // March over each field
+        for (std::size_t it = 0; it < monitor->fields.size(); it++) {
+            // determine the field
+            const auto &field = monitor->fields[it];
+
+            // Get the sub vector
+            IS subIs;
+            DM subDm;
+            Vec locVec;
+            ierr = monitor->GetSolver()->GetSubDomain().GetFieldLocalVector(field, 0.0, &subIs, &locVec, &subDm);
+            CHKERRQ(ierr);
+
+            // get a temp vector
+            Vec interpValues;
+            ierr = DMInterpolationGetVector(monitor->interpolants[it], &interpValues);
+            CHKERRQ(ierr);
+
+            // Interpolate
+            ierr = DMInterpolationEvaluate(monitor->interpolants[it], subDm, locVec, interpValues);
+            CHKERRQ(ierr);
+
+            // Record each value
+            const PetscScalar *interValuesArray;
+            VecGetArrayRead(interpValues, &interValuesArray);
+            PetscInt offset = 0;
+            const int &fieldOffset = monitor->fieldOffset[it];
+            for (PetscInt p = 0; p < (PetscInt)monitor->recorders.size(); p++) {
+                for (PetscInt c = 0; c < field.numberComponents; c++) {
+                    monitor->recorders[p].SetValue(fieldOffset + c, interValuesArray[offset++]);
+                }
+            }
+
+            // restore
+            VecRestoreArrayRead(interpValues, &interValuesArray);
+            ierr = DMInterpolationRestoreVector(monitor->interpolants[it], &interpValues);
+            CHKERRQ(ierr);
+            ierr = monitor->GetSolver()->GetSubDomain().RestoreFieldLocalVector(field, &subIs, &locVec, &subDm);
+            CHKERRQ(ierr);
+        }
     }
 
+    PetscFunctionReturn(0);
+}
+
+ablate::monitors::Probes::ProbeRecorder::ProbeRecorder(int bufferSizeIn, const std::vector<std::string> &variables, const std::filesystem::path &outputPath)
+    : bufferSize(PetscMax(bufferSizeIn, 1)), outputPath(outputPath) {
+    // size up the buffers
+    buffer = std::vector<std::vector<double>>(bufferSize, std::vector<double>(variables.size()));
+    timeHistory = std::vector<double>(bufferSize);
+
+    // check to see if the file exists
+    if (std::filesystem::exists(outputPath)) {
+        // build regex to get the first number column
+        const auto regex = std::regex("^([0-9.eE-]*)");
+
+        std::fstream oldFile;
+        oldFile.open(outputPath, std::ios::in);
+        if (oldFile.is_open()) {
+            std::string line;
+            getline(oldFile, line);
+            while (getline(oldFile, line)) {
+                std::smatch m;
+                regex_search(line, m, regex);
+                for (auto x : m) {
+                    lastOutputTime = PetscMax(lastOutputTime, std::stod(x));
+                }
+            }
+            oldFile.close();  // close the file object.
+        }
+    } else {
+        // write the header file
+        std::ofstream probeFile;
+        probeFile.open(outputPath);
+        probeFile << "time,";
+        for (const auto &variable : variables) {
+            probeFile << variable << ",";
+        }
+        probeFile << std::endl;
+        probeFile.close();
+    }
 }
 ablate::monitors::Probes::ProbeRecorder::~ProbeRecorder() { WriteBuffer(); }
 
-void ablate::monitors::Probes::ProbeRecorder::AdvanceTime(double time) {}
-void ablate::monitors::Probes::ProbeRecorder::SetValue(std::size_t index, double value) {}
-void ablate::monitors::Probes::ProbeRecorder::WriteBuffer() {}
+void ablate::monitors::Probes::ProbeRecorder::AdvanceTime(double time) {
+    if (time > lastOutputTime) {
+        if (activeIndex + 1 >= bufferSize) {
+            WriteBuffer();
+        }
+
+        activeIndex++;
+        lastOutputTime = time;
+        timeHistory[activeIndex] = time;
+    }
+}
+
+void ablate::monitors::Probes::ProbeRecorder::SetValue(std::size_t index, double value) {
+    if (activeIndex >= 0) {
+        buffer[activeIndex][index] = value;
+    }
+}
+void ablate::monitors::Probes::ProbeRecorder::WriteBuffer() {
+    // write the header file
+    std::ofstream probeFile;
+    probeFile.open(outputPath, std::ios_base::app);
+    for (int r = 0; r <= activeIndex; r++) {
+        probeFile << timeHistory[r] << ",";
+        for (const auto &value : buffer[r]) {
+            probeFile << value << ",";
+        }
+        probeFile << "\n";
+    }
+    probeFile.close();
+    activeIndex = -1;
+}
 
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::monitors::Probes::Probe, ablate::monitors::Probes::Probe, "Probe specification struct", ARG(std::string, "name", "name of the probe"),
@@ -148,4 +282,4 @@ REGISTER_DEFAULT(ablate::monitors::Probes::Probe, ablate::monitors::Probes::Prob
 
 REGISTER(ablate::monitors::Monitor, ablate::monitors::Probes, "Records the values of the specified variables at a specific point in space",
          ARG(std::vector<ablate::monitors::Probes::Probe>, "probes", "where to record log (default is stdout)"), ARG(std::vector<std::string>, "variables", "list of variables to output"),
-         OPT(ablate::io::interval::Interval, "interval", "report interval object, defaults to every"));
+         OPT(ablate::io::interval::Interval, "interval", "report interval object, defaults to every"), OPT(int, "bufferSize", "how often the probe file is written (default is 100, must be > 0)"));

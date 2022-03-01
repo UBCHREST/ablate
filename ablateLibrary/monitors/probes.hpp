@@ -35,10 +35,13 @@ class Probes : public Monitor {
         PetscReal lastOutputTime = PETSC_MIN_REAL;
 
         //! The current location in the buffer to record
-        std::size_t activeIndex = -1;
+        int activeIndex = -1;
 
         //! store the output buffer [buffer][variables]
         std::vector<std::vector<double>> buffer;
+
+        //! store the time history
+        std::vector<double> timeHistory;
 
        public:
         /**
@@ -46,7 +49,7 @@ class Probes : public Monitor {
          * @param bufferSize
          * @param variables
          */
-        ProbeRecorder(int bufferSize, const std::vector<std::string>& variables, std::filesystem::path outputPath);
+        ProbeRecorder(int bufferSize, const std::vector<std::string>& variables, const std::filesystem::path& outputPath);
 
         /**
          * Catch close and output the buffer
@@ -80,14 +83,23 @@ class Probes : public Monitor {
     //! The sampling interval
     const std::shared_ptr<io::interval::Interval> interval;
 
+    //!  output bufferSize
+    const int bufferSize;
+
     //! list of local probes on this rank
     std::vector<Probe> localProbes;
 
     //! list of fields to interpolate
     std::vector<domain::Field> fields;
 
+    //! store the offset for the field in the output (needed for multiple components)
+    std::vector<int> fieldOffset;
+
     //! list of petsc intepolants
     std::vector<DMInterpolationInfo> interpolants;
+
+    //! list of probe recorders that goe
+    std::vector<ProbeRecorder> recorders;
 
     static PetscErrorCode UpdateProbes(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
 
@@ -99,7 +111,7 @@ class Probes : public Monitor {
      * @param bufferSize the buffer size between writes
      * @param interval the sampling interval
      */
-    Probes(std::vector<Probe> probes, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval>& interval = {});
+    Probes(std::vector<Probe> probes, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval>& interval = {}, const int bufferSize = 0);
 
     /**
      * Probes monitor
@@ -108,7 +120,7 @@ class Probes : public Monitor {
      * @param bufferSize the buffer size between writes
      * @param interval the sampling interval
      */
-    Probes(std::vector<std::shared_ptr<Probe>> probes, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval>& interval = {});
+    Probes(const std::vector<std::shared_ptr<Probe>>& probes, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval>& interval = {}, const int bufferSize = 0);
 
     ~Probes() override;
 
