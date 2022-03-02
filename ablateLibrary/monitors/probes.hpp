@@ -23,7 +23,7 @@ class Probes : public Monitor {
     /**
      * Private class for recording the the probe output
      */
-    class ProbeRecorder{
+    class ProbeRecorder {
        private:
         //! The amount of data to store before writing
         const int bufferSize;

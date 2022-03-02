@@ -88,5 +88,5 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
         - name: c
           location: [ .25, .75 ]
       bufferSize: 10
-      variables:  [velocity, densityEV, ev ]
+      variables:  [velocity, densityEV, ev, euler ]
    

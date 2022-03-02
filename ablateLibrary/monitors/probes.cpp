@@ -139,7 +139,7 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
     // Build a ProbeRecorder for each probe
     for (const auto &probe : localProbes) {
         std::filesystem::path probePath = ablate::environment::RunEnvironment::Get().GetOutputDirectory() / (probe.name + ".csv");
-        recorders.emplace_back(bufferSize, variableNames, probePath);
+        recorders.emplace_back(bufferSize, componentNames, probePath);
     }
 }
 

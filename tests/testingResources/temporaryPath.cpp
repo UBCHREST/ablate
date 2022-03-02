@@ -1,9 +1,10 @@
 #include "temporaryPath.hpp"
+#include <algorithm>
 #include <fstream>
-#include <sstream>
 #include <random>
+#include <sstream>
 
-testingResources::TemporaryPath::TemporaryPath() : path(std::filesystem::temp_directory_path()/RandomString(10)) {}
+testingResources::TemporaryPath::TemporaryPath() : path(std::filesystem::temp_directory_path() / RandomString(10)) {}
 
 testingResources::TemporaryPath::~TemporaryPath() {
     if (exists(path)) {
@@ -18,12 +19,11 @@ std::string testingResources::TemporaryPath::ReadFile() const {
 
     return buffer.str();
 }
+
 std::string testingResources::TemporaryPath::RandomString(std::size_t length) {
     std::mt19937 rng(time(nullptr));
     std::uniform_int_distribution<int> generator(0, charSet.size() - 1);
-    auto randomChar = [&rng, &generator]() -> char {
-        return charSet[generator(rng)];
-    };
+    auto randomChar = [&rng, &generator]() -> char { return charSet[generator(rng)]; };
     std::string str(length, 0);
     std::generate_n(str.begin(), length, randomChar);
     return str;

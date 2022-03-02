@@ -36,7 +36,7 @@ class VectorUtilities {
     template <class T>
     static inline std::vector<T> Copy(const std::vector<std::shared_ptr<T>>& vector) {
         std::vector<T> result;
-        for(const auto& ptr : vector){
+        for (const auto& ptr : vector) {
             result.push_back(*ptr);
         }
         return result;
