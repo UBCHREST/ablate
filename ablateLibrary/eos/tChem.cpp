@@ -407,7 +407,7 @@ void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(int numSpec, 
 }
 
 const char *ablate::eos::TChem::periodicTable =
-    "102 10\n"
+    "106 10\n"
     "H          HE         LI         BE         B          C          N          O          F          NE\n"
     "  1.00797    4.00260    6.93900    9.01220   10.81100   12.01115   14.00670   15.99940   18.99840   20.18300\n"
     "NA         MG         AL         SI         P          S          CL         AR         K          CA\n"
@@ -428,8 +428,8 @@ const char *ablate::eos::TChem::periodicTable =
     "204.37000  207.19000  208.98000  210.00000  210.00000  222.00000  223.00000  226.00000  227.00000  232.03800\n"
     "PA         U          NP         PU         AM         CM         BK         CF         ES         FM\n"
     "231.00000  238.03000  237.00000  242.00000  243.00000  247.00000  249.00000  251.00000  254.00000  253.00000\n"
-    "D          E\n"
-    "  2.01410    5.45E-4  \n"
+    "D          E          T          CI         OI         X          \n"
+    " 2.01410    5.45E-4    3.016      13.003     18.000     195.08    \n"
     "";
 
 #include "registrar.hpp"
