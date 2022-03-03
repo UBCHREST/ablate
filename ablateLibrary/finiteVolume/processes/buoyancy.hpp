@@ -1,13 +1,13 @@
-#ifndef ABLATELIBRARY_BOUYANCY_HPP
-#define ABLATELIBRARY_BOUYANCY_HPP
+#ifndef ABLATELIBRARY_BUOYANCY_HPP
+#define ABLATELIBRARY_BUOYANCY_HPP
 
 #include "flowProcess.hpp"
 
 namespace ablate::finiteVolume::processes {
 
-class Bouyancy : public FlowProcess {
+class Buoyancy : public FlowProcess {
    private:
-    const std::vector<PetscReal> bouyancyVector;
+    const std::vector<PetscReal> buoyancyVector;
     /**
      * Compute and store the avg density in the domain
      */
@@ -25,13 +25,13 @@ class Bouyancy : public FlowProcess {
      * private function to compute gravity source
      * @return
      */
-    static PetscErrorCode ComputeBouyancySource(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
+    static PetscErrorCode ComputeBuoyancySource(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
                                                const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    public:
-    explicit Bouyancy(std::vector<double> bouyancyVector);
+    explicit Buoyancy(std::vector<double> buoyancyVector);
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
 };
 
 }  // namespace ablate::finiteVolume::processes
-#endif  // ABLATELIBRARY_BOUYANCY_HPP
+#endif  // ABLATELIBRARY_BUOYANCY_HPP

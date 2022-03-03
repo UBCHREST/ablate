@@ -1,16 +1,16 @@
-#include "bouyancy.hpp"
+#include "buoyancy.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-ablate::finiteVolume::processes::Bouyancy::Bouyancy(std::vector<double> bouyancyVector) : bouyancyVector(bouyancyVector) {}
+ablate::finiteVolume::processes::Buoyancy::Buoyancy(std::vector<double> buoyancyVector) : buoyancyVector(buoyancyVector) {}
 
-void ablate::finiteVolume::processes::Bouyancy::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
+void ablate::finiteVolume::processes::Buoyancy::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
     // Before each step, update the avg density
-    auto bouyancyPreStep = std::bind(&ablate::finiteVolume::processes::Bouyancy::UpdateAverageDensity, this, std::placeholders::_1, std::placeholders::_2);
-    fv.RegisterPreStep(bouyancyPreStep);
+    auto buoyancyPreStep = std::bind(&ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity, this, std::placeholders::_1, std::placeholders::_2);
+    fv.RegisterPreStep(buoyancyPreStep);
 
     // add the source function
-    fv.RegisterRHSFunction(ComputeBouyancySource, this, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::EULER_FIELD}, {});
+    fv.RegisterRHSFunction(ComputeBuoyancySource, this, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::EULER_FIELD}, {});
 }
-PetscErrorCode ablate::finiteVolume::processes::Bouyancy::UpdateAverageDensity(TS flowTs, ablate::solver::Solver &flow) {
+PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(TS flowTs, ablate::solver::Solver &flow) {
     PetscFunctionBeginUser;
     PetscReal locDensitySum = 0.0;
     PetscInt locCellCount = 0;
@@ -66,12 +66,12 @@ PetscErrorCode ablate::finiteVolume::processes::Bouyancy::UpdateAverageDensity(T
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::Bouyancy::ComputeBouyancySource(PetscInt dim, PetscReal time, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u,
+PetscErrorCode ablate::finiteVolume::processes::Buoyancy::ComputeBuoyancySource(PetscInt dim, PetscReal time, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u,
                                                                               const PetscScalar *const *gradU, const PetscInt *aOff, const PetscScalar *a, const PetscScalar *const *gradA,
                                                                               PetscScalar *f, void *ctx) {
     PetscFunctionBeginUser;
     const int EULER_FIELD = 0;
-    auto bouyancyProcess = (ablate::finiteVolume::processes::Bouyancy *)ctx;
+    auto buoyancyProcess = (ablate::finiteVolume::processes::Buoyancy *)ctx;
 
     // exact some values
     const PetscReal density = u[uOff[EULER_FIELD] + RHO];
@@ -82,7 +82,7 @@ PetscErrorCode ablate::finiteVolume::processes::Bouyancy::ComputeBouyancySource(
 
     // Add in the buoyancy source terms for momentum and energy
     for (PetscInt n = 0; n < dim; n++) {
-        f[RHOU] = PetscMax((density - bouyancyProcess->densityAvg) * bouyancyProcess->bouyancyVector[n], 0.0);
+        f[RHOU] = PetscMax((density - buoyancyProcess->densityAvg) * buoyancyProcess->buoyancyVector[n], 0.0);
         PetscReal vel = u[uOff[EULER_FIELD] + RHOU + n] / density;
         f[RHOE] += vel * f[RHOU];
     }
@@ -91,5 +91,5 @@ PetscErrorCode ablate::finiteVolume::processes::Bouyancy::ComputeBouyancySource(
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::Bouyancy, "build advection/diffusion for the euler field",
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::Buoyancy, "build advection/diffusion for the euler field",
          ARG(std::vector<double>, "vector", "gravitational acceleration vector"));

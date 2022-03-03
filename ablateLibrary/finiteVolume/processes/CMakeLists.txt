@@ -19,6 +19,6 @@ target_sources(ablateLibrary
         pressureGradientScaling.cpp
         arbitrarySource.hpp
         arbitrarySource.cpp
-        bouyancy.hpp
-        bouyancy.cpp
+        buoyancy.hpp
+        buoyancy.cpp
         )
