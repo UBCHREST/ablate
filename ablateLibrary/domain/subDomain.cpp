@@ -440,6 +440,7 @@ PetscErrorCode ablate::domain::SubDomain::RestoreFieldGlobalVector(const Field& 
 
     PetscFunctionReturn(0);
 }
+
 PetscErrorCode ablate::domain::SubDomain::GetFieldLocalVector(const ablate::domain::Field& field, PetscReal time, IS* vecIs, Vec* vec, DM* subdm) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;

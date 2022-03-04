@@ -15,6 +15,8 @@ target_sources(testingResources
         PetscTestErrorChecker.hpp
         convergenceTester.hpp
         convergenceTester.cpp
+        temporaryPath.hpp
+        temporaryPath.cpp
         )
 
 # Allow public access to the header files in the directory

@@ -77,6 +77,12 @@ solver: !ablate::finiteElement::IncompressibleFlowSolver
       boundaryValue: *temperatureField
   monitors:
     - !ablate::monitors::FieldErrorMonitor
+    - !ablate::monitors::Probes
+      probes:
+        - name: incompressibleFlowRestartProbe
+          location: [ .25, .25 ]
+      bufferSize: 10
+      variables: [ temperature ]
 
 
     

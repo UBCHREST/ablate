@@ -15,7 +15,13 @@ INSTANTIATE_TEST_SUITE_P(
                            .expectedFiles{{"outputs/compressibleFlow/compressibleFlowVortex/domain.xmf", "domain.xmf"}}},
         (MpiTestParameter){
             .testName = "inputs/compressibleFlow/customCouetteCompressibleFlow.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlow/customCouetteCompressibleFlow.txt", .arguments = ""},
-        (MpiTestParameter){.testName = "inputs/compressibleFlow/extraVariableTransport.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlow/extraVariableTransport.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/compressibleFlow/extraVariableTransport.yaml",
+                           .nproc = 1,
+                           .expectedOutputFile = "outputs/compressibleFlow/extraVariableTransport/extraVariableTransport.txt",
+                           .arguments = "",
+                           .expectedFiles{{"outputs/compressibleFlow/extraVariableTransport/a.csv", "a.csv"},
+                                          {"outputs/compressibleFlow/extraVariableTransport/b.csv", "b.csv"},
+                                          {"outputs/compressibleFlow/extraVariableTransport/c.csv", "c.csv"}}},
         (MpiTestParameter){.testName = "inputs/compressibleFlow/steadyCompressibleFlowLodiTest.yaml",
                            .nproc = 2,
                            .expectedOutputFile = "outputs/compressibleFlow/steadyCompressibleFlowLodiTest.txt",
@@ -97,18 +103,23 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlowRestart, IntegrationRestartTestsSpecifi
 
 INSTANTIATE_TEST_SUITE_P(
     RestartFEFlow, IntegrationRestartTestsSpecifier,
-    testing::Values(
-        (IntegrationRestartTestsParameters){
-            .mpiTestParameter = {.testName = "inputs/feFlow/incompressibleFlowRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/feFlow/incompressibleFlowRestart.txt", .arguments = ""},
-            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
-        (IntegrationRestartTestsParameters){
-            .mpiTestParameter = {.testName = "inputs/feFlow/incompressibleFlowRestart.yaml", .nproc = 2, .expectedOutputFile = "outputs/feFlow/incompressibleFlowRestart.txt", .arguments = ""},
-            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
-        (IntegrationRestartTestsParameters){.mpiTestParameter = {.testName = "inputs/feFlow/incompressibleFlowIntervalRestart.yaml",
-                                                                 .nproc = 1,
-                                                                 .expectedOutputFile = "outputs/feFlow/incompressibleFlowIntervalRestart.txt",
-                                                                 .arguments = ""},
-                                            .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
+    testing::Values((IntegrationRestartTestsParameters){.mpiTestParameter = {.testName = "inputs/feFlow/incompressibleFlowRestart.yaml",
+                                                                             .nproc = 1,
+                                                                             .expectedOutputFile = "outputs/feFlow/incompressibleFlowRestart.txt",
+                                                                             .arguments = "",
+                                                                             .expectedFiles = {{"outputs/feFlow/incompressibleFlowRestartProbe.csv", "incompressibleFlowRestartProbe.csv"}}},
+                                                        .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
+                    (IntegrationRestartTestsParameters){.mpiTestParameter = {.testName = "inputs/feFlow/incompressibleFlowRestart.yaml",
+                                                                             .nproc = 2,
+                                                                             .expectedOutputFile = "outputs/feFlow/incompressibleFlowRestart.txt",
+                                                                             .arguments = "",
+                                                                             .expectedFiles = {{"outputs/feFlow/incompressibleFlowRestartProbe.csv", "incompressibleFlowRestartProbe.csv"}}},
+                                                        .restartOverrides = {{"timestepper::arguments::ts_max_steps", "30"}}},
+                    (IntegrationRestartTestsParameters){.mpiTestParameter = {.testName = "inputs/feFlow/incompressibleFlowIntervalRestart.yaml",
+                                                                             .nproc = 1,
+                                                                             .expectedOutputFile = "outputs/feFlow/incompressibleFlowIntervalRestart.txt",
+                                                                             .arguments = ""},
+                                                        .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
     [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
 
 INSTANTIATE_TEST_SUITE_P(
