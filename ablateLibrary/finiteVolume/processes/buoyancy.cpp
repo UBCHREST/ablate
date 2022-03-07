@@ -67,8 +67,8 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(T
 }
 
 PetscErrorCode ablate::finiteVolume::processes::Buoyancy::ComputeBuoyancySource(PetscInt dim, PetscReal time, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u,
-                                                                              const PetscScalar *const *gradU, const PetscInt *aOff, const PetscScalar *a, const PetscScalar *const *gradA,
-                                                                              PetscScalar *f, void *ctx) {
+                                                                                const PetscScalar *const *gradU, const PetscInt *aOff, const PetscScalar *a, const PetscScalar *const *gradA,
+                                                                                PetscScalar *f, void *ctx) {
     PetscFunctionBeginUser;
     const int EULER_FIELD = 0;
     auto buoyancyProcess = (ablate::finiteVolume::processes::Buoyancy *)ctx;
@@ -82,9 +82,9 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::ComputeBuoyancySource(
 
     // Add in the buoyancy source terms for momentum and energy
     for (PetscInt n = 0; n < dim; n++) {
-        f[RHOU] = PetscMax((density - buoyancyProcess->densityAvg) * buoyancyProcess->buoyancyVector[n], 0.0);
+        f[RHOU + n] = PetscMax((density - buoyancyProcess->densityAvg) * buoyancyProcess->buoyancyVector[n], 0.0);
         PetscReal vel = u[uOff[EULER_FIELD] + RHOU + n] / density;
-        f[RHOE] += vel * f[RHOU];
+        f[RHOE] += vel * f[RHOU + n];
     }
 
     PetscFunctionReturn(0);

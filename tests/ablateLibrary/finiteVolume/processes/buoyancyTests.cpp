@@ -89,7 +89,7 @@ TEST_P(BuoyancyTestFixture, ShouldComputeCorrectFlux) {
         std::vector<double> expectedSource(5);
         GetParam().expectedSourceFunction->Eval(centroid, 3, 0.0, expectedSource);
 
-        for (PetscInt d = 0; d < 2 /*expectedSource.size()*/; d++) {
+        for (PetscInt d = 0; d < expectedSource.size(); d++) {
             ASSERT_NEAR(data[d], expectedSource[d], 1E-8) << "Expected buoyancy source is incorrect for component " << d << " in cell " << c;
         }
     }

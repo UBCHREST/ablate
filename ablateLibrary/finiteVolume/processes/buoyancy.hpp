@@ -26,7 +26,7 @@ class Buoyancy : public FlowProcess {
      * @return
      */
     static PetscErrorCode ComputeBuoyancySource(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
-                                               const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
+                                                const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    public:
     explicit Buoyancy(std::vector<double> buoyancyVector);

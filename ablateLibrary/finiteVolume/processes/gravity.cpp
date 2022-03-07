@@ -23,9 +23,9 @@ PetscErrorCode ablate::finiteVolume::processes::Gravity::ComputeGravitySource(Pe
 
     // Add in the gravity source terms for momentum and energy
     for (PetscInt n = 0; n < dim; n++) {
-        f[RHOU] = density * gravityProcess->gravityVector[n];
+        f[RHOU + n] = density * gravityProcess->gravityVector[n];
         PetscReal vel = u[uOff[EULER_FIELD] + RHOU + n] / density;
-        f[RHOE] += vel * f[RHOU];
+        f[RHOE] += vel * f[RHOU + n];
     }
 
     PetscFunctionReturn(0);
