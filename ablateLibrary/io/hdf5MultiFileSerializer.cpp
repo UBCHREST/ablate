@@ -62,7 +62,7 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
                     hdf5Serializer->EndEvent();
 
                     hdf5Serializer->StartEvent("Save");
-                    serializableObject->Save(petscViewer, hdf5Serializer->sequenceNumber, time);
+                    serializableObject->Save(petscViewer, 0, time);
                     hdf5Serializer->EndEvent();
 
                     hdf5Serializer->StartEvent("PetscViewerHDF5Destroy");
