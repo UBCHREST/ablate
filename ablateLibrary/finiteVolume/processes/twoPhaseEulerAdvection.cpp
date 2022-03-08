@@ -344,8 +344,7 @@ ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(
       fluxCalculatorGasGas(fluxCalculatorGasGas),
       fluxCalculatorGasLiquid(fluxCalculatorGasLiquid),
       fluxCalculatorLiquidGas(fluxCalculatorLiquidGas),
-      fluxCalculatorLiquidLiquid(fluxCalculatorLiquidLiquid) {
-}
+      fluxCalculatorLiquidLiquid(fluxCalculatorLiquidLiquid) {}
 
 void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     // Currently, no option for species advection
