@@ -26,6 +26,7 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     PetscInt sequenceNumber;
     PetscInt timeStep;
     bool resumed = false;
+    bool rootNode = false;
 
     // Hold the pointer to each serializable object;
     std::vector<std::weak_ptr<Serializable>> serializables;
@@ -39,11 +40,19 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     //! Private functions to load and save the ts metadata data
     std::filesystem::path GetOutputFilePath(const std::string& objectId) const;
 
+    //! private function to get the output directory
+    std::filesystem::path GetOutputDirectoryPath(const std::string& objectId) const;
+
    public:
     /**
      * Separates into multiple files to solve some io issues
      */
     explicit Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval>);
+
+    /**
+     * Allow file cleanup
+     */
+    ~Hdf5MultiFileSerializer() override;
 
     /**
      * Handles registering the object and restore if available.
