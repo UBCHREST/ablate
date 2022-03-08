@@ -2,9 +2,10 @@
 #include <petscviewerhdf5.h>
 #include <yaml-cpp/yaml.h>
 #include <fstream>
+#include <utility>
 #include "environment/runEnvironment.hpp"
 
-ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(interval) {
+ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(std::move(interval)) {
     // Load the metadata from the file is available, otherwise set to 0
     auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
 
@@ -23,7 +24,35 @@ ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<abl
         sequenceNumber = -1;
     }
 }
-void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> serializable) { serializables.push_back(serializable); }
+void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> serializable) {
+    serializables.push_back(serializable);
+
+    if (auto serializableObject = serializable.lock()) {
+        // resume if needed
+        if (resumed) {
+            auto filePath = GetOutputFilePath(serializableObject->GetId());
+
+            PetscViewer petscViewer = nullptr;
+            StartEvent("PetscViewerHDF5Open");
+            PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> checkError;
+            EndEvent();
+
+            // Restore the simulation
+            StartEvent("Restore");
+            // NOTE: as far as the output file the sequence number is always zero because it is a new file
+            serializableObject->Restore(petscViewer, 0, time);
+            EndEvent();
+
+            StartEvent("PetscViewerHDF5Destroy");
+            PetscViewerDestroy(&petscViewer) >> checkError;
+            EndEvent();
+        } else {
+            // Create an output directory
+            auto outputDirectory = environment::RunEnvironment::Get().GetOutputDirectory() / serializableObject->GetId();
+            std::filesystem::create_directory(outputDirectory);
+        }
+    }
+}
 
 PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveStateFunction(TS ts, PetscInt steps, PetscReal time, Vec u, void* ctx) {
     PetscFunctionBeginUser;
@@ -44,24 +73,20 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
         // Save this to a file
         hdf5Serializer->SaveMetadata(ts);
 
-        std::stringstream sequenceNumberOutputStream;
-        sequenceNumberOutputStream << std::setw(5) << std::setfill('0') << hdf5Serializer->sequenceNumber;
-        auto sequenceNumberOutputString = "." + sequenceNumberOutputStream.str();
-
         try {
             // save each serializer
             for (auto& serializablePtr : hdf5Serializer->serializables) {
                 if (auto serializableObject = serializablePtr.lock()) {
                     // Create an output path
-                    auto filePath = environment::RunEnvironment::Get().GetOutputDirectory() / (serializableObject->GetId() + sequenceNumberOutputString + extension);
+                    auto filePath = hdf5Serializer->GetOutputFilePath(serializableObject->GetId());
 
                     PetscViewer petscViewer = nullptr;
-
                     hdf5Serializer->StartEvent("PetscViewerHDF5Open");
                     PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;
                     hdf5Serializer->EndEvent();
 
                     hdf5Serializer->StartEvent("Save");
+                    // NOTE: as far as the output file the sequence number is always zero because it is a new file
                     serializableObject->Save(petscViewer, 0, time);
                     hdf5Serializer->EndEvent();
 
@@ -77,7 +102,7 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
     PetscFunctionReturn(0);
 }
 
-void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) {
+void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
     YAML::Emitter out;
     out << YAML::BeginMap;
     out << YAML::Key << "time";
@@ -107,6 +132,13 @@ void ablate::io::Hdf5MultiFileSerializer::RestoreTS(TS ts) {
         TSSetTime(ts, time);
         TSSetTimeStep(ts, dt);
     }
+}
+
+std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputFilePath(const std::string& objectId) const {
+    std::stringstream sequenceNumberOutputStream;
+    sequenceNumberOutputStream << std::setw(5) << std::setfill('0') << sequenceNumber;
+    auto sequenceNumberOutputString = "." + sequenceNumberOutputStream.str();
+    return environment::RunEnvironment::Get().GetOutputDirectory() / objectId / (objectId + sequenceNumberOutputString + extension);
 }
 
 #include "registrar.hpp"

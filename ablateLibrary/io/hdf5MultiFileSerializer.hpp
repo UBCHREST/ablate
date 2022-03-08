@@ -34,7 +34,10 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     static PetscErrorCode Hdf5MultiFileSerializerSaveStateFunction(TS ts, PetscInt steps, PetscReal time, Vec u, void* mctx);
 
     //! Private functions to load and save the ts metadata data
-    void SaveMetadata(TS ts);
+    void SaveMetadata(TS ts) const;
+
+    //! Private functions to load and save the ts metadata data
+    std::filesystem::path GetOutputFilePath(const std::string& objectId) const;
 
    public:
     /**
