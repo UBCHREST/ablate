@@ -43,7 +43,7 @@ ablate::monitors::probes::Rake::Rake(std::string name, std::vector<double> start
 
 void ablate::monitors::probes::Rake::Report(MPI_Comm comm) const {
     // Get the rank
-    PetscInt rank;
+    PetscMPIInt rank;
     MPI_Comm_rank(comm, &rank) >> checkMpiError;
     if (rank == 0) {
         std::ofstream probeFile;
