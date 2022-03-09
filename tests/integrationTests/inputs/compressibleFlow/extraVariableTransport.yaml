@@ -89,4 +89,11 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
           location: [ .25, .75 ]
       bufferSize: 10
       variables:  [velocity, densityEV, ev, euler ]
-   
+    - !ablate::monitors::Probes
+      probes: !ablate::monitors::probes::Rake
+        name: rakeProbe
+        start: [.75, .5]
+        end: [.25, 0.5]
+        number: 3
+      bufferSize: 10
+      variables: [ velocity, densityEV, ev, euler ]

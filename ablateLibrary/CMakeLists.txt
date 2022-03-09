@@ -7,7 +7,7 @@ target_link_libraries(ablateLibrary PUBLIC ablateCore)
 FetchContent_Declare(
         cppParser
         GIT_REPOSITORY https://github.com/UBCHREST/CppParser.git
-        GIT_TAG v0.1.6
+        GIT_TAG v0.1.7
 )
 FetchContent_MakeAvailable(cppParser)
 target_link_libraries(ablateLibrary PUBLIC cppParserLibrary)

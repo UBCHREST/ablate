@@ -35,7 +35,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             // print all files in the directory so that they are compared with expected
             if (rank == 0) {
                 std::vector<std::string> resultFileInfo;
-                for (const auto& entry : fs::directory_iterator(ablate::environment::RunEnvironment::Get().GetOutputDirectory())) {
+                for (const auto& entry : fs::recursive_directory_iterator(ablate::environment::RunEnvironment::Get().GetOutputDirectory())) {
                     resultFileInfo.push_back(entry.path().filename());
                 }
                 // sort the names so that the output order is defined
@@ -105,7 +105,7 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
         // print all files in the directory so that they are compared with expected
         if (rank == 0) {
             std::vector<std::string> resultFileInfo;
-            for (const auto& entry : fs::directory_iterator(resultDirectory)) {
+            for (const auto& entry : fs::recursive_directory_iterator(resultDirectory)) {
                 resultFileInfo.push_back(entry.path().filename());
             }
             // sort the names so that the output order is defined

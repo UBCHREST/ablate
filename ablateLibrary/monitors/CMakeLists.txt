@@ -30,3 +30,4 @@ target_sources(ablateLibrary
         )
 
 add_subdirectory(logs)
+add_subdirectory(probes)
