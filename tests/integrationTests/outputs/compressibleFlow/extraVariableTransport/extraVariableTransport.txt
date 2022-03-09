@@ -25,4 +25,9 @@ b.csv
 c.csv
 domain.hdf5
 domain.xmf
+rakeProbe
+rakeProbe.0.csv
+rakeProbe.1.csv
+rakeProbe.2.csv
+rakeProbe.txt
 restart.rst

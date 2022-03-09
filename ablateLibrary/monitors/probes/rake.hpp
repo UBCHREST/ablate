@@ -1,13 +1,13 @@
 #ifndef ABLATELIBRARY_RAKE_HPP
 #define ABLATELIBRARY_RAKE_HPP
 
-#include "probeInitializer.hpp"
 #include <string>
 #include <vector>
+#include "probeInitializer.hpp"
 
 namespace ablate::monitors::probes {
 
-class Rake : public ProbeInitializer{
+class Rake : public ProbeInitializer {
    private:
     //! the name of these rakes/probes
     const std::string rakeName;
@@ -31,7 +31,6 @@ class Rake : public ProbeInitializer{
      */
     const std::vector<Probe>& GetProbes() const override { return list; }
 
-
     /**
      * place all probes in the same directory
      * @return
@@ -42,8 +41,7 @@ class Rake : public ProbeInitializer{
      * prints a log of probe locations to a file
      */
     void Report(MPI_Comm) const override;
-
 };
 
-}
+}  // namespace ablate::monitors::probes
 #endif  // ABLATELIBRARY_RAKE_HPP

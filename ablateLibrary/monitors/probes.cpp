@@ -186,7 +186,7 @@ PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, Pets
             VecGetArrayRead(interpValues, &interValuesArray);
             PetscInt offset = 0;
             const int &fieldOffset = monitor->fieldOffset[it];
-            for (auto & recorder : monitor->recorders) {
+            for (auto &recorder : monitor->recorders) {
                 for (PetscInt c = 0; c < field.numberComponents; c++) {
                     recorder.SetValue(fieldOffset + c, interValuesArray[offset++]);
                 }

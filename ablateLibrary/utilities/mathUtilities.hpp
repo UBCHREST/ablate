@@ -5,7 +5,6 @@
 namespace ablate::utilities {
 class MathUtilities {
    public:
-
     template <class I, class T>
     static inline void ScaleVector(I dim, T* vec, T alpha) {
         for (I d = 0; d < dim; d++) {

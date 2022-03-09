@@ -11,8 +11,8 @@ Testing is essential for any high-quality software product and should be integra
 The [Googletest](https://github.com/google/googletest) framework is used for testing on ABLATE.  The [Googletest Primer](https://google.github.io/googletest/primer.html) is the recommended starting point to become familiar with the framework.  In short, a series of macros `TEST`, `TEST_F`, and `TEST_P` are used to specify standard, text fixtures, or parameterized tests.  The entire test suite can be run with ctest command or with IDEs such as CLion (recommended) or VisualStudio.
 
 There are some useful command line flags that can be used when debugging tests:
-- --runMpiTestDirectly=true : when passed in (along with google test single test selection or through CLion run configuration) this flag allows for a test to be run/debug directly.  This bypasses the separate process launch making it easier to debug, but you must directly pass in any needed arguments.
-- --keepOutputFile=true : keeps all output files from the tests and reports the file name.
+- \-\-runMpiTestDirectly=true : when passed in (along with google test single test selection or through CLion run configuration) this flag allows for a test to be run/debug directly.  This bypasses the separate process launch making it easier to debug, but you must directly pass in any needed arguments.
+- \-\-keepOutputFile=true : keeps all output files from the tests and reports the file name.
 
 Automated testing is performed on a series of linux Docker images automatically before a pull request can be merged.  If the tests are passing locally but failing for a pull request you can debug using the same environment as the pull request using [Building ABLATE with Docker Directions]({{ site.baseurl }}{%link content/development/BuildingAblateWithDocker.md %}).  Tests can also be run directly in docker using the following commands.
 

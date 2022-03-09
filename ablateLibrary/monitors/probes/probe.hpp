@@ -7,7 +7,7 @@
 namespace ablate::monitors::probes {
 
 /**
-     * Helper struct to represent each location in a probeInitializer
+ * Helper struct to represent each location in a probeInitializer
  */
 struct Probe {
     std::string name;
@@ -15,6 +15,6 @@ struct Probe {
 
     Probe(std::string name, std::vector<PetscReal> location) : name(std::move(name)), location(std::move(location)) {}
 };
-}
+}  // namespace ablate::monitors::probes
 
 #endif  // ABLATELIBRARY_PROBE_HPP
