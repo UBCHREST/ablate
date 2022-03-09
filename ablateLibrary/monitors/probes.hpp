@@ -1,11 +1,11 @@
-
 #ifndef ABLATELIBRARY_PROBES_HPP
 #define ABLATELIBRARY_PROBES_HPP
 
 #include <particles/particles.hpp>
 #include <utility>
 #include "io/interval/interval.hpp"
-
+#include "probes/probe.hpp"
+#include "probes/probeInitializer.hpp"
 namespace ablate::monitors {
 
 /**
@@ -13,13 +13,6 @@ namespace ablate::monitors {
  */
 class Probes : public Monitor {
    public:
-    struct Probe {
-        std::string name;
-        std::vector<PetscReal> location;
-
-        Probe(std::string name, std::vector<PetscReal> location) : name(std::move(name)), location(std::move(location)) {}
-    };
-
     /**
      * Private class for recording the the probe output
      */
@@ -75,7 +68,7 @@ class Probes : public Monitor {
     };
 
     //! Original list of all requested probe locations by name
-    const std::vector<Probe> allProbes;
+    const std::shared_ptr<ablate::monitors::probes::ProbeInitializer> initializer;
 
     //! List of variables to output
     const std::vector<std::string> variableNames;
@@ -87,7 +80,7 @@ class Probes : public Monitor {
     const int bufferSize;
 
     //! list of local probes on this rank
-    std::vector<Probe> localProbes;
+    std::vector<probes::Probe> localProbes;
 
     //! list of fields to interpolate
     std::vector<domain::Field> fields;
@@ -111,16 +104,8 @@ class Probes : public Monitor {
      * @param bufferSize the buffer size between writes
      * @param interval the sampling interval
      */
-    Probes(std::vector<Probe> probes, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval>& interval = {}, const int bufferSize = 0);
-
-    /**
-     * Probes monitor
-     * @param probeLocations a vector of names and probe locations as shared pointers.  This is used for the parser
-     * @param variables a list of output variables
-     * @param bufferSize the buffer size between writes
-     * @param interval the sampling interval
-     */
-    Probes(const std::vector<std::shared_ptr<Probe>>& probes, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval>& interval = {}, const int bufferSize = 0);
+    Probes(const std::shared_ptr<ablate::monitors::probes::ProbeInitializer>&, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval>& interval = {},
+           const int bufferSize = 0);
 
     ~Probes() override;
 

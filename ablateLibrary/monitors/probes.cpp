@@ -6,25 +6,24 @@
 #include "utilities/mpiError.hpp"
 #include "utilities/vectorUtilities.hpp"
 
-ablate::monitors::Probes::Probes(std::vector<Probe> probes, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval> &intervalIn, const int bufferSize)
-    : allProbes(std::move(probes)),
+ablate::monitors::Probes::Probes(const std::shared_ptr<ablate::monitors::probes::ProbeInitializer> &initializer, std::vector<std::string> variableNames,
+                                 const std::shared_ptr<io::interval::Interval> &intervalIn, const int bufferSize)
+    : initializer(initializer),
       variableNames(std::move(variableNames)),
       interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()),
       bufferSize(bufferSize == 0 ? 100 : bufferSize) {}
 
-ablate::monitors::Probes::Probes(const std::vector<std::shared_ptr<Probe>> &allProbesPtrs, std::vector<std::string> variableNames, const std::shared_ptr<io::interval::Interval> &interval,
-                                 const int bufferSize)
-    : Probes(utilities::VectorUtilities::Copy(allProbesPtrs), std::move(variableNames), interval, bufferSize) {}
-
 void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) {
     Monitor::Register(solver);
+
+    initializer->Report(solver->GetSubDomain().GetComm());
 
     // extract some useful information
     const PetscInt dim = solver->GetSubDomain().GetDimensions();
 
     {  // Determine what probes live locally
         // extract some useful information
-        const auto globalPointsCount = (PetscInt)allProbes.size();
+        const auto globalPointsCount = (PetscInt)initializer->GetProbes().size();
 
         // Determine which probes live on this rank
         Vec pointVec;
@@ -32,7 +31,7 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
 
         // Get a list of all probe locations and convert to a vec
         PetscInt offset = 0;
-        for (const auto &probe : allProbes) {
+        for (const auto &probe : initializer->GetProbes()) {
             // Make sure that the location is at least equal to the number of dims
             if ((PetscInt)probe.location.size() < dim) {
                 throw std::invalid_argument("All specified probe locations must be at list dimension " + std::to_string(dim) + ".");
@@ -67,11 +66,11 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
         MPI_Allreduce(foundProcs.data(), globalProcs.data(), globalPointsCount, MPI_INT, MPI_MIN, solver->GetSubDomain().GetComm()) >> checkMpiError;
 
         // throw error if location cannot be found and copy over the probes that this rank owns
-        for (std::size_t p = 0; p < allProbes.size(); p++) {
+        for (std::size_t p = 0; p < initializer->GetProbes().size(); p++) {
             if (globalProcs[p] == size) {
-                throw std::invalid_argument("Cannot locate probe " + allProbes[p].name + " in domain");
+                throw std::invalid_argument("Cannot locate probe " + initializer->GetProbes()[p].name + " in domain");
             } else if (globalProcs[p] == rank) {
-                localProbes.push_back(allProbes[p]);
+                localProbes.push_back(initializer->GetProbes()[p]);
             }
         }
 
@@ -138,7 +137,7 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
 
     // Build a ProbeRecorder for each probe
     for (const auto &probe : localProbes) {
-        std::filesystem::path probePath = ablate::environment::RunEnvironment::Get().GetOutputDirectory() / (probe.name + ".csv");
+        std::filesystem::path probePath = initializer->GetDirectory() / (probe.name + ".csv");
         recorders.emplace_back(bufferSize, componentNames, probePath);
     }
 }
@@ -149,7 +148,7 @@ ablate::monitors::Probes::~Probes() {
     }
 }
 
-PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, PetscReal time, Vec u, void *ctx) {
+PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, PetscReal time, Vec, void *ctx) {
     PetscFunctionBegin;
     auto monitor = (ablate::monitors::Probes *)ctx;
     auto comm = PetscObjectComm((PetscObject)ts);
@@ -187,9 +186,9 @@ PetscErrorCode ablate::monitors::Probes::UpdateProbes(TS ts, PetscInt step, Pets
             VecGetArrayRead(interpValues, &interValuesArray);
             PetscInt offset = 0;
             const int &fieldOffset = monitor->fieldOffset[it];
-            for (PetscInt p = 0; p < (PetscInt)monitor->recorders.size(); p++) {
+            for (auto & recorder : monitor->recorders) {
                 for (PetscInt c = 0; c < field.numberComponents; c++) {
-                    monitor->recorders[p].SetValue(fieldOffset + c, interValuesArray[offset++]);
+                    recorder.SetValue(fieldOffset + c, interValuesArray[offset++]);
                 }
             }
 
@@ -261,6 +260,7 @@ void ablate::monitors::Probes::ProbeRecorder::SetValue(std::size_t index, double
         buffer[activeIndex][index] = value;
     }
 }
+
 void ablate::monitors::Probes::ProbeRecorder::WriteBuffer() {
     // write the header file
     std::ofstream probeFile;
@@ -277,9 +277,6 @@ void ablate::monitors::Probes::ProbeRecorder::WriteBuffer() {
 }
 
 #include "registrar.hpp"
-REGISTER_DEFAULT(ablate::monitors::Probes::Probe, ablate::monitors::Probes::Probe, "Probe specification struct", ARG(std::string, "name", "name of the probe"),
-                 ARG(std::vector<double>, "location", "the probe location"));
-
 REGISTER(ablate::monitors::Monitor, ablate::monitors::Probes, "Records the values of the specified variables at a specific point in space",
-         ARG(std::vector<ablate::monitors::Probes::Probe>, "probes", "where to record log (default is stdout)"), ARG(std::vector<std::string>, "variables", "list of variables to output"),
+         ARG(ablate::monitors::probes::ProbeInitializer, "probes", "where to record log (default is stdout)"), ARG(std::vector<std::string>, "variables", "list of variables to output"),
          OPT(ablate::io::interval::Interval, "interval", "report interval object, defaults to every"), OPT(int, "bufferSize", "how often the probe file is written (default is 100, must be > 0)"));

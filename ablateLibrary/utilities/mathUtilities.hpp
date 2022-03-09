@@ -5,44 +5,65 @@
 namespace ablate::utilities {
 class MathUtilities {
    public:
-    static inline void ScaleVector(PetscInt dim, PetscReal* vec, PetscReal alpha) {
-        for (PetscInt d = 0; d < dim; d++) {
+
+    template <class I, class T>
+    static inline void ScaleVector(I dim, T* vec, T alpha) {
+        for (I d = 0; d < dim; d++) {
             vec[d] *= alpha;
         }
     }
 
-    static inline void NormVector(PetscInt dim, PetscReal* vec) {
+    template <class I, class T>
+    static inline void NormVector(I dim, T* vec) {
         auto mag = MagVector(dim, vec);
-        for (PetscInt d = 0; d < dim; d++) {
+        for (I d = 0; d < dim; d++) {
             vec[d] = vec[d] / mag;
         }
     }
 
-    static inline void NormVector(PetscInt dim, const PetscReal* in, PetscReal* out) {
-        PetscReal mag = 0.0;
-        for (PetscInt d = 0; d < dim; d++) {
+    template <class I, class T>
+    static inline void NormVector(I dim, const T* in, T* out) {
+        T mag = 0.0;
+        for (I d = 0; d < dim; d++) {
             mag += in[d] * in[d];
         }
         mag = PetscSqrtReal(mag);
-        for (PetscInt d = 0; d < dim; d++) {
+        for (I d = 0; d < dim; d++) {
             out[d] = in[d] / mag;
         }
     }
 
-    static inline PetscReal MagVector(PetscInt dim, const PetscReal* in) {
-        PetscReal mag = 0.0;
-        for (PetscInt d = 0; d < dim; d++) {
+    template <class I, class T>
+    static inline T MagVector(I dim, const T* in) {
+        T mag = 0.0;
+        for (I d = 0; d < dim; d++) {
             mag += in[d] * in[d];
         }
         return PetscSqrtReal(mag);
     }
 
-    static inline PetscReal DotVector(PetscInt dim, const PetscReal* a, const PetscReal* b) {
-        PetscReal dot = 0.0;
-        for (PetscInt d = 0; d < dim; d++) {
+    template <class I, class T>
+    static inline T DotVector(I dim, const T* a, const T* b) {
+        T dot = 0.0;
+        for (I d = 0; d < dim; d++) {
             dot += a[d] * b[d];
         }
         return dot;
+    }
+
+    /**
+     * subtract so that c = a - b
+     * @tparam I
+     * @tparam T
+     * @param dim
+     * @param a
+     * @param b
+     */
+    template <class I, class T>
+    static inline void Subtract(I dim, const T* a, const T* b, T* c) {
+        for (I i = 0; i < dim; i++) {
+            c[i] = a[i] - b[i];
+        }
     }
 
     /**
@@ -52,10 +73,11 @@ class MathUtilities {
      * @param dim
      * @param transformationMatrix
      */
-    static inline void Multiply(PetscReal dim, const PetscScalar A[3][3], const PetscReal* in, PetscReal* out) {
-        for (PetscInt i = 0; i < dim; i++) {
+    template <class I, class T>
+    static inline void Multiply(I dim, const T A[3][3], const T* in, T* out) {
+        for (I i = 0; i < dim; i++) {
             out[i] = 0.0;
-            for (PetscInt j = 0; j < dim; j++) {
+            for (I j = 0; j < dim; j++) {
                 out[i] += A[i][j] * in[j];
             }
         }
@@ -68,10 +90,11 @@ class MathUtilities {
      * @param dim
      * @param transformationMatrix
      */
-    static inline void MultiplyTranspose(PetscReal dim, const PetscScalar A[3][3], const PetscReal* in, PetscReal* out) {
-        for (PetscInt i = 0; i < dim; i++) {
+    template <class I, class T>
+    static inline void MultiplyTranspose(I dim, const T A[3][3], const T* in, T* out) {
+        for (I i = 0; i < dim; i++) {
             out[i] = 0.0;
-            for (PetscInt j = 0; j < dim; j++) {
+            for (I j = 0; j < dim; j++) {
                 out[i] += A[j][i] * in[j];
             }
         }
