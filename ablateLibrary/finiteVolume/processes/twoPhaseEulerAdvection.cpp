@@ -148,23 +148,26 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal massFluxGG;
     PetscReal massFluxGL;
     PetscReal massFluxLL;
-    PetscReal p12;  // pressure equilibrium ( might need to make sure they match)
+    PetscReal p12GG;  // interface pressure
+    PetscReal p12GL;
+    PetscReal p12LL;
 
     // call flux calculator 3 times, gas-gas, gas-liquid, liquid-liquid regions
     fluxCalculator::Direction directionG = twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorFunction()(
-        twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGG, &p12);
+        twoPhaseEulerAdvection->fluxCalculatorGasGas->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGG, &p12GG);
     // should be same direction, if not, big problem
-    twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
-        twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxLL, &p12);
+    fluxCalculator::Direction directionL = twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
+        twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxLL, &p12LL);
 
+    fluxCalculator::Direction directionGL;
     if (alphaL > alphaR) {
         // gas on left, liquid on right
-        twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(
-            twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxGL, &p12);
+        directionGL = twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorFunction()(
+            twoPhaseEulerAdvection->fluxCalculatorGasLiquid->GetFluxCalculatorContext(), normalVelocityL, aG_L, densityG_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxGL, &p12GL);
     } else if (alphaL < alphaR) {
         // liquid on left, gas on right
-        twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorFunction()(
-            twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGL, &p12);
+        directionGL = twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorFunction()(
+            twoPhaseEulerAdvection->fluxCalculatorLiquidGas->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aG_R, densityG_R, pR, &massFluxGL, &p12GL);
     } else {
         // no discontinuous region
         massFluxGL = 0.0;
@@ -173,60 +176,61 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     // Calculate total flux
     PetscReal alphaMin = PetscMin(alphaR, alphaL);
     PetscReal alphaDif = PetscAbs(alphaL - alphaR);
-    if (directionG == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
-                                               //        flux[RHO] = massFlux * areaMag;
-        flux[CompressibleFlowFields::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * areaMag * (1 - alphaMin - alphaDif));
-        PetscReal velMagL = MagVector(dim, velocityL);
+    PetscReal alphaLiq = 1-alphaMin-alphaDif;
+    flux[CompressibleFlowFields::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * areaMag * (1 - alphaMin - alphaDif));
+
+    PetscReal velMagL = MagVector(dim, velocityL);
+    PetscReal velMagR = MagVector(dim, velocityR);
+    // gas interface
+    if (directionG == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity??
         PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
-        PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
-        PetscReal HGL_L;
-        if (alphaL > alphaR) {
-            // gas on left
-            HGL_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
-        } else if (alphaL < alphaR) {
-            // liquid on left
-            HGL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
-        } else {
-            // no discontinuous region
-            HGL_L = 0.0;
-        }
-        //        flux[RHOE] = HL * massFlux * areaMag;
-        flux[CompressibleFlowFields::RHOE] = (HG_L * massFluxGG * areaMag * alphaMin) + (HGL_L * massFluxGL * areaMag * alphaDif) + (HL_L * massFluxLL * areaMag * (1 - alphaMin - alphaDif));
+        flux[CompressibleFlowFields::RHOE] = (HG_L * massFluxGG * areaMag * alphaMin);
+
         for (PetscInt n = 0; n < dim; n++) {
-            //            flux[RHOU + n] = velocityL[n] * massFlux * areaMag + p12 * fg->normal[n];
-            flux[CompressibleFlowFields::RHOU + n] = velocityL[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin - alphaDif)) + p12 * fg->normal[n];
+            flux[CompressibleFlowFields::RHOU + n] = velocityL[n] * areaMag * (massFluxGG * alphaMin) + (p12GG*alphaMin) * fg->normal[n];
         }
     } else if (directionG == fluxCalculator::RIGHT) {
-        //        flux[RHO] = massFlux * areaMag;
-        flux[CompressibleFlowFields::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * areaMag * (1 - alphaMin - alphaDif));
-        PetscReal velMagR = MagVector(dim, velocityR);
         PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
-        PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
-        PetscReal HGL_R;
-        if (alphaL > alphaR) {
-            // liquid on right
-            HGL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
-        } else if (alphaL < alphaR) {
-            // gas on right
-            HGL_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
-        } else {
-            // no discontinuous region
-            HGL_R = 0.0;
-        }
-        //        flux[RHOE] = HR * massFlux * areaMag;
-        flux[CompressibleFlowFields::RHOE] = (HG_R * massFluxGG * areaMag * alphaMin) + (HGL_R * massFluxGL * areaMag * alphaDif) + (HL_R * massFluxLL * areaMag * (1 - alphaMin - alphaDif));
+        flux[CompressibleFlowFields::RHOE] = (HG_R * massFluxGG * areaMag * alphaMin);
+
         for (PetscInt n = 0; n < dim; n++) {
-            //            flux[RHOU + n] = velocityR[n] * massFlux * areaMag + p12 * fg->normal[n];
-            flux[CompressibleFlowFields::RHOU + n] = velocityR[n] * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin - alphaDif)) + p12 * fg->normal[n];
+            flux[CompressibleFlowFields::RHOU + n] = velocityR[n] * areaMag * (massFluxGG * alphaMin) + (p12GG*alphaMin) * fg->normal[n];
         }
     } else {
-        //        flux[RHO] = massFlux * areaMag;
-        flux[CompressibleFlowFields::RHO] = (massFluxGG * areaMag * alphaMin) + (massFluxGL * areaMag * alphaDif) + (massFluxLL * areaMag * (1 - alphaMin - alphaDif));
-
-        PetscReal velMagL = MagVector(dim, velocityL);
-        //        PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
         PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
+        PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
+
+        flux[CompressibleFlowFields::RHOE] = (0.5 * (HG_L + HG_R) * massFluxGG * areaMag * alphaMin);
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[CompressibleFlowFields::RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGG * alphaMin) + (p12GG * alphaMin) * fg->normal[n];
+        }
+    }
+    // add liquid interface
+    if (directionL == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
         PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
+        flux[CompressibleFlowFields::RHOE] += (HL_L * massFluxLL * areaMag * alphaLiq);
+
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[CompressibleFlowFields::RHOU + n] += velocityL[n] * areaMag * (massFluxLL * alphaLiq) + (p12LL*alphaLiq) * fg->normal[n];
+        }
+    } else if (directionL == fluxCalculator::RIGHT) {
+        PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+        flux[CompressibleFlowFields::RHOE] += (HL_R * massFluxLL * areaMag * alphaLiq);
+
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[CompressibleFlowFields::RHOU + n] += velocityR[n] * areaMag * (massFluxLL * alphaLiq) + (p12LL*alphaLiq) * fg->normal[n];
+        }
+    } else {
+        PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
+        PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+
+        flux[CompressibleFlowFields::RHOE] += (0.5 * (HL_L + HL_R) * massFluxLL * areaMag * alphaLiq);
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[CompressibleFlowFields::RHOU + n] += 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxLL * alphaLiq) + (p12LL * alphaLiq) * fg->normal[n];
+        }
+    }
+    // add gas-liquid or liquid-gas interface
+    if (directionGL == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
         PetscReal HGL_L;
         if (alphaL > alphaR) {
             // gas on left
@@ -238,11 +242,12 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
             // no discontinuous region
             HGL_L = 0.0;
         }
+        flux[FlowProcess::RHOE] += (HGL_L * massFluxGL * areaMag * alphaDif);
 
-        PetscReal velMagR = MagVector(dim, velocityR);
-        //        PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
-        PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
-        PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[CompressibleFlowFields::RHOU + n] += velocityL[n] * areaMag * (massFluxGL * alphaDif) + (p12GL*alphaDif) * fg->normal[n];
+        }
+    } else if (directionGL == fluxCalculator::RIGHT) {
         PetscReal HGL_R;
         if (alphaL > alphaR) {
             // liquid on right
@@ -254,13 +259,39 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
             // no discontinuous region
             HGL_R = 0.0;
         }
-        //        flux[RHOE] = 0.5 * (HL + HR) * massFlux * areaMag;
-        flux[CompressibleFlowFields::RHOE] = (0.5 * (HG_L + HG_R) * massFluxGG * areaMag * alphaMin) + (0.5 * (HGL_L + HGL_R) * massFluxGL * areaMag * alphaDif) +
-                                             (0.5 * (HL_L + HL_R) * massFluxLL * areaMag * (1 - alphaMin - alphaDif));
+        flux[CompressibleFlowFields::RHOE] += (HGL_R * massFluxGL * areaMag * alphaDif);
+
         for (PetscInt n = 0; n < dim; n++) {
-            //            flux[RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * massFlux * areaMag + p12 * fg->normal[n];
-            flux[CompressibleFlowFields::RHOU + n] =
-                0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGG * alphaMin + massFluxGL * alphaDif + massFluxLL * (1 - alphaMin - alphaDif)) + p12 * fg->normal[n];
+            flux[CompressibleFlowFields::RHOU + n] += velocityR[n] * areaMag * (massFluxGL * alphaDif) + (p12GL*alphaDif) * fg->normal[n];
+        }
+    } else {
+        PetscReal HGL_L;
+        if (alphaL > alphaR) {
+            // gas on left
+            HGL_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
+        } else if (alphaL < alphaR) {
+            // liquid on left
+            HGL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
+        } else {
+            // no discontinuous region
+            HGL_L = 0.0;
+        }
+        PetscReal HGL_R;
+        if (alphaL > alphaR) {
+            // liquid on right
+            HGL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+        } else if (alphaL < alphaR) {
+            // gas on right
+            HGL_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
+        } else {
+            // no discontinuous region
+            HGL_R = 0.0;
+        }
+
+        flux[CompressibleFlowFields::RHOE] += (0.5 * (HGL_L + HGL_R) * massFluxGL * areaMag * alphaDif);
+        for (PetscInt n = 0; n < dim; n++) {
+            flux[CompressibleFlowFields::RHOU + n] +=
+                0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGL * alphaDif) + (p12GL*alphaDif)  * fg->normal[n];
         }
     }
 
