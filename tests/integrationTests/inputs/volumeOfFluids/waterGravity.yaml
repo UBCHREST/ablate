@@ -2,7 +2,7 @@
 environment:
   title: WaterWG_50
   tagDirectory: true
-arguments: {}
+arguments: { }
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -12,9 +12,9 @@ timestepper:
     ts_dt: 1e-10
   domain: !<!ablate::domain::BoxMeshBoundaryCells>
     name: simpleBoxField
-    faces: [50]
-    lower: [0]
-    upper: [1]
+    faces: [ 50 ]
+    lower: [ 0 ]
+    upper: [ 1 ]
     mainRegion:
       name: mainSolver
     boundaryFaceRegion:
@@ -78,7 +78,7 @@ solvers:
           eosL: *1
           eosR: *1
       - !ablate::finiteVolume::processes::Gravity
-        vector: [-9.81]
+        vector: [ -9.81 ]
     computePhysicsTimeStep: true
     monitors:
       - !<!ablate::monitors::TimeStepMonitor>
