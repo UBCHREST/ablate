@@ -171,6 +171,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     } else {
         // no discontinuous region
         massFluxGL = 0.0;
+        p12GL = 0.5 * (p12GG + p12LL);
     }
 
     // Calculate total flux
@@ -183,22 +184,22 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal velMagR = MagVector(dim, velocityR);
     // gas interface
     if (directionG == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity??
-        PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
+        PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + p12GG / densityG_L;
         flux[CompressibleFlowFields::RHOE] = (HG_L * massFluxGG * areaMag * alphaMin);
 
         for (PetscInt n = 0; n < dim; n++) {
             flux[CompressibleFlowFields::RHOU + n] = velocityL[n] * areaMag * (massFluxGG * alphaMin) + (p12GG*alphaMin) * fg->normal[n];
         }
     } else if (directionG == fluxCalculator::RIGHT) {
-        PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
+        PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + p12GG / densityG_R;
         flux[CompressibleFlowFields::RHOE] = (HG_R * massFluxGG * areaMag * alphaMin);
 
         for (PetscInt n = 0; n < dim; n++) {
             flux[CompressibleFlowFields::RHOU + n] = velocityR[n] * areaMag * (massFluxGG * alphaMin) + (p12GG*alphaMin) * fg->normal[n];
         }
     } else {
-        PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
-        PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
+        PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + p12GG / densityG_L;
+        PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + p12GG / densityG_R;
 
         flux[CompressibleFlowFields::RHOE] = (0.5 * (HG_L + HG_R) * massFluxGG * areaMag * alphaMin);
         for (PetscInt n = 0; n < dim; n++) {
@@ -207,22 +208,22 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     }
     // add liquid interface
     if (directionL == fluxCalculator::LEFT) {  // direction of GG,LL,LG should match since uniform velocity???
-        PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
+        PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + p12LL / densityL_L;
         flux[CompressibleFlowFields::RHOE] += (HL_L * massFluxLL * areaMag * alphaLiq);
 
         for (PetscInt n = 0; n < dim; n++) {
             flux[CompressibleFlowFields::RHOU + n] += velocityL[n] * areaMag * (massFluxLL * alphaLiq) + (p12LL*alphaLiq) * fg->normal[n];
         }
     } else if (directionL == fluxCalculator::RIGHT) {
-        PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+        PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + p12LL / densityL_R;
         flux[CompressibleFlowFields::RHOE] += (HL_R * massFluxLL * areaMag * alphaLiq);
 
         for (PetscInt n = 0; n < dim; n++) {
             flux[CompressibleFlowFields::RHOU + n] += velocityR[n] * areaMag * (massFluxLL * alphaLiq) + (p12LL*alphaLiq) * fg->normal[n];
         }
     } else {
-        PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
-        PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+        PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + p12LL / densityL_L;
+        PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + p12LL / densityL_R;
 
         flux[CompressibleFlowFields::RHOE] += (0.5 * (HL_L + HL_R) * massFluxLL * areaMag * alphaLiq);
         for (PetscInt n = 0; n < dim; n++) {
@@ -234,15 +235,15 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         PetscReal HGL_L;
         if (alphaL > alphaR) {
             // gas on left
-            HGL_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
+            HGL_L = internalEnergyG_L + velMagL * velMagL / 2.0 + p12GL / densityG_L;
         } else if (alphaL < alphaR) {
             // liquid on left
-            HGL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
+            HGL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + p12GL / densityL_L;
         } else {
             // no discontinuous region
             HGL_L = 0.0;
         }
-        flux[FlowProcess::RHOE] += (HGL_L * massFluxGL * areaMag * alphaDif);
+        flux[CompressibleFlowFields::RHOE] += (HGL_L * massFluxGL * areaMag * alphaDif);
 
         for (PetscInt n = 0; n < dim; n++) {
             flux[CompressibleFlowFields::RHOU + n] += velocityL[n] * areaMag * (massFluxGL * alphaDif) + (p12GL*alphaDif) * fg->normal[n];
@@ -251,10 +252,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         PetscReal HGL_R;
         if (alphaL > alphaR) {
             // liquid on right
-            HGL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+            HGL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + p12GL / densityL_R;
         } else if (alphaL < alphaR) {
             // gas on right
-            HGL_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
+            HGL_R = internalEnergyG_R + velMagR * velMagR / 2.0 + p12GL / densityG_R;
         } else {
             // no discontinuous region
             HGL_R = 0.0;
@@ -268,10 +269,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         PetscReal HGL_L;
         if (alphaL > alphaR) {
             // gas on left
-            HGL_L = internalEnergyG_L + velMagL * velMagL / 2.0 + pL / densityG_L;
+            HGL_L = internalEnergyG_L + velMagL * velMagL / 2.0 + p12GL / densityG_L;
         } else if (alphaL < alphaR) {
             // liquid on left
-            HGL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + pL / densityL_L;
+            HGL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + p12GL / densityL_L;
         } else {
             // no discontinuous region
             HGL_L = 0.0;
@@ -279,10 +280,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         PetscReal HGL_R;
         if (alphaL > alphaR) {
             // liquid on right
-            HGL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + pR / densityL_R;
+            HGL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + p12GL / densityL_R;
         } else if (alphaL < alphaR) {
             // gas on right
-            HGL_R = internalEnergyG_R + velMagR * velMagR / 2.0 + pR / densityG_R;
+            HGL_R = internalEnergyG_R + velMagR * velMagR / 2.0 + p12GL / densityG_R;
         } else {
             // no discontinuous region
             HGL_R = 0.0;
