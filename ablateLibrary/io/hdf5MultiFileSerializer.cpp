@@ -50,6 +50,10 @@ ablate::io::Hdf5MultiFileSerializer::~Hdf5MultiFileSerializer() {
 void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> serializable) {
     serializables.push_back(serializable);
 
+    // Mark this to cleanup
+    int rank;
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkError;
+
     if (auto serializableObject = serializable.lock()) {
         // resume if needed
         if (resumed) {
@@ -72,12 +76,12 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
         } else {
             // Create an output directory
             auto outputDirectory = GetOutputDirectoryPath(serializableObject->GetId());
-            std::filesystem::create_directory(outputDirectory);
+            if(rank == 0) {
+                std::filesystem::create_directory(outputDirectory);
+            }
+            MPI_Barrier(PETSC_COMM_WORLD);
         }
 
-        // Mark this to cleanup
-        int rank;
-        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkError;
         if (rank == 0) {
             postProcessesIds.push_back(serializableObject->GetId());
         }
