@@ -76,7 +76,7 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
         } else {
             // Create an output directory
             auto outputDirectory = GetOutputDirectoryPath(serializableObject->GetId());
-            if(rank == 0) {
+            if (rank == 0) {
                 std::filesystem::create_directory(outputDirectory);
             }
             MPI_Barrier(PETSC_COMM_WORLD);
