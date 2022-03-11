@@ -127,6 +127,16 @@ INSTANTIATE_TEST_SUITE_P(
                                                         .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
     [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
 
+INSTANTIATE_TEST_SUITE_P(FVRestart, IntegrationRestartTestsSpecifier,
+                         testing::Values((IntegrationRestartTestsParameters){.mpiTestParameter = {.testName = "inputs/compressibleFlow/compressibleFlowVortexLodiRestart.yaml",
+                                                                                                  .nproc = 1,
+                                                                                                  .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowVortexLodiRestart.txt",
+                                                                                                  .arguments = ""},
+                                                                             .restartOverrides = {{"timestepper::arguments::ts_max_steps", "20"}}}),
+                         [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) {
+                             return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc);
+                         });
+
 INSTANTIATE_TEST_SUITE_P(
     RestartParticles, IntegrationRestartTestsSpecifier,
     testing::Values((IntegrationRestartTestsParameters){

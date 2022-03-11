@@ -26,7 +26,9 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     PetscInt sequenceNumber;
     PetscInt timeStep;
     bool resumed = false;
-    bool rootNode = false;
+
+    // keep a list of postProcesses ids
+    std::vector<std::string> postProcessesIds;
 
     // Hold the pointer to each serializable object;
     std::vector<std::weak_ptr<Serializable>> serializables;
@@ -41,7 +43,7 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     std::filesystem::path GetOutputFilePath(const std::string& objectId) const;
 
     //! private function to get the output directory
-    std::filesystem::path GetOutputDirectoryPath(const std::string& objectId) const;
+    static std::filesystem::path GetOutputDirectoryPath(const std::string& objectId);
 
    public:
     /**

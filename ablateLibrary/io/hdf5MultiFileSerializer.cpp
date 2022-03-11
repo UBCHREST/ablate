@@ -4,6 +4,7 @@
 #include <fstream>
 #include <utility>
 #include "environment/runEnvironment.hpp"
+#include "generators.hpp"
 
 ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(std::move(interval)) {
     // Load the metadata from the file is available, otherwise set to 0
@@ -26,13 +27,23 @@ ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<abl
 }
 
 ablate::io::Hdf5MultiFileSerializer::~Hdf5MultiFileSerializer() {
-    if (rootNode) {
-        // save each serializer
-        for (auto& serializablePtr : serializables) {
-            if (auto serializableObject = serializablePtr.lock()) {
-                //TODO: add xdmf file generation
+    // save each serializer
+    for (std::string id : postProcessesIds) {
+        std::vector<std::filesystem::path> inputFilePaths;
+
+        auto directoryPath = GetOutputDirectoryPath(id);
+        for (const auto& file : std::filesystem::directory_iterator(directoryPath)) {
+            if (file.path().extension() == ".hdf5") {
+                inputFilePaths.push_back(file.path());
             }
         }
+
+        // sort the paths
+        std::sort(inputFilePaths.begin(), inputFilePaths.end());
+
+        // run the convert function
+        std::filesystem::path outputFile = directoryPath / (id + ".xmf");
+        petscXdmfGenerator::Generate(inputFilePaths, outputFile);
     }
 }
 
@@ -63,10 +74,17 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
             auto outputDirectory = GetOutputDirectoryPath(serializableObject->GetId());
             std::filesystem::create_directory(outputDirectory);
         }
+
+        // Mark this to cleanup
+        int rank;
+        MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkError;
+        if (rank == 0) {
+            postProcessesIds.push_back(serializableObject->GetId());
+        }
     }
 }
 
-PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveStateFunction(TS ts, PetscInt steps, PetscReal time, Vec u, void* ctx) {
+PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveStateFunction(TS ts, PetscInt steps, PetscReal time, Vec, void* ctx) {
     PetscFunctionBeginUser;
     auto hdf5Serializer = (Hdf5MultiFileSerializer*)ctx;
 
@@ -76,11 +94,6 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
     }
 
     if (hdf5Serializer->interval->Check(PetscObjectComm((PetscObject)ts), steps, time)) {
-        // check to see if root node
-        int rank;
-        MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> checkError;
-        hdf5Serializer->rootNode = rank == 0;
-
         // Update all metadata
         hdf5Serializer->time = time;
         hdf5Serializer->timeStep = steps;
@@ -132,7 +145,9 @@ void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
     out << YAML::Value << sequenceNumber;
     out << YAML::EndMap;
 
-    if (rootNode) {
+    int rank;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)ts), &rank) >> checkError;
+    if (rank == 0) {
         auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
         std::ofstream restartFile;
         restartFile.open(restartFilePath);
@@ -153,9 +168,10 @@ std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputFilePath(con
     std::stringstream sequenceNumberOutputStream;
     sequenceNumberOutputStream << std::setw(5) << std::setfill('0') << sequenceNumber;
     auto sequenceNumberOutputString = "." + sequenceNumberOutputStream.str();
-    return GetOutputFilePath(objectId) / (objectId + sequenceNumberOutputString + extension);
+    return GetOutputDirectoryPath(objectId) / (objectId + sequenceNumberOutputString + extension);
 }
-std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputDirectoryPath(const std::string& objectId) const { return environment::RunEnvironment::Get().GetOutputDirectory() / objectId; }
+
+std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputDirectoryPath(const std::string& objectId) { return environment::RunEnvironment::Get().GetOutputDirectory() / objectId; }
 
 #include "registrar.hpp"
 REGISTER(ablate::io::Serializer, ablate::io::Hdf5MultiFileSerializer, "serializer for IO that writes each time to a separate hdf5 file",
