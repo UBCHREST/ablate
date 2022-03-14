@@ -8,20 +8,20 @@
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
-#include "finiteVolume/processes/gravity.hpp"
+#include "finiteVolume/processes/buoyancy.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/simpleFormula.hpp"
 #include "parameters/mapParameters.hpp"
 
-struct GravityTestParameters {
-    std::vector<double> gravity;
+struct BuoyancyTestParameters {
+    std::vector<double> buoyancy;
     std::shared_ptr<ablate::mathFunctions::FieldFunction> initialEuler;
     std::shared_ptr<ablate::mathFunctions::MathFunction> expectedSourceFunction;
 };
 
-class GravityTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<GravityTestParameters> {};
+class BuoyancyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<BuoyancyTestParameters> {};
 
-TEST_P(GravityTestFixture, ShouldComputeCorrectFlux) {
+TEST_P(BuoyancyTestFixture, ShouldComputeCorrectFlux) {
     // arrange
     const auto& params = GetParam();
 
@@ -38,12 +38,12 @@ TEST_P(GravityTestFixture, ShouldComputeCorrectFlux) {
                                                             std::vector<double>{.0, .0, .0},
                                                             std::vector<double>{1, 1, 1});
 
-    // Make a finite volume with only a gravity
+    // Make a finite volume with only a buoyancy
     auto fvObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>(
         "testFV",
         ablate::domain::Region::ENTIREDOMAIN,
         nullptr /*options*/,
-        std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{std::make_shared<ablate::finiteVolume::processes::Gravity>(GetParam().gravity)},
+        std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{std::make_shared<ablate::finiteVolume::processes::Buoyancy>(GetParam().buoyancy)},
         std::vector<std::shared_ptr<ablate::finiteVolume::boundaryConditions::BoundaryCondition>>{});
 
     // init
@@ -89,8 +89,8 @@ TEST_P(GravityTestFixture, ShouldComputeCorrectFlux) {
         std::vector<double> expectedSource(5);
         GetParam().expectedSourceFunction->Eval(centroid, 3, 0.0, expectedSource);
 
-        for (PetscInt d = 0; d < 2 /*expectedSource.size()*/; d++) {
-            ASSERT_NEAR(data[d], expectedSource[d], 1E-8) << "Expected gravity source is incorrect for component " << d << " in cell " << c;
+        for (PetscInt d = 0; d < expectedSource.size(); d++) {
+            ASSERT_NEAR(data[d], expectedSource[d], 1E-8) << "Expected buoyancy source is incorrect for component " << d << " in cell " << c;
         }
     }
     VecRestoreArrayRead(locF, &locFArray) >> errorChecker;
@@ -100,9 +100,9 @@ TEST_P(GravityTestFixture, ShouldComputeCorrectFlux) {
     DMRestoreLocalVector(domain->GetDM(), &locF) >> errorChecker;
 }
 
-INSTANTIATE_TEST_SUITE_P(GravityTests, GravityTestFixture,
-                         testing::Values((GravityTestParameters){
-                             .gravity = {0.0, 0.0, -9.8},
+INSTANTIATE_TEST_SUITE_P(BuoyancyTests, BuoyancyTestFixture,
+                         testing::Values((BuoyancyTestParameters){
+                             .buoyancy = {0.0, 0.0, -9.8},
                              .initialEuler = std::make_shared<ablate::mathFunctions::FieldFunction>(
                                  "euler", std::make_shared<ablate::mathFunctions::SimpleFormula>("1.1 + z, 0.0, (1.1 + z)*10*x, (1.1 + z)*20*y, (1.1 + z)*30*z")),
                              .expectedSourceFunction = std::make_shared<ablate::mathFunctions::SimpleFormula>("0.0,(30*z)*max(((1.1 + z)-1.6)*-9.8, 0.0), 0.0, 0.0, max(((1.1 + z)-1.6)*-9.8, 0.0)")}));

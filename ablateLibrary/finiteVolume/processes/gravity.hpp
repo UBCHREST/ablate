@@ -8,18 +8,6 @@ namespace ablate::finiteVolume::processes {
 class Gravity : public FlowProcess {
    private:
     const std::vector<PetscReal> gravityVector;
-    /**
-     * Compute and store the avg density in the domain
-     */
-    PetscReal densityAvg = NAN;
-
-    /**
-     * private function to compute the average density in the domain
-     * @param flowTs
-     * @param flow
-     * @return
-     */
-    PetscErrorCode UpdateAverageDensity(TS flowTs, ablate::solver::Solver& flow);
 
     /**
      * private function to compute gravity source
