@@ -99,17 +99,18 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
                                                                                              parameters,
                                                                                              nullptr /*transportModel*/,
                                                                                              std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
-                                                                                             boundaryConditions /*boundary conditions*/,
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
+                                                                                             boundaryConditions /*boundary conditions*/);
 
-            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
+            mesh->InitializeSubDomains({flowObject},
+                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution},
+                                       std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactEulerSolution, yiExactSolution});
             DMSetApplicationContext(mesh->GetDM(), flowObject.get());
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Name the flow field
             PetscObjectSetName(((PetscObject)mesh->GetSolutionVector()), "Numerical Solution") >> testErrorChecker;
 
-            // Setup the TS
+            // Set up the TS
             TSSetFromOptions(ts) >> testErrorChecker;
 
             // advance to the end time
@@ -152,8 +153,8 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowAdvectionFixture,
                              (CompressibleFlowAdvectionTestParameters){
                                  .mpiTestParameter = {.testName = "yi advection",
                                                       .nproc = 1,
-                                                      .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                   "-euler_petscfv_type upwind -densityYi_petscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
+                                                      .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                   " -ts_max_steps 50 -ts_dt 5e-05  "},
                                  .initialNx = 5,
                                  .levels = 4,
                                  .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),
@@ -163,8 +164,8 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowAdvectionFixture,
                              (CompressibleFlowAdvectionTestParameters){
                                  .mpiTestParameter = {.testName = "mpi yi advection",
                                                       .nproc = 2,
-                                                      .arguments = "-dm_plex_separate_marker -dm_distribute -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                   "-euler_petscfv_type upwind -densityYi_petscfv_type upwind -ts_max_steps 50 -ts_dt 5e-05  "},
+                                                      .arguments = "-dm_plex_separate_marker -dm_distribute -ts_adapt_type none "
+                                                                   "-ts_max_steps 50 -ts_dt 5e-05  "},
                                  .initialNx = 5,
                                  .levels = 4,
                                  .eulerExact = ablate::mathFunctions::Create("2.0, 500000, 8.0, 0.0"),

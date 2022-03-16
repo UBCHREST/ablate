@@ -10,6 +10,7 @@
 #include "domain/fieldDescriptor.hpp"
 #include "domain/modifiers/modifier.hpp"
 #include "fieldDescription.hpp"
+#include "io/serializable.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "region.hpp"
 
@@ -46,8 +47,8 @@ class Domain {
     // This domain can be partitions into multiple subdomains
     std::vector<std::shared_ptr<SubDomain>> subDomains;
 
-    // The solution to the flow
-    Vec solField;
+    //! The global solution vector defined over the entire dm. This is the canonical source of information
+    Vec solGlobalField;
 
     void CreateStructures();
 
@@ -59,15 +60,36 @@ class Domain {
 
     inline DM& GetDM() noexcept { return dm; }
 
-    Vec GetSolutionVector() { return solField; }
+    /**
+     * Returns access to the global solution field
+     * @return
+     */
+    inline Vec GetSolutionVector() { return solGlobalField; }
 
+    /**
+     * Register the field with the dm
+     * @param fieldDescription
+     */
     void RegisterField(const ablate::domain::FieldDescription& fieldDescription);
 
-    PetscInt GetDimensions() const;
+    PetscInt GetDimensions() const noexcept;
 
-    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations);
+    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+                              const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
+
+    /**
+     * project the list of field function into the provided global vector
+     * @param fieldFunctions
+     * @param globVec
+     */
+    void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time = 0.0);
 
     std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
+
+    /**
+     * Provide a list of serialize subDomains
+     */
+    std::vector<std::weak_ptr<io::Serializable>> GetSerializableSubDomains();
 
     /**
      * Get the petscField object from the dm or auxDm for this region

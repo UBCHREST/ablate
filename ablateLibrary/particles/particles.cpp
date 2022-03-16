@@ -13,8 +13,6 @@ ablate::particles::Particles::Particles(std::string solverId, std::shared_ptr<do
       ndims(ndims),
       timeInitial(0.0),
       timeFinal(0.0),
-      flowInitial(nullptr),
-      flowFinal(nullptr),
       exactSolution(exactSolution),
       dmChanged(false),
       initializer(initializer),
@@ -78,11 +76,6 @@ void ablate::particles::Particles::Initialize() {
     // associate the swarm with the cell dm
     DMSwarmSetCellDM(swarmDm, subDomain->GetDM()) >> checkError;
 
-    // Store the values in the particles from the ts and flow
-    flowFinal = subDomain->GetSolutionVector();
-    VecDuplicate(flowFinal, &(flowInitial)) >> checkError;
-    VecCopy(subDomain->GetSolutionVector(), flowInitial) >> checkError;
-
     // name the particle domain
     PetscObjectSetOptions((PetscObject)swarmDm, petscOptions) >> checkError;
     PetscObjectSetName((PetscObject)swarmDm, GetId().c_str()) >> checkError;
@@ -123,9 +116,6 @@ ablate::particles::Particles::~Particles() {
     }
     if (particleTs) {
         TSDestroy(&particleTs) >> checkError;
-    }
-    if (flowInitial) {
-        VecDestroy(&flowInitial) >> checkError;
     }
     if (petscOptions) {
         ablate::utilities::PetscOptionsDestroyAndCheck(GetId(), &petscOptions);
@@ -274,8 +264,7 @@ PetscErrorCode ablate::particles::Particles::ComputeParticleError(TS particleTS,
     VecRestoreArrayWrite(exactLocationVec, &exactLocationArray) >> checkError;
 
     // Get all points still in this mesh
-    DM flowDM;
-    VecGetDM(particles->flowFinal, &flowDM) >> checkError;
+    DM flowDM = particles->subDomain->GetDM();
     PetscSF cellSF = NULL;
     DMLocatePoints(flowDM, exactLocationVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
     const PetscSFNode *cells;
@@ -488,8 +477,6 @@ void ablate::particles::Particles::AdvectParticles(TS flowTS) {
 
     // take the needed timesteps to get to the flow time
     TSSolve(particleTs, solutionVector) >> checkError;
-
-    VecCopy(flowFinal, flowInitial) >> checkError;
     timeInitial = timeFinal;
 
     // get the updated time step, and reset if it has gone down
@@ -550,7 +537,7 @@ static PetscErrorCode DMSequenceViewTimeHDF5(DM dm, PetscViewer viewer) {
     PetscFunctionReturn(0);
 }
 
-void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, PetscReal time) const {
+void ablate::particles::Particles::Save(PetscViewer viewer, PetscInt steps, PetscReal time) {
     DMSetOutputSequenceNumber(GetParticleDM(), steps, time) >> checkError;
     Vec particleVector;
 

@@ -13,4 +13,12 @@ target_sources(ablateLibrary
         tChemReactions.cpp
         twoPhaseEulerAdvection.hpp
         twoPhaseEulerAdvection.cpp
+        gravity.hpp
+        gravity.cpp
+        pressureGradientScaling.hpp
+        pressureGradientScaling.cpp
+        arbitrarySource.hpp
+        arbitrarySource.cpp
+        buoyancy.hpp
+        buoyancy.cpp
         )

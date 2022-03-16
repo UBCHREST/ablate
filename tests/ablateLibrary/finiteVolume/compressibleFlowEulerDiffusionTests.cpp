@@ -233,10 +233,10 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
                                                                                              flowParameters,
                                                                                              transportModel,
                                                                                              std::make_shared<finiteVolume::fluxCalculator::OffFlux>(),
-                                                                                             boundaryConditions /*boundary conditions*/,
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution} /*exactSolution*/);
+                                                                                             boundaryConditions /*boundary conditions*/);
 
-            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
+            mesh->InitializeSubDomains(
+                {flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{exactSolution});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Name the flow field
@@ -302,25 +302,23 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
     EndWithMPI
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    CompressibleFlow, CompressibleFlowDiffusionTestFixture,
-    testing::Values(
-        (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
-                                                                       .nproc = 1,
-                                                                       .arguments = "-dm_plex_separate_marker -petsclimiter_type none  -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                                    "-temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares  -ts_max_steps 600 -ts_dt 0.00000625 "},
-                                                  .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
-                                                  .initialNx = 3,
-                                                  .levels = 3,
-                                                  .expectedL2Convergence = {NAN, 1.5, NAN, NAN},
-                                                  .expectedLInfConvergence = {NAN, 1.3, NAN, NAN}},
-        (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
-                                                                       .nproc = 2,
-                                                                       .arguments = "-dm_plex_separate_marker -petsclimiter_type none -ts_adapt_type none -automaticTimeStepCalculator off "
-                                                                                    "-temperature_petscfv_type leastsquares -velocity_petscfv_type leastsquares -ts_max_steps 600 -ts_dt 0.00000625 "},
-                                                  .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
-                                                  .initialNx = 9,
-                                                  .levels = 2,
-                                                  .expectedL2Convergence = {NAN, 2.2, NAN, NAN},
-                                                  .expectedLInfConvergence = {NAN, 2.5, NAN, NAN}}),
-    [](const testing::TestParamInfo<CompressibleFlowDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
+INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowDiffusionTestFixture,
+                         testing::Values((CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction",
+                                                                                                        .nproc = 1,
+                                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                                                     "-ts_max_steps 600 -ts_dt 0.00000625 "},
+                                                                                   .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
+                                                                                   .initialNx = 3,
+                                                                                   .levels = 3,
+                                                                                   .expectedL2Convergence = {NAN, 1.5, NAN, NAN},
+                                                                                   .expectedLInfConvergence = {NAN, 1.3, NAN, NAN}},
+                                         (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
+                                                                                                        .nproc = 2,
+                                                                                                        .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
+                                                                                                                     " -ts_max_steps 600 -ts_dt 0.00000625 "},
+                                                                                   .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
+                                                                                   .initialNx = 9,
+                                                                                   .levels = 2,
+                                                                                   .expectedL2Convergence = {NAN, 2.2, NAN, NAN},
+                                                                                   .expectedLInfConvergence = {NAN, 2.5, NAN, NAN}}),
+                         [](const testing::TestParamInfo<CompressibleFlowDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

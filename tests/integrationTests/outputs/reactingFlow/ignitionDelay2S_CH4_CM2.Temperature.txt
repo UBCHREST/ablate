@@ -1,0 +1,1 @@
+Computed Ignition Delay \(Temperature\): (.*)<expects> <5e-05

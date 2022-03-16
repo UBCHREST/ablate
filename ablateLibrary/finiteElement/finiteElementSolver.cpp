@@ -8,9 +8,8 @@
 
 ablate::finiteElement::FiniteElementSolver::FiniteElementSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                                 std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions,
-                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields,
-                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution)
-    : Solver(solverId, region, options), boundaryConditions(boundaryConditions), auxiliaryFieldsUpdaters(auxiliaryFields), exactSolutions(exactSolution) {}
+                                                                std::vector<std::shared_ptr<mathFunctions::FieldFunction>> auxiliaryFields)
+    : Solver(solverId, region, options), boundaryConditions(boundaryConditions), auxiliaryFieldsUpdaters(auxiliaryFields) {}
 
 void ablate::finiteElement::FiniteElementSolver::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { Solver::Register(subDomain); }
 
@@ -39,25 +38,6 @@ void ablate::finiteElement::FiniteElementSolver::Setup() {
 void ablate::finiteElement::FiniteElementSolver::Initialize() {
     // Initialize the flow field if provided
     this->CompleteFlowInitialization(subDomain->GetDM(), subDomain->GetSolutionVector());
-
-    // if an exact solution has been provided register it
-    auto prob = subDomain->GetDiscreteSystem();
-    for (const auto &exactSolution : exactSolutions) {
-        // check to make sure that the exact solution is applicable everywhere or to this subDomain
-        if (exactSolution->GetRegion() != domain::Region::ENTIREDOMAIN) {
-            throw std::invalid_argument("Exact solutions should be applicable over the entire domain.");
-        }
-
-        auto fieldId = subDomain->GetField(exactSolution->GetName());
-
-        // Get the current field type
-        if (exactSolution->HasSolutionField()) {
-            PetscDSSetExactSolution(prob, fieldId.id, exactSolution->GetSolutionField().GetPetscFunction(), exactSolution->GetSolutionField().GetContext()) >> checkError;
-        }
-        if (exactSolution->HasTimeDerivative()) {
-            PetscDSSetExactSolutionTimeDerivative(prob, fieldId.id, exactSolution->GetTimeDerivative().GetPetscFunction(), exactSolution->GetTimeDerivative().GetContext()) >> checkError;
-        }
-    }
 }
 
 void ablate::finiteElement::FiniteElementSolver::UpdateAuxFields(TS ts, ablate::finiteElement::FiniteElementSolver &fe) {
@@ -83,21 +63,6 @@ void ablate::finiteElement::FiniteElementSolver::UpdateAuxFields(TS ts, ablate::
 
     // Update the source terms
     DMProjectFunctionLocal(fe.subDomain->GetAuxDM(), time + dt, &auxiliaryFieldFunctions[0], &auxiliaryFieldContexts[0], INSERT_ALL_VALUES, fe.subDomain->GetAuxVector()) >> checkError;
-}
-
-void ablate::finiteElement::FiniteElementSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const {
-    Solver::Save(viewer, sequenceNumber, time);
-
-    if (!exactSolutions.empty()) {
-        Vec exactVec;
-        DMGetGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
-
-        subDomain->ProjectFieldFunctionsToSubDM(exactSolutions, exactVec, time);
-
-        PetscObjectSetName((PetscObject)exactVec, "exact") >> checkError;
-        VecView(exactVec, viewer) >> checkError;
-        DMRestoreGlobalVector(subDomain->GetSubDM(), &exactVec) >> checkError;
-    }
 }
 
 PetscErrorCode ablate::finiteElement::FiniteElementSolver::ComputeIFunction(PetscReal time, Vec locX, Vec locX_t, Vec locF) {

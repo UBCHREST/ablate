@@ -1,0 +1,813 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" [
+<!ENTITY HeavyData "fluidField.hdf5">
+]>
+<Xdmf>
+  <Domain Name="domain">
+    <DataItem Dimensions="52 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+      &HeavyData;:/viz/topology/cells
+    </DataItem>
+    <DataItem DataType="Float" Dimensions="69 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+      &HeavyData;:/geometry/vertices
+    </DataItem>
+    <Grid CollectionType="Temporal" GridType="Collection" Name="TimeSeries">
+      <Time TimeType="List">
+        <DataItem Dimensions="11" Format="XML" NumberType="Float">
+          0 6.00058e-05 0.000114251 0.000165011 0.000213928 0.000262139 0.000310471 0.000359575 0.000410002 0.000461818 0.000513562
+        </DataItem>
+      </Time>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              3 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              3 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              3 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              3 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              3 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              3 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              4 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              4 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              4 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              4 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              4 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              4 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              5 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              5 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              5 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              5 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              5 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              5 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              6 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              6 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              6 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              6 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              6 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              6 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              7 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              7 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              7 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              7 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              7 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              7 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              8 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              8 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              8 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              8 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              8 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              8 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              9 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              9 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              9 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              9 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              9 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              9 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="52" TopologyType="Quadrilateral">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem Reference="XML">
+            /Xdmf/Domain/DataItem[@Name="_geometry_vertices"]
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="aux_temperature" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              10 0 0 1 1 1 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 1" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="aux_velocity" Type="Vector">
+          <DataItem Dimensions="1 52 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              10 0 0 1 1 1 1 52 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 2" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/aux_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_0" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              10 0 0 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_1" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              10 0 1 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_2" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              10 0 2 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="solution_euler_3" Type="Scalar">
+          <DataItem Dimensions="1 52 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              10 0 3 1 1 4 1 52 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="11 52 4" Format="HDF" Precision="8">
+              &HeavyData;:/cell_fields/solution_euler
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>

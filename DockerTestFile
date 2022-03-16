@@ -1,14 +1,14 @@
-FROM ghcr.io/ubchrest/petsc-docker/petsc-build:latest
+FROM ghcr.io/ubchrest/ablate/ablate-dependencies:latest
 
-# Install dependencies
-RUN apt-get update
-RUN apt-get install -y clang-format
-
-# Setup the petsc env
+# Setup the petsc env for tests
 ARG PETSC_BUILD_ARCH=arch-ablate-opt
 ENV PETSC_ARCH=$PETSC_BUILD_ARCH
 ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
 ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
+
+# provide hook to disable tensorflow
+ARG ENABLE_TENSOR_FLOW=1
+ENV TENSORFLOW_DIR=${ENABLE_TENSOR_FLOW:+${TENSORFLOW_DIR}}
 
 # Copy over the source
 COPY . /source

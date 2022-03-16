@@ -3,21 +3,21 @@ cmake_minimum_required(VERSION 3.14)
 find_package(PkgConfig REQUIRED)
 
 # Check if a C compiler is explicitly stated
-if(NOT DEFINED CMAKE_C_COMPILER)
-  # Set the compilers based upon the PETSc package
-  pkg_get_variable(PETSC_C_COMPILER PETSc ccompiler)
-  set(CMAKE_C_COMPILER ${PETSC_C_COMPILER})
-endif()
+if (NOT DEFINED CMAKE_C_COMPILER)
+    # Set the compilers based upon the PETSc package
+    pkg_get_variable(PETSC_C_COMPILER PETSc ccompiler)
+    set(CMAKE_C_COMPILER ${PETSC_C_COMPILER})
+endif ()
 
 # Check if a CXX compiler is explicitly stated
-if(NOT DEFINED CMAKE_CXX_COMPILER)
-  # Set the compilers based upon the PETSc package
-  pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
-  set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
-endif()
+if (NOT DEFINED CMAKE_CXX_COMPILER)
+    # Set the compilers based upon the PETSc package
+    pkg_get_variable(PETSC_CXX_COMPILER PETSc cxxcompiler)
+    set(CMAKE_CXX_COMPILER ${PETSC_CXX_COMPILER})
+endif ()
 
 # Set the project details
-project(ablateLibrary VERSION 0.7.16)
+project(ablateLibrary VERSION 0.7.44)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -32,10 +32,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(FetchContent)
 
 # Check if we should enable testing options
-if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
     include(CTest)
-endif()
+endif ()
 
 # Add required warnings for projects
 function(ablate_default_target_compile_options_c target)
@@ -57,14 +57,14 @@ set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)
 set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
 
 # Setup and configure testing
-if(BUILD_TESTING)
+if (BUILD_TESTING)
     enable_testing()
     include(GoogleTest)
     add_subdirectory(tests)
 
     # Include the format command only if we are building tests
     include(clangFormatter.cmake)
-endif()
+endif ()
 
 # keep a separate main statement
 add_executable(ablate main.cpp)

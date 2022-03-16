@@ -53,7 +53,6 @@ static PetscErrorCode SetInitialCondition(PetscInt dim, PetscReal time, const Pe
     if (x[0] < initialConditions->length / 2.0) {
         u[ablate::finiteVolume::processes::FlowProcess::RHO] = initialConditions->rhoL;
         u[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
-        u[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
@@ -62,7 +61,6 @@ static PetscErrorCode SetInitialCondition(PetscInt dim, PetscReal time, const Pe
     } else {
         u[ablate::finiteVolume::processes::FlowProcess::RHO] = initialConditions->rhoR;
         u[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
-        u[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
@@ -122,7 +120,6 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
         a_xG[ablate::finiteVolume::processes::FlowProcess::RHO] = initialConditions->rhoL;
 
         a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = initialConditions->rhoL * initialConditions->uL;
-        a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pL / ((initialConditions->gamma - 1.0) * initialConditions->rhoL);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uL);
@@ -131,7 +128,6 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
         a_xG[ablate::finiteVolume::processes::FlowProcess::RHO] = initialConditions->rhoR;
 
         a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = initialConditions->rhoR * initialConditions->uR;
-        a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = 0.0;
 
         PetscReal e = initialConditions->pR / ((initialConditions->gamma - 1.0) * initialConditions->rhoR);
         PetscReal et = e + 0.5 * PetscSqr(initialConditions->uR);
@@ -161,11 +157,11 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
 
             // Create a mesh
             // hard code the problem setup to act like a oneD problem
-            PetscReal start[] = {0.0, 0.0};
-            PetscReal end[] = {testingParam.initialConditions.length, 1};
-            PetscInt nx[] = {testingParam.nx, 1};
-            DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
-            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 2, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
+            PetscReal start[] = {0.0};
+            PetscReal end[] = {testingParam.initialConditions.length};
+            PetscInt nx[] = {testingParam.nx};
+            DMBoundaryType bcType[] = {DM_BOUNDARY_NONE};
+            DMPlexCreateBoxMesh(PETSC_COMM_WORLD, 1, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             auto eos = std::make_shared<ablate::eos::PerfectGas>(
                 std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", std::to_string(testingParam.initialConditions.gamma)}}));
@@ -181,9 +177,8 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             auto initialCondition = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(SetInitialCondition, (void *)&testingParam.initialConditions));
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "wall left", 4, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
-                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "right left", 2, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
-                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "mirrorWall", std::vector<int>{1, 3}, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
+                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "wall left", 1, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions),
+                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "right left", 2, PhysicsBoundary_Euler, (void *)&testingParam.initialConditions)};
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
                                                                                              ablate::domain::Region::ENTIREDOMAIN,
@@ -193,9 +188,9 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
                                                                                              nullptr /*transportModel*/,
                                                                                              testingParam.fluxCalculator,
                                                                                              boundaryConditions /*boundary conditions*/,
-                                                                                             std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{} /*exactSolution*/);
+                                                                                             true /*physics time step*/);
 
-            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition});
+            mesh->InitializeSubDomains({flowObject}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{initialCondition}, std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{});
             solver::DirectSolverTsInterface directSolverTsInterface(ts, flowObject);
 
             // Setup the TS

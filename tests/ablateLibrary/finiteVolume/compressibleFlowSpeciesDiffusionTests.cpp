@@ -117,7 +117,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d\n", l);
 
             // setup any global arguments
-            ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"automaticTimeStepCalculator", "off"}, {"petsclimiter_type", "none"}});
+            ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"petsclimiter_type", "none"}});
 
             // create a mock eos
             std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
@@ -162,7 +162,8 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 false /*simplex*/);
 
             // create a time stepper
-            auto timeStepper = ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}, nullptr, exactSolutions);
+            auto timeStepper =
+                ablate::solver::TimeStepper("timeStepper", mesh, {{"ts_dt", "5.e-01"}, {"ts_type", "rk"}, {"ts_max_time", "15.0"}, {"ts_adapt_type", "none"}}, nullptr, exactSolutions, exactSolutions);
 
             // setup a flow parameters
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(0.0, 0.0, parameters.diff);
@@ -180,14 +181,13 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                 std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eos, nullptr, transportModel),
             };
 
-            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>("testFlow",
-                                                                                         domain::Region::ENTIREDOMAIN,
-                                                                                         petscFlowOptions /*options*/,
-                                                                                         flowProcesses,
-                                                                                         boundaryConditions /*boundary conditions*/,
-                                                                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{eulerExactField, yiExactField});
+            auto flowObject = std::make_shared<ablate::finiteVolume::FiniteVolumeSolver>(
+                "testFlow", domain::Region::ENTIREDOMAIN, petscFlowOptions /*options*/, flowProcesses, boundaryConditions /*boundary conditions*/);
 
             timeStepper.Register(flowObject);
+
+            // prevent the normalization of species
+            TSSetPostEvaluate(timeStepper.GetTS(), nullptr) >> testErrorChecker;
 
             // run
             timeStepper.Solve();

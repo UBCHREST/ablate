@@ -41,7 +41,8 @@
         "CMAKE_BUILD_TYPE": "Debug"
       },
       "environment": {
-        "PETSC_ARCH": "arch-ablate-debug"
+        "PETSC_ARCH": "arch-ablate-debug",
+        "PKG_CONFIG_PATH": "/petsc-install/arch-ablate-debug/lib/pkgconfig"
       },
       "vendor": {
         "jetbrains.com/clion": {
@@ -58,7 +59,8 @@
         "CMAKE_BUILD_TYPE": "Release"
       },
       "environment": {
-        "PETSC_ARCH": "arch-ablate-opt"
+        "PETSC_ARCH": "arch-ablate-opt",
+        "PKG_CONFIG_PATH": "/petsc-install/arch-ablate-opt/lib/pkgconfig"
       },
       "vendor": {
         "jetbrains.com/clion": {

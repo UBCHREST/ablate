@@ -8,7 +8,7 @@
 #include "utilities/petscError.hpp"
 
 ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn)
-    : dm(dmIn), name(name), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solField(nullptr), modifiers(std::move(modifiersIn)) {
+    : dm(dmIn), name(name), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solGlobalField(nullptr), modifiers(std::move(modifiersIn)) {
     // update the dm with the modifiers
     for (auto& modifier : modifiers) {
         modifier->Modify(dm);
@@ -47,8 +47,8 @@ ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::share
 
 ablate::domain::Domain::~Domain() {
     // clean up the petsc objects
-    if (solField) {
-        VecDestroy(&solField) >> checkError;
+    if (solGlobalField) {
+        VecDestroy(&solGlobalField) >> checkError;
     }
 }
 
@@ -80,7 +80,7 @@ void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptio
     fields.push_back(Field::FromFieldDescription(fieldDescription, fields.size()));
 }
 
-PetscInt ablate::domain::Domain::GetDimensions() const {
+PetscInt ablate::domain::Domain::GetDimensions() const noexcept {
     PetscInt dim;
     DMGetDimension(dm, &dim) >> checkError;
     return dim;
@@ -89,8 +89,8 @@ PetscInt ablate::domain::Domain::GetDimensions() const {
 void ablate::domain::Domain::CreateStructures() {
     // Setup the solve with the ts
     DMPlexCreateClosureIndex(dm, NULL) >> checkError;
-    DMCreateGlobalVector(dm, &(solField)) >> checkError;
-    PetscObjectSetName((PetscObject)solField, "solution") >> checkError;
+    DMCreateGlobalVector(dm, &(solGlobalField)) >> checkError;
+    PetscObjectSetName((PetscObject)solGlobalField, "solution") >> checkError;
 
     // add the names to each of the components in the dm section
     PetscSection section;
@@ -124,7 +124,8 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     }
 }
 
-void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations) {
+void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+                                                  const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions) {
     // determine the number of fields
     for (auto& solver : solvers) {
         solver->Register(GetSubDomain(solver->GetRegion()));
@@ -141,21 +142,48 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
     }
 
     // Set the initial conditions for each field specified
+    ProjectFieldFunctions(initializations, solGlobalField);
+
+    // Initialize each solver
+    for (auto& solver : solvers) {
+        solver->Initialize();
+    }
+
+    // Set the exact solutions if the field in lives in each subDomain
+    for (auto& subDomain : subDomains) {
+        subDomain->SetsExactSolutions(exactSolutions);
+    }
+}
+std::vector<std::weak_ptr<ablate::io::Serializable>> ablate::domain::Domain::GetSerializableSubDomains() {
+    std::vector<std::weak_ptr<io::Serializable>> serializables;
+    for (auto& serializable : subDomains) {
+        serializables.push_back(serializable);
+    }
+    return serializables;
+}
+
+void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time) {
     PetscInt numberFields;
     DMGetNumFields(dm, &numberFields) >> checkError;
-    for (auto& initialization : initializations) {
+
+    // get a local vector for the work
+    Vec locVec;
+    DMGetLocalVector(dm, &locVec) >> checkError;
+    DMGlobalToLocal(dm, globVec, INSERT_VALUES, locVec) >> checkError;
+
+    for (auto& fieldFunction : fieldFunctions) {
         // Size up the field projects
-        std::vector<mathFunctions::PetscFunction> fieldFunctions(numberFields, nullptr);
+        std::vector<mathFunctions::PetscFunction> fieldFunctionsPts(numberFields, nullptr);
         std::vector<void*> fieldContexts(numberFields, nullptr);
 
-        auto fieldId = GetField(initialization->GetName());
-        fieldContexts[fieldId.id] = initialization->GetSolutionField().GetContext();
-        fieldFunctions[fieldId.id] = initialization->GetSolutionField().GetPetscFunction();
+        auto fieldId = GetField(fieldFunction->GetName());
+        fieldContexts[fieldId.id] = fieldFunction->GetSolutionField().GetContext();
+        fieldFunctionsPts[fieldId.id] = fieldFunction->GetSolutionField().GetPetscFunction();
 
         // Determine where to apply this field
         DMLabel fieldLabel = nullptr;
         PetscInt fieldValue = 0;
-        if (const auto& region = initialization->GetRegion()) {
+        if (const auto& region = fieldFunction->GetRegion()) {
             fieldValue = region->GetValue();
             DMGetLabel(dm, region->GetName().c_str(), &fieldLabel) >> checkError;
         } else {
@@ -166,12 +194,16 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
             }
         }
 
+        // Note the global DMProjectFunctionLabel can't be used because it overwrites unwritten values.
         // Project this field
-        DMProjectFunctionLabel(dm, 0.0, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctions.data(), fieldContexts.data(), INSERT_VALUES, solField) >> checkError;
+        if (fieldLabel) {
+            DMProjectFunctionLabelLocal(dm, time, fieldLabel, 1, &fieldValue, -1, nullptr, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
+        } else {
+            DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
+        }
     }
 
-    // Initialize each solver
-    for (auto& solver : solvers) {
-        solver->Initialize();
-    }
+    // push the results back to the global vector
+    DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec) >> checkError;
+    DMRestoreLocalVector(dm, &locVec) >> checkError;
 }

@@ -1,0 +1,22 @@
+Timestep: 0000 time = 0        	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <1E-15 <1E-15 <1E-13
+Timestep: 0001 time = 0.01     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0002 time = 0.02     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0003 time = 0.03     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0004 time = 0.04     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0005 time = 0.05     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0006 time = 0.06     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0007 time = 0.07     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0008 time = 0.08     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0009 time = 0.09     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0010 time = 0.1      	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0011 time = 0.11     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0012 time = 0.12     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0013 time = 0.13     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0014 time = 0.14     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+Timestep: 0015 time = 0.15     	 L_2 Error: \[(.*), (.*), (.*)\]<expects> <.1 <1 <.1
+ResultFiles:
+domain.hdf5
+domain.xmf
+flowTracerParticles.hdf5
+flowTracerParticles.xmf
+restart.rst

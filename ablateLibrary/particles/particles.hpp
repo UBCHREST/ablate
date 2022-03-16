@@ -11,7 +11,7 @@
 
 namespace ablate::particles {
 
-class Particles : public solver::Solver {
+class Particles : public solver::Solver, public io::Serializable {
    protected:
     // particle domain
     DM swarmDm;
@@ -21,10 +21,6 @@ class Particles : public solver::Solver {
     TS particleTs = NULL;
     PetscReal timeInitial; /* The time for ui, at the beginning of the advection solve */
     PetscReal timeFinal;   /* The time for uf, at the end of the advection solve */
-
-    // flow coupling data
-    Vec flowInitial; /* The PDE solution field at ti */
-    Vec flowFinal;   /* The PDE solution field at tf */
 
     // all fields stored in the particle domain
     std::vector<ParticleField> particleFieldDescriptors;
@@ -111,7 +107,7 @@ class Particles : public solver::Solver {
      * @param time
      * @param u
      */
-    void Save(PetscViewer viewer, PetscInt steps, PetscReal time) const override;
+    void Save(PetscViewer viewer, PetscInt steps, PetscReal time) override;
 
     /**
      * shared function to view all particles;
@@ -121,6 +117,12 @@ class Particles : public solver::Solver {
      * @param u
      */
     void Restore(PetscViewer viewer, PetscInt steps, PetscReal time) override;
+
+    /**
+     * Get an id for serialization
+     * @return
+     */
+    inline const std::string& GetId() const override { return GetSolverId(); }
 
     /** common field names for particles **/
     inline static const char ParticleVelocity[] = "ParticleVelocity";

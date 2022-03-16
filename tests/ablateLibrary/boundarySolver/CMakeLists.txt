@@ -1,6 +1,8 @@
 target_sources(libraryTests
         PRIVATE
-        boundarySolverGradientTests.cpp
+        boundarySolverPointTests.cpp
+        boundarySolverDistributedTests.cpp
         )
 
 add_subdirectory(lodi)
+add_subdirectory(physics)

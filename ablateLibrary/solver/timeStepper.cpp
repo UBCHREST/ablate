@@ -5,8 +5,16 @@
 #include "utilities/petscOptions.hpp"
 
 ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<ablate::domain::Domain> domain, std::map<std::string, std::string> arguments,
-                                         std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations)
-    : name(nameIn), domain(domain), serializer(serializerIn), initializations(initializations) {
+                                         std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations,
+                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances,
+                                         std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances)
+    : name(nameIn),
+      domain(domain),
+      serializer(serializerIn),
+      initializations(initializations),
+      exactSolutions(exactSolutions),
+      absoluteTolerances(absoluteTolerances),
+      relativeTolerances(relativeTolerances) {
     // create an instance of the ts
     TSCreate(PETSC_COMM_WORLD, &ts) >> checkError;
 
@@ -43,7 +51,7 @@ void ablate::solver::TimeStepper::Solve() {
         throw std::runtime_error("No solvers have been set.");
     }
 
-    domain->InitializeSubDomains(solvers, initializations);
+    domain->InitializeSubDomains(solvers, initializations, exactSolutions);
     TSSetDM(ts, domain->GetDM()) >> checkError;
 
     // Register any functions with the dm/ts
@@ -61,15 +69,28 @@ void ablate::solver::TimeStepper::Solve() {
     // Register the monitors
     for (auto& solver : solvers) {
         // Get any monitors
-        auto& monitorsList = monitors[solver->GetId()];
+        auto& monitorsList = monitors[solver->GetSolverId()];
         for (auto& monitor : monitorsList) {
             monitor->Register(solver);
         }
     }
-    // Register the solver with the serializer
+
     if (serializer) {
+        // Register any subdomain with the serializer
+        for (auto& subDomain : domain->GetSerializableSubDomains()) {
+            if (auto subDomainPtr = subDomain.lock()) {
+                if (subDomainPtr->Serialize()) {
+                    serializer->Register(subDomain);
+                }
+            }
+        }
+
+        // Register the solver with the serializer
         for (auto& solver : solvers) {
-            serializer->Register(solver);
+            auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
+            if (serializable && serializable->Serialize()) {
+                serializer->Register(serializable);
+            }
         }
     }
 
@@ -83,6 +104,32 @@ void ablate::solver::TimeStepper::Solve() {
     // If there was a serializer, restore the ts
     if (serializer) {
         serializer->RestoreTS(ts);
+    }
+
+    // set time stepper individual tolerances if specified
+    if (!absoluteTolerances.empty() || !relativeTolerances.empty()) {
+        Vec vatol = nullptr;
+        Vec vrtol = nullptr;
+
+        DMCreateGlobalVector(domain->GetDM(), &vatol) >> checkError;
+        DMCreateGlobalVector(domain->GetDM(), &vrtol) >> checkError;
+
+        // Get the default values
+        PetscReal aTolDefault, rTolDefault;
+        TSGetTolerances(ts, &aTolDefault, nullptr, &rTolDefault, nullptr) >> checkError;
+
+        // Set the default values
+        VecSet(vatol, aTolDefault) >> checkError;
+        VecSet(vrtol, rTolDefault) >> checkError;
+
+        // project the tolerances
+        domain->ProjectFieldFunctions(absoluteTolerances, vatol);
+        domain->ProjectFieldFunctions(relativeTolerances, vrtol);
+
+        // Set the values
+        TSSetTolerances(ts, PETSC_DECIDE, vatol, PETSC_DECIDE, vrtol) >> checkError;
+        VecDestroy(&vatol);
+        VecDestroy(&vrtol);
     }
 
     TSViewFromOptions(ts, NULL, "-ts_view") >> checkError;
@@ -112,7 +159,7 @@ void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solve
     // Register the monitors
     for (auto& monitor : solverMonitors) {
         // store a reference to the monitor
-        monitors[solver->GetId()].push_back(monitor);
+        monitors[solver->GetSolverId()].push_back(monitor);
 
         // register the monitor with the ts
         TSMonitorSet(ts, monitor->GetPetscFunction(), monitor->GetContext(), NULL) >> checkError;
@@ -259,4 +306,7 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm,
 REGISTER_DEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
                  ARG(ablate::domain::Domain, "domain", "the mesh used for the simulation"), ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
                  OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"),
-                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "initialization", "initialization field functions"));
+                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "initialization", "initialization field functions"),
+                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolution", "optional exact solutions that can be used for error calculations"),
+                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "absoluteTolerances", "optional absolute tolerances for a field"),
+                 OPT(std::vector<ablate::mathFunctions::FieldFunction>, "relativeTolerances", "optional relative tolerances for a field"));

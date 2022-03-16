@@ -16,7 +16,7 @@ PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, Pets
         IS vecIs;
         Vec vec;
         DM subDm;
-        ierr = monitor->GetSolver()->GetSubDomain().GetFieldSubVector(field, &vecIs, &vec, &subDm);
+        ierr = monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIs, &vec, &subDm);
         CHKERRQ(ierr);
 
         // get the comm for this monitor
@@ -86,7 +86,7 @@ PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, Pets
         monitor->log->Print("\n");
         monitor->log->Print("\tavg", avgGlob.size(), &avgGlob[0], "%2.3g");
         monitor->log->Print("\n");
-        ierr = monitor->GetSolver()->GetSubDomain().RestoreFieldSubVector(field, &vecIs, &vec, &subDm);
+        ierr = monitor->GetSolver()->GetSubDomain().RestoreFieldGlobalVector(field, &vecIs, &vec, &subDm);
         CHKERRQ(ierr);
     }
     PetscFunctionReturn(0);

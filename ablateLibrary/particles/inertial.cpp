@@ -75,18 +75,14 @@ PetscErrorCode ablate::particles::Inertial::UnpackKinematics(TS ts, Vec kinemati
 
 PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
     PetscFunctionBeginUser;
-
     ablate::particles::Inertial *particles = (ablate::particles::Inertial *)ctx;
 
-    Vec u = particles->flowFinal;
     DM sdm, dm, vdm;
-    Vec vel, locvel, fluidVelocity;
+    Vec locvel, fluidVelocity;
     IS vis;
     DMInterpolationInfo ictx;
     const PetscScalar *coords;
     PetscScalar *f;
-    const auto &flowVelocityField = particles->subDomain->GetField("velocity");
-    PetscInt vf[1] = {flowVelocityField.id};
     PetscInt dim, Np;
     PetscErrorCode ierr;
 
@@ -103,22 +99,9 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
     ierr = DMGetDimension(dm, &dim);
     CHKERRQ(ierr);
 
-    /* Get local fluid velocity */
-    ierr = DMCreateSubDM(dm, 1, vf, &vis, &vdm);
-    CHKERRQ(ierr);
-    ierr = VecGetSubVector(u, vis, &vel);
-    CHKERRQ(ierr);
-    ierr = DMGetLocalVector(vdm, &locvel);
-    CHKERRQ(ierr);
-    ierr = DMPlexInsertBoundaryValues(vdm, PETSC_TRUE, locvel, particles->timeInitial, NULL, NULL, NULL);
-    CHKERRQ(ierr);
-    ierr = DMGlobalToLocalBegin(vdm, vel, INSERT_VALUES, locvel);
-    CHKERRQ(ierr);
-    ierr = DMGlobalToLocalEnd(vdm, vel, INSERT_VALUES, locvel);
-    CHKERRQ(ierr);
-    ierr = VecRestoreSubVector(u, vis, &vel);
-    CHKERRQ(ierr);
-    ierr = ISDestroy(&vis);
+    /* Get local flow velocity */
+    const auto &flowVelocityField = particles->subDomain->GetField("velocity");
+    ierr = particles->subDomain->GetFieldLocalVector(flowVelocityField, particles->timeInitial, &vis, &locvel, &vdm);
     CHKERRQ(ierr);
 
     /* Interpolate velocity */
@@ -161,9 +144,7 @@ PetscErrorCode ablate::particles::Inertial::RHSFunction(TS ts, PetscReal t, Vec 
     CHKERRQ(ierr);
     ierr = DMInterpolationDestroy(&ictx);
     CHKERRQ(ierr);
-    ierr = DMRestoreLocalVector(vdm, &locvel);
-    CHKERRQ(ierr);
-    ierr = DMDestroy(&vdm);
+    ierr = particles->subDomain->RestoreFieldLocalVector(flowVelocityField, &vis, &locvel, &vdm);
     CHKERRQ(ierr);
 
     // Calculate RHS of particle position and velocity equations

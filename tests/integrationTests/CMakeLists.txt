@@ -4,8 +4,9 @@ target_link_libraries(integrationTests PUBLIC gtest ablateLibrary testingResourc
 target_sources(integrationTests
         PRIVATE
         tests.cpp
-        main.cpp
         )
+
+add_subdirectory(runners)
 
 gtest_discover_tests(integrationTests
         # set a working directory so your project root so that you can find test data via paths relative to the project root

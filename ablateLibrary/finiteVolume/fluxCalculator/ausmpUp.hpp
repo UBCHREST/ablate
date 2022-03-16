@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_AUSMPUP_HPP
 #define ABLATELIBRARY_AUSMPUP_HPP
 
+#include "finiteVolume/processes/pressureGradientScaling.hpp"
 #include "fluxCalculator.hpp"
 namespace ablate::finiteVolume::fluxCalculator {
 
@@ -9,6 +10,9 @@ namespace ablate::finiteVolume::fluxCalculator {
  */
 class AusmpUp : public fluxCalculator::FluxCalculator {
    private:
+    // AusmUp uses a pgs if provided
+    const std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs;
+
     static Direction AusmpUpFunction(void*, PetscReal uL, PetscReal aL, PetscReal rhoL, PetscReal pL, PetscReal uR, PetscReal aR, PetscReal rhoR, PetscReal pR, PetscReal* massFlux, PetscReal* p12);
 
     static PetscReal M1Plus(PetscReal m);
@@ -18,19 +22,19 @@ class AusmpUp : public fluxCalculator::FluxCalculator {
     const inline static PetscReal beta = 1.e+0 / 8.e+0;
     const inline static PetscReal Kp = 0.25;
     const inline static PetscReal Ku = 0.75;
-    const inline static PetscReal sigma = 1.0;
+    const inline static PetscReal sigma = 0.25;
 
     // The reference infinity mach number
     const double mInf;
 
    public:
-    explicit AusmpUp(double mInf);
+    explicit AusmpUp(double mInf, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
     AusmpUp(AusmpUp const&) = delete;
     AusmpUp& operator=(AusmpUp const&) = delete;
     ~AusmpUp() override = default;
 
     FluxCalculatorFunction GetFluxCalculatorFunction() override { return AusmpUpFunction; }
-    void* GetFluxCalculatorContext() override { return (void*)&mInf; }
+    void* GetFluxCalculatorContext() override { return this; }
 
     /**
      * Support calls

@@ -126,6 +126,10 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
     std::vector<PetscReal> ferrors(totalComponents);
     NormType petscNormType;
     switch (normType) {
+        case Norm::L1_NORM:
+        case Norm::L1:
+            petscNormType = NORM_1;
+            break;
         case Norm::L2_NORM:
         case Norm::L2:
             petscNormType = NORM_2;
@@ -143,6 +147,14 @@ std::vector<PetscReal> ablate::monitors::SolutionErrorMonitor::ComputeError(TS t
     VecStrideNormAll(exactVec, petscNormType, &ferrors[0]) >> checkError;
 
     // normalize the error if _norm
+    if (normType == Norm::L1_NORM) {
+        PetscInt size;
+        VecGetSize(exactVec, &size);
+        PetscReal factor = (1.0 / (size / totalComponents));
+        for (PetscInt c = 0; c < totalComponents; c++) {
+            ferrors[c] *= factor;
+        }
+    }
     if (normType == Norm::L2_NORM) {
         PetscInt size;
         VecGetSize(exactVec, &size);
@@ -183,6 +195,10 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::S
 
 std::ostream& ablate::monitors::operator<<(std::ostream& os, const ablate::monitors::SolutionErrorMonitor::Norm& v) {
     switch (v) {
+        case SolutionErrorMonitor::Norm::L1:
+            return os << "l1";
+        case SolutionErrorMonitor::Norm::L1_NORM:
+            return os << "l1_norm";
         case SolutionErrorMonitor::Norm::L2:
             return os << "l2";
         case SolutionErrorMonitor::Norm::LINF:
@@ -204,6 +220,10 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::S
         v = SolutionErrorMonitor::Norm::LINF;
     } else if (enumString == "l2_norm") {
         v = SolutionErrorMonitor::Norm::L2_NORM;
+    } else if (enumString == "l1_norm") {
+        v = SolutionErrorMonitor::Norm::L1_NORM;
+    } else if (enumString == "l1") {
+        v = SolutionErrorMonitor::Norm::L1;
     } else {
         throw std::invalid_argument("Unknown norm type " + enumString);
     }
@@ -213,4 +233,5 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::S
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::SolutionErrorMonitor, "Computes and reports the error every time step",
          ENUM(ablate::monitors::SolutionErrorMonitor::Scope, "scope", "how the error should be calculated ('vector', 'component')"),
-         ENUM(ablate::monitors::SolutionErrorMonitor::Norm, "type", "norm type ('l2', 'linf', 'l2_norm')"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
+         ENUM(ablate::monitors::SolutionErrorMonitor::Norm, "type", "norm type ('l1','l1_norm','l2', 'linf', 'l2_norm')"),
+         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

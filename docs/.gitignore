@@ -4,3 +4,4 @@ _site
 .bundle
 vendor
 install
+sourceDocs

@@ -9,17 +9,26 @@ namespace ablate::finiteVolume::processes {
 
 class TwoPhaseEulerAdvection : public Process {
    private:
+    struct DecodeDataStruct {
+        std::shared_ptr<ablate::eos::EOS> eosGas;
+        std::shared_ptr<ablate::eos::EOS> eosLiquid;
+        PetscReal ke;
+        PetscReal e;
+        PetscReal rho;
+        PetscReal Yg;
+        PetscReal Yl;
+        PetscInt dim;
+        PetscReal* vel;
+    };
+
     const std::shared_ptr<eos::EOS> eosGas;
     const std::shared_ptr<eos::EOS> eosLiquid;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas;
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid;
-    struct Parameters {
-        // gravitational acceleration vector
-        PetscReal g[3];  // default = {0.0, 0.0, 0.0};
-    };
-    Parameters parameters;
+
+    static PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void* ctx);
 
    public:
     static PetscErrorCode UpdateAuxTemperatureField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
@@ -36,7 +45,7 @@ class TwoPhaseEulerAdvection : public Process {
 
     TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
                            std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
-                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid, std::shared_ptr<parameters::Parameters> parametersIn);
+                           std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid);
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
 
    private:

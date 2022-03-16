@@ -18,15 +18,15 @@ namespace processes {
 class Process;
 }
 
-class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction {
+class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction, public io::Serializable {
    public:
     using RHSArbitraryFunction = PetscErrorCode (*)(const FiniteVolumeSolver&, DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
     using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
                                                   const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
                                                   const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void* ctx);
-    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[], const PetscInt aOff[],
-                                                   const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
+    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
+                                                   const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    private:
     /**
@@ -53,6 +53,15 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
         std::vector<PetscInt> auxFields;
     };
 
+    /**
+     * struct to describe the compute timestamp functions
+     */
+    struct ComputeTimeStepDescription {
+        ComputeTimeStepFunction function;
+        void* context;
+        std::string name; /**used for output**/
+    };
+
     // hold the update functions for flux and point sources
     std::vector<FluxFunctionDescription> rhsFluxFunctionDescriptions;
     std::vector<PointFunctionDescription> rhsPointFunctionDescriptions;
@@ -61,16 +70,16 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     std::vector<std::pair<RHSArbitraryFunction, void*>> rhsArbitraryFunctions;
 
     // functions to update the timestep
-    std::vector<std::pair<ComputeTimeStepFunction, void*>> timeStepFunctions;
+    const bool computePhysicsTimeStep;
+    std::vector<ComputeTimeStepDescription> timeStepFunctions;
 
     // Hold the flow processes.  This is mostly just to hold a pointer to them
     std::vector<std::shared_ptr<processes::Process>> processes;
 
     // static function to update the flowfield
-    static void ComputeTimeStep(TS, ablate::solver::Solver&);
+    static void EnforceTimeStep(TS ts, ablate::solver::Solver& solver);
 
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
-    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
     /**
      * Computes the flux across each face in th region
@@ -82,7 +91,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * support call to compute the gradients in each cell.  This also limits the gradient based upon
      * the limiter
      */
-    void ComputeFieldGradients(const domain::Field& field, Vec xGlobVec, Vec& gradLocVec, DM& dmGrad);
+    void ComputeFieldGradients(const domain::Field& field, Vec xLocalVec, Vec& gradLocVec, DM& dmGrad);
 
     /**
      * support call to project to a single face from a side
@@ -100,13 +109,13 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     /**
      * Function to compute the point source terms
      */
-    void ComputePointSourceTerms(DM dm, PetscDS ds, PetscInt totDim, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux, const PetscScalar* auxArray, DM faceDM,
+    void ComputePointSourceTerms(DM dm, PetscDS ds, PetscInt totDim, PetscReal time, const PetscScalar* xArray, DM dmAux, PetscDS dsAux, PetscInt totDimAux, const PetscScalar* auxArray, DM faceDM,
                                  const PetscScalar* faceGeomArray, DM cellDM, const PetscScalar* cellGeomArray, std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays,
                                  std::vector<DM>& dmAuxGrads, std::vector<const PetscScalar*>& locAuxGradArrays, PetscScalar* locFArray);
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
-                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolution);
+                       std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep = false);
 
     /** SubDomain Register and Setup **/
     void Setup() override;
@@ -159,15 +168,40 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param inputFields
      * @param auxFields
      */
-    void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx);
+    void RegisterComputeTimeStepFunction(ComputeTimeStepFunction function, void* ctx, std::string name);
 
     /**
-     * Function to save the subDomain flowField to a viewer
+     * Computes the individual time steps useful for output/debugging.  This does not enforce the time step
+     */
+    std::map<std::string, double> ComputePhysicsTimeSteps(TS);
+
+    /**
+     * Returns true if any of the processes are marked as serializable
+     * @return
+     */
+    bool Serialize() const override;
+
+    /**
+     * only required function, returns the id of the object.  Should be unique for the simulation
+     * @return
+     */
+    const std::string& GetId() const override { return GetSolverId(); }
+
+    /**
+     * Save the state to the PetscViewer
      * @param viewer
      * @param sequenceNumber
      * @param time
      */
-    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) const override;
+    void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * Restore the state from the PetscViewer
+     * @param viewer
+     * @param sequenceNumber
+     * @param time
+     */
+    void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
 };
 }  // namespace ablate::finiteVolume
 
