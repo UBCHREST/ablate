@@ -1,16 +1,19 @@
-#ifndef ABLATELIBRARY_BOUNDARYSOLVER_HPP
-#define ABLATELIBRARY_BOUNDARYSOLVER_HPP
+//
+// Created by owen on 3/19/22.
+//
+#ifndef ABLATELIBRARY_RADIATIONSOLVER_HPP
+#define ABLATELIBRARY_RADIATIONSOLVER_HPP
 
 #include <memory>
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
 
-namespace ablate::boundarySolver {
+namespace ablate::radiationSolver {
 
-// forward declare the boundaryProcess
-class BoundaryProcess;
+// forward declare the radiationProcess
+class RadiationProcess;
 
-class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  //Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
+class RadiationSolver : public solver::CellSolver, public solver::RHSFunction {  //Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
    public:
     /**
      * Boundary information.
@@ -26,19 +29,9 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
                                                       PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[], PetscScalar source[], void* ctx);
 
     /**
-     * Update the solution or aux field before each time step
-     */
-    using BoundaryUpdateFunction = PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[], PetscScalar* boundaryValues,
-                                                      const PetscScalar* stencilValues, const PetscInt aOff[], PetscScalar* auxValues, const PetscScalar* stencilAuxValues, void* ctx);
-
-    /**
      * Boundaries can be treated in two different ways, point source on the boundary or distributed in the other phase.  For the Distributed model, the source is divided by volume in each case
      */
-    enum class BoundarySourceType {
-        Point,       /** the source terms are added to boundary cell **/
-        Distributed, /** the source terms are distributed to neighbor cells based upon the stencil (divided by cell volume) **/
-        Flux         /** the source term are added to only one neighbor cell. (divided by cell volume)**/
-    };
+    enum class BoundarySourceType { Point, Distributed };
 
     /**
      * public helper function to compute the gradient
@@ -66,16 +59,14 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
      * struct to hold the gradient stencil for the boundary
      */
     struct GradientStencil {
-        /** the boundary cell for this stencil **/
-        PetscInt cellId;
         /** the boundary geom for this stencil **/
         BoundaryFVFaceGeom geometry;
         /** The points in the stencil*/
         std::vector<PetscInt> stencil;
-        /** store the stencil size for easy access */
-        PetscInt stencilSize;
         /** The weights in [point*dim + dir] order */
         std::vector<PetscScalar> gradientWeights;
+        /** store the stencil size for easy access */
+        PetscInt stencilSize;
         /** The distribution weights in order */
         std::vector<PetscScalar> distributionWeights;
         /** Store the volume for each stencil cell */
@@ -85,7 +76,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
     /**
      * struct to describe how to compute the source terms for boundary
      */
-    struct BoundarySourceFunctionDescription {
+    struct BoundaryFunctionDescription {
         BoundarySourceFunction function;
         void* context;
         BoundarySourceType type;
@@ -95,28 +86,14 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
         std::vector<PetscInt> auxFields;
     };
 
-    /**
-     * struct to describe how to compute the boundary update functions
-     */
-    struct BoundaryUpdateFunctionDescription {
-        BoundaryUpdateFunction function;
-        void* context;
-
-        std::vector<PetscInt> inputFields;
-        std::vector<PetscInt> auxFields;
-    };
-
     // Hold the region used to define the boundary faces
     const std::shared_ptr<domain::Region> fieldBoundary;
 
     // hold the update functions for flux and point sources
-    std::vector<BoundarySourceFunctionDescription> boundarySourceFunctions;
+    std::vector<BoundaryFunctionDescription> boundaryFunctions;
 
-    // hold the update functions for flux and point sources
-    std::vector<BoundaryUpdateFunctionDescription> boundaryUpdateFunctions;
-
-    // Hold a list of boundaryProcesses that contribute to this solver
-    std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses;
+    // Hold a list of radiationProcesses that contribute to this solver
+    std::vector<std::shared_ptr<RadiationProcess>> radiationProcesses;
 
     // Hold a list of GradientStencils, this order corresponds to the face order
     std::vector<GradientStencil> gradientStencils;
@@ -127,36 +104,18 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
     // The PetscFV (usually the least squares method) is used to compute the gradient weights
     PetscFV gradientCalculator = nullptr;
 
-    // Determine if multiple faces should be merged for a single cell
-    const bool mergeFaces;
-
-    /**
-     * private function compute weights and store a gradient stencil
-     * @param cellId
-     * @param geometry
-     * @param stencil
-     * @param cellDM
-     * @param cellGeomArray
-     */
-    void CreateGradientStencil(PetscInt cellId, const BoundaryFVFaceGeom& geometry, const std::vector<PetscInt>& stencil, DM cellDM, const PetscScalar* cellGeomArray);
-
-    /**
-     * Prestep to update boundary variables
-     */
-    void UpdateVariablesPreStep(TS ts, ablate::solver::Solver&);
-
    public:
     /**
      *
      * @param solverId the id for this solver
      * @param region the boundary cell region
      * @param fieldBoundary the region describing the faces between the boundary and field
-     * @param boundaryProcesses a list of boundary processes
+     * @param radiationProcesses a list of boundary processes
      * @param options other options
      */
-    BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses,
-                   std::shared_ptr<parameters::Parameters> options, bool mergeFaces = false);
-    ~BoundarySolver() override;
+    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<RadiationProcess>> radiationProcesses,
+                   std::shared_ptr<parameters::Parameters> options);
+    ~RadiationSolver() override;
 
     /** SubDomain Register and Setup **/
     void Setup() override;
@@ -169,13 +128,6 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
      */
     void RegisterFunction(BoundarySourceFunction function, void* context, const std::vector<std::string>& sourceFields, const std::vector<std::string>& inputFields,
                           const std::vector<std::string>& auxFields, BoundarySourceType type = BoundarySourceType::Point);
-
-    /**
-     * Register an update function.
-     * @param function
-     * @param context
-     */
-    void RegisterFunction(BoundaryUpdateFunction function, void* context, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
 
     /**
      * Function passed into PETSc to compute the FV RHS
@@ -196,8 +148,8 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
     /**
      * Return a reference to the boundary geometry.  This is a slow call and should only be done for init/debugging/testing
      */
-    std::vector<GradientStencil> GetBoundaryGeometry(PetscInt cell) const;
+    const BoundaryFVFaceGeom& GetBoundaryGeometry(PetscInt cell) const;
 };
 
-}  // namespace ablate::boundarySolver
+}  // namespace ablate::radiationSolver
 #endif  // ABLATELIBRARY_BOUNDARYSOLVER_HPP
