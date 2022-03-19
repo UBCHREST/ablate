@@ -1,16 +1,19 @@
-#ifndef ABLATELIBRARY_BOUNDARYSOLVER_HPP
-#define ABLATELIBRARY_BOUNDARYSOLVER_HPP
+//
+// Created by owen on 3/19/22.
+//
+#ifndef ABLATELIBRARY_RADIATIONSOLVER_HPP
+#define ABLATELIBRARY_RADIATIONSOLVER_HPP
 
 #include <memory>
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
 
-namespace ablate::boundarySolver {
+namespace ablate::radiationSolver {
 
-// forward declare the boundaryProcess
-class BoundaryProcess;
+// forward declare the radiationProcess
+class RadiationProcess;
 
-class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  //Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
+class RadiationSolver : public solver::CellSolver, public solver::RHSFunction {  //Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
    public:
     /**
      * Boundary information.
@@ -89,8 +92,8 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
     // hold the update functions for flux and point sources
     std::vector<BoundaryFunctionDescription> boundaryFunctions;
 
-    // Hold a list of boundaryProcesses that contribute to this solver
-    std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses;
+    // Hold a list of radiationProcesses that contribute to this solver
+    std::vector<std::shared_ptr<RadiationProcess>> radiationProcesses;
 
     // Hold a list of GradientStencils, this order corresponds to the face order
     std::vector<GradientStencil> gradientStencils;
@@ -107,12 +110,12 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
      * @param solverId the id for this solver
      * @param region the boundary cell region
      * @param fieldBoundary the region describing the faces between the boundary and field
-     * @param boundaryProcesses a list of boundary processes
+     * @param radiationProcesses a list of boundary processes
      * @param options other options
      */
-    BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses,
+    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<RadiationProcess>> radiationProcesses,
                    std::shared_ptr<parameters::Parameters> options);
-    ~BoundarySolver() override;
+    ~RadiationSolver() override;
 
     /** SubDomain Register and Setup **/
     void Setup() override;
@@ -148,5 +151,5 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  
     const BoundaryFVFaceGeom& GetBoundaryGeometry(PetscInt cell) const;
 };
 
-}  // namespace ablate::boundarySolver
+}  // namespace ablate::radiationSolver
 #endif  // ABLATELIBRARY_BOUNDARYSOLVER_HPP
