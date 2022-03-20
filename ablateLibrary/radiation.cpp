@@ -18,7 +18,7 @@ class Irradiate { //name of the ray tracing class
     const double pi = 3.1415926535897932384626433832795028841971693993;
 
     const std::vector<double> origin = {0,0,0}; //This is the point of the current cell that is being irradiated. It should be given as an input or set by the given cell.
-    PetscReal test = 0;
+    //PetscReal test = 0;
 
     ///Class Inputs and Variables
     double h = 0.1; //This is the DEFAULT step size and should be set by the user input

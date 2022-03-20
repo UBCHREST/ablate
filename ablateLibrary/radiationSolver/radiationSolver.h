@@ -135,6 +135,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      * @param time
      * @param locXVec
      * @param globFVec
+     *
      * @param ctx
      * @return
      */
@@ -149,6 +150,31 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      * Return a reference to the boundary geometry.  This is a slow call and should only be done for init/debugging/testing
      */
     const BoundaryFVFaceGeom& GetBoundaryGeometry(PetscInt cell) const;
+
+    ///Starting added radiation stuff here
+
+    ///Class Methods
+    PetscReal rayTrace();
+    PetscReal castRay(int theta, int phi, std::vector<PetscReal> intersect); //Class methods get declared here
+    PetscReal flameIntensity(PetscReal epsilon, PetscReal temperature);
+    PetscReal mag(std::vector<PetscReal> vector);
+
+    ///Class Constants
+    const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
+    const PetscReal refTemp = 298.15;
+    const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
+
+    ///Class inputs and Variables
+    DM faceDM, cellDM; //Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
+    PetscInt dim;
+
+    PetscReal h = 0.1; //This is the DEFAULT step size and should be set by the user input
+    PetscInt nTheta = 100; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscInt nPhi = 100; //The DEFAULT number of angles to solve with, should be given by user input
+
+    PetscReal radGain;
+    const Vec origin = {0,0,0};
+    PetscReal rayInit();
 };
 
 }  // namespace ablate::radiationSolver
