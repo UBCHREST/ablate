@@ -59,7 +59,7 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
     // Create a location vector (Location of what? The current cell?)
     Vec locVec; //Vector representing the location of a cell?
     VecCreateSeq(PETSC_COMM_SELF, dim, &locVec) >> checkError; //Creates the vector with a length equal to the number of dimensions
-    VecSetBlockSize(locVec, dim) >> checkError; //TODO: What is vec set block size?
+    VecSetBlockSize(locVec, dim) >> checkError; //TODO: What is vec set block size? Probably something related to memory management
 
     while (s < L) { //While the vector traveled distance is less than the line length total?
         // Compute the current location
@@ -85,7 +85,7 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
                 // get the center location of this cell
                 PetscFVCellGeom* cellGeom;
                 DMPlexPointLocalRead(dmCell, cells[0].index, cellGeomArray, &cellGeom) >> checkError;
-                // figure out where this cell is along the line //TODO: Maybe the ray tracer can step based on the center to center cell distance instead of predefined step size, maybe not
+                // figure out where this cell is along the line
                 double alongLine = 0.0;
                 for (PetscInt d = 0; d < dim; d++) {
                     alongLine += PetscSqr(cellGeom->centroid[d] - start[d]);
