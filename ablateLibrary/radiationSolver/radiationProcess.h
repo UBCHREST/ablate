@@ -5,7 +5,9 @@
 #ifndef ABLATELIBRARY_RADIATIONPROCESS_H
 #define ABLATELIBRARY_RADIATIONPROCESS_H
 
-namespace ablate::boundarySolver {
+#include "radiationSolver.h"
+
+namespace ablate::radiationSolver {
 
 class RadiationProcess {
    public:

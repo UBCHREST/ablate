@@ -106,8 +106,7 @@ void ablate::radiationSolver::RadiationSolver::Setup() { //allows initialization
     PetscInt maxFaces = 0;
 
     // March over each cell in this region to create the stencil
-    IS cellIS;
-    PetscInt cStart, cEnd;
+    IS cellIS; //PetscInt cStart, cEnd; has been moved to the header file and declared as a global variable
     const PetscInt* cells;
     GetCellRange(cellIS, cStart, cEnd, cells);
     for (PetscInt c = cStart; c < cEnd; ++c) {
@@ -268,51 +267,72 @@ void ablate::radiationSolver::RadiationSolver::Initialize() { //TODO: Initializa
 //Temperature and absorptivity(any property) of arbitrary point based on location (Using aux fields most likely?) //No idea yet, probably not crazy hard (Don't think absorptivity model exists yet)
 
 ///Declaring function for the initialization to call, draws each ray vector and gets all of the cells associated with it (sorted by distance and starting at the boundary working in)
-PetscReal ablate::radiationSolver::RadiationSolver::rayInit() { //TODO: Need to create set of vectors associated with each ray in the initialization
-    double theta; //represents the actual current angle (inclination)
-    double phi; //represents the actual current angle (rotation)
-    //TODO: h should probably be auto-set as the minimum cell radius?
+void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to create set of vectors associated with each ray in the initialization
+    double theta;                                           // represents the actual current angle (inclination)
+    double phi;                                             // represents the actual current angle (rotation)
+    // TODO: h should probably be auto-set as the minimum cell radius?
 
-    //TODO: Will need to iterate over every cell in the subdomain
-    for(int ntheta = 0; ntheta < nTheta; ntheta++) { //for every angle theta
-        //precalculate sin and cosine of the angle theta? because it is used frequently
-        for(int nphi = 0; nphi < nPhi; nphi++) { //for every angle phi
-            theta = (ntheta/nTheta)*2*pi; //converts the present angle number into a real angle
-            phi = (nphi/nPhi)*2*pi; //converts the present angle number into a real angle
+    /// Create a matrix which can store cell locations based on origin cell, theta, and phi
+    Mat rays;
+    // PetscInt rayCells[nTheta][nPhi]; //Add an index for the number of cells
+    MatCreate(PETSC_COMM_WORLD, &rays);
+    MatSetSizes(rays, PETSC_DECIDE, PETSC_DECIDE, nTheta, nPhi);
+    MatSetFromOptions(rays);
+    MatSetUp(rays);
 
-            PetscReal magnitude; //TODO: Should represent the distance from the origin cell to the boundary
-            while(magnitude - h > 0) {
-                /// Draw a point on which to grab the cells of the DM
-                std::vector<PetscReal> direction = {sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta)};  //(Reference: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction TODO: All of this needs to be in Petsc data types probably? Tried and failed to import Petsc functionality. How to?
-                // Intersect should point to the boundary, and then be pushed back to the origin, getting each cell
-                Vec intersect;  //(subtract the origin from the direction to get intersect point) get the point of intersection with the boundary //TODO: get the index of the domain boundary and ray vector intersection point.
-                VecCreateSeq(PETSC_COMM_SELF, dim, &intersect) >> checkError;  // Creates the vector with a length equal to the number of dimensions
-                VecSetBlockSize(intersect, dim) >> checkError;
+    for(int iCell = cStart; iCell <= cEnd; iCell++) {       //loop through subdomain cell indices
+        //DMGetCoordinatesLocalSetUp(cellDM);
+        //DMGetCoordinates(cellDM, origin); // TODO: Get the position vector of the current cell index
+        for (int ntheta = 0; ntheta < nTheta; ntheta++) {  // for every angle theta
+            // precalculate sin and cosine of the angle theta because it is used frequently?
+            for (int nphi = 0; nphi < nPhi; nphi++) {  // for every angle phi
+                theta = (ntheta / nTheta) * 2 * pi;    // converts the present angle number into a real angle
+                phi = (nphi / nPhi) * 2 * pi;          // converts the present angle number into a real angle
 
-                /// Loop through points to try to get a list (vector) of cells that are sitting on that line
-                // TODO: Need to loop over from boundary to origin, shrinking the intersect vector each time
-                PetscSF cellSF = NULL;  // PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
-                DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NEAREST, &cellSF) >> checkError;  // Locate the points in v in the mesh and return a PetscSF of the containing cells
+                PetscReal magnitude = 20;  // TODO: Should represent the distance from the origin cell to the boundary. How to get this?
+                while (magnitude - h > 0) {
+                    /// Draw a point on which to grab the cells of the DM
+                    Vec intersect;                                                // Intersect should point to the boundary, and then be pushed back to the origin, getting each cell
+                    PetscReal direction[3] = {magnitude * sin(theta) * cos(phi),  // x component conversion from spherical coordinates //TODO: + current cell x position
+                                              magnitude * sin(theta) * sin(phi),  // y component conversion from spherical coordinates //TODO: + current cell y position
+                                              magnitude * cos(theta)};            // z component conversion from spherical coordinates //TODO: + current cell z position
+                    //(Reference for transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
+                    /// This code block creates the vector pointing to the cell whose index will be stored during the current loop
+                    PetscInt i[3] = {0, 1, 2};
+                    VecCreate(PETSC_COMM_WORLD, &intersect);
+                    VecSetSizes(intersect, PETSC_DECIDE, 3);
+                    VecSetFromOptions(intersect);
+                    VecSetValues(intersect, 3, i, direction, INSERT_VALUES);
 
-                /// An array that maps each point to its containing cell can be obtained with
-                const PetscSFNode* cells;
-                PetscInt nFound;
-                const PetscInt* found;
-                PetscSFGetGraph(cellSF, NULL, &nFound, &found, &cells);
+                    /// Loop through points to try to get a list (vector) of cells that are sitting on that line
+                    PetscSF cellSF = NULL;  // PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
+                    DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NEAREST, &cellSF) >> checkError;  // Locate the points in v in the mesh and return a PetscSF of the containing cells
 
-                /// Assemble a matrix of vectors associated with each cell index and angular coordinate
-                // TODO: The cell index and ray index could be used as matrix indices to store each vector of ray cells (or something I don't know)
+                    /// An array that maps each point to its containing cell can be obtained with
+                    const PetscSFNode* cells;
+                    PetscInt nFound;
+                    const PetscInt* found;
+                    PetscSFGetGraph(cellSF, NULL, &nFound, &found, &cells);
 
-                magnitude -= h; //Decrease the magnitude of the ray tracing vector by one space step
-            }
-            //Then the actual runtime function will iterate through each cell and update radGain
+                    /// Assemble a matrix of vectors associated with each cell index and angular coordinate
+                    // TODO: Store cell indices for each distance value, in a struct? In a matrix?
+                    MatSetValue(rays, ntheta, nphi, 1.0, INSERT_VALUES);  // The inserted value (currently 1.0) should be something representing the vector of rays
 
-            //for each cell index
-                //for each ray index
-                    //at this matrix index, store a vector of cell indices associated with the single ray
+                    magnitude -= h;  // Decrease the magnitude of the ray tracing vector by one space step
+
+                    /// For monitoring and debugging
+                    PetscPrintf(PETSC_COMM_WORLD, "Intersect x: %g, y: %g, z: %g\n", direction[0], direction[1], direction[2]);
+                }
             }
         }
     }
+    ///At this point all of the values have been stored and the matrix can be assembled
+    MatAssemblyBegin(rays,MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(rays,MAT_FINAL_ASSEMBLY);
+
+    //DMPlexPointGlobalFieldRead //TODO: How to get values based on cell index?
+    //DMDAGetRay //TODO: What is this?
+    //VecScale TODO: Could use this instead of multiplying by magnitude
 }
 
 PetscReal ablate::radiationSolver::RadiationSolver::rayTrace() { ///Gets the total intensity/radiative gain at a single cell
@@ -451,7 +471,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
     const PetscInt* cells;
     GetCellRange(cellIS, cStart, cEnd, cells);
     if (cEnd > cStart) {
-        PetscInt dim = subDomain->GetDimensions();
+        dim = subDomain->GetDimensions();
 
         // Get pointers to sol, aux, and f vectors
         const PetscScalar *locXArray, *locAuxArray = nullptr;
@@ -626,7 +646,7 @@ void ablate::radiationSolver::RadiationSolver::InsertFieldFunctions(const std::v
         PetscInt cStart, cEnd;
         const PetscInt* cells;
         GetCellRange(cellIS, cStart, cEnd, cells);
-        PetscInt dim = subDomain->GetDimensions();
+        dim = subDomain->GetDimensions();
 
         // Get the petscFunction/context
         auto petscFunction = fieldFunction->GetFieldFunction()->GetPetscFunction();
@@ -698,7 +718,7 @@ const ablate::radiationSolver::RadiationSolver::BoundaryFVFaceGeom& ablate::radi
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::radiationSolver::RadiationSolver, "A solver used to compute boundary values in boundary cells", ARG(std::string, "id", "the name of the flow field"),
+REGISTER(ablate::solver::Solver, ablate::radiationSolver::RadiationSolver, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "the region describing the faces between the boundary and field"),
          ARG(std::vector<ablate::radiationSolver::RadiationProcess>, "processes", "a list of boundary processes"),
          OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"));
