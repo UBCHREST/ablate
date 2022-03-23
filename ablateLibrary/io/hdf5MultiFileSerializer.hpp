@@ -6,6 +6,7 @@
 #include <io/interval/interval.hpp>
 #include <memory>
 #include <vector>
+#include "parameters/parameters.hpp"
 #include "serializable.hpp"
 #include "serializer.hpp"
 #include "utilities/loggable.hpp"
@@ -33,6 +34,9 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     // Hold the pointer to each serializable object;
     std::vector<std::weak_ptr<Serializable>> serializables;
 
+    // an optional petscOptions that is used for this solver
+    PetscOptions petscOptions = nullptr;
+
     //! Petsc function used to save the system state
     static PetscErrorCode Hdf5MultiFileSerializerSaveStateFunction(TS ts, PetscInt steps, PetscReal time, Vec u, void* mctx);
 
@@ -49,7 +53,7 @@ class Hdf5MultiFileSerializer : public Serializer, private utilities::Loggable<H
     /**
      * Separates into multiple files to solve some io issues
      */
-    explicit Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval>);
+    explicit Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval>, std::shared_ptr<parameters::Parameters> options = nullptr);
 
     /**
      * Allow file cleanup

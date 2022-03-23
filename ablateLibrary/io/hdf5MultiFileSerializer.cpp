@@ -5,8 +5,10 @@
 #include <utility>
 #include "environment/runEnvironment.hpp"
 #include "generators.hpp"
+#include "utilities/petscOptions.hpp"
 
-ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval> interval) : interval(std::move(interval)) {
+ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<ablate::io::interval::Interval> interval, std::shared_ptr<parameters::Parameters> options)
+    : interval(std::move(interval)) {
     // Load the metadata from the file is available, otherwise set to 0
     auto restartFilePath = environment::RunEnvironment::Get().GetOutputDirectory() / "restart.rst";
 
@@ -23,6 +25,12 @@ ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer(std::shared_ptr<abl
         dt = NAN;
         timeStep = -1;
         sequenceNumber = -1;
+    }
+
+    // setup petsc options if provided
+    if (options) {
+        PetscOptionsCreate(&petscOptions) >> checkError;
+        options->Fill(petscOptions);
     }
 }
 
@@ -45,12 +53,16 @@ ablate::io::Hdf5MultiFileSerializer::~Hdf5MultiFileSerializer() {
         std::filesystem::path outputFile = directoryPath / (id + ".xmf");
         petscXdmfGenerator::Generate(inputFilePaths, outputFile);
     }
+
+    if (petscOptions) {
+        ablate::utilities::PetscOptionsDestroyAndCheck("ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializer", &petscOptions);
+    }
 }
 
 void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> serializable) {
     serializables.push_back(serializable);
 
-    // Mark this to cleanup
+    // Mark this to clean up
     int rank;
     MPI_Comm_rank(PETSC_COMM_WORLD, &rank) >> checkError;
 
@@ -63,6 +75,11 @@ void ablate::io::Hdf5MultiFileSerializer::Register(std::weak_ptr<Serializable> s
             StartEvent("PetscViewerHDF5Open");
             PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_UPDATE, &petscViewer) >> checkError;
             EndEvent();
+
+            // set the petsc options if provided
+            PetscObjectSetOptions((PetscObject)petscViewer, petscOptions) >> checkError;
+            PetscViewerSetFromOptions(petscViewer) >> checkError;
+            PetscViewerViewFromOptions(petscViewer, nullptr, "-hdf5ViewerView") >> checkError;
 
             // Restore the simulation
             StartEvent("Restore");
@@ -118,6 +135,11 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
                     hdf5Serializer->StartEvent("PetscViewerHDF5Open");
                     PetscViewerHDF5Open(PETSC_COMM_WORLD, filePath.string().c_str(), FILE_MODE_WRITE, &petscViewer) >> checkError;
                     hdf5Serializer->EndEvent();
+
+                    // set the petsc options if provided
+                    PetscObjectSetOptions((PetscObject)petscViewer, hdf5Serializer->petscOptions) >> checkError;
+                    PetscViewerSetFromOptions(petscViewer) >> checkError;
+                    PetscViewerViewFromOptions(petscViewer, nullptr, "-hdf5ViewerView") >> checkError;
 
                     hdf5Serializer->StartEvent("Save");
                     // NOTE: as far as the output file the sequence number is always zero because it is a new file
@@ -179,4 +201,5 @@ std::filesystem::path ablate::io::Hdf5MultiFileSerializer::GetOutputDirectoryPat
 
 #include "registrar.hpp"
 REGISTER(ablate::io::Serializer, ablate::io::Hdf5MultiFileSerializer, "serializer for IO that writes each time to a separate hdf5 file",
-         ARG(ablate::io::interval::Interval, "interval", "The interval object used to determine write interval."));
+         ARG(ablate::io::interval::Interval, "interval", "The interval object used to determine write interval."),
+         OPT(ablate::parameters::Parameters, "options", "options for the viewer passed directly to PETSc including (hdf5ViewerView, viewer_hdf5_collective, viewer_hdf5_sp_output"));
