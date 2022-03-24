@@ -114,7 +114,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      * @param options other options
      */
     RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<RadiationProcess>> radiationProcesses,
-                   std::shared_ptr<parameters::Parameters> options);
+                    std::shared_ptr<parameters::Parameters> options);
     ~RadiationSolver() override;
 
     /** SubDomain Register and Setup **/
@@ -170,7 +170,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscInt dim; //Number of dimensions that the domain exists within
     PetscInt cStart, cEnd; //Indices of all cells in the domain
 
-    //PetscInt nSteps = 100; //number of steps that each ray will go through //TODO: This should be set as a function of the distance and step size
+    PetscInt nSteps = 100; //number of steps that each ray will go through //TODO: This should be set as a function of the distance and step size
     PetscReal h = 0.1; //This is the DEFAULT step size and should be set by the user input
     PetscInt nTheta = 100; //The DEFAULT number of angles to solve with, should be given by user input
     PetscInt nPhi = 100; //The DEFAULT number of angles to solve with, should be given by user input

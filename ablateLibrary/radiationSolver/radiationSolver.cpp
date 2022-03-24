@@ -1,10 +1,10 @@
 //
 // Created by owen on 3/19/22.
 //
-#include "radiationSolver.h"
+#include "radiationSolver.hpp"
 #include <set>
 #include <utility>
-#include "radiationProcess.h"
+#include "radiationProcess.hpp"
 #include "utilities/mathUtilities.hpp"
 
 ablate::radiationSolver::RadiationSolver::RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
@@ -253,7 +253,7 @@ void ablate::radiationSolver::RadiationSolver::Initialize() { //TODO: Initializa
 
         DMRestoreLocalVector(solver.GetSubDomain().GetDM(), &locXVec) >> checkError;
 
-        this->rayInit();
+        this->rayInit(); //Runs the new code for ray initialization here.
     });
 }
 
@@ -273,12 +273,12 @@ void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to cre
     // TODO: h should probably be auto-set as the minimum cell radius?
 
     /// Create a matrix which can store cell locations based on origin cell, theta, and phi
-    Mat rays;
+    PetscSF rays[cEnd][nTheta][nPhi][nSteps];
     // PetscInt rayCells[nTheta][nPhi]; //Add an index for the number of cells
-    MatCreate(PETSC_COMM_WORLD, &rays);
+    /*MatCreate(PETSC_COMM_WORLD, &rays);
     MatSetSizes(rays, PETSC_DECIDE, PETSC_DECIDE, nTheta, nPhi);
     MatSetFromOptions(rays);
-    MatSetUp(rays);
+    MatSetUp(rays);*/
 
     for(int iCell = cStart; iCell <= cEnd; iCell++) {       //loop through subdomain cell indices
         //DMGetCoordinatesLocalSetUp(cellDM);
@@ -290,6 +290,7 @@ void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to cre
                 phi = (nphi / nPhi) * 2 * pi;          // converts the present angle number into a real angle
 
                 PetscReal magnitude = 20;  // TODO: Should represent the distance from the origin cell to the boundary. How to get this?
+                int nsteps =  0; //Number of spatial steps that  the ray has taken towards the origin
                 while (magnitude - h > 0) {
                     /// Draw a point on which to grab the cells of the DM
                     Vec intersect;                                                // Intersect should point to the boundary, and then be pushed back to the origin, getting each cell
@@ -308,27 +309,29 @@ void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to cre
                     PetscSF cellSF = NULL;  // PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
                     DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NEAREST, &cellSF) >> checkError;  // Locate the points in v in the mesh and return a PetscSF of the containing cells
 
-                    /// An array that maps each point to its containing cell can be obtained with
-                    const PetscSFNode* cells;
+                    /// An array that maps each point to its containing cell can be obtained with //TODO: This mat not be needed because we are looking for the cell index not the node indices
+                    /*const PetscSFNode* cells;
                     PetscInt nFound;
                     const PetscInt* found;
-                    PetscSFGetGraph(cellSF, NULL, &nFound, &found, &cells);
+                    PetscSFGetGraph(cellSF, NULL, &nFound, &found, &cells);*/
 
                     /// Assemble a matrix of vectors associated with each cell index and angular coordinate
-                    // TODO: Store cell indices for each distance value, in a struct? In a matrix?
-                    MatSetValue(rays, ntheta, nphi, 1.0, INSERT_VALUES);  // The inserted value (currently 1.0) should be something representing the vector of rays
+                    // TODO: Store cell indices for each distance value, in a struct? In a matrix? Need to figure out the most efficient way to store.
+                    //MatSetValue(rays, ntheta, nphi, 1.0, INSERT_VALUES);  // The inserted value (currently 1.0) should be something representing the vector of rays
+                    rays[iCell][ntheta][nphi][nsteps] = cellSF;
 
                     magnitude -= h;  // Decrease the magnitude of the ray tracing vector by one space step
+                    nsteps++;
 
                     /// For monitoring and debugging
-                    PetscPrintf(PETSC_COMM_WORLD, "Intersect x: %g, y: %g, z: %g\n", direction[0], direction[1], direction[2]);
+                    PetscPrintf(PETSC_COMM_WORLD, "Intersect x: %g, y: %g, z: %g Index: %g\n", direction[0], direction[1], direction[2],rays[iCell][ntheta][nphi][nsteps]);
                 }
             }
         }
     }
     ///At this point all of the values have been stored and the matrix can be assembled
-    MatAssemblyBegin(rays,MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(rays,MAT_FINAL_ASSEMBLY);
+    //MatAssemblyBegin(rays,MAT_FINAL_ASSEMBLY);
+    //MatAssemblyEnd(rays,MAT_FINAL_ASSEMBLY);
 
     //DMPlexPointGlobalFieldRead //TODO: How to get values based on cell index?
     //DMDAGetRay //TODO: What is this?
@@ -467,7 +470,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
     DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
     // Get the region to march over
     IS cellIS; //(includes what cells are needed in the solver, iterate through, get needed values)
-    PetscInt cStart, cEnd;
+    //PetscInt cStart, cEnd;
     const PetscInt* cells;
     GetCellRange(cellIS, cStart, cEnd, cells);
     if (cEnd > cStart) {
@@ -643,7 +646,7 @@ void ablate::radiationSolver::RadiationSolver::InsertFieldFunctions(const std::v
 
         // March over each cell
         IS cellIS;
-        PetscInt cStart, cEnd;
+        //PetscInt cStart, cEnd;
         const PetscInt* cells;
         GetCellRange(cellIS, cStart, cEnd, cells);
         dim = subDomain->GetDimensions();
@@ -705,14 +708,14 @@ void ablate::radiationSolver::RadiationSolver::ComputeGradientAlongNormal(PetscI
 
 const ablate::radiationSolver::RadiationSolver::BoundaryFVFaceGeom& ablate::radiationSolver::RadiationSolver::GetBoundaryGeometry(PetscInt cell) const {
     IS cellIS;
-    PetscInt cStart, cEnd;
+    PetscInt cstart, cend;
     const PetscInt* cells;
-    GetCellRange(cellIS, cStart, cEnd, cells);
+    GetCellRange(cellIS, cstart, cend, cells);
 
     // Locate the index
     PetscInt location;
     ISLocate(cellIS, cell, &location) >> checkError;
-    RestoreRange(cellIS, cStart, cEnd, cells);
+    RestoreRange(cellIS, cstart, cend, cells);
 
     return gradientStencils[location].geometry;
 }
@@ -720,5 +723,5 @@ const ablate::radiationSolver::RadiationSolver::BoundaryFVFaceGeom& ablate::radi
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::radiationSolver::RadiationSolver, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "the region describing the faces between the boundary and field"),
-         ARG(std::vector<ablate::radiationSolver::RadiationProcess>, "processes", "a list of boundary processes"),
+         ARG(std::vector<ablate::radiationSolver::RadiationProcess>, "processes", "a list of processes"),
          OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"));
