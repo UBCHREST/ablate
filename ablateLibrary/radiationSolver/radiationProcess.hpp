@@ -2,10 +2,10 @@
 // Created by owen on 3/19/22.
 //
 
-#ifndef ABLATELIBRARY_RADIATIONPROCESS_H
-#define ABLATELIBRARY_RADIATIONPROCESS_H
+#ifndef ABLATELIBRARY_RADIATIONPROCESS_HPP
+#define ABLATELIBRARY_RADIATIONPROCESS_HPP
 
-#include "radiationSolver.h"
+#include "radiationSolver.hpp"
 
 namespace ablate::radiationSolver {
 
@@ -17,4 +17,4 @@ class RadiationProcess {
 
 }  // namespace ablate::radiationSolver
 
-#endif  // ABLATELIBRARY_RADIATIONPROCESS_H
+#endif  // ABLATELIBRARY_RADIATIONPROCESS_HPP
