@@ -1,7 +1,5 @@
 <?xml version="1.0" ?>
-<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" [
-<!ENTITY HeavyData "flowTracerParticles.hdf5">
-]>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
 <Xdmf>
   <Domain Name="domain">
     <Grid CollectionType="Temporal" GridType="Collection" Name="TimeSeries">
@@ -19,7 +17,7 @@
               0 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -29,7 +27,7 @@
               0 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -39,7 +37,7 @@
               0 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -53,7 +51,7 @@
               1 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -63,7 +61,7 @@
               1 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -73,7 +71,7 @@
               1 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -87,7 +85,7 @@
               2 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -97,7 +95,7 @@
               2 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -107,7 +105,7 @@
               2 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -121,7 +119,7 @@
               3 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -131,7 +129,7 @@
               3 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -141,7 +139,7 @@
               3 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -155,7 +153,7 @@
               4 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -165,7 +163,7 @@
               4 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -175,7 +173,7 @@
               4 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -189,7 +187,7 @@
               5 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -199,7 +197,7 @@
               5 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -209,7 +207,7 @@
               5 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -223,7 +221,7 @@
               6 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -233,7 +231,7 @@
               6 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -243,7 +241,7 @@
               6 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -257,7 +255,7 @@
               7 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -267,7 +265,7 @@
               7 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -277,7 +275,7 @@
               7 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -291,7 +289,7 @@
               8 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -301,7 +299,7 @@
               8 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -311,7 +309,7 @@
               8 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -325,7 +323,7 @@
               9 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -335,7 +333,7 @@
               9 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -345,7 +343,7 @@
               9 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -359,7 +357,7 @@
               10 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -369,7 +367,7 @@
               10 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -379,7 +377,7 @@
               10 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -393,7 +391,7 @@
               11 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -403,7 +401,7 @@
               11 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -413,7 +411,7 @@
               11 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -427,7 +425,7 @@
               12 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -437,7 +435,7 @@
               12 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -447,7 +445,7 @@
               12 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -461,7 +459,7 @@
               13 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -471,7 +469,7 @@
               13 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -481,7 +479,7 @@
               13 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -495,7 +493,7 @@
               14 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -505,7 +503,7 @@
               14 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -515,7 +513,7 @@
               14 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -529,7 +527,7 @@
               15 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/DMSwarmPIC_coor
+              flowTracerParticles.hdf5:/particle_fields/DMSwarmPIC_coor
             </DataItem>
           </DataItem>
         </Geometry>
@@ -539,7 +537,7 @@
               15 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/InitialLocation
+              flowTracerParticles.hdf5:/particle_fields/InitialLocation
             </DataItem>
           </DataItem>
         </Attribute>
@@ -549,7 +547,7 @@
               15 0 0 1 1 1 1 100 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="16 100 2" Format="HDF" Precision="8">
-              &HeavyData;:/particle_fields/ParticleVelocity
+              flowTracerParticles.hdf5:/particle_fields/ParticleVelocity
             </DataItem>
           </DataItem>
         </Attribute>
