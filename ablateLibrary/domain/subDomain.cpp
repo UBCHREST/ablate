@@ -132,7 +132,7 @@ void ablate::domain::SubDomain::CreateSubDomainStructures() {
         DMGetRegionDS(auxDM, label, nullptr, &auxDiscreteSystem) >> checkError;
 
         // attach this field as aux vector to the dm
-        DMSetAuxiliaryVec(domain.GetDM(), label, labelValue, auxLocalVec) >> checkError;
+        DMSetAuxiliaryVec(domain.GetDM(), label, labelValue, 0 /*The equation part, or 0 if unused*/, auxLocalVec) >> checkError;
         PetscObjectSetName((PetscObject)auxLocalVec, "aux") >> checkError;
         PetscObjectSetName((PetscObject)auxGlobalVec, "aux") >> checkError;
 
