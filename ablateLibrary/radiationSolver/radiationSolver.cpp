@@ -7,9 +7,8 @@
 #include "radiationProcess.hpp"
 #include "utilities/mathUtilities.hpp"
 
-ablate::radiationSolver::RadiationSolver::RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
-                                                       std::vector<std::shared_ptr<RadiationProcess>> radiationProcesses, std::shared_ptr<parameters::Parameters> options)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)), radiationProcesses(std::move(radiationProcesses)) {}
+ablate::radiationSolver::RadiationSolver::RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::shared_ptr<parameters::Parameters> options)
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)) {}
 
 ablate::radiationSolver::RadiationSolver::~RadiationSolver() {
     if (gradientCalculator) {
@@ -59,10 +58,6 @@ static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel bounda
 }
 
 void ablate::radiationSolver::RadiationSolver::Setup() { //allows initialization after the subdomain and dm is established
-    // march over process and link to the flow
-    for (auto& process : radiationProcesses) {
-        process->Initialize(*this);
-    }
 
     // Set up the gradient calculator
     PetscFVCreate(PETSC_COMM_SELF, &gradientCalculator) >> checkError;
@@ -300,20 +295,21 @@ void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to cre
                     //(Reference for transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
                     /// This code block creates the vector pointing to the cell whose index will be stored during the current loop
                     PetscInt i[3] = {0, 1, 2};
-                    VecCreate(PETSC_COMM_WORLD, &intersect);
+                    VecCreate(PETSC_COMM_WORLD, &intersect); F
                     VecSetSizes(intersect, PETSC_DECIDE, 3);
                     VecSetFromOptions(intersect);
                     VecSetValues(intersect, 3, i, direction, INSERT_VALUES);
 
                     /// Loop through points to try to get a list (vector) of cells that are sitting on that line
+                    //TODO: Use std vector to store points (build vector outside of while loop) (or use a set prevents index duplication in the list)
                     PetscSF cellSF = NULL;  // PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
-                    DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NEAREST, &cellSF) >> checkError;  // Locate the points in v in the mesh and return a PetscSF of the containing cells
+                    DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NONE, &cellSF) >> checkError;  // Locate the points in v in the mesh and return a PetscSF of the containing cells
 
                     /// An array that maps each point to its containing cell can be obtained with //TODO: This mat not be needed because we are looking for the cell index not the node indices
                     /*const PetscSFNode* cells;
                     PetscInt nFound;
                     const PetscInt* found;
-                    PetscSFGetGraph(cellSF, NULL, &nFound, &found, &cells);*/
+                    PetscSFGetGraph(cellSF, NULL, &nFound, &found, &cells);*/ //TODO: Use this to get the petsc int cell number from the struct (SF)
 
                     /// Assemble a matrix of vectors associated with each cell index and angular coordinate
                     // TODO: Store cell indices for each distance value, in a struct? In a matrix? Need to figure out the most efficient way to store.
@@ -723,5 +719,4 @@ const ablate::radiationSolver::RadiationSolver::BoundaryFVFaceGeom& ablate::radi
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::radiationSolver::RadiationSolver, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "the region describing the faces between the boundary and field"),
-         ARG(std::vector<ablate::radiationSolver::RadiationProcess>, "processes", "a list of processes"),
          OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"));

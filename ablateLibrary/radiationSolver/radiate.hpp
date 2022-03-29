@@ -3,6 +3,7 @@
 
 #include "radiationSolver.hpp"
 #include "radiationSolver/radiationProcess.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 
 namespace ablate::radiationSolver {
 
@@ -12,7 +13,13 @@ class radiate : public RadiationProcess {
 
     void Initialize(ablate::radiationSolver::RadiationSolver& bSolver) override;
 
-    static PetscErrorCode radiateFunction();
+    static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
+                                         const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
+
+    //std::vector<std::string> fieldNames;
+
+   private:
+    ablate::finiteVolume::processes::EulerTransport::UpdateTemperatureData updateTemperatureData{};
 };
 
 }  // namespace ablate::radiationSolver::lodi
