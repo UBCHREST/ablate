@@ -162,7 +162,6 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     ///Class inputs and Variables
     DM faceDM, cellDM; //Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
     PetscInt dim; //Number of dimensions that the domain exists within
-    PetscInt cStart, cEnd; //Indices of all cells in the domain
 
     PetscInt nSteps = 100; //number of steps that each ray will go through //TODO: This should be set as a function of the distance and step size
     PetscReal h = 0.1; //This is the DEFAULT step size and should be set by the user input
