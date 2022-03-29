@@ -10,9 +10,6 @@
 
 namespace ablate::radiationSolver {
 
-// forward declare the radiationProcess
-class RadiationProcess;
-
 class RadiationSolver : public solver::CellSolver, public solver::RHSFunction {  //Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
    public:
     /**
@@ -92,9 +89,6 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     // hold the update functions for flux and point sources
     std::vector<BoundaryFunctionDescription> boundaryFunctions;
 
-    // Hold a list of radiationProcesses that contribute to this solver
-    std::vector<std::shared_ptr<RadiationProcess>> radiationProcesses;
-
     // Hold a list of GradientStencils, this order corresponds to the face order
     std::vector<GradientStencil> gradientStencils;
 
@@ -113,7 +107,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      * @param radiationProcesses a list of boundary processes
      * @param options other options
      */
-    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<RadiationProcess>> radiationProcesses,
+    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
                     std::shared_ptr<parameters::Parameters> options);
     ~RadiationSolver() override;
 
