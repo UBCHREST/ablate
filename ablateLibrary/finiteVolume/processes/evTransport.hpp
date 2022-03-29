@@ -70,7 +70,8 @@ class EVTransport : public FlowProcess {
     /**
      * Function to compute the EV fraction. This function assumes that the input values will be {"euler", "densityYi"}
      */
-    static PetscErrorCode UpdateEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
+    static PetscErrorCode UpdateEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt* aOff,
+                                        PetscScalar* auxField, void* ctx);
 
    private:
     /**

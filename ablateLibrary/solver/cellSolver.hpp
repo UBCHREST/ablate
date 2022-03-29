@@ -10,7 +10,8 @@ namespace ablate::solver {
 
 class CellSolver : public solver::Solver {
    public:
-    using AuxFieldUpdateFunction = PetscErrorCode (*)(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* u, PetscScalar* auxField, void* ctx);
+    using AuxFieldUpdateFunction = PetscErrorCode (*)(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* u, const PetscInt aOff[],
+                                                      PetscScalar* auxField, void* ctx);
 
    private:
     /**
@@ -20,7 +21,7 @@ class CellSolver : public solver::Solver {
         AuxFieldUpdateFunction function;
         void* context;
         std::vector<PetscInt> inputFields;
-        PetscInt auxField;
+        std::vector<PetscInt> auxFields;
     };
 
     std::vector<AuxFieldUpdateFunctionDescription> auxFieldUpdateFunctionDescriptions;
@@ -36,7 +37,7 @@ class CellSolver : public solver::Solver {
      * @param inputFields
      * @param auxFields
      */
-    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, const std::string& auxField, const std::vector<std::string>& inputFields);
+    void RegisterAuxFieldUpdate(AuxFieldUpdateFunction function, void* context, const std::vector<std::string>& auxField, const std::vector<std::string>& inputFields);
 
     /**
      * Helper function to march over each cell and update the aux Fields

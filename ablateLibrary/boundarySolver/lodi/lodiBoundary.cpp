@@ -120,20 +120,20 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
                 // add in aux update variables
                 bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
                                                &updateTemperatureData,
-                                               finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                                {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD});
             } else {
                 // add in aux update variables
                 bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
                                                &updateTemperatureData,
-                                               finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                                {finiteVolume::CompressibleFlowFields::EULER_FIELD});
             }
 
             if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::VELOCITY_FIELD)) {
                 bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocityField,
                                                nullptr,
-                                               finiteVolume::CompressibleFlowFields::VELOCITY_FIELD,
+                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::VELOCITY_FIELD},
                                                {finiteVolume::CompressibleFlowFields::EULER_FIELD});
             }
         }
@@ -147,13 +147,13 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
                 // add in aux update variables
                 bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
                                                &updateTemperatureData,
-                                               finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                                {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD});
             } else {
                 // add in aux update variables
                 bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
                                                &updateTemperatureData,
-                                               finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD,
+                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                                {finiteVolume::CompressibleFlowFields::EULER_FIELD});
             }
         }
@@ -165,7 +165,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
         // Register an update for the yi field
         bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::SpeciesTransport::UpdateAuxMassFractionField,
                                        &nSpecEqs,
-                                       finiteVolume::CompressibleFlowFields::YI_FIELD,
+                                       std::vector<std::string>{finiteVolume::CompressibleFlowFields::YI_FIELD},
                                        {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD});
 
         bSolver.RegisterPostEvaluate(ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies);
@@ -177,7 +177,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
         // Register an update for the yi field
         bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EVTransport::UpdateEVField,
                                        &nEvEqs,
-                                       finiteVolume::CompressibleFlowFields::EV_FIELD,
+                                       std::vector<std::string>{finiteVolume::CompressibleFlowFields::EV_FIELD},
                                        {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD});
     }
 

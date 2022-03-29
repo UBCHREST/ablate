@@ -79,27 +79,31 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
 
     // check to see if auxFieldUpdates needed to be added
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VELOCITY_FIELD)) {
-        flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, nullptr, CompressibleFlowFields::VELOCITY_FIELD, {CompressibleFlowFields::EULER_FIELD});
+        flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, nullptr, std::vector<std::string>{CompressibleFlowFields::VELOCITY_FIELD}, {CompressibleFlowFields::EULER_FIELD});
     }
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::TEMPERATURE_FIELD)) {
         if (updateTemperatureData.numberSpecies > 0) {
             // add in aux update variables
-            flow.RegisterAuxFieldUpdate(
-                UpdateAuxTemperatureField, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
+            flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField,
+                                        &updateTemperatureData,
+                                        std::vector<std::string>{CompressibleFlowFields::TEMPERATURE_FIELD},
+                                        {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
         } else {
             // add in aux update variables
-            flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, &updateTemperatureData, CompressibleFlowFields::TEMPERATURE_FIELD, {CompressibleFlowFields::EULER_FIELD});
+            flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField, &updateTemperatureData, std::vector<std::string>{CompressibleFlowFields::TEMPERATURE_FIELD}, {CompressibleFlowFields::EULER_FIELD});
         }
     }
 
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::PRESSURE_FIELD)) {
         if (advectionData.numberSpecies > 0) {
             // add in aux update variables
-            flow.RegisterAuxFieldUpdate(
-                UpdateAuxPressureField, &advectionData, CompressibleFlowFields::PRESSURE_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
+            flow.RegisterAuxFieldUpdate(UpdateAuxPressureField,
+                                        &advectionData,
+                                        std::vector<std::string>{CompressibleFlowFields::PRESSURE_FIELD},
+                                        {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
         } else {
             // add in aux update variables
-            flow.RegisterAuxFieldUpdate(UpdateAuxPressureField, &advectionData, CompressibleFlowFields::PRESSURE_FIELD, {CompressibleFlowFields::EULER_FIELD});
+            flow.RegisterAuxFieldUpdate(UpdateAuxPressureField, &advectionData, std::vector<std::string>{CompressibleFlowFields::PRESSURE_FIELD}, {CompressibleFlowFields::EULER_FIELD});
         }
     }
 }
@@ -378,12 +382,12 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::CompressibleFlow
 }
 
 PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
-                                                                                       const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
+                                                                                       const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + RHO];
 
     for (PetscInt d = 0; d < dim; d++) {
-        auxField[d] = conservedValues[uOff[0] + RHOU + d] / density;
+        auxField[aOff[0] + d] = conservedValues[uOff[0] + RHOU + d] / density;
     }
 
     PetscFunctionReturn(0);
@@ -391,13 +395,13 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocit
 
 // When used, you must request euler, then densityYi
 PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
-                                                                                          const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
+                                                                                          const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + RHO];
     PetscReal totalEnergy = conservedValues[uOff[0] + RHOE] / density;
     auto flowParameters = (UpdateTemperatureData*)ctx;
     PetscErrorCode ierr = flowParameters->computeTemperatureFunction(
-        dim, density, totalEnergy, conservedValues + uOff[0] + RHOU, flowParameters->numberSpecies ? conservedValues + uOff[1] : NULL, auxField, flowParameters->computeTemperatureContext);
+        dim, density, totalEnergy, conservedValues + uOff[0] + RHOU, flowParameters->numberSpecies ? conservedValues + uOff[1] : NULL, auxField + aOff[0], flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
@@ -405,7 +409,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTempera
 
 // When used, you must request euler, then densityYi
 PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
-                                                                                       const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx) {
+                                                                                       const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
     PetscReal density;
     PetscReal velocity[3];
@@ -424,7 +428,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxPressur
                      &internalEnergy,
                      &a,
                      &M,
-                     auxField);
+                     auxField + aOff[0]);
 
     PetscFunctionReturn(0);
 }

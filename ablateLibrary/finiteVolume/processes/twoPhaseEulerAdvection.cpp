@@ -353,18 +353,18 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Initialize(ablate:
 
     // check to see if auxFieldUpdates needed to be added
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::VELOCITY_FIELD)) {
-        flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField2Gas, nullptr, CompressibleFlowFields::VELOCITY_FIELD, {CompressibleFlowFields::EULER_FIELD});
+        flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField2Gas, nullptr, std::vector<std::string>{CompressibleFlowFields::VELOCITY_FIELD}, {CompressibleFlowFields::EULER_FIELD});
     }
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::TEMPERATURE_FIELD)) {
         // add in aux update variables
-        flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField2Gas, this, CompressibleFlowFields::TEMPERATURE_FIELD, {"densityVF", "euler"});
+        flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField2Gas, this, std::vector<std::string>{CompressibleFlowFields::TEMPERATURE_FIELD}, {"densityVF", "euler"});
     }
     if (flow.GetSubDomain().ContainsField("pressure")) {
         // add in aux update variables
-        flow.RegisterAuxFieldUpdate(UpdateAuxPressureField2Gas, this, "pressure", {"densityVF", "euler"});
+        flow.RegisterAuxFieldUpdate(UpdateAuxPressureField2Gas, this, std::vector<std::string>{"pressure"}, {"densityVF", "euler"});
     }
     if (flow.GetSubDomain().ContainsField("volumeFraction")) {
-        flow.RegisterAuxFieldUpdate(UpdateAuxVolumeFractionField2Gas, this, "volumeFraction", {"densityVF", "euler"});
+        flow.RegisterAuxFieldUpdate(UpdateAuxVolumeFractionField2Gas, this, std::vector<std::string>{"volumeFraction"}, {"densityVF", "euler"});
     }
 }
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x,
@@ -679,19 +679,19 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
 }
 
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAuxVelocityField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
-                                                                                                   const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
+                                                                                                   const PetscScalar *conservedValues, const PetscInt aOff[], PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[FlowProcess::RHO];
 
     for (PetscInt d = 0; d < dim; d++) {
-        auxField[d] = conservedValues[FlowProcess::RHOU + d] / density;
+        auxField[aOff[0] + d] = conservedValues[FlowProcess::RHOU + d] / density;
     }
 
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAuxTemperatureField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
-                                                                                                      const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
+                                                                                                      const PetscScalar *conservedValues, const PetscInt aOff[], PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
     const int EULER_FIELD = 1;
@@ -755,12 +755,12 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
     PetscReal Tg;
     twoPhaseEulerAdvection->eosGas->GetComputeTemperatureFunction()(dim, densityG, etG, massfluxG, NULL, &Tg, twoPhaseEulerAdvection->eosGas->GetDecodeStateContext());
     PetscReal T = Tg;  // temperature equilibrium, Tg = Tl
-    *auxField = T;
+    auxField[aOff[0]] = T;
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAuxPressureField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
-                                                                                                   const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
+                                                                                                   const PetscScalar *conservedValues, const PetscInt aOff[], PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
     const int EULER_FIELD = 1;
@@ -806,12 +806,12 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
                              &ML,
                              &p,
                              &alpha);
-    *auxField = p;
+    auxField[aOff[0]] = p;
     PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAuxVolumeFractionField2Gas(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
-                                                                                                         const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
+                                                                                                         const PetscScalar *conservedValues, const PetscInt aOff[], PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
     const int EULER_FIELD = 1;
@@ -857,7 +857,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
                              &ML,
                              &p,
                              &alpha);
-    *auxField = alpha;
+    auxField[aOff[0]] = alpha;
     PetscFunctionReturn(0);
 }
 

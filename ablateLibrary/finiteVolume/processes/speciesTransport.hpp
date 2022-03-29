@@ -62,8 +62,8 @@ class SpeciesTransport : public FlowProcess {
     /**
      * Function to compute the mass fraction. This function assumes that the input values will be {"euler", "densityYi"}
      */
-    static PetscErrorCode UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
-                                                     void* ctx);
+    static PetscErrorCode UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt aOff[],
+                                                     PetscScalar* auxField, void* ctx);
 
     /**
      * Normalize and cleanup the species mass fractions in the solution vector

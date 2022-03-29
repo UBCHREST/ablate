@@ -68,19 +68,19 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
             }
         }
 
-        flow.RegisterAuxFieldUpdate(UpdateEVField, &numberEV, nonConserved, {CompressibleFlowFields::EULER_FIELD, conserved});
+        flow.RegisterAuxFieldUpdate(UpdateEVField, &numberEV, std::vector<std::string>{nonConserved}, {CompressibleFlowFields::EULER_FIELD, conserved});
     }
 }
 
 PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdateEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt *uOff, const PetscScalar *conservedValues,
-                                                                           PetscScalar *auxField, void *ctx) {
+                                                                           const PetscInt *aOff, PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + RHO];
 
     auto numberEV = (PetscInt *)ctx;
 
     for (PetscInt e = 0; e < *numberEV; e++) {
-        auxField[e] = conservedValues[uOff[1] + e] / density;
+        auxField[aOff[0] + e] = conservedValues[uOff[1] + e] / density;
     }
 
     PetscFunctionReturn(0);

@@ -55,7 +55,8 @@ void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finit
                                      {CompressibleFlowFields::YI_FIELD});
         }
 
-        flow.RegisterAuxFieldUpdate(UpdateAuxMassFractionField, &numberSpecies, CompressibleFlowFields::YI_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
+        flow.RegisterAuxFieldUpdate(
+            UpdateAuxMassFractionField, &numberSpecies, std::vector<std::string>{CompressibleFlowFields::YI_FIELD}, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
 
         // clean up the species
         flow.RegisterPostEvaluate(NormalizeSpecies);
@@ -63,14 +64,14 @@ void ablate::finiteVolume::processes::SpeciesTransport::Initialize(ablate::finit
 }
 
 PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt uOff[],
-                                                                                             const PetscScalar *conservedValues, PetscScalar *auxField, void *ctx) {
+                                                                                             const PetscScalar *conservedValues, const PetscInt aOff[], PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + RHO];
 
     auto numberSpecies = (PetscInt *)ctx;
 
     for (PetscInt sp = 0; sp < *numberSpecies; sp++) {
-        auxField[sp] = conservedValues[uOff[1] + sp] / density;
+        auxField[aOff[0] + sp] = conservedValues[uOff[1] + sp] / density;
     }
 
     PetscFunctionReturn(0);

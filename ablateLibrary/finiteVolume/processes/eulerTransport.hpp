@@ -66,19 +66,19 @@ class EulerTransport : public FlowProcess {
     /**
      * Function to compute the temperature field. This function assumes that the input values will be {"euler", "densityYi"}
      */
-    static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
-                                                    void* ctx);
+    static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt aOff[],
+                                                    PetscScalar* auxField, void* ctx);
     /**
      * Function to compute the velocity. This function assumes that the input values will be {"euler"}
      */
-    static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
-                                                 void* ctx);
+    static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt aOff[],
+                                                 PetscScalar* auxField, void* ctx);
 
     /**
      * Function to compute the velocity. This function assumes that the input values will be {"euler", "densityYi }
      */
-    static PetscErrorCode UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
-                                                 void* ctx);
+    static PetscErrorCode UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt aOff[],
+                                                 PetscScalar* auxField, void* ctx);
 
     /**
      *
