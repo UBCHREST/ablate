@@ -3,6 +3,7 @@
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 
 ablate::monitors::IgnitionDelayPeakYi::IgnitionDelayPeakYi(std::string species, std::vector<double> location, std::shared_ptr<logs::Log> logIn, std::shared_ptr<logs::Log> historyLogIn)
     : log(logIn ? logIn : std::make_shared<logs::StdOut>()), historyLog(historyLogIn), species(species), location(location) {}
@@ -120,7 +121,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
     CHKERRQ(ierr);
 
     // Store the result
-    double yi = densityYiValues[monitor->yiOffset] / eulerValues[ablate::finiteVolume::processes::FlowProcess::RHO];
+    double yi = densityYiValues[monitor->yiOffset] / eulerValues[ablate::finiteVolume::CompressibleFlowFields::RHO];
     monitor->timeHistory.push_back(crtime);
     monitor->yiHistory.push_back(yi);
 

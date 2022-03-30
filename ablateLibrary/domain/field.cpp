@@ -32,25 +32,27 @@ std::istream& ablate::domain::operator>>(std::istream& is, ablate::domain::Field
     return is;
 }
 
-ablate::domain::Field ablate::domain::Field::FromFieldDescription(const ablate::domain::FieldDescription& fieldDescription, PetscInt id, PetscInt subId) {
+ablate::domain::Field ablate::domain::Field::FromFieldDescription(const ablate::domain::FieldDescription& fieldDescription, PetscInt id, PetscInt subId, PetscInt offset) {
     return ablate::domain::Field{
         .name = fieldDescription.name,
         .numberComponents = (PetscInt)fieldDescription.components.size(),
         .components = fieldDescription.components,
         .id = id,
         .subId = subId,
+        .offset = offset,
         .location = fieldDescription.location,
         .type = fieldDescription.type,
     };
 }
 
-ablate::domain::Field ablate::domain::Field::CreateSubField(PetscInt newSubId) const {
+ablate::domain::Field ablate::domain::Field::CreateSubField(PetscInt newSubId, PetscInt offset) const {
     return ablate::domain::Field{
         .name = name,
         .numberComponents = numberComponents,
         .components = components,
         .id = id,
         .subId = newSubId,
+        .offset = offset,
         .location = location,
         .type = type,
     };

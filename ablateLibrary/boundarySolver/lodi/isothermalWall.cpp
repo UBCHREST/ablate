@@ -3,7 +3,7 @@
 #include "finiteVolume/processes/flowProcess.hpp"
 #include "utilities/mathUtilities.hpp"
 
-using fp = ablate::finiteVolume::processes::FlowProcess;
+using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
     : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)) {}

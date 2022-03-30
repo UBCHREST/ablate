@@ -3,7 +3,7 @@
 #include "finiteVolume/processes/flowProcess.hpp"
 #include "utilities/mathUtilities.hpp"
 
-using fp = ablate::finiteVolume::processes::FlowProcess;
+using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::shared_ptr<ablate::mathFunctions::FieldFunction> massFractions,
                                                           std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux)

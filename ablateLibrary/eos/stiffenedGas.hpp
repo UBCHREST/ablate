@@ -57,6 +57,26 @@ class StiffenedGas : public EOS {
     PetscReal GetSpecificHeatCp() const { return parameters.Cp; }
     PetscReal GetReferencePressure() const { return parameters.p0; }
 
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields
+     * @param property
+     * @param fields
+     * @return
+     */
+    ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override{
+        return ThermodynamicFunction{};
+    };
+
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields and temperature
+     * @param property
+     * @param fields
+     * @return
+     */
+    ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override{
+        return ThermodynamicTemperatureFunction{};
+    };
+
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };
 

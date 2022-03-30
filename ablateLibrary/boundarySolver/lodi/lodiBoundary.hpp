@@ -6,16 +6,17 @@
 #include "finiteVolume/processes/eulerTransport.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 
 namespace ablate::boundarySolver::lodi {
 class LODIBoundary : public BoundaryProcess {
    protected:
     typedef enum {
-        RHO = finiteVolume::processes::FlowProcess::RHO,
-        RHOE = finiteVolume::processes::FlowProcess::RHOE,
-        RHOVELN = finiteVolume::processes::FlowProcess::RHOU,
-        RHOVELT1 = finiteVolume::processes::FlowProcess::RHOV,
-        RHOVELT2 = finiteVolume::processes::FlowProcess::RHOW
+        RHO = finiteVolume::CompressibleFlowFields::RHO,
+        RHOE = finiteVolume::CompressibleFlowFields::RHOE,
+        RHOVELN = finiteVolume::CompressibleFlowFields::RHOU,
+        RHOVELT1 = finiteVolume::CompressibleFlowFields::RHOV,
+        RHOVELT2 = finiteVolume::CompressibleFlowFields::RHOW
     } BoundaryEulerComponents;
 
     // Global parameters

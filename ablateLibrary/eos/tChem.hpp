@@ -115,6 +115,24 @@ class TChem : public EOS {
 
     static int ComputeEnthalpyOfFormation(int numSpec, double* tempYiWorkingArray, double& enthalpyOfFormation);
 
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields
+     * @param property
+     * @param fields
+     * @return
+     */
+    ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override { return ThermodynamicFunction{}; };
+
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields and temperature
+     * @param property
+     * @param fields
+     * @return
+     */
+    ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override {
+        return ThermodynamicTemperatureFunction{};
+    };
+
     // Private static helper functions
     inline const static double TREF = 298.15;
 };

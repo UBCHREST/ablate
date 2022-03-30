@@ -37,22 +37,20 @@ INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, PerfectGasTestCreateAndViewFixture,
                          [](const testing::TestParamInfo<EOSTestCreateAndViewParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// EOS decode state tests
+/// EOS Thermodynamic property tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct EOSTestDecodeStateParameters {
+struct PGTestParameters {
     std::map<std::string, std::string> options;
-    std::vector<PetscReal> densityYiIn;
-    PetscReal densityIn;
-    PetscReal totalEnergyIn;
-    std::vector<PetscReal> velocityIn;
-    PetscReal expectedInternalEnergy;
-    PetscReal expectedSpeedOfSound;
-    PetscReal expectedPressure;
+    ablate::eos::ThermodynamicProperty thermodynamicProperty;
+    std::vector<ablate::domain::Field> fields;
+
+    std::vector<PetscReal> conservedValues;
+    PetscReal expectedValue;
 };
 
-class PerfectGasTestDecodeStateFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<EOSTestDecodeStateParameters> {};
+class PGThermodynamicPropertyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<PGTestParameters> {};
 
-TEST_P(PerfectGasTestDecodeStateFixture, ShouldDecodeState) {
+TEST_P(PGThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
@@ -60,40 +58,71 @@ TEST_P(PerfectGasTestDecodeStateFixture, ShouldDecodeState) {
     // get the test params
     const auto& params = GetParam();
 
-    // Prepare outputs
-    PetscReal internalEnergy;
-    PetscReal speedOfSound;
-    PetscReal pressure;
-
-    // act
-    PetscErrorCode ierr = eos->GetDecodeStateFunction()(
-        params.velocityIn.size(), params.densityIn, params.totalEnergyIn, &params.velocityIn[0], &params.densityYiIn[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
-
-    // assert
+    // act/assert check for compute without temperature
+    auto thermodynamicFunction = eos->GetThermodynamicFunction(params.thermodynamicProperty, params.fields);
+    PetscReal computedProperty = NAN;
+    PetscErrorCode ierr = thermodynamicFunction.function(params.conservedValues.data(), &computedProperty, thermodynamicFunction.context.get());
     ASSERT_EQ(ierr, 0);
-    ASSERT_NEAR(internalEnergy, params.expectedInternalEnergy, 1E-6);
-    ASSERT_NEAR(speedOfSound, params.expectedSpeedOfSound, 1E-6);
-    ASSERT_NEAR(pressure, params.expectedPressure, 1E-6);
+    ASSERT_NEAR(computedProperty, params.expectedValue, 1E-6) << "for direct function ";
+
+    // act/assert check for compute when temperature is known
+    auto temperatureFunction = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, params.fields);
+    PetscReal computedTemperature;
+    ierr = temperatureFunction.function(params.conservedValues.data(), &computedTemperature, temperatureFunction.context.get());
+    ASSERT_EQ(ierr, 0);
+
+    auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureFunction(params.thermodynamicProperty, params.fields);
+    computedProperty = NAN;
+    ierr = thermodynamicTemperatureFunction.function(params.conservedValues.data(), computedTemperature, &computedProperty, thermodynamicTemperatureFunction.context.get());
+
+    ASSERT_EQ(ierr, 0);
+    ASSERT_NEAR(computedProperty, params.expectedValue, 1E-6) << " for temperature function ";
 }
 
-INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, PerfectGasTestDecodeStateFixture,
-                         testing::Values((EOSTestDecodeStateParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
-                                                                        .densityYiIn = {},
-                                                                        .densityIn = 1.2,
-                                                                        .totalEnergyIn = 1E5,
-                                                                        .velocityIn = {10, -20, 30},
-                                                                        .expectedInternalEnergy = 99300,
-                                                                        .expectedSpeedOfSound = 235.8134856,
-                                                                        .expectedPressure = 47664},
-                                         (EOSTestDecodeStateParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}},
-                                                                        .densityYiIn = {},
-                                                                        .densityIn = .9,
-                                                                        .totalEnergyIn = 1.56E5,
-                                                                        .velocityIn = {0.0},
-                                                                        .expectedInternalEnergy = 1.56E+05,
-                                                                        .expectedSpeedOfSound = 558.5696018,
-                                                                        .expectedPressure = 140400}),
-                         [](const testing::TestParamInfo<EOSTestDecodeStateParameters>& info) { return std::to_string(info.index); });
+INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, PGThermodynamicPropertyTestFixture,
+                         testing::Values((PGTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Pressure,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                                            .conservedValues = {1.2, 1.2 * 1E5, 1.2 * 10, 1.2 * -20, 1.2 * 30},
+                                                            .expectedValue = 47664},
+                                         (PGTestParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Pressure,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2}},
+                                                            .conservedValues = {NAN, NAN, 0.9, 0.9 * 1.56E5, 0.0},
+                                                            .expectedValue = 140400},
+                                         (PGTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                                            .conservedValues = {1.2, 1.2 * 1E5, 1.2 * 10, 1.2 * -20, 1.2 * 30},
+                                                            .expectedValue = 99300},
+                                         (PGTestParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2}},
+                                                            .conservedValues = {NAN, NAN, 0.9, 0.9 * 1.56E5, 0.0},
+                                                            .expectedValue = 1.56E+05},
+                                         (PGTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeedOfSound,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                                            .conservedValues = {1.2, 1.2 * 1E5, 1.2 * 10, 1.2 * -20, 1.2 * 30},
+                                                            .expectedValue = 235.8134856},
+                                         (PGTestParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeedOfSound,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2}},
+                                                            .conservedValues = {NAN, NAN, 0.9, 0.9 * 1.56E5, 0.0},
+                                                            .expectedValue = 558.5696018},
+                                         (PGTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Temperature,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                                            .conservedValues = {1.2, 1.2 * 1.50E5, 1.2 * 10, 1.2 * -20, 1.2 * 30},
+                                                            .expectedValue = 208.0836237},
+                                         (PGTestParameters){.options = {{"gamma", "2.0"}, {"Rgas", "4.0"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Temperature,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2}},
+                                                            .conservedValues = {NAN, NAN, 0.9, 0.9 * 1.56E5, 0.0},
+                                                            .expectedValue = 39000}
+
+                                         ),
+                         [](const testing::TestParamInfo<PGTestParameters>& info) { return std::to_string(info.index) + "_" + std::string(to_string(info.param.thermodynamicProperty)); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS get temperature tests

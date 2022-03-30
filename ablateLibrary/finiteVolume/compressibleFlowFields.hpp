@@ -13,6 +13,8 @@ namespace ablate::finiteVolume {
 
 class CompressibleFlowFields : public domain::FieldDescriptor {
    public:
+    typedef enum { RHO, RHOE, RHOU, RHOV, RHOW } EulerComponents;
+
     inline const static std::string EULER_FIELD = "euler";
     inline const static std::string DENSITY_YI_FIELD = "densityYi";
     inline const static std::string YI_FIELD = "yi";

@@ -3,6 +3,7 @@
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 
 ablate::monitors::IgnitionDelayTemperature::IgnitionDelayTemperature(std::shared_ptr<eos::EOS> eosIn, std::vector<double> location, double thresholdTemperatureIn, std::shared_ptr<logs::Log> logIn,
                                                                      std::shared_ptr<logs::Log> historyLogIn)
@@ -107,11 +108,11 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     // compute the temperature
     // using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
     double T;
-    const double density = eulerValues[ablate::finiteVolume::processes::FlowProcess::RHO];
+    const double density = eulerValues[ablate::finiteVolume::CompressibleFlowFields::RHO];
     monitor->eos->GetComputeTemperatureFunction()(dim,
                                                   density,
-                                                  eulerValues[ablate::finiteVolume::processes::FlowProcess::RHOE] / density,
-                                                  eulerValues + ablate::finiteVolume::processes::FlowProcess::RHOU,
+                                                  eulerValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density,
+                                                  eulerValues + ablate::finiteVolume::CompressibleFlowFields::RHOU,
                                                   densityYiValues,
                                                   &T,
                                                   monitor->eos->GetComputeTemperatureContext());

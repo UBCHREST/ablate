@@ -75,7 +75,7 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
 PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdateEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom *cellGeom, const PetscInt *uOff, const PetscScalar *conservedValues,
                                                                            const PetscInt *aOff, PetscScalar *auxField, void *ctx) {
     PetscFunctionBeginUser;
-    PetscReal density = conservedValues[uOff[0] + RHO];
+    PetscReal density = conservedValues[uOff[0] + CompressibleFlowFields::RHO];
 
     auto numberEV = (PetscInt *)ctx;
 
@@ -180,14 +180,14 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
     auto flowParameters = (DiffusionData *)ctx;
 
     // get the current density from euler
-    const PetscReal density = 0.5 * (fieldL[uOff[EULER_FIELD] + RHO] + fieldR[uOff[EULER_FIELD] + RHO]);
+    const PetscReal density = 0.5 * (fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO] + fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO]);
 
     PetscErrorCode ierr;
     PetscReal temperatureLeft;
     ierr = flowParameters->computeTemperatureFunction(dim,
-                                                      fieldL[uOff[EULER_FIELD] + RHO],
-                                                      fieldL[uOff[EULER_FIELD] + RHOE] / fieldL[uOff[EULER_FIELD] + RHO],
-                                                      fieldL + uOff[EULER_FIELD] + RHOU,
+                                                      fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO],
+                                                      fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHOE] / fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO],
+                                                      fieldL + uOff[EULER_FIELD] + CompressibleFlowFields::RHOU,
                                                       fieldL + uOff[DENSITY_YI_FIELD],
                                                       &temperatureLeft,
                                                       flowParameters->computeTemperatureContext);
@@ -195,9 +195,9 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
 
     PetscReal temperatureRight;
     ierr = flowParameters->computeTemperatureFunction(dim,
-                                                      fieldR[uOff[EULER_FIELD] + RHO],
-                                                      fieldR[uOff[EULER_FIELD] + RHOE] / fieldR[uOff[EULER_FIELD] + RHO],
-                                                      fieldR + uOff[EULER_FIELD] + RHOU,
+                                                      fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO],
+                                                      fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHOE] / fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO],
+                                                      fieldR + uOff[EULER_FIELD] + CompressibleFlowFields::RHOU,
                                                       fieldR + uOff[DENSITY_YI_FIELD],
                                                       &temperatureRight,
                                                       flowParameters->computeTemperatureContext);
@@ -205,9 +205,9 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
 
     // compute diff
     PetscReal diffLeft = 0.0;
-    flowParameters->diffFunction(temperatureLeft, fieldL[uOff[EULER_FIELD] + RHO], auxL + aOff[YI_FIELD], diffLeft, flowParameters->diffContext);
+    flowParameters->diffFunction(temperatureLeft, fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO], auxL + aOff[YI_FIELD], diffLeft, flowParameters->diffContext);
     PetscReal diffRight = 0.0;
-    flowParameters->diffFunction(temperatureRight, fieldR[uOff[EULER_FIELD] + RHO], auxR + aOff[YI_FIELD], diffRight, flowParameters->diffContext);
+    flowParameters->diffFunction(temperatureRight, fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO], auxR + aOff[YI_FIELD], diffRight, flowParameters->diffContext);
     PetscReal diff = 0.5 * (diffLeft + diffRight);
 
     // species equations

@@ -3,7 +3,7 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "mathFunctions/functionFactory.hpp"
 
-using fp = ablate::finiteVolume::processes::FlowProcess;
+using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::lodi::Inlet::Inlet(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling,
                                            std::shared_ptr<ablate::mathFunctions::MathFunction> prescribedVelocity)

@@ -7,8 +7,6 @@ namespace ablate::finiteVolume::processes {
 
 class FlowProcess : public Process {
    public:
-    typedef enum { RHO, RHOE, RHOU, RHOV, RHOW } Components;
-
     /**
      * Private function to decode the euler fields
      * @param flowData

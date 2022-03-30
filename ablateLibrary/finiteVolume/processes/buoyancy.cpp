@@ -41,7 +41,7 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(T
         CHKERRQ(ierr);
 
         if (euler) {
-            locDensitySum += euler[RHO];
+            locDensitySum += euler[CompressibleFlowFields::RHO];
             locCellCount++;
         }
     }
@@ -74,17 +74,17 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::ComputeBuoyancySource(
     auto buoyancyProcess = (ablate::finiteVolume::processes::Buoyancy *)ctx;
 
     // exact some values
-    const PetscReal density = u[uOff[EULER_FIELD] + RHO];
+    const PetscReal density = u[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
 
     // set the source terms
-    f[RHO] = 0.0;
-    f[RHOE] = 0.0;
+    f[CompressibleFlowFields::RHO] = 0.0;
+    f[CompressibleFlowFields::RHOE] = 0.0;
 
     // Add in the buoyancy source terms for momentum and energy
     for (PetscInt n = 0; n < dim; n++) {
-        f[RHOU + n] = PetscMax((density - buoyancyProcess->densityAvg) * buoyancyProcess->buoyancyVector[n], 0.0);
-        PetscReal vel = u[uOff[EULER_FIELD] + RHOU + n] / density;
-        f[RHOE] += vel * f[RHOU + n];
+        f[CompressibleFlowFields::RHOU + n] = PetscMax((density - buoyancyProcess->densityAvg) * buoyancyProcess->buoyancyVector[n], 0.0);
+        PetscReal vel = u[uOff[EULER_FIELD] + CompressibleFlowFields::RHOU + n] / density;
+        f[CompressibleFlowFields::RHOE] += vel * f[CompressibleFlowFields::RHOU + n];
     }
 
     PetscFunctionReturn(0);

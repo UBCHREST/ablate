@@ -32,6 +32,9 @@ class MockEOS : public ablate::eos::EOS {
     MOCK_METHOD(ablate::eos::ComputeSpecificHeatFunction, GetComputeSpecificHeatConstantVolumeFunction, (), (override));
     MOCK_METHOD(void*, GetComputeSpecificHeatConstantVolumeContext, (), (override));
     MOCK_METHOD(const std::vector<std::string>&, GetSpecies, (), (const, override));
+
+    MOCK_METHOD(ablate::eos::ThermodynamicFunction, GetThermodynamicFunction, (ablate::eos::ThermodynamicProperty, const std::vector<ablate::domain::Field>&), (const, override));
+    MOCK_METHOD(ablate::eos::ThermodynamicTemperatureFunction, GetThermodynamicTemperatureFunction, (ablate::eos::ThermodynamicProperty, const std::vector<ablate::domain::Field>&), (const, override));
 };
 }  // namespace ablateTesting::eos
 

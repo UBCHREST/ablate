@@ -178,23 +178,23 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(Pe
         eulerAdvectionData->fluxCalculatorFunction(eulerAdvectionData->fluxCalculatorCtx, normalVelocityL, aL, densityL, pL, normalVelocityR, aR, densityR, pR, &massFlux, &p12);
 
     if (direction == fluxCalculator::LEFT) {
-        flux[RHO] = massFlux * areaMag;
+        flux[CompressibleFlowFields::RHO] = massFlux * areaMag;
         PetscReal velMagL = utilities::MathUtilities::MagVector(dim, velocityL);
         PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
-        flux[RHOE] = HL * massFlux * areaMag;
+        flux[CompressibleFlowFields::RHOE] = HL * massFlux * areaMag;
         for (PetscInt n = 0; n < dim; n++) {
-            flux[RHOU + n] = velocityL[n] * massFlux * areaMag + p12 * fg->normal[n];
+            flux[CompressibleFlowFields::RHOU + n] = velocityL[n] * massFlux * areaMag + p12 * fg->normal[n];
         }
     } else if (direction == fluxCalculator::RIGHT) {
-        flux[RHO] = massFlux * areaMag;
+        flux[CompressibleFlowFields::RHO] = massFlux * areaMag;
         PetscReal velMagR = utilities::MathUtilities::MagVector(dim, velocityR);
         PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
-        flux[RHOE] = HR * massFlux * areaMag;
+        flux[CompressibleFlowFields::RHOE] = HR * massFlux * areaMag;
         for (PetscInt n = 0; n < dim; n++) {
-            flux[RHOU + n] = velocityR[n] * massFlux * areaMag + p12 * fg->normal[n];
+            flux[CompressibleFlowFields::RHOU + n] = velocityR[n] * massFlux * areaMag + p12 * fg->normal[n];
         }
     } else {
-        flux[RHO] = massFlux * areaMag;
+        flux[CompressibleFlowFields::RHO] = massFlux * areaMag;
 
         PetscReal velMagL = utilities::MathUtilities::MagVector(dim, velocityL);
         PetscReal HL = internalEnergyL + velMagL * velMagL / 2.0 + pL / densityL;
@@ -202,9 +202,9 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(Pe
         PetscReal velMagR = utilities::MathUtilities::MagVector(dim, velocityR);
         PetscReal HR = internalEnergyR + velMagR * velMagR / 2.0 + pR / densityR;
 
-        flux[RHOE] = 0.5 * (HL + HR) * massFlux * areaMag;
+        flux[CompressibleFlowFields::RHOE] = 0.5 * (HL + HR) * massFlux * areaMag;
         for (PetscInt n = 0; n < dim; n++) {
-            flux[RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * massFlux * areaMag + p12 * fg->normal[n];
+            flux[CompressibleFlowFields::RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * massFlux * areaMag + p12 * fg->normal[n];
         }
     }
 
@@ -259,19 +259,19 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
         }
 
         if (xc) {  // must be real cell and not ghost
-            PetscReal rho = xc[RHO];
+            PetscReal rho = xc[CompressibleFlowFields::RHO];
             PetscReal vel[3];
             for (PetscInt i = 0; i < dim; i++) {
-                vel[i] = xc[RHOU + i] / rho;
+                vel[i] = xc[CompressibleFlowFields::RHOU + i] / rho;
             }
 
             // Get the speed of sound from the eos
             PetscReal ie;
             PetscReal a;
             PetscReal p;
-            advectionData->decodeStateFunction(dim, rho, xc[RHOE] / rho, vel, densityYi, &ie, &a, &p, advectionData->decodeStateContext) >> checkError;
+            advectionData->decodeStateFunction(dim, rho, xc[CompressibleFlowFields::RHOE] / rho, vel, densityYi, &ie, &a, &p, advectionData->decodeStateContext) >> checkError;
 
-            PetscReal u = xc[RHOU] / rho;
+            PetscReal u = xc[CompressibleFlowFields::RHOU] / rho;
             PetscReal dt = advectionData->cfl * dx / (a + PetscAbsReal(u));
 
             dtMin = PetscMin(dtMin, dt);
@@ -298,23 +298,23 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
     // Compute mu and k
     PetscReal* yiScratch = &flowParameters->yiScratch[0];
     for (std::size_t s = 0; s < flowParameters->yiScratch.size(); s++) {
-        yiScratch[s] = fieldL[uOff[DENSITY_YI] + s] / fieldL[uOff[EULER] + RHO];
+        yiScratch[s] = fieldL[uOff[DENSITY_YI] + s] / fieldL[uOff[EULER] + CompressibleFlowFields::RHO];
     }
 
     PetscReal muLeft = 0.0;
-    flowParameters->muFunction(auxL[aOff[T]], fieldL[uOff[EULER] + RHO], yiScratch, muLeft, flowParameters->muContext);
+    flowParameters->muFunction(auxL[aOff[T]], fieldL[uOff[EULER] + CompressibleFlowFields::RHO], yiScratch, muLeft, flowParameters->muContext);
     PetscReal kLeft = 0.0;
-    flowParameters->kFunction(auxL[aOff[T]], fieldL[uOff[EULER] + RHO], yiScratch, kLeft, flowParameters->kContext);
+    flowParameters->kFunction(auxL[aOff[T]], fieldL[uOff[EULER] + CompressibleFlowFields::RHO], yiScratch, kLeft, flowParameters->kContext);
 
     // Compute mu and k
     for (std::size_t s = 0; s < flowParameters->yiScratch.size(); s++) {
-        yiScratch[s] = fieldR[uOff[DENSITY_YI] + s] / fieldR[uOff[EULER] + RHO];
+        yiScratch[s] = fieldR[uOff[DENSITY_YI] + s] / fieldR[uOff[EULER] + CompressibleFlowFields::RHO];
     }
 
     PetscReal muRight = 0.0;
-    flowParameters->muFunction(auxR[aOff[T]], fieldR[uOff[EULER] + RHO], yiScratch, muRight, flowParameters->muContext);
+    flowParameters->muFunction(auxR[aOff[T]], fieldR[uOff[EULER] + CompressibleFlowFields::RHO], yiScratch, muRight, flowParameters->muContext);
     PetscReal kRight = 0.0;
-    flowParameters->kFunction(auxR[aOff[T]], fieldR[uOff[EULER] + RHO], yiScratch, kRight, flowParameters->kContext);
+    flowParameters->kFunction(auxR[aOff[T]], fieldR[uOff[EULER] + CompressibleFlowFields::RHO], yiScratch, kRight, flowParameters->kContext);
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
@@ -331,11 +331,11 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
         }
 
         // add in the contribution
-        flux[RHOU + c] = viscousFlux;
+        flux[CompressibleFlowFields::RHOU + c] = viscousFlux;
     }
 
     // energy equation
-    flux[RHOE] = 0.0;
+    flux[CompressibleFlowFields::RHOE] = 0.0;
     for (PetscInt d = 0; d < dim; ++d) {
         PetscReal heatFlux = 0.0;
         // add in the contributions for this viscous terms
@@ -349,11 +349,11 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
         // Multiply by the area normal
         heatFlux *= -fg->normal[d];
 
-        flux[RHOE] += heatFlux;
+        flux[CompressibleFlowFields::RHOE] += heatFlux;
     }
 
     // zero out the density flux
-    flux[RHO] = 0.0;
+    flux[CompressibleFlowFields::RHO] = 0.0;
     PetscFunctionReturn(0);
 }
 
@@ -384,10 +384,10 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::CompressibleFlow
 PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
                                                                                        const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
-    PetscReal density = conservedValues[uOff[0] + RHO];
+    PetscReal density = conservedValues[uOff[0] + CompressibleFlowFields::RHO];
 
     for (PetscInt d = 0; d < dim; d++) {
-        auxField[aOff[0] + d] = conservedValues[uOff[0] + RHOU + d] / density;
+        auxField[aOff[0] + d] = conservedValues[uOff[0] + CompressibleFlowFields::RHOU + d] / density;
     }
 
     PetscFunctionReturn(0);
@@ -397,11 +397,11 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocit
 PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
                                                                                           const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
-    PetscReal density = conservedValues[uOff[0] + RHO];
-    PetscReal totalEnergy = conservedValues[uOff[0] + RHOE] / density;
+    PetscReal density = conservedValues[uOff[0] + CompressibleFlowFields::RHO];
+    PetscReal totalEnergy = conservedValues[uOff[0] + CompressibleFlowFields::RHOE] / density;
     auto flowParameters = (UpdateTemperatureData*)ctx;
     PetscErrorCode ierr = flowParameters->computeTemperatureFunction(
-        dim, density, totalEnergy, conservedValues + uOff[0] + RHOU, flowParameters->numberSpecies ? conservedValues + uOff[1] : NULL, auxField + aOff[0], flowParameters->computeTemperatureContext);
+        dim, density, totalEnergy, conservedValues + uOff[0] + CompressibleFlowFields::RHOU, flowParameters->numberSpecies ? conservedValues + uOff[1] : NULL, auxField + aOff[0], flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

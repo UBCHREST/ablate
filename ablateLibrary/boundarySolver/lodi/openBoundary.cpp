@@ -2,7 +2,7 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
 
-using fp = ablate::finiteVolume::processes::FlowProcess;
+using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::lodi::OpenBoundary::OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure, double maxAcousticsLength,
                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
