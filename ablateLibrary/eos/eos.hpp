@@ -44,6 +44,11 @@ struct ThermodynamicTemperatureFunction {
 };
 
 /**
+ * Simple function representing the context and function for computing a field from two specified properties, velocity, and Yi
+ */
+using FieldFunction = std::function<void(PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[])>;
+
+/**
  * The EOS is a combination of species model and EOS.  This allows the eos to dictate the order/number of species.  This can be relaxed in the future
  */
 class EOS {
@@ -78,6 +83,14 @@ class EOS {
     virtual void* GetComputeSpecificHeatConstantVolumeContext() = 0;
 
     /**
+     * Single function to produce thermodynamic function for any property based upon the available fields
+     * @param property
+     * @param fields
+     * @return
+     */
+    virtual ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const = 0;
+
+    /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
      * @param property
      * @param fields
@@ -86,12 +99,12 @@ class EOS {
     virtual ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const = 0;
 
     /**
-     * Single function to produce thermodynamic function for any property based upon the available fields
-     * @param property
-     * @param fields
-     * @return
+     * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only
+     * @param field
+     * @param property1
+     * @param property2
      */
-    virtual ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const = 0;
+    virtual FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const = 0;
 
     /**
      * Species supported by this EOS

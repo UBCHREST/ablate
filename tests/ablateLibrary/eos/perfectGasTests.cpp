@@ -225,39 +225,108 @@ TEST(PerfectGasEOSTests, PerfectGasShouldReportSpeciesWhenProvided) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// Perfect Gas DensityFunctionFromTemperaturePressure
+/// Perfect Gas FieldFunctionTests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct PerfectGasTestComputeDensityParameters {
+struct PGFieldFunctionTestParameters {
+    // eos init
     std::map<std::string, std::string> options;
-    PetscReal temperatureIn;
-    PetscReal pressureIn;
-    PetscReal expectedDensity;
+    std::vector<std::string> species = {};
+
+    // field function init
+    std::string field;
+    ablate::eos::ThermodynamicProperty property1;
+    ablate::eos::ThermodynamicProperty property2;
+
+    // inputs
+    PetscReal property1Value;
+    PetscReal property2Value;
+    std::vector<PetscReal> velocity;
+    std::vector<PetscReal> yi;
+    std::vector<PetscReal> expectedValue;
 };
 
-class PerfectGasTestComputeDensityTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<PerfectGasTestComputeDensityParameters> {};
+class PGFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<PGFieldFunctionTestParameters> {};
 
-TEST_P(PerfectGasTestComputeDensityTestFixture, ShouldComputeCorrectTemperature) {
+TEST_P(PGFieldFunctionTestFixture, ShouldComputeField) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::PerfectGas>(parameters, GetParam().species);
 
     // get the test params
     const auto& params = GetParam();
-
-    // Prepare outputs
-    PetscReal density;
+    std::vector<PetscReal> actualValue(params.expectedValue.size(), NAN);
 
     // act
-    PetscErrorCode ierr =
-        eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(params.temperatureIn, params.pressureIn, nullptr, &density, eos->GetComputeDensityFunctionFromTemperaturePressureContext());
+    auto stateFunction = eos->GetFieldFunctionFunction(params.field, params.property1, params.property2);
+    stateFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), params.yi.data(), actualValue.data());
 
     // assert
-    ASSERT_EQ(ierr, 0);
-    ASSERT_NEAR(density, params.expectedDensity, 1E-3);
+    for (std::size_t c = 0; c < params.expectedValue.size(); c++) {
+        ASSERT_NEAR(actualValue[c], params.expectedValue[c], 1E-3) << "for component[" << c << "] ";
+    }
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    PerfectGasEOSTests, PerfectGasTestComputeDensityTestFixture,
-    testing::Values((PerfectGasTestComputeDensityParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}}, .temperatureIn = 300.0, .pressureIn = 101325.0, .expectedDensity = 1.17682},
-                    (PerfectGasTestComputeDensityParameters){.options = {{"gamma", "1.4"}, {"Rgas", "487.0"}}, .temperatureIn = 1000.0, .pressureIn = 1013250.0, .expectedDensity = 2.08059}),
-    [](const testing::TestParamInfo<PerfectGasTestComputeDensityParameters>& info) { return std::to_string(info.index); });
+INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, PGFieldFunctionTestFixture,
+                         testing::Values((PGFieldFunctionTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+                                                                         .field = "euler",
+                                                                         .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                         .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+
+                                                                         .property1Value = 300.0,
+                                                                         .property2Value = 101325.0,
+                                                                         .velocity = {0.0},
+                                                                         .expectedValue = {1.1768292682, 1.1768292682 * 2.1525E+05, 1.1768292682 * 0.0}},
+                                         (PGFieldFunctionTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "487.0"}},
+                                                                         .field = "euler",
+                                                                         .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                         .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+
+                                                                         .property1Value = 1000.0,
+                                                                         .property2Value = 1013250.0,
+                                                                         .velocity = {10, 20},
+                                                                         .expectedValue = {2.08059548254, 2.08059548254 * 1.21775000E+06, 2.08059548254 * 10.0, 2.08059548254 * 20.0}},
+                                         (PGFieldFunctionTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+                                                                         .field = "euler",
+                                                                         .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                         .property2 = ablate::eos::ThermodynamicProperty::Temperature,
+
+                                                                         .property1Value = 101325.0,
+                                                                         .property2Value = 300.0,
+                                                                         .velocity = {0.0},
+                                                                         .expectedValue = {1.1768292682, 1.1768292682 * 2.1525E+05, 1.1768292682 * 0.0}},
+                                         (PGFieldFunctionTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "487.0"}},
+                                                                         .field = "euler",
+                                                                         .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                         .property2 = ablate::eos::ThermodynamicProperty::Temperature,
+
+                                                                         .property1Value = 1013250.0,
+                                                                         .property2Value = 1000.0,
+                                                                         .velocity = {10, 20},
+                                                                         .expectedValue = {2.08059548254, 2.08059548254 * 1.21775000E+06, 2.08059548254 * 10.0, 2.08059548254 * 20.0}},
+                                         (PGFieldFunctionTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "487.0"}},
+                                                                         .species = {"H2", "O2", "N2"},
+                                                                         .field = "densityYi",
+                                                                         .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                         .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+
+                                                                         .property1Value = 1000.0,
+                                                                         .property2Value = 1013250.0,
+                                                                         .velocity = {10, 20},
+                                                                         .yi = {.1, .3, .6},
+                                                                         .expectedValue = {2.08059548254 * .1, 2.08059548254 * .3, 2.08059548254 * 0.6}},
+                                         (PGFieldFunctionTestParameters){.options = {{"gamma", "1.4"}, {"Rgas", "287.0"}},
+                                                                         .field = "euler",
+                                                                         .species = {"H2", "O2", "N2"},
+                                                                         .field = "densityYi",
+                                                                         .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                         .property2 = ablate::eos::ThermodynamicProperty::Temperature,
+
+                                                                         .property1Value = 101325.0,
+                                                                         .property2Value = 300.0,
+                                                                         .velocity = {0.0},
+                                                                         .yi = {.1, .3, .6},
+                                                                         .expectedValue = {1.1768292682 * .1, 1.1768292682 * .3, 1.1768292682 * 0.6}}),
+
+                         [](const testing::TestParamInfo<PGFieldFunctionTestParameters>& info) {
+                             return std::to_string(info.index) + "_" + info.param.field + "_from_" + std::string(to_string(info.param.property1)) + "_" + std::string(to_string(info.param.property2));
+                         });

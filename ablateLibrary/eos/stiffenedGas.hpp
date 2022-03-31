@@ -77,6 +77,17 @@ class StiffenedGas : public EOS {
         return ThermodynamicTemperatureFunction{};
     };
 
+    /**
+     * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only
+     * @param field
+     * @param property1
+     * @param property2
+     */
+    FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override {
+        return nullptr;
+    }
+
+
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };
 

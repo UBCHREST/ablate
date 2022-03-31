@@ -123,8 +123,19 @@ class PerfectGas : public EOS {
      * @return
      */
     ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
-    ;
 
+    /**
+     * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only
+     * @param field
+     * @param property1
+     * @param property2
+     */
+     FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
+
+    /**
+     * returns the species supported by this EOS
+     * @return
+     */
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };
 
