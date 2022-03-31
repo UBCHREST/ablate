@@ -107,7 +107,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::PerfectGas::GetThermodynamicFunc
         throw std::invalid_argument("The ablate::eos::PerfectGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
     }
 
-    return ThermodynamicFunction{.function = thermodynamicFunctions[property],
+    return ThermodynamicFunction{.function = thermodynamicFunctions[property].first,
                                  .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .parameters = parameters})};
 }
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::PerfectGas::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property,
@@ -119,7 +119,7 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::PerfectGas::GetThermo
     }
 
     return ThermodynamicTemperatureFunction{
-        .function = thermodynamicTemperatureFunctions[property],
+        .function = thermodynamicFunctions[property].second,
         .context = std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .parameters = parameters})};
 }
 

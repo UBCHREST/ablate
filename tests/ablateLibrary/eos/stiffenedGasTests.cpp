@@ -38,64 +38,104 @@ INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasTestCreateAndViewFixt
                                                                                       .expectedView = "EOS: stiffenedGas\n\tgamma: 3.2\n\tCp: 100.2\n\tp0: 3.5e+06\n\tspecies: O2, N2\n"}),
                          [](const testing::TestParamInfo<StiffenedGasEOSTestCreateAndViewParameters>& info) { return std::to_string(info.index); });
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// EOS decode state tests
+/// EOS Thermodynamic property tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct StiffenedGasEOSTestDecodeStateParameters {
+struct SGTestParameters {
     std::map<std::string, std::string> options;
-    std::vector<PetscReal> densityYiIn;
-    PetscReal densityIn;
-    PetscReal totalEnergyIn;
-    std::vector<PetscReal> velocityIn;
-    PetscReal expectedInternalEnergy;
-    PetscReal expectedSpeedOfSound;
-    PetscReal expectedPressure;
+    std::vector<std::string> species = {};
+    ablate::eos::ThermodynamicProperty thermodynamicProperty;
+    std::vector<ablate::domain::Field> fields;
+    std::vector<PetscReal> conservedValues;
+    std::optional<PetscReal> expectedTemperature;
+    std::vector<PetscReal> expectedValue;
 };
 
-class StiffenedGasTestDecodeStateFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<StiffenedGasEOSTestDecodeStateParameters> {};
+class SGThermodynamicPropertyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<SGTestParameters> {};
 
-TEST_P(StiffenedGasTestDecodeStateFixture, ShouldDecodeState) {
+TEST_P(SGThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     // arrange
     auto parameters = std::make_shared<ablate::parameters::MapParameters>(GetParam().options);
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::StiffenedGas>(parameters);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::StiffenedGas>(parameters, GetParam().species);
 
     // get the test params
     const auto& params = GetParam();
 
-    // Prepare outputs
-    PetscReal internalEnergy;
-    PetscReal speedOfSound;
-    PetscReal pressure;
-
-    // act
-    PetscErrorCode ierr = eos->GetDecodeStateFunction()(
-        params.velocityIn.size(), params.densityIn, params.totalEnergyIn, &params.velocityIn[0], &params.densityYiIn[0], &internalEnergy, &speedOfSound, &pressure, eos->GetDecodeStateContext());
-
-    // assert
+    // act/assert check for compute without temperature
+    auto thermodynamicFunction = eos->GetThermodynamicFunction(params.thermodynamicProperty, params.fields);
+    std::vector<PetscReal> computedProperty(params.expectedValue.size(), NAN);
+    PetscErrorCode ierr = thermodynamicFunction.function(params.conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get());
     ASSERT_EQ(ierr, 0);
-    ASSERT_NEAR(internalEnergy, params.expectedInternalEnergy, 1E-6);
-    ASSERT_NEAR(speedOfSound, params.expectedSpeedOfSound, 1E-6);
-    ASSERT_NEAR(pressure, params.expectedPressure, 1E-6);
+    for (std::size_t c = 0; c < params.expectedValue.size(); c++) {
+        ASSERT_NEAR(computedProperty[c], params.expectedValue[c], 1E-6) << "for direct function ";
+    }
+    // act/assert check for compute when temperature is known
+    auto temperatureFunction = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, params.fields);
+    PetscReal computedTemperature;
+    ierr = temperatureFunction.function(params.conservedValues.data(), &computedTemperature, temperatureFunction.context.get());
+    ASSERT_EQ(ierr, 0);
+
+    if (params.expectedTemperature) {
+        ASSERT_NEAR(computedTemperature, params.expectedTemperature.value(), 1E-6) << "for computed temperature ";
+    }
+
+    auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureFunction(params.thermodynamicProperty, params.fields);
+    computedProperty = std::vector<PetscReal>(params.expectedValue.size(), NAN);
+    ierr = thermodynamicTemperatureFunction.function(params.conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get());
+
+    ASSERT_EQ(ierr, 0);
+    for (std::size_t c = 0; c < params.expectedValue.size(); c++) {
+        ASSERT_NEAR(computedProperty[c], params.expectedValue[c], 1E-6) << " for temperature function ";
+    }
 }
 
-INSTANTIATE_TEST_SUITE_P(StiffenedGasEOSTests, StiffenedGasTestDecodeStateFixture,
-                         testing::Values((StiffenedGasEOSTestDecodeStateParameters){.options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}},
-                                                                                    .densityYiIn = {},
-                                                                                    .densityIn = 998.7,
-                                                                                    .totalEnergyIn = 2.5E6,
-                                                                                    .velocityIn = {10, -20, 30},
-                                                                                    .expectedInternalEnergy = 2499300.0,
-                                                                                    .expectedSpeedOfSound = 1549.4332810120738,
-                                                                                    .expectedPressure = 76505448.11999989},
-                                         (StiffenedGasEOSTestDecodeStateParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
-                                                                                    .densityYiIn = {},
-                                                                                    .densityIn = 800,
-                                                                                    .totalEnergyIn = 1.2E5,
-                                                                                    .velocityIn = {0.0},
-                                                                                    .expectedInternalEnergy = 1.2E+05,
-                                                                                    .expectedSpeedOfSound = 902.2194855,
-                                                                                    .expectedPressure = 2e8}),
-                         [](const testing::TestParamInfo<StiffenedGasEOSTestDecodeStateParameters>& info) { return std::to_string(info.index); });
+INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, SGThermodynamicPropertyTestFixture,
+                         testing::Values((SGTestParameters){.options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                                            .conservedValues = {998.7, 998.7 * 2.5E6, 998.7 * 10, 998.7 * -20, 998.7 * 30},
+                                                            .expectedValue = {2499300.0}},
+                                         (SGTestParameters){.options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeedOfSound,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                                            .conservedValues = {998.7, 998.7 * 2.5E6, 998.7 * 10, 998.7 * -20, 998.7 * 30},
+                                                            .expectedValue = {1549.4332810120738}},
+                                         (SGTestParameters){.options = {{"gamma", "1.932"}, {"Cp", "8095.08"}, {"p0", "1.1645E9"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Pressure,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                                            .conservedValues = {998.7, 998.7 * 2.5E6, 998.7 * 10, 998.7 * -20, 998.7 * 30},
+                                                            .expectedValue = {76505448.11999989}},
+                                         (SGTestParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2}},
+                                                            .conservedValues = {NAN, NAN, 800, 800 * 1.2E5, 0.0},
+                                                            .expectedValue = {1.2E+05}},
+                                         (SGTestParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::SpeedOfSound,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2}},
+                                                            .conservedValues = {NAN, NAN, 800, 800 * 1.2E5, 0.0},
+                                                            .expectedValue = {902.2194855}},
+                                         (SGTestParameters){.options = {{"gamma", "3.2"}, {"Cp", "100.2"}, {"p0", "3.5e6"}},
+                                                            .thermodynamicProperty = ablate::eos::ThermodynamicProperty::Pressure,
+                                                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 2}},
+                                                            .conservedValues = {NAN, NAN, 800, 800 * 1.2E5, 0.0},
+                                                            .expectedValue = {2e8}}
+
+                                         ),
+
+                         [](const testing::TestParamInfo<SGTestParameters>& info) { return std::to_string(info.index) + "_" + std::string(to_string(info.param.thermodynamicProperty)); });
+
+
+
+
+
+
+
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS get temperature tests
