@@ -187,12 +187,39 @@ PetscErrorCode ablate::eos::PerfectGas::InternalSensibleEnergyTemperatureFunctio
     *internalEnergy = T* cv;
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::PerfectGas::SensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::PerfectGas::SensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::PerfectGas::SpecificHeatConstantVolumeFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::PerfectGas::SpecificHeatConstantVolumeTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::PerfectGas::SpecificHeatConstantPressureFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::PerfectGas::SpecificHeatConstantPressureTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) { return 0; }
+PetscErrorCode ablate::eos::PerfectGas::SensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *property, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal temperature;
+    TemperatureFunction(conserved, &temperature, ctx);
+    SensibleEnthalpyTemperatureFunction(conserved, temperature, property, ctx);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::PerfectGas::SensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *sensibleEnthalpy, void *ctx) {
+    PetscFunctionBeginUser;
+    const auto& parameters =  ((FunctionContext *)ctx)->parameters;
+    PetscReal cp = parameters.gamma * parameters.rGas / (parameters.gamma - 1.0);
+    *sensibleEnthalpy = T * cp;
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::PerfectGas::SpecificHeatConstantVolumeFunction(const PetscReal *conserved, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    const auto& parameters =  ((FunctionContext *)ctx)->parameters;
+    (*specificHeat) = parameters.rGas / (parameters.gamma - 1.0);
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::PerfectGas::SpecificHeatConstantVolumeTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) {
+    return SpecificHeatConstantVolumeFunction(conserved, property, ctx);
+}
+PetscErrorCode ablate::eos::PerfectGas::SpecificHeatConstantPressureFunction(const PetscReal *conserved, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    const auto& parameters =  ((FunctionContext *)ctx)->parameters;
+    (*specificHeat) = parameters.gamma * parameters.rGas / (parameters.gamma - 1.0);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::PerfectGas::SpecificHeatConstantPressureTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) {
+    return SpecificHeatConstantPressureFunction(conserved, property, ctx);
+}
 PetscErrorCode ablate::eos::PerfectGas::SpeedOfSoundFunction(const PetscReal *conserved, PetscReal *property, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
@@ -222,8 +249,17 @@ PetscErrorCode ablate::eos::PerfectGas::SpeedOfSoundTemperatureFunction(const Pe
     *speedOfSound = PetscSqrtReal(functionContext->parameters.gamma * (p) / density);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::PerfectGas::MachNumberFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::PerfectGas::MachNumberTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) { return 0; }
+PetscErrorCode ablate::eos::PerfectGas::SpeciesSensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *hi, void *ctx) {
+    PetscFunctionBeginUser;
+    const auto& parameters =  ((FunctionContext *)ctx)->parameters;
+    for (PetscInt s = 0; s < parameters.numberSpecies; s++) {
+        hi[s] = 0.0;
+    }
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::PerfectGas::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) {
+    return SpeciesSensibleEnthalpyFunction(conserved, property, ctx);
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::PerfectGas, "perfect gas eos", ARG(ablate::parameters::Parameters, "parameters", "parameters for the perfect gas eos"),

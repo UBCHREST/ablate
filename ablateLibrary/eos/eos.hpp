@@ -8,7 +8,7 @@
 
 namespace ablate::eos {
 
-enum class ThermodynamicProperty { Pressure, Temperature, InternalSensibleEnergy, SensibleEnthalpy, SpecificHeatConstantVolume, SpecificHeatConstantPressure, SpeedOfSound, MachNumber };
+enum class ThermodynamicProperty { Pressure, Temperature, InternalSensibleEnergy, SensibleEnthalpy, SpecificHeatConstantVolume, SpecificHeatConstantPressure, SpeedOfSound, SpeciesSensibleEnthalpy };
 
 /**
  * The internalEnergy computed is without the enthalpy of formation of the species.
@@ -133,8 +133,8 @@ constexpr std::string_view to_string(const ThermodynamicProperty& prop) {
             return "specificHeatConstantPressure";
         case ThermodynamicProperty::SpeedOfSound:
             return "speedOfSound";
-        case ThermodynamicProperty::MachNumber:
-            return "machNumber";
+        case ThermodynamicProperty::SpeciesSensibleEnthalpy:
+            return "speciesSensibleEnthalpy";
     }
     return "";
 }

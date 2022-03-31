@@ -47,7 +47,7 @@ class PerfectGas : public EOS {
     static PetscErrorCode SpecificHeatConstantVolumeFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SpecificHeatConstantPressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SpeedOfSoundFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    static PetscErrorCode MachNumberFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpeciesSensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 
     static PetscErrorCode PressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode TemperatureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
@@ -56,36 +56,34 @@ class PerfectGas : public EOS {
     static PetscErrorCode SpecificHeatConstantVolumeTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpecificHeatConstantPressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpeedOfSoundTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-    static PetscErrorCode MachNumberTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-
+    static PetscErrorCode SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
 
     /**
      * Store a map of functions functions for quick lookup
      */
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
-    inline static std::map<ThermodynamicProperty, ThermodynamicStaticFunction> thermodynamicFunctions =
-        { {ThermodynamicProperty::Pressure, PressureFunction},
-         {ThermodynamicProperty::Temperature, TemperatureFunction},
-         {ThermodynamicProperty::InternalSensibleEnergy, InternalSensibleEnergyFunction},
-         {ThermodynamicProperty::SensibleEnthalpy, SensibleEnthalpyFunction},
-         {ThermodynamicProperty::SpecificHeatConstantVolume, SpecificHeatConstantVolumeFunction},
-         {ThermodynamicProperty::SpecificHeatConstantPressure, SpecificHeatConstantPressureFunction},
-         {ThermodynamicProperty::SpeedOfSound, SpeedOfSoundFunction},
-         {ThermodynamicProperty::MachNumber, MachNumberFunction} };
+    inline static std::map<ThermodynamicProperty, ThermodynamicStaticFunction> thermodynamicFunctions = {{ThermodynamicProperty::Pressure, PressureFunction},
+                                                                                                         {ThermodynamicProperty::Temperature, TemperatureFunction},
+                                                                                                         {ThermodynamicProperty::InternalSensibleEnergy, InternalSensibleEnergyFunction},
+                                                                                                         {ThermodynamicProperty::SensibleEnthalpy, SensibleEnthalpyFunction},
+                                                                                                         {ThermodynamicProperty::SpecificHeatConstantVolume, SpecificHeatConstantVolumeFunction},
+                                                                                                         {ThermodynamicProperty::SpecificHeatConstantPressure, SpecificHeatConstantPressureFunction},
+                                                                                                         {ThermodynamicProperty::SpeedOfSound, SpeedOfSoundFunction},
+                                                                                                         {ThermodynamicProperty::SpeciesSensibleEnthalpy, SpeciesSensibleEnthalpyFunction}};
 
     /**
      * Store a map of temperature functions for quick lookup
      */
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    inline static std::map<ThermodynamicProperty, ThermodynamicTemperatureStaticFunction> thermodynamicTemperatureFunctions =
-        { {ThermodynamicProperty::Pressure, PressureTemperatureFunction},
-         {ThermodynamicProperty::Temperature, TemperatureTemperatureFunction},
-         {ThermodynamicProperty::InternalSensibleEnergy, InternalSensibleEnergyTemperatureFunction},
-         {ThermodynamicProperty::SensibleEnthalpy, SensibleEnthalpyTemperatureFunction},
-         {ThermodynamicProperty::SpecificHeatConstantVolume, SpecificHeatConstantVolumeTemperatureFunction},
-         {ThermodynamicProperty::SpecificHeatConstantPressure, SpecificHeatConstantPressureTemperatureFunction},
-         {ThermodynamicProperty::SpeedOfSound, SpeedOfSoundTemperatureFunction},
-         {ThermodynamicProperty::MachNumber, MachNumberTemperatureFunction} };
+    inline static std::map<ThermodynamicProperty, ThermodynamicTemperatureStaticFunction> thermodynamicTemperatureFunctions = {
+        {ThermodynamicProperty::Pressure, PressureTemperatureFunction},
+        {ThermodynamicProperty::Temperature, TemperatureTemperatureFunction},
+        {ThermodynamicProperty::InternalSensibleEnergy, InternalSensibleEnergyTemperatureFunction},
+        {ThermodynamicProperty::SensibleEnthalpy, SensibleEnthalpyTemperatureFunction},
+        {ThermodynamicProperty::SpecificHeatConstantVolume, SpecificHeatConstantVolumeTemperatureFunction},
+        {ThermodynamicProperty::SpecificHeatConstantPressure, SpecificHeatConstantPressureTemperatureFunction},
+        {ThermodynamicProperty::SpeedOfSound, SpeedOfSoundTemperatureFunction},
+        {ThermodynamicProperty::SpeciesSensibleEnthalpy, SpeciesSensibleEnthalpyTemperatureFunction}};
 
    public:
     explicit PerfectGas(std::shared_ptr<ablate::parameters::Parameters>, std::vector<std::string> species = {});
@@ -115,7 +113,8 @@ class PerfectGas : public EOS {
      * @param fields
      * @return
      */
-    ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;;
+    ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
+    ;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
@@ -123,7 +122,8 @@ class PerfectGas : public EOS {
      * @param fields
      * @return
      */
-    ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;;
+    ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
+    ;
 
     const std::vector<std::string>& GetSpecies() const override { return species; }
 };
