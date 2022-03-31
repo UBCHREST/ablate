@@ -139,7 +139,66 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::StiffenedGas::GetTher
 
 ablate::eos::FieldFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1,
                                                                                ablate::eos::ThermodynamicProperty property2) const {
-    return ablate::eos::FieldFunction();
+    if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
+        if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
+            (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
+            auto tp = [this](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // Compute the density
+                PetscReal gam = parameters.gamma;
+                PetscReal density = (pressure + parameters.p0) / (gam - 1) * gam / parameters.Cp / temperature;
+
+                // compute the sensible internal energy
+                PetscReal sensibleInternalEnergy = temperature  * parameters.Cp / parameters.gamma + parameters.p0 / density;
+
+                // convert to total sensibleEnergy
+                PetscReal kineticEnergy = 0;
+                for (PetscInt d = 0; d < dim; d++) {
+                    kineticEnergy += PetscSqr(velocity[d]);
+                }
+                kineticEnergy *= 0.5;
+
+                conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
+                conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + sensibleInternalEnergy);
+                ;
+                for (PetscInt d = 0; d < dim; d++) {
+                    conserved[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = density * velocity[d];
+                }
+            };
+            if (property1 == ThermodynamicProperty::Temperature) {
+                return tp;
+            } else {
+                return [tp](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                    tp(temperature, pressure, dim, velocity, yi, conserved);
+                };
+            }
+        }
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
+
+    } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field) {
+        if (property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) {
+            return [this](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // Compute the density
+                PetscReal density = (pressure + parameters.p0) / (parameters.gamma - 1.0) * parameters.gamma / parameters.Cp / temperature;
+
+                for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
+                    conserved[c] = density * yi[c];
+                }
+            };
+        }else if(property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature){
+            return [this](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // Compute the density
+                PetscReal density = (pressure + parameters.p0) / (parameters.gamma - 1.0) * parameters.gamma / parameters.Cp / temperature;
+
+                for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
+                    conserved[c] = density * yi[c];
+                }
+            };
+        }
+
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
+    } else {
+        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::PerfectGas.");
+    }
 }
 
 PetscErrorCode ablate::eos::StiffenedGas::PressureFunction(const PetscReal *conserved, PetscReal *p, void *ctx) {
@@ -156,7 +215,7 @@ PetscErrorCode ablate::eos::StiffenedGas::PressureFunction(const PetscReal *cons
 
     // assumed eos
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
-    *p = (functionContext->parameters.gamma - 1.0) * density * (internalEnergy) - functionContext->parameters.gamma * functionContext->parameters.p0;
+    *p = (functionContext->parameters.gamma - 1.0) * density * (internalEnergy)-functionContext->parameters.gamma * functionContext->parameters.p0;
     //*a = PetscSqrtReal(parameters->gamma * ((*p) + parameters->p0) / density);
     PetscFunctionReturn(0);
 }
@@ -166,7 +225,7 @@ PetscErrorCode ablate::eos::StiffenedGas::PressureTemperatureFunction(const Pets
     auto functionContext = (FunctionContext *)ctx;
 
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
-    PetscReal internalEnergy = T*functionContext->parameters.Cp/functionContext->parameters.gamma + functionContext->parameters.p0/density;
+    PetscReal internalEnergy = T * functionContext->parameters.Cp / functionContext->parameters.gamma + functionContext->parameters.p0 / density;
     *p = (functionContext->parameters.gamma - 1.0) * density * internalEnergy - functionContext->parameters.gamma * functionContext->parameters.p0;
     PetscFunctionReturn(0);
 }
@@ -183,7 +242,7 @@ PetscErrorCode ablate::eos::StiffenedGas::TemperatureFunction(const PetscReal *c
     }
 
     // assumed eos
-    PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5*speedSquare;
+    PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
     PetscReal cp = functionContext->parameters.Cp;
     PetscReal pinf = functionContext->parameters.p0;
     PetscReal gam = functionContext->parameters.gamma;
@@ -192,7 +251,7 @@ PetscErrorCode ablate::eos::StiffenedGas::TemperatureFunction(const PetscReal *c
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::StiffenedGas::TemperatureTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) {
-    return TemperatureFunction(conserved, property,ctx);
+    return TemperatureFunction(conserved, property, ctx);
 }
 PetscErrorCode ablate::eos::StiffenedGas::InternalSensibleEnergyFunction(const PetscReal *conserved, PetscReal *internalEnergy, void *ctx) {
     PetscFunctionBeginUser;
@@ -206,7 +265,7 @@ PetscErrorCode ablate::eos::StiffenedGas::InternalSensibleEnergyFunction(const P
     }
 
     // assumed eos
-    *internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5*speedSquare;
+    *internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::StiffenedGas::InternalSensibleEnergyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *internalEnergy, void *ctx) {
@@ -214,15 +273,65 @@ PetscErrorCode ablate::eos::StiffenedGas::InternalSensibleEnergyTemperatureFunct
     auto functionContext = (FunctionContext *)ctx;
 
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
-    *internalEnergy = T*functionContext->parameters.Cp/functionContext->parameters.gamma + functionContext->parameters.p0/density;
+    *internalEnergy = T * functionContext->parameters.Cp / functionContext->parameters.gamma + functionContext->parameters.p0 / density;
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::StiffenedGas::SensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::StiffenedGas::SensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::StiffenedGas::SpecificHeatConstantVolumeFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::StiffenedGas::SpecificHeatConstantVolumeTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::StiffenedGas::SpecificHeatConstantPressureFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::StiffenedGas::SpecificHeatConstantPressureTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) { return 0; }
+PetscErrorCode ablate::eos::StiffenedGas::SensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *sensibleEnthalpy, void *ctx) {
+    PetscFunctionBeginUser;
+    // Total Enthalpy == Sensible Enthalpy = e + p/rho
+    auto functionContext = (FunctionContext *)ctx;
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+
+    PetscReal sensibleInternalEnergy;
+    InternalSensibleEnergyFunction(conserved, &sensibleInternalEnergy, ctx);
+
+    // Compute the pressure
+    PetscReal p = (functionContext->parameters.gamma - 1.0) * density * sensibleInternalEnergy - functionContext->parameters.gamma * functionContext->parameters.p0;
+
+    // compute the enthalpy
+    *sensibleEnthalpy = sensibleInternalEnergy + p / density;
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::StiffenedGas::SensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *sensibleEnthalpy, void *ctx) {
+    PetscFunctionBeginUser;
+    // Total Enthalpy == Sensible Enthalpy = e + p/rho
+    auto functionContext = (FunctionContext *)ctx;
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+
+    PetscReal sensibleInternalEnergy;
+    InternalSensibleEnergyTemperatureFunction(conserved, T, &sensibleInternalEnergy, ctx);
+
+    // Compute the pressure
+    PetscReal p = (functionContext->parameters.gamma - 1.0) * density * (sensibleInternalEnergy)-functionContext->parameters.gamma * functionContext->parameters.p0;
+
+    // compute the enthalpy
+    *sensibleEnthalpy = sensibleInternalEnergy + p / density;
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::StiffenedGas::SpecificHeatConstantVolumeFunction(const PetscReal *conserved, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    const auto &parameters = ((FunctionContext *)ctx)->parameters;
+    (*specificHeat) = parameters.Cp / parameters.gamma;
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::StiffenedGas::SpecificHeatConstantVolumeTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    const auto &parameters = ((FunctionContext *)ctx)->parameters;
+    (*specificHeat) = parameters.Cp / parameters.gamma;
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::StiffenedGas::SpecificHeatConstantPressureFunction(const PetscReal *conserved, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    const auto &parameters = ((FunctionContext *)ctx)->parameters;
+    (*specificHeat) = parameters.Cp;
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::StiffenedGas::SpecificHeatConstantPressureTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *specificHeat, void *ctx) {
+    PetscFunctionBeginUser;
+    const auto &parameters = ((FunctionContext *)ctx)->parameters;
+    (*specificHeat) = parameters.Cp;
+    PetscFunctionReturn(0);
+}
 PetscErrorCode ablate::eos::StiffenedGas::SpeedOfSoundFunction(const PetscReal *conserved, PetscReal *a, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
@@ -237,7 +346,7 @@ PetscErrorCode ablate::eos::StiffenedGas::SpeedOfSoundFunction(const PetscReal *
 
     // assumed eos
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
-    PetscReal p = (functionContext->parameters.gamma - 1.0) * density * (internalEnergy) - functionContext->parameters.gamma * functionContext->parameters.p0;
+    PetscReal p = (functionContext->parameters.gamma - 1.0) * density * (internalEnergy)-functionContext->parameters.gamma * functionContext->parameters.p0;
     *a = PetscSqrtReal(functionContext->parameters.gamma * (p + functionContext->parameters.p0) / density);
     PetscFunctionReturn(0);
 }
@@ -246,13 +355,22 @@ PetscErrorCode ablate::eos::StiffenedGas::SpeedOfSoundTemperatureFunction(const 
     auto functionContext = (FunctionContext *)ctx;
 
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
-    PetscReal internalEnergy = T*functionContext->parameters.Cp/functionContext->parameters.gamma + functionContext->parameters.p0/density;
+    PetscReal internalEnergy = T * functionContext->parameters.Cp / functionContext->parameters.gamma + functionContext->parameters.p0 / density;
     PetscReal p = (functionContext->parameters.gamma - 1.0) * density * internalEnergy - functionContext->parameters.gamma * functionContext->parameters.p0;
     *a = PetscSqrtReal(functionContext->parameters.gamma * (p + functionContext->parameters.p0) / density);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::StiffenedGas::SpeciesSensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return 0; }
-PetscErrorCode ablate::eos::StiffenedGas::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) { return 0; }
+PetscErrorCode ablate::eos::StiffenedGas::SpeciesSensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *hi, void *ctx) {
+    PetscFunctionBeginUser;
+    const auto &parameters = ((FunctionContext *)ctx)->parameters;
+    for (PetscInt s = 0; s < parameters.numberSpecies; s++) {
+        hi[s] = 0.0;
+    }
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::StiffenedGas::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) {
+    return SpeciesSensibleEnthalpyFunction(conserved, property, ctx);
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::StiffenedGas, "stiffened gas eos", ARG(ablate::parameters::Parameters, "parameters", "parameters for the stiffened gas eos"),
