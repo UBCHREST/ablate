@@ -82,7 +82,7 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
                 // we have not counted this cell
                 indexLocations.push_back(cells[0].index);
 
-                // get the center location of this cell
+                // get the center location of this cell //TODO: This can be used in order to find the cell locations based on index?
                 PetscFVCellGeom* cellGeom;
                 DMPlexPointLocalRead(dmCell, cells[0].index, cellGeomArray, &cellGeom) >> checkError;
                 // figure out where this cell is along the line
