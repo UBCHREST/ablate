@@ -152,7 +152,8 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscReal castRay(int theta, int phi, std::vector<PetscReal> intersect); //Class methods get declared here
     PetscReal flameIntensity(PetscReal epsilon, PetscReal temperature);
     PetscReal mag(std::vector<PetscReal> vector);
-    void rayInit();
+    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rayInit();
+    void raysGetLoc(std::vector<std::vector<std::vector<std::vector<PetscInt>>>>);
 
     ///Class Constants
     const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
@@ -163,10 +164,10 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     DM faceDM, cellDM; //Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
     PetscInt dim; //Number of dimensions that the domain exists within
 
-    PetscInt nSteps = 100; //number of steps that each ray will go through //TODO: This should be set as a function of the distance and step size
+    PetscInt nSteps = 100; //number of steps that each ray will go through //This won't be used
     PetscReal h = 0.1; //This is the DEFAULT step size and should be set by the user input
-    PetscInt nTheta = 100; //The DEFAULT number of angles to solve with, should be given by user input
-    PetscInt nPhi = 100; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscInt nTheta = 10; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscInt nPhi = 10; //The DEFAULT number of angles to solve with, should be given by user input
 
     PetscReal radGain;
     //PetscViewer viewer;

@@ -8,6 +8,7 @@
 #include "utilities/mathUtilities.hpp"
 #include <fstream>
 #include <iostream>
+#include "environment/runEnvironment.hpp"
 
 ablate::radiationSolver::RadiationSolver::RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::shared_ptr<parameters::Parameters> options)
     : CellSolver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)) {}
@@ -250,14 +251,10 @@ void ablate::radiationSolver::RadiationSolver::Initialize() { //TODO: Initializa
         cellSolver.UpdateAuxFields(time, locXVec, solver.GetSubDomain().GetAuxVector()); ///This is the function that updates aux fields!
 
         DMRestoreLocalVector(solver.GetSubDomain().GetDM(), &locXVec) >> checkError;
-
-        this->rayInit(); //Runs the new code for ray initialization here.
-
-        std::ofstream myfile; //TODO: How to make an output file the ABLATE way?
-        myfile.open ("example.txt");
-        myfile << "Writing this to a file.\n";
-        myfile.close();
     });
+
+    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays = this->rayInit(); //Runs the new code for ray initialization here
+    this->raysGetLoc(rays);
 }
 
 ///Starting new radiation stuff here
@@ -270,7 +267,7 @@ void ablate::radiationSolver::RadiationSolver::Initialize() { //TODO: Initializa
 //Temperature and absorptivity(any property) of arbitrary point based on location (Using aux fields most likely?) //No idea yet, probably not crazy hard (Don't think absorptivity model exists yet)
 
 ///Declaring function for the initialization to call, draws each ray vector and gets all of the cells associated with it (sorted by distance and starting at the boundary working in)
-void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to create set of vectors associated with each ray in the initialization
+std::vector<std::vector<std::vector<std::vector<PetscInt>>>> ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to create set of vectors associated with each ray in the initialization
     double theta;                                           // represents the actual current angle (inclination)
     double phi;                                             // represents the actual current angle (rotation)
 
@@ -289,22 +286,28 @@ void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to cre
     }
 
     /// Create a matrix which can store cell locations based on origin cell, theta, and phi
-    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays;//TODO: Vector of vector of etc. (ultimately of PETSc Ints) Can use the pushback command to append
+    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays; //Vector of vector of vectors etc. (ultimately of PETSc Ints) Can use the pushback command to append
     //PetscInt rays[cEnd][nTheta][nPhi][nSteps]; //Vector of vectors replaces this
 
-    for(int iCell = cStart; iCell <= cEnd; iCell++) {       //loop through subdomain cell indices
-        std::vector<std::vector<std::vector<PetscInt>>> rayCells; ///TODO: Make vector to store this dimensional row
+    for(int iCell = cStart; iCell <= cEnd; iCell++) {               //loop through subdomain cell indices
+        double percentComplete = 100.0*double(iCell)/double(cEnd);
+        PetscPrintf(PETSC_COMM_WORLD, "Percent Complete: %f\n", percentComplete);
+
+        std::vector<std::vector<std::vector<PetscInt>>> rayCells; //Make vector to store this dimensional row
         //DMGetCoordinatesLocalSetUp(cellDM);
         //DMGetCoordinates(cellDM, origin); // TODO: Get the position vector of the current cell index
         for (int ntheta = 0; ntheta < nTheta; ntheta++) {  // for every angle theta
-            std::vector<std::vector<PetscInt>> rayThetas; ///TODO: Make vector to store this dimensional row
+            //PetscPrintf(PETSC_COMM_WORLD, "Passed theta loop\n");
+            std::vector<std::vector<PetscInt>> rayThetas; //Make vector to store this dimensional row
 
             // precalculate sin and cosine of the angle theta because it is used frequently?
             for (int nphi = 0; nphi < nPhi; nphi++) {  // for every angle phi
-                std::vector<PetscInt> rayPhis; ///TODO: Make vector to store this dimensional row
+                //PetscPrintf(PETSC_COMM_WORLD, "Passed phi loop\n");
+                //float pComplete = double(ntheta)/double(nTheta);
+                //PetscPrintf(PETSC_COMM_WORLD, "Percent Complete: %f\n", pComplete);
 
-                theta = (ntheta / nTheta) * 2 * pi;    // converts the present angle number into a real angle
-                phi = (nphi / nPhi) * 2 * pi;          // converts the present angle number into a real angle
+                std::vector<PetscInt> rayPhis; //Make vector to store this dimensional row
+
 
                 PetscReal magnitude = h; //Should represent the distance from the origin cell to the boundary. How to get this? By marching out of the domain! (and checking whether we are still inside)
                 int nsteps =  0; //Number of spatial steps that  the ray has taken towards the origin
@@ -312,6 +315,8 @@ void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to cre
                 while (!boundary) {
                     /// Draw a point on which to grab the cells of the DM
                     Vec intersect;                                                // Intersect should point to the boundary, and then be pushed back to the origin, getting each cell
+                    theta = ((double)ntheta / (double)nTheta) * 2.0 * pi;    // converts the present angle number into a real angle
+                    phi = ((double)nphi / (double)nPhi) * 2.0 * pi;          // converts the present angle number into a real angle
                     PetscReal direction[3] = {magnitude * sin(theta) * cos(phi),  // x component conversion from spherical coordinates //TODO: + current cell x position
                                               magnitude * sin(theta) * sin(phi),  // y component conversion from spherical coordinates //TODO: + current cell y position
                                               magnitude * cos(theta)};            // z component conversion from spherical coordinates //TODO: + current cell z position
@@ -324,9 +329,9 @@ void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to cre
                     VecSetValues(intersect, 3, i, direction, INSERT_VALUES); //Actually input the values of the vector (There are three values to input)
 
                     /// Loop through points to try to get a list (vector) of cells that are sitting on that line
-                    //TODO: Use std vector to store points (build vector outside of while loop) (or use a set prevents index duplication in the list)
+                    //Use std vector to store points (build vector outside of while loop?) (or use a set prevents index duplication in the list?)
                     PetscSF cellSF = nullptr;  // PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
-                    DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NONE, &cellSF) >> checkError;  // Locate the points in v in the mesh and return a PetscSF of the containing cells
+                    DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NONE, &cellSF);// >> checkError;  // Locate the points in v in the mesh and return a PetscSF of the containing cells
                     /// An array that maps each point to its containing cell can be obtained with the below
                     //We want to get a PetscInt index out of the DMLocatePoints function
                     PetscInt nFound;
@@ -335,14 +340,20 @@ void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to cre
                     PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell); //Using this to get the petsc int cell number from the struct (SF)
 
                     ///IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
-                    for (PetscInt p = 0; p < nFound; ++p) { //TODO: Should only add one cell index per space step, why are multiple cell indices returned? Grab the first only instead?
-                        if (cell[p].index >= 0) {
+                    //for (PetscInt p = 0; p < nFound; ++p) { //TODO: Should only add one cell index per space step, why are multiple cell indices returned? Grab the first only instead?
+                        if (cell[0].index >= 1) {
                             /// Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step
-                            rayPhis.push_back(cell[p].index);
+                            rayPhis.push_back(cell[0].index);
 
-                            PetscPrintf(PETSC_COMM_WORLD, "Intersect x: %g, y: %g, z: %g Value: %g\n", direction[0], direction[1], direction[2], cell[p].index);
+                            //PetscPrintf(PETSC_COMM_WORLD, "Intersect x: %f, y: %f, z: %f Value: %i\n", direction[0], direction[1], direction[2], cell[0].index);
+                            //PetscPrintf(PETSC_COMM_WORLD, "Cell: %i, nTheta: %i, Theta: %g, nPhi: %i, Phi: %g, Value: %i\n", iCell, ntheta, theta, nphi, phi, cell[p].index);
                         }else{boundary = true;}
-                    }
+                    //}
+
+                    ///Notes on how this is failing
+                    //Is the null cell index actually 0 and not -1?
+
+                    //boundary = true; //Force the angles to iterate?
 
                     //Increase the step size of the ray toward the boundary by one more minimum cell radius
                     magnitude += h;  // Increase the magnitude of the ray tracing vector by one space step
@@ -359,16 +370,57 @@ void ablate::radiationSolver::RadiationSolver::rayInit() {  // TODO: Need to cre
             rayCells.push_back(rayThetas);
         }
         //PetscPrintf(PETSC_COMM_WORLD, "Adding layer 3\n");
-        rays.push_back(rayCells); //These lines append all of the new values into the
+        rays.push_back(rayCells); //These lines append the new values into the main vector
     }
-    ///At this point all of the values have been stored and the matrix can be assembled //TODO: Might not need to do this anymore
-    //MatAssemblyBegin(rays,MAT_FINAL_ASSEMBLY);
-    //MatAssemblyEnd(rays,MAT_FINAL_ASSEMBLY);
-
-    //DMPlexPointGlobalFieldRead //TODO: How to get values based on cell index? //Need to grab temperature values from the finiteVolume solver
+    PetscPrintf(PETSC_COMM_WORLD, "Finished!\n");
+    return rays; //Outputs the collection of cell indices in order that their values and locations can be later read from.
 }
 
+void ablate::radiationSolver::RadiationSolver::raysGetLoc(std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays) { //Write the locations of the cells that the initializer has stored
 
+    /// An array that maps each point to its containing cell can be obtained with the below
+    const PetscScalar* cellGeomArray; //Declare the variables that will containt eh geometry of the cells
+    Vec cellGeomVec;
+
+    // March over each cell in this region to create the stencil
+    IS cellIS;
+    PetscInt cStart, cEnd; //Keep these as local variables, the cell indices in the radiation initializer should be updated with every radiation initialization. The variables here are owned by the DM
+    const PetscInt* cells;
+    GetCellRange(cellIS, cStart, cEnd, cells);
+
+    DMPlexGetGeometryFVM(cellDM, nullptr, &cellGeomVec, nullptr); //Obtain the geometric information about the cells in the DM?
+    VecGetArrayRead(cellGeomVec, &cellGeomArray);
+
+    ///Get the file path for the output
+    std::filesystem::path radOutput = environment::RunEnvironment::Get().GetOutputDirectory() / "radOutput.txt";
+    std::ofstream stream(radOutput);
+
+    std::vector<std::vector<PetscReal>> locations; //2 Dimensional vector which stores the locations of the cell centers
+    //TODO: Need to iterate through every point in the rays vector also
+    for(int iCell = cStart; iCell <= cEnd; iCell++) {     // loop through subdomain cell indices
+        for (int ntheta = 0; ntheta < nTheta; ntheta++) {  // for every angle theta
+            for (int nphi = 0; nphi < nPhi; nphi++) {
+                int numPoints = static_cast<int>(rays[iCell][ntheta][nphi].size());      // TODO: How to know the number of cells in each ray? (size of specific sub-vector)
+                for (int n = 0; n < numPoints; n++) {  /// Every cell point that is stored within the ray
+                    std::vector<PetscReal> point;      // Make vector to store this dimensional row
+                    for (int i = 0; i < dim; i++) {  // We will need an extra column to store the ray vector. This will probably need to be stored in a different vector
+                        /// cellGeom represents vector location?
+                        PetscFVCellGeom* cellGeom;
+                        DMPlexPointLocalRead(cellDM, rays[iCell][ntheta][nphi][n], cellGeomArray, &cellGeom);  // Reads the cell location from the point in question
+                        point.push_back(cellGeom->centroid[i]);                                    // Add the centroid location for each dimension.
+
+                        stream << cellGeom->centroid[i];  // Print the value of the centroid to a 3 (4) column txt file of x,y,z, (ray number ?). (Ultimately these values will need to be stored in program or used)
+                        stream << " ";
+                    }
+                    stream << rays[iCell][ntheta][nphi][n];  // Prints the index value stored at this point in the ray
+                    stream << "\n";
+                    locations.push_back(point);
+                }
+            }
+        }
+    }
+    stream.close();
+}
 
 PetscReal ablate::radiationSolver::RadiationSolver::rayTrace() { ///Gets the total intensity/radiative gain at a single cell
 
