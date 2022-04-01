@@ -178,9 +178,7 @@ class TChem : public EOS {
      * @param property1
      * @param property2
      */
-    FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override{
-        return nullptr;
-    }
+    FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
 
 
     // Private static helper functions

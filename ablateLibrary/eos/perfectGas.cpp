@@ -260,6 +260,7 @@ PetscErrorCode ablate::eos::PerfectGas::SpeciesSensibleEnthalpyFunction(const Pe
 PetscErrorCode ablate::eos::PerfectGas::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) {
     return SpeciesSensibleEnthalpyFunction(conserved, property, ctx);
 }
+
 ablate::eos::FieldFunction ablate::eos::PerfectGas::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1,
                                                                              ablate::eos::ThermodynamicProperty property2) const {
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
