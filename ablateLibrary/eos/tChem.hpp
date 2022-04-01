@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "eos.hpp"
 #include "utilities/intErrorChecker.hpp"
+#include <map>
 
 namespace ablate::eos {
 
@@ -29,8 +30,8 @@ class TChem : public EOS {
     int numberSpecies;
 
     // store a tcWorkingVector
-    std::vector<double> tempYiWorkingVector;
-    std::vector<double> sourceWorkingVector;
+    mutable std::vector<double> tempYiWorkingVector;
+    mutable std::vector<double> sourceWorkingVector;
 
     // precompute the speciesHeatOfFormation taken at TREF
     std::vector<double> speciesHeatOfFormation;
@@ -38,6 +39,13 @@ class TChem : public EOS {
     // write/reproduce the periodic table
     static const char* periodicTable;
     inline static const char* periodicTableFileName = "periodictable.dat";
+
+    struct FunctionContext {
+        PetscInt dim;
+        PetscInt eulerOffset;
+        PetscInt densityYiOffset;
+        const TChem* tChem;
+    };
 
     static PetscErrorCode TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
                                               PetscReal* p, void* ctx);
@@ -85,6 +93,39 @@ class TChem : public EOS {
      */
     static void FillWorkingVectorFromDensityMassFractions(int numSpec, double density, double temperature, const double* densityYi, double* workingVector);
 
+    static PetscErrorCode TemperatureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode PressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode InternalSensibleEnergyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpeciesSensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+
+    static PetscErrorCode TemperatureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode PressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode InternalSensibleEnergyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantVolumeTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpecificHeatConstantPressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpeedOfSoundTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+
+    /**
+     * Store a map of functions functions for quick lookup
+     */
+    using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
+    using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+    inline static std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction,ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions =
+        {{ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
+         {ThermodynamicProperty::Temperature, {TemperatureFunction,TemperatureTemperatureFunction}},
+         {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction,InternalSensibleEnergyTemperatureFunction}},
+         {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction,SensibleEnthalpyTemperatureFunction}},
+         {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction,SpecificHeatConstantVolumeTemperatureFunction}},
+         {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction,SpecificHeatConstantPressureTemperatureFunction}},
+         {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction,SpeedOfSoundTemperatureFunction}},
+         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction,SpeciesSensibleEnthalpyTemperatureFunction}}};
+
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);
     ~TChem();
@@ -121,7 +162,7 @@ class TChem : public EOS {
      * @param fields
      * @return
      */
-    ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override { return ThermodynamicFunction{}; };
+    ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
@@ -129,9 +170,7 @@ class TChem : public EOS {
      * @param fields
      * @return
      */
-    ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override {
-        return ThermodynamicTemperatureFunction{};
-    };
+    ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only

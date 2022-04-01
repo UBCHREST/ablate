@@ -1,3 +1,4 @@
+#include <numeric>
 #include "PetscTestFixture.hpp"
 #include "eos/tChem.hpp"
 #include "gtest/gtest.h"
@@ -27,6 +28,19 @@ static std::vector<PetscReal> GetDensityMassFraction(const std::vector<std::stri
     }
 
     return densityYis;
+}
+
+static void FillDensityMassFraction(const ablate::domain::Field& densityYiField, const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn, double density,
+                                    std::vector<PetscReal>& conservedValues) {
+    for (const auto& value : yiIn) {
+        // Get the index
+        auto it = std::find(species.begin(), species.end(), value.first);
+        if (it != species.end()) {
+            auto index = std::distance(species.begin(), it);
+
+            conservedValues[index + densityYiField.offset] = density * value.second;
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -90,6 +104,94 @@ INSTANTIATE_TEST_SUITE_P(TChemTests, TChemGetSpeciesFixture,
                                                  "CH2OH", "CH3O", "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO", "HCCOH",  "N",    "NH",   "NH2",    "NH3",    "NNH", "NO",
                                                  "NO2",   "N2O",  "HNO",   "CN",  "HCN",  "H2CN", "HCNN", "HCNO", "HOCN", "HNCO", "NCO",   "AR",     "C3H7", "C3H8", "CH2CHO", "CH3CHO", "N2"}}),
                          [](const testing::TestParamInfo<TChemGetSpeciesParameters>& info) { return info.param.mechFile.stem().string() + "_" + info.param.thermoFile.stem().string(); });
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// EOS Thermodynamic property tests
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+struct TCTestParameters {
+    std::filesystem::path mechFile;
+    std::filesystem::path thermoFile;
+    std::vector<ablate::domain::Field> fields;
+    std::vector<PetscReal> conservedEulerValues;
+    std::map<std::string, PetscReal> yiMap;
+    std::optional<PetscReal> expectedTemperature;
+    std::map<ablate::eos::ThermodynamicProperty, std::vector<PetscReal>> testProperties;
+};
+
+class TCThermodynamicPropertyTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TCTestParameters> {};
+
+TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
+    // arrange
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+
+    // get the test params
+    const auto& params = GetParam();
+
+    // combine and build the total conserved values
+    auto conservedValuesSize = std::accumulate(params.fields.begin(), params.fields.end(), 0, [](int a, const ablate::domain::Field& field) { return a + field.numberComponents; });
+    std::vector<PetscReal> conservedValues(conservedValuesSize, 0.0);
+    std::copy(params.conservedEulerValues.begin(), params.conservedEulerValues.end(), conservedValues.begin() + std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) {
+                                                                                                                    return field.name == "euler";
+                                                                                                                })->offset);
+    FillDensityMassFraction(*std::find_if(params.fields.begin(), params.fields.end(), [](const auto& field) { return field.name == "densityYi"; }),
+                            eos->GetSpecies(),
+                            params.yiMap,
+                            params.conservedEulerValues[0],
+                            conservedValues);
+
+    // compute the reference temperature for other calculations
+    auto temperatureFunction = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, params.fields);
+    PetscReal computedTemperature;
+    PetscErrorCode ierr = temperatureFunction.function(conservedValues.data(), &computedTemperature, temperatureFunction.context.get());
+    ASSERT_EQ(ierr, 0);
+
+    if (params.expectedTemperature) {
+        ASSERT_LT(PetscAbs(computedTemperature - params.expectedTemperature.value()) / params.expectedTemperature.value(), 1E-5) << "The percent difference for computed temperature should be small";
+    }
+
+    // Check each of the provided property
+    for (const auto& [thermodynamicProperty, expectedValue] : params.testProperties) {
+        // act/assert check for compute without temperature
+        auto thermodynamicFunction = eos->GetThermodynamicFunction(thermodynamicProperty, params.fields);
+        std::vector<PetscReal> computedProperty(expectedValue.size(), NAN);
+        PetscErrorCode ierr = thermodynamicFunction.function(conservedValues.data(), computedProperty.data(), thermodynamicFunction.context.get());
+        ASSERT_EQ(ierr, 0);
+        for (std::size_t c = 0; c < expectedValue.size(); c++) {
+            ASSERT_LT(PetscAbs(expectedValue[c] - computedProperty[c]) / expectedValue[c], 1E-5)
+                << "The percent difference for the direct function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs " << computedProperty[c] << ") should be small";
+        }
+
+        auto thermodynamicTemperatureFunction = eos->GetThermodynamicTemperatureFunction(thermodynamicProperty, params.fields);
+        computedProperty = std::vector<PetscReal>(expectedValue.size(), NAN);
+        ierr = thermodynamicTemperatureFunction.function(conservedValues.data(), computedTemperature, computedProperty.data(), thermodynamicTemperatureFunction.context.get());
+
+        ASSERT_EQ(ierr, 0);
+        for (std::size_t c = 0; c < expectedValue.size(); c++) {
+            ASSERT_LT(PetscAbs(expectedValue[c] - computedProperty[c]) / expectedValue[c], 1E-5)
+                << "The percent difference for the temperature function of " << to_string(thermodynamicProperty) << " (" << expectedValue[c] << " vs " << computedProperty[c] << ") should be small";
+        }
+    }
+}
+
+INSTANTIATE_TEST_SUITE_P(TChemTests, TCThermodynamicPropertyTestFixture,
+                         testing::Values((TCTestParameters){
+                             .mechFile = "inputs/eos/grimech30.dat",
+                             .thermoFile = "inputs/eos/thermo30.dat",
+                             .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}, ablate::domain::Field{.name = "densityYi", .numberComponents = 53, .offset = 5}},
+                             .conservedEulerValues = {1.2, 1.2 * 1.0E+05, 1.2 * 10, -1.2 * 20, 1.2 * 30},
+                             .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
+                             .expectedTemperature = 499.2577,
+                             .testProperties = {
+                                 {ablate::eos::ThermodynamicProperty::Temperature, {499.2577}},
+                                 {ablate::eos::ThermodynamicProperty::InternalSensibleEnergy, {99300.0}},
+                                 {ablate::eos::ThermodynamicProperty::Pressure, {197710.5}},
+                                 {ablate::eos::ThermodynamicProperty::SensibleEnthalpy, {264057.52}},
+                                 {ablate::eos::ThermodynamicProperty::SpeedOfSound, {464.33}},
+                                 {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {1399.301411}},
+                                 {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}}
+                             }}),
+
+                         [](const testing::TestParamInfo<TCTestParameters>& info) { return std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// TChem get species enthalpy
