@@ -1,7 +1,9 @@
 #ifndef ABLATELIBRARY_EOS_HPP
 #define ABLATELIBRARY_EOS_HPP
 #include <petsc.h>
+#include <functional>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <vector>
 #include "domain/field.hpp"

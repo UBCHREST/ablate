@@ -3,10 +3,10 @@
 
 #include "boundarySolver/boundaryProcess.hpp"
 #include "eos/eos.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
-#include "finiteVolume/compressibleFlowFields.hpp"
 
 namespace ablate::boundarySolver::lodi {
 class LODIBoundary : public BoundaryProcess {

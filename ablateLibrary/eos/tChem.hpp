@@ -2,9 +2,9 @@
 #define ABLATECLIENTTEMPLATE_TCHEM_HPP
 
 #include <filesystem>
+#include <map>
 #include "eos.hpp"
 #include "utilities/intErrorChecker.hpp"
-#include <map>
 
 namespace ablate::eos {
 
@@ -116,15 +116,15 @@ class TChem : public EOS {
      */
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    inline static std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction,ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions =
-        {{ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
-         {ThermodynamicProperty::Temperature, {TemperatureFunction,TemperatureTemperatureFunction}},
-         {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction,InternalSensibleEnergyTemperatureFunction}},
-         {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction,SensibleEnthalpyTemperatureFunction}},
-         {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction,SpecificHeatConstantVolumeTemperatureFunction}},
-         {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction,SpecificHeatConstantPressureTemperatureFunction}},
-         {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction,SpeedOfSoundTemperatureFunction}},
-         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction,SpeciesSensibleEnthalpyTemperatureFunction}}};
+    inline static std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
+        {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
+        {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction}},
+        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
+        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction}},
+        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction, SpecificHeatConstantVolumeTemperatureFunction}},
+        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction, SpecificHeatConstantPressureTemperatureFunction}},
+        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction}},
+        {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);
@@ -179,7 +179,6 @@ class TChem : public EOS {
      * @param property2
      */
     FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
-
 
     // Private static helper functions
     inline const static double TREF = 298.15;

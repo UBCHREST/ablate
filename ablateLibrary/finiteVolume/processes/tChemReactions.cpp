@@ -1,6 +1,6 @@
 #include "tChemReactions.hpp"
-#include "finiteVolume/compressibleFlowFields.hpp"
 #include <utilities/petscError.hpp>
+#include "finiteVolume/compressibleFlowFields.hpp"
 
 #if defined(PETSC_HAVE_TCHEM)
 #if defined(MAX)

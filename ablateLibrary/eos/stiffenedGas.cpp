@@ -148,7 +148,7 @@ ablate::eos::FieldFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(c
                 PetscReal density = (pressure + parameters.p0) / (gam - 1) * gam / parameters.Cp / temperature;
 
                 // compute the sensible internal energy
-                PetscReal sensibleInternalEnergy = temperature  * parameters.Cp / parameters.gamma + parameters.p0 / density;
+                PetscReal sensibleInternalEnergy = temperature * parameters.Cp / parameters.gamma + parameters.p0 / density;
 
                 // convert to total sensibleEnergy
                 PetscReal kineticEnergy = 0;
@@ -184,7 +184,7 @@ ablate::eos::FieldFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(c
                     conserved[c] = density * yi[c];
                 }
             };
-        }else if(property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature){
+        } else if (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature) {
             return [this](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 // Compute the density
                 PetscReal density = (pressure + parameters.p0) / (parameters.gamma - 1.0) * parameters.gamma / parameters.Cp / temperature;

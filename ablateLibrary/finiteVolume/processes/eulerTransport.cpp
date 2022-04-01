@@ -400,8 +400,13 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTempera
     PetscReal density = conservedValues[uOff[0] + CompressibleFlowFields::RHO];
     PetscReal totalEnergy = conservedValues[uOff[0] + CompressibleFlowFields::RHOE] / density;
     auto flowParameters = (UpdateTemperatureData*)ctx;
-    PetscErrorCode ierr = flowParameters->computeTemperatureFunction(
-        dim, density, totalEnergy, conservedValues + uOff[0] + CompressibleFlowFields::RHOU, flowParameters->numberSpecies ? conservedValues + uOff[1] : NULL, auxField + aOff[0], flowParameters->computeTemperatureContext);
+    PetscErrorCode ierr = flowParameters->computeTemperatureFunction(dim,
+                                                                     density,
+                                                                     totalEnergy,
+                                                                     conservedValues + uOff[0] + CompressibleFlowFields::RHOU,
+                                                                     flowParameters->numberSpecies ? conservedValues + uOff[1] : NULL,
+                                                                     auxField + aOff[0],
+                                                                     flowParameters->computeTemperatureContext);
     CHKERRQ(ierr);
 
     PetscFunctionReturn(0);

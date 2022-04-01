@@ -63,15 +63,15 @@ class PerfectGas : public EOS {
      */
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    inline static std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction,ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions =
-        {{ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
-                                                                                                         {ThermodynamicProperty::Temperature, {TemperatureFunction,TemperatureTemperatureFunction}},
-                                                                                                         {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction,InternalSensibleEnergyTemperatureFunction}},
-                                                                                                         {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction,SensibleEnthalpyTemperatureFunction}},
-                                                                                                         {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction,SpecificHeatConstantVolumeTemperatureFunction}},
-                                                                                                         {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction,SpecificHeatConstantPressureTemperatureFunction}},
-                                                                                                         {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction,SpeedOfSoundTemperatureFunction}},
-                                                                                                         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction,SpeciesSensibleEnthalpyTemperatureFunction}}};
+    inline static std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
+        {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
+        {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction}},
+        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
+        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction}},
+        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction, SpecificHeatConstantVolumeTemperatureFunction}},
+        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction, SpecificHeatConstantPressureTemperatureFunction}},
+        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction}},
+        {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
    public:
     explicit PerfectGas(std::shared_ptr<ablate::parameters::Parameters>, std::vector<std::string> species = {});
@@ -117,7 +117,7 @@ class PerfectGas : public EOS {
      * @param property1
      * @param property2
      */
-     FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
+    FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
 
     /**
      * returns the species supported by this EOS

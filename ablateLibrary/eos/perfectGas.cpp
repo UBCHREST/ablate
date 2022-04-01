@@ -308,7 +308,7 @@ ablate::eos::FieldFunction ablate::eos::PerfectGas::GetFieldFunctionFunction(con
                     conserved[c] = density * yi[c];
                 }
             };
-        }else if(property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature){
+        } else if (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature) {
             return [this](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 // Compute the density
                 PetscReal density = pressure / (temperature * parameters.rGas);
