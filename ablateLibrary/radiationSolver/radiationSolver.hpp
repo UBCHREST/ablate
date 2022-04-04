@@ -148,7 +148,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     ///Starting added radiation stuff here
 
     ///Class Methods
-    PetscReal rayTrace();
+    std::vector<PetscReal> rayTrace(std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays);
     PetscReal castRay(int theta, int phi, std::vector<PetscReal> intersect); //Class methods get declared here
     PetscReal flameIntensity(PetscReal epsilon, PetscReal temperature);
     PetscReal mag(std::vector<PetscReal> vector);
@@ -165,11 +165,11 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscInt dim; //Number of dimensions that the domain exists within
 
     PetscInt nSteps = 100; //number of steps that each ray will go through //This won't be used
-    PetscReal h = 0.1; //This is the DEFAULT step size and should be set by the user input
+    PetscReal h = 0.05; //This is the DEFAULT step size and should be set by the user input
     PetscInt nTheta = 10; //The DEFAULT number of angles to solve with, should be given by user input
     PetscInt nPhi = 10; //The DEFAULT number of angles to solve with, should be given by user input
 
-    PetscReal radGain;
+    //PetscReal radGain;
     //PetscViewer viewer;
     Vec origin;
 };

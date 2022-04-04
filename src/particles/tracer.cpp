@@ -55,7 +55,7 @@ PetscErrorCode ablate::particles::Tracer::freeStreaming(TS ts, PetscReal t, Vec 
 
     /* Get local flow velocity */
     const auto &flowVelocityField = particles->subDomain->GetField("velocity");
-    ierr = particles->subDomain->GetFieldLocalVector(flowVelocityField, particles->timeInitial, &vis, &locvel, &vdm);
+    ierr = particles->subDomain->GetFieldLocalVector(flowVelocityField, particles->timeInitial, &vis, &locvel, &vdm); //TODO: Get temperature based on this function
     CHKERRQ(ierr);
 
     /* Interpolate velocity */
