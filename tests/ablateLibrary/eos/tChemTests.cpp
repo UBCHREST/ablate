@@ -314,7 +314,7 @@ INSTANTIATE_TEST_SUITE_P(
                                  4.383264e+06, 4.569753e+06, 3.683059e+06, 1.405856e+06, 1.109638e+07, 1.193612e+07, 6.659771e+06, 7.583124e+06, 3.310248e+06}}},
             .errorTolerance = 1E-3}),
 
-    [](const testing::TestParamInfo<TCTestParameters>& info) { return std::to_string(info.index); });
+    [](const testing::TestParamInfo<TCTestParameters>& info) { return "case_" + std::to_string(info.index); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Perfect Gas FieldFunctionTests
