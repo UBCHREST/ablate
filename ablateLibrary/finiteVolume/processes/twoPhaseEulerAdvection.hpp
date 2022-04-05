@@ -19,7 +19,7 @@ class TwoPhaseEulerAdvection : public Process {
         PetscReal* vel;
     };
 
-    struct DecodeEOS{
+    struct DecodeEOS {
         eos::ThermodynamicFunction gasComputeTemperature;
         eos::ThermodynamicTemperatureFunction gasComputeInternalEnergy;
         eos::ThermodynamicTemperatureFunction gasComputeSpeedOfSound;
@@ -29,7 +29,6 @@ class TwoPhaseEulerAdvection : public Process {
         eos::ThermodynamicTemperatureFunction liquidComputeInternalEnergy;
         eos::ThermodynamicTemperatureFunction liquidComputeSpeedOfSound;
         eos::ThermodynamicTemperatureFunction liquidComputePressure;
-
     };
     DecodeEOS decodeEos;
 
@@ -70,10 +69,9 @@ class TwoPhaseEulerAdvection : public Process {
                                                         const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* flux, void* ctx);
 
    public:
-    void DecodeTwoPhaseEulerState( PetscInt dim,const PetscReal *conservedValues, const PetscReal* eulerConservedValues, PetscReal densityVF,
-                                         const PetscReal* normal, PetscReal* density, PetscReal* densityG, PetscReal* densityL, PetscReal* normalVelocity, PetscReal* velocity,
-                                         PetscReal* internalEnergy, PetscReal* internalEnergyG, PetscReal* internalEnergyL, PetscReal* aG, PetscReal* aL, PetscReal* MG, PetscReal* ML, PetscReal* p,
-                                         PetscReal* alpha);
+    void DecodeTwoPhaseEulerState(PetscInt dim, const PetscReal* conservedValues, const PetscReal* eulerConservedValues, PetscReal densityVF, const PetscReal* normal, PetscReal* density,
+                                  PetscReal* densityG, PetscReal* densityL, PetscReal* normalVelocity, PetscReal* velocity, PetscReal* internalEnergy, PetscReal* internalEnergyG,
+                                  PetscReal* internalEnergyL, PetscReal* aG, PetscReal* aL, PetscReal* MG, PetscReal* ML, PetscReal* p, PetscReal* alpha);
 };
 
 }  // namespace ablate::finiteVolume::processes

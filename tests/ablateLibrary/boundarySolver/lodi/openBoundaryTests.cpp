@@ -36,29 +36,6 @@ struct OpenBoundaryTestParameters {
 
 class OpenBoundaryTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<OpenBoundaryTestParameters> {};
 
-static PetscErrorCode MockEOSDecodeStateFunction(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy,
-                                                 PetscReal* a, PetscReal* p, void* ctx) {
-    auto fun =
-        (std::function<PetscErrorCode(
-             PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx)>*)ctx;
-    return (*fun)(dim, density, totalEnergy, velocity, densityYi, internalEnergy, a, p, nullptr);
-}
-
-static PetscErrorCode MockEOSComputeTemperatureFunction(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx) {
-    auto fun = (std::function<PetscErrorCode(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx)>*)ctx;
-    return (*fun)(dim, density, totalEnergy, massFlux, densityYi, T, nullptr);
-}
-
-static PetscErrorCode MockEOSComputeSpecificHeatFunction(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx) {
-    auto fun = (std::function<PetscErrorCode(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx)>*)ctx;
-    return (*fun)(T, density, yi, specificHeat, nullptr);
-}
-
-static PetscErrorCode MockEOSComputeSensibleEnthalpyFunction(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx) {
-    auto fun = (std::function<PetscErrorCode(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx)>*)ctx;
-    return (*fun)(T, density, yi, sensibleEnthalpy, nullptr);
-}
-
 TEST_P(OpenBoundaryTestFixture, ShouldComputeCorrectSourceTerm) {
     // arrange
     // get the required variables
@@ -327,9 +304,9 @@ INSTANTIATE_TEST_SUITE_P(
             .computeStencilPressureFunction =
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", (8.692018326008165 + 1.040246109552421), conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", (8.692018326008165 + 1.040246109552421) *  -499.960302, conserved[ff::RHOU]);
+                    CHECK_EXPECT("mom0", (8.692018326008165 + 1.040246109552421) * -499.960302, conserved[ff::RHOU]);
                     CHECK_EXPECT("totalEnergy", 3000 * (8.692018326008165 + 1.040246109552421), conserved[ff::RHOE], 1E-3);
-                    *property =  251618.820766997 + 200.00000096625962;  // delta p = stencil-boundary ... stencil = boundary+deltap
+                    *property = 251618.820766997 + 200.00000096625962;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .boundaryValues = {8.692018326008165, -882665.4860045275, -4346.010032205915},
@@ -395,180 +372,178 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("density", (8.692018326008165 + 1.040246109552421), conserved[ff::RHO]);
                     CHECK_EXPECT("mom0", (8.692018326008165 + 1.040246109552421) * 500.0398979798, conserved[ff::RHOU]);
                     CHECK_EXPECT("totalEnergy", 3000 * (8.692018326008165 + 1.040246109552421), conserved[ff::RHOE], 1E-3);
-                    *property =  251618.820766997 + 200.00000096625962;  // delta p = stencil-boundary ... stencil = boundary+deltap
+                    *property = 251618.820766997 + 200.00000096625962;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .boundaryValues = {8.692018326008165, -882665.4860045275, 4346.010032205915},
             .stencilValues = {(8.692018326008165 + 1.040246109552421), 3000 * (8.692018326008165 + 1.040246109552421), (500.0001 + 0.03979797979809766) * (8.692018326008165 + 1.040246109552421)},
             .expectedResults = {0.0, 0.0, 0.0}},
-        (OpenBoundaryTestParameters){
-            .name = "3D supersonic out of the domain",
-            .dim = 3,
-            .nEqs = 5,
-            .reflectFactor = 0.15,
-            .referencePressure = 202650.0,
-            .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 5, .offset = 0}},
-            .computeTemperatureFunction =
-                [](const PetscReal conserved[], PetscReal* property) {
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
-                    *property = 100.43;
-                },
-            .computeSpeedOfSoundFunction =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.43, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
-                    *property = 201.8111245542304;
-                },
-            .computePressureFromTemperature =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.43, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
-                    *property = 251619.82076699712;
-                },
-            .computeCpFunction =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.43, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
-                    *property = 995.8750316818866;
-                },
-            .computeCvFunction =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.43, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
-                    *property = 707.6318608176182;
-                },
-            .computeSensibleEnthalpy =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.43, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
-                    *property = -197630.63204437506;
-                },
-            .computeStencilPressureFunction =
-                [](const PetscReal conserved[], PetscReal* property) {
-                    CHECK_EXPECT("density", (8.694650097350083 - 0.12298691191290341), conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", (8.694650097350083 - 0.12298691191290341) *  (-500 + 1.9999999999981803), conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", (8.694650097350083 - 0.12298691191290341) * (-600 + 2.0000000000436553), conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", (8.694650097350083 - 0.12298691191290341) * (-700 + 0.004999999964638845), conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", (8.694650097350083 - 0.12298691191290341) * 3000, conserved[ff::RHOE], 1E-3);
-                    *property =  251619.82076699712 + 199.99999993015075;  // delta p = stencil-boundary ... stencil = boundary+deltap
-                },
-            .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
-            .boundaryValues = {8.694650097350083, 2812108.5386315645, -4347.325048675041, -5216.79005841005, -6086.255068145058},
-            .stencilValues = {(8.694650097350083 - 0.12298691191290341),
-                              3000 * (8.694650097350083 - 0.12298691191290341),
-                              (-500.0 + 1.9999999999981803) * (8.694650097350083 - 0.12298691191290341),
-                              (-600.0 + 2.0000000000436553) * (8.694650097350083 - 0.12298691191290341),
-                              (-700.0 + 0.004999999964638845) * (8.694650097350083 - 0.12298691191290341)},
-            .expectedResults = {-86.13431158921169, -3.467059254299343E7, 55239.66593088489, 63853.09709008283, 60124.44938764354}},
-        (OpenBoundaryTestParameters){
-            .name = "3D subsonic out of the domain",
-            .dim = 3,
-            .nEqs = 5,
-            .reflectFactor = 0.15,
-            .referencePressure = 202650.0,
-            .maxAcousticsLength = 0.02,
-            .fields = {{.name = "euler", .numberComponents = 5, .offset = 0}},
-            .computeTemperatureFunction =
-                [](const PetscReal conserved[], PetscReal* property) {
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
-                    *property = 100.4;
-                },
-            .computeSpeedOfSoundFunction =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.4, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
-                    *property = 201.8111245542304;
-                },
-            .computePressureFromTemperature =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.4, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
-                    *property = 251619.82076699712;
-                },
-            .computeCpFunction =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.4, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
-                    *property = 995.8750316818866;
-                },
-            .computeCvFunction =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.4, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
-                    *property = 707.6318608176182;
-                },
-            .computeSensibleEnthalpy =
-                [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
-                    CHECK_EXPECT("temperature", 100.4, temperature);
-                    CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
-                    *property = -197630.63204437506;
-                },
-            .computeStencilPressureFunction =
-                [](const PetscReal conserved[], PetscReal* property) {
-                    CHECK_EXPECT("density", (8.694650097350083 - 0.12298691191290341), conserved[ff::RHO]);
-                    CHECK_EXPECT("mom0", (8.694650097350083 - 0.12298691191290341) *  (-5.0 + 2.000000000000312), conserved[ff::RHOU]);
-                    CHECK_EXPECT("mom1", (8.694650097350083 - 0.12298691191290341) * (-6.0 + 0.005000000000165981), conserved[ff::RHOV]);
-                    CHECK_EXPECT("mom2", (8.694650097350083 - 0.12298691191290341) * (-7.0 + 2.000000000000312), conserved[ff::RHOW]);
-                    CHECK_EXPECT("totalEnergy", (8.694650097350083 - 0.12298691191290341) * 3000, conserved[ff::RHOE], 1E-3);
-                    *property =  251619.82076699712 + 199.99999993015075;  // delta p = stencil-boundary ... stencil = boundary+deltap
-                },
-            .fvFaceGeom = {.normal = {0.0, -1.0, 0.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
-            .boundaryValues = {8.694650097350083, -1969470.8091556267, -43.473250486750416, -52.167900584100494, -60.86255068145058},
-            .stencilValues = {(8.694650097350083 - 0.12298691191290341),
-                              3000 * (8.694650097350083 - 0.12298691191290341),
-                              (-5.0 + 2.000000000000312) * (8.694650097350083 - 0.12298691191290341),
-                              (-6.0 + 0.005000000000165981) * (8.694650097350083 - 0.12298691191290341),
-                              (-7.0 + 2.000000000000312) * (8.694650097350083 - 0.12298691191290341)},
-            .expectedResults = {-910.2235530052537, 1.810158811466939E8, 4655.4535661944865, -178273.9425225725, 6475.9006722049935}},
+        (OpenBoundaryTestParameters){.name = "3D supersonic out of the domain",
+                                     .dim = 3,
+                                     .nEqs = 5,
+                                     .reflectFactor = 0.15,
+                                     .referencePressure = 202650.0,
+                                     .maxAcousticsLength = 0.02,
+                                     .fields = {{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                     .computeTemperatureFunction =
+                                         [](const PetscReal conserved[], PetscReal* property) {
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
+                                             *property = 100.43;
+                                         },
+                                     .computeSpeedOfSoundFunction =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.43, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
+                                             *property = 201.8111245542304;
+                                         },
+                                     .computePressureFromTemperature =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.43, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
+                                             *property = 251619.82076699712;
+                                         },
+                                     .computeCpFunction =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.43, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
+                                             *property = 995.8750316818866;
+                                         },
+                                     .computeCvFunction =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.43, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
+                                             *property = 707.6318608176182;
+                                         },
+                                     .computeSensibleEnthalpy =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.43, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -500., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -600, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -700, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * 323429.7536008524, conserved[ff::RHOE], 1E-3);
+                                             *property = -197630.63204437506;
+                                         },
+                                     .computeStencilPressureFunction =
+                                         [](const PetscReal conserved[], PetscReal* property) {
+                                             CHECK_EXPECT("density", (8.694650097350083 - 0.12298691191290341), conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", (8.694650097350083 - 0.12298691191290341) * (-500 + 1.9999999999981803), conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", (8.694650097350083 - 0.12298691191290341) * (-600 + 2.0000000000436553), conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", (8.694650097350083 - 0.12298691191290341) * (-700 + 0.004999999964638845), conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", (8.694650097350083 - 0.12298691191290341) * 3000, conserved[ff::RHOE], 1E-3);
+                                             *property = 251619.82076699712 + 199.99999993015075;  // delta p = stencil-boundary ... stencil = boundary+deltap
+                                         },
+                                     .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                     .boundaryValues = {8.694650097350083, 2812108.5386315645, -4347.325048675041, -5216.79005841005, -6086.255068145058},
+                                     .stencilValues = {(8.694650097350083 - 0.12298691191290341),
+                                                       3000 * (8.694650097350083 - 0.12298691191290341),
+                                                       (-500.0 + 1.9999999999981803) * (8.694650097350083 - 0.12298691191290341),
+                                                       (-600.0 + 2.0000000000436553) * (8.694650097350083 - 0.12298691191290341),
+                                                       (-700.0 + 0.004999999964638845) * (8.694650097350083 - 0.12298691191290341)},
+                                     .expectedResults = {-86.13431158921169, -3.467059254299343E7, 55239.66593088489, 63853.09709008283, 60124.44938764354}},
+        (OpenBoundaryTestParameters){.name = "3D subsonic out of the domain",
+                                     .dim = 3,
+                                     .nEqs = 5,
+                                     .reflectFactor = 0.15,
+                                     .referencePressure = 202650.0,
+                                     .maxAcousticsLength = 0.02,
+                                     .fields = {{.name = "euler", .numberComponents = 5, .offset = 0}},
+                                     .computeTemperatureFunction =
+                                         [](const PetscReal conserved[], PetscReal* property) {
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
+                                             *property = 100.4;
+                                         },
+                                     .computeSpeedOfSoundFunction =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.4, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
+                                             *property = 201.8111245542304;
+                                         },
+                                     .computePressureFromTemperature =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.4, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
+                                             *property = 251619.82076699712;
+                                         },
+                                     .computeCpFunction =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.4, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
+                                             *property = 995.8750316818866;
+                                         },
+                                     .computeCvFunction =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.4, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
+                                             *property = 707.6318608176182;
+                                         },
+                                     .computeSensibleEnthalpy =
+                                         [](const PetscReal conserved[], PetscReal temperature, PetscReal* property) {
+                                             CHECK_EXPECT("temperature", 100.4, temperature);
+                                             CHECK_EXPECT("density", 8.694650097350083, conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", 8.694650097350083 * -5., conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", 8.694650097350083 * -6, conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", 8.694650097350083 * -7, conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", 8.694650097350083 * -226515.2463991476, conserved[ff::RHOE], 1E-3);
+                                             *property = -197630.63204437506;
+                                         },
+                                     .computeStencilPressureFunction =
+                                         [](const PetscReal conserved[], PetscReal* property) {
+                                             CHECK_EXPECT("density", (8.694650097350083 - 0.12298691191290341), conserved[ff::RHO]);
+                                             CHECK_EXPECT("mom0", (8.694650097350083 - 0.12298691191290341) * (-5.0 + 2.000000000000312), conserved[ff::RHOU]);
+                                             CHECK_EXPECT("mom1", (8.694650097350083 - 0.12298691191290341) * (-6.0 + 0.005000000000165981), conserved[ff::RHOV]);
+                                             CHECK_EXPECT("mom2", (8.694650097350083 - 0.12298691191290341) * (-7.0 + 2.000000000000312), conserved[ff::RHOW]);
+                                             CHECK_EXPECT("totalEnergy", (8.694650097350083 - 0.12298691191290341) * 3000, conserved[ff::RHOE], 1E-3);
+                                             *property = 251619.82076699712 + 199.99999993015075;  // delta p = stencil-boundary ... stencil = boundary+deltap
+                                         },
+                                     .fvFaceGeom = {.normal = {0.0, -1.0, 0.0}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
+                                     .boundaryValues = {8.694650097350083, -1969470.8091556267, -43.473250486750416, -52.167900584100494, -60.86255068145058},
+                                     .stencilValues = {(8.694650097350083 - 0.12298691191290341),
+                                                       3000 * (8.694650097350083 - 0.12298691191290341),
+                                                       (-5.0 + 2.000000000000312) * (8.694650097350083 - 0.12298691191290341),
+                                                       (-6.0 + 0.005000000000165981) * (8.694650097350083 - 0.12298691191290341),
+                                                       (-7.0 + 2.000000000000312) * (8.694650097350083 - 0.12298691191290341)},
+                                     .expectedResults = {-910.2235530052537, 1.810158811466939E8, 4655.4535661944865, -178273.9425225725, 6475.9006722049935}},
         (OpenBoundaryTestParameters){
             .name = "1D subsonic out of the domain with sp and ev",
             .dim = 1,
@@ -589,7 +564,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
 
                     *property = 300.4;
@@ -605,7 +580,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
 
                     *property = 431.6854962124021;
@@ -621,7 +596,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
                     *property = 251619.82076699706;
                 },
@@ -636,7 +611,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
                     *property = 1934.650079471233;
                 },
@@ -651,7 +626,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
                     *property = 1464.9215577478003;
                 },
@@ -666,7 +641,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
                     *property = 4347.52375485136;
                 },
@@ -680,9 +655,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * (1.783191515808363 + 90.16181478870485), conserved[4]);
                     CHECK_EXPECT("densityYi2", (.4 - 117.62376237623829) * (1.783191515808363 + 90.16181478870485), conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", (.25 + 1.9999999999989138) *(1.783191515808363 + 90.16181478870485), conserved[6]);
+                    CHECK_EXPECT("densityEV0", (.25 + 1.9999999999989138) * (1.783191515808363 + 90.16181478870485), conserved[6]);
                     CHECK_EXPECT("densityEV1", (.5 + 2.000000000001112) * (1.783191515808363 + 90.16181478870485), conserved[7]);
-                    *property =  251619.82076699706 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
+                    *property = 251619.82076699706 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .boundaryValues =
@@ -716,7 +691,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
 
                     *property = 300.4;
@@ -732,7 +707,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
 
                     *property = 431.6854962124021;
@@ -748,7 +723,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
                     *property = 251619.82076699706;
                 },
@@ -763,7 +738,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
                     *property = 1934.650079471233;
                 },
@@ -778,7 +753,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
                     *property = 1464.9215577478003;
                 },
@@ -793,7 +768,7 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783192, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783192, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783192, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783192, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783192, conserved[7]);
                     *property = 4347.52375485136;
                 },
@@ -807,9 +782,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * (1.783191515808363 + 90.16181478870485), conserved[4]);
                     CHECK_EXPECT("densityYi2", (.4 - 117.62376237623829) * (1.783191515808363 + 90.16181478870485), conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", (.25 + 1.9999999999989138) *(1.783191515808363 + 90.16181478870485), conserved[6]);
+                    CHECK_EXPECT("densityEV0", (.25 + 1.9999999999989138) * (1.783191515808363 + 90.16181478870485), conserved[6]);
                     CHECK_EXPECT("densityEV1", (.5 + 2.000000000001112) * (1.783191515808363 + 90.16181478870485), conserved[7]);
-                    *property =  251619.82076699706 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
+                    *property = 251619.82076699706 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .getPgs = []() { return std::make_shared<ablate::finiteVolume::processes::PressureGradientScaling>(std::shared_ptr<ablate::eos::EOS>{}, 125.0, 1.0); },
@@ -838,13 +813,13 @@ INSTANTIATE_TEST_SUITE_P(
                 [](const PetscReal conserved[], PetscReal* property) {
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
                     CHECK_EXPECT("mom0", 1.783191515808363 * -1000.000000, conserved[ff::RHOU]);
-                    CHECK_EXPECT("totalEnergy", 1.783191515808363 *  363241.0758291322, conserved[ff::RHOE], 1E-3);
+                    CHECK_EXPECT("totalEnergy", 1.783191515808363 * 363241.0758291322, conserved[ff::RHOE], 1E-3);
 
                     CHECK_EXPECT("densityYi0", 0.1 * 1.783191515808363, conserved[3]);
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
 
                     *property = 300.4;
@@ -854,13 +829,13 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("temperature", 300.4, temperature);
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
                     CHECK_EXPECT("mom0", 1.783191515808363 * -1000.000000, conserved[ff::RHOU]);
-                    CHECK_EXPECT("totalEnergy", 1.783191515808363 *  363241.0758291322, conserved[ff::RHOE], 1E-3);
+                    CHECK_EXPECT("totalEnergy", 1.783191515808363 * 363241.0758291322, conserved[ff::RHOE], 1E-3);
 
                     CHECK_EXPECT("densityYi0", 0.1 * 1.783191515808363, conserved[3]);
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
 
                     *property = 431.6854962124021;
@@ -870,13 +845,13 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("temperature", 300.4, temperature);
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
                     CHECK_EXPECT("mom0", 1.783191515808363 * -1000.000000, conserved[ff::RHOU]);
-                    CHECK_EXPECT("totalEnergy", 1.783191515808363 *  363241.0758291322, conserved[ff::RHOE], 1E-3);
+                    CHECK_EXPECT("totalEnergy", 1.783191515808363 * 363241.0758291322, conserved[ff::RHOE], 1E-3);
 
                     CHECK_EXPECT("densityYi0", 0.1 * 1.783191515808363, conserved[3]);
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
                     *property = 251619.82076699706;
                 },
@@ -885,13 +860,13 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("temperature", 300.4, temperature);
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
                     CHECK_EXPECT("mom0", 1.783191515808363 * -1000.000000, conserved[ff::RHOU]);
-                    CHECK_EXPECT("totalEnergy", 1.783191515808363 *  363241.0758291322, conserved[ff::RHOE], 1E-3);
+                    CHECK_EXPECT("totalEnergy", 1.783191515808363 * 363241.0758291322, conserved[ff::RHOE], 1E-3);
 
                     CHECK_EXPECT("densityYi0", 0.1 * 1.783191515808363, conserved[3]);
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
                     *property = 1934.650079471233;
                 },
@@ -900,13 +875,13 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("temperature", 300.4, temperature);
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
                     CHECK_EXPECT("mom0", 1.783191515808363 * -1000.000000, conserved[ff::RHOU]);
-                    CHECK_EXPECT("totalEnergy", 1.783191515808363 *  363241.0758291322, conserved[ff::RHOE], 1E-3);
+                    CHECK_EXPECT("totalEnergy", 1.783191515808363 * 363241.0758291322, conserved[ff::RHOE], 1E-3);
 
                     CHECK_EXPECT("densityYi0", 0.1 * 1.783191515808363, conserved[3]);
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
                     *property = 1464.9215577478003;
                 },
@@ -915,13 +890,13 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("temperature", 300.4, temperature);
                     CHECK_EXPECT("density", 1.783191515808363, conserved[ff::RHO]);
                     CHECK_EXPECT("mom0", 1.783191515808363 * -1000.000000, conserved[ff::RHOU]);
-                    CHECK_EXPECT("totalEnergy", 1.783191515808363 *  363241.0758291322, conserved[ff::RHOE], 1E-3);
+                    CHECK_EXPECT("totalEnergy", 1.783191515808363 * 363241.0758291322, conserved[ff::RHOE], 1E-3);
 
                     CHECK_EXPECT("densityYi0", 0.1 * 1.783191515808363, conserved[3]);
                     CHECK_EXPECT("densityYi1", 0.5 * 1.783191515808363, conserved[4]);
                     CHECK_EXPECT("densityYi2", 0.4 * 1.783191515808363, conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", 0.25 *1.783191515808363, conserved[6]);
+                    CHECK_EXPECT("densityEV0", 0.25 * 1.783191515808363, conserved[6]);
                     CHECK_EXPECT("densityEV1", 0.5 * 1.783191515808363, conserved[7]);
                     *property = 4347.52375485136;
                 },
@@ -935,9 +910,9 @@ INSTANTIATE_TEST_SUITE_P(
                     CHECK_EXPECT("densityYi1", 0.5 * (1.783191515808363 + 90.16181478870485), conserved[4]);
                     CHECK_EXPECT("densityYi2", (.4 - 117.62376237623829) * (1.783191515808363 + 90.16181478870485), conserved[5]);
 
-                    CHECK_EXPECT("densityEV0", (.25 + 1.9999999999989138) *(1.783191515808363 + 90.16181478870485), conserved[6]);
+                    CHECK_EXPECT("densityEV0", (.25 + 1.9999999999989138) * (1.783191515808363 + 90.16181478870485), conserved[6]);
                     CHECK_EXPECT("densityEV1", (.5 + 2.000000000001112) * (1.783191515808363 + 90.16181478870485), conserved[7]);
-                    *property =  251619.82076699706 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
+                    *property = 251619.82076699706 + 199.99999981373549;  // delta p = stencil-boundary ... stencil = boundary+deltap
                 },
             .fvFaceGeom = {.normal = {-1, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
             .getPgs = []() { return std::make_shared<ablate::finiteVolume::processes::PressureGradientScaling>(std::shared_ptr<ablate::eos::EOS>{}, 125.0, 1.0); },

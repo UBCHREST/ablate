@@ -32,11 +32,9 @@ class EulerTransport : public FlowProcess {
     // Store ctx needed for static function diffusion function passed to PETSc
     struct DiffusionData {
         /* thermal conductivity*/
-        eos::transport::ComputeConductivityFunction kFunction;
-        void* kContext;
+        eos::ThermodynamicTemperatureFunction kFunction;
         /* dynamic viscosity*/
-        eos::transport::ComputeViscosityFunction muFunction;
-        void* muContext;
+        eos::ThermodynamicTemperatureFunction muFunction;
 
         /* store a scratch variable to hold yi*/
         std::vector<PetscReal> yiScratch;

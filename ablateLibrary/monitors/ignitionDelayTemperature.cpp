@@ -98,7 +98,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
 
     // Get the euler and densityYi values
     const PetscScalar* conserved;
-    ierr = DMPlexPointGlobalRead(dm, monitor->cellOfInterest,  uArray, &conserved);
+    ierr = DMPlexPointGlobalRead(dm, monitor->cellOfInterest, uArray, &conserved);
     CHKERRQ(ierr);
 
     // compute the temperature

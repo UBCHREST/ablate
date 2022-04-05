@@ -179,12 +179,11 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
                                        {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD});
     }
 
-
     // Call Initialize to setup the other needed vars
     Initialize(dims, nEqs, nSpecEqs, nEvEqs, bSolver.GetSubDomain().GetFields());
 }
 
-void ablate::boundarySolver::lodi::LODIBoundary::Initialize(PetscInt dimsIn, PetscInt nEqsIn, PetscInt nSpecEqsIn, PetscInt nEvEqsIn, const std::vector<domain::Field>& fields) {
+void ablate::boundarySolver::lodi::LODIBoundary::Initialize(PetscInt dimsIn, PetscInt nEqsIn, PetscInt nSpecEqsIn, PetscInt nEvEqsIn, const std::vector<domain::Field> &fields) {
     dims = dimsIn;
     nEqs = nEqsIn;
     nSpecEqs = nSpecEqsIn;
@@ -214,5 +213,4 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(PetscInt dimsIn, Pet
     computeSpecificHeatConstantVolume = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpecificHeatConstantVolume, fields);
     computeSensibleEnthalpyFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SensibleEnthalpy, fields);
     computePressure = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Pressure, fields);
-
 }

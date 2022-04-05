@@ -3,12 +3,6 @@
 #include "eos/transport/sutherland.hpp"
 #include "gtest/gtest.h"
 
-static PetscErrorCode MockCpFunction(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx) {
-    // this is a fun hack to set cp equal to the first yi
-    *specificHeat = yi[0];
-    return 0;
-}
-
 struct SutherlandTransportTestParameters {
     PetscReal temperatureIn;
     PetscReal densityIn;
@@ -21,55 +15,122 @@ struct SutherlandTransportTestParameters {
 
 class SutherlandTransportTestFixture : public ::testing::TestWithParam<SutherlandTransportTestParameters> {};
 
-TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectConductivity) {
+TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectDirectConductivity) {
     // ARRANGE
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockCpFunction));
-//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureContext()).Times(::testing::Exactly(1));
+    EXPECT_CALL(*eos, GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, testing::_))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = GetParam().temperatureIn; })));
+    EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, testing::_))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(
+            ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction([](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = GetParam().cpIn; })));
 
     auto sutherlandModel = std::make_shared<ablate::eos::transport::Sutherland>(eos);
+    auto conductivityFunction = sutherlandModel->GetTransportFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
 
     // ACT
     PetscReal computedK = NAN;
-    auto yi = GetParam().cpIn;  // just for testing, set the yi from the cp
-    sutherlandModel->GetComputeConductivityFunction()(GetParam().temperatureIn, GetParam().densityIn, &yi, computedK, sutherlandModel->GetComputeConductivityContext());
+    conductivityFunction.function(nullptr, &computedK, conductivityFunction.context.get());
 
     // ASSERT
-    double error = (GetParam().expectedConductivity - computedK) / GetParam().expectedConductivity;
+    double error = PetscAbs((GetParam().expectedConductivity - computedK) / GetParam().expectedConductivity);
     ASSERT_LT(error, 1E-5);
 }
 
-TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectViscosity) {
+TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectTemperatureConductivity) {
     // ARRANGE
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureFunction()).Times(::testing::Exactly(1));
-//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureContext()).Times(::testing::Exactly(1));
+    EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, testing::_))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(
+            ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction([](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = GetParam().cpIn; })));
 
     auto sutherlandModel = std::make_shared<ablate::eos::transport::Sutherland>(eos);
+    auto conductivityFunction = sutherlandModel->GetTransportTemperatureFunction(ablate::eos::transport::TransportProperty::Conductivity, {});
+
+    // ACT
+    PetscReal computedK = NAN;
+    conductivityFunction.function(nullptr, GetParam().temperatureIn, &computedK, conductivityFunction.context.get());
+
+    // ASSERT
+    double error = PetscAbs((GetParam().expectedConductivity - computedK) / GetParam().expectedConductivity);
+    ASSERT_LT(error, 1E-5);
+}
+
+TEST_P(SutherlandTransportTestFixture, ShouldComputeDirectCorrectViscosity) {
+    // ARRANGE
+    std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
+    EXPECT_CALL(*eos, GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, testing::_))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = GetParam().temperatureIn; })));
+
+    auto sutherlandModel = std::make_shared<ablate::eos::transport::Sutherland>(eos);
+    auto viscosityFunction = sutherlandModel->GetTransportFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
 
     // ACT
     PetscReal computedMu = NAN;
-    sutherlandModel->GetComputeViscosityFunction()(GetParam().temperatureIn, GetParam().densityIn, NULL, computedMu, sutherlandModel->GetComputeViscosityContext());
+    viscosityFunction.function(nullptr, &computedMu, viscosityFunction.context.get());
 
     // ASSERT
-    double error = (GetParam().expectedViscosity - computedMu) / GetParam().expectedViscosity;
+    double error = PetscAbs((GetParam().expectedViscosity - computedMu) / GetParam().expectedViscosity);
     ASSERT_LT(error, 1E-5);
 }
 
-TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectDiffusivity) {
+TEST_P(SutherlandTransportTestFixture, ShouldComputeTemperatureCorrectViscosity) {
     // ARRANGE
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureFunction()).Times(::testing::Exactly(1));
-//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureContext()).Times(::testing::Exactly(1));
 
     auto sutherlandModel = std::make_shared<ablate::eos::transport::Sutherland>(eos);
+    auto viscosityFunction = sutherlandModel->GetTransportTemperatureFunction(ablate::eos::transport::TransportProperty::Viscosity, {});
+
+    // ACT
+    PetscReal computedMu = NAN;
+    viscosityFunction.function(nullptr, GetParam().temperatureIn, &computedMu, viscosityFunction.context.get());
+
+    // ASSERT
+    double error = PetscAbs((GetParam().expectedViscosity - computedMu) / GetParam().expectedViscosity);
+    ASSERT_LT(error, 1E-5);
+}
+
+TEST_P(SutherlandTransportTestFixture, ShouldComputeDirectCorrectDiffusivity) {
+    // ARRANGE
+    std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
+    EXPECT_CALL(*eos, GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, testing::_))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = GetParam().temperatureIn; })));
+    EXPECT_CALL(*eos, GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Density, testing::_))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = GetParam().densityIn; })));
+
+    auto sutherlandModel = std::make_shared<ablate::eos::transport::Sutherland>(eos);
+    auto diffusivityFunction = sutherlandModel->GetTransportFunction(ablate::eos::transport::TransportProperty::Diffusivity, {});
 
     // ACT
     PetscReal computedDiff = NAN;
-    sutherlandModel->GetComputeDiffusivityFunction()(GetParam().temperatureIn, GetParam().densityIn, NULL, computedDiff, sutherlandModel->GetComputeDiffusivityContext());
+    diffusivityFunction.function(nullptr, &computedDiff, diffusivityFunction.context.get());
 
     // ASSERT
-    double error = (GetParam().expectedDiffusivity - computedDiff) / GetParam().expectedDiffusivity;
+    double error = PetscAbs((GetParam().expectedDiffusivity - computedDiff) / GetParam().expectedDiffusivity);
+    ASSERT_LT(error, 1E-5);
+}
+
+TEST_P(SutherlandTransportTestFixture, ShouldComputeTemperatureCorrectDiffusivity) {
+    // ARRANGE
+    std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
+    EXPECT_CALL(*eos, GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Density, testing::_))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* property) { *property = GetParam().densityIn; })));
+
+    auto sutherlandModel = std::make_shared<ablate::eos::transport::Sutherland>(eos);
+    auto diffusivityFunction = sutherlandModel->GetTransportTemperatureFunction(ablate::eos::transport::TransportProperty::Diffusivity, {});
+
+    // ACT
+    PetscReal computedDiff = NAN;
+    diffusivityFunction.function(nullptr, GetParam().temperatureIn, &computedDiff, diffusivityFunction.context.get());
+
+    // ASSERT
+    double error = PetscAbs((GetParam().expectedDiffusivity - computedDiff) / GetParam().expectedDiffusivity);
     ASSERT_LT(error, 1E-5);
 }
 

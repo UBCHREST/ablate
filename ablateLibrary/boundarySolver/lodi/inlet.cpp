@@ -57,7 +57,6 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
         for (PetscInt d = 0; d < dim; d++) {
             boundaryVel[d] = boundaryValues[uOff[inletBoundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / boundaryDensity;
             boundaryNormalVelocity += boundaryVel[d] * fg->normal[d];
-
         }
         PetscErrorCode ierr = inletBoundary->computeTemperature.function(boundaryValues, &boundaryTemperature, inletBoundary->computeTemperature.context.get());
         CHKERRQ(ierr);
@@ -92,7 +91,6 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryNormalVelocity, stencilSize, &stencilNormalVelocity[0], stencilWeights, dVeldNorm);
     PetscScalar dPdNorm;
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryPressure, stencilSize, &stencilPressure[0], stencilWeights, dPdNorm);
-
 
     // Compute the cp, cv from the eos
     std::vector<PetscReal> boundaryYi(inletBoundary->nSpecEqs);

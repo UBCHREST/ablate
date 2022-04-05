@@ -53,7 +53,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
         CHKERRQ(ierr);
         ierr = boundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, boundary->computePressureFromTemperature.context.get());
         CHKERRQ(ierr);
-        boundaryMach = PetscAbs(boundaryNormalVelocity/ boundarySpeedOfSound);
+        boundaryMach = PetscAbs(boundaryNormalVelocity / boundarySpeedOfSound);
     }
 
     // Map the boundary velocity into the normal coord system

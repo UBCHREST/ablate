@@ -40,15 +40,11 @@ class EVTransport : public FlowProcess {
     AdvectionData advectionData;
 
     struct DiffusionData {
-        /* diffusivity */
-        eos::transport::ComputeDiffusivityFunction diffFunction;
-        void* diffContext;
-
         /* number of extra species */
         PetscInt numberEV;
 
-        /* functions to compute species enthalpy */
-        eos::ThermodynamicFunction computeTemperature;
+        /* functions to compute diffusion */
+        eos::ThermodynamicFunction diffFunction;
 
         /* store a scratch space for speciesSpeciesSensibleEnthalpy */
         std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;

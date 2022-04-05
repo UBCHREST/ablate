@@ -5,8 +5,7 @@
 
 namespace ablate::finiteVolume::processes {
 
-class FlowProcess : public Process {
-};
+class FlowProcess : public Process {};
 
 }  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_FLOWPROCESS_HPP

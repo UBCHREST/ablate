@@ -47,7 +47,6 @@ class CompressibleFlowEvDiffusionTestFixture : public testingResources::MpiTestF
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
-
 ////////////////////////////////////
 static PetscErrorCode ComputeDensityEVExact(PetscInt dim, PetscReal time, const PetscReal xyz[], PetscInt Nf, PetscScalar* ev, void* ctx) {
     PetscFunctionBeginUser;
@@ -104,12 +103,13 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
             auto species = std::vector<std::string>();
             EXPECT_CALL(*eos, GetSpecies()).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::ReturnRef(species));
-            EXPECT_CALL(*eos, GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, testing::_)).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction(
-                [](const PetscReal conserved[], PetscReal* T) { *T = NAN; }
-                )));
-            EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, testing::_)).Times(::testing::AtLeast(1)).WillRepeatedly(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction(
-                [](const PetscReal conserved[], PetscReal TOld, PetscReal* T) { *T = NAN; }
-                )));
+            EXPECT_CALL(*eos, GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, testing::_))
+                .Times(::testing::AtLeast(1))
+                .WillRepeatedly(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction([](const PetscReal conserved[], PetscReal* T) { *T = NAN; })));
+            EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, testing::_))
+                .Times(::testing::AtLeast(1))
+                .WillRepeatedly(
+                    ::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction([](const PetscReal conserved[], PetscReal TOld, PetscReal* T) { *T = NAN; })));
 
             // determine required fields for finite volume compressible flow
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {

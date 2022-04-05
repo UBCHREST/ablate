@@ -32,6 +32,7 @@ class StiffenedGas : public EOS {
      * @return
      * @{
      */
+    static PetscErrorCode DensityFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode PressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode TemperatureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode InternalSensibleEnergyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
@@ -51,6 +52,7 @@ class StiffenedGas : public EOS {
      * @return
      * @{
      */
+    static PetscErrorCode DensityTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode PressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode TemperatureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode InternalSensibleEnergyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
@@ -67,6 +69,7 @@ class StiffenedGas : public EOS {
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
     std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
+        {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction}},
         {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
         {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction}},
         {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},

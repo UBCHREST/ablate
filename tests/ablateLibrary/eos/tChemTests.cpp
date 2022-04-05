@@ -21,15 +21,6 @@ static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& sp
     return yi;
 }
 
-static std::vector<PetscReal> GetDensityMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn, double density) {
-    auto densityYis = GetMassFraction(species, yiIn);
-    for (auto& densityYi : densityYis) {
-        densityYi *= density;
-    }
-
-    return densityYis;
-}
-
 static void FillDensityMassFraction(const ablate::domain::Field& densityYiField, const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn, double density,
                                     std::vector<PetscReal>& conservedValues) {
     for (const auto& value : yiIn) {
@@ -190,7 +181,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SensibleEnthalpy, {264057.52}},
                                               {ablate::eos::ThermodynamicProperty::SpeedOfSound, {464.33}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {1399.301411}},
-                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}}}},
+                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}},
+                                              {ablate::eos::ThermodynamicProperty::Density, {1.2}}}},
         (TCTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                            .thermoFile = "inputs/eos/thermo30.dat",
                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 2}, ablate::domain::Field{.name = "densityYi", .numberComponents = 53, .offset = 7}},
@@ -203,7 +195,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SensibleEnthalpy, {264057.52}},
                                               {ablate::eos::ThermodynamicProperty::SpeedOfSound, {464.33}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {1399.301411}},
-                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}}}},
+                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}},
+                                              {ablate::eos::ThermodynamicProperty::Density, {1.2}}}},
         (TCTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                            .thermoFile = "inputs/eos/thermo30.dat",
                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 53}, ablate::domain::Field{.name = "densityYi", .numberComponents = 53, .offset = 0}},
@@ -216,8 +209,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SensibleEnthalpy, {264057.52}},
                                               {ablate::eos::ThermodynamicProperty::SpeedOfSound, {464.33}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {1399.301411}},
-                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}}}},
-
+                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1069.297887}},
+                                              {ablate::eos::ThermodynamicProperty::Density, {1.2}}}},
         (TCTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                            .thermoFile = "inputs/eos/thermo30.dat",
                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 53}, ablate::domain::Field{.name = "densityYi", .numberComponents = 53, .offset = 0}},
@@ -230,8 +223,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SensibleEnthalpy, {557466.2}},
                                               {ablate::eos::ThermodynamicProperty::SpeedOfSound, {560.8365}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {1270.738292}},
-                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {959.3732847}}}},
-
+                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {959.3732847}},
+                                              {ablate::eos::ThermodynamicProperty::Density, {0.8}}}},
         (TCTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                            .thermoFile = "inputs/eos/thermo30.dat",
                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 55}, ablate::domain::Field{.name = "densityYi", .numberComponents = 53, .offset = 2}},
@@ -244,8 +237,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SensibleEnthalpy, {125077.36}},
                                               {ablate::eos::ThermodynamicProperty::SpeedOfSound, {416.04}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {1048.3886}},
-                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {751.5853}}}},
-
+                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {751.5853}},
+                                              {ablate::eos::ThermodynamicProperty::Density, {3.3}}}},
         (TCTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                            .thermoFile = "inputs/eos/thermo30.dat",
                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 55}, ablate::domain::Field{.name = "densityYi", .numberComponents = 53, .offset = 2}},
@@ -258,8 +251,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SensibleEnthalpy, {841104.3210298242}},
                                               {ablate::eos::ThermodynamicProperty::SpeedOfSound, {1013.72}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {6076.13}},
-                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {4382.03}}}},
-
+                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {4382.03}},
+                                              {ablate::eos::ThermodynamicProperty::Density, {0.01}}}},
         (TCTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                            .thermoFile = "inputs/eos/thermo30.dat",
                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0}, ablate::domain::Field{.name = "densityYi", .numberComponents = 53, .offset = 5}},
@@ -272,8 +265,8 @@ INSTANTIATE_TEST_SUITE_P(
                                               {ablate::eos::ThermodynamicProperty::SensibleEnthalpy, {245904.07895}},
                                               {ablate::eos::ThermodynamicProperty::SpeedOfSound, {623.94}},
                                               {ablate::eos::ThermodynamicProperty::SpecificHeatConstantPressure, {2564.85}},
-                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1852.33}}}},
-
+                                              {ablate::eos::ThermodynamicProperty::SpecificHeatConstantVolume, {1852.33}},
+                                              {ablate::eos::ThermodynamicProperty::Density, {999.9}}}},
         (TCTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                            .thermoFile = "inputs/eos/thermo30.dat",
                            .fields = {ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 0}, ablate::domain::Field{.name = "densityYi", .numberComponents = 53, .offset = 3}},

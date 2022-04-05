@@ -19,22 +19,6 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(const std::share
 
     advectionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
 
-    // If there is a transport model, assumed diffusion
-    if (transportModel) {
-        // Store the required data for the low level c functions
-        diffusionData.muFunction = transportModel->GetComputeViscosityFunction();
-        diffusionData.muContext = transportModel->GetComputeViscosityContext();
-        diffusionData.kFunction = transportModel->GetComputeConductivityFunction();
-        diffusionData.kContext = transportModel->GetComputeConductivityContext();
-
-    } else {
-        // Store the required data for the low level c functions
-        diffusionData.muFunction = nullptr;
-        diffusionData.muContext = nullptr;
-        diffusionData.kFunction = nullptr;
-        diffusionData.kContext = nullptr;
-    }
-
     // set the decode state function
     diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
     diffusionData.yiScratch.resize(eos->GetSpecies().size());
@@ -60,23 +44,27 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
         advectionData.computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
     }
 
-
-
     // if there are any coefficients for diffusion, compute diffusion
-    if (diffusionData.kFunction || diffusionData.muFunction) {
-        // Register the euler diffusion source terms
-        if (diffusionData.numberSpecies > 0) {
-            flow.RegisterRHSFunction(DiffusionFlux,
-                                     &diffusionData,
-                                     CompressibleFlowFields::EULER_FIELD,
-                                     {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
-                                     {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
-        } else {
-            flow.RegisterRHSFunction(DiffusionFlux,
-                                     &diffusionData,
-                                     CompressibleFlowFields::EULER_FIELD,
-                                     {CompressibleFlowFields::EULER_FIELD},
-                                     {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
+    if (transportModel) {
+        // Store the required data for the low level c functions
+        diffusionData.muFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, flow.GetSubDomain().GetFields());
+        diffusionData.kFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, flow.GetSubDomain().GetFields());
+
+        if (diffusionData.muFunction.function || diffusionData.kFunction.function) {
+            // Register the euler diffusion source terms
+            if (diffusionData.numberSpecies > 0) {
+                flow.RegisterRHSFunction(DiffusionFlux,
+                                         &diffusionData,
+                                         CompressibleFlowFields::EULER_FIELD,
+                                         {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
+                                         {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
+            } else {
+                flow.RegisterRHSFunction(DiffusionFlux,
+                                         &diffusionData,
+                                         CompressibleFlowFields::EULER_FIELD,
+                                         {CompressibleFlowFields::EULER_FIELD},
+                                         {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
+            }
         }
     }
 
@@ -85,7 +73,6 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
         flow.RegisterAuxFieldUpdate(UpdateAuxVelocityField, nullptr, std::vector<std::string>{CompressibleFlowFields::VELOCITY_FIELD}, {CompressibleFlowFields::EULER_FIELD});
     }
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::TEMPERATURE_FIELD)) {
-
         if (updateTemperatureData.numberSpecies > 0) {
             // add in aux update variables
             flow.RegisterAuxFieldUpdate(UpdateAuxTemperatureField,
@@ -167,7 +154,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(Pe
     PetscReal aR;
     PetscReal pR;
 
-    {// decode right state
+    {  // decode right state
         densityR = fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
         PetscReal temperatureR;
 
@@ -317,9 +304,9 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
     }
 
     PetscReal muLeft = 0.0;
-    flowParameters->muFunction(auxL[aOff[T]], fieldL[uOff[EULER] + CompressibleFlowFields::RHO], yiScratch, muLeft, flowParameters->muContext);
+    flowParameters->muFunction.function(fieldL, auxL[aOff[T]], &muLeft, flowParameters->muFunction.context.get());
     PetscReal kLeft = 0.0;
-    flowParameters->kFunction(auxL[aOff[T]], fieldL[uOff[EULER] + CompressibleFlowFields::RHO], yiScratch, kLeft, flowParameters->kContext);
+    flowParameters->kFunction.function(fieldL, auxL[aOff[T]], &kLeft, flowParameters->kFunction.context.get());
 
     // Compute mu and k
     for (std::size_t s = 0; s < flowParameters->yiScratch.size(); s++) {
@@ -327,9 +314,9 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
     }
 
     PetscReal muRight = 0.0;
-    flowParameters->muFunction(auxR[aOff[T]], fieldR[uOff[EULER] + CompressibleFlowFields::RHO], yiScratch, muRight, flowParameters->muContext);
+    flowParameters->muFunction.function(fieldR, auxR[aOff[T]], &muRight, flowParameters->muFunction.context.get());
     PetscReal kRight = 0.0;
-    flowParameters->kFunction(auxR[aOff[T]], fieldR[uOff[EULER] + CompressibleFlowFields::RHO], yiScratch, kRight, flowParameters->kContext);
+    flowParameters->kFunction.function(fieldR, auxR[aOff[T]], &kRight, flowParameters->kFunction.context.get());
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
@@ -429,7 +416,6 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxPressur
     PetscReal temperature;
     eulerAdvectionData->computeTemperature.function(conservedValues, &temperature, eulerAdvectionData->computeTemperature.context.get()) >> checkError;
     eulerAdvectionData->computePressure.function(conservedValues, temperature, auxField + aOff[0], eulerAdvectionData->computePressure.context.get()) >> checkError;
-
 
     PetscFunctionReturn(0);
 }

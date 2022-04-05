@@ -1,7 +1,7 @@
 #include "perfectGas.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 
-ablate::eos::PerfectGas::PerfectGas(const std::shared_ptr<ablate::parameters::Parameters>& parametersIn, std::vector<std::string> species)
+ablate::eos::PerfectGas::PerfectGas(const std::shared_ptr<ablate::parameters::Parameters> &parametersIn, std::vector<std::string> species)
     : EOS("perfectGas"),
       species(species),
       parameters{.gamma = parametersIn->Get<PetscReal>("gamma", 1.4), .rGas = parametersIn->Get<PetscReal>("Rgas", 287.0), .numberSpecies = (PetscInt)species.size()} {}
@@ -180,6 +180,18 @@ PetscErrorCode ablate::eos::PerfectGas::SpeciesSensibleEnthalpyFunction(const Pe
 }
 PetscErrorCode ablate::eos::PerfectGas::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) {
     return SpeciesSensibleEnthalpyFunction(conserved, property, ctx);
+}
+PetscErrorCode ablate::eos::PerfectGas::DensityFunction(const PetscReal *conserved, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::PerfectGas::DensityTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
 }
 
 ablate::eos::FieldFunction ablate::eos::PerfectGas::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1,

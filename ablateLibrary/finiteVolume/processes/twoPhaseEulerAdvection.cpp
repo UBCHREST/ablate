@@ -30,10 +30,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunc
     VecGetArrayRead(x, &ax);
     // ax = [rhog, eg]
     PetscReal rhoG = ax[0];
-//    PetscReal eG = ax[1];
-//    PetscReal etG = ax[1] + decodeDataStruct->ke;
-//    PetscReal eL = (decodeDataStruct->e - decodeDataStruct->Yg * ax[1]) / (decodeDataStruct->Yl + 1E-10);
-//    PetscReal etL = eL + decodeDataStruct->ke;
+    //    PetscReal eG = ax[1];
+    //    PetscReal etG = ax[1] + decodeDataStruct->ke;
+    //    PetscReal eL = (decodeDataStruct->e - decodeDataStruct->Yg * ax[1]) / (decodeDataStruct->Yl + 1E-10);
+    //    PetscReal etL = eL + decodeDataStruct->ke;
     PetscReal rhoL = decodeDataStruct->Yl / (1 / decodeDataStruct->rho - decodeDataStruct->Yg / ax[0] + 1E-10) + 1E-10;
 
     PetscReal massfluxG[3];
@@ -47,14 +47,14 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunc
     PetscReal pL = NAN;
     PetscReal TG = NAN;
     PetscReal TL = NAN;
-//    PetscReal aG;
-//    PetscReal aL;
+    //    PetscReal aG;
+    //    PetscReal aL;
 
     // TODO: restore arbitrary decode
-//    decodeDataStruct->eosGas->GetDecodeStateFunction()(decodeDataStruct->dim, rhoG, etG, decodeDataStruct->vel, NULL, &eG, &aG, &pG, decodeDataStruct->eosGas->GetDecodeStateContext());
-//    decodeDataStruct->eosGas->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoG, etG, massfluxG, NULL, &TG, decodeDataStruct->eosGas->GetComputeTemperatureContext());
-//    decodeDataStruct->eosLiquid->GetDecodeStateFunction()(decodeDataStruct->dim, rhoL, etL, decodeDataStruct->vel, NULL, &eL, &aL, &pL, decodeDataStruct->eosLiquid->GetDecodeStateContext());
-//    decodeDataStruct->eosLiquid->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoL, etL, massfluxL, NULL, &TL, decodeDataStruct->eosLiquid->GetComputeTemperatureContext());
+    //    decodeDataStruct->eosGas->GetDecodeStateFunction()(decodeDataStruct->dim, rhoG, etG, decodeDataStruct->vel, NULL, &eG, &aG, &pG, decodeDataStruct->eosGas->GetDecodeStateContext());
+    //    decodeDataStruct->eosGas->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoG, etG, massfluxG, NULL, &TG, decodeDataStruct->eosGas->GetComputeTemperatureContext());
+    //    decodeDataStruct->eosLiquid->GetDecodeStateFunction()(decodeDataStruct->dim, rhoL, etL, decodeDataStruct->vel, NULL, &eL, &aL, &pL, decodeDataStruct->eosLiquid->GetDecodeStateContext());
+    //    decodeDataStruct->eosLiquid->GetComputeTemperatureFunction()(decodeDataStruct->dim, rhoL, etL, massfluxL, NULL, &TL, decodeDataStruct->eosLiquid->GetComputeTemperatureContext());
 
     VecGetArray(F, &aF);
     aF[0] = pG - pL;
@@ -64,11 +64,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunc
     return 0;
 }
 
-void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(PetscInt dim,
-                                                                                       const PetscReal *conservedValues, const PetscReal *eulerConservedValues, PetscReal densityVF, const PetscReal *normal, PetscReal *density,
-                                                                                       PetscReal *densityG, PetscReal *densityL, PetscReal *normalVelocity, PetscReal *velocity,
-                                                                                       PetscReal *internalEnergy, PetscReal *internalEnergyG, PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL,
-                                                                                       PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *alpha) {
+void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(PetscInt dim, const PetscReal *conservedValues, const PetscReal *eulerConservedValues, PetscReal densityVF,
+                                                                                       const PetscReal *normal, PetscReal *density, PetscReal *densityG, PetscReal *densityL, PetscReal *normalVelocity,
+                                                                                       PetscReal *velocity, PetscReal *internalEnergy, PetscReal *internalEnergyG, PetscReal *internalEnergyL,
+                                                                                       PetscReal *aG, PetscReal *aL, PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *alpha) {
     // (RHO, RHOE, RHOU, RHOV, RHOW)
     // decode
     *density = eulerConservedValues[CompressibleFlowFields::RHO];
@@ -104,22 +103,22 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         PetscReal cv2 = R2 / (gamma2 - 1);
 
         PetscReal eG = (*internalEnergy) / (Yg + Yl * cv2 / cv1);
-//        PetscReal etG = eG + ke;
+        //        PetscReal etG = eG + ke;
         PetscReal eL = cv2 / cv1 * eG;
 
-//        PetscReal etL = eL + ke;
+        //        PetscReal etL = eL + ke;
         PetscReal rhoG = (*density) * (Yg + Yl * eL / eG * (gamma2 - 1) / (gamma1 - 1));
         PetscReal rhoL = rhoG * eG / eL * (gamma1 - 1) / (gamma2 - 1);
 
         PetscReal pG = 0;
-//        PetscReal pL;
+        //        PetscReal pL;
         PetscReal a1 = 0;
         PetscReal a2 = 0;
-//        PetscReal TG;
+        //        PetscReal TG;
 
         // decode the liquid
-//        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, &eG, &a1, &pG, eosGas->GetDecodeStateContext());
-//        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, &eL, &a2, &pL, eosLiquid->GetDecodeStateContext());
+        //        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, &eG, &a1, &pG, eosGas->GetDecodeStateContext());
+        //        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, &eL, &a2, &pL, eosLiquid->GetDecodeStateContext());
 
         // once state defined
         *densityG = rhoG;
@@ -198,8 +197,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
             }
         }
 
-//        PetscReal etG = eG + ke;
-//        PetscReal etL = eL + ke;
+        //        PetscReal etG = eG + ke;
+        //        PetscReal etL = eL + ke;
         PetscReal ar = -(gamma2 - 1) * eL;
         PetscReal br = (gamma1 - 1) * Yg * (*density) * eG + (gamma2 - 1) * eL * (*density) * Yl + gamma2 * p02;
         PetscReal cr = -gamma2 * p02 * Yl * (*density);
@@ -219,11 +218,11 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
             throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative density rhoG");
         }
         PetscReal pG = 0;
-//        PetscReal pL;
+        //        PetscReal pL;
         PetscReal a1 = 0;
         PetscReal a2 = 0;
-//        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, &eG, &a1, &pG, eosGas->GetDecodeStateContext());
-//        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, &eL, &a2, &pL, eosLiquid->GetDecodeStateContext());
+        //        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, &eG, &a1, &pG, eosGas->GetDecodeStateContext());
+        //        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, &eL, &a2, &pL, eosLiquid->GetDecodeStateContext());
 
         // once state defined
         *densityG = rhoG;
@@ -305,18 +304,18 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         //  ax = [rhog, eg]
 
         PetscReal eG = ax[1];
-//        PetscReal etG = eG + ke;
+        //        PetscReal etG = eG + ke;
         PetscReal eL = ((*internalEnergy) - Yg * eG) / (Yl + 1E-10);
-//        PetscReal etL = eL + ke;
+        //        PetscReal etL = eL + ke;
         PetscReal rhoG = ax[0];
         PetscReal rhoL = Yl / (1 / (*density) - Yg / rhoG + 1E-10) + 1E-10;
         // define output variables
-//        PetscReal pG;
-//        PetscReal pL;
-//        PetscReal a1;
-//        PetscReal a2;
-//        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, &eG, &a1, &pG, eosGas->GetDecodeStateContext());
-//        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, &eL, &a2, &pL, eosLiquid->GetDecodeStateContext());
+        //        PetscReal pG;
+        //        PetscReal pL;
+        //        PetscReal a1;
+        //        PetscReal a2;
+        //        eosGas->GetDecodeStateFunction()(dim, rhoG, etG, velocity, NULL, &eG, &a1, &pG, eosGas->GetDecodeStateContext());
+        //        eosLiquid->GetDecodeStateFunction()(dim, rhoL, etL, velocity, NULL, &eL, &a2, &pL, eosLiquid->GetDecodeStateContext());
 
         SNESDestroy(&snes);
         VecDestroy(&x);
@@ -327,9 +326,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEule
         *densityL = rhoL;
         *internalEnergyG = eG;
         *internalEnergyL = eL;
-//        *p = (pG + pL) / 2;
-//        *aG = a1;
-//        *aL = a2;
+        //        *p = (pG + pL) / 2;
+        //        *aG = a1;
+        //        *aL = a2;
         *MG = (*normalVelocity) / (*aG);
         *ML = (*normalVelocity) / (*aL);
         *alpha = densityVF / (*densityG);
@@ -398,26 +397,25 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal ML_L;
     PetscReal pL;  // pressure equilibrium
     PetscReal alphaL;
-    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(
-                             dim,
-                             fieldL,
-                             fieldL + uOff[EULER_FIELD],
-                             fieldL[uOff[VF_FIELD]],
-                             norm,
-                             &densityL,
-                             &densityG_L,
-                             &densityL_L,
-                             &normalVelocityL,
-                             velocityL,
-                             &internalEnergyL,
-                             &internalEnergyG_L,
-                             &internalEnergyL_L,
-                             &aG_L,
-                             &aL_L,
-                             &MG_L,
-                             &ML_L,
-                             &pL,
-                             &alphaL);
+    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(dim,
+                                                     fieldL,
+                                                     fieldL + uOff[EULER_FIELD],
+                                                     fieldL[uOff[VF_FIELD]],
+                                                     norm,
+                                                     &densityL,
+                                                     &densityG_L,
+                                                     &densityL_L,
+                                                     &normalVelocityL,
+                                                     velocityL,
+                                                     &internalEnergyL,
+                                                     &internalEnergyG_L,
+                                                     &internalEnergyL_L,
+                                                     &aG_L,
+                                                     &aL_L,
+                                                     &MG_L,
+                                                     &ML_L,
+                                                     &pL,
+                                                     &alphaL);
 
     PetscReal densityR;
     PetscReal densityG_R;
@@ -433,26 +431,25 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal ML_R;
     PetscReal pR;
     PetscReal alphaR;
-    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(
-                             dim,
-                             fieldR,
-                             fieldR + uOff[EULER_FIELD],
-                             fieldR[uOff[VF_FIELD]],
-                             norm,
-                             &densityR,
-                             &densityG_R,
-                             &densityL_R,
-                             &normalVelocityR,
-                             velocityR,
-                             &internalEnergyR,
-                             &internalEnergyG_R,
-                             &internalEnergyL_R,
-                             &aG_R,
-                             &aL_R,
-                             &MG_R,
-                             &ML_R,
-                             &pR,
-                             &alphaR);
+    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(dim,
+                                                     fieldR,
+                                                     fieldR + uOff[EULER_FIELD],
+                                                     fieldR[uOff[VF_FIELD]],
+                                                     norm,
+                                                     &densityR,
+                                                     &densityG_R,
+                                                     &densityL_R,
+                                                     &normalVelocityR,
+                                                     velocityR,
+                                                     &internalEnergyR,
+                                                     &internalEnergyG_R,
+                                                     &internalEnergyL_R,
+                                                     &aG_R,
+                                                     &aL_R,
+                                                     &MG_R,
+                                                     &ML_R,
+                                                     &pR,
+                                                     &alphaR);
 
     // get the face values
     PetscReal massFluxGG;
@@ -605,25 +602,25 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal ML_L;
     PetscReal pL;  // pressure equilibrium
     PetscReal alphaL;
-    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(                             dim,
+    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(dim,
                                                      fieldL,
-                             fieldL + uOff[EULER_FIELD],
-                             fieldL[uOff[VF_FIELD]],
-                             norm,
-                             &densityL,
-                             &densityG_L,
-                             &densityL_L,
-                             &normalVelocityL,
-                             velocityL,
-                             &internalEnergyL,
-                             &internalEnergyG_L,
-                             &internalEnergyL_L,
-                             &aG_L,
-                             &aL_L,
-                             &MG_L,
-                             &ML_L,
-                             &pL,
-                             &alphaL);
+                                                     fieldL + uOff[EULER_FIELD],
+                                                     fieldL[uOff[VF_FIELD]],
+                                                     norm,
+                                                     &densityL,
+                                                     &densityG_L,
+                                                     &densityL_L,
+                                                     &normalVelocityL,
+                                                     velocityL,
+                                                     &internalEnergyL,
+                                                     &internalEnergyG_L,
+                                                     &internalEnergyL_L,
+                                                     &aG_L,
+                                                     &aL_L,
+                                                     &MG_L,
+                                                     &ML_L,
+                                                     &pL,
+                                                     &alphaL);
 
     PetscReal densityR;
     PetscReal densityG_R;
@@ -639,26 +636,25 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal ML_R;
     PetscReal pR;
     PetscReal alphaR;
-    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(
-                             dim,
+    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(dim,
                                                      fieldR,
-                             fieldR + uOff[EULER_FIELD],
-                             fieldR[uOff[VF_FIELD]],
-                             norm,
-                             &densityR,
-                             &densityG_R,
-                             &densityL_R,
-                             &normalVelocityR,
-                             velocityR,
-                             &internalEnergyR,
-                             &internalEnergyG_R,
-                             &internalEnergyL_R,
-                             &aG_R,
-                             &aL_R,
-                             &MG_R,
-                             &ML_R,
-                             &pR,
-                             &alphaR);
+                                                     fieldR + uOff[EULER_FIELD],
+                                                     fieldR[uOff[VF_FIELD]],
+                                                     norm,
+                                                     &densityR,
+                                                     &densityG_R,
+                                                     &densityL_R,
+                                                     &normalVelocityR,
+                                                     velocityR,
+                                                     &internalEnergyR,
+                                                     &internalEnergyG_R,
+                                                     &internalEnergyL_R,
+                                                     &aG_R,
+                                                     &aL_R,
+                                                     &MG_R,
+                                                     &ML_R,
+                                                     &pR,
+                                                     &alphaR);
 
     // get the face values
     PetscReal massFlux;
@@ -718,43 +714,42 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
     PetscReal ML;
     PetscReal p;  // pressure equilibrium
     PetscReal alpha;
-    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(
-                             dim,
-        conservedValues,
-                             conservedValues + uOff[EULER_FIELD],  // should be cell center fields
-                             conservedValues[uOff[VF_FIELD]],      // should be cell center fields
-                             norm,
-                             &density,
-                             &densityG,
-                             &densityL,
-                             &normalVelocity,
-                             velocity,
-                             &internalEnergy,
-                             &internalEnergyG,
-                             &internalEnergyL,
-                             &aG,
-                             &aL,
-                             &MG,
-                             &ML,
-                             &p,
-                             &alpha);
+    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(dim,
+                                                     conservedValues,
+                                                     conservedValues + uOff[EULER_FIELD],  // should be cell center fields
+                                                     conservedValues[uOff[VF_FIELD]],      // should be cell center fields
+                                                     norm,
+                                                     &density,
+                                                     &densityG,
+                                                     &densityL,
+                                                     &normalVelocity,
+                                                     velocity,
+                                                     &internalEnergy,
+                                                     &internalEnergyG,
+                                                     &internalEnergyL,
+                                                     &aG,
+                                                     &aL,
+                                                     &MG,
+                                                     &ML,
+                                                     &p,
+                                                     &alpha);
 
     // Get kinetic energy
-//    PetscReal ke = 0.0;
+    //    PetscReal ke = 0.0;
     for (PetscInt d = 0; d < dim; d++) {
         velocity[d] = conservedValues[CompressibleFlowFields::RHOU + d] / density;
         normalVelocity += velocity[d] * norm[d];
-//        ke += PetscSqr(velocity[d]);
+        //        ke += PetscSqr(velocity[d]);
     }
-//    ke *= 0.5;
-//    PetscReal etG = internalEnergyG + ke;
+    //    ke *= 0.5;
+    //    PetscReal etG = internalEnergyG + ke;
     PetscReal massfluxG[3];
     for (PetscInt d = 0; d < dim; d++) {
         massfluxG[d] = velocity[d] * densityG;
     }
 
     PetscReal Tg = NAN;
-//    twoPhaseEulerAdvection->eosGas->GetComputeTemperatureFunction()(dim, densityG, etG, massfluxG, NULL, &Tg, twoPhaseEulerAdvection->eosGas->GetDecodeStateContext());
+    //    twoPhaseEulerAdvection->eosGas->GetComputeTemperatureFunction()(dim, densityG, etG, massfluxG, NULL, &Tg, twoPhaseEulerAdvection->eosGas->GetDecodeStateContext());
     PetscReal T = Tg;  // temperature equilibrium, Tg = Tl
     auxField[aOff[0]] = T;
     PetscFunctionReturn(0);
@@ -787,24 +782,25 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
     PetscReal ML;
     PetscReal p;  // pressure equilibrium
     PetscReal alpha;
-    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(                             dim,conservedValues,
-                             conservedValues + uOff[EULER_FIELD],  // should be cell center fields
-                             conservedValues[uOff[VF_FIELD]],      // should be cell center fields
-                             norm,
-                             &density,
-                             &densityG,
-                             &densityL,
-                             &normalVelocity,
-                             velocity,
-                             &internalEnergy,
-                             &internalEnergyG,
-                             &internalEnergyL,
-                             &aG,
-                             &aL,
-                             &MG,
-                             &ML,
-                             &p,
-                             &alpha);
+    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(dim,
+                                                     conservedValues,
+                                                     conservedValues + uOff[EULER_FIELD],  // should be cell center fields
+                                                     conservedValues[uOff[VF_FIELD]],      // should be cell center fields
+                                                     norm,
+                                                     &density,
+                                                     &densityG,
+                                                     &densityL,
+                                                     &normalVelocity,
+                                                     velocity,
+                                                     &internalEnergy,
+                                                     &internalEnergyG,
+                                                     &internalEnergyL,
+                                                     &aG,
+                                                     &aL,
+                                                     &MG,
+                                                     &ML,
+                                                     &p,
+                                                     &alpha);
     auxField[aOff[0]] = p;
     PetscFunctionReturn(0);
 }
@@ -836,26 +832,25 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
     PetscReal ML;
     PetscReal p;  // pressure equilibrium
     PetscReal alpha;
-    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(
-                             dim,
-        conservedValues,
-                             conservedValues + uOff[EULER_FIELD],  // should be cell center fields
-                             conservedValues[uOff[VF_FIELD]],      // should be cell center fields
-                             norm,
-                             &density,
-                             &densityG,
-                             &densityL,
-                             &normalVelocity,
-                             velocity,
-                             &internalEnergy,
-                             &internalEnergyG,
-                             &internalEnergyL,
-                             &aG,
-                             &aL,
-                             &MG,
-                             &ML,
-                             &p,
-                             &alpha);
+    twoPhaseEulerAdvection->DecodeTwoPhaseEulerState(dim,
+                                                     conservedValues,
+                                                     conservedValues + uOff[EULER_FIELD],  // should be cell center fields
+                                                     conservedValues[uOff[VF_FIELD]],      // should be cell center fields
+                                                     norm,
+                                                     &density,
+                                                     &densityG,
+                                                     &densityL,
+                                                     &normalVelocity,
+                                                     velocity,
+                                                     &internalEnergy,
+                                                     &internalEnergyG,
+                                                     &internalEnergyL,
+                                                     &aG,
+                                                     &aL,
+                                                     &MG,
+                                                     &ML,
+                                                     &p,
+                                                     &alpha);
     auxField[aOff[0]] = alpha;
     PetscFunctionReturn(0);
 }

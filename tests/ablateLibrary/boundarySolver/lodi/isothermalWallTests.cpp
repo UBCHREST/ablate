@@ -32,29 +32,6 @@ struct IsothermalWallTestParameters {
 
 class IsothermalWallTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<IsothermalWallTestParameters> {};
 
-static PetscErrorCode MockEOSDecodeStateFunction(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy,
-                                                 PetscReal* a, PetscReal* p, void* ctx) {
-    auto fun =
-        (std::function<PetscErrorCode(
-             PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a, PetscReal* p, void* ctx)>*)ctx;
-    return (*fun)(dim, density, totalEnergy, velocity, densityYi, internalEnergy, a, p, nullptr);
-}
-
-static PetscErrorCode MockEOSComputeTemperatureFunction(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx) {
-    auto fun = (std::function<PetscErrorCode(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx)>*)ctx;
-    return (*fun)(dim, density, totalEnergy, massFlux, densityYi, T, nullptr);
-}
-
-static PetscErrorCode MockEOSComputeSpecificHeatFunction(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx) {
-    auto fun = (std::function<PetscErrorCode(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx)>*)ctx;
-    return (*fun)(T, density, yi, specificHeat, nullptr);
-}
-
-static PetscErrorCode MockEOSComputeSensibleEnthalpyFunction(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx) {
-    auto fun = (std::function<PetscErrorCode(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx)>*)ctx;
-    return (*fun)(T, density, yi, sensibleEnthalpy, nullptr);
-}
-
 TEST_P(IsothermalWallTestFixture, ShouldComputeCorrectSourceTerm) {
     // arrange
     // get the required variables

@@ -28,7 +28,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     PetscInt countLocal = 0;
 
     // get access to the underlying data for the flow
-    const auto& flowEulerId = flow.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD);
+    const auto &flowEulerId = flow.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD);
     PetscInt dim = flow.GetSubDomain().GetDimensions();
 
     // get the flowSolution from the ts
@@ -44,9 +44,9 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     flow.GetCellRange(cellIS, cStart, cEnd, cells);
 
     // get decode state function/context
-    eos::ThermodynamicFunction computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature,flow.GetSubDomain().GetFields());
+    eos::ThermodynamicFunction computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());
     eos::ThermodynamicTemperatureFunction computeInternalEnergy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::InternalSensibleEnergy, flow.GetSubDomain().GetFields());
-    eos::ThermodynamicTemperatureFunction computeSpeedOfSound =eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
+    eos::ThermodynamicTemperatureFunction computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
     eos::ThermodynamicTemperatureFunction computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
 
     // check for ghost nodes
@@ -98,7 +98,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
             for (PetscInt d = 0; d < dim; d++) {
                 velMag += PetscSqr(conserved[flowEulerId.offset + CompressibleFlowFields::RHOU + d] / density);
             }
-            mach = PetscSqrtReal(velMag)/a;
+            mach = PetscSqrtReal(velMag) / a;
 
             // Store the max/min values
             countLocal++;

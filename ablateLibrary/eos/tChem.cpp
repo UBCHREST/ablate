@@ -499,7 +499,18 @@ PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureFunction(co
 
     PetscFunctionReturn(0);
 }
-
+PetscErrorCode ablate::eos::TChem::DensityFunction(const PetscReal *conserved, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::DensityTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
+}
 ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2) const {
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
         if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||

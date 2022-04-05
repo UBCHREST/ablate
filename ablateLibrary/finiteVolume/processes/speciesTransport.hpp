@@ -32,8 +32,7 @@ class SpeciesTransport : public FlowProcess {
 
     struct DiffusionData {
         /* diffusivity */
-        eos::transport::ComputeDiffusivityFunction diffFunction;
-        void* diffContext;
+        eos::ThermodynamicTemperatureFunction diffFunction;
 
         /* number of gas species */
         PetscInt numberSpecies;

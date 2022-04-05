@@ -279,7 +279,18 @@ PetscErrorCode ablate::eos::StiffenedGas::SpeciesSensibleEnthalpyFunction(const 
 PetscErrorCode ablate::eos::StiffenedGas::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *property, void *ctx) {
     return SpeciesSensibleEnthalpyFunction(conserved, property, ctx);
 }
-
+PetscErrorCode ablate::eos::StiffenedGas::DensityFunction(const PetscReal *conserved, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::StiffenedGas::DensityTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
+}
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::StiffenedGas, "stiffened gas eos", ARG(ablate::parameters::Parameters, "parameters", "parameters for the stiffened gas eos"),
          OPT(std::vector<std::string>, "species", "species to track.  Note: species mass fractions do not change eos"));
