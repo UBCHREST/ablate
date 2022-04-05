@@ -24,8 +24,8 @@ class SutherlandTransportTestFixture : public ::testing::TestWithParam<Sutherlan
 TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectConductivity) {
     // ARRANGE
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockCpFunction));
-    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureContext()).Times(::testing::Exactly(1));
+//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureFunction()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(MockCpFunction));
+//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureContext()).Times(::testing::Exactly(1));
 
     auto sutherlandModel = std::make_shared<ablate::eos::transport::Sutherland>(eos);
 
@@ -42,8 +42,8 @@ TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectConductivity) {
 TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectViscosity) {
     // ARRANGE
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureFunction()).Times(::testing::Exactly(1));
-    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureContext()).Times(::testing::Exactly(1));
+//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureFunction()).Times(::testing::Exactly(1));
+//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureContext()).Times(::testing::Exactly(1));
 
     auto sutherlandModel = std::make_shared<ablate::eos::transport::Sutherland>(eos);
 
@@ -59,8 +59,8 @@ TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectViscosity) {
 TEST_P(SutherlandTransportTestFixture, ShouldComputeCorrectDiffusivity) {
     // ARRANGE
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
-    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureFunction()).Times(::testing::Exactly(1));
-    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureContext()).Times(::testing::Exactly(1));
+//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureFunction()).Times(::testing::Exactly(1));
+//    EXPECT_CALL(*eos, GetComputeSpecificHeatConstantPressureContext()).Times(::testing::Exactly(1));
 
     auto sutherlandModel = std::make_shared<ablate::eos::transport::Sutherland>(eos);
 

@@ -28,8 +28,11 @@ TEST_P(EulerTransportFluxTestFixture, ShouldComputeCorrectFlux) {
 
     // set a perfect gas for testing
     auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>());
-    eulerFlowData.decodeStateFunction = eos->GetDecodeStateFunction();
-    eulerFlowData.decodeStateContext = eos->GetDecodeStateContext();
+    auto eulerFieldMock = ablate::domain::Field{.name = "euler", .numberComponents = 3, .offset = 0};
+    eulerFlowData.computeTemperature = eos->GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, {eulerFieldMock});
+    eulerFlowData.computeInternalEnergy = eos->GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::InternalSensibleEnergy, {eulerFieldMock});
+    eulerFlowData.computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::SpeedOfSound, {eulerFieldMock});
+    eulerFlowData.computePressure = eos->GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::Pressure, {eulerFieldMock});
 
     // setup a fake PetscFVFaceGeom
     PetscFVFaceGeom faceGeom{};

@@ -35,8 +35,7 @@ void ablate::monitors::IgnitionDelayTemperature::Register(std::shared_ptr<solver
     }
 
     // determine the component offset
-    eulerId = flow->GetSubDomain().GetField("euler").id;
-    yiId = flow->GetSubDomain().GetField("densityYi").id;
+    computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow->GetSubDomain().GetFields());
 
     // Convert the location to a vec
     Vec locVec;
@@ -98,24 +97,13 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     CHKERRQ(ierr);
 
     // Get the euler and densityYi values
-    const PetscScalar* eulerValues;
-    const PetscScalar* densityYiValues;
-    ierr = DMPlexPointGlobalFieldRead(dm, monitor->cellOfInterest, monitor->eulerId, uArray, &eulerValues);
-    CHKERRQ(ierr);
-    ierr = DMPlexPointGlobalFieldRead(dm, monitor->cellOfInterest, monitor->yiId, uArray, &densityYiValues);
+    const PetscScalar* conserved;
+    ierr = DMPlexPointGlobalRead(dm, monitor->cellOfInterest,  uArray, &conserved);
     CHKERRQ(ierr);
 
     // compute the temperature
-    // using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
     double T;
-    const double density = eulerValues[ablate::finiteVolume::CompressibleFlowFields::RHO];
-    monitor->eos->GetComputeTemperatureFunction()(dim,
-                                                  density,
-                                                  eulerValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] / density,
-                                                  eulerValues + ablate::finiteVolume::CompressibleFlowFields::RHOU,
-                                                  densityYiValues,
-                                                  &T,
-                                                  monitor->eos->GetComputeTemperatureContext());
+    monitor->computeTemperature.function(conserved, &T, monitor->computeTemperature.context.get());
 
     // Store the result
     monitor->timeHistory.push_back(crtime);

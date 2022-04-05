@@ -16,7 +16,7 @@ class PerfectGas : public EOS {
         PetscReal rGas;
         PetscInt numberSpecies;
     };
-    Parameters parameters;
+    Parameters parameters{};
 
     struct FunctionContext {
         PetscInt dim;
@@ -24,22 +24,14 @@ class PerfectGas : public EOS {
         Parameters parameters;
     };
 
-    static PetscErrorCode PerfectGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
-                                                PetscReal* p, void* ctx);
-    static PetscErrorCode PerfectGasComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
-
-    static PetscErrorCode PerfectGasComputeSpeciesSensibleEnthalpy(PetscReal T, PetscReal* hi, void* ctx);
-
-    static PetscErrorCode PerfectGasComputeDensityFunctionFromTemperaturePressure(PetscReal T, PetscReal pressure, const PetscReal yi[], PetscReal* density, void* ctx);
-
-    static PetscErrorCode PerfectGasComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
-
-    static PetscErrorCode PerfectGasComputeSensibleEnthalpy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
-
-    static PetscErrorCode PerfectGasComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
-
-    static PetscErrorCode PerfectGasComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
-
+    /** @name Direct Thermodynamic Properties Functions
+     * These functions are used to compute the direct thermodynamic properties (without temperature).  They are not called directly but a pointer to them is returned
+     * @param conserved
+     * @param property
+     * @param ctx
+     * @return
+     * @{
+     */
     static PetscErrorCode PressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode TemperatureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode InternalSensibleEnergyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
@@ -48,7 +40,17 @@ class PerfectGas : public EOS {
     static PetscErrorCode SpecificHeatConstantPressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SpeedOfSoundFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SpeciesSensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    /** @} */
 
+    /** @name Temperature Based Thermodynamic Properties Functions
+     * These functions are used to compute the thermodynamic properties when temperature is known.  They are not called directly but a pointer to them is returned and may be faster than the direct
+     * calls.
+     * @param conserved
+     * @param property
+     * @param ctx
+     * @return
+     * @{
+     */
     static PetscErrorCode PressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode TemperatureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode InternalSensibleEnergyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
@@ -57,13 +59,14 @@ class PerfectGas : public EOS {
     static PetscErrorCode SpecificHeatConstantPressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpeedOfSoundTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    /** @} */
 
     /**
      * Store a map of functions functions for quick lookup
      */
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    inline static std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
+    std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
         {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
         {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction}},
         {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
@@ -74,26 +77,19 @@ class PerfectGas : public EOS {
         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
    public:
-    explicit PerfectGas(std::shared_ptr<ablate::parameters::Parameters>, std::vector<std::string> species = {});
+    explicit PerfectGas(const std::shared_ptr<ablate::parameters::Parameters>&, std::vector<std::string> species = {});
     void View(std::ostream& stream) const override;
-    DecodeStateFunction GetDecodeStateFunction() override { return PerfectGasDecodeState; }
-    void* GetDecodeStateContext() override { return &parameters; }
-    ComputeTemperatureFunction GetComputeTemperatureFunction() override { return PerfectGasComputeTemperature; }
-    void* GetComputeTemperatureContext() override { return &parameters; }
-    ComputeSpeciesSensibleEnthalpyFunction GetComputeSpeciesSensibleEnthalpyFunction() override { return PerfectGasComputeSpeciesSensibleEnthalpy; }
-    void* GetComputeSpeciesSensibleEnthalpyContext() override { return &parameters; }
-    ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { return PerfectGasComputeDensityFunctionFromTemperaturePressure; }
-    void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return &parameters; }
-    ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return PerfectGasComputeSensibleInternalEnergy; }
-    void* GetComputeSensibleInternalEnergyContext() override { return &parameters; }
-    ComputeSensibleEnthalpyFunction GetComputeSensibleEnthalpyFunction() override { return PerfectGasComputeSensibleEnthalpy; }
-    void* GetComputeSensibleEnthalpyContext() override { return &parameters; }
-    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() override { return PerfectGasComputeSpecificHeatConstantPressure; }
-    void* GetComputeSpecificHeatConstantPressureContext() override { return &parameters; }
-    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantVolumeFunction() override { return PerfectGasComputeSpecificHeatConstantVolume; }
-    void* GetComputeSpecificHeatConstantVolumeContext() override { return &parameters; }
-    PetscReal GetSpecificHeatRatio() const { return parameters.gamma; }
-    PetscReal GetGasConstant() const { return parameters.rGas; }
+    /**
+     * Get constant specific heat ratio for a perfect gas.
+     * @return
+     */
+    [[nodiscard]] PetscReal GetSpecificHeatRatio() const { return parameters.gamma; }
+
+    /**
+     * Get constant gas constant for a perfect gas
+     * @return
+     */
+    [[nodiscard]] PetscReal GetGasConstant() const { return parameters.rGas; }
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields
@@ -101,7 +97,7 @@ class PerfectGas : public EOS {
      * @param fields
      * @return
      */
-    ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
+    [[nodiscard]] ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
@@ -109,7 +105,7 @@ class PerfectGas : public EOS {
      * @param fields
      * @return
      */
-    ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
+    [[nodiscard]] ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const override;
 
     /**
      * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only
@@ -117,13 +113,13 @@ class PerfectGas : public EOS {
      * @param property1
      * @param property2
      */
-    FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
+    [[nodiscard]] FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
 
     /**
      * returns the species supported by this EOS
      * @return
      */
-    const std::vector<std::string>& GetSpecies() const override { return species; }
+    [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return species; }
 };
 
 }  // namespace ablate::eos

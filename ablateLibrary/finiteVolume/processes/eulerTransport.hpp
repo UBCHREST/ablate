@@ -19,8 +19,10 @@ class EulerTransport : public FlowProcess {
         PetscInt numberSpecies;
 
         // EOS function calls
-        eos::DecodeStateFunction decodeStateFunction;
-        void* decodeStateContext;
+        eos::ThermodynamicFunction computeTemperature;
+        eos::ThermodynamicTemperatureFunction computeInternalEnergy;
+        eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
+        eos::ThermodynamicTemperatureFunction computePressure;
 
         /* store method used for flux calculator */
         ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
@@ -44,8 +46,7 @@ class EulerTransport : public FlowProcess {
     };
     // Store ctx needed for static function diffusion function passed to PETSc
     struct UpdateTemperatureData {
-        eos::ComputeTemperatureFunction computeTemperatureFunction;
-        void* computeTemperatureContext;
+        eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
         PetscInt numberSpecies;
     };
 
@@ -84,7 +85,7 @@ class EulerTransport : public FlowProcess {
      *
      * public constructor for euler advection
      */
-    EulerTransport(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
+    EulerTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
                    std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
     /**

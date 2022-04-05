@@ -23,12 +23,13 @@ class IgnitionDelayTemperature : public Monitor {
     const std::vector<double> location;
 
     // The offset for the euler and mass fractions in the solution array
-    PetscInt eulerId;
-    PetscInt yiId;
     PetscInt cellOfInterest;
 
     std::vector<double> timeHistory;
     std::vector<double> temperatureHistory;
+
+    // Get compute temperature function
+    eos::ThermodynamicFunction computeTemperature;
 
    public:
     explicit IgnitionDelayTemperature(std::shared_ptr<eos::EOS>, std::vector<double> location, double thresholdTemperature, std::shared_ptr<logs::Log> log = {},

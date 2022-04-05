@@ -35,9 +35,11 @@ TEST_P(CompressibleFlowStateTestFixture, ShouldComputeCorrectEuler) {
     finiteVolume::fieldFunctions::CompressibleFlowState flowState(eos, params.temperature, params.pressure, params.velocity, massFractionFieldFunction);
     const auto& location = params.location;
 
+    auto computeStateFunction = flowState.GetFieldFunction("euler");
+
     // act
     std::vector<PetscScalar> eulerCompute(params.expectedEuler.size());
-    PetscErrorCode ierr = flowState.ComputeEulerFromState(location.size(), 0.0, &location[0], params.expectedEuler.size(), &eulerCompute[0], &flowState);
+    PetscErrorCode ierr = computeStateFunction->GetPetscFunction()(location.size(), 0.0, &location[0], params.expectedEuler.size(), &eulerCompute[0], computeStateFunction->GetContext());
 
     // assert
     ASSERT_EQ(ierr, 0);
@@ -53,10 +55,11 @@ TEST_P(CompressibleFlowStateTestFixture, ShouldComputeCorrectMassFractions) {
     auto massFractionFieldFunction = std::make_shared<ablate::finiteVolume::fieldFunctions::MassFractions>(eos, params.massFractions);
     finiteVolume::fieldFunctions::CompressibleFlowState flowState(eos, params.temperature, params.pressure, params.velocity, massFractionFieldFunction);
     const auto& location = params.location;
+    auto computeStateFunction = flowState.GetFieldFunction("densityYi");
 
     // act
     std::vector<PetscScalar> densityYi(eos->GetSpecies().size());
-    PetscErrorCode ierr = flowState.ComputeDensityYiFromState(location.size(), 0.0, &location[0], densityYi.size(), &densityYi[0], &flowState);
+    PetscErrorCode ierr = computeStateFunction->GetPetscFunction()(location.size(), 0.0, &location[0], params.expectedEuler.size(), &densityYi[0], computeStateFunction->GetContext());
 
     // assert
     ASSERT_EQ(ierr, 0);

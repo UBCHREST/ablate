@@ -274,8 +274,8 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     CHKERRQ(ierr);
 
     // get access to the underlying data for the flow
-    PetscInt flowEulerId = flow.GetSubDomain().GetField("euler").id;
-    PetscInt flowDensityYiId = flow.GetSubDomain().GetField("densityYi").id;
+    const auto& flowEulerId = flow.GetSubDomain().GetField("euler");
+    const auto& flowDensityYiId = flow.GetSubDomain().GetField("densityYi");
 
     // get the flowSolution from the ts
     Vec globFlowVec;
@@ -291,8 +291,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     CHKERRQ(ierr);
 
     // store the eos temperature functions
-    eos::ComputeTemperatureFunction temperatureFunction = eos->GetComputeTemperatureFunction();
-    void* temperatureContext = eos->GetComputeTemperatureContext();
+    eos::ThermodynamicFunction temperatureFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());
 
     // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
@@ -300,24 +299,15 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
         const PetscInt cell = cells ? cells[c] : c;
 
         // Get the current state variables for this cell
-        const PetscScalar* euler;
-        const PetscScalar* densityYi;
-        ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowEulerId, flowArray, &euler);
-        CHKERRQ(ierr);
-        ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowDensityYiId, flowArray, &densityYi);
+        const PetscScalar* conserved = nullptr;
+        ierr = DMPlexPointGlobalRead(flow.GetSubDomain().GetDM(), cell, flowArray, &conserved);
         CHKERRQ(ierr);
 
         // If a real cell (not ghost)
-        if (euler) {
+        if (conserved) {
             // store the data for the chemistry ts (T, Yi...)
             PetscReal temperature;
-            ierr = temperatureFunction(dim,
-                                       euler[ablate::finiteVolume::CompressibleFlowFields::RHO],
-                                       euler[ablate::finiteVolume::CompressibleFlowFields::RHOE] / euler[ablate::finiteVolume::CompressibleFlowFields::RHO],
-                                       euler + ablate::finiteVolume::CompressibleFlowFields::RHOU,
-                                       densityYi,
-                                       &temperature,
-                                       temperatureContext);
+            ierr = temperatureFunction.function(conserved, &temperature, temperatureFunction.context.get());
             CHKERRQ(ierr);
 
             // get access to the point ode solver
@@ -326,7 +316,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
             CHKERRQ(ierr);
             pointArray[0] = temperature;
             for (std::size_t s = 0; s < numberSpecies; s++) {
-                pointArray[s + 1] = PetscMin(PetscMax(0.0, densityYi[s] / euler[ablate::finiteVolume::CompressibleFlowFields::RHO]), 1.0);
+                pointArray[s + 1] = PetscMin(PetscMax(0.0, conserved[flowDensityYiId.offset + s] / conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHO]), 1.0);
             }
 
             // precompute some values with the point array
@@ -336,14 +326,14 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
 
             // compute the pressure as this node from T, Yi
             double R = 1000.0 * RUNIV / mwMix;
-            PetscReal pressure = euler[ablate::finiteVolume::CompressibleFlowFields::RHO] * temperature * R;
+            PetscReal pressure = conserved[ flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHO] * temperature * R;
             TC_setThermoPres(pressure);
 
             // Compute the total energy sen + hof
             PetscReal hof;
             err = eos::TChem::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, hof);
             TCCHKERRQ(err);
-            PetscReal enerTotal = hof + euler[ablate::finiteVolume::CompressibleFlowFields::RHOE] / euler[ablate::finiteVolume::CompressibleFlowFields::RHO];
+            PetscReal enerTotal = hof + conserved[flowEulerId.offset+ ablate::finiteVolume::CompressibleFlowFields::RHOE] / conserved[flowEulerId.offset+ablate::finiteVolume::CompressibleFlowFields::RHO];
 
             ierr = VecRestoreArray(pointData, &pointArray);
             CHKERRQ(ierr);
@@ -364,10 +354,10 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
             if (ierr != 0) {
                 std::string error = "Could not solve chemistry ode, setting source terms to zero T,P (" + std::to_string(temperature) + ", " + std::to_string(pressure) + ") \n (euler, yi): ";
                 for (PetscInt i = 0; i < dim + 2; i++) {
-                    error += std::to_string(euler[i]) + ", ";
+                    error += std::to_string(conserved[flowEulerId.offset + i]) + ", ";
                 }
                 for (std::size_t sp = 0; sp < numberSpecies; sp++) {
-                    error += std::to_string(densityYi[sp]) + ", ";
+                    error += std::to_string(conserved[flowDensityYiId.offset + sp]) + ", ";
                 }
                 std::cout << error << std::endl;
 
@@ -406,14 +396,14 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
             // store the computed source terms
             fieldSource[ablate::finiteVolume::CompressibleFlowFields::RHO] = 0.0;
             fieldSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] =
-                (euler[ablate::finiteVolume::CompressibleFlowFields::RHO] * updatedInternalEnergy - euler[ablate::finiteVolume::CompressibleFlowFields::RHOE]) / dt;
+                (conserved[flowEulerId.offset+ ablate::finiteVolume::CompressibleFlowFields::RHO] * updatedInternalEnergy - conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHOE]) / dt;
             for (PetscInt d = 0; d < dim; d++) {
                 fieldSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = 0.0;
             }
             for (std::size_t sp = 0; sp < numberSpecies; sp++) {
                 // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
                 fieldSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + dim + sp] =
-                    (euler[ablate::finiteVolume::CompressibleFlowFields::RHO] * PetscMin(1.0, PetscMax(pointArray[sp + 1], 0.0)) - densityYi[sp]) / dt;
+                    (conserved[flowEulerId.offset+ ablate::finiteVolume::CompressibleFlowFields::RHO] * PetscMin(1.0, PetscMax(pointArray[sp + 1], 0.0)) - conserved[flowDensityYiId.offset + sp]) / dt;
             }
 
             VecRestoreArray(pointData, &pointArray);

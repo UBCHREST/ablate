@@ -61,26 +61,26 @@ TEST_P(TwoPhaseEulerAdvectionTestDecodeStateFixture, ShouldDecodeState) {
     PetscReal alpha;
 
     // act
-    finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(params.eosGas,
-                                                                              params.eosLiquid,
-                                                                              params.dim,
-                                                                              &params.conservedValuesIn[0],
-                                                                              params.densityVFIn,
-                                                                              &params.normalIn[0],
-                                                                              &density,
-                                                                              &densityG,
-                                                                              &densityL,
-                                                                              &normalVelocity,
-                                                                              &velocity[0],
-                                                                              &internalEnergy,
-                                                                              &internalEnergyG,
-                                                                              &internalEnergyL,
-                                                                              &soundSpeedG,
-                                                                              &soundSpeedL,
-                                                                              &MG,
-                                                                              &ML,
-                                                                              &pressure,
-                                                                              &alpha);
+    FAIL() << "update";
+//    finiteVolume::processes::TwoPhaseEulerAdvection::DecodeTwoPhaseEulerState(
+//                                                                              params.dim,
+//                                                                              &params.conservedValuesIn[0],
+//                                                                              params.densityVFIn,
+//                                                                              &params.normalIn[0],
+//                                                                              &density,
+//                                                                              &densityG,
+//                                                                              &densityL,
+//                                                                              &normalVelocity,
+//                                                                              &velocity[0],
+//                                                                              &internalEnergy,
+//                                                                              &internalEnergyG,
+//                                                                              &internalEnergyL,
+//                                                                              &soundSpeedG,
+//                                                                              &soundSpeedL,
+//                                                                              &MG,
+//                                                                              &ML,
+//                                                                              &pressure,
+//                                                                              &alpha);
 
     // assert
     ASSERT_NEAR(density, params.expectedDensity, 1E-6);

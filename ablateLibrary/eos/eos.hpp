@@ -5,29 +5,13 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 #include "domain/field.hpp"
 
 namespace ablate::eos {
 
 enum class ThermodynamicProperty { Pressure, Temperature, InternalSensibleEnergy, SensibleEnthalpy, SpecificHeatConstantVolume, SpecificHeatConstantPressure, SpeedOfSound, SpeciesSensibleEnthalpy };
-
-/**
- * The internalEnergy computed is without the enthalpy of formation of the species.
- */
-using DecodeStateFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
-                                               PetscReal* p, void* ctx);
-using ComputeTemperatureFunction = PetscErrorCode (*)(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
-
-using ComputeSensibleInternalEnergyFunction = PetscErrorCode (*)(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
-
-using ComputeSensibleEnthalpyFunction = PetscErrorCode (*)(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx);
-
-using ComputeSpecificHeatFunction = PetscErrorCode (*)(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
-
-using ComputeSpeciesSensibleEnthalpyFunction = PetscErrorCode (*)(PetscReal T, PetscReal* hi, void* ctx);
-
-using ComputeDensityFunctionFromTemperaturePressure = PetscErrorCode (*)(PetscReal T, PetscReal pressure, const PetscReal yi[], PetscReal* density, void* ctx);
 
 /**
  * Simple struct representing the context and function for computing any thermodynamic value when temperature is not available.
@@ -58,7 +42,7 @@ class EOS {
     const std::string type;
 
    public:
-    EOS(std::string typeIn) : type(typeIn){};
+    explicit EOS(std::string typeIn) : type(std::move(typeIn)){};
     virtual ~EOS() = default;
 
     /**
@@ -67,30 +51,13 @@ class EOS {
      */
     virtual void View(std::ostream& stream) const = 0;
 
-    virtual DecodeStateFunction GetDecodeStateFunction() = 0;
-    virtual void* GetDecodeStateContext() = 0;
-    virtual ComputeTemperatureFunction GetComputeTemperatureFunction() = 0;
-    virtual void* GetComputeTemperatureContext() = 0;
-    virtual ComputeSpeciesSensibleEnthalpyFunction GetComputeSpeciesSensibleEnthalpyFunction() = 0;
-    virtual void* GetComputeSpeciesSensibleEnthalpyContext() = 0;
-    virtual ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() = 0;
-    virtual void* GetComputeDensityFunctionFromTemperaturePressureContext() = 0;
-    virtual ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() = 0;
-    virtual void* GetComputeSensibleInternalEnergyContext() = 0;
-    virtual ComputeSensibleEnthalpyFunction GetComputeSensibleEnthalpyFunction() = 0;
-    virtual void* GetComputeSensibleEnthalpyContext() = 0;
-    virtual ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() = 0;
-    virtual void* GetComputeSpecificHeatConstantPressureContext() = 0;
-    virtual ComputeSpecificHeatFunction GetComputeSpecificHeatConstantVolumeFunction() = 0;
-    virtual void* GetComputeSpecificHeatConstantVolumeContext() = 0;
-
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields
      * @param property
      * @param fields
      * @return
      */
-    virtual ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const = 0;
+    [[nodiscard]] virtual ThermodynamicFunction GetThermodynamicFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const = 0;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
@@ -98,7 +65,7 @@ class EOS {
      * @param fields
      * @return
      */
-    virtual ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const = 0;
+    [[nodiscard]] virtual ThermodynamicTemperatureFunction GetThermodynamicTemperatureFunction(ThermodynamicProperty property, const std::vector<domain::Field>& fields) const = 0;
 
     /**
      * Single function to produce fieldFunction function for any two properties, velocity, and species mass fractions.  These calls can be slower and should be used for init/output only
@@ -106,14 +73,14 @@ class EOS {
      * @param property1
      * @param property2
      */
-    virtual FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const = 0;
+    [[nodiscard]] virtual FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const = 0;
 
     /**
      * Species supported by this EOS
      * species model functions
      * @return
      */
-    virtual const std::vector<std::string>& GetSpecies() const = 0;
+    [[nodiscard]] virtual const std::vector<std::string>& GetSpecies() const = 0;
 
     /**
      * Support function for printing any eos

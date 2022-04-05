@@ -9,7 +9,7 @@ namespace ablate::finiteVolume::fieldFunctions {
 
 class DensityExtraVariables : public ablate::mathFunctions::FieldFunction {
    private:
-    const std::shared_ptr<ablate::finiteVolume::fieldFunctions::CompressibleFlowState> flowState;
+    const std::shared_ptr<mathFunctions::MathFunction> eulerFunction;
     const std::vector<std::shared_ptr<mathFunctions::MathFunction>> evFunctions;
 
     static PetscErrorCode ComputeDensityEvFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);

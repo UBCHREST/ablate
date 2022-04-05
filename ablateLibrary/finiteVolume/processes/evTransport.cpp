@@ -12,8 +12,6 @@ ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved,
       advectionData() {
     if (fluxCalculator) {
         // set the decode state function
-        advectionData.decodeStateFunction = eos->GetDecodeStateFunction();
-        advectionData.decodeStateContext = eos->GetDecodeStateContext();
         advectionData.numberEV = 0;
 
         // extract the difference function from fluxDifferencer object
@@ -27,8 +25,6 @@ ablate::finiteVolume::processes::EVTransport::EVTransport(std::string conserved,
 
         // set the eos functions
         diffusionData.numberEV = 0;
-        diffusionData.computeTemperatureFunction = eos->GetComputeTemperatureFunction();
-        diffusionData.computeTemperatureContext = eos->GetComputeTemperatureContext();
 
         diffusionData.speciesSpeciesSensibleEnthalpy.resize(eos->GetSpecies().size());
     } else {
@@ -52,6 +48,12 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
         }
 
         if (fluxCalculator) {
+            // set decode state functions
+            advectionData.computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());
+            advectionData.computeInternalEnergy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::InternalSensibleEnergy, flow.GetSubDomain().GetFields());
+            advectionData.computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
+            advectionData.computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
+
             if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::DENSITY_YI_FIELD)) {
                 flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
             } else {
@@ -60,6 +62,8 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
         }
 
         if (diffusionData.diffFunction) {
+            diffusionData.computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());
+
             if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::YI_FIELD)) {
                 flow.RegisterRHSFunction(
                     DiffusionEVFlux, &diffusionData, conserved, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {nonConserved, CompressibleFlowFields::YI_FIELD});
@@ -100,7 +104,6 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
 
     const int EULER_FIELD = 0;
     const int DENSITY_EV_FIELD = 1;
-    const int DENSITY_YI_FIELD = 2;
 
     // Decode the left and right states
     PetscReal densityL;
@@ -108,42 +111,56 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
     PetscReal velocityL[3];
     PetscReal internalEnergyL;
     PetscReal aL;
-    PetscReal ML;
     PetscReal pL;
-    DecodeEulerState(eulerAdvectionData->decodeStateFunction,
-                     eulerAdvectionData->decodeStateContext,
-                     dim,
-                     fieldL + uOff[EULER_FIELD],
-                     fieldL + uOff[DENSITY_YI_FIELD],
-                     norm,
-                     &densityL,
-                     &normalVelocityL,
-                     velocityL,
-                     &internalEnergyL,
-                     &aL,
-                     &ML,
-                     &pL);
+    {
+        densityL = fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
+        PetscReal temperatureL;
+
+        PetscErrorCode ierr = eulerAdvectionData->computeTemperature.function(fieldL, &temperatureL, eulerAdvectionData->computeTemperature.context.get());
+        CHKERRQ(ierr);
+
+        // Get the velocity in this direction
+        normalVelocityL = 0.0;
+        for (PetscInt d = 0; d < dim; d++) {
+            velocityL[d] = fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHOU + d] / densityL;
+            normalVelocityL += velocityL[d] * norm[d];
+        }
+
+        ierr = eulerAdvectionData->computeInternalEnergy.function(fieldL, temperatureL, &internalEnergyL, eulerAdvectionData->computeInternalEnergy.context.get());
+        CHKERRQ(ierr);
+        ierr = eulerAdvectionData->computeSpeedOfSound.function(fieldL, temperatureL, &aL, eulerAdvectionData->computeSpeedOfSound.context.get());
+        CHKERRQ(ierr);
+        ierr = eulerAdvectionData->computePressure.function(fieldL, temperatureL, &pL, eulerAdvectionData->computePressure.context.get());
+        CHKERRQ(ierr);
+    }
 
     PetscReal densityR;
     PetscReal normalVelocityR;
     PetscReal velocityR[3];
     PetscReal internalEnergyR;
     PetscReal aR;
-    PetscReal MR;
     PetscReal pR;
-    DecodeEulerState(eulerAdvectionData->decodeStateFunction,
-                     eulerAdvectionData->decodeStateContext,
-                     dim,
-                     fieldR + uOff[EULER_FIELD],
-                     fieldR + uOff[DENSITY_YI_FIELD],
-                     norm,
-                     &densityR,
-                     &normalVelocityR,
-                     velocityR,
-                     &internalEnergyR,
-                     &aR,
-                     &MR,
-                     &pR);
+    {// decode right state
+        densityR = fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
+        PetscReal temperatureR;
+
+        PetscErrorCode ierr = eulerAdvectionData->computeTemperature.function(fieldR, &temperatureR, eulerAdvectionData->computeTemperature.context.get());
+        CHKERRQ(ierr);
+
+        // Get the velocity in this direction
+        normalVelocityR = 0.0;
+        for (PetscInt d = 0; d < dim; d++) {
+            velocityR[d] = fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHOU + d] / densityR;
+            normalVelocityR += velocityR[d] * norm[d];
+        }
+
+        ierr = eulerAdvectionData->computeInternalEnergy.function(fieldR, temperatureR, &internalEnergyR, eulerAdvectionData->computeInternalEnergy.context.get());
+        CHKERRQ(ierr);
+        ierr = eulerAdvectionData->computeSpeedOfSound.function(fieldR, temperatureR, &aR, eulerAdvectionData->computeSpeedOfSound.context.get());
+        CHKERRQ(ierr);
+        ierr = eulerAdvectionData->computePressure.function(fieldR, temperatureR, &pR, eulerAdvectionData->computePressure.context.get());
+        CHKERRQ(ierr);
+    }
 
     // get the face values
     PetscReal massFlux;
@@ -173,7 +190,6 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int EULER_FIELD = 0;
-    const int DENSITY_YI_FIELD = 1;
     const int YI_FIELD = 1;
     const int EV_FIELD = 0;
 
@@ -184,23 +200,11 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
 
     PetscErrorCode ierr;
     PetscReal temperatureLeft;
-    ierr = flowParameters->computeTemperatureFunction(dim,
-                                                      fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO],
-                                                      fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHOE] / fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO],
-                                                      fieldL + uOff[EULER_FIELD] + CompressibleFlowFields::RHOU,
-                                                      fieldL + uOff[DENSITY_YI_FIELD],
-                                                      &temperatureLeft,
-                                                      flowParameters->computeTemperatureContext);
+    ierr = flowParameters->computeTemperature.function(fieldL, &temperatureLeft, flowParameters->computeTemperature.context.get());
     CHKERRQ(ierr);
 
     PetscReal temperatureRight;
-    ierr = flowParameters->computeTemperatureFunction(dim,
-                                                      fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO],
-                                                      fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHOE] / fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO],
-                                                      fieldR + uOff[EULER_FIELD] + CompressibleFlowFields::RHOU,
-                                                      fieldR + uOff[DENSITY_YI_FIELD],
-                                                      &temperatureRight,
-                                                      flowParameters->computeTemperatureContext);
+    ierr = flowParameters->computeTemperature.function(fieldR, &temperatureRight, flowParameters->computeTemperature.context.get());
     CHKERRQ(ierr);
 
     // compute diff

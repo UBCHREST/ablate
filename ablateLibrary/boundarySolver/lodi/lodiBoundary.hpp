@@ -20,7 +20,6 @@ class LODIBoundary : public BoundaryProcess {
     } BoundaryEulerComponents;
 
     // Global parameters
-    const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling;
 
     void GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal Cp, PetscReal Cv, PetscReal& velNormPrim, PetscReal& speedOfSoundPrim);
@@ -36,6 +35,16 @@ class LODIBoundary : public BoundaryProcess {
     // Keep track of the required fields
     std::vector<std::string> fieldNames;
 
+    // Store eos decode params
+    const std::shared_ptr<eos::EOS> eos;
+    eos::ThermodynamicFunction computeTemperature;
+    eos::ThermodynamicTemperatureFunction computePressureFromTemperature;
+    eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
+    eos::ThermodynamicTemperatureFunction computeSpecificHeatConstantPressure;
+    eos::ThermodynamicTemperatureFunction computeSpecificHeatConstantVolume;
+    eos::ThermodynamicTemperatureFunction computeSensibleEnthalpyFunction;
+    eos::ThermodynamicFunction computePressure;
+
    public:
     explicit LODIBoundary(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
 
@@ -48,7 +57,7 @@ class LODIBoundary : public BoundaryProcess {
      * @param nSpecEqs
      * @param nEvEqs
      */
-    void Initialize(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0);
+    void Initialize(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0, const std::vector<domain::Field>& fields = {});
 
    private:
     ablate::finiteVolume::processes::EulerTransport::UpdateTemperatureData updateTemperatureData{};

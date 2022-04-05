@@ -10,8 +10,8 @@ namespace ablate::eos::transport {
 class Sutherland : public TransportModel {
    private:
     const std::shared_ptr<eos::EOS> eos;
-    const ComputeSpecificHeatFunction cpFunction;
-    void* cpContext;
+//    const eos::ThermodynamicTemperatureFunction cpFunction;
+//    void* cpContext;
 
     // constant values
     inline const static PetscReal pr = 0.707;

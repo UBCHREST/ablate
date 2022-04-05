@@ -6,7 +6,7 @@
 #include "utilities/mathUtilities.hpp"
 
 ablate::boundarySolver::lodi::LODIBoundary::LODIBoundary(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
-    : eos(std::move(eos)), pressureGradientScaling(std::move(pressureGradientScaling)), dims(0), nEqs(0), nSpecEqs(0), nEvEqs(0), eulerId(-1), speciesId(-1), evId(-1) {}
+    : pressureGradientScaling(std::move(pressureGradientScaling)), dims(0), nEqs(0), nSpecEqs(0), nEvEqs(0), eulerId(-1), speciesId(-1), evId(-1), eos(std::move(eos)) {}
 
 void ablate::boundarySolver::lodi::LODIBoundary::GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal cp, PetscReal cv, PetscReal &velNormPrim, PetscReal &speedOfSoundPrim) {
     PetscReal alpha2 = 1.0;
@@ -112,8 +112,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
         nEqs += bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD).numberComponents;
 
         if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD)) {
-            updateTemperatureData.computeTemperatureFunction = eos->GetComputeTemperatureFunction();
-            updateTemperatureData.computeTemperatureContext = eos->GetComputeTemperatureContext();
+            updateTemperatureData.computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
             updateTemperatureData.numberSpecies = (PetscInt)eos->GetSpecies().size();
 
             if (updateTemperatureData.numberSpecies > 0) {
@@ -139,8 +138,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
         }
 
         if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD)) {
-            updateTemperatureData.computeTemperatureFunction = eos->GetComputeTemperatureFunction();
-            updateTemperatureData.computeTemperatureContext = eos->GetComputeTemperatureContext();
+            updateTemperatureData.computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
             updateTemperatureData.numberSpecies = (PetscInt)eos->GetSpecies().size();
 
             if (updateTemperatureData.numberSpecies > 0) {
@@ -181,11 +179,12 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
                                        {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD});
     }
 
+
     // Call Initialize to setup the other needed vars
-    Initialize(dims, nEqs, nSpecEqs, nEvEqs);
+    Initialize(dims, nEqs, nSpecEqs, nEvEqs, bSolver.GetSubDomain().GetFields());
 }
 
-void ablate::boundarySolver::lodi::LODIBoundary::Initialize(PetscInt dimsIn, PetscInt nEqsIn, PetscInt nSpecEqsIn, PetscInt nEvEqsIn) {
+void ablate::boundarySolver::lodi::LODIBoundary::Initialize(PetscInt dimsIn, PetscInt nEqsIn, PetscInt nSpecEqsIn, PetscInt nEvEqsIn, const std::vector<domain::Field>& fields) {
     dims = dimsIn;
     nEqs = nEqsIn;
     nSpecEqs = nSpecEqsIn;
@@ -205,4 +204,15 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(PetscInt dimsIn, Pet
         evId = offset++;
         fieldNames.push_back(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD);
     }
+
+    // set decode state functions
+    computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, fields);
+    computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, fields);
+    computePressureFromTemperature = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, fields);
+
+    computeSpecificHeatConstantPressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpecificHeatConstantPressure, fields);
+    computeSpecificHeatConstantVolume = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpecificHeatConstantVolume, fields);
+    computeSensibleEnthalpyFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SensibleEnthalpy, fields);
+    computePressure = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Pressure, fields);
+
 }

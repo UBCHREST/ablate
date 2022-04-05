@@ -19,8 +19,10 @@ class SpeciesTransport : public FlowProcess {
         PetscInt numberSpecies;
 
         // EOS function calls
-        eos::DecodeStateFunction decodeStateFunction;
-        void* decodeStateContext;
+        eos::ThermodynamicFunction computeTemperature;
+        eos::ThermodynamicTemperatureFunction computeInternalEnergy;
+        eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
+        eos::ThermodynamicTemperatureFunction computePressure;
 
         /* store method used for flux calculator */
         ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
@@ -37,10 +39,8 @@ class SpeciesTransport : public FlowProcess {
         PetscInt numberSpecies;
 
         /* functions to compute species enthalpy */
-        eos::ComputeTemperatureFunction computeTemperatureFunction;
-        void* computeTemperatureContext;
-        eos::ComputeSpeciesSensibleEnthalpyFunction computeSpeciesSensibleEnthalpyFunction;
-        void* computeSpeciesSensibleEnthalpyContext;
+        eos::ThermodynamicFunction computeTemperatureFunction;
+        eos::ThermodynamicTemperatureFunction computeSpeciesSensibleEnthalpyFunction;
 
         /* store a scratch space for speciesSpeciesSensibleEnthalpy */
         std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;

@@ -28,11 +28,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     PetscInt countLocal = 0;
 
     // get access to the underlying data for the flow
-    PetscInt flowEulerId = flow.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD).id;
-    PetscInt flowDensityYiId = -1;
-    if (flow.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {
-        flowDensityYiId = flow.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).id;
-    }
+    const auto& flowEulerId = flow.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD);
     PetscInt dim = flow.GetSubDomain().GetDimensions();
 
     // get the flowSolution from the ts
@@ -48,8 +44,10 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     flow.GetCellRange(cellIS, cStart, cEnd, cells);
 
     // get decode state function/context
-    auto decodeStateFunction = eos->GetDecodeStateFunction();
-    auto decodeStateContext = eos->GetDecodeStateContext();
+    eos::ThermodynamicFunction computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature,flow.GetSubDomain().GetFields());
+    eos::ThermodynamicTemperatureFunction computeInternalEnergy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::InternalSensibleEnergy, flow.GetSubDomain().GetFields());
+    eos::ThermodynamicTemperatureFunction computeSpeedOfSound =eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
+    eos::ThermodynamicTemperatureFunction computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
 
     // check for ghost nodes
     // check to see if there is a ghost label
@@ -75,28 +73,32 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
         }
 
         // Get the current state variables for this cell
-        const PetscScalar *euler = nullptr;
-        ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowEulerId, flowArray, &euler);
+        const PetscScalar *conserved = nullptr;
+        ierr = DMPlexPointGlobalRead(flow.GetSubDomain().GetDM(), cell, flowArray, &conserved);
         CHKERRQ(ierr);
 
         // If valid cell
-        if (euler) {
-            const PetscScalar *densityYi = nullptr;
-            if (flowDensityYiId >= 0) {
-                ierr = DMPlexPointGlobalFieldRead(flow.GetSubDomain().GetDM(), cell, flowDensityYiId, flowArray, &densityYi);
-                CHKERRQ(ierr);
-            }
-
+        if (conserved) {
             // Extract values
-            PetscReal density;
-            PetscReal velocity[3];
-            PetscReal internalEnergy;
             PetscReal a;
             PetscReal mach;
             PetscReal p;
 
             // Decode the state to compute
-            finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction, decodeStateContext, dim, euler, densityYi, &density, velocity, &internalEnergy, &a, &mach, &p);
+            PetscReal temperature;
+            ierr = computeTemperature.function(conserved, &temperature, computeTemperature.context.get());
+            CHKERRQ(ierr);
+            ierr = computePressure.function(conserved, temperature, &p, computePressure.context.get());
+            CHKERRQ(ierr);
+            ierr = computeSpeedOfSound.function(conserved, temperature, &a, computeSpeedOfSound.context.get());
+            CHKERRQ(ierr);
+
+            PetscReal density = conserved[flowEulerId.offset + CompressibleFlowFields::RHO];
+            PetscReal velMag = 0.0;
+            for (PetscInt d = 0; d < dim; d++) {
+                velMag += PetscSqr(conserved[flowEulerId.offset + CompressibleFlowFields::RHOU + d] / density);
+            }
+            mach = PetscSqrtReal(velMag)/a;
 
             // Store the max/min values
             countLocal++;

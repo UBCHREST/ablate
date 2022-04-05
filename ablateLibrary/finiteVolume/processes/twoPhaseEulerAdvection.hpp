@@ -10,8 +10,6 @@ namespace ablate::finiteVolume::processes {
 class TwoPhaseEulerAdvection : public Process {
    private:
     struct DecodeDataStruct {
-        std::shared_ptr<ablate::eos::EOS> eosGas;
-        std::shared_ptr<ablate::eos::EOS> eosLiquid;
         PetscReal ke;
         PetscReal e;
         PetscReal rho;
@@ -20,6 +18,20 @@ class TwoPhaseEulerAdvection : public Process {
         PetscInt dim;
         PetscReal* vel;
     };
+
+    struct DecodeEOS{
+        eos::ThermodynamicFunction gasComputeTemperature;
+        eos::ThermodynamicTemperatureFunction gasComputeInternalEnergy;
+        eos::ThermodynamicTemperatureFunction gasComputeSpeedOfSound;
+        eos::ThermodynamicTemperatureFunction gasComputePressure;
+
+        eos::ThermodynamicFunction liquidComputeTemperature;
+        eos::ThermodynamicTemperatureFunction liquidComputeInternalEnergy;
+        eos::ThermodynamicTemperatureFunction liquidComputeSpeedOfSound;
+        eos::ThermodynamicTemperatureFunction liquidComputePressure;
+
+    };
+    DecodeEOS decodeEos;
 
     const std::shared_ptr<eos::EOS> eosGas;
     const std::shared_ptr<eos::EOS> eosLiquid;
@@ -58,7 +70,7 @@ class TwoPhaseEulerAdvection : public Process {
                                                         const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* flux, void* ctx);
 
    public:
-    static void DecodeTwoPhaseEulerState(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, PetscInt dim, const PetscReal* conservedValues, PetscReal densityVF,
+    void DecodeTwoPhaseEulerState( PetscInt dim,const PetscReal *conservedValues, const PetscReal* eulerConservedValues, PetscReal densityVF,
                                          const PetscReal* normal, PetscReal* density, PetscReal* densityG, PetscReal* densityL, PetscReal* normalVelocity, PetscReal* velocity,
                                          PetscReal* internalEnergy, PetscReal* internalEnergyG, PetscReal* internalEnergyL, PetscReal* aG, PetscReal* aL, PetscReal* MG, PetscReal* ML, PetscReal* p,
                                          PetscReal* alpha);

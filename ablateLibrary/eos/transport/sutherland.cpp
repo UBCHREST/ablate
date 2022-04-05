@@ -1,12 +1,13 @@
 #include "sutherland.hpp"
 ablate::eos::transport::Sutherland::Sutherland(std::shared_ptr<eos::EOS> eosIn)
-    : eos(eosIn), cpFunction(eos->GetComputeSpecificHeatConstantPressureFunction()), cpContext(eos->GetComputeSpecificHeatConstantPressureContext()) {}
+    : eos(eosIn) {}
 
 void ablate::eos::transport::Sutherland::SutherlandComputeConductivityFunction(PetscReal temperature, PetscReal density, const PetscReal *yi, PetscReal &conductivity, void *ctx) {
     // compute the cp as a function of
-    auto sutherland = (ablate::eos::transport::Sutherland *)ctx;
-    PetscReal cp;
-    sutherland->cpFunction(temperature, density, yi, &cp, sutherland->cpContext);
+//    auto sutherland = (ablate::eos::transport::Sutherland *)ctx;
+    PetscReal cp = 1.0;
+    //TODO: convert transport to same methodology as eos
+//    sutherland->cpFunction(temperature, density, yi, &cp, sutherland->cpContext);
 
     // compute mu
     double mu = muo * PetscSqrtReal(temperature / to) * (temperature / to) * (to + so) / (temperature + so);

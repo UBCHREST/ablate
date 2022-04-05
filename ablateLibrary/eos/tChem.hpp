@@ -47,16 +47,6 @@ class TChem : public EOS {
         const TChem* tChem;
     };
 
-    static PetscErrorCode TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* velocity, const PetscReal densityYi[], PetscReal* internalEnergy, PetscReal* a,
-                                              PetscReal* p, void* ctx);
-    static PetscErrorCode TChemComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal* massFlux, const PetscReal densityYi[], PetscReal* T, void* ctx);
-    static PetscErrorCode TChemComputeSpeciesSensibleEnthalpy(PetscReal T, PetscReal* hi, void* ctx);
-    static PetscErrorCode TChemComputeDensityFunctionFromTemperaturePressure(PetscReal T, PetscReal pressure, const PetscReal yi[], PetscReal* density, void* ctx);
-    static PetscErrorCode TChemComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleInternalEnergy, void* ctx);
-    static PetscErrorCode TChemComputeSensibleEnthalpy(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* sensibleEnthalpy, void* ctx);
-    static PetscErrorCode TChemComputeSpecificHeatConstantPressure(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
-    static PetscErrorCode TChemComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal yi[], PetscReal* specificHeat, void* ctx);
-
     /**
      * The tempYiWorkingArray is expected to be filled with correct species yi.  The 0 location is set in this function.
      * @param numSpec
@@ -93,6 +83,14 @@ class TChem : public EOS {
      */
     static void FillWorkingVectorFromDensityMassFractions(int numSpec, double density, double temperature, const double* densityYi, double* workingVector);
 
+    /** @name Direct Thermodynamic Properties Functions
+     * These functions are used to compute the direct thermodynamic properties (without temperature).  They are not called directly but a pointer to them is returned
+     * @param conserved
+     * @param property
+     * @param ctx
+     * @return
+     * @{
+     */
     static PetscErrorCode TemperatureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode PressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode InternalSensibleEnergyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
@@ -101,7 +99,17 @@ class TChem : public EOS {
     static PetscErrorCode SpecificHeatConstantPressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SpeedOfSoundFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SpeciesSensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    /** @} */
 
+    /** @name Temperature Based Thermodynamic Properties Functions
+     * These functions are used to compute the thermodynamic properties when temperature is known.  They are not called directly but a pointer to them is returned and may be faster than the direct
+     * calls.
+     * @param conserved
+     * @param property
+     * @param ctx
+     * @return
+     * @{
+     */
     static PetscErrorCode TemperatureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode PressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode InternalSensibleEnergyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
@@ -110,13 +118,14 @@ class TChem : public EOS {
     static PetscErrorCode SpecificHeatConstantPressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpeedOfSoundTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    /** @} */
 
     /**
      * Store a map of functions functions for quick lookup
      */
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    inline static std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
+    std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
         {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
         {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction}},
         {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
@@ -128,7 +137,7 @@ class TChem : public EOS {
 
    public:
     TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);
-    ~TChem();
+    ~TChem() override;
 
     // general functions
     void View(std::ostream& stream) const override;
@@ -136,24 +145,13 @@ class TChem : public EOS {
     // species model functions
     const std::vector<std::string>& GetSpecies() const override;
 
-    // EOS functions
-    DecodeStateFunction GetDecodeStateFunction() override { return TChemGasDecodeState; }
-    void* GetDecodeStateContext() override { return this; }
-    ComputeTemperatureFunction GetComputeTemperatureFunction() override { return TChemComputeTemperature; }
-    void* GetComputeTemperatureContext() override { return this; }
-    ComputeSpeciesSensibleEnthalpyFunction GetComputeSpeciesSensibleEnthalpyFunction() override { return TChemComputeSpeciesSensibleEnthalpy; }
-    void* GetComputeSpeciesSensibleEnthalpyContext() override { return this; }
-    ComputeDensityFunctionFromTemperaturePressure GetComputeDensityFunctionFromTemperaturePressureFunction() override { return TChemComputeDensityFunctionFromTemperaturePressure; }
-    void* GetComputeDensityFunctionFromTemperaturePressureContext() override { return this; }
-    ComputeSensibleInternalEnergyFunction GetComputeSensibleInternalEnergyFunction() override { return TChemComputeSensibleInternalEnergy; }
-    void* GetComputeSensibleInternalEnergyContext() override { return this; }
-    ComputeSensibleEnthalpyFunction GetComputeSensibleEnthalpyFunction() override { return TChemComputeSensibleEnthalpy; }
-    void* GetComputeSensibleEnthalpyContext() override { return this; }
-    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantPressureFunction() override { return TChemComputeSpecificHeatConstantPressure; }
-    void* GetComputeSpecificHeatConstantPressureContext() override { return this; }
-    ComputeSpecificHeatFunction GetComputeSpecificHeatConstantVolumeFunction() override { return TChemComputeSpecificHeatConstantVolume; }
-    void* GetComputeSpecificHeatConstantVolumeContext() override { return this; }
-
+    /**
+     * Used by tChem Rxns
+     * @param numSpec
+     * @param tempYiWorkingArray
+     * @param enthalpyOfFormation
+     * @return
+     */
     static int ComputeEnthalpyOfFormation(int numSpec, double* tempYiWorkingArray, double& enthalpyOfFormation);
 
     /**
