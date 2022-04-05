@@ -64,7 +64,7 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     std::vector<PetscReal> stencilDensity(stencilSize);
     std::vector<std::vector<PetscReal>> stencilVel(stencilSize, std::vector<PetscReal>(dim));
     std::vector<std::vector<PetscReal>> stencilNormalCoordsVel(dim, std::vector<PetscReal>(stencilSize));  // NOTE this is [dim][stencil]
-    std::vector<PetscReal> stencilNormalVelocity(stencilSize);
+    std::vector<PetscReal> stencilNormalVelocity(stencilSize, 0.0);
     std::vector<PetscReal> stencilPressure(stencilSize);
     std::vector<std::vector<PetscReal>> stencilYi(boundary->nSpecEqs, std::vector<PetscReal>(stencilSize));  // NOTE this is [sp][stencil]
     std::vector<std::vector<PetscReal>> stencilEv(boundary->nEvEqs, std::vector<PetscReal>(stencilSize));    // NOTE this is [sp][stencil]
