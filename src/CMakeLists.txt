@@ -173,4 +173,3 @@ add_subdirectory(chemistry)
 
 # Add required warnings for the ablate library
 ablate_default_target_compile_options_cxx(ablateLibrary)
-add_executable(radiationTest radiation.cpp)

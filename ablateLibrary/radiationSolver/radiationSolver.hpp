@@ -154,6 +154,8 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscReal mag(std::vector<PetscReal> vector);
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rayInit();
     void raysGetLoc(std::vector<std::vector<std::vector<std::vector<PetscInt>>>>);
+    PetscReal cumSimp(std::vector<PetscReal> n, PetscReal H);
+    std::vector<PetscReal> solveParallelPlates();
 
     ///Class Constants
     const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
@@ -165,9 +167,9 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscInt dim; //Number of dimensions that the domain exists within
 
     PetscInt nSteps = 100; //number of steps that each ray will go through //This won't be used
-    PetscReal h = 0.05; //This is the DEFAULT step size and should be set by the user input
-    PetscInt nTheta = 10; //The DEFAULT number of angles to solve with, should be given by user input
-    PetscInt nPhi = 10; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscReal h = 0.01; //This is the DEFAULT step size which should be set by the user input
+    PetscInt nTheta = 30; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscInt nPhi = 5; //The DEFAULT number of angles to solve with, should be given by user input
 
     //PetscReal radGain;
     //PetscViewer viewer;
