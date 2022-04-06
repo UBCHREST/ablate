@@ -1,4 +1,6 @@
 #include "twoPhaseEulerAdvection.hpp"
+
+#include <utility>
 #include "eos/perfectGas.hpp"
 #include "eos/stiffenedGas.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
@@ -28,12 +30,12 @@ ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
                                                                                 std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid)
-    : eosGas(eosGas),
-      eosLiquid(eosLiquid),
-      fluxCalculatorGasGas(fluxCalculatorGasGas),
-      fluxCalculatorGasLiquid(fluxCalculatorGasLiquid),
-      fluxCalculatorLiquidGas(fluxCalculatorLiquidGas),
-      fluxCalculatorLiquidLiquid(fluxCalculatorLiquidLiquid) {}
+    : eosGas(std::move(eosGas)),
+      eosLiquid(std::move(eosLiquid)),
+      fluxCalculatorGasGas(std::move(fluxCalculatorGasGas)),
+      fluxCalculatorGasLiquid(std::move(fluxCalculatorGasLiquid)),
+      fluxCalculatorLiquidGas(std::move(fluxCalculatorLiquidGas)),
+      fluxCalculatorLiquidLiquid(std::move(fluxCalculatorLiquidLiquid)) {}
 
 void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) {
     // Create the decoder based upon the eoses
@@ -476,7 +478,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::UpdateAu
 }
 
 std::shared_ptr<ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseDecoder> ablate::finiteVolume::processes::TwoPhaseEulerAdvection::CreateTwoPhaseDecoder(
-    PetscInt dim, const std::shared_ptr<eos::EOS> eosGas, const std::shared_ptr<eos::EOS> eosLiquid) {
+    PetscInt dim, const std::shared_ptr<eos::EOS> &eosGas, const std::shared_ptr<eos::EOS> &eosLiquid) {
     // check if both perfect gases, use analytical solution
     auto perfectGasEos1 = std::dynamic_pointer_cast<eos::PerfectGas>(eosGas);
     auto perfectGasEos2 = std::dynamic_pointer_cast<eos::PerfectGas>(eosLiquid);
@@ -492,8 +494,8 @@ std::shared_ptr<ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhas
 }
 
 /**PerfectGasPerfectGasDecoder**************/
-ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasPerfectGasDecoder::PerfectGasPerfectGasDecoder(PetscInt dim, std::shared_ptr<eos::PerfectGas> eosGas,
-                                                                                                                  std::shared_ptr<eos::PerfectGas> eosLiquid)
+ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasPerfectGasDecoder::PerfectGasPerfectGasDecoder(PetscInt dim, const std::shared_ptr<eos::PerfectGas> &eosGas,
+                                                                                                                  const std::shared_ptr<eos::PerfectGas> &eosLiquid)
     : eosGas(eosGas), eosLiquid(eosLiquid) {
     // Create the fake euler field
     auto fakeEulerField = ablate::domain::Field{.name = CompressibleFlowFields::EULER_FIELD, .numberComponents = 2 + dim, .offset = 0};
@@ -607,8 +609,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasPerfectG
 }
 
 /**PerfectGasStiffenedGasDecoder**************/
-ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffenedGasDecoder::PerfectGasStiffenedGasDecoder(PetscInt dim, std::shared_ptr<eos::PerfectGas> eosGas,
-                                                                                                                      std::shared_ptr<eos::StiffenedGas> eosLiquid)
+ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffenedGasDecoder::PerfectGasStiffenedGasDecoder(PetscInt dim, const std::shared_ptr<eos::PerfectGas> &eosGas,
+                                                                                                                      const std::shared_ptr<eos::StiffenedGas> &eosLiquid)
     : eosGas(eosGas), eosLiquid(eosLiquid) {
     // Create the fake euler field
     auto fakeEulerField = ablate::domain::Field{.name = CompressibleFlowFields::EULER_FIELD, .numberComponents = 2 + dim, .offset = 0};

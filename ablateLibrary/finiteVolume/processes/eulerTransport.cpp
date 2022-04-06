@@ -262,10 +262,6 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
 
         if (euler) {  // must be real cell and not ghost
             PetscReal rho = euler[CompressibleFlowFields::RHO];
-            PetscReal vel[3];
-            for (PetscInt i = 0; i < dim; i++) {
-                vel[i] = euler[CompressibleFlowFields::RHOU + i] / rho;
-            }
 
             // Get the speed of sound from the eos
             PetscReal temperature;
