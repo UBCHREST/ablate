@@ -49,7 +49,7 @@ class TwoPhaseEulerAdvection : public Process {
         eos::ThermodynamicTemperatureFunction liquidComputePressure;
 
        public:
-        PerfectGasPerfectGasDecoder(PetscInt dim, const std::shared_ptr<eos::PerfectGas>& perfectGasEos1, const std::shared_ptr<eos::PerfectGas>& perfectGasEos2);
+        PerfectGasPerfectGasDecoder(PetscInt dim, const std::shared_ptr<eos::PerfectGas> &perfectGasEos1, const std::shared_ptr<eos::PerfectGas> &perfectGasEos2);
         void DecodeTwoPhaseEulerState(PetscInt dim, const PetscInt *uOff, const PetscReal *conservedValues, const PetscReal *normal, PetscReal *density, PetscReal *densityG, PetscReal *densityL,
                                       PetscReal *normalVelocity, PetscReal *velocity, PetscReal *internalEnergy, PetscReal *internalEnergyG, PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL,
                                       PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *T, PetscReal *alpha) override;
@@ -82,7 +82,7 @@ class TwoPhaseEulerAdvection : public Process {
         eos::ThermodynamicTemperatureFunction liquidComputePressure;
 
        public:
-        PerfectGasStiffenedGasDecoder(PetscInt dim, const std::shared_ptr<eos::PerfectGas>& perfectGasEos1, const std::shared_ptr<eos::StiffenedGas>& perfectGasEos2);
+        PerfectGasStiffenedGasDecoder(PetscInt dim, const std::shared_ptr<eos::PerfectGas> &perfectGasEos1, const std::shared_ptr<eos::StiffenedGas> &perfectGasEos2);
 
         void DecodeTwoPhaseEulerState(PetscInt dim, const PetscInt *uOff, const PetscReal *conservedValues, const PetscReal *normal, PetscReal *density, PetscReal *densityG, PetscReal *densityL,
                                       PetscReal *normalVelocity, PetscReal *velocity, PetscReal *internalEnergy, PetscReal *internalEnergyG, PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL,
@@ -136,7 +136,7 @@ class TwoPhaseEulerAdvection : public Process {
      * @param eosLiquid
      * @return
      */
-    static std::shared_ptr<TwoPhaseDecoder> CreateTwoPhaseDecoder(PetscInt dim, const std::shared_ptr<eos::EOS>& eosGas, const std::shared_ptr<eos::EOS>& eosLiquid);
+    static std::shared_ptr<TwoPhaseDecoder> CreateTwoPhaseDecoder(PetscInt dim, const std::shared_ptr<eos::EOS> &eosGas, const std::shared_ptr<eos::EOS> &eosLiquid);
 };
 
 }  // namespace ablate::finiteVolume::processes
