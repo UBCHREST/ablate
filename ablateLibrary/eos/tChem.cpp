@@ -128,10 +128,8 @@ int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, doubl
 
 PetscErrorCode ablate::eos::TChem::ComputeTemperatureInternal(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T) {
     PetscFunctionBeginUser;
-
     // This is an iterative process to go compute temperature from density
-    // TODO: update to use temperature guess
-    double t2 = 300.0;
+    double t2 = tempYiWorkingArray[0];
 
     // set some constants
     const auto EPS_T_RHO_E = 1E-8;
