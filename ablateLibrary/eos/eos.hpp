@@ -45,7 +45,8 @@ struct ThermodynamicTemperatureFunction {
 using FieldFunction = std::function<void(PetscReal property1, PetscReal property2, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[])>;
 
 /**
- * The EOS is a combination of species model and EOS.  This allows the eos to dictate the order/number of species.  This can be relaxed in the future
+ * The equation of state is designed to to compute thermodynamic properties based upon the conserved field variables being solved.  This can range from euler & densityYi and  euler & progresses
+ * variables with ChemTab.
  */
 class EOS {
    protected:
