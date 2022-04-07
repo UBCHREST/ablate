@@ -172,7 +172,7 @@ TEST_P(LinearTableTestFixture, ShouldInterpolateValueUsingPetscFunction) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(PerfectGasEOSTests, LinearTableTestFixture,
+INSTANTIATE_TEST_SUITE_P(LinearTableTests, LinearTableTestFixture,
                          testing::Values(
                              (LinearTableTestParameters){
                                  .yColumns = {"y"},

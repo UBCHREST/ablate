@@ -35,8 +35,12 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
         for (PetscInt f = s; f < e; f++) {
             PetscInt globID = points ? points[f] : f;
 
+            // Get the offset for this field
+            PetscInt fieldOffset;
+            PetscDSGetFieldOffset(discreteSystem, f, &fieldOffset) >> checkError;
+
             const auto& field = domain.GetField(globID);
-            auto newField = field.CreateSubField(f);
+            auto newField = field.CreateSubField(f, fieldOffset);
             fieldsByName.insert(std::make_pair(newField.name, newField));
             fieldsByType[FieldLocation::SOL].push_back(newField);
         }
@@ -44,7 +48,11 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
     } else {
         // just copy them all over
         for (const auto& field : domain.GetFields()) {
-            auto newField = field.CreateSubField(field.id);
+            // Get the offset for this field
+            PetscInt fieldOffset;
+            PetscDSGetFieldOffset(discreteSystem, field.id, &fieldOffset) >> checkError;
+
+            auto newField = field.CreateSubField(field.id, fieldOffset);
             fieldsByName.insert(std::make_pair(newField.name, newField));
             fieldsByType[FieldLocation::SOL].push_back(newField);
         }
@@ -75,6 +83,9 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
         // this is a hard coded "dmAux" that petsc looks for
         DMSetCoordinateDM(auxDM, coordDM) >> checkError;
 
+        // Keep track of the offset so it can be computed upfront
+        PetscInt offset = 0;
+
         for (const auto& subAuxField : subAuxFields) {
             // Create the field and add it with the label
             auto petscField = subAuxField->CreatePetscField(domain.GetDM());
@@ -86,9 +97,10 @@ ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const 
             PetscObjectDestroy(&petscField);
 
             // Record the field
-            auto newAuxField = Field::FromFieldDescription(*subAuxField, (PetscInt)fieldsByType[FieldLocation::AUX].size(), (PetscInt)fieldsByType[FieldLocation::AUX].size());
+            auto newAuxField = Field::FromFieldDescription(*subAuxField, (PetscInt)fieldsByType[FieldLocation::AUX].size(), (PetscInt)fieldsByType[FieldLocation::AUX].size(), offset);
             fieldsByType[FieldLocation::AUX].push_back(newAuxField);
             fieldsByName.insert(std::make_pair(newAuxField.name, newAuxField));
+            offset += newAuxField.numberComponents;
         }
     }
 }

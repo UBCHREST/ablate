@@ -2,7 +2,7 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
 
-using fp = ablate::finiteVolume::processes::FlowProcess;
+using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::lodi::OpenBoundary::OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure, double maxAcousticsLength,
                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
@@ -23,8 +23,6 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
                                                                                 const PetscScalar *stencilWeights, const PetscInt *sOff, PetscScalar *source, void *ctx) {
     PetscFunctionBeginUser;
     auto boundary = (OpenBoundary *)ctx;
-    auto decodeStateFunction = boundary->eos->GetDecodeStateFunction();
-    auto decodeStateContext = boundary->eos->GetDecodeStateContext();
 
     // Compute the transformation matrix
     PetscReal transformationMatrix[3][3];
@@ -32,9 +30,9 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
 
     // Compute the pressure/values on the boundary
     PetscReal boundaryDensity;
+    PetscReal boundaryTemperature;
     PetscReal boundaryVel[3];
-    PetscReal boundaryNormalVelocity;
-    PetscReal boundaryInternalEnergy;
+    PetscReal boundaryNormalVelocity = 0.0;
     PetscReal boundarySpeedOfSound;
     PetscReal boundaryMach;
     PetscReal boundaryPressure;
@@ -43,21 +41,20 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     const PetscScalar *boundaryDensityYi = boundary->nSpecEqs > 0 ? boundaryValues + uOff[boundary->speciesId] : nullptr;
 
     // Get the velocity and pressure on the surface
-    finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
-                                                           decodeStateContext,
-                                                           dim,
-                                                           boundaryValues + uOff[boundary->eulerId],
-                                                           boundaryDensityYi,
-                                                           fg->normal,
-                                                           &boundaryDensity,
-                                                           &boundaryNormalVelocity,
-                                                           boundaryVel,
-                                                           &boundaryInternalEnergy,
-                                                           &boundarySpeedOfSound,
-                                                           &boundaryMach,
-                                                           &boundaryPressure);
-
-    boundaryMach = PetscAbs(boundaryMach);
+    {
+        boundaryDensity = boundaryValues[uOff[boundary->eulerId] + finiteVolume::CompressibleFlowFields::RHO];
+        for (PetscInt d = 0; d < dim; d++) {
+            boundaryVel[d] = boundaryValues[uOff[boundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / boundaryDensity;
+            boundaryNormalVelocity += boundaryVel[d] * fg->normal[d];
+        }
+        PetscErrorCode ierr = boundary->computeTemperature.function(boundaryValues, &boundaryTemperature, boundary->computeTemperature.context.get());
+        CHKERRQ(ierr);
+        ierr = boundary->computeSpeedOfSound.function(boundaryValues, boundaryTemperature, &boundarySpeedOfSound, boundary->computeSpeedOfSound.context.get());
+        CHKERRQ(ierr);
+        ierr = boundary->computePressureFromTemperature.function(boundaryValues, boundaryTemperature, &boundaryPressure, boundary->computePressureFromTemperature.context.get());
+        CHKERRQ(ierr);
+        boundaryMach = PetscAbs(boundaryNormalVelocity / boundarySpeedOfSound);
+    }
 
     // Map the boundary velocity into the normal coord system
     PetscReal boundaryVelNormCord[3];
@@ -67,28 +64,19 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     std::vector<PetscReal> stencilDensity(stencilSize);
     std::vector<std::vector<PetscReal>> stencilVel(stencilSize, std::vector<PetscReal>(dim));
     std::vector<std::vector<PetscReal>> stencilNormalCoordsVel(dim, std::vector<PetscReal>(stencilSize));  // NOTE this is [dim][stencil]
-    std::vector<PetscReal> stencilInternalEnergy(stencilSize);
-    std::vector<PetscReal> stencilNormalVelocity(stencilSize);
-    std::vector<PetscReal> stencilSpeedOfSound(stencilSize);
-    std::vector<PetscReal> stencilMach(stencilSize);
+    std::vector<PetscReal> stencilNormalVelocity(stencilSize, 0.0);
     std::vector<PetscReal> stencilPressure(stencilSize);
     std::vector<std::vector<PetscReal>> stencilYi(boundary->nSpecEqs, std::vector<PetscReal>(stencilSize));  // NOTE this is [sp][stencil]
     std::vector<std::vector<PetscReal>> stencilEv(boundary->nEvEqs, std::vector<PetscReal>(stencilSize));    // NOTE this is [sp][stencil]
 
     for (PetscInt s = 0; s < stencilSize; s++) {
-        finiteVolume::processes::FlowProcess::DecodeEulerState(decodeStateFunction,
-                                                               decodeStateContext,
-                                                               dim,
-                                                               &stencilValues[s][uOff[boundary->eulerId]],
-                                                               boundary->nSpecEqs > 0 ? &stencilValues[s][uOff[boundary->speciesId]] : nullptr,
-                                                               fg->normal,
-                                                               &stencilDensity[s],
-                                                               &stencilNormalVelocity[s],
-                                                               &stencilVel[s][0],
-                                                               &stencilInternalEnergy[s],
-                                                               &stencilSpeedOfSound[s],
-                                                               &stencilMach[s],
-                                                               &stencilPressure[s]);
+        stencilDensity[s] = stencilValues[s][uOff[boundary->eulerId] + finiteVolume::CompressibleFlowFields::RHO];
+        for (PetscInt d = 0; d < dim; d++) {
+            stencilVel[s][d] = stencilValues[s][uOff[boundary->eulerId] + finiteVolume::CompressibleFlowFields::RHOU + d] / stencilDensity[s];
+            stencilNormalVelocity[s] += stencilVel[s][d] * fg->normal[d];
+        }
+        PetscErrorCode ierr = boundary->computePressure.function(stencilValues[s], &stencilPressure[s], boundary->computePressure.context.get());
+        CHKERRQ(ierr);
 
         // Map the stencil velocity to a normal velocity
         PetscReal normalCoordsVel[3];
@@ -118,17 +106,6 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
     PetscScalar dPdNorm;
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryPressure, stencilSize, &stencilPressure[0], stencilWeights, dPdNorm);
 
-    // Compute the temperature at the boundary
-    PetscReal boundaryTemperature;
-    boundary->eos->GetComputeTemperatureFunction()(dim,
-                                                   boundaryDensity,
-                                                   boundaryValues[uOff[boundary->eulerId] + fp::RHOE] / boundaryDensity,
-                                                   boundaryValues + uOff[boundary->eulerId] + fp::RHOU,
-                                                   boundaryDensityYi,
-                                                   &boundaryTemperature,
-                                                   boundary->eos->GetComputeTemperatureContext()) >>
-        checkError;
-
     // compute boundary ev, yi
     std::vector<PetscReal> boundaryYi(boundary->nSpecEqs);
     for (PetscInt i = 0; i < boundary->nSpecEqs; i++) {
@@ -141,16 +118,12 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
 
     // Compute the cp, cv from the eos
     PetscReal boundaryCp, boundaryCv;
-    boundary->eos->GetComputeSpecificHeatConstantPressureFunction()(
-        boundaryTemperature, boundaryDensity, boundaryYi.data(), &boundaryCp, boundary->eos->GetComputeSpecificHeatConstantPressureContext()) >>
-        checkError;
-    boundary->eos->GetComputeSpecificHeatConstantVolumeFunction()(boundaryTemperature, boundaryDensity, boundaryYi.data(), &boundaryCv, boundary->eos->GetComputeSpecificHeatConstantVolumeContext()) >>
-        checkError;
+    boundary->computeSpecificHeatConstantPressure.function(boundaryValues, boundaryTemperature, &boundaryCp, boundary->computeSpecificHeatConstantPressure.context.get());
+    boundary->computeSpecificHeatConstantVolume.function(boundaryValues, boundaryTemperature, &boundaryCv, boundary->computeSpecificHeatConstantVolume.context.get());
 
     // Compute the enthalpy
     PetscReal boundarySensibleEnthalpy;
-    boundary->eos->GetComputeSensibleEnthalpyFunction()(boundaryTemperature, boundaryDensity, boundaryYi.data(), &boundarySensibleEnthalpy, boundary->eos->GetComputeSensibleEnthalpyContext()) >>
-        checkError;
+    boundary->computeSensibleEnthalpyFunction.function(boundaryValues, boundaryTemperature, &boundarySensibleEnthalpy, boundary->computeSensibleEnthalpyFunction.context.get());
 
     // get_vel_and_c_prims(PGS, velwall[0], C, Cp, Cv, velnprm, Cprm);
     PetscReal velNormPrim, speedOfSoundPrim;

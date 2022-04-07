@@ -19,8 +19,10 @@ class SpeciesTransport : public FlowProcess {
         PetscInt numberSpecies;
 
         // EOS function calls
-        eos::DecodeStateFunction decodeStateFunction;
-        void* decodeStateContext;
+        eos::ThermodynamicFunction computeTemperature;
+        eos::ThermodynamicTemperatureFunction computeInternalEnergy;
+        eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
+        eos::ThermodynamicTemperatureFunction computePressure;
 
         /* store method used for flux calculator */
         ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
@@ -30,17 +32,14 @@ class SpeciesTransport : public FlowProcess {
 
     struct DiffusionData {
         /* diffusivity */
-        eos::transport::ComputeDiffusivityFunction diffFunction;
-        void* diffContext;
+        eos::ThermodynamicTemperatureFunction diffFunction;
 
         /* number of gas species */
         PetscInt numberSpecies;
 
         /* functions to compute species enthalpy */
-        eos::ComputeTemperatureFunction computeTemperatureFunction;
-        void* computeTemperatureContext;
-        eos::ComputeSpeciesSensibleEnthalpyFunction computeSpeciesSensibleEnthalpyFunction;
-        void* computeSpeciesSensibleEnthalpyContext;
+        eos::ThermodynamicFunction computeTemperatureFunction;
+        eos::ThermodynamicTemperatureFunction computeSpeciesSensibleEnthalpyFunction;
 
         /* store a scratch space for speciesSpeciesSensibleEnthalpy */
         std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;
@@ -62,8 +61,8 @@ class SpeciesTransport : public FlowProcess {
     /**
      * Function to compute the mass fraction. This function assumes that the input values will be {"euler", "densityYi"}
      */
-    static PetscErrorCode UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
-                                                     void* ctx);
+    static PetscErrorCode UpdateAuxMassFractionField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt aOff[],
+                                                     PetscScalar* auxField, void* ctx);
 
     /**
      * Normalize and cleanup the species mass fractions in the solution vector

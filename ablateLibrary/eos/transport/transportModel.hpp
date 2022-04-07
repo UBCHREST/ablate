@@ -1,22 +1,31 @@
 #ifndef ABLATELIBRARY_TRANSPORTMODEL_HPP
 #define ABLATELIBRARY_TRANSPORTMODEL_HPP
+
 #include <petscsystypes.h>
+#include "eos/eos.hpp"
 namespace ablate::eos::transport {
 
-using ComputeConductivityFunction = void (*)(PetscReal temperature, PetscReal density, const PetscReal* yi, PetscReal& conductivity, void* ctx);
-using ComputeViscosityFunction = void (*)(PetscReal temperature, PetscReal density, const PetscReal* yi, PetscReal& viscosity, void* ctx);
-using ComputeDiffusivityFunction = void (*)(PetscReal temperature, PetscReal density, const PetscReal* yi, PetscReal& diffusivity, void* ctx);
+enum class TransportProperty { Conductivity, Viscosity, Diffusivity };
 
 class TransportModel {
    public:
     virtual ~TransportModel() = default;
 
-    virtual ComputeConductivityFunction GetComputeConductivityFunction() = 0;
-    virtual void* GetComputeConductivityContext() = 0;
-    virtual ComputeViscosityFunction GetComputeViscosityFunction() = 0;
-    virtual void* GetComputeViscosityContext() = 0;
-    virtual ComputeDiffusivityFunction GetComputeDiffusivityFunction() = 0;
-    virtual void* GetComputeDiffusivityContext() = 0;
+    /**
+     * Single function to produce transport function for any property based upon the available fields
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] virtual ThermodynamicFunction GetTransportFunction(TransportProperty property, const std::vector<domain::Field>& fields) const = 0;
+
+    /**
+     * Single function to produce thermodynamic function for any property based upon the available fields and temperature
+     * @param property
+     * @param fields
+     * @return
+     */
+    [[nodiscard]] virtual ThermodynamicTemperatureFunction GetTransportTemperatureFunction(TransportProperty property, const std::vector<domain::Field>& fields) const = 0;
 };
 }  // namespace ablate::eos::transport
 #endif  // ABLATELIBRARY_TRANSPORTMODEL_HPP

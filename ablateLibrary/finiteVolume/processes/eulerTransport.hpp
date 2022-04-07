@@ -19,8 +19,10 @@ class EulerTransport : public FlowProcess {
         PetscInt numberSpecies;
 
         // EOS function calls
-        eos::DecodeStateFunction decodeStateFunction;
-        void* decodeStateContext;
+        eos::ThermodynamicFunction computeTemperature;
+        eos::ThermodynamicTemperatureFunction computeInternalEnergy;
+        eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
+        eos::ThermodynamicTemperatureFunction computePressure;
 
         /* store method used for flux calculator */
         ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
@@ -30,11 +32,9 @@ class EulerTransport : public FlowProcess {
     // Store ctx needed for static function diffusion function passed to PETSc
     struct DiffusionData {
         /* thermal conductivity*/
-        eos::transport::ComputeConductivityFunction kFunction;
-        void* kContext;
+        eos::ThermodynamicTemperatureFunction kFunction;
         /* dynamic viscosity*/
-        eos::transport::ComputeViscosityFunction muFunction;
-        void* muContext;
+        eos::ThermodynamicTemperatureFunction muFunction;
 
         /* store a scratch variable to hold yi*/
         std::vector<PetscReal> yiScratch;
@@ -44,8 +44,7 @@ class EulerTransport : public FlowProcess {
     };
     // Store ctx needed for static function diffusion function passed to PETSc
     struct UpdateTemperatureData {
-        eos::ComputeTemperatureFunction computeTemperatureFunction;
-        void* computeTemperatureContext;
+        eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
         PetscInt numberSpecies;
     };
 
@@ -66,25 +65,25 @@ class EulerTransport : public FlowProcess {
     /**
      * Function to compute the temperature field. This function assumes that the input values will be {"euler", "densityYi"}
      */
-    static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
-                                                    void* ctx);
+    static PetscErrorCode UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt aOff[],
+                                                    PetscScalar* auxField, void* ctx);
     /**
      * Function to compute the velocity. This function assumes that the input values will be {"euler"}
      */
-    static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
-                                                 void* ctx);
+    static PetscErrorCode UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt aOff[],
+                                                 PetscScalar* auxField, void* ctx);
 
     /**
      * Function to compute the velocity. This function assumes that the input values will be {"euler", "densityYi }
      */
-    static PetscErrorCode UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField,
-                                                 void* ctx);
+    static PetscErrorCode UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt aOff[],
+                                                 PetscScalar* auxField, void* ctx);
 
     /**
      *
      * public constructor for euler advection
      */
-    EulerTransport(std::shared_ptr<parameters::Parameters> parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
+    EulerTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
                    std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
     /**

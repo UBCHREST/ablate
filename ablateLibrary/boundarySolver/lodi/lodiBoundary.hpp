@@ -3,6 +3,7 @@
 
 #include "boundarySolver/boundaryProcess.hpp"
 #include "eos/eos.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
@@ -11,15 +12,14 @@ namespace ablate::boundarySolver::lodi {
 class LODIBoundary : public BoundaryProcess {
    protected:
     typedef enum {
-        RHO = finiteVolume::processes::FlowProcess::RHO,
-        RHOE = finiteVolume::processes::FlowProcess::RHOE,
-        RHOVELN = finiteVolume::processes::FlowProcess::RHOU,
-        RHOVELT1 = finiteVolume::processes::FlowProcess::RHOV,
-        RHOVELT2 = finiteVolume::processes::FlowProcess::RHOW
+        RHO = finiteVolume::CompressibleFlowFields::RHO,
+        RHOE = finiteVolume::CompressibleFlowFields::RHOE,
+        RHOVELN = finiteVolume::CompressibleFlowFields::RHOU,
+        RHOVELT1 = finiteVolume::CompressibleFlowFields::RHOV,
+        RHOVELT2 = finiteVolume::CompressibleFlowFields::RHOW
     } BoundaryEulerComponents;
 
     // Global parameters
-    const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling;
 
     void GetVelAndCPrims(PetscReal velNorm, PetscReal speedOfSound, PetscReal Cp, PetscReal Cv, PetscReal& velNormPrim, PetscReal& speedOfSoundPrim);
@@ -35,6 +35,16 @@ class LODIBoundary : public BoundaryProcess {
     // Keep track of the required fields
     std::vector<std::string> fieldNames;
 
+    // Store eos decode params
+    const std::shared_ptr<eos::EOS> eos;
+    eos::ThermodynamicFunction computeTemperature;
+    eos::ThermodynamicTemperatureFunction computePressureFromTemperature;
+    eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
+    eos::ThermodynamicTemperatureFunction computeSpecificHeatConstantPressure;
+    eos::ThermodynamicTemperatureFunction computeSpecificHeatConstantVolume;
+    eos::ThermodynamicTemperatureFunction computeSensibleEnthalpyFunction;
+    eos::ThermodynamicFunction computePressure;
+
    public:
     explicit LODIBoundary(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
 
@@ -47,7 +57,7 @@ class LODIBoundary : public BoundaryProcess {
      * @param nSpecEqs
      * @param nEvEqs
      */
-    void Initialize(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0);
+    void Initialize(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0, const std::vector<domain::Field>& fields = {});
 
    private:
     ablate::finiteVolume::processes::EulerTransport::UpdateTemperatureData updateTemperatureData{};

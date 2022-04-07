@@ -1,4 +1,5 @@
 #include "tChem.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -127,9 +128,8 @@ int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, doubl
 
 PetscErrorCode ablate::eos::TChem::ComputeTemperatureInternal(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T) {
     PetscFunctionBeginUser;
-
     // This is an iterative process to go compute temperature from density
-    double t2 = 300.0;
+    double t2 = tempYiWorkingArray[0];
 
     // set some constants
     const auto EPS_T_RHO_E = 1E-8;
@@ -171,193 +171,6 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperatureInternal(int numSpec, doubl
         }
         T = t2;
     }
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode ablate::eos::TChem::TChemComputeTemperature(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *massFlux, const PetscReal densityYi[], PetscReal *T, void *ctx) {
-    PetscFunctionBeginUser;
-    TChem *tChem = (TChem *)ctx;
-
-    // Compute the internal energy from total ener
-    // Get the velocity in this direction
-    PetscReal speedSquare = 0.0;
-    for (PetscInt d = 0; d < dim; d++) {
-        speedSquare += PetscSqr(massFlux[d] / density);
-    }
-
-    // assumed eos
-    PetscReal internalEnergyRef = (totalEnergy)-0.5 * speedSquare;
-
-    // Fill the working array
-    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
-    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, NAN, densityYi, tempYiWorkingArray);
-
-    // precompute some values
-    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
-    TCCHKERRQ(err);
-
-    // compute the temperature
-    PetscErrorCode ierr = ComputeTemperatureInternal(tChem->numberSpecies, tempYiWorkingArray, internalEnergyRef, mwMix, *T);
-    CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode ablate::eos::TChem::TChemGasDecodeState(PetscInt dim, PetscReal density, PetscReal totalEnergy, const PetscReal *velocity, const PetscReal densityYi[], PetscReal *internalEnergy,
-                                                       PetscReal *a, PetscReal *p, void *ctx) {
-    PetscFunctionBeginUser;
-    TChem *tChem = (TChem *)ctx;
-
-    // Get the velocity in this direction to compute the internal energy
-    PetscReal ke = 0.0;
-    for (PetscInt d = 0; d < dim; d++) {
-        ke += PetscSqr(velocity[d]);
-    }
-    ke *= 0.5;
-    (*internalEnergy) = (totalEnergy)-ke;
-
-    // Fill the working array
-    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
-    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, NAN, densityYi, tempYiWorkingArray);
-
-    // precompute some values
-    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
-    TCCHKERRQ(err);
-
-    // compute the temperature
-    double temperature;
-    PetscErrorCode ierr = ComputeTemperatureInternal(tChem->numberSpecies, tempYiWorkingArray, *internalEnergy, mwMix, temperature);
-    CHKERRQ(ierr);
-
-    // compute r
-    double R = 1000.0 * RUNIV / mwMix;
-
-    // compute pressure p = rho*R*T
-    *p = density * temperature * R;
-
-    // lastly compute the speed of sound
-    double cp;
-    tempYiWorkingArray[0] = temperature;
-    err = TC_getMs2CpMixMs(&tChem->tempYiWorkingVector[0], tChem->numberSpecies + 1, &cp);
-    TCCHKERRQ(err);
-    double cv = cp - R;
-    double gamma = cp / cv;
-    *a = PetscSqrtReal(gamma * R * temperature);
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode ablate::eos::TChem::TChemComputeSpeciesSensibleEnthalpy(PetscReal t, PetscReal *hi, void *ctx) {
-    PetscFunctionBeginUser;
-    TChem *tChem = (TChem *)ctx;
-
-    // compute the total enthalpy of each species
-    int ierr = TC_getHspecMs(t, tChem->numberSpecies, hi);
-    TCCHKERRQ(ierr);
-
-    // subtract away the heat of formation
-    for (auto s = 0; s < tChem->numberSpecies; s++) {
-        hi[s] -= tChem->speciesHeatOfFormation[s];
-    }
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode ablate::eos::TChem::TChemComputeDensityFunctionFromTemperaturePressure(PetscReal temperature, PetscReal pressure, const PetscReal *yi, PetscReal *density, void *ctx) {
-    PetscFunctionBeginUser;
-    TChem *tChem = (TChem *)ctx;
-
-    // Fill the working array
-    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
-    FillWorkingVectorFromMassFractions(tChem->numberSpecies, temperature, yi, tempYiWorkingArray);
-
-    // precompute some values
-    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
-    TCCHKERRQ(err);
-
-    // compute r
-    double R = 1000.0 * RUNIV / mwMix;
-
-    // compute pressure p = rho*R*T
-    *density = pressure / (temperature * R);
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode ablate::eos::TChem::TChemComputeSensibleInternalEnergy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleInternalEnergy, void *ctx) {
-    PetscFunctionBeginUser;
-    TChem *tChem = (TChem *)ctx;
-
-    // Fill the working array
-    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
-    FillWorkingVectorFromMassFractions(tChem->numberSpecies, T, yi, tempYiWorkingArray);
-
-    // precompute some values
-    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
-    TCCHKERRQ(err);
-
-    // compute the sensibleInternalEnergy
-    double sensibleInternalEnergyCompute = 0;
-    err = ComputeSensibleInternalEnergyInternal(tChem->numberSpecies, tempYiWorkingArray, mwMix, sensibleInternalEnergyCompute);
-    *sensibleInternalEnergy = sensibleInternalEnergyCompute;
-    TCCHKERRQ(err);
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode ablate::eos::TChem::TChemComputeSensibleEnthalpy(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *sensibleEnthalpy, void *ctx) {
-    PetscFunctionBeginUser;
-
-    TChem *tChem = (TChem *)ctx;
-
-    // Fill the working array
-    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
-    FillWorkingVectorFromMassFractions(tChem->numberSpecies, T, yi, tempYiWorkingArray);
-
-    // get the required values
-    double totalEnthalpy;
-    int err = TC_getMs2HmixMs(tempYiWorkingArray, tChem->numberSpecies + 1, &totalEnthalpy);
-    if (err != 0) {
-        return err;
-    }
-
-    // compute the heat of formation
-    double enthalpyOfFormation;
-    err = ComputeEnthalpyOfFormation(tChem->numberSpecies, tempYiWorkingArray, enthalpyOfFormation);
-
-    *sensibleEnthalpy = totalEnthalpy - enthalpyOfFormation;
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode ablate::eos::TChem::TChemComputeSpecificHeatConstantPressure(PetscReal T, PetscReal, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
-    PetscFunctionBeginUser;
-    TChem *tChem = (TChem *)ctx;
-
-    // Fill the working array
-    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
-    FillWorkingVectorFromMassFractions(tChem->numberSpecies, T, yi, tempYiWorkingArray);
-
-    // call the tChem library
-    int err = TC_getMs2CpMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, specificHeat);
-    TCCHKERRQ(err);
-
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode ablate::eos::TChem::TChemComputeSpecificHeatConstantVolume(PetscReal T, PetscReal density, const PetscReal *yi, PetscReal *specificHeat, void *ctx) {
-    PetscFunctionBeginUser;
-    TChem *tChem = (TChem *)ctx;
-
-    // Fill the working array
-    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
-    FillWorkingVectorFromMassFractions(tChem->numberSpecies, T, yi, tempYiWorkingArray);
-
-    // call the tChem library
-    int err = TC_getMs2CvMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, specificHeat);
-    TCCHKERRQ(err);
-
     PetscFunctionReturn(0);
 }
 
@@ -403,6 +216,389 @@ void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(int numSpec, 
         workingVector[numSpec] = 0.0;
     } else {
         workingVector[numSpec] = 1.0 - yiSum;
+    }
+}
+
+ablate::eos::ThermodynamicFunction ablate::eos::TChem::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
+    // Look for the euler field
+    auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
+    if (eulerField == fields.end()) {
+        throw std::invalid_argument("The ablate::eos::PerfectGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
+    }
+
+    auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
+    if (densityYiField == fields.end()) {
+        throw std::invalid_argument("The ablate::eos::PerfectGas requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD Field");
+    }
+
+    return ThermodynamicFunction{.function = thermodynamicFunctions.at(property).first,
+                                 .context = std::make_shared<FunctionContext>(
+                                     FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .densityYiOffset = densityYiField->offset, .tChem = this})};
+}
+
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChem::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
+    // Look for the euler field
+    auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
+    if (eulerField == fields.end()) {
+        throw std::invalid_argument("The ablate::eos::PerfectGas requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
+    }
+
+    auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
+    if (densityYiField == fields.end()) {
+        throw std::invalid_argument("The ablate::eos::PerfectGas requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD Field");
+    }
+
+    return ThermodynamicTemperatureFunction{.function = thermodynamicFunctions.at(property).second,
+                                            .context = std::make_shared<FunctionContext>(
+                                                FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .densityYiOffset = densityYiField->offset, .tChem = this})};
+}
+
+PetscErrorCode ablate::eos::TChem::TemperatureFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return TemperatureTemperatureFunction(conserved, 300, property, ctx); }
+PetscErrorCode ablate::eos::TChem::TemperatureTemperatureFunction(const PetscReal *conserved, PetscReal temperatureGuess, PetscReal *temperature, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    auto tChem = functionContext->tChem;
+    // Compute the internal energy from total ener
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscReal speedSquare = 0.0;
+    for (PetscInt d = 0; d < functionContext->dim; d++) {
+        speedSquare += PetscSqr(conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
+    }
+
+    // assumed eos
+    PetscReal internalEnergyRef = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
+
+    // Fill the working array
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, temperatureGuess, conserved + functionContext->densityYiOffset, tempYiWorkingArray);
+
+    // precompute some values
+    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
+    TCCHKERRQ(err);
+
+    // compute the temperature
+    PetscErrorCode ierr = ComputeTemperatureInternal(tChem->numberSpecies, tempYiWorkingArray, internalEnergyRef, mwMix, *temperature);
+    CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::PressureFunction(const PetscReal *conserved, PetscReal *pressure, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal temperature;
+    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
+    CHKERRQ(ierr);
+    ierr = PressureTemperatureFunction(conserved, temperature, pressure, ctx);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::PressureTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *pressure, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    auto tChem = functionContext->tChem;
+
+    // Fill the working array
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, temperature, conserved + functionContext->densityYiOffset, tempYiWorkingArray);
+
+    // precompute some values
+    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
+    TCCHKERRQ(err);
+
+    // compute r
+    double R = 1000.0 * RUNIV / mwMix;
+
+    // compute pressure p = rho*R*T
+    *pressure = density * temperature * R;
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyFunction(const PetscReal *conserved, PetscReal *sensibleInternalEnergy, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscReal speedSquare = 0.0;
+    for (PetscInt d = 0; d < functionContext->dim; d++) {
+        speedSquare += PetscSqr(conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
+    }
+
+    *sensibleInternalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *sensibleInternalEnergy, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    auto tChem = functionContext->tChem;
+
+    // Fill the working array
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, temperature, conserved + functionContext->densityYiOffset, tempYiWorkingArray);
+
+    // precompute some values
+    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
+    TCCHKERRQ(err);
+
+    // compute the sensibleInternalEnergy
+    double sensibleInternalEnergyCompute = 0;
+    err = ComputeSensibleInternalEnergyInternal(tChem->numberSpecies, tempYiWorkingArray, mwMix, sensibleInternalEnergyCompute);
+    *sensibleInternalEnergy = sensibleInternalEnergyCompute;
+    TCCHKERRQ(err);
+
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *sensibleEnthalpy, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal temperature;
+    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
+    CHKERRQ(ierr);
+    ierr = SensibleEnthalpyTemperatureFunction(conserved, temperature, sensibleEnthalpy, ctx);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *sensibleEnthalpy, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    auto tChem = functionContext->tChem;
+
+    // Fill the working array
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, temperature, conserved + functionContext->densityYiOffset, tempYiWorkingArray);
+
+    // get the required values
+    double totalEnthalpy;
+    int err = TC_getMs2HmixMs(tempYiWorkingArray, tChem->numberSpecies + 1, &totalEnthalpy);
+    if (err != 0) {
+        return err;
+    }
+
+    // compute the heat of formation
+    double enthalpyOfFormation;
+    err = ComputeEnthalpyOfFormation(tChem->numberSpecies, tempYiWorkingArray, enthalpyOfFormation);
+    CHKERRQ(err);
+
+    *sensibleEnthalpy = totalEnthalpy - enthalpyOfFormation;
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeFunction(const PetscReal *conserved, PetscReal *cv, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal temperature;
+    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
+    CHKERRQ(ierr);
+    ierr = SpecificHeatConstantVolumeTemperatureFunction(conserved, temperature, cv, ctx);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *cv, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    auto tChem = functionContext->tChem;
+
+    // Fill the working array
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, temperature, conserved + functionContext->densityYiOffset, tempYiWorkingArray);
+
+    // call the tChem library
+    int err = TC_getMs2CvMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, cv);
+    TCCHKERRQ(err);
+
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureFunction(const PetscReal *conserved, PetscReal *cp, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal temperature;
+    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
+    CHKERRQ(ierr);
+    ierr = SpecificHeatConstantPressureTemperatureFunction(conserved, temperature, cp, ctx);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *cp, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    auto tChem = functionContext->tChem;
+
+    // Fill the working array
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, temperature, conserved + functionContext->densityYiOffset, tempYiWorkingArray);
+
+    // call the tChem library
+    int err = TC_getMs2CpMixMs(tempYiWorkingArray, tChem->numberSpecies + 1, cp);
+    TCCHKERRQ(err);
+
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SpeedOfSoundFunction(const PetscReal *conserved, PetscReal *speedOfSound, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal temperature;
+    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
+    CHKERRQ(ierr);
+    ierr = SpeedOfSoundTemperatureFunction(conserved, temperature, speedOfSound, ctx);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SpeedOfSoundTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *speedOfSound, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    auto tChem = functionContext->tChem;
+
+    // Fill the working array
+    auto tempYiWorkingArray = tChem->tempYiWorkingVector.data();
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    FillWorkingVectorFromDensityMassFractions(tChem->numberSpecies, density, temperature, conserved + functionContext->densityYiOffset, tempYiWorkingArray);
+
+    // precompute some values
+    double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+    int err = TC_getMs2Wmix(tempYiWorkingArray + 1, tChem->numberSpecies, &mwMix);
+    TCCHKERRQ(err);
+
+    // compute r
+    double R = 1000.0 * RUNIV / mwMix;
+
+    // lastly compute the speed of sound
+    double cp;
+    err = TC_getMs2CpMixMs(&tChem->tempYiWorkingVector[0], tChem->numberSpecies + 1, &cp);
+    TCCHKERRQ(err);
+    double cv = cp - R;
+    double gamma = cp / cv;
+    *speedOfSound = PetscSqrtReal(gamma * R * temperature);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *hi, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal temperature;
+    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
+    CHKERRQ(ierr);
+    ierr = SpeciesSensibleEnthalpyTemperatureFunction(conserved, temperature, hi, ctx);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *hi, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    auto tChem = functionContext->tChem;
+
+    // compute the total enthalpy of each species
+    int ierr = TC_getHspecMs(temperature, tChem->numberSpecies, hi);
+    TCCHKERRQ(ierr);
+
+    // subtract away the heat of formation
+    for (auto s = 0; s < tChem->numberSpecies; s++) {
+        hi[s] -= tChem->speciesHeatOfFormation[s];
+    }
+
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::DensityFunction(const PetscReal *conserved, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::DensityTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
+}
+ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2) const {
+    if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
+        if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
+            (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
+            auto tp = [this](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // Compute the density
+                // Fill the working array
+                auto tempYiWorkingArray = tempYiWorkingVector.data();
+                FillWorkingVectorFromMassFractions(numberSpecies, temperature, yi, tempYiWorkingArray);
+
+                // precompute some values
+                double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+                TC_getMs2Wmix(tempYiWorkingArray + 1, numberSpecies, &mwMix) >> errorChecker;
+
+                // compute r
+                double R = 1000.0 * RUNIV / mwMix;
+
+                // compute pressure p = rho*R*T
+                PetscReal density = pressure / (temperature * R);
+
+                PetscReal sensibleInternalEnergy;
+                ComputeSensibleInternalEnergyInternal(numberSpecies, tempYiWorkingArray, mwMix, sensibleInternalEnergy) >> errorChecker;
+
+                // convert to total sensibleEnergy
+                PetscReal kineticEnergy = 0;
+                for (PetscInt d = 0; d < dim; d++) {
+                    kineticEnergy += PetscSqr(velocity[d]);
+                }
+                kineticEnergy *= 0.5;
+
+                conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
+                conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + sensibleInternalEnergy);
+                for (PetscInt d = 0; d < dim; d++) {
+                    conserved[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = density * velocity[d];
+                }
+            };
+            if (property1 == ThermodynamicProperty::Temperature) {
+                return tp;
+            } else {
+                return [tp](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                    tp(temperature, pressure, dim, velocity, yi, conserved);
+                };
+            }
+        }
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
+
+    } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field) {
+        if (property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) {
+            return [this](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                auto tempYiWorkingArray = tempYiWorkingVector.data();
+                FillWorkingVectorFromMassFractions(numberSpecies, temperature, yi, tempYiWorkingArray);
+
+                // precompute some values
+                double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+                TC_getMs2Wmix(tempYiWorkingArray + 1, numberSpecies, &mwMix) >> errorChecker;
+
+                // compute r
+                double R = 1000.0 * RUNIV / mwMix;
+
+                // compute pressure p = rho*R*T
+                PetscReal density = pressure / (temperature * R);
+
+                for (PetscInt c = 0; c < numberSpecies; c++) {
+                    conserved[c] = density * yi[c];
+                }
+            };
+        } else if (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature) {
+            return [this](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                auto tempYiWorkingArray = tempYiWorkingVector.data();
+                FillWorkingVectorFromMassFractions(numberSpecies, temperature, yi, tempYiWorkingArray);
+
+                // precompute some values
+                double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+                TC_getMs2Wmix(tempYiWorkingArray + 1, numberSpecies, &mwMix) >> errorChecker;
+
+                // compute r
+                double R = 1000.0 * RUNIV / mwMix;
+
+                // compute pressure p = rho*R*T
+                PetscReal density = pressure / (temperature * R);
+
+                for (PetscInt c = 0; c < numberSpecies; c++) {
+                    conserved[c] = density * yi[c];
+                }
+            };
+        }
+
+        throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
+    } else {
+        throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::PerfectGas.");
     }
 }
 

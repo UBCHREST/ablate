@@ -15,17 +15,17 @@ PetscErrorCode ablate::finiteVolume::processes::Gravity::ComputeGravitySource(Pe
     auto gravityProcess = (ablate::finiteVolume::processes::Gravity *)ctx;
 
     // exact some values
-    const PetscReal density = u[uOff[EULER_FIELD] + RHO];
+    const PetscReal density = u[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
 
     // set the source terms
-    f[RHO] = 0.0;
-    f[RHOE] = 0.0;
+    f[CompressibleFlowFields::RHO] = 0.0;
+    f[CompressibleFlowFields::RHOE] = 0.0;
 
     // Add in the gravity source terms for momentum and energy
     for (PetscInt n = 0; n < dim; n++) {
-        f[RHOU + n] = density * gravityProcess->gravityVector[n];
-        PetscReal vel = u[uOff[EULER_FIELD] + RHOU + n] / density;
-        f[RHOE] += vel * f[RHOU + n];
+        f[CompressibleFlowFields::RHOU + n] = density * gravityProcess->gravityVector[n];
+        PetscReal vel = u[uOff[EULER_FIELD] + CompressibleFlowFields::RHOU + n] / density;
+        f[CompressibleFlowFields::RHOE] += vel * f[CompressibleFlowFields::RHOU + n];
     }
 
     PetscFunctionReturn(0);

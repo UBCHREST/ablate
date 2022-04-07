@@ -28,8 +28,10 @@ class EVTransport : public FlowProcess {
         PetscInt numberEV;
 
         // EOS function calls
-        eos::DecodeStateFunction decodeStateFunction;
-        void* decodeStateContext;
+        eos::ThermodynamicFunction computeTemperature;
+        eos::ThermodynamicTemperatureFunction computeInternalEnergy;
+        eos::ThermodynamicTemperatureFunction computeSpeedOfSound;
+        eos::ThermodynamicTemperatureFunction computePressure;
 
         /* store method used for flux calculator */
         ablate::finiteVolume::fluxCalculator::FluxCalculatorFunction fluxCalculatorFunction;
@@ -38,16 +40,11 @@ class EVTransport : public FlowProcess {
     AdvectionData advectionData;
 
     struct DiffusionData {
-        /* diffusivity */
-        eos::transport::ComputeDiffusivityFunction diffFunction;
-        void* diffContext;
-
         /* number of extra species */
         PetscInt numberEV;
 
-        /* functions to compute species enthalpy */
-        eos::ComputeTemperatureFunction computeTemperatureFunction;
-        void* computeTemperatureContext;
+        /* functions to compute diffusion */
+        eos::ThermodynamicFunction diffFunction;
 
         /* store a scratch space for speciesSpeciesSensibleEnthalpy */
         std::vector<PetscReal> speciesSpeciesSensibleEnthalpy;
@@ -70,7 +67,8 @@ class EVTransport : public FlowProcess {
     /**
      * Function to compute the EV fraction. This function assumes that the input values will be {"euler", "densityYi"}
      */
-    static PetscErrorCode UpdateEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, PetscScalar* auxField, void* ctx);
+    static PetscErrorCode UpdateEVField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[], const PetscScalar* conservedValues, const PetscInt* aOff,
+                                        PetscScalar* auxField, void* ctx);
 
    private:
     /**

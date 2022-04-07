@@ -20,13 +20,12 @@ class CompressibleFlowState {
     CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eos, std::shared_ptr<mathFunctions::MathFunction> temperatureFunction, std::shared_ptr<mathFunctions::MathFunction> pressureFunction,
                           std::shared_ptr<mathFunctions::MathFunction> velocityFunction, std::shared_ptr<mathFunctions::FieldFunction> massFractionFunction = {});
 
-    static PetscErrorCode ComputeEulerFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
-    static PetscErrorCode ComputeDensityYiFromState(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
-
     /**
-     * Helper function for other flowStates
+     * returns the field function for the supplied properties and field
+     * @param field
+     * @return
      */
-    PetscReal ComputeDensityFromState(PetscInt dim, PetscReal time, const PetscReal x[]);
+    std::shared_ptr<mathFunctions::MathFunction> GetFieldFunction(const std::string& field) const;
 };
 
 }  // namespace ablate::finiteVolume::fieldFunctions

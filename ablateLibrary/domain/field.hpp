@@ -23,14 +23,17 @@ struct Field {
     // The specific id in this ds/subdomain
     const PetscInt subId = PETSC_DEFAULT;
 
+    // The specific offset for this field in this ds/subdomain
+    const PetscInt offset = PETSC_DEFAULT;
+
     const enum FieldLocation location = FieldLocation::SOL;
 
     // Keep track of the field type
     const enum FieldType type;
 
-    static Field FromFieldDescription(const FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT);
+    static Field FromFieldDescription(const FieldDescription& fieldDescription, PetscInt id, PetscInt subId = PETSC_DEFAULT, PetscInt offset = PETSC_DEFAULT);
 
-    Field CreateSubField(PetscInt subId) const;
+    Field CreateSubField(PetscInt subId, PetscInt offset) const;
 };
 
 std::istream& operator>>(std::istream& is, FieldLocation& v);

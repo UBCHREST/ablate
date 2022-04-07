@@ -78,10 +78,10 @@ static PetscErrorCode EulerExact(PetscInt dim, PetscReal time, const PetscReal x
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    node[ablate::finiteVolume::processes::FlowProcess::RHO] = parameters->rho;
-    node[ablate::finiteVolume::processes::FlowProcess::RHOE] = parameters->rho * eT;
-    node[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = parameters->rho * u;
-    node[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = parameters->rho * v;
+    node[ablate::finiteVolume::CompressibleFlowFields::RHO] = parameters->rho;
+    node[ablate::finiteVolume::CompressibleFlowFields::RHOE] = parameters->rho * eT;
+    node[ablate::finiteVolume::CompressibleFlowFields::RHOU + 0] = parameters->rho * u;
+    node[ablate::finiteVolume::CompressibleFlowFields::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -97,10 +97,10 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
     PetscReal eT = e + 0.5 * (u * u + v * v);
 
-    a_xG[ablate::finiteVolume::processes::FlowProcess::RHO] = parameters->rho;
-    a_xG[ablate::finiteVolume::processes::FlowProcess::RHOE] = parameters->rho * eT;
-    a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 0] = parameters->rho * u;
-    a_xG[ablate::finiteVolume::processes::FlowProcess::RHOU + 1] = parameters->rho * v;
+    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHO] = parameters->rho;
+    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHOE] = parameters->rho * eT;
+    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHOU + 0] = parameters->rho * u;
+    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHOU + 1] = parameters->rho * v;
 
     PetscFunctionReturn(0);
 }
@@ -110,7 +110,7 @@ static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c,
     InputParameters *constants = (InputParameters *)ctx;
 
     // Offset the calc assuming the cells are square
-    for (PetscInt f = 0; f < ablate::finiteVolume::processes::FlowProcess::RHOU + constants->dim; f++) {
+    for (PetscInt f = 0; f < ablate::finiteVolume::CompressibleFlowFields::RHOU + constants->dim; f++) {
         a_xG[f] = a_xI[f];
     }
     PetscFunctionReturn(0);

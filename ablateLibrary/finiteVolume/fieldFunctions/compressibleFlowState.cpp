@@ -1,5 +1,7 @@
 #include "compressibleFlowState.hpp"
-#include <finiteVolume/processes/eulerTransport.hpp>
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
+#include "mathFunctions/functionWrapper.hpp"
 
 ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<mathFunctions::MathFunction> temperatureFunctionIn,
                                                                                    std::shared_ptr<mathFunctions::MathFunction> pressureFunctionIn,
@@ -18,7 +20,7 @@ ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowSta
         throw std::invalid_argument("The velocity must be specified in the flow::fieldSolutions::Euler initializer");
     }
 
-    const auto &species = eos->GetSpecies();
+    const auto& species = eos->GetSpecies();
     if (massFractionFunction == nullptr) {
         if (!species.empty()) {
             throw std::invalid_argument("The mass fractions must be specified because there are species in the EOS.");
@@ -26,116 +28,41 @@ ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowSta
     }
 }
 
-PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeEulerFromState(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
-    PetscFunctionBeginUser;
-    PetscErrorCode ierr;
+std::shared_ptr<ablate::mathFunctions::MathFunction> ablate::finiteVolume::fieldFunctions::CompressibleFlowState::GetFieldFunction(const std::string& field) const {
+    auto eosFunction = eos->GetFieldFunctionFunction(field, eos::ThermodynamicProperty::Temperature, eos::ThermodynamicProperty::Pressure);
 
-    auto flowState = (ablate::finiteVolume::fieldFunctions::CompressibleFlowState *)ctx;
-
-    // get the temperature, pressure, and velocity
-    PetscReal temperature;
-    ierr = flowState->temperatureFunction->GetPetscFunction()(dim, time, x, 1, &temperature, flowState->temperatureFunction->GetContext());
-    CHKERRQ(ierr);
-
-    PetscReal pressure;
-    ierr = flowState->pressureFunction->GetPetscFunction()(dim, time, x, 1, &pressure, flowState->pressureFunction->GetContext());
-    CHKERRQ(ierr);
-
-    PetscReal velocity[3];
-    ierr = flowState->velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, flowState->velocityFunction->GetContext());
-    CHKERRQ(ierr);
-
-    // compute the mass fraction at this location
-    std::vector<PetscReal> yi(flowState->eos->GetSpecies().size());
-    if (flowState->massFractionFunction) {
-        ierr = flowState->massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], flowState->massFractionFunction->GetSolutionField().GetContext());
+    auto fieldFunction = [eos = this->eos,
+                          temperatureFunction = this->temperatureFunction,
+                          pressureFunction = this->pressureFunction,
+                          velocityFunction = this->velocityFunction,
+                          massFractionFunction = this->massFractionFunction,
+                          eosFunction](int dim, double time, const double x[], int nf, double* u, void* ctx) {
+        PetscErrorCode ierr;
+        // get the temperature, pressure, and velocity
+        PetscReal temperature;
+        ierr = temperatureFunction->GetPetscFunction()(dim, time, x, 1, &temperature, temperatureFunction->GetContext());
         CHKERRQ(ierr);
-    }
 
-    // compute the density
-    ierr = flowState->eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(
-        temperature, pressure, &yi[0], u + ablate::finiteVolume::processes::FlowProcess::RHO, flowState->eos->GetComputeDensityFunctionFromTemperaturePressureContext());
-    CHKERRQ(ierr);
-
-    // compute the internal energy
-    PetscReal sensibleInternalEnergy;
-    ierr = flowState->eos->GetComputeSensibleInternalEnergyFunction()(
-        temperature, u[ablate::finiteVolume::processes::FlowProcess::RHO], &yi[0], &sensibleInternalEnergy, flowState->eos->GetComputeSensibleInternalEnergyContext());
-    CHKERRQ(ierr);
-
-    // convert to total sensibleEnergy
-    PetscReal kineticEnergy = 0;
-    for (PetscInt d = 0; d < dim; d++) {
-        kineticEnergy += PetscSqr(velocity[d]);
-    }
-    kineticEnergy *= 0.5;
-    u[ablate::finiteVolume::processes::FlowProcess::RHOE] = u[ablate::finiteVolume::processes::FlowProcess::RHO] * (kineticEnergy + sensibleInternalEnergy);
-
-    // Set the vel*rho term
-    for (PetscInt d = 0; d < dim; d++) {
-        u[ablate::finiteVolume::processes::FlowProcess::RHOU + d] = u[ablate::finiteVolume::processes::FlowProcess::RHO] * velocity[d];
-    }
-    PetscFunctionReturn(0);
-}
-
-PetscErrorCode ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeDensityYiFromState(PetscInt dim, PetscReal time, const PetscReal *x, PetscInt Nf, PetscScalar *u, void *ctx) {
-    PetscFunctionBeginUser;
-    PetscErrorCode ierr;
-
-    auto flowState = (ablate::finiteVolume::fieldFunctions::CompressibleFlowState *)ctx;
-
-    // make sure the that number of species is correct
-    if ((PetscInt)flowState->eos->GetSpecies().size() != Nf) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "The number of species specified in the CompressibleFlowState does not match requested.");
-    }
-
-    // get the temperature, pressure, and velocity
-    PetscReal temperature;
-    ierr = flowState->temperatureFunction->GetPetscFunction()(dim, time, x, 1, &temperature, flowState->temperatureFunction->GetContext());
-    CHKERRQ(ierr);
-
-    PetscReal pressure;
-    ierr = flowState->pressureFunction->GetPetscFunction()(dim, time, x, 1, &pressure, flowState->pressureFunction->GetContext());
-    CHKERRQ(ierr);
-
-    // compute the mass fraction at this location
-    std::vector<PetscReal> yi(flowState->eos->GetSpecies().size());
-    ierr = flowState->massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], flowState->massFractionFunction->GetSolutionField().GetContext());
-    CHKERRQ(ierr);
-
-    // compute the density
-    PetscReal density;
-    ierr =
-        flowState->eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(temperature, pressure, &yi[0], &density, flowState->eos->GetComputeDensityFunctionFromTemperaturePressureContext());
-    CHKERRQ(ierr);
-
-    // update the densityYi field
-    for (PetscInt sp = 0; sp < Nf; sp++) {
-        u[sp] = yi[sp] * density;
-    }
-
-    PetscFunctionReturn(0);
-}
-PetscReal ablate::finiteVolume::fieldFunctions::CompressibleFlowState::ComputeDensityFromState(PetscInt dim, PetscReal time, const PetscReal x[]) {
-    PetscErrorCode ierr;
-
-    // get the temperature, pressure, and velocity
-    PetscReal temperature = temperatureFunction->Eval(x, dim, time);
-    PetscReal pressure = pressureFunction->Eval(x, dim, time);
-
-    // compute the mass fraction at this location
-    std::vector<PetscReal> yi(eos->GetSpecies().size());
-    if (massFractionFunction) {
-        ierr = massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], massFractionFunction->GetSolutionField().GetContext());
+        PetscReal pressure;
+        ierr = pressureFunction->GetPetscFunction()(dim, time, x, 1, &pressure, pressureFunction->GetContext());
         CHKERRQ(ierr);
-    }
 
-    // compute the density
-    PetscReal density;
-    ierr = eos->GetComputeDensityFunctionFromTemperaturePressureFunction()(temperature, pressure, &yi[0], &density, eos->GetComputeDensityFunctionFromTemperaturePressureContext());
-    CHKERRQ(ierr);
+        PetscReal velocity[3];
+        ierr = velocityFunction->GetPetscFunction()(dim, time, x, dim, velocity, velocityFunction->GetContext());
+        CHKERRQ(ierr);
 
-    return density;
+        // compute the mass fraction at this location
+        std::vector<PetscReal> yi(eos->GetSpecies().size());
+        if (massFractionFunction) {
+            ierr = massFractionFunction->GetSolutionField().GetPetscFunction()(dim, time, x, yi.size(), &yi[0], massFractionFunction->GetSolutionField().GetContext());
+            CHKERRQ(ierr);
+        }
+
+        eosFunction(temperature, pressure, dim, velocity, yi.data(), u);
+        return 0;
+    };
+
+    return std::make_shared<mathFunctions::FunctionWrapper>(fieldFunction);
 }
 
 #include "registrar.hpp"
