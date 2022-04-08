@@ -1,3 +1,10 @@
+---
+layout: default
+title: DAKOTA Integration
+parent: Development Guides
+nav_order: 13
+---
+
 
 # Using DAKOTA with ABLATE For Uncertainty Assessment
 
