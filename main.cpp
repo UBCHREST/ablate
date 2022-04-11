@@ -1,6 +1,6 @@
+#include <time.h>
 #include <fstream>
 #include <iostream>
-#include <time.h>
 #include <memory>
 #include <parameters/petscPrefixOptions.hpp>
 #include <utilities/fileUtility.hpp>
@@ -8,8 +8,8 @@
 #include "builder.hpp"
 #include "environment/runEnvironment.hpp"
 #include "listing.hpp"
-#include "yamlParser.hpp"
 #include "utilities/petscError.hpp"
+#include "yamlParser.hpp"
 
 using namespace ablate;
 
@@ -110,6 +110,6 @@ int main(int argc, char** args) {
 
     // output runtime
     clock_t stop = clock();
-    double elapsed = (double) (stop - start) / CLOCKS_PER_SEC;
+    double elapsed = (double)(stop - start) / CLOCKS_PER_SEC;
     std::cout << "Runtime: " << elapsed << " sec" << std::endl;
 }
