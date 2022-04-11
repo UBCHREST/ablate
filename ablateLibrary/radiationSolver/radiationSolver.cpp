@@ -253,6 +253,7 @@ void ablate::radiationSolver::RadiationSolver::Initialize() {
         DMRestoreLocalVector(solver.GetSubDomain().GetDM(), &locXVec) >> checkError;
     });
 
+    //this->reallySolveParallelPlates();
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays = this->rayInit(); //Runs the new code for ray initialization here
     this->rayTrace(rays);
 }
@@ -311,7 +312,7 @@ std::vector<std::vector<std::vector<std::vector<PetscInt>>>> ablate::radiationSo
         DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);  // Reads the cell location from the current cell
 
         ///Set the spatial step size to the minimum cell radius
-        h = minCellRadius;
+        //h = minCellRadius;
 
         for (int ntheta = 0; ntheta < nTheta; ntheta++) {  // for every angle theta
             //PetscPrintf(PETSC_COMM_WORLD, "Passed theta loop\n");
@@ -555,7 +556,6 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::rayTrace(std::v
 
 std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::solveParallelPlates(){ ///Get the analytical solution for two parallel plates of different temperatures
     ///Define variables and basic information
-    //PetscInt zCellNumber = 20; //Number of points for which to calculate G
     std::vector<PetscReal> G;//(zCellNumber, 0); //Initialize a ray representing the irradiation at each cell point
     PetscReal IT = flameIntensity(1, 700); //Intensity of rays originating from the top plate
     PetscReal IB = flameIntensity(1, 1300); //Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
@@ -570,53 +570,137 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::solveParallelPl
     std::filesystem::path radOutput = environment::RunEnvironment::Get().GetOutputDirectory() / "analytical.txt"; //Will contain irradiation at each point
     std::ofstream stream(radOutput);
 
-    PetscReal nMu = 100; //Number of mu for which the angle is computed //1/cos(theta); //Theta never comes up in the actual process of solving so we can just iterate over mu to keep things evenly spaced
+    PetscReal nMu = 1000; //Number of mu for which the angle is computed //1/cos(theta); //Theta never comes up in the actual process of solving so we can just iterate over mu to keep things evenly spaced
     //PetscReal mu = (nmu / nMu); //From 0 to 1
-    PetscReal nZ = 100;
-    PetscReal nZp = 100;
+    PetscReal nZ = 1000;
+    PetscReal nZp = 1000;
 
     ///For every z
-    for(double nz = 0; nz < nZ; nz++) {
+    for(double nz = 1; nz < (nZ-1); nz++) {
         ///Get the temperature
-        PetscReal z = zBottom*(1 - (nz/nZ)) + zTop*(nz/nZ); //This calculates the z height based on the number of zs
-        if(z <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
-            temperature = -6.349E6*z*z + 2000.0;
-        }else{
-            temperature = -1.179E7*z*z + 2000.0;
-        }
-        ///Get the black body intensity here
-        Ibz = flameIntensity(1, temperature);
-
+        PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
         std::vector<PetscReal> Iplus;
         std::vector<PetscReal> Iminus;
         /// For every mu
-        for(double nmu = 0; nmu < nMu; nmu++) {
+        for(double nmu = 1; nmu < (nMu-1); nmu++) {
             PetscReal mu = (nmu / nMu); //From 0 to 1
             ///First get vectors of the value that will be integrated along z prime
             std::vector<PetscReal> plus;
             std::vector<PetscReal> minus;
             ///For every zprime
-            for(double nzp; nzp < nZp; nzp++) {
-                PetscReal zp = zBottom*(1 - (nz/nZ)) + z*(nz/nZ); //Calculate the you know the thing
-                plus.push_back(Ibz * exp((kappa*(z-zp)))/mu);
+            for(double nzp = 1; nzp < (nZp-1); nzp++) { ///Plus integral goes from bottom to Z
+                PetscReal zp = zBottom + (nzp/nZp)*(z-zBottom); //Calculate the z height
+                ///Get the temperature
+                //PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
+                if(zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
+                    temperature = -6.349E6*zp*zp + 2000.0;
+                }else{
+                    temperature = -1.179E7*zp*zp + 2000.0;
+                }
+                ///Get the black body intensity here
+                Ibz = flameIntensity(1, temperature);
+                plus.push_back(Ibz * exp(-(kappa*(z-zp))/mu));
             }
-            for(double nzp; nzp < nZp; nzp++) {
-                PetscReal zp = z*(1 - (nz/nZ)) + zTop*(nz/nZ);
-                minus.push_back(Ibz * exp((kappa*(z-zp)))/mu);
+            for(double nzp = 1; nzp < (nZp-1); nzp++) { ///Minus integral goes from z to top
+                PetscReal zp = z + (nzp / nZp) * (zTop - z);  // Calculate the zp height
+                /// Get the temperature
+                // PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
+                if (zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
+                    temperature = -6.349E6 * zp * zp + 2000.0;
+                } else {
+                    temperature = -1.179E7 * zp * zp + 2000.0;
+                }
+                /// Get the black body intensity here
+                Ibz = flameIntensity(1, temperature);
+                minus.push_back(Ibz * exp((kappa * (zp - z)) / mu));
             }
 
             /// Calculate the value (with the zprime integrals)
-            Iplus.push_back(IB * exp((kappa * z) / (mu-1)) + (kappa / (mu-1)) * cumSimp(zBottom, z, plus));  // Add the intensity from above at this height (to the vector, for integration)
-            Iminus.push_back(IT * exp((kappa*z)/(mu)) + (kappa/mu) * cumSimp(zBottom, z, minus)); //Add the intensity from below at this height (to the vector, for integration)
+            Iplus.push_back(IB * exp(-(kappa * z) / mu) + (kappa / mu) * cumSimp(zBottom, z, plus));  // Add the intensity from above at this height (to the vector, for integration)
+            Iminus.push_back(IT * exp((kappa*((zTop-zBottom)-z))/(mu-1)) - (kappa/(mu-1)) * cumSimp(z, zTop, minus)); //Add the intensity from below at this height (to the vector, for integration)
         }
         /// Integrate the G values along mu (also for every z, in the same loop)
         PetscReal intensity = 2 * pi * (cumSimp(-1, 0, Iminus) + cumSimp(0, 1, Iplus));
+        stream << z;
+        stream << ' ';
         stream << intensity;
         stream << '\n';
         G.push_back(2 * pi * (cumSimp(-1, 0, Iminus) + cumSimp(0, 1, Iplus)));
     }
     stream.close();
     return G; //Return the vector of values representing the irradiation at each height z
+}
+
+std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::reallySolveParallelPlates(){
+    ///Define variables and basic information
+    std::vector<PetscReal> G; //Irradiation at each point
+    PetscReal IT = flameIntensity(1, 700); //Intensity of rays originating from the top plate
+    PetscReal IB = flameIntensity(1, 1300); //Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
+    PetscReal kappa = 1; //Kappa is not spatially dependant in this special case
+    PetscReal zBottom = -0.0105; //Prescribe the top and bottom heights for the domain
+    PetscReal zTop = 0.0105;
+
+    PetscReal intensity;
+    PetscReal temperature;
+    PetscReal Ibz;
+
+    ///Get the file path for the output
+    std::filesystem::path radOutput = environment::RunEnvironment::Get().GetOutputDirectory() / "analytical.txt"; //Will contain irradiation at each point
+    std::ofstream stream(radOutput);
+
+    //PetscReal nMu = 1000; //Number of mu for which the angle is computed //1/cos(theta); //Theta never comes up in the actual process of solving so we can just iterate over mu to keep things evenly spaced
+    //PetscReal mu = (nmu / nMu); //From 0 to 1
+    PetscReal nZ = 1000;
+    PetscReal nZp = 1000;
+
+    ///For every z
+    for(double nz = 1; nz < (nZ-1); nz++) {
+        PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
+        Ibz = 0;
+
+        std::vector<PetscReal> Iplus;
+        std::vector<PetscReal> Iminus;
+
+        for(double nzp = 1; nzp < (nZp-1); nzp++) { ///Plus integral goes from bottom to Z
+            PetscReal zp = zBottom + (nzp/nZp)*(z-zBottom); //Calculate the z height
+            ///Get the temperature
+            //PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
+            if(zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
+                temperature = -6.349E6*zp*zp + 2000.0;
+            }else{
+                temperature = -1.179E7*zp*zp + 2000.0;
+            }
+            ///Get the black body intensity here
+            Ibz = flameIntensity(1, temperature);
+            Iplus.push_back(Ibz * eInteg(1,kappa*(z-zp)));
+        }
+        for(double nzp = 1; nzp < (nZp-1); nzp++) { ///Minus integral goes from z to top
+            PetscReal zp = z + (nzp/nZp) * (zTop-z);  // Calculate the zp height
+            /// Get the temperature
+            // PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
+            if (zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
+                temperature = -6.349E6*zp*zp + 2000.0;
+            } else {
+                temperature = -1.179E7*zp*zp + 2000.0;
+            }
+            /// Get the black body intensity here
+            Ibz = flameIntensity(1, temperature);
+            Iminus.push_back(Ibz * eInteg(1,kappa * (zp-z)));
+        }
+
+        PetscReal term1 = IB*eInteg(2,kappa*(z-zBottom));
+        PetscReal term2 = IT*eInteg(2,kappa*(zTop-z));
+        PetscReal term3 = cumSimp(zBottom,z,Iplus);
+        PetscReal term4 = cumSimp(z,zTop,Iminus);
+        G.push_back(2 * pi * (term1 + term2 + term3 + term4));
+        ///Write to the file
+        intensity = 2 * pi * (term1 + term2 + term3 + term4);
+        stream << z;
+        stream << ' ';
+        stream << intensity;
+        stream << '\n';
+    }
+    return G;
 }
 
 ///This function will get the set of ray cells, grab their properties, and march the intensity along them
@@ -637,6 +721,26 @@ PetscReal ablate::radiationSolver::RadiationSolver::castRay(int theta, int phi, 
     return rayIntensity; //Final intensity of the ray as it approaches the current cell
 }
 
+PetscReal ablate::radiationSolver::RadiationSolver::eInteg(int order, double x) {
+    if(x == 0 && order !=1) return 1/(order-1); //Simple solution in this case, exit
+    std::vector<PetscReal> En;
+    double N = 100;
+    for(double n = 1; n < N; n++) {
+        double mu = n/N;
+        if(order == 1) {
+            En.push_back(exp(-x/mu)/mu);
+        }
+        if(order == 2) {
+            En.push_back(exp(-x/mu));
+        }
+        if(order == 3) {
+            En.push_back(exp(-x/mu)*mu);
+        }
+    }
+    PetscReal final = cumSimp(0, 1, En);
+    return final;
+}
+
 PetscReal ablate::radiationSolver::RadiationSolver::flameIntensity(double epsilon, double temperature) { ///Gets the flame intensity based on temperature and emissivity
     return epsilon * sbc * temperature * temperature * temperature * temperature / pi;
 }
@@ -654,21 +758,28 @@ PetscReal ablate::radiationSolver::RadiationSolver::cumSimp(PetscReal a, PetscRe
     ///b-a represents the size of the total domain that is being integrated over
     //PetscReal b = H; //End
     //PetscReal a = 0; //Beginning
-    PetscReal n = static_cast<int>(f.size()); //The number of elements in the vector that is being integrated over
+    PetscReal I;
+    PetscReal n = static_cast<double>(f.size()); //The number of elements in the vector that is being integrated over
+    int margin = 0;
 
     //PetscReal h = (b-a)/n; //Step size
     PetscReal f_sum = 0; //Initialize the sum of all middle elements
 
-    ///Loop through every point except the first and last
-    for (int i = 1; i < (n-1); i++) {
-        if (i%2 == 0 ) {
-            f[i] = 2 * f[i]; //Weight lightly on the border
-        }else {
-            f[i] = 4 * f[i]; //Weight heavily in the center
+    if (a!=b) {
+        ///Loop through every point except the first and last
+        for (int i = margin; i < (n-margin); i++) {
+            if (i%2 == 0 ) {
+                f[i] = 2 * f[i]; //Weight lightly on the border
+            }else {
+                f[i] = 4 * f[i]; //Weight heavily in the center
+            }
+            f_sum += f[i]; //Add this value to the total every time
         }
-        f_sum += f[i]; //Add this value to the total every time
+        //I = ((b - a) / (3 * n)) * (f_sum);  // The ends make it upset, just don't include them :3
+        I = ((b - a) / (3 * n)) * (f[0] + f_sum + f[n]);  // Compute the total final integral
+    }else{
+        I = 0;
     }
-    PetscReal I = ((b - a) / (3 * n)) * (f[0] + f_sum + f[n]); //Compute the total final integral
     return I;
 }
 
