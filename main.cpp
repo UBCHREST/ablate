@@ -1,4 +1,3 @@
-#include <time.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -16,9 +15,6 @@ using namespace ablate;
 const char* replacementInputPrefix = "-yaml::";
 
 int main(int argc, char** args) {
-    // start clock time
-    clock_t start = clock();
-
     // initialize petsc and mpi
     PetscInitialize(&argc, &args, NULL, NULL) >> checkError;
 
@@ -107,9 +103,4 @@ int main(int argc, char** args) {
         }
     }
     PetscFinalize() >> checkError;
-
-    // output runtime
-    clock_t stop = clock();
-    double elapsed = (double)(stop - start) / CLOCKS_PER_SEC;
-    std::cout << "Runtime: " << elapsed << " sec" << std::endl;
 }
