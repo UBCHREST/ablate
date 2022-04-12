@@ -6,7 +6,7 @@
 #include "finiteElement/incompressibleFlowSolver.hpp"
 #include "finiteElement/lowMachFlowFields.hpp"
 #include "gtest/gtest.h"
-#include "incompressibleFlow.h"
+#include "finiteElement/incompressibleFlow.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
 #include "parameters/petscOptionParameters.hpp"

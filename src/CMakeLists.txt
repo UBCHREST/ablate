@@ -1,7 +1,9 @@
 # Setup any ablateLibrary specific dependencies
 ### Ablate Library Setup ###
 add_library(ablateLibrary SHARED "")
-target_link_libraries(ablateLibrary PUBLIC ablateCore)
+
+# Include PETSc and MPI
+target_link_libraries(ablateLibrary PUBLIC PkgConfig::PETSc)
 
 # Get the CPP dependency
 FetchContent_Declare(
@@ -87,7 +89,7 @@ target_link_libraries(ablateLibrary PUBLIC EGADS::EGADS)
 # OpenCASCADE should be built with petsc
 FIND_PACKAGE(OpenCASCADE CONFIG REQUIRED HINTS "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/cmake/opencascade/")
 target_link_libraries(ablateLibrary PUBLIC ${OpenCASCADE_LIBRARIES})
-target_link_directories(ablateCore PUBLIC ${OpenCASCADE_LIBRARY_DIR})
+target_link_directories(ablateLibrary PUBLIC ${OpenCASCADE_LIBRARY_DIR})
 
 ### Load in threads ###
 set(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -139,6 +141,13 @@ endif()
 
 # Allow public access to the header files in the directory
 target_include_directories(ablateLibrary PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+
+# Tag the version file
+configure_file (
+        "version.h.in"
+        "version.h"
+)
+target_include_directories(ablateLibrary PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 target_sources(ablateLibrary
         PUBLIC

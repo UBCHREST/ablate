@@ -47,8 +47,7 @@ function(ablate_default_target_compile_options_cxx target)
 endfunction()
 
 # Load in the subdirectories
-add_subdirectory(ablateCore)
-add_subdirectory(ablateLibrary)
+add_subdirectory(src)
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
@@ -69,3 +68,6 @@ endif ()
 add_executable(ablate main.cpp)
 target_link_libraries(ablate PRIVATE ablateLibrary)
 ablate_default_target_compile_options_cxx(ablate)
+
+# include system specific hacks
+include(systemHacks.cmake)
