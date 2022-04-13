@@ -36,11 +36,11 @@ void ablate::Builder::Run(std::shared_ptr<cppParser::Factory> parser) {
     timeStepper->Solve();
 }
 
-void ablate::Builder::PrintVersion(std::ostream& stream) { stream << ABLATECORE_VERSION; }
+void ablate::Builder::PrintVersion(std::ostream& stream) { stream << ABLATE_VERSION; }
 
 void ablate::Builder::PrintInfo(std::ostream& stream) {
     stream << "ABLATE: " << std::endl;
     stream << '\t' << "Documentation: https://ablate.dev" << std::endl;
     stream << '\t' << "Source: https://github.com/UBCHREST/ablate" << std::endl;
-    stream << '\t' << "Version: " << ABLATECORE_VERSION << std::endl;
+    stream << '\t' << "Version: " << ABLATE_VERSION << std::endl;
 }
