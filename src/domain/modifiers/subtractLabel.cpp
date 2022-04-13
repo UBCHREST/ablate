@@ -47,7 +47,6 @@ void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
     if (subtrahendIS) {
         ISDestroy(&subtrahendIS) >> checkError;
     }
-    DMPlexLabelComplete(dm, differenceLabel) >> checkError;
 }
 std::string ablate::domain::modifiers::SubtractLabel::ToString() const {
     std::string string = "ablate::domain::modifiers::SubtractLabel\n";

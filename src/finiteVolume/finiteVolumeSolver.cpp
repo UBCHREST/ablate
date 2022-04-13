@@ -1209,6 +1209,10 @@ static PetscErrorCode BuildGradientReconstruction_Internal(DM dm, DMLabel region
         PetscCheck(usedFaces, PETSC_COMM_SELF, PETSC_ERR_USER, "Mesh contains isolated cell (no neighbors). Is it intentional?");
         PetscCall(PetscFVComputeGradient(fvm, usedFaces, dx, grad));
         for (f = 0, usedFaces = 0; f < numFaces; ++f) {
+            if (regionLabel) {
+                PetscCall(DMLabelGetValue(regionLabel, faces[f], &labelValue));
+                if (labelValue != regionValue) continue;
+            }
             PetscCall(DMLabelGetValue(ghostLabel, faces[f], &ghost));
             PetscCall(DMIsBoundaryPoint(dm, faces[f], &boundary));
             if ((ghost >= 0) || boundary) continue;
