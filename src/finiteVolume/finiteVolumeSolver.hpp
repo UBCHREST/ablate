@@ -78,7 +78,14 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     // static function to update the flowfield
     static void EnforceTimeStep(TS ts, ablate::solver::Solver& solver);
 
+    // store the boundary conditions
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
+
+    //! store the dmGrad, these are specific to this finite volume solver
+    std::vector<DM> gradientDms;
+
+    //! store the gradient dm for each aux variable
+    std::vector<DM> auxGradientDms;
 
     /**
      * Computes the flux across each face in th region
@@ -93,17 +100,6 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     void ComputeFieldGradients(const domain::Field& field, Vec xLocalVec, Vec& gradLocVec, DM& dmGrad);
 
     /**
-     * Retrieve precomputed cell geometry for the specified field.  Each field will have different gradDM
-     * @param dm
-     * @param fv
-     * @param cellgeom
-     * @param facegeom
-     * @param gradDM
-     * @return
-     */
-    PetscErrorCode GetMultiFieldDataFVM(DM dm, PetscFV fv, Vec* cellgeom, Vec* facegeom, DM* gradDM);
-
-    /**
      * Computes the dmGrad over this region
      * @param dm
      * @param fvm
@@ -112,7 +108,8 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param dmGrad
      * @return
      */
-    PetscErrorCode ComputeGradientFVM(DM dm, PetscFV fvm, Vec faceGeometry, Vec cellGeometry, DM* dmGrad);
+    static PetscErrorCode ComputeGradientFVM(DM dm, DMLabel regionLabel, PetscInt regionValue, PetscFV fvm, Vec faceGeometry, Vec cellGeometry, DM* dmGrad);
+
     /**
      * support call to project to a single face from a side
      */
@@ -134,18 +131,19 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
                                  std::vector<DM>& dmAuxGrads, std::vector<const PetscScalar*>& locAuxGradArrays, PetscScalar* locFArray);
 
     /**
-     * Static call to make sure local ghost boundary have valid gradient values
+     * call to make sure local ghost boundary have valid gradient values
      * @param dm
      * @param auxFvm
      * @param localXVec
      * @param gradLocalVec
      * @return
      */
-    static PetscErrorCode FillGradientBoundary(DM dm, PetscFV auxFvm, Vec localXVec, Vec gradLocalVec);
+    PetscErrorCode FillGradientBoundary(DM dm, PetscFV auxFvm, Vec localXVec, Vec gradLocalVec);
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep = false);
+    ~FiniteVolumeSolver() override;
 
     /** SubDomain Register and Setup **/
     void Setup() override;

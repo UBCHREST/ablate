@@ -14,7 +14,22 @@ ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverI
       processes(std::move(processes)),
       boundaryConditions(std::move(boundaryConditions)) {}
 
+ablate::finiteVolume::FiniteVolumeSolver::~FiniteVolumeSolver() {
+    for (auto& dm : gradientDms) {
+        if (dm) {
+            DMDestroy(&dm) >> checkError;
+        }
+    }
+    for (auto& dm : auxGradientDms) {
+        if (dm) {
+            DMDestroy(&dm) >> checkError;
+        }
+    }
+}
+
 void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
+    ablate::solver::CellSolver::Setup();
+
     // march over process and link to the flow
     for (const auto& process : processes) {
         process->Initialize(*this);
@@ -73,6 +88,38 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
     if (!timeStepFunctions.empty() && computePhysicsTimeStep) {
         RegisterPreStep(EnforceTimeStep);
     }
+
+    auto getGradientDm = [this](const domain::Field& fieldInfo, std::vector<DM>& gradDMs) {
+        auto petscField = subDomain->GetPetscFieldObject(fieldInfo);
+        auto petscFieldFV = (PetscFV)petscField;
+
+        PetscBool computeGradients;
+        PetscFVGetComputeGradients(petscFieldFV, &computeGradients) >> checkError;
+
+        if (computeGradients) {
+            DM dmGradInt;
+
+            DMLabel regionLabel = nullptr;
+            PetscInt regionValue = PETSC_DECIDE;
+            if (const auto& region = GetRegion()) {
+                DMGetLabel(subDomain->GetDM(), region->GetName().c_str(), &regionLabel);
+                regionValue = region->GetValue();
+            }
+
+            ComputeGradientFVM(subDomain->GetFieldDM(fieldInfo), regionLabel, regionValue, petscFieldFV, faceGeomVec, cellGeomVec, &dmGradInt) >> checkError;
+            gradDMs.push_back(dmGradInt);
+        } else {
+            gradDMs.push_back(nullptr);
+        }
+    };
+
+    // Compute the gradient dm for each field that supports it
+    for (const auto& fieldInfo : subDomain->GetFields()) {
+        getGradientDm(fieldInfo, gradientDms);
+    }
+    for (const auto& fieldInfo : subDomain->GetFields(domain::FieldLocation::AUX)) {
+        getGradientDm(fieldInfo, auxGradientDms);
+    }
 }
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
@@ -83,10 +130,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
     auto dm = subDomain->GetDM();
     auto ds = subDomain->GetDiscreteSystem();
     /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
-    Vec facegeom, cellgeom;
-    ierr = DMPlexGetGeometryFVM(dm, &facegeom, &cellgeom, nullptr);
-    CHKERRQ(ierr);
-    ierr = ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(dm, ds, PETSC_FALSE, locXVec, time, facegeom, cellgeom, nullptr);
+    ierr = ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(dm, ds, PETSC_FALSE, locXVec, time, faceGeomVec, cellGeomVec, nullptr);
     CHKERRQ(ierr);
 
     try {
@@ -214,33 +258,29 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
 
     /* 2: Get geometric data */
     // We can use a single call for the geometry data because it does not depend on the fv object
-    Vec cellGeometryFVM = nullptr, faceGeometryFVM = nullptr;
     const PetscScalar* cellGeomArray = nullptr;
     const PetscScalar* faceGeomArray = nullptr;
-    DMPlexGetGeometryFVM(dm, &faceGeometryFVM, &cellGeometryFVM, nullptr) >> checkError;
-    VecGetArrayRead(cellGeometryFVM, &cellGeomArray) >> checkError;
-    VecGetArrayRead(faceGeometryFVM, &faceGeomArray) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
     DM faceDM, cellDM;
-    VecGetDM(faceGeometryFVM, &faceDM) >> checkError;
-    VecGetDM(cellGeometryFVM, &cellDM) >> checkError;
+    VecGetDM(faceGeomVec, &faceDM) >> checkError;
+    VecGetDM(cellGeomVec, &cellDM) >> checkError;
 
     // there must be a separate gradient vector/dm for field because they can be different sizes
-    std::vector<DM> dmGrads(nf, nullptr);
     std::vector<Vec> locGradVecs(nf, nullptr);
-    std::vector<DM> dmAuxGrads(naf, nullptr);
     std::vector<Vec> locAuxGradVecs(naf, nullptr);
 
     /* Reconstruct and limit cell gradients */
     // for each field compute the gradient in the localGrads vector
     for (const auto& field : subDomain->GetFields()) {
-        ComputeFieldGradients(field, locXVec, locGradVecs[field.subId], dmGrads[field.subId]);
+        ComputeFieldGradients(field, locXVec, locGradVecs[field.subId], gradientDms[field.subId]);
     }
 
     // do the same for the aux fields
     for (const auto& field : subDomain->GetFields(domain::FieldLocation::AUX)) {
-        ComputeFieldGradients(field, locAuxField, locAuxGradVecs[field.subId], dmAuxGrads[field.subId]);
+        ComputeFieldGradients(field, locAuxField, locAuxGradVecs[field.subId], auxGradientDms[field.subId]);
 
-        if (dmAuxGrads[field.subId]) {
+        if (auxGradientDms[field.subId]) {
             auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
             FillGradientBoundary(dmAux, fvm, locAuxField, locAuxGradVecs[field.subId]) >> checkError;
         }
@@ -273,11 +313,11 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
     // Compute the source terms from flux across the interface
     if (!this->rhsFluxFunctionDescriptions.empty()) {
         ComputeFluxSourceTerms(
-            dm, ds, totDim, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, dmGrads, locGradArrays, dmAuxGrads, locAuxGradArrays, locFArray);
+            dm, ds, totDim, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, gradientDms, locGradArrays, auxGradientDms, locAuxGradArrays, locFArray);
     }
     if (!this->rhsPointFunctionDescriptions.empty()) {
         ComputePointSourceTerms(
-            dm, ds, totDim, time, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, dmGrads, locGradArrays, dmAuxGrads, locAuxGradArrays, locFArray);
+            dm, ds, totDim, time, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, gradientDms, locGradArrays, auxGradientDms, locAuxGradArrays, locFArray);
     }
 
     // cleanup (restore access to locGradVecs, locAuxGradVecs with DMRestoreLocalVector)
@@ -288,19 +328,19 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
     for (const auto& field : subDomain->GetFields()) {
         if (locGradVecs[field.subId]) {
             VecRestoreArrayRead(locGradVecs[field.subId], &locGradArrays[field.subId]) >> checkError;
-            DMRestoreLocalVector(dmGrads[field.subId], &locGradVecs[field.subId]) >> checkError;
+            DMRestoreLocalVector(gradientDms[field.subId], &locGradVecs[field.subId]) >> checkError;
         }
     }
     for (const auto& field : subDomain->GetFields(domain::FieldLocation::AUX)) {
         if (locAuxGradVecs[field.subId]) {
             VecRestoreArrayRead(locAuxGradVecs[field.subId], &locAuxGradArrays[field.subId]) >> checkError;
-            DMRestoreLocalVector(dmAuxGrads[field.subId], &locAuxGradVecs[field.subId]) >> checkError;
+            DMRestoreLocalVector(auxGradientDms[field.subId], &locAuxGradVecs[field.subId]) >> checkError;
         }
     }
 
     VecRestoreArray(locF, &locFArray) >> checkError;
-    VecRestoreArrayRead(faceGeometryFVM, (const PetscScalar**)&cellGeomArray) >> checkError;
-    VecRestoreArrayRead(cellGeometryFVM, (const PetscScalar**)&faceGeomArray) >> checkError;
+    VecRestoreArrayRead(faceGeomVec, (const PetscScalar**)&cellGeomArray) >> checkError;
+    VecRestoreArrayRead(cellGeomVec, (const PetscScalar**)&faceGeomArray) >> checkError;
 }
 
 /**
@@ -365,9 +405,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
     auto dm = subDomain->GetFieldDM(field);
 
     // Get the dm for this grad field
-    Vec faceGeometryVec;
-    Vec cellGeometryVec;
-    GetMultiFieldDataFVM(dm, fvm, &cellGeometryVec, &faceGeometryVec, &dmGrad) >> checkError;
     // If there is no grad, return
     if (!dmGrad) {
         return;
@@ -388,8 +425,8 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
     // Get the face geometry
     DM dmFace;
     const PetscScalar* faceGeometryArray;
-    VecGetDM(faceGeometryVec, &dmFace) >> checkError;
-    VecGetArrayRead(faceGeometryVec, &faceGeometryArray);
+    VecGetDM(faceGeomVec, &dmFace) >> checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeometryArray);
 
     // extract the local x array
     const PetscScalar* xLocalArray;
@@ -465,8 +502,8 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
         // Get the cell geometry
         DM dmCell;
         const PetscScalar* cellGeometryArray;
-        VecGetDM(cellGeometryVec, &dmCell) >> checkError;
-        VecGetArrayRead(cellGeometryVec, &cellGeometryArray);
+        VecGetDM(cellGeomVec, &dmCell) >> checkError;
+        VecGetArrayRead(cellGeomVec, &cellGeometryArray);
 
         // create a temp work array
         PetscReal* cellPhi;
@@ -510,7 +547,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
         // clean up the limiter work
         DMRestoreWorkArray(dm, dof, MPIU_REAL, &cellPhi) >> checkError;
         RestoreRange(cellIS, cStart, cEnd, cells);
-        VecRestoreArrayRead(cellGeometryVec, &cellGeometryArray);
+        VecRestoreArrayRead(cellGeomVec, &cellGeometryArray);
     }
     // Communicate gradient values
     VecRestoreArray(gradGlobVec, &gradGlobArray) >> checkError;
@@ -519,7 +556,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFieldGradients(const ablat
 
     // cleanup
     VecRestoreArrayRead(xLocalVec, &xLocalArray) >> checkError;
-    VecRestoreArrayRead(faceGeometryVec, &faceGeometryArray) >> checkError;
+    VecRestoreArrayRead(faceGeomVec, &faceGeometryArray) >> checkError;
     RestoreRange(faceIS, fStart, fEnd, faces);
     DMRestoreGlobalVector(dmGrad, &gradGlobVec) >> checkError;
 }
@@ -962,9 +999,6 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::FillGradientBoundary(DM
     CHKERRQ(ierr);
 
     // Get the fvm face and cell geometry
-    Vec cellGeomVec = nullptr; /* vector of structs related to cell geometry*/
-    Vec faceGeomVec = nullptr; /* vector of structs related to face geometry*/
-    ierr = DMPlexGetGeometryFVM(dm, &faceGeomVec, &cellGeomVec, nullptr);
     CHKERRQ(ierr);
 
     // get the dm for each geom type
@@ -1115,180 +1149,248 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::FillGradientBoundary(DM
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::GetMultiFieldDataFVM(DM dm, PetscFV fv, Vec* cellgeom, Vec* facegeom, DM* gradDM) {
-    PetscObject cellgeomobj, facegeomobj;
-    PetscErrorCode ierr;
+static PetscErrorCode BuildGradientReconstruction_Internal(DM dm, DMLabel regionLabel, PetscInt regionValue, PetscFV fvm, DM dmFace, PetscScalar* fgeom, DM dmCell, PetscScalar* cgeom) {
+    DMLabel ghostLabel;
+    PetscScalar *dx, *grad, **gref;
+    PetscInt dim, cStart, cEnd, c, cEndInterior, maxNumFaces;
 
     PetscFunctionBegin;
-    ierr = PetscObjectQuery((PetscObject)dm, "DMPlex_cellgeom_fvm", &cellgeomobj);
-    CHKERRQ(ierr);
-    if (!cellgeomobj) {
-        Vec cellgeomInt, facegeomInt;
+    PetscCall(DMGetDimension(dm, &dim));
+    PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));
+    PetscCall(DMPlexGetGhostCellStratum(dm, &cEndInterior, NULL));
+    cEndInterior = cEndInterior < 0 ? cEnd : cEndInterior;
+    PetscCall(DMPlexGetMaxSizes(dm, &maxNumFaces, NULL));
+    PetscCall(PetscFVLeastSquaresSetMaxFaces(fvm, maxNumFaces));
+    PetscCall(DMGetLabel(dm, "ghost", &ghostLabel));
+    PetscCall(PetscMalloc3(maxNumFaces * dim, &dx, maxNumFaces * dim, &grad, maxNumFaces, &gref));
+    for (c = cStart; c < cEndInterior; c++) {
+        const PetscInt* faces;
+        PetscInt numFaces, usedFaces, f, d;
+        PetscFVCellGeom* cg;
+        PetscBool boundary;
+        PetscInt ghost;
+        PetscInt labelValue;
 
-        ierr = DMPlexComputeGeometryFVM(dm, &cellgeomInt, &facegeomInt);
-        CHKERRQ(ierr);
-        ierr = PetscObjectCompose((PetscObject)dm, "DMPlex_cellgeom_fvm", (PetscObject)cellgeomInt);
-        CHKERRQ(ierr);
-        ierr = PetscObjectCompose((PetscObject)dm, "DMPlex_facegeom_fvm", (PetscObject)facegeomInt);
-        CHKERRQ(ierr);
-        ierr = VecDestroy(&cellgeomInt);
-        CHKERRQ(ierr);
-        ierr = VecDestroy(&facegeomInt);
-        CHKERRQ(ierr);
-        ierr = PetscObjectQuery((PetscObject)dm, "DMPlex_cellgeom_fvm", &cellgeomobj);
-        CHKERRQ(ierr);
-    }
-    ierr = PetscObjectQuery((PetscObject)dm, "DMPlex_facegeom_fvm", &facegeomobj);
-    CHKERRQ(ierr);
-    if (cellgeom) *cellgeom = (Vec)cellgeomobj;
-    if (facegeom) *facegeom = (Vec)facegeomobj;
-    if (gradDM) {
-        PetscObject gradobj;
-        PetscBool computeGradients;
+        // do not attempt to compute a gradient reconstruction stencil in a ghost cell.  It will never be used
+        PetscCall(DMLabelGetValue(ghostLabel, c, &ghost));
+        if (ghost >= 0) continue;
 
-        ierr = PetscFVGetComputeGradients(fv, &computeGradients);
-        CHKERRQ(ierr);
-        if (!computeGradients) {
-            *gradDM = nullptr;
-            PetscFunctionReturn(0);
+        if (regionLabel) {
+            PetscCall(DMLabelGetValue(regionLabel, c, &labelValue));
+            if (labelValue != regionValue) continue;
         }
 
-        // Get the petscId object for this fv
-        PetscObjectId fvId;
-        ierr = PetscObjectGetId((PetscObject)fv, &fvId);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexPointLocalRead(dmCell, c, cgeom, &cg));
+        PetscCall(DMPlexGetConeSize(dm, c, &numFaces));
+        PetscCall(DMPlexGetCone(dm, c, &faces));
+        PetscCheckFalse(numFaces < dim, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Cell %D has only %D faces, not enough for gradient reconstruction", c, numFaces);
+        for (f = 0, usedFaces = 0; f < numFaces; ++f) {
+            PetscFVCellGeom* cg1;
+            PetscFVFaceGeom* fg;
+            const PetscInt* fcells;
+            PetscInt ncell, side;
 
-        char dmGradName[PETSC_MAX_OPTION_NAME];
-        ierr = PetscSNPrintf(dmGradName, PETSC_MAX_OPTION_NAME, "DMPlex_dmgrad_fvm_%" PRId64, fvId);
-        CHKERRQ(ierr);
+            if (regionLabel) {
+                PetscCall(DMLabelGetValue(regionLabel, faces[f], &labelValue));
+                if (labelValue != regionValue) continue;
+            }
 
-        ierr = PetscObjectQuery((PetscObject)dm, dmGradName, &gradobj);
-        CHKERRQ(ierr);
-        if (!gradobj) {
-            DM dmGradInt;
-
-            ierr = DMPlexComputeGradientFVM(dm, fv, (Vec)facegeomobj, (Vec)cellgeomobj, &dmGradInt);
-            CHKERRQ(ierr);
-            ierr = PetscObjectCompose((PetscObject)dm, dmGradName, (PetscObject)dmGradInt);
-            CHKERRQ(ierr);
-            ierr = DMDestroy(&dmGradInt);
-            CHKERRQ(ierr);
-            ierr = PetscObjectQuery((PetscObject)dm, dmGradName, &gradobj);
-            CHKERRQ(ierr);
+            PetscCall(DMLabelGetValue(ghostLabel, faces[f], &ghost));
+            PetscCall(DMIsBoundaryPoint(dm, faces[f], &boundary));
+            if ((ghost >= 0) || boundary) continue;
+            PetscCall(DMPlexGetSupport(dm, faces[f], &fcells));
+            side = (c != fcells[0]); /* c is on left=0 or right=1 of face */
+            ncell = fcells[!side];   /* the neighbor */
+            PetscCall(DMPlexPointLocalRef(dmFace, faces[f], fgeom, &fg));
+            PetscCall(DMPlexPointLocalRead(dmCell, ncell, cgeom, &cg1));
+            for (d = 0; d < dim; ++d) dx[usedFaces * dim + d] = cg1->centroid[d] - cg->centroid[d];
+            gref[usedFaces++] = fg->grad[side]; /* Gradient reconstruction term will go here */
         }
-        *gradDM = (DM)gradobj;
+        PetscCheck(usedFaces, PETSC_COMM_SELF, PETSC_ERR_USER, "Mesh contains isolated cell (no neighbors). Is it intentional?");
+        PetscCall(PetscFVComputeGradient(fvm, usedFaces, dx, grad));
+        for (f = 0, usedFaces = 0; f < numFaces; ++f) {
+            PetscCall(DMLabelGetValue(ghostLabel, faces[f], &ghost));
+            PetscCall(DMIsBoundaryPoint(dm, faces[f], &boundary));
+            if ((ghost >= 0) || boundary) continue;
+            for (d = 0; d < dim; ++d) gref[usedFaces][d] = grad[usedFaces * dim + d];
+            ++usedFaces;
+        }
     }
+    PetscCall(PetscFree3(dx, grad, gref));
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeGradientFVM(DM dm, PetscFV fvm, Vec faceGeometry, Vec cellGeometry, DM* dmGrad) {
+static PetscErrorCode BuildGradientReconstruction_Internal_Tree(DM dm, DMLabel regionLabel, PetscInt regionValue, PetscFV fvm, DM dmFace, PetscScalar* fgeom, DM dmCell, PetscScalar* cgeom) {
+    DMLabel ghostLabel;
+    PetscScalar *dx, *grad, **gref;
+    PetscInt dim, cStart, cEnd, c, cEndInterior, fStart, fEnd, f, nStart, nEnd, maxNumFaces = 0;
+    PetscSection neighSec;
+    PetscInt(*neighbors)[2];
+    PetscInt* counter;
+
+    PetscFunctionBegin;
+    PetscCall(DMGetDimension(dm, &dim));
+    PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));
+    PetscCall(DMPlexGetGhostCellStratum(dm, &cEndInterior, NULL));
+    if (cEndInterior < 0) cEndInterior = cEnd;
+    PetscCall(PetscSectionCreate(PetscObjectComm((PetscObject)dm), &neighSec));
+    PetscCall(PetscSectionSetChart(neighSec, cStart, cEndInterior));
+    PetscCall(DMPlexGetHeightStratum(dm, 1, &fStart, &fEnd));
+    PetscCall(DMGetLabel(dm, "ghost", &ghostLabel));
+    for (f = fStart; f < fEnd; f++) {
+        const PetscInt* fcells;
+        PetscBool boundary;
+        PetscInt ghost = -1;
+        PetscInt numChildren, numCells, labelValue;
+
+        if (ghostLabel) PetscCall(DMLabelGetValue(ghostLabel, f, &ghost));
+        PetscCall(DMIsBoundaryPoint(dm, f, &boundary));
+        PetscCall(DMPlexGetTreeChildren(dm, f, &numChildren, NULL));
+        if ((ghost >= 0) || boundary || numChildren) continue;
+
+        if (regionLabel) {
+            PetscCall(DMLabelGetValue(regionLabel, f, &labelValue));
+            if (labelValue != regionValue) continue;
+        }
+
+        PetscCall(DMPlexGetSupportSize(dm, f, &numCells));
+        if (numCells == 2) {
+            PetscCall(DMPlexGetSupport(dm, f, &fcells));
+            for (c = 0; c < 2; c++) {
+                PetscInt cell = fcells[c];
+
+                if (cell >= cStart && cell < cEndInterior) {
+                    PetscCall(PetscSectionAddDof(neighSec, cell, 1));
+                }
+            }
+        }
+    }
+    PetscCall(PetscSectionSetUp(neighSec));
+    PetscCall(PetscSectionGetMaxDof(neighSec, &maxNumFaces));
+    PetscCall(PetscFVLeastSquaresSetMaxFaces(fvm, maxNumFaces));
+    nStart = 0;
+    PetscCall(PetscSectionGetStorageSize(neighSec, &nEnd));
+    PetscCall(PetscMalloc1((nEnd - nStart), &neighbors));
+    PetscCall(PetscCalloc1((cEndInterior - cStart), &counter));
+    for (f = fStart; f < fEnd; f++) {
+        const PetscInt* fcells;
+        PetscBool boundary;
+        PetscInt ghost = -1;
+        PetscInt numChildren, numCells, labelValue;
+
+        if (ghostLabel) PetscCall(DMLabelGetValue(ghostLabel, f, &ghost));
+        PetscCall(DMIsBoundaryPoint(dm, f, &boundary));
+        PetscCall(DMPlexGetTreeChildren(dm, f, &numChildren, NULL));
+        if ((ghost >= 0) || boundary || numChildren) continue;
+
+        if (regionLabel) {
+            PetscCall(DMLabelGetValue(regionLabel, f, &labelValue));
+            if (labelValue != regionValue) continue;
+        }
+
+        PetscCall(DMPlexGetSupportSize(dm, f, &numCells));
+        if (numCells == 2) {
+            PetscCall(DMPlexGetSupport(dm, f, &fcells));
+            for (c = 0; c < 2; c++) {
+                PetscInt cell = fcells[c], off;
+
+                if (regionLabel) {
+                    PetscCall(DMLabelGetValue(regionLabel, c, &labelValue));
+                    if (labelValue != regionValue) continue;
+                }
+
+                if (cell >= cStart && cell < cEndInterior) {
+                    PetscCall(PetscSectionGetOffset(neighSec, cell, &off));
+                    off += counter[cell - cStart]++;
+                    neighbors[off][0] = f;
+                    neighbors[off][1] = fcells[1 - c];
+                }
+            }
+        }
+    }
+    PetscCall(PetscFree(counter));
+    PetscCall(PetscMalloc3(maxNumFaces * dim, &dx, maxNumFaces * dim, &grad, maxNumFaces, &gref));
+    for (c = cStart; c < cEndInterior; c++) {
+        PetscInt numFaces, d, off, labelValue, ghost = -1;
+        PetscFVCellGeom* cg;
+
+        PetscCall(DMPlexPointLocalRead(dmCell, c, cgeom, &cg));
+        PetscCall(PetscSectionGetDof(neighSec, c, &numFaces));
+        PetscCall(PetscSectionGetOffset(neighSec, c, &off));
+
+        if (regionLabel) {
+            PetscCall(DMLabelGetValue(regionLabel, c, &labelValue));
+            if (labelValue != regionValue) continue;
+        }
+
+        // do not attempt to compute a gradient reconstruction stencil in a ghost cell.  It will never be used
+        if (ghostLabel) PetscCall(DMLabelGetValue(ghostLabel, c, &ghost));
+        if (ghost >= 0) continue;
+
+        PetscCheckFalse(numFaces < dim, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Cell %D has only %D faces, not enough for gradient reconstruction", c, numFaces);
+        for (f = 0; f < numFaces; ++f) {
+            PetscFVCellGeom* cg1;
+            PetscFVFaceGeom* fg;
+            const PetscInt* fcells;
+            PetscInt ncell, side, nface;
+
+            if (regionLabel) {
+                PetscCall(DMLabelGetValue(regionLabel, f, &labelValue));
+                if (labelValue != regionValue) continue;
+            }
+
+            nface = neighbors[off + f][0];
+            ncell = neighbors[off + f][1];
+            PetscCall(DMPlexGetSupport(dm, nface, &fcells));
+            side = (c != fcells[0]);
+            PetscCall(DMPlexPointLocalRef(dmFace, nface, fgeom, &fg));
+            PetscCall(DMPlexPointLocalRead(dmCell, ncell, cgeom, &cg1));
+            for (d = 0; d < dim; ++d) dx[f * dim + d] = cg1->centroid[d] - cg->centroid[d];
+            gref[f] = fg->grad[side]; /* Gradient reconstruction term will go here */
+        }
+        PetscCall(PetscFVComputeGradient(fvm, numFaces, dx, grad));
+        for (f = 0; f < numFaces; ++f) {
+            for (d = 0; d < dim; ++d) gref[f][d] = grad[f * dim + d];
+        }
+    }
+    PetscCall(PetscFree3(dx, grad, gref));
+    PetscCall(PetscSectionDestroy(&neighSec));
+    PetscCall(PetscFree(neighbors));
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeGradientFVM(DM dm, DMLabel regionLabel, PetscInt regionValue, PetscFV fvm, Vec faceGeometry, Vec cellGeometry, DM* dmGrad) {
     DM dmFace, dmCell;
     PetscScalar *fgeom, *cgeom;
     PetscSection sectionGrad, parentSection;
-    PetscInt dim, pdim, cDmStart, cDmEnd, c;
+    PetscInt dim, pdim, cStart, cEnd, cEndInterior, c;
 
     PetscFunctionBegin;
     PetscCall(DMGetDimension(dm, &dim));
     PetscCall(PetscFVGetNumComponents(fvm, &pdim));
-    PetscCall(DMPlexGetHeightStratum(dm, 0, &cDmStart, &cDmEnd));
+    PetscCall(DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd));
+    PetscCall(DMPlexGetGhostCellStratum(dm, &cEndInterior, NULL));
     /* Construct the interpolant corresponding to each face from the least-square solution over the cell neighborhood */
     PetscCall(VecGetDM(faceGeometry, &dmFace));
     PetscCall(VecGetDM(cellGeometry, &dmCell));
     PetscCall(VecGetArray(faceGeometry, &fgeom));
     PetscCall(VecGetArray(cellGeometry, &cgeom));
     PetscCall(DMPlexGetTree(dm, &parentSection, NULL, NULL, NULL, NULL));
-
-    // Get the label for this region
-    DMLabel solverRegionLabel = nullptr;
-    PetscInt solverRegionValue = -1;
-    if (auto region = GetRegion()) {
-        PetscCall(DMGetLabel(subDomain->GetDM(), region->GetName().c_str(), &solverRegionLabel));
-        solverRegionValue = region->GetId();
-    }
-
     if (!parentSection) {
-        DMLabel ghostLabel;
-        PetscScalar *dx, *grad, **gref;
-        PetscInt maxNumFaces;
-
-        IS cellIS;
-        PetscInt cStart, cEnd;
-        const PetscInt* cells;
-        GetCellRange(cellIS, cStart, cEnd, cells);
-
-        PetscCall(DMPlexGetMaxSizes(dm, &maxNumFaces, NULL));
-        PetscCall(PetscFVLeastSquaresSetMaxFaces(fvm, maxNumFaces));
-        PetscCall(DMGetLabel(dm, "ghost", &ghostLabel));
-        PetscCall(PetscMalloc3(maxNumFaces * dim, &dx, maxNumFaces * dim, &grad, maxNumFaces, &gref));
-        for (c = cStart; c < cEnd; ++c) {
-            PetscInt cell = cells ? cells[c] : c;
-            const PetscInt* faces;
-            PetscInt numFaces, usedFaces, f, d;
-            PetscFVCellGeom* cg;
-            PetscBool boundary;
-            PetscInt ghost;
-
-            // do not attempt to compute a gradient reconstruction stencil in a ghost cell.  It will never be used
-            PetscCall(DMLabelGetValue(ghostLabel, cell, &ghost));
-            if (ghost >= 0) continue;
-
-            PetscCall(DMPlexPointLocalRead(dmCell, cell, cgeom, &cg));
-            PetscCall(DMPlexGetConeSize(dm, cell, &numFaces));
-            PetscCall(DMPlexGetCone(dm, cell, &faces));
-            PetscCheckFalse(numFaces < dim, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Cell %D has only %D faces, not enough for gradient reconstruction", c, numFaces);
-            for (f = 0, usedFaces = 0; f < numFaces; ++f) {
-                PetscFVCellGeom* cg1;
-                PetscFVFaceGeom* fg;
-                const PetscInt* fcells;
-                PetscInt ncell, side;
-
-                // make sure that this face is in this solver region
-                if (solverRegionLabel) {
-                    PetscInt faceRegionValue;
-                    PetscCall(DMLabelGetValue(solverRegionLabel, faces[f], &faceRegionValue));
-                    if (faceRegionValue != solverRegionValue) {
-                        continue;
-                    }
-                    throw std::invalid_argument("codeCalled");
-                }
-
-                PetscCall(DMLabelGetValue(ghostLabel, faces[f], &ghost));
-                PetscCall(DMIsBoundaryPoint(dm, faces[f], &boundary));
-                if ((ghost >= 0) || boundary) continue;
-                PetscCall(DMPlexGetSupport(dm, faces[f], &fcells));
-                side = (cell != fcells[0]); /* c is on left=0 or right=1 of face */
-                ncell = fcells[!side];      /* the neighbor */
-                PetscCall(DMPlexPointLocalRef(dmFace, faces[f], fgeom, &fg));
-                PetscCall(DMPlexPointLocalRead(dmCell, ncell, cgeom, &cg1));
-                for (d = 0; d < dim; ++d) dx[usedFaces * dim + d] = cg1->centroid[d] - cg->centroid[d];
-                gref[usedFaces++] = fg->grad[side]; /* Gradient reconstruction term will go here */
-            }
-            PetscCheck(usedFaces, PETSC_COMM_SELF, PETSC_ERR_USER, "Mesh contains isolated cell (no neighbors). Is it intentional?");
-            PetscCall(PetscFVComputeGradient(fvm, usedFaces, dx, grad));
-            for (f = 0, usedFaces = 0; f < numFaces; ++f) {
-                PetscCall(DMLabelGetValue(ghostLabel, faces[f], &ghost));
-                PetscCall(DMIsBoundaryPoint(dm, faces[f], &boundary));
-                if ((ghost >= 0) || boundary) continue;
-                for (d = 0; d < dim; ++d) gref[usedFaces][d] = grad[usedFaces * dim + d];
-                ++usedFaces;
-            }
-        }
-        PetscCall(PetscFree3(dx, grad, gref));
-        RestoreRange(cellIS, cStart, cEnd, cells);
+        PetscCall(BuildGradientReconstruction_Internal(dm, regionLabel, regionValue, fvm, dmFace, fgeom, dmCell, cgeom));
     } else {
-        throw std::invalid_argument("ablate::finiteVolume::FiniteVolumeSolver::ComputeGradientFVM not supported for for tree structure");
+        PetscCall(BuildGradientReconstruction_Internal_Tree(dm, regionLabel, regionValue, fvm, dmFace, fgeom, dmCell, cgeom));
     }
     PetscCall(VecRestoreArray(faceGeometry, &fgeom));
     PetscCall(VecRestoreArray(cellGeometry, &cgeom));
     /* Create storage for gradients */
     PetscCall(DMClone(dm, dmGrad));
     PetscCall(PetscSectionCreate(PetscObjectComm((PetscObject)dm), &sectionGrad));
-    PetscCall(PetscSectionSetChart(sectionGrad, cDmStart, cDmEnd));
-    for (c = cDmStart; c < cDmEnd; ++c) PetscCall(PetscSectionSetDof(sectionGrad, c, pdim * dim));
+    PetscCall(PetscSectionSetChart(sectionGrad, cStart, cEnd));
+    for (c = cStart; c < cEnd; ++c) PetscCall(PetscSectionSetDof(sectionGrad, c, pdim * dim));
     PetscCall(PetscSectionSetUp(sectionGrad));
     PetscCall(DMSetLocalSection(*dmGrad, sectionGrad));
     PetscCall(PetscSectionDestroy(&sectionGrad));
-    PetscFunctionReturn(0);
     PetscFunctionReturn(0);
 }
 

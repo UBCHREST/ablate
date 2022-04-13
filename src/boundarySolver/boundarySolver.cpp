@@ -56,6 +56,8 @@ static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel bounda
 }
 
 void ablate::boundarySolver::BoundarySolver::Setup() {
+    ablate::solver::CellSolver::Setup();
+
     // march over process and link to the flow
     for (auto& process : boundaryProcesses) {
         process->Initialize(*this);
@@ -79,8 +81,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     }
 
     // Get the geometry for the mesh
-    Vec faceGeomVec, cellGeomVec;
-    DMPlexGetGeometryFVM(subDomain->GetDM(), &faceGeomVec, &cellGeomVec, nullptr) >> checkError;
     DM faceDM, cellDM;
     VecGetDM(faceGeomVec, &faceDM) >> checkError;
     VecGetDM(cellGeomVec, &cellDM) >> checkError;
@@ -282,11 +282,8 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
     // Extract the cell geometry, and the dm that holds the information
     auto dm = subDomain->GetDM();
     auto auxDM = subDomain->GetAuxDM();
-    Vec cellGeomVec;
     DM dmCell;
     const PetscScalar* cellGeomArray;
-    ierr = DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr);
-    CHKERRQ(ierr);
     ierr = VecGetDM(cellGeomVec, &dmCell);
     CHKERRQ(ierr);
     ierr = VecGetArrayRead(cellGeomVec, &cellGeomArray);
