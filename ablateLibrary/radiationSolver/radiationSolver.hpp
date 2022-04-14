@@ -154,7 +154,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscReal mag(std::vector<PetscReal> vector);
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rayInit();
     void raysGetLoc(std::vector<std::vector<std::vector<std::vector<PetscInt>>>>);
-    PetscReal cumSimp(PetscReal a, PetscReal b, std::vector<double> f);
+    PetscReal cSimp(PetscReal a, PetscReal b, std::vector<double> f);
     std::vector<PetscReal> solveParallelPlates();
     std::vector<PetscReal> reallySolveParallelPlates();
     PetscReal eInteg(int order, double x);
@@ -170,7 +170,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
 
     PetscInt nSteps = 100; //number of steps that each ray will go through //This won't be used
     PetscReal h = 0.002; //This is the DEFAULT step size which should be set by the user input
-    PetscInt nTheta = 1000; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscInt nTheta = 50; //The DEFAULT number of angles to solve with, should be given by user input
     PetscInt nPhi = 1; //The DEFAULT number of angles to solve with, should be given by user input
 
     //PetscReal radGain;
