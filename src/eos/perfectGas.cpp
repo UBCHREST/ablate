@@ -315,7 +315,6 @@ ablate::eos::FieldFunction ablate::eos::PerfectGas::GetFieldFunctionFunction(con
             };
         }
 
-
         throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
     } else {
         throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::PerfectGas.");

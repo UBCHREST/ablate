@@ -40,8 +40,7 @@ class ConstantPressureFix : public FlowProcess {
      * @return
      */
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
-
 };
 
-}
+}  // namespace ablate::finiteVolume::processes
 #endif  // ABLATELIBRARY_CONSTANTPRESSUREFIX_HPP
