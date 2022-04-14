@@ -148,16 +148,16 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     ///Starting added radiation stuff here
 
     ///Class Methods
-    std::vector<PetscReal> rayTrace(std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays);
-    PetscReal castRay(int theta, int phi, std::vector<PetscReal> intersect); //Class methods get declared here
-    PetscReal flameIntensity(PetscReal epsilon, PetscReal temperature);
-    PetscReal mag(std::vector<PetscReal> vector);
-    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rayInit();
-    void raysGetLoc(std::vector<std::vector<std::vector<std::vector<PetscInt>>>>);
-    PetscReal cSimp(PetscReal a, PetscReal b, std::vector<double> f);
-    std::vector<PetscReal> solveParallelPlates();
-    std::vector<PetscReal> reallySolveParallelPlates();
-    PetscReal eInteg(int order, double x);
+    void RayTrace();
+    PetscReal CastRay(int theta, int phi, std::vector<PetscReal> intersect); //Class methods get declared here
+    PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
+    PetscReal Mag(std::vector<PetscReal> vector);
+    void RayInit();
+    void RaysGetLoc();
+    PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f);
+    std::vector<PetscReal> SolveParallelPlates();
+    std::vector<PetscReal> ReallySolveParallelPlates();
+    PetscReal EInteg(int order, double x);
 
     ///Class Constants
     const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
@@ -173,6 +173,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscInt nTheta = 50; //The DEFAULT number of angles to solve with, should be given by user input
     PetscInt nPhi = 1; //The DEFAULT number of angles to solve with, should be given by user input
 
+    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays; //Indices: Cell, angle (theta), angle(phi), space ... Can use the pushback command to append
     //PetscReal radGain;
     //PetscViewer viewer;
     Vec origin;

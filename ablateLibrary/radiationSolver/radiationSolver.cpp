@@ -254,13 +254,13 @@ void ablate::radiationSolver::RadiationSolver::Initialize() {
     });
 
     //this->reallySolveParallelPlates();
-    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays = this->rayInit(); //Runs the ray initialization finding cell indices
-    this->rayTrace(rays);
+    this->RayInit(); //Runs the ray initialization finding cell indices
+    this->RayTrace();
 }
 
 ///Starting new radiation stuff here
-//rayInit() will collect all needed cell locations based on the ray that they are associated with, making the ray cells easy  to step through during run time
-//rayTrace() will
+//RayInit() will collect all needed cell locations based on the ray that they are associated with, making the ray cells easy  to step through during run time
+//RayTrace() will
 
 ///Things this code needs from ABLATE
 //Location of the current (ray passing through) cell should be known //This is almost done?
@@ -268,7 +268,7 @@ void ablate::radiationSolver::RadiationSolver::Initialize() {
 //Temperature and absorptivity(any property) of arbitrary point based on location (Using aux fields most likely?) //No idea yet, probably not crazy hard (Don't think absorptivity model exists yet)
 
 ///Declaring function for the initialization to call, draws each ray vector and gets all of the cells associated with it (sorted by distance and starting at the boundary working in)
-std::vector<std::vector<std::vector<std::vector<PetscInt>>>> ablate::radiationSolver::RadiationSolver::rayInit() {
+void ablate::radiationSolver::RadiationSolver::RayInit() {
     double theta;                                           // represents the actual current angle (inclination)
     double phi;                                             // represents the actual current angle (rotation)
 
@@ -288,7 +288,8 @@ std::vector<std::vector<std::vector<std::vector<PetscInt>>>> ablate::radiationSo
     }
 
     /// Create a matrix which can store cell locations based on origin cell, theta, and phi
-    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays; //Indices: Cell, angle (theta), angle(phi), space ... Can use the pushback command to append
+    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays(stencilSet.size(), std::vector<std::vector<std::vector<PetscInt>>>()); //Indices: Cell, angle (theta), angle(phi), space ... Can use the pushback command to append
+
 
     PetscInt ncells = 0;                                                                //PARALLEL THINGS -------------------------------------------------------
     for(int iCell: stencilSet) {               //loop through subdomain cell indices    //Should each of the cells be owned by a different process? (For parallel)
@@ -317,6 +318,9 @@ std::vector<std::vector<std::vector<std::vector<PetscInt>>>> ablate::radiationSo
 
             // precalculate sin and cosine of the angle theta because it is used frequently?
             for (int nphi = 0; nphi < nPhi; nphi++) {  // for every angle phi
+
+                //TODO: If all rays are preallocated and independent, parallelize here? Task queue? Distribute by rank?
+                //TODO: Problem with profiler being incompatible with kernel, put timers in? <-----------------------------------
 
                 std::vector<PetscInt> rayPhis; //Make vector to store this dimensional row
                 //std::vector<std::vector<PetscInt>> rayPhis(nPhi, 0); //Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
@@ -393,7 +397,7 @@ std::vector<std::vector<std::vector<std::vector<PetscInt>>>> ablate::radiationSo
                     PetscSFDestroy(&cellSF);
                     VecDestroy(&intersect);
                 }
-                rayThetas.push_back(rayPhis);
+                rayThetas.push_back(rayPhis); //TODO: Change to preallocated method and compare the two method times
                 //rayThetas[nphi] = rayPhis;
             }
             rayCells.push_back(rayThetas); //This lin is for dynamically allocated assignment
@@ -401,13 +405,15 @@ std::vector<std::vector<std::vector<std::vector<PetscInt>>>> ablate::radiationSo
         }
         rays.push_back(rayCells); //These lines append the new values into the main vector (They need to be layered on every time)
         //rays[ncells] = rayCells;
+        //rays[0][2][3].
+        auto& rayPhis = rays[0][2][3]; //Extract a reference from a vector (to an item already in the array, don't have to push it back)
         ncells++;
     }
     PetscPrintf(PETSC_COMM_WORLD, "Finished!\n");
-    return rays; //Outputs the collection of cell indices in order that their values and locations can be later read from.
+    //return rays; //Outputs the collection of cell indices in order that their values and locations can be later read from.
 }
 
-void ablate::radiationSolver::RadiationSolver::raysGetLoc(std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays) { ///Write the locations of the ray cells that the initializer has stored (for a single parent cell)
+void ablate::radiationSolver::RadiationSolver::RaysGetLoc() { ///Write the locations of the ray cells that the initializer has stored (for a single parent cell)
 
     /// An array that maps each point to its containing cell can be obtained with the below
     const PetscScalar* cellGeomArray; //Declare the variables that will contain the geometry of the cells
@@ -455,9 +461,8 @@ void ablate::radiationSolver::RadiationSolver::raysGetLoc(std::vector<std::vecto
     stream.close();
 }
 
-//TODO: Make the rays vector a global variable
 //TODO: Make all method titles capitalized
-std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::rayTrace(std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays) { ///Gets the total intensity/radiative gain at a single cell
+void ablate::radiationSolver::RadiationSolver::RayTrace() { ///Gets the total intensity/radiative gain at a single cell
 
     //std::cout << "Called ray tracing function. nTheta = " << nTheta << ", nPhi = " << nPhi << ", h step = " << h << "\n"; //DEBUGGING COMMENT
 
@@ -496,6 +501,7 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::rayTrace(std::v
 
     std::vector<std::vector<PetscReal>> locations; //2 Dimensional vector which stores the locations of the cell centers
     PetscInt ncells = 0;
+
     for(int iCell: stencilSet) {     // loop through subdomain cell indices
         ///Print location of the current cell
         for (int i = 0; i < dim; i++) {                   // We will need an extra column to store the ray vector. This will probably need to be stored in a different vector
@@ -512,12 +518,12 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::rayTrace(std::v
                 ///Initial ray intensity should be set based on which boundary it is coming from.
 
                 ///If the ray originates from the walls, then set the initial ray intensity to the wall temperature
-                PetscReal rayIntensity; // = flameIntensity(1, refTemp); //Initialize the ray intensity as the far fie0ld flame intensity
+                PetscReal rayIntensity; // = FlameIntensity(1, refTemp); //Initialize the ray intensity as the far fie0ld flame intensity
                 if (theta > pi/2) { //If sitting on the bottom boundary (everything on the lower half of the angles)
-                    rayIntensity = flameIntensity(1, 1300); //Set the initial ray intensity to the bottom wall intensity
+                    rayIntensity = FlameIntensity(1, 1300); //Set the initial ray intensity to the bottom wall intensity
                 }
                 else if (theta < pi/2) { //If sitting on the top boundary
-                    rayIntensity = flameIntensity(1, 700); //Set the initial ray intensity to the top wall intensity
+                    rayIntensity = FlameIntensity(1, 700); //Set the initial ray intensity to the top wall intensity
                 }
 
                 int numPoints = static_cast<int>(rays[ncells][ntheta][nphi].size());
@@ -541,14 +547,18 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::rayTrace(std::v
                     }
 
                     //TODO: For ABLATE implementation, get temperature based on this function
-                    //const auto &temperatureField = subDomain->GetField("temperature");
-                    //PetscScalar* pt = nullptr;
+                    const auto &temperatureField = subDomain->GetField("temperature");
+                    PetscScalar* pt = nullptr;
+                    //DMPlexPointLocalRef()
                     //DMPlexPointLocalFieldRef(cellDM, rays[ncells][ntheta][nphi][n], temperatureField.id, cellGeomArray, &pt);
+
+
+                    //TODO: What function to use here?
 
                     //TODO: Input absorptivity values from model here.
 
                     ///The ray intensity changes as a function of the environment at this point
-                    rayIntensity = flameIntensity(1 - exp(-kappa*h), temperature) + rayIntensity*exp(-kappa*h);
+                    rayIntensity = FlameIntensity(1 - exp(-kappa*h), temperature) + rayIntensity*exp(-kappa*h);
                     //stream << rayIntensity;  // Prints the intensity at this point
                     //stream << "\n";
                     //PetscPrintf(PETSC_COMM_WORLD, "Intensity: %f\n", rayIntensity);
@@ -567,14 +577,13 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::rayTrace(std::v
         ncells++;
     }
     stream.close();
-    return radGain; //TODO: Ultimately add net radiation to the flow field directly
 }
 
-std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::solveParallelPlates(){ ///Get the analytical solution for two parallel plates of different temperatures
+std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::SolveParallelPlates(){ ///Get the analytical solution for two parallel plates of different temperatures
     ///Define variables and basic information
     std::vector<PetscReal> G;//(zCellNumber, 0); //Initialize a ray representing the irradiation at each cell point
-    PetscReal IT = flameIntensity(1, 700); //Intensity of rays originating from the top plate
-    PetscReal IB = flameIntensity(1, 1300); //Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
+    PetscReal IT = FlameIntensity(1, 700); //Intensity of rays originating from the top plate
+    PetscReal IB = FlameIntensity(1, 1300); //Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
     PetscReal kappa = 1; //Kappa is not spatially dependant in this special case
     PetscReal zBottom = -0.0105; //Prescribe the top and bottom heights for the domain
     PetscReal zTop = 0.0105;
@@ -614,7 +623,7 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::solveParallelPl
                     temperature = -1.179E7*zp*zp + 2000.0;
                 }
                 ///Get the black body intensity here
-                Ibz = flameIntensity(1, temperature);
+                Ibz = FlameIntensity(1, temperature);
                 plus.push_back(Ibz * exp(-(kappa*(z-zp))/mu));
             }
             for(double nzp = 1; nzp < (nZp-1); nzp++) { ///Minus integral goes from z to top
@@ -627,31 +636,31 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::solveParallelPl
                     temperature = -1.179E7 * zp * zp + 2000.0;
                 }
                 /// Get the black body intensity here
-                Ibz = flameIntensity(1, temperature);
+                Ibz = FlameIntensity(1, temperature);
                 minus.push_back(Ibz * exp((kappa * (zp - z)) / mu));
             }
 
             /// Calculate the value (with the zprime integrals)
-            Iplus.push_back(IB * exp(-(kappa * z) / mu) + (kappa / mu) * cSimp(zBottom, z, plus));  // Add the intensity from above at this height (to the vector, for integration)
-            Iminus.push_back(IT * exp((kappa*((zTop-zBottom)-z))/(mu-1)) - (kappa/(mu-1)) * cSimp(z, zTop, minus)); //Add the intensity from below at this height (to the vector, for integration)
+            Iplus.push_back(IB * exp(-(kappa * z) / mu) + (kappa / mu) * CSimp(zBottom, z, plus));  // Add the intensity from above at this height (to the vector, for integration)
+            Iminus.push_back(IT * exp((kappa*((zTop-zBottom)-z))/(mu-1)) - (kappa/(mu-1)) * CSimp(z, zTop, minus)); //Add the intensity from below at this height (to the vector, for integration)
         }
         /// Integrate the G values along mu (also for every z, in the same loop)
-        PetscReal intensity = 2 * pi * (cSimp(-1, 0, Iminus) + cSimp(0, 1, Iplus));
+        PetscReal intensity = 2 * pi * (CSimp(-1, 0, Iminus) + CSimp(0, 1, Iplus));
         stream << z;
         stream << ' ';
         stream << intensity;
         stream << '\n';
-        G.push_back(2 * pi * (cSimp(-1, 0, Iminus) + cSimp(0, 1, Iplus)));
+        G.push_back(2 * pi * (CSimp(-1, 0, Iminus) + CSimp(0, 1, Iplus)));
     }
     stream.close();
     return G; //Return the vector of values representing the irradiation at each height z
 }
 
-std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::reallySolveParallelPlates(){
+std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::ReallySolveParallelPlates(){
     ///Define variables and basic information
     std::vector<PetscReal> G; //Irradiation at each point
-    PetscReal IT = flameIntensity(1, 700); //Intensity of rays originating from the top plate
-    PetscReal IB = flameIntensity(1, 1300); //Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
+    PetscReal IT = FlameIntensity(1, 700); //Intensity of rays originating from the top plate
+    PetscReal IB = FlameIntensity(1, 1300); //Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
     PetscReal kappa = 1; //Kappa is not spatially dependant in this special case
     PetscReal zBottom = -0.0105; //Prescribe the top and bottom heights for the domain
     PetscReal zTop = 0.0105;
@@ -687,8 +696,8 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::reallySolvePara
                 temperature = -1.179E7*zp*zp + 2000.0;
             }
             ///Get the black body intensity here
-            Ibz = flameIntensity(1, temperature);
-            Iplus.push_back(Ibz * eInteg(1,kappa*(z-zp)));
+            Ibz = FlameIntensity(1, temperature);
+            Iplus.push_back(Ibz * EInteg(1,kappa*(z-zp)));
         }
         for(double nzp = 1; nzp < (nZp-1); nzp++) { ///Minus integral goes from z to top
             PetscReal zp = z + (nzp/nZp) * (zTop-z);  // Calculate the zp height
@@ -700,14 +709,14 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::reallySolvePara
                 temperature = -1.179E7*zp*zp + 2000.0;
             }
             /// Get the black body intensity here
-            Ibz = flameIntensity(1, temperature);
-            Iminus.push_back(Ibz * eInteg(1,kappa * (zp-z)));
+            Ibz = FlameIntensity(1, temperature);
+            Iminus.push_back(Ibz * EInteg(1,kappa * (zp-z)));
         }
 
-        PetscReal term1 = IB*eInteg(2,kappa*(z-zBottom));
-        PetscReal term2 = IT*eInteg(2,kappa*(zTop-z));
-        PetscReal term3 = cSimp(zBottom,z,Iplus);
-        PetscReal term4 = cSimp(z,zTop,Iminus);
+        PetscReal term1 = IB*EInteg(2,kappa*(z-zBottom));
+        PetscReal term2 = IT*EInteg(2,kappa*(zTop-z));
+        PetscReal term3 = CSimp(zBottom,z,Iplus);
+        PetscReal term4 = CSimp(z,zTop,Iminus);
         G.push_back(2 * pi * (term1 + term2 + term3 + term4));
         ///Write to the file
         intensity = 2 * pi * (term1 + term2 + term3 + term4);
@@ -720,16 +729,16 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::reallySolvePara
 }
 
 ///This function will get the set of ray cells, grab their properties, and march the intensity along them
-PetscReal ablate::radiationSolver::RadiationSolver::castRay(int theta, int phi,  std::vector<PetscReal> intersect) { ///Spatially integrates intensity over current ray based on temp & absorption at each distance
+PetscReal ablate::radiationSolver::RadiationSolver::CastRay(int theta, int phi,  std::vector<PetscReal> intersect) { ///Spatially integrates intensity over current ray based on temp & absorption at each distance
     std::vector<PetscReal> ray = {0,0,0}; //vector representing the ray as it is traced back from the boundary to the origin.
 
-    double rayIntensity = flameIntensity(1, refTemp); //Initialize the ray intensity as the far field flame intensity TODO: should this be changed to the casing (boundary node) temperature in the context of a rocket?
-    double magnitude = mag(intersect); //get the magnitude of the vector between the origin cell and the boundary TODO: Set magnitude equal to intersection point minus origin
+    double rayIntensity = FlameIntensity(1, refTemp); //Initialize the ray intensity as the far field flame intensity TODO: should this be changed to the casing (boundary node) temperature in the context of a rocket?
+    double magnitude = Mag(intersect); //get the magnitude of the vector between the origin cell and the boundary TODO: Set magnitude equal to intersection point minus origin
     while(magnitude - h > 0) { //Keep stepping intensity through space until the origin cell has been reached
         double kappa = 0; //Absorptivity at the current point TODO: Need the absorptivity at any point in the domain
         double temp = 0; //Temperature at the current point (used to calculate current point flame intensity)//TODO: Need temperature of any point in the domain
         //From Java, implemented in line below //Math.exp(-kappa[ijk[2]][ijk[1]][ijk[0]] * deltaRay) TODO: ask, what part is this exactly?
-        rayIntensity += flameIntensity(1 - exp(-kappa*h), temp + rayIntensity*exp(-kappa*h)); //represents the flame intensity at the far field boundary
+        rayIntensity += FlameIntensity(1 - exp(-kappa*h), temp + rayIntensity*exp(-kappa*h)); //represents the flame intensity at the far field boundary
         ray = {0,0,0};//std::Subtract(intersect,origin);//TODO: vector subtract from intersection point to get next coordinate, how to identify point at which properties are measured?
         magnitude -= h; //One step towards the origin has been completed
     }
@@ -737,7 +746,7 @@ PetscReal ablate::radiationSolver::RadiationSolver::castRay(int theta, int phi, 
     return rayIntensity; //Final intensity of the ray as it approaches the current cell
 }
 
-PetscReal ablate::radiationSolver::RadiationSolver::eInteg(int order, double x) {
+PetscReal ablate::radiationSolver::RadiationSolver::EInteg(int order, double x) {
     if(x == 0 && order !=1) return 1/(order-1); //Simple solution in this case, exit
     std::vector<PetscReal> En;
     double N = 100;
@@ -753,15 +762,15 @@ PetscReal ablate::radiationSolver::RadiationSolver::eInteg(int order, double x) 
             En.push_back(exp(-x/mu)*mu);
         }
     }
-    PetscReal final = cSimp(0, 1, En);
+    PetscReal final = CSimp(0, 1, En);
     return final;
 }
 
-PetscReal ablate::radiationSolver::RadiationSolver::flameIntensity(double epsilon, double temperature) { ///Gets the flame intensity based on temperature and emissivity
+PetscReal ablate::radiationSolver::RadiationSolver::FlameIntensity(double epsilon, double temperature) { ///Gets the flame intensity based on temperature and emissivity
     return epsilon * sbc * temperature * temperature * temperature * temperature / pi;
 }
 
-PetscReal ablate::radiationSolver::RadiationSolver::mag( std::vector<PetscReal> vector) { ///Simple function to find magnitude of a vector
+PetscReal ablate::radiationSolver::RadiationSolver::Mag( std::vector<PetscReal> vector) { ///Simple function to find magnitude of a vector
     PetscReal magnitude = 0;
     for (const int i : vector) { //Sum of all points
         magnitude += i*i; //Squared
@@ -770,7 +779,7 @@ PetscReal ablate::radiationSolver::RadiationSolver::mag( std::vector<PetscReal> 
     return magnitude; //Return the magnitude of the vector as a double
 }
 
-PetscReal ablate::radiationSolver::RadiationSolver::cSimp(PetscReal a, PetscReal b, std::vector<double> f) {
+PetscReal ablate::radiationSolver::RadiationSolver::CSimp(PetscReal a, PetscReal b, std::vector<double> f) {
     ///b-a represents the size of the total domain that is being integrated over
     //PetscReal b = H; //End
     //PetscReal a = 0; //Beginning
@@ -825,7 +834,7 @@ void ablate::radiationSolver::RadiationSolver::RegisterFunction(ablate::radiatio
 }
 PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) { //main interface for integrating in time Inputs: local vector, x vector (current solution), local f vector
     PetscFunctionBeginUser;                                                                                             //gets fields out of the main vector
-    //TODO: This is likely where the radiative gain will be calculated and updated. The aux fields need to be updated and rays cast. Tracing vectors are precalculated in init.
+    ///This is likely where the radiative gain will be calculated and updated. The aux fields need to be updated and rays cast. Tracing vectors are precalculated in init.
     PetscErrorCode ierr;
 
     // Extract the cell geometry, and the dm that holds the information
@@ -843,7 +852,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
 
     // prepare to compute the source, u, and a offsets
     PetscInt nf;
-    ierr = PetscDSGetNumFields(subDomain->GetDiscreteSystem(), &nf);
+    ierr = PetscDSGetNumFields(subDomain->GetDiscreteSystem(), &nf); //TODO: Source, u, and a offsets? What are the offsets?
     CHKERRQ(ierr);
 
     // Create the required offset arrays. These are sized for the max possible value
@@ -877,7 +886,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
         dim = subDomain->GetDimensions();
 
         // Get pointers to sol, aux, and f vectors
-        const PetscScalar *locXArray, *locAuxArray = nullptr;
+        const PetscScalar *locXArray, *locAuxArray = nullptr; //TODO: What are the sol, aux, and f vectors?
         PetscScalar* locFArray;
         ierr = VecGetArrayRead(locXVec, &locXArray);
         CHKERRQ(ierr);
@@ -885,7 +894,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
             ierr = VecGetArrayRead(locAuxVec, &locAuxArray);
             CHKERRQ(ierr);
         }
-        VecGetArray(locFVec, &locFArray) >> checkError;
+        VecGetArray(locFVec, &locFArray) >> checkError; //TODO: Local F vector?
         CHKERRQ(ierr);
 
         // Store pointers to the stencil variables
@@ -893,7 +902,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
         std::vector<const PetscScalar*> auxStencilValues(maximumStencilSize);
 
         // March over each boundary function
-        for (const auto& function : boundaryFunctions) {
+        for (const auto& function : boundaryFunctions) { //TODO: What are the multiple boundary functions?
             for (std::size_t i = 0; i < function.sourceFields.size(); i++) {
                 sourceOffsets[i] = offsetsTotal[function.sourceFields[i]];
             }
@@ -911,7 +920,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
             // March over each cell in this region
             PetscInt cOffset = 0;  // Keep track of the cell offset
             for (PetscInt c = cStart; c < cEnd; ++c, cOffset++) {
-                // if there is a cell array, use it, otherwise it is just c
+                // if there is a cell array, use it, otherwise it is just c //TODO: Iterating through all of the cells in the domain
                 const PetscInt cell = cells ? cells[c] : c;
 
                 // make sure we are not working on a ghost cell
@@ -947,7 +956,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
                 switch (function.type) {
                     case BoundarySourceType::Point:
                         PetscScalar* rhs;
-                        DMPlexPointLocalRef(dm, cell, locFArray, &rhs) >> checkError;
+                        DMPlexPointLocalRef(dm, cell, locFArray, &rhs) >> checkError; //TODO: What is this function used for?
 
                         /*PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell,
                                            const PetscInt uOff[], const PetscScalar* boundaryValues, const PetscScalar* stencilValues[],
@@ -958,7 +967,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
                                                  cg,
                                                  inputOffsetsPointer,
                                                  solPt,
-                                                 inputStencilValues.data(),
+                                                 inputStencilValues.data(), //TODO: This was grabbed from the DMPlexPointLocalRead?
                                                  auxOffsetsPointer,
                                                  auxPt,
                                                  auxStencilValues.data(),
@@ -1001,7 +1010,7 @@ PetscErrorCode ablate::radiationSolver::RadiationSolver::ComputeRHSFunction(Pets
                             DMPlexPointLocalRef(dm, stencilInfo.stencil[s], locFArray, &rhs) >> checkError;
 
                             // Now over the entire rhs, the function should have added the values correctly using the sourceOffsetsPointer
-                            for (PetscInt sc = 0; sc < scratchSize; sc++) {
+                            for (PetscInt sc = 0; sc < scratchSize; sc++) { //TODO: Does the rhs variable represent the output? (Net radiative gain?)
                                 rhs[sc] += (distributedSourceScratch[sc] * stencilInfo.distributionWeights[s]) / stencilInfo.volumes[s];
                             }
                         }
