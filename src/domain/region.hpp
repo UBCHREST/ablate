@@ -26,6 +26,8 @@ class Region {
     inline const PetscInt& GetValue() const { return value; }
 
     inline const std::string ToString() const { return name + ":" + std::to_string(value); };
+
+    static void GetLabel(const std::shared_ptr<Region>& region, DM dm, DMLabel& regionLabel, PetscInt& regionValue);
 };
 
 std::ostream& operator<<(std::ostream& os, const Region& region);

@@ -21,18 +21,43 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
    public:
     using RHSArbitraryFunction = PetscErrorCode (*)(const FiniteVolumeSolver&, DM dm, PetscReal time, Vec locXVec, Vec locFVec, void* ctx);
     using ComputeTimeStepFunction = double (*)(TS ts, FiniteVolumeSolver&, void* ctx);
-    using FVMRHSFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
+    /**
+     * Function assumes that the left/right solution and aux variables are discontinuous across the interface
+     */
+    using DiscontinuousFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
                                                   const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
                                                   const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void* ctx);
-    using FVMRHSPointFunction = PetscErrorCode (*)(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
+
+    /**
+     * Function assumes that the left/right solution and aux variables are continuous across the interface and values are interpolated to the face
+     */
+    using ContinuousFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+                                                               const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                               const PetscScalar gradAux[],  PetscScalar flux[], void* ctx);
+    /**
+     * Functions that operates on entire cell value.
+     */
+    using PointFunction = PetscErrorCode (*)(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
                                                    const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    private:
     /**
      * struct to describe how to compute RHS finite volume flux source terms
      */
-    struct FluxFunctionDescription {
-        FVMRHSFluxFunction function;
+    struct DiscontinuousFluxFunctionDescription {
+        DiscontinuousFluxFunction function;
+        void* context;
+
+        PetscInt field;
+        std::vector<PetscInt> inputFields;
+        std::vector<PetscInt> auxFields;
+    };
+
+    /**
+     * struct to describe how to compute RHS finite volume flux source terms with a continuous field
+     */
+    struct ContinuousFluxFunctionDescription {
+        ContinuousFluxFunction function;
         void* context;
 
         PetscInt field;
@@ -44,7 +69,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * struct to describe how to compute RHS finite volume point source terms
      */
     struct PointFunctionDescription {
-        FVMRHSPointFunction function;
+        PointFunction function;
         void* context;
 
         std::vector<PetscInt> fields;
@@ -62,8 +87,9 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     };
 
     // hold the update functions for flux and point sources
-    std::vector<FluxFunctionDescription> rhsFluxFunctionDescriptions;
-    std::vector<PointFunctionDescription> rhsPointFunctionDescriptions;
+    std::vector<DiscontinuousFluxFunctionDescription> discontinuousFluxFunctionDescriptions;
+    std::vector<ContinuousFluxFunctionDescription> continuousFluxFunctionDescriptions;
+    std::vector<PointFunctionDescription> pointFunctionDescriptions;
 
     // allow the use of any arbitrary rhs functions
     std::vector<std::pair<RHSArbitraryFunction, void*>> rhsArbitraryFunctions;
@@ -82,10 +108,13 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     const std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions;
 
     //! store the dmGrad, these are specific to this finite volume solver
-    std::vector<DM> gradientDms;
+    std::vector<DM> gradientCellDms;
 
     //! store the gradient dm for each aux variable
-    std::vector<DM> auxGradientDms;
+    std::vector<DM> auxGradientCellDms;
+
+    //! store a dm for solution variable
+
 
     /**
      * Computes the flux across each face in th region
@@ -161,14 +190,24 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
     /**
-     * Register a FVM rhs source flux function
+     * Register a FVM rhs discontinuous flux function
      * @param function
      * @param context
      * @param field
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(FVMRHSFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
+    void RegisterRHSFunction(DiscontinuousFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
+
+    /**
+     * Register a FVM rhs continuous flux function
+     * @param function
+     * @param context
+     * @param field
+     * @param inputFields
+     * @param auxFields
+     */
+    void RegisterRHSFunction(ContinuousFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
 
     /**
      * Register a FVM rhs point function
@@ -178,7 +217,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(FVMRHSPointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields,
+    void RegisterRHSFunction(PointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields,
                              const std::vector<std::string>& auxFields);
 
     /**

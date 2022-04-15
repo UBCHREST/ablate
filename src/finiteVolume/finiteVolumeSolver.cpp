@@ -5,6 +5,7 @@
 #include "processes/process.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
+#include "faceInterpolant.hpp"
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes,
@@ -15,12 +16,12 @@ ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverI
       boundaryConditions(std::move(boundaryConditions)) {}
 
 ablate::finiteVolume::FiniteVolumeSolver::~FiniteVolumeSolver() {
-    for (auto& dm : gradientDms) {
+    for (auto& dm : gradientCellDms) {
         if (dm) {
             DMDestroy(&dm) >> checkError;
         }
     }
-    for (auto& dm : auxGradientDms) {
+    for (auto& dm : auxGradientCellDms) {
         if (dm) {
             DMDestroy(&dm) >> checkError;
         }
@@ -115,11 +116,14 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
 
     // Compute the gradient dm for each field that supports it
     for (const auto& fieldInfo : subDomain->GetFields()) {
-        getGradientDm(fieldInfo, gradientDms);
+        getGradientDm(fieldInfo, gradientCellDms);
     }
     for (const auto& fieldInfo : subDomain->GetFields(domain::FieldLocation::AUX)) {
-        getGradientDm(fieldInfo, auxGradientDms);
+        getGradientDm(fieldInfo, auxGradientCellDms);
     }
+
+    FaceInterpolant test(subDomain, GetRegion(), faceGeomVec, cellGeomVec);
+
 }
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
@@ -152,13 +156,13 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields,
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(DiscontinuousFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields,
                                                                    const std::vector<std::string>& auxFields) {
     // map the field, inputFields, and auxFields to locations
     auto& fieldId = subDomain->GetField(field);
 
     // Create the FVMRHS Function
-    FluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
+    DiscontinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
 
     for (auto& inputField : inputFields) {
         auto& inputFieldId = subDomain->GetField(inputField);
@@ -170,10 +174,31 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSFluxFun
         functionDescription.auxFields.push_back(auxFieldId.id);
     }
 
-    rhsFluxFunctionDescriptions.push_back(functionDescription);
+    discontinuousFluxFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSPointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields,
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(ablate::finiteVolume::FiniteVolumeSolver::ContinuousFluxFunction function, void* context, const std::string& field,
+                                                                   const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields) {
+    // map the field, inputFields, and auxFields to locations
+    auto& fieldId = subDomain->GetField(field);
+
+    // Create the FVMRHS Function
+    ContinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
+
+    for (auto& inputField : inputFields) {
+        auto& inputFieldId = subDomain->GetField(inputField);
+        functionDescription.inputFields.push_back(inputFieldId.id);
+    }
+
+    for (const auto& auxField : auxFields) {
+        auto& auxFieldId = subDomain->GetField(auxField);
+        functionDescription.auxFields.push_back(auxFieldId.id);
+    }
+
+    continuousFluxFunctionDescriptions.push_back(functionDescription);
+}
+
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(PointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields,
                                                                    const std::vector<std::string>& auxFields) {
     // Create the FVMRHS Function
     PointFunctionDescription functionDescription{.function = function, .context = context};
@@ -193,7 +218,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(FVMRHSPointFu
         functionDescription.auxFields.push_back(fieldId.id);
     }
 
-    rhsPointFunctionDescriptions.push_back(functionDescription);
+    pointFunctionDescriptions.push_back(functionDescription);
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(RHSArbitraryFunction function, void* context) { rhsArbitraryFunctions.emplace_back(function, context); }
@@ -266,25 +291,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
     VecGetDM(faceGeomVec, &faceDM) >> checkError;
     VecGetDM(cellGeomVec, &cellDM) >> checkError;
 
-    // there must be a separate gradient vector/dm for field because they can be different sizes
-    std::vector<Vec> locGradVecs(nf, nullptr);
-    std::vector<Vec> locAuxGradVecs(naf, nullptr);
-
-    /* Reconstruct and limit cell gradients */
-    // for each field compute the gradient in the localGrads vector
-    for (const auto& field : subDomain->GetFields()) {
-        ComputeFieldGradients(field, locXVec, locGradVecs[field.subId], gradientDms[field.subId]);
-    }
-
-    // do the same for the aux fields
-    for (const auto& field : subDomain->GetFields(domain::FieldLocation::AUX)) {
-        ComputeFieldGradients(field, locAuxField, locAuxGradVecs[field.subId], auxGradientDms[field.subId]);
-
-        if (auxGradientDms[field.subId]) {
-            auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
-            FillGradientBoundary(dmAux, fvm, locAuxField, locAuxGradVecs[field.subId]) >> checkError;
-        }
-    }
 
     // Get raw access to the computed values
     const PetscScalar *xArray, *auxArray = nullptr;
@@ -293,49 +299,85 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
         VecGetArrayRead(locAuxField, &auxArray) >> checkError;
     }
 
-    std::vector<const PetscScalar*> locGradArrays(nf, nullptr);
-    std::vector<const PetscScalar*> locAuxGradArrays(naf, nullptr);
-    for (const auto& field : subDomain->GetFields()) {
-        if (locGradVecs[field.subId]) {
-            VecGetArrayRead(locGradVecs[field.subId], &locGradArrays[field.subId]) >> checkError;
-        }
-    }
-    for (const auto& field : subDomain->GetFields(domain::FieldLocation::AUX)) {
-        if (locAuxGradVecs[field.subId]) {
-            VecGetArrayRead(locAuxGradVecs[field.subId], &locAuxGradArrays[field.subId]) >> checkError;
-        }
-    }
-
     // get raw access to the locF
     PetscScalar* locFArray;
     VecGetArray(locF, &locFArray) >> checkError;
 
-    // Compute the source terms from flux across the interface
-    if (!this->rhsFluxFunctionDescriptions.empty()) {
-        ComputeFluxSourceTerms(
-            dm, ds, totDim, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, gradientDms, locGradArrays, auxGradientDms, locAuxGradArrays, locFArray);
+    // Compute the source terms from flux across the interface for cell based gradient functions
+    if(!this->discontinuousFluxFunctionDescriptions.empty() || !this->pointFunctionDescriptions.empty()) {
+        // there must be a separate gradient vector/dm for field because they can be different sizes
+        std::vector<Vec> locGradVecs(nf, nullptr);
+        std::vector<Vec> locAuxGradVecs(naf, nullptr);
+
+        /* Reconstruct and limit cell gradients */
+        // for each field compute the gradient in the localGrads vector
+        for (const auto& field : subDomain->GetFields()) {
+            ComputeFieldGradients(field, locXVec, locGradVecs[field.subId], gradientCellDms[field.subId]);
+        }
+
+        // do the same for the aux fields
+        for (const auto& field : subDomain->GetFields(domain::FieldLocation::AUX)) {
+            ComputeFieldGradients(field, locAuxField, locAuxGradVecs[field.subId], auxGradientCellDms[field.subId]);
+
+            if (auxGradientCellDms[field.subId]) {
+                auto fvm = (PetscFV)subDomain->GetPetscFieldObject(field);
+                FillGradientBoundary(dmAux, fvm, locAuxField, locAuxGradVecs[field.subId]) >> checkError;
+            }
+        }
+
+        std::vector<const PetscScalar*> locGradArrays(nf, nullptr);
+        std::vector<const PetscScalar*> locAuxGradArrays(naf, nullptr);
+        for (const auto& field : subDomain->GetFields()) {
+            if (locGradVecs[field.subId]) {
+                VecGetArrayRead(locGradVecs[field.subId], &locGradArrays[field.subId]) >> checkError;
+            }
+        }
+        for (const auto& field : subDomain->GetFields(domain::FieldLocation::AUX)) {
+            if (locAuxGradVecs[field.subId]) {
+                VecGetArrayRead(locAuxGradVecs[field.subId], &locAuxGradArrays[field.subId]) >> checkError;
+            }
+        }
+
+        if (!this->discontinuousFluxFunctionDescriptions.empty()) {
+            ComputeFluxSourceTerms(
+                dm, ds, totDim, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, gradientCellDms, locGradArrays,
+                                   auxGradientCellDms, locAuxGradArrays, locFArray);
+        }
+        if (!this->pointFunctionDescriptions.empty()) {
+            ComputePointSourceTerms(
+                dm, ds, totDim, time, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray,
+                                    gradientCellDms, locGradArrays,
+                                    auxGradientCellDms, locAuxGradArrays, locFArray);
+        }
+
+        // clean up cell grads
+        for (const auto& field : subDomain->GetFields()) {
+            if (locGradVecs[field.subId]) {
+                VecRestoreArrayRead(locGradVecs[field.subId], &locGradArrays[field.subId]) >> checkError;
+                DMRestoreLocalVector(gradientCellDms[field.subId], &locGradVecs[field.subId]) >> checkError;
+            }
+        }
+        for (const auto& field : subDomain->GetFields(domain::FieldLocation::AUX)) {
+            if (locAuxGradVecs[field.subId]) {
+                VecRestoreArrayRead(locAuxGradVecs[field.subId], &locAuxGradArrays[field.subId]) >> checkError;
+                DMRestoreLocalVector(auxGradientCellDms[field.subId], &locAuxGradVecs[field.subId]) >> checkError;
+            }
+        }
+
     }
-    if (!this->rhsPointFunctionDescriptions.empty()) {
-        ComputePointSourceTerms(
-            dm, ds, totDim, time, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, gradientDms, locGradArrays, auxGradientDms, locAuxGradArrays, locFArray);
+
+    // for face based function
+    if(!this->continuousFluxFunctionDescriptions.empty()){
+
+
     }
+
+
 
     // cleanup (restore access to locGradVecs, locAuxGradVecs with DMRestoreLocalVector)
     VecRestoreArrayRead(locXVec, &xArray) >> checkError;
     if (locAuxField) {
         VecRestoreArrayRead(locAuxField, &auxArray) >> checkError;
-    }
-    for (const auto& field : subDomain->GetFields()) {
-        if (locGradVecs[field.subId]) {
-            VecRestoreArrayRead(locGradVecs[field.subId], &locGradArrays[field.subId]) >> checkError;
-            DMRestoreLocalVector(gradientDms[field.subId], &locGradVecs[field.subId]) >> checkError;
-        }
-    }
-    for (const auto& field : subDomain->GetFields(domain::FieldLocation::AUX)) {
-        if (locAuxGradVecs[field.subId]) {
-            VecRestoreArrayRead(locAuxGradVecs[field.subId], &locAuxGradArrays[field.subId]) >> checkError;
-            DMRestoreLocalVector(auxGradientDms[field.subId], &locAuxGradVecs[field.subId]) >> checkError;
-        }
     }
 
     VecRestoreArray(locF, &locFArray) >> checkError;
@@ -653,12 +695,12 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
     }
 
     // Precompute the offsets to pass into the rhsFluxFunctionDescriptions
-    std::vector<PetscInt> fluxComponentSize(rhsFluxFunctionDescriptions.size());
-    std::vector<PetscInt> fluxId(rhsFluxFunctionDescriptions.size());
-    std::vector<std::vector<PetscInt>> uOff(rhsFluxFunctionDescriptions.size());
-    std::vector<std::vector<PetscInt>> aOff(rhsFluxFunctionDescriptions.size());
-    std::vector<std::vector<PetscInt>> uOff_x(rhsFluxFunctionDescriptions.size());
-    std::vector<std::vector<PetscInt>> aOff_x(rhsFluxFunctionDescriptions.size());
+    std::vector<PetscInt> fluxComponentSize(discontinuousFluxFunctionDescriptions.size());
+    std::vector<PetscInt> fluxId(discontinuousFluxFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> uOff(discontinuousFluxFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> aOff(discontinuousFluxFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> uOff_x(discontinuousFluxFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> aOff_x(discontinuousFluxFunctionDescriptions.size());
 
     // Get the full set of offsets from the ds
     PetscInt* uOffTotal;
@@ -666,13 +708,13 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
     PetscDSGetComponentOffsets(ds, &uOffTotal) >> checkError;
     PetscDSGetComponentDerivativeOffsets(ds, &uGradOffTotal) >> checkError;
 
-    for (std::size_t fun = 0; fun < rhsFluxFunctionDescriptions.size(); fun++) {
-        const auto& field = subDomain->GetField(rhsFluxFunctionDescriptions[fun].field);
+    for (std::size_t fun = 0; fun < discontinuousFluxFunctionDescriptions.size(); fun++) {
+        const auto& field = subDomain->GetField(discontinuousFluxFunctionDescriptions[fun].field);
         fluxComponentSize[fun] = field.numberComponents;
         fluxId[fun] = field.id;
-        for (std::size_t f = 0; f < rhsFluxFunctionDescriptions[fun].inputFields.size(); f++) {
-            uOff[fun].push_back(uOffTotal[rhsFluxFunctionDescriptions[fun].inputFields[f]]);
-            uOff_x[fun].push_back(uGradOffTotal[rhsFluxFunctionDescriptions[fun].inputFields[f]]);
+        for (std::size_t f = 0; f < discontinuousFluxFunctionDescriptions[fun].inputFields.size(); f++) {
+            uOff[fun].push_back(uOffTotal[discontinuousFluxFunctionDescriptions[fun].inputFields[f]]);
+            uOff_x[fun].push_back(uGradOffTotal[discontinuousFluxFunctionDescriptions[fun].inputFields[f]]);
         }
     }
 
@@ -681,10 +723,10 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
         PetscInt* auxGradOffTotal;
         PetscDSGetComponentOffsets(dsAux, &auxOffTotal) >> checkError;
         PetscDSGetComponentDerivativeOffsets(dsAux, &auxGradOffTotal) >> checkError;
-        for (std::size_t fun = 0; fun < rhsFluxFunctionDescriptions.size(); fun++) {
-            for (std::size_t f = 0; f < rhsFluxFunctionDescriptions[fun].auxFields.size(); f++) {
-                aOff[fun].push_back(auxOffTotal[rhsFluxFunctionDescriptions[fun].auxFields[f]]);
-                aOff_x[fun].push_back(auxGradOffTotal[rhsFluxFunctionDescriptions[fun].auxFields[f]]);
+        for (std::size_t fun = 0; fun < discontinuousFluxFunctionDescriptions.size(); fun++) {
+            for (std::size_t f = 0; f < discontinuousFluxFunctionDescriptions[fun].auxFields.size(); f++) {
+                aOff[fun].push_back(auxOffTotal[discontinuousFluxFunctionDescriptions[fun].auxFields[f]]);
+                aOff_x[fun].push_back(auxGradOffTotal[discontinuousFluxFunctionDescriptions[fun].auxFields[f]]);
             }
         }
     }
@@ -741,9 +783,9 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
         }
 
         // March over each source function
-        for (std::size_t fun = 0; fun < rhsFluxFunctionDescriptions.size(); fun++) {
+        for (std::size_t fun = 0; fun < discontinuousFluxFunctionDescriptions.size(); fun++) {
             PetscArrayzero(flux, totDim) >> checkError;
-            const auto& rhsFluxFunctionDescription = rhsFluxFunctionDescriptions[fun];
+            const auto& rhsFluxFunctionDescription = discontinuousFluxFunctionDescriptions[fun];
             rhsFluxFunctionDescription.function(
                 dim, fg, &uOff[fun][0], &uOff_x[fun][0], uL, uR, gradL, gradR, &aOff[fun][0], &aOff_x[fun][0], auxL, auxR, gradAuxL, gradAuxR, flux, rhsFluxFunctionDescription.context) >>
                 checkError;
@@ -797,18 +839,18 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
                                                                        std::vector<DM>& dmGrads, std::vector<const PetscScalar*>& locGradArrays, std::vector<DM>& dmAuxGrads,
                                                                        std::vector<const PetscScalar*>& locAuxGradArrays, PetscScalar* locFArray) {
     // Precompute the offsets to pass into the rhsFluxFunctionDescriptions
-    std::vector<std::vector<PetscInt>> fluxComponentSize(rhsPointFunctionDescriptions.size());
-    std::vector<std::vector<PetscInt>> fluxComponentOffset(rhsPointFunctionDescriptions.size());
-    std::vector<std::vector<PetscInt>> uOff(rhsPointFunctionDescriptions.size());
-    std::vector<std::vector<PetscInt>> aOff(rhsPointFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> fluxComponentSize(pointFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> fluxComponentOffset(pointFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> uOff(pointFunctionDescriptions.size());
+    std::vector<std::vector<PetscInt>> aOff(pointFunctionDescriptions.size());
 
     // Get the full set of offsets from the ds
     PetscInt* uOffTotal;
     PetscDSGetComponentOffsets(ds, &uOffTotal) >> checkError;
 
-    for (std::size_t fun = 0; fun < rhsPointFunctionDescriptions.size(); fun++) {
-        for (std::size_t f = 0; f < rhsPointFunctionDescriptions[fun].fields.size(); f++) {
-            const auto& field = subDomain->GetField(rhsPointFunctionDescriptions[fun].fields[f]);
+    for (std::size_t fun = 0; fun < pointFunctionDescriptions.size(); fun++) {
+        for (std::size_t f = 0; f < pointFunctionDescriptions[fun].fields.size(); f++) {
+            const auto& field = subDomain->GetField(pointFunctionDescriptions[fun].fields[f]);
 
             PetscInt fieldSize, fieldOffset;
             PetscDSGetFieldSize(ds, field.subId, &fieldSize) >> checkError;
@@ -817,17 +859,17 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
             fluxComponentOffset[fun].push_back(fieldOffset);
         }
 
-        for (std::size_t f = 0; f < rhsPointFunctionDescriptions[fun].inputFields.size(); f++) {
-            uOff[fun].push_back(uOffTotal[rhsPointFunctionDescriptions[fun].inputFields[f]]);
+        for (std::size_t f = 0; f < pointFunctionDescriptions[fun].inputFields.size(); f++) {
+            uOff[fun].push_back(uOffTotal[pointFunctionDescriptions[fun].inputFields[f]]);
         }
     }
 
     if (dsAux) {
         PetscInt* auxOffTotal;
         PetscDSGetComponentOffsets(dsAux, &auxOffTotal) >> checkError;
-        for (std::size_t fun = 0; fun < rhsPointFunctionDescriptions.size(); fun++) {
-            for (std::size_t f = 0; f < rhsPointFunctionDescriptions[fun].auxFields.size(); f++) {
-                aOff[fun].push_back(auxOffTotal[rhsPointFunctionDescriptions[fun].auxFields[f]]);
+        for (std::size_t fun = 0; fun < pointFunctionDescriptions.size(); fun++) {
+            for (std::size_t f = 0; f < pointFunctionDescriptions[fun].auxFields.size(); f++) {
+                aOff[fun].push_back(auxOffTotal[pointFunctionDescriptions[fun].auxFields[f]]);
             }
         }
     }
@@ -879,13 +921,13 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
         }
 
         // March over each functionDescriptions
-        for (std::size_t fun = 0; fun < rhsPointFunctionDescriptions.size(); fun++) {
+        for (std::size_t fun = 0; fun < pointFunctionDescriptions.size(); fun++) {
             // (PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx)
-            rhsPointFunctionDescriptions[fun].function(dim, time, cg, &uOff[fun][0], u, gradU, &aOff[fun][0], a, gradAux, fScratch, rhsPointFunctionDescriptions[fun].context) >> checkError;
+            pointFunctionDescriptions[fun].function(dim, time, cg, &uOff[fun][0], u, gradU, &aOff[fun][0], a, gradAux, fScratch, pointFunctionDescriptions[fun].context) >> checkError;
 
             // copy over each result flux field
             PetscInt r = 0;
-            for (std::size_t ff = 0; ff < rhsPointFunctionDescriptions[fun].fields.size(); ff++) {
+            for (std::size_t ff = 0; ff < pointFunctionDescriptions[fun].fields.size(); ff++) {
                 for (PetscInt d = 0; d < fluxComponentSize[fun][ff]; ++d) {
                     rhs[fluxComponentOffset[fun][ff] + d] += fScratch[r++];
                 }

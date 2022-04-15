@@ -1,10 +1,20 @@
 #include "region.hpp"
+#include "utilities/petscError.hpp"
 #include <functional>
 
 ablate::domain::Region::Region(std::string name, int valueIn) : name(name), value(valueIn == 0 ? 1 : valueIn) {
     // Create a unique string
     auto hashString = name + ":" + std::to_string(value);
     id = std::hash<std::string>()(hashString);
+}
+
+void ablate::domain::Region::GetLabel(const std::shared_ptr<Region>& region, DM dm, DMLabel& regionLabel, PetscInt& regionValue) {
+    regionLabel = nullptr;
+    regionValue = PETSC_DECIDE;
+    if (region) {
+        DMGetLabel(dm, region->GetName().c_str(), &regionLabel) >> checkError;
+        regionValue = region->GetValue();
+    }
 }
 
 std::ostream& ablate::domain::operator<<(std::ostream& os, const ablate::domain::Region& region) {
