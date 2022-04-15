@@ -116,7 +116,7 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertBoundaryValues_Plex(DM dm, Pe
                 CHKERRQ(ierr);
             }
         } else
-            SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Unknown discretization type for field %D", field);
+            SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Unknown discretization type for field %d", field);
     }
     PetscFunctionReturn(0);
 }
@@ -182,7 +182,7 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
                     break;
             }
         } else
-            SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Unknown discretization type for field %D", field);
+            SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_ARG_WRONG, "Unknown discretization type for field %d", field);
     }
     PetscFunctionReturn(0);
 }
