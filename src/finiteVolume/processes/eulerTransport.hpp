@@ -48,6 +48,7 @@ class EulerTransport : public FlowProcess {
         PetscInt numberSpecies;
     };
 
+
    private:
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
     const std::shared_ptr<eos::EOS> eos;
@@ -57,6 +58,8 @@ class EulerTransport : public FlowProcess {
     UpdateTemperatureData updateTemperatureData;
 
     DiffusionData diffusionData;
+
+    eos::ThermodynamicFunction computePressureFunction;
 
     // static function to compute time step for euler advection
     static double ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);

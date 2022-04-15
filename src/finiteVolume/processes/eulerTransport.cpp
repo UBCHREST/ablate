@@ -88,16 +88,8 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
     }
 
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::PRESSURE_FIELD)) {
-        if (advectionData.numberSpecies > 0) {
-            // add in aux update variables
-            flow.RegisterAuxFieldUpdate(UpdateAuxPressureField,
-                                        &advectionData,
-                                        std::vector<std::string>{CompressibleFlowFields::PRESSURE_FIELD},
-                                        {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD});
-        } else {
-            // add in aux update variables
-            flow.RegisterAuxFieldUpdate(UpdateAuxPressureField, &advectionData, std::vector<std::string>{CompressibleFlowFields::PRESSURE_FIELD}, {CompressibleFlowFields::EULER_FIELD});
-        }
+        computePressureFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
+        flow.RegisterAuxFieldUpdate(UpdateAuxPressureField, &computePressureFunction, std::vector<std::string>{CompressibleFlowFields::PRESSURE_FIELD}, {});
     }
 }
 
@@ -406,12 +398,10 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTempera
 PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
                                                                                        const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
-    auto eulerAdvectionData = (AdvectionData*)ctx;
+    auto pressureFunction = (eos::ThermodynamicFunction *)ctx;
 
     // Get the speed of sound from the eos
-    PetscReal temperature;
-    eulerAdvectionData->computeTemperature.function(conservedValues, &temperature, eulerAdvectionData->computeTemperature.context.get()) >> checkError;
-    eulerAdvectionData->computePressure.function(conservedValues, temperature, auxField + aOff[0], eulerAdvectionData->computePressure.context.get()) >> checkError;
+    pressureFunction->function(conservedValues, auxField + aOff[0], pressureFunction->context.get()) >> checkError;
 
     PetscFunctionReturn(0);
 }
