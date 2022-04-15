@@ -165,15 +165,18 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
 
     ///Class inputs and Variables
-    DM faceDM, cellDM; //Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
+    DM faceDM, cellDM, vdm; //Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
+    Vec loctemp;
+    IS vis;
+
     PetscInt dim; //Number of dimensions that the domain exists within
 
     PetscInt nSteps = 100; //number of steps that each ray will go through //This won't be used
     PetscReal h = 0.002; //This is the DEFAULT step size which should be set by the user input
-    PetscInt nTheta = 50; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscInt nTheta = 100; //The DEFAULT number of angles to solve with, should be given by user input
     PetscInt nPhi = 1; //The DEFAULT number of angles to solve with, should be given by user input
 
-    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays; //Indices: Cell, angle (theta), angle(phi), space ... Can use the pushback command to append
+    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays;//(std::vector<std::vector<std::vector<PetscInt>>>()); //Indices: Cell, angle (theta), angle(phi), space steps
     //PetscReal radGain;
     //PetscViewer viewer;
     Vec origin;

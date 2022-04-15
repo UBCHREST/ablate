@@ -287,16 +287,18 @@ void ablate::radiationSolver::RadiationSolver::RayInit() {
         stencilSet.insert(cell);
     }
 
-    /// Create a matrix which can store cell locations based on origin cell, theta, and phi
-    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays(stencilSet.size(), std::vector<std::vector<std::vector<PetscInt>>>()); //Indices: Cell, angle (theta), angle(phi), space ... Can use the pushback command to append
-
+    /// Create a nested vector which can store cell locations based on origin cell, theta, phi, and space step
+    std::vector<PetscInt> rayPhis; //Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
+    std::vector<std::vector<PetscInt>> rayThetas(nPhi, rayPhis); //Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
+    std::vector<std::vector<std::vector<PetscInt>>> rayCells(nTheta, rayThetas); //Make vector to store this dimensional row //Preallocate the sub-vectors in order to avoid dynamic sizing as much as possibl
+    rays.resize(stencilSet.size(), rayCells); //Indices: Cell, angle (theta), angle(phi), space steps
 
     PetscInt ncells = 0;                                                                //PARALLEL THINGS -------------------------------------------------------
     for(int iCell: stencilSet) {               //loop through subdomain cell indices    //Should each of the cells be owned by a different process? (For parallel)
         double percentComplete = 100.0*double(ncells)/double(stencilSet.size());        //MPI Scatter or Broadcast could distribute the cell stencil information?
         PetscPrintf(PETSC_COMM_WORLD, "Radiation Initializer Percent Complete: %f\n", percentComplete);       //Distribute the cells in the stencil based on rank of the process?
                                                                                         //Incorporate buffers at the end of every cell process?
-        std::vector<std::vector<std::vector<PetscInt>>> rayCells; //Make vector to store this dimensional row
+        //std::vector<std::vector<std::vector<PetscInt>>> rayCells; //Make vector to store this dimensional row
         //std::vector<std::vector<std::vector<PetscInt>>> rayCells(stencilSet.size(), 0); //Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
         //TODO: May need to adjust by moving all of the vector declarations up here and nesting them to start with. This shouldn't be an issue really.
 
@@ -310,10 +312,10 @@ void ablate::radiationSolver::RadiationSolver::RayInit() {
         DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);  // Reads the cell location from the current cell
 
         ///Set the spatial step size to the minimum cell radius
-        //h = minCellRadius;
+        h = minCellRadius;
 
         for (int ntheta = 0; ntheta < nTheta; ntheta++) {  // for every angle theta
-            std::vector<std::vector<PetscInt>> rayThetas; //Make vector to store this dimensional row
+            //std::vector<std::vector<PetscInt>> rayThetas; //Make vector to store this dimensional row
             //std::vector<std::vector<PetscInt>> rayThetas(nTheta, 0); //Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
 
             // precalculate sin and cosine of the angle theta because it is used frequently?
@@ -322,7 +324,7 @@ void ablate::radiationSolver::RadiationSolver::RayInit() {
                 //TODO: If all rays are preallocated and independent, parallelize here? Task queue? Distribute by rank?
                 //TODO: Problem with profiler being incompatible with kernel, put timers in? <-----------------------------------
 
-                std::vector<PetscInt> rayPhis; //Make vector to store this dimensional row
+                //std::vector<PetscInt> rayPhis; //Make vector to store this dimensional row
                 //std::vector<std::vector<PetscInt>> rayPhis(nPhi, 0); //Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
 
                 PetscReal magnitude = h; //Should represent the distance from the origin cell to the boundary. How to get this? By marching out of the domain! (and checking whether we are still inside)
@@ -383,9 +385,10 @@ void ablate::radiationSolver::RadiationSolver::RayInit() {
                         ///This function returns multiple values if multiple points are input to it
                         if (cell[0].index >= 0) {
                             /// Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
-                            rayPhis.push_back(cell[0].index);
+                            rays[ncells][ntheta][nphi].push_back(cell[0].index);
+                            //rayPhis.push_back(cell[0].index);
                             //PetscPrintf(PETSC_COMM_WORLD, "Intersect x: %f, y: %f, z: %f Value: %i\n", direction[0], direction[1], direction[2], cell[0].index);
-                            // PetscPrintf(PETSC_COMM_WORLD, "Cell: %i, nTheta: %i, Theta: %g, nPhi: %i, Phi: %g, Value: %i\n", iCell, ntheta, theta, nphi, phi, cell[p].index);
+                            //PetscPrintf(PETSC_COMM_WORLD, "Cell: %i, nTheta: %i, Theta: %g, nPhi: %i, Phi: %g, Value: %i\n", iCell, ntheta, theta, nphi, phi, cell[p].index);
                         }else {boundary = true;}
                     }else {boundary = true;}
 
@@ -397,16 +400,16 @@ void ablate::radiationSolver::RadiationSolver::RayInit() {
                     PetscSFDestroy(&cellSF);
                     VecDestroy(&intersect);
                 }
-                rayThetas.push_back(rayPhis); //TODO: Change to preallocated method and compare the two method times
+                //rayThetas.push_back(rayPhis); //Changed to preallocated method and comparing the two method times
                 //rayThetas[nphi] = rayPhis;
             }
-            rayCells.push_back(rayThetas); //This lin is for dynamically allocated assignment
+            //rayCells.push_back(rayThetas); //This lin is for dynamically allocated assignment
             //rayCells[ntheta] = rayThetas; //This line is for preallocated assignment
         }
-        rays.push_back(rayCells); //These lines append the new values into the main vector (They need to be layered on every time)
+        //rays.push_back(rayCells); //These lines append the new values into the main vector (They need to be layered on every time)
         //rays[ncells] = rayCells;
-        //rays[0][2][3].
-        auto& rayPhis = rays[0][2][3]; //Extract a reference from a vector (to an item already in the array, don't have to push it back)
+        //rays[0][2][3].push_back()
+        //auto& rayPhis = rays[0][2][3]; //Extract a reference from a vector (to an item already in the array, don't have to push it back)
         ncells++;
     }
     PetscPrintf(PETSC_COMM_WORLD, "Finished!\n");
@@ -461,7 +464,6 @@ void ablate::radiationSolver::RadiationSolver::RaysGetLoc() { ///Write the locat
     stream.close();
 }
 
-//TODO: Make all method titles capitalized
 void ablate::radiationSolver::RadiationSolver::RayTrace() { ///Gets the total intensity/radiative gain at a single cell
 
     //std::cout << "Called ray tracing function. nTheta = " << nTheta << ", nPhi = " << nPhi << ", h step = " << h << "\n"; //DEBUGGING COMMENT
@@ -546,12 +548,12 @@ void ablate::radiationSolver::RadiationSolver::RayTrace() { ///Gets the total in
                         temperature = -1.179E7*loc[2]*loc[2] + 2000.0;
                     }
 
-                    //TODO: For ABLATE implementation, get temperature based on this function
+                    //For ABLATE implementation, get temperature based on this function
                     const auto &temperatureField = subDomain->GetField("temperature");
                     PetscScalar* pt = nullptr;
-                    //DMPlexPointLocalRef()
-                    //DMPlexPointLocalFieldRef(cellDM, rays[ncells][ntheta][nphi][n], temperatureField.id, cellGeomArray, &pt);
-
+                    subDomain->GetFieldLocalVector(temperatureField, 0, &vis, &loctemp, &vdm);
+                    VecGetArray(loctemp, &pt); //Get the array that lives inside the vector
+                    DMPlexPointLocalRef(cellDM, rays[ncells][ntheta][nphi][n], &temperature, &pt); //Gets the temperature from the cell index specified
 
                     //TODO: What function to use here?
 
@@ -568,6 +570,8 @@ void ablate::radiationSolver::RadiationSolver::RayTrace() { ///Gets the total in
             }
             //PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
         }
+        //Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable
+
         radGain[ncells] = kappa*intensity; //Total energy gain of the current cell depends on absorptivity at the current cell
         PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
         ///Print the radiative gain at each cell
