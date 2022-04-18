@@ -5,6 +5,7 @@
 #include <vector>
 #include "boundaryConditions/boundaryCondition.hpp"
 #include "eos/eos.hpp"
+#include "faceInterpolant.hpp"
 #include "mathFunctions/fieldFunction.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/solver.hpp"
@@ -24,21 +25,15 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     /**
      * Function assumes that the left/right solution and aux variables are discontinuous across the interface
      */
-    using DiscontinuousFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
-                                                  const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[],
-                                                  const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void* ctx);
+    using DiscontinuousFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[],
+                                                         const PetscScalar fieldR[], const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[],
+                                                         const PetscScalar auxL[], const PetscScalar auxR[], const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar flux[], void* ctx);
 
-    /**
-     * Function assumes that the left/right solution and aux variables are continuous across the interface and values are interpolated to the face
-     */
-    using ContinuousFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
-                                                               const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
-                                                               const PetscScalar gradAux[],  PetscScalar flux[], void* ctx);
     /**
      * Functions that operates on entire cell value.
      */
     using PointFunction = PetscErrorCode (*)(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
-                                                   const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
+                                             const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
 
    private:
     /**
@@ -46,18 +41,6 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      */
     struct DiscontinuousFluxFunctionDescription {
         DiscontinuousFluxFunction function;
-        void* context;
-
-        PetscInt field;
-        std::vector<PetscInt> inputFields;
-        std::vector<PetscInt> auxFields;
-    };
-
-    /**
-     * struct to describe how to compute RHS finite volume flux source terms with a continuous field
-     */
-    struct ContinuousFluxFunctionDescription {
-        ContinuousFluxFunction function;
         void* context;
 
         PetscInt field;
@@ -88,7 +71,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
 
     // hold the update functions for flux and point sources
     std::vector<DiscontinuousFluxFunctionDescription> discontinuousFluxFunctionDescriptions;
-    std::vector<ContinuousFluxFunctionDescription> continuousFluxFunctionDescriptions;
+    std::vector<FaceInterpolant::ContinuousFluxFunctionDescription> continuousFluxFunctionDescriptions;
     std::vector<PointFunctionDescription> pointFunctionDescriptions;
 
     // allow the use of any arbitrary rhs functions
@@ -113,14 +96,13 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     //! store the gradient dm for each aux variable
     std::vector<DM> auxGradientCellDms;
 
-    //! store a dm for solution variable
-
+    //! hold the class responsible for compute face values;
+    std::unique_ptr<FaceInterpolant> faceInterpolant = nullptr;
 
     /**
-     * Computes the flux across each face in th region
-
+     * Computes the flux across each face in th region based upon the cell information
      */
-    void ComputeSourceTerms(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF);
+    void ComputeCellSourceTerms(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF);
 
     /**
      * support call to compute the gradients in each cell.  This also limits the gradient based upon
@@ -207,7 +189,8 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(ContinuousFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
+    void RegisterRHSFunction(FaceInterpolant::ContinuousFluxFunction function, void* context, const std::string& field, const std::vector<std::string>& inputFields,
+                             const std::vector<std::string>& auxFields);
 
     /**
      * Register a FVM rhs point function
@@ -217,8 +200,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param inputFields
      * @param auxFields
      */
-    void RegisterRHSFunction(PointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields,
-                             const std::vector<std::string>& auxFields);
+    void RegisterRHSFunction(PointFunction function, void* context, const std::vector<std::string>& fields, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
 
     /**
      * Register an arbitrary function.  The user is responsible for all work

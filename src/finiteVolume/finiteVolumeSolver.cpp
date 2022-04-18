@@ -2,10 +2,10 @@
 #include <petsc/private/dmpleximpl.h>
 
 #include <utility>
+#include "faceInterpolant.hpp"
 #include "processes/process.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
-#include "faceInterpolant.hpp"
 
 ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
                                                              std::vector<std::shared_ptr<processes::Process>> processes,
@@ -121,16 +121,11 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
     for (const auto& fieldInfo : subDomain->GetFields(domain::FieldLocation::AUX)) {
         getGradientDm(fieldInfo, auxGradientCellDms);
     }
-
-    FaceInterpolant test(subDomain, GetRegion(), faceGeomVec, cellGeomVec);
-
 }
 
 PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
-
     PetscErrorCode ierr;
-
     auto dm = subDomain->GetDM();
     auto ds = subDomain->GetDiscreteSystem();
     /* Handle non-essential (e.g. outflow) boundary values.  This should be done before the auxFields are updated so that boundary values can be updated */
@@ -142,7 +137,24 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
         UpdateAuxFields(time, locXVec, subDomain->GetAuxVector());
 
         // Compute the RHS function
-        ComputeSourceTerms(time, locXVec, subDomain->GetAuxVector(), locFVec);
+        ComputeCellSourceTerms(time, locXVec, subDomain->GetAuxVector(), locFVec);
+
+        // create the faceInterpolant if needed
+        if (!continuousFluxFunctionDescriptions.empty()) {
+            if (faceInterpolant == nullptr) {
+                faceInterpolant = std::make_unique<FaceInterpolant>(subDomain, GetRegion(), faceGeomVec, cellGeomVec);
+            }
+
+            IS faceIS;
+            PetscInt fStart, fEnd;
+            const PetscInt* faces;
+            GetFaceRange(faceIS, fStart, fEnd, faces);
+
+            faceInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, continuousFluxFunctionDescriptions, fStart, fEnd, faces, cellGeomVec);
+
+            RestoreRange(faceIS, fStart, fEnd, faces);
+        }
+
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
     }
@@ -177,13 +189,13 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(Discontinuous
     discontinuousFluxFunctionDescriptions.push_back(functionDescription);
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(ablate::finiteVolume::FiniteVolumeSolver::ContinuousFluxFunction function, void* context, const std::string& field,
+void ablate::finiteVolume::FiniteVolumeSolver::RegisterRHSFunction(ablate::finiteVolume::FaceInterpolant::ContinuousFluxFunction function, void* context, const std::string& field,
                                                                    const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields) {
     // map the field, inputFields, and auxFields to locations
     auto& fieldId = subDomain->GetField(field);
 
     // Create the FVMRHS Function
-    ContinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
+    FaceInterpolant::ContinuousFluxFunctionDescription functionDescription{.function = function, .context = context, .field = fieldId.id};
 
     for (auto& inputField : inputFields) {
         auto& inputFieldId = subDomain->GetField(inputField);
@@ -259,7 +271,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::RegisterComputeTimeStepFunction(C
     timeStepFunctions.emplace_back(ComputeTimeStepDescription{.function = function, .context = ctx, .name = std::move(name)});
 }
 
-void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
+void ablate::finiteVolume::FiniteVolumeSolver::ComputeCellSourceTerms(PetscReal time, Vec locXVec, Vec locAuxField, Vec locF) {
     auto dm = subDomain->GetDM();
     auto dmAux = subDomain->GetAuxDM();
 
@@ -291,7 +303,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
     VecGetDM(faceGeomVec, &faceDM) >> checkError;
     VecGetDM(cellGeomVec, &cellDM) >> checkError;
 
-
     // Get raw access to the computed values
     const PetscScalar *xArray, *auxArray = nullptr;
     VecGetArrayRead(locXVec, &xArray) >> checkError;
@@ -304,7 +315,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
     VecGetArray(locF, &locFArray) >> checkError;
 
     // Compute the source terms from flux across the interface for cell based gradient functions
-    if(!this->discontinuousFluxFunctionDescriptions.empty() || !this->pointFunctionDescriptions.empty()) {
+    if (!this->discontinuousFluxFunctionDescriptions.empty() || !this->pointFunctionDescriptions.empty()) {
         // there must be a separate gradient vector/dm for field because they can be different sizes
         std::vector<Vec> locGradVecs(nf, nullptr);
         std::vector<Vec> locAuxGradVecs(naf, nullptr);
@@ -339,15 +350,43 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
         }
 
         if (!this->discontinuousFluxFunctionDescriptions.empty()) {
-            ComputeFluxSourceTerms(
-                dm, ds, totDim, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray, gradientCellDms, locGradArrays,
-                                   auxGradientCellDms, locAuxGradArrays, locFArray);
+            ComputeFluxSourceTerms(dm,
+                                   ds,
+                                   totDim,
+                                   xArray,
+                                   dmAux,
+                                   dsAux,
+                                   totDimAux,
+                                   auxArray,
+                                   faceDM,
+                                   faceGeomArray,
+                                   cellDM,
+                                   cellGeomArray,
+                                   gradientCellDms,
+                                   locGradArrays,
+                                   auxGradientCellDms,
+                                   locAuxGradArrays,
+                                   locFArray);
         }
         if (!this->pointFunctionDescriptions.empty()) {
-            ComputePointSourceTerms(
-                dm, ds, totDim, time, xArray, dmAux, dsAux, totDimAux, auxArray, faceDM, faceGeomArray, cellDM, cellGeomArray,
-                                    gradientCellDms, locGradArrays,
-                                    auxGradientCellDms, locAuxGradArrays, locFArray);
+            ComputePointSourceTerms(dm,
+                                    ds,
+                                    totDim,
+                                    time,
+                                    xArray,
+                                    dmAux,
+                                    dsAux,
+                                    totDimAux,
+                                    auxArray,
+                                    faceDM,
+                                    faceGeomArray,
+                                    cellDM,
+                                    cellGeomArray,
+                                    gradientCellDms,
+                                    locGradArrays,
+                                    auxGradientCellDms,
+                                    locAuxGradArrays,
+                                    locFArray);
         }
 
         // clean up cell grads
@@ -363,16 +402,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeSourceTerms(PetscReal time
                 DMRestoreLocalVector(auxGradientCellDms[field.subId], &locAuxGradVecs[field.subId]) >> checkError;
             }
         }
-
     }
-
-    // for face based function
-    if(!this->continuousFluxFunctionDescriptions.empty()){
-
-
-    }
-
-
 
     // cleanup (restore access to locGradVecs, locAuxGradVecs with DMRestoreLocalVector)
     VecRestoreArrayRead(locXVec, &xArray) >> checkError;

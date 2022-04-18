@@ -398,7 +398,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTempera
 PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
                                                                                        const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
-    auto pressureFunction = (eos::ThermodynamicFunction *)ctx;
+    auto pressureFunction = (eos::ThermodynamicFunction*)ctx;
 
     // Get the speed of sound from the eos
     pressureFunction->function(conservedValues, auxField + aOff[0], pressureFunction->context.get()) >> checkError;

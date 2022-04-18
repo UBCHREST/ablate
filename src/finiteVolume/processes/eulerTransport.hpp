@@ -48,7 +48,6 @@ class EulerTransport : public FlowProcess {
         PetscInt numberSpecies;
     };
 
-
    private:
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
     const std::shared_ptr<eos::EOS> eos;

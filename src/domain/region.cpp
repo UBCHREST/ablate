@@ -1,6 +1,6 @@
 #include "region.hpp"
-#include "utilities/petscError.hpp"
 #include <functional>
+#include "utilities/petscError.hpp"
 
 ablate::domain::Region::Region(std::string name, int valueIn) : name(name), value(valueIn == 0 ? 1 : valueIn) {
     // Create a unique string
