@@ -11,6 +11,20 @@ namespace ablate::finiteVolume::processes {
 
 class TwoPhaseEulerAdvection : public Process {
    private:
+    struct DecodeDataStruct {
+        PetscReal etot;
+        PetscReal rhotot;
+        PetscReal Yg;
+        PetscReal Yl;
+        PetscReal gam1;
+        PetscReal gam2;
+        PetscReal cpg;
+        PetscReal cpl;
+        PetscReal p0g;
+        PetscReal p0l;
+    };
+    static PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void* ctx);
+
     /**
      * General two phase decoder interface
      */
@@ -83,6 +97,40 @@ class TwoPhaseEulerAdvection : public Process {
 
        public:
         PerfectGasStiffenedGasDecoder(PetscInt dim, const std::shared_ptr<eos::PerfectGas> &perfectGasEos1, const std::shared_ptr<eos::StiffenedGas> &perfectGasEos2);
+
+        void DecodeTwoPhaseEulerState(PetscInt dim, const PetscInt *uOff, const PetscReal *conservedValues, const PetscReal *normal, PetscReal *density, PetscReal *densityG, PetscReal *densityL,
+                                      PetscReal *normalVelocity, PetscReal *velocity, PetscReal *internalEnergy, PetscReal *internalEnergyG, PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL,
+                                      PetscReal *MG, PetscReal *ML, PetscReal *p, PetscReal *T, PetscReal *alpha) override;
+    };
+
+    /**
+     * Implementation for two stiffened gases
+     */
+    class StiffenedGasStiffenedGasDecoder : public TwoPhaseDecoder {
+        const std::shared_ptr<eos::StiffenedGas> eosGas;
+        const std::shared_ptr<eos::StiffenedGas> eosLiquid;
+
+        /**
+         * Store a scratch euler field for use with the eos
+         */
+        std::vector<PetscReal> gasEulerFieldScratch;
+        std::vector<PetscReal> liquidEulerFieldScratch;
+
+        /**
+         * Get the compute functions using a fake field with only euler
+         */
+        eos::ThermodynamicFunction gasComputeTemperature;
+        eos::ThermodynamicTemperatureFunction gasComputeInternalEnergy;
+        eos::ThermodynamicTemperatureFunction gasComputeSpeedOfSound;
+        eos::ThermodynamicTemperatureFunction gasComputePressure;
+
+        eos::ThermodynamicFunction liquidComputeTemperature;
+        eos::ThermodynamicTemperatureFunction liquidComputeInternalEnergy;
+        eos::ThermodynamicTemperatureFunction liquidComputeSpeedOfSound;
+        eos::ThermodynamicTemperatureFunction liquidComputePressure;
+
+       public:
+        StiffenedGasStiffenedGasDecoder(PetscInt dim, const std::shared_ptr<eos::StiffenedGas> &perfectGasEos1, const std::shared_ptr<eos::StiffenedGas> &perfectGasEos2);
 
         void DecodeTwoPhaseEulerState(PetscInt dim, const PetscInt *uOff, const PetscReal *conservedValues, const PetscReal *normal, PetscReal *density, PetscReal *densityG, PetscReal *densityL,
                                       PetscReal *normalVelocity, PetscReal *velocity, PetscReal *internalEnergy, PetscReal *internalEnergyG, PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL,
