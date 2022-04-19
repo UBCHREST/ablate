@@ -82,13 +82,13 @@ ablate::finiteVolume::FaceInterpolant::FaceInterpolant(std::shared_ptr<ablate::d
                 if (cellHeight != 0) {
                     continue;
                 }
-                if (regionLabel) {  // TODO: remove this region check, do a ds check instead
-                    PetscInt labelValue;
-                    DMLabelGetValue(regionLabel, cell, &labelValue) >> checkError;
-                    if (labelValue != regionValue) {
-                        continue;
-                    }
-                }
+                //                if (regionLabel) {  // TODO: remove this region check, do a ds check instead
+                //                    PetscInt labelValue;
+                //                    DMLabelGetValue(regionLabel, cell, &labelValue) >> checkError;
+                //                    if (labelValue != regionValue) {
+                //                        continue;
+                //                    }
+                //                }
 
                 stencil.stencil.push_back(cell);
             }
@@ -105,11 +105,11 @@ ablate::finiteVolume::FaceInterpolant::FaceInterpolant(std::shared_ptr<ablate::d
         stencil.stencil.erase(std::unique(stencil.stencil.begin(), stencil.stencil.end()), stencils[iFace].stencil.end());
 
         // ignore cell if there are no stencils
+        stencil.stencilSize = (PetscInt)stencil.stencil.size();
         if (stencil.stencilSize) {
             // for now, set the interpolant weights to be the average of the two faces
-            stencil.stencilSize = (PetscInt)stencil.stencil.size();
-            stencil.stencil.resize(stencil.stencilSize, 0.0);
-            stencil.stencil.resize(stencil.stencilSize * subDomain->GetDimensions(), 0.0);
+            stencil.weights.resize(stencil.stencilSize, 0.0);
+            stencil.gradientWeights.resize(stencil.stencilSize * subDomain->GetDimensions(), 0.0);
             if (stencil.stencilSize * dim > (PetscInt)dx.size()) {
                 dx.resize(stencil.stencilSize * dim);
             }
@@ -289,11 +289,11 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
 
             // for each component
             PetscInt offset = 0;
-            for (PetscInt cc = 0; cc < solTotalSize; c++) {
+            for (PetscInt cc = 0; cc < solTotalSize; cc++) {
                 PetscScalar delta = solutionValue[cc] - faceSolValues[cc];
 
                 for (PetscInt d = 0; d < dim; ++d) {
-                    faceSolGradValues[offset++] += stencil.gradientWeights[c * dim + d] * delta;
+                    faceSolGradValues[offset++] += stencil.gradientWeights[cc * dim + d] * delta;
                 }
             }
 
@@ -304,11 +304,11 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
 
                 // for each component
                 offset = 0;
-                for (PetscInt cc = 0; cc < auxTotalSize; c++) {
+                for (PetscInt cc = 0; cc < auxTotalSize; cc++) {
                     PetscScalar delta = auxValue[cc] - faceAuxValues[cc];
 
                     for (PetscInt d = 0; d < dim; ++d) {
-                        faceAuxGradValues[offset++] += stencil.gradientWeights[c * dim + d] * delta;
+                        faceAuxGradValues[offset++] += stencil.gradientWeights[cc * dim + d] * delta;
                     }
                 }
             }
@@ -322,7 +322,7 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
 
     if (auxTotalSize) {
         VecRestoreArrayRead(auxVec, &auxArray);
-        VecRestoreArray(faceSolutionGradVec, &faceSolutionGradArray);
+        VecRestoreArray(faceAuxVec, &faceAuxArray);
         VecRestoreArray(faceAuxGradVec, &faceAuxGradArray);
     }
 }

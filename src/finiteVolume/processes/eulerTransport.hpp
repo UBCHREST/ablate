@@ -35,13 +35,8 @@ class EulerTransport : public FlowProcess {
         eos::ThermodynamicTemperatureFunction kFunction;
         /* dynamic viscosity*/
         eos::ThermodynamicTemperatureFunction muFunction;
-
-        /* store a scratch variable to hold yi*/
-        std::vector<PetscReal> yiScratch;
-
-        /* number of gas species */
-        PetscInt numberSpecies;
     };
+
     // Store ctx needed for static function diffusion function passed to PETSc
     struct UpdateTemperatureData {
         eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
@@ -112,9 +107,9 @@ class EulerTransport : public FlowProcess {
      * ctx = FlowData_CompressibleFlow
      * @return
      */
-    static PetscErrorCode DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar fieldL[], const PetscScalar fieldR[],
-                                        const PetscScalar gradL[], const PetscScalar gradR[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar auxL[], const PetscScalar auxR[],
-                                        const PetscScalar gradAuxL[], const PetscScalar gradAuxR[], PetscScalar* fL, void* ctx);
+    static PetscErrorCode DiffusionFlux(PetscInt dim, const PetscReal* area, const PetscReal* normal, const PetscReal* centroid, const PetscInt uOff[], const PetscInt uOff_x[],
+                                        const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
+                                        PetscScalar flux[], void* ctx);
 
     /**
      * static support function to compute the stress tensor
@@ -125,7 +120,7 @@ class EulerTransport : public FlowProcess {
      * @param tau
      * @return
      */
-    static PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVelL, const PetscReal* gradVelR, PetscReal* tau);
+    static PetscErrorCode CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVel, PetscReal* tau);
 };
 
 }  // namespace ablate::finiteVolume::processes

@@ -18,11 +18,6 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(const std::share
     }
 
     advectionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
-
-    // set the decode state function
-    diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
-    diffusionData.yiScratch.resize(eos->GetSpecies().size());
-
     updateTemperatureData.numberSpecies = (PetscInt)eos->GetSpecies().size();
 }
 
@@ -52,19 +47,11 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
 
         if (diffusionData.muFunction.function || diffusionData.kFunction.function) {
             // Register the euler diffusion source terms
-            if (diffusionData.numberSpecies > 0) {
-                flow.RegisterRHSFunction(DiffusionFlux,
-                                         &diffusionData,
-                                         CompressibleFlowFields::EULER_FIELD,
-                                         {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD},
-                                         {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
-            } else {
-                flow.RegisterRHSFunction(DiffusionFlux,
-                                         &diffusionData,
-                                         CompressibleFlowFields::EULER_FIELD,
-                                         {CompressibleFlowFields::EULER_FIELD},
-                                         {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
-            }
+            flow.RegisterRHSFunction(DiffusionFlux,
+                                     &diffusionData,
+                                     CompressibleFlowFields::EULER_FIELD,
+                                     {CompressibleFlowFields::EULER_FIELD},
+                                     {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD});
         }
     }
 
@@ -271,44 +258,26 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
     flow.RestoreRange(cellIS, cStart, cEnd, cells);
     return dtMin;
 }
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscInt* uOff_x, const PetscScalar* fieldL,
-                                                                              const PetscScalar* fieldR, const PetscScalar* gradL, const PetscScalar* gradR, const PetscInt* aOff,
-                                                                              const PetscInt* aOff_x, const PetscScalar* auxL, const PetscScalar* auxR, const PetscScalar* gradAuxL,
-                                                                              const PetscScalar* gradAuxR, PetscScalar* flux, void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(PetscInt dim, const PetscReal* area, const PetscReal* normal, const PetscReal* centroid, const PetscInt uOff[],
+                                                                              const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
+                                                                              const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int T = 0;
     const int VEL = 1;
-    const int EULER = 0;
-    const int DENSITY_YI = 1;
 
     PetscErrorCode ierr;
     auto flowParameters = (DiffusionData*)ctx;
 
     // Compute mu and k
-    PetscReal* yiScratch = &flowParameters->yiScratch[0];
-    for (std::size_t s = 0; s < flowParameters->yiScratch.size(); s++) {
-        yiScratch[s] = fieldL[uOff[DENSITY_YI] + s] / fieldL[uOff[EULER] + CompressibleFlowFields::RHO];
-    }
-
-    PetscReal muLeft = 0.0;
-    flowParameters->muFunction.function(fieldL, auxL[aOff[T]], &muLeft, flowParameters->muFunction.context.get());
-    PetscReal kLeft = 0.0;
-    flowParameters->kFunction.function(fieldL, auxL[aOff[T]], &kLeft, flowParameters->kFunction.context.get());
-
-    // Compute mu and k
-    for (std::size_t s = 0; s < flowParameters->yiScratch.size(); s++) {
-        yiScratch[s] = fieldR[uOff[DENSITY_YI] + s] / fieldR[uOff[EULER] + CompressibleFlowFields::RHO];
-    }
-
-    PetscReal muRight = 0.0;
-    flowParameters->muFunction.function(fieldR, auxR[aOff[T]], &muRight, flowParameters->muFunction.context.get());
-    PetscReal kRight = 0.0;
-    flowParameters->kFunction.function(fieldR, auxR[aOff[T]], &kRight, flowParameters->kFunction.context.get());
+    PetscReal mu = 0.0;
+    flowParameters->muFunction.function(field, aux[aOff[T]], &mu, flowParameters->muFunction.context.get());
+    PetscReal k = 0.0;
+    flowParameters->kFunction.function(field, aux[aOff[T]], &k, flowParameters->kFunction.context.get());
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
-    ierr = CompressibleFlowComputeStressTensor(dim, 0.5 * (muLeft + muRight), gradAuxL + aOff_x[VEL], gradAuxR + aOff_x[VEL], tau);
+    ierr = CompressibleFlowComputeStressTensor(dim, 0.5 * mu, gradAux + aOff_x[VEL], tau);
     CHKERRQ(ierr);
 
     // for each velocity component
@@ -317,7 +286,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
 
         // March over each direction
         for (PetscInt d = 0; d < dim; ++d) {
-            viscousFlux += -fg->normal[d] * tau[c * dim + d];  // This is tau[c][d]
+            viscousFlux += -normal[d] * tau[c * dim + d];  // This is tau[c][d]
         }
 
         // add in the contribution
@@ -330,14 +299,14 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
         PetscReal heatFlux = 0.0;
         // add in the contributions for this viscous terms
         for (PetscInt c = 0; c < dim; ++c) {
-            heatFlux += 0.5 * (auxL[aOff[VEL] + c] + auxR[aOff[VEL] + c]) * tau[d * dim + c];
+            heatFlux += aux[aOff[VEL] + c] * tau[d * dim + c];
         }
 
         // heat conduction (-k dT/dx - k dT/dy - k dT/dz) . n A
-        heatFlux += 0.5 * (kLeft * gradAuxL[aOff_x[T] + d] + kRight * gradAuxR[aOff_x[T] + d]);
+        heatFlux += 0.5 * (k * gradAux[aOff_x[T] + d]);
 
         // Multiply by the area normal
-        heatFlux *= -fg->normal[d];
+        heatFlux *= -normal[d];
 
         flux[CompressibleFlowFields::RHOE] += heatFlux;
     }
@@ -347,12 +316,12 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVelL, const PetscReal* gradVelR, PetscReal* tau) {
+PetscErrorCode ablate::finiteVolume::processes::EulerTransport::CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVel, PetscReal* tau) {
     PetscFunctionBeginUser;
     // pre compute the div of the velocity field
     PetscReal divVel = 0.0;
     for (PetscInt c = 0; c < dim; ++c) {
-        divVel += 0.5 * (gradVelL[c * dim + c] + gradVelR[c * dim + c]);
+        divVel += gradVel[c * dim + c];
     }
 
     // March over each velocity component, u, v, w
@@ -361,10 +330,10 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::CompressibleFlow
         for (PetscInt d = 0; d < dim; ++d) {
             if (d == c) {
                 // for the xx, yy, zz, components
-                tau[c * dim + d] = 2.0 * mu * (0.5 * (gradVelL[c * dim + d] + gradVelR[c * dim + d]) - divVel / 3.0);
+                tau[c * dim + d] = 2.0 * mu * ((gradVel[c * dim + d]) - divVel / 3.0);
             } else {
                 // for xy, xz, etc
-                tau[c * dim + d] = mu * (0.5 * (gradVelL[c * dim + d] + gradVelR[c * dim + d]) + 0.5 * (gradVelL[d * dim + c] + gradVelR[d * dim + c]));
+                tau[c * dim + d] = mu * ((gradVel[c * dim + d]) + (gradVel[d * dim + c]));
             }
         }
     }
