@@ -277,7 +277,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
-    ierr = CompressibleFlowComputeStressTensor(dim, 0.5 * mu, gradAux + aOff_x[VEL], tau);
+    ierr = CompressibleFlowComputeStressTensor(dim,  mu, gradAux + aOff_x[VEL], tau);
     CHKERRQ(ierr);
 
     // for each velocity component
@@ -286,7 +286,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
 
         // March over each direction
         for (PetscInt d = 0; d < dim; ++d) {
-            viscousFlux += -normal[d] * tau[c * dim + d];  // This is tau[c][d]
+            viscousFlux += -area[d] * tau[c * dim + d];  // This is tau[c][d]
         }
 
         // add in the contribution
@@ -303,10 +303,10 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
         }
 
         // heat conduction (-k dT/dx - k dT/dy - k dT/dz) . n A
-        heatFlux += 0.5 * (k * gradAux[aOff_x[T] + d]);
+        heatFlux += k * gradAux[aOff_x[T] + d];
 
         // Multiply by the area normal
-        heatFlux *= -normal[d];
+        heatFlux *= -area[d];
 
         flux[CompressibleFlowFields::RHOE] += heatFlux;
     }

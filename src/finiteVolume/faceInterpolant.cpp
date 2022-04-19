@@ -146,7 +146,7 @@ ablate::finiteVolume::FaceInterpolant::FaceInterpolant(std::shared_ptr<ablate::d
                 }
             }
 
-            PetscFVComputeGradient(gradientCalculator, stencil.stencilSize, &dx[0], stencil.gradientWeights.data()) >> checkError;
+            PetscFVComputeGradient(gradientCalculator, stencil.stencilSize, dx.data(), stencil.gradientWeights.data()) >> checkError;
         }
         iFace++;
     }
@@ -199,9 +199,9 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
 
     // Size the return vectors
     DMGetLocalVector(faceSolutionDm, &faceSolutionVec) >> checkError;
-    DMGetLocalVector(faceSolutionGradDm, &faceAuxVec) >> checkError;
+    DMGetLocalVector(faceSolutionGradDm, &faceSolutionGradVec) >> checkError;
     if (auxTotalSize) {
-        DMGetLocalVector(faceAuxDm, &faceSolutionGradVec) >> checkError;
+        DMGetLocalVector(faceAuxDm, &faceAuxVec) >> checkError;
         DMGetLocalVector(faceAuxGradDm, &faceAuxGradVec) >> checkError;
     }
 
@@ -236,7 +236,7 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
 
     PetscInt iFace = 0;
     for (PetscInt face = globalFaceStart; face < fEnd; face++) {
-        auto& stencil = stencils[iFace];
+        auto& stencil = stencils[iFace++];
 
         if (!stencil.stencilSize) {
             continue;
@@ -293,7 +293,7 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
                 PetscScalar delta = solutionValue[cc] - faceSolValues[cc];
 
                 for (PetscInt d = 0; d < dim; ++d) {
-                    faceSolGradValues[offset++] += stencil.gradientWeights[cc * dim + d] * delta;
+                    faceSolGradValues[offset++] += stencil.gradientWeights[c * dim + d] * delta;
                 }
             }
 
@@ -308,7 +308,7 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
                     PetscScalar delta = auxValue[cc] - faceAuxValues[cc];
 
                     for (PetscInt d = 0; d < dim; ++d) {
-                        faceAuxGradValues[offset++] += stencil.gradientWeights[cc * dim + d] * delta;
+                        faceAuxGradValues[offset++] += stencil.gradientWeights[c * dim + d] * delta;
                     }
                 }
             }
@@ -329,9 +329,9 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
 void ablate::finiteVolume::FaceInterpolant::RestoreInterpolatedFaceVectors(Vec solutionVec, Vec auxVec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec) {
     // Size the return vectors
     DMRestoreLocalVector(faceSolutionDm, &faceSolutionVec) >> checkError;
-    DMRestoreLocalVector(faceSolutionGradDm, &faceAuxVec) >> checkError;
+    DMRestoreLocalVector(faceSolutionGradDm, &faceSolutionGradVec) >> checkError;
     if (faceAuxDm) {
-        DMRestoreLocalVector(faceAuxDm, &faceSolutionGradVec) >> checkError;
+        DMRestoreLocalVector(faceAuxDm, &faceAuxVec) >> checkError;
     }
     if (faceAuxGradDm) {
         DMRestoreLocalVector(faceAuxGradDm, &faceAuxGradVec) >> checkError;
@@ -513,7 +513,7 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
         VecRestoreArrayRead(faceAuxGradVec, &faceAuxGradArray);
     }
     VecRestoreArray(locFVec, &locFArray) >> checkError;
-
+//    VecView(locFVec, PETSC_VIEWER_STDOUT_WORLD);
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     RestoreInterpolatedFaceVectors(locXVec, locFVec, faceSolutionVec, faceAuxVec, faceSolutionGradVec, faceAuxGradVec);
 }

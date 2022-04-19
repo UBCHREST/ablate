@@ -86,29 +86,6 @@ class FaceInterpolant {
         }
     }
 
-    /**
-     * Private function to get the interpolated values on the face
-     * @param solutionVec
-     * @param auxVec
-     * @param faceSolutionVec
-     * @param faceAuxVec
-     * @param faceSolutionGradVec
-     * @param faceAuxGradVec
-     */
-    void GetInterpolatedFaceVectors(Vec solutionVec, Vec auxVec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec);
-
-    /**
-     * Private function to return the interpolated values on the face
-
-     * @param solutionVec
-     * @param auxVec
-     * @param faceSolutionVec
-     * @param faceAuxVec
-     * @param faceSolutionGradVec
-     * @param faceAuxGradVec
-     */
-    void RestoreInterpolatedFaceVectors(Vec solutionVec, Vec auxVec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec);
-
    public:
     FaceInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomain, std::shared_ptr<domain::Region> region, Vec faceGeomVec, Vec cellGeomVec);
     ~FaceInterpolant();
@@ -140,6 +117,29 @@ class FaceInterpolant {
      */
     void ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, PetscInt fStart, PetscInt fEnd,
                     const PetscInt* faces, Vec cellGeomVec);
+
+    /**
+     * function to get the interpolated values on the face
+     * @param solutionVec
+     * @param auxVec
+     * @param faceSolutionVec
+     * @param faceAuxVec
+     * @param faceSolutionGradVec
+     * @param faceAuxGradVec
+     */
+    void GetInterpolatedFaceVectors(Vec solutionVec, Vec auxVec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec);
+
+    /**
+     * function to return the interpolated values on the face
+     * @param solutionVec
+     * @param auxVec
+     * @param faceSolutionVec
+     * @param faceAuxVec
+     * @param faceSolutionGradVec
+     * @param faceAuxGradVec
+     */
+    void RestoreInterpolatedFaceVectors(Vec solutionVec, Vec auxVec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec);
+
 };
 
 }  // namespace ablate::finiteVolume

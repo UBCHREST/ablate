@@ -239,12 +239,6 @@ class SubDomain : public io::Serializable {
     inline Vec GetSolutionVector() noexcept { return domain.GetSolutionVector(); }
 
     /**
-     * Return the local solution vector with information updated from the global solution vector
-     * @return
-     */
-    Vec GetSolutionLocalVector();
-
-    /**
      * Returns the local aux vector
      * @return
      */
