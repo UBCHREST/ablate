@@ -11,9 +11,6 @@ class FaceInterpolant {
     //! use the subDomain to setup the problem
     std::shared_ptr<ablate::domain::SubDomain> subDomain;
 
-    //! The region of this solver.
-    const std::shared_ptr<domain::Region> region;
-
     //! store the aux and solution variable sizes for this domain
     PetscInt solTotalSize = 0;
 
@@ -87,7 +84,13 @@ class FaceInterpolant {
     }
 
    public:
-    FaceInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomain, std::shared_ptr<domain::Region> region, Vec faceGeomVec, Vec cellGeomVec);
+    /**
+     *
+     * @param subDomain
+     * @param faceGeomVec
+     * @param cellGeomVec
+     */
+    FaceInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomain, Vec faceGeomVec, Vec cellGeomVec);
     ~FaceInterpolant();
 
     /**
@@ -115,8 +118,8 @@ class FaceInterpolant {
      * @param locXVec
      * @param locFVec
      */
-    void ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, PetscInt fStart, PetscInt fEnd,
-                    const PetscInt* faces, Vec cellGeomVec);
+    void ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
+                    std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, PetscInt fStart, PetscInt fEnd, const PetscInt* faces, Vec cellGeomVec);
 
     /**
      * function to get the interpolated values on the face

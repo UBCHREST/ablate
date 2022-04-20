@@ -142,7 +142,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
         // create the faceInterpolant if needed
         if (!continuousFluxFunctionDescriptions.empty()) {
             if (faceInterpolant == nullptr) {
-                faceInterpolant = std::make_unique<FaceInterpolant>(subDomain, GetRegion(), faceGeomVec, cellGeomVec);
+                faceInterpolant = std::make_unique<FaceInterpolant>(subDomain, faceGeomVec, cellGeomVec);
             }
 
             IS faceIS;
@@ -150,7 +150,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
             const PetscInt* faces;
             GetFaceRange(faceIS, fStart, fEnd, faces);
 
-            faceInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, continuousFluxFunctionDescriptions, fStart, fEnd, faces, cellGeomVec);
+            faceInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, GetRegion(), continuousFluxFunctionDescriptions, fStart, fEnd, faces, cellGeomVec);
             RestoreRange(faceIS, fStart, fEnd, faces);
         }
     } catch (std::exception& exception) {

@@ -150,3 +150,4 @@ and one value equal to 2.  When using the compare tool, you must escape all rege
 | =                    | the actual value muse equal the specified value according to ASSERT_DOUBLE_EQ. A nan can be specified to compare with expected nan output. |
 | ~                    | any number is accepted                                                                                                                     |
 | *                    | any string is accepted                                                                                                                     |
+| n                    | should be near value (percent difference <=1E-3)                                                                                           |

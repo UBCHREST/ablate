@@ -3,7 +3,7 @@ Timestep: 0001 time = 6.001e-05 dt = 6.00058e-05
 Timestep: 0002 time = 0.0001143 dt = 5.42457e-05
 Timestep: 0003 time = 0.000165 dt = 5.07594e-05
 Timestep: 0004 time = 0.0002139 dt = 4.89168e-05
-Timestep: 0005 time = 0.0002621 dt = 4.82109e-05
+Timestep: 0005 time = 0.0002621 dt = 4.82108e-05
 Timestep: 0006 time = 0.0003105 dt = 4.8332e-05
 Timestep: 0007 time = 0.0003596 dt = 4.91042e-05
 Timestep: 0008 time = 0.00041  dt = 5.04274e-05

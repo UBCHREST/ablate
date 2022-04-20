@@ -94,7 +94,7 @@ TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         DMPlexComputeGeometryFVM(mesh->GetSubDomain(domain::Region::ENTIREDOMAIN)->GetDM(), &cellGeomVec, &faceGeomVec) >> testErrorChecker;
 
         // create a test faceInterpolant
-        ablate::finiteVolume::FaceInterpolant faceInterpolant(mesh->GetSubDomain(domain::Region::ENTIREDOMAIN), domain::Region::ENTIREDOMAIN, faceGeomVec, cellGeomVec);
+        ablate::finiteVolume::FaceInterpolant faceInterpolant(mesh->GetSubDomain(domain::Region::ENTIREDOMAIN), faceGeomVec, cellGeomVec);
 
         // Get the global vectors
         auto globVec = mesh->GetSolutionVector();
