@@ -9,6 +9,7 @@
 #include <fstream>
 #include <iostream>
 #include "environment/runEnvironment.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 
 ablate::radiationSolver::RadiationSolver::RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::shared_ptr<parameters::Parameters> options)
     : CellSolver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)) {}
@@ -542,11 +543,11 @@ void ablate::radiationSolver::RadiationSolver::RayTrace() { ///Gets the total in
 
                     ///Redefine the absorptivity and temperature in this section
                     ///Get the local temperature at every point along the ray. For the analytical solution, the temperature at each point will be based on the spatial location of the cell.
-                    if(loc[2] <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
+                    /*if(loc[2] <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
                         temperature = -6.349E6*loc[2]*loc[2] + 2000.0;
                     }else{
                         temperature = -1.179E7*loc[2]*loc[2] + 2000.0;
-                    }
+                    }*/
 
                     //For ABLATE implementation, get temperature based on this function
                     const auto &temperatureField = subDomain->GetField("temperature");
@@ -571,6 +572,21 @@ void ablate::radiationSolver::RadiationSolver::RayTrace() { ///Gets the total in
             //PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
         }
         //Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable
+        Vec rhs;
+        DMGetLocalVector(subDomain->GetDM(), &rhs);
+        VecZeroEntries(rhs);
+        PetscScalar* rhsArray;
+
+        const auto& eulerFieldInfo = subDomain->GetField("euler");
+
+        // Get the cell center
+        PetscFVCellGeom* cellGeom;
+        DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);
+
+        // extract the result from the rhs
+        PetscScalar* rhsValues;
+        DMPlexPointLocalFieldRead(cellDM, iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
+        rhsArray[ablate::finiteVolume::CompressibleFlowFields::RHOE] += kappa*intensity;
 
         radGain[ncells] = kappa*intensity; //Total energy gain of the current cell depends on absorptivity at the current cell
         PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
@@ -660,9 +676,10 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::SolveParallelPl
     return G; //Return the vector of values representing the irradiation at each height z
 }
 
-std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::ReallySolveParallelPlates(){
+PetscReal ablate::radiationSolver::RadiationSolver::ReallySolveParallelPlates(PetscReal z){ //std::vector<PetscReal>
     ///Define variables and basic information
-    std::vector<PetscReal> G; //Irradiation at each point
+    //std::vector<PetscReal> G; //Irradiation at each point
+    PetscReal G;
     PetscReal IT = FlameIntensity(1, 700); //Intensity of rays originating from the top plate
     PetscReal IB = FlameIntensity(1, 1300); //Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
     PetscReal kappa = 1; //Kappa is not spatially dependant in this special case
@@ -673,18 +690,20 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::ReallySolvePara
     PetscReal temperature;
     PetscReal Ibz;
 
+    PetscReal pi = 3.1415926535897932384626433832795028841971693993;
+
     ///Get the file path for the output
     std::filesystem::path radOutput = environment::RunEnvironment::Get().GetOutputDirectory() / "analytical.txt"; //Will contain irradiation at each point
     std::ofstream stream(radOutput);
 
     //PetscReal nMu = 1000; //Number of mu for which the angle is computed //1/cos(theta); //Theta never comes up in the actual process of solving so we can just iterate over mu to keep things evenly spaced
     //PetscReal mu = (nmu / nMu); //From 0 to 1
-    PetscReal nZ = 1000;
+    //PetscReal nZ = 1000;
     PetscReal nZp = 1000;
 
     ///For every z
-    for(double nz = 1; nz < (nZ-1); nz++) {
-        PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
+    //for(double nz = 1; nz < (nZ-1); nz++) {
+        //PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
         Ibz = 0;
 
         std::vector<PetscReal> Iplus;
@@ -721,14 +740,15 @@ std::vector<PetscReal> ablate::radiationSolver::RadiationSolver::ReallySolvePara
         PetscReal term2 = IT*EInteg(2,kappa*(zTop-z));
         PetscReal term3 = CSimp(zBottom,z,Iplus);
         PetscReal term4 = CSimp(z,zTop,Iminus);
-        G.push_back(2 * pi * (term1 + term2 + term3 + term4));
+        //G.push_back(2 * pi * (term1 + term2 + term3 + term4));
+        G = 2 * pi * (term1 + term2 + term3 + term4);
         ///Write to the file
         intensity = 2 * pi * (term1 + term2 + term3 + term4);
         stream << z;
         stream << ' ';
         stream << intensity;
         stream << '\n';
-    }
+    //}
     return G;
 }
 
@@ -771,6 +791,8 @@ PetscReal ablate::radiationSolver::RadiationSolver::EInteg(int order, double x) 
 }
 
 PetscReal ablate::radiationSolver::RadiationSolver::FlameIntensity(double epsilon, double temperature) { ///Gets the flame intensity based on temperature and emissivity
+    const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
+    const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
     return epsilon * sbc * temperature * temperature * temperature * temperature / pi;
 }
 

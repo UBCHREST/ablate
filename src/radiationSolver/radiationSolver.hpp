@@ -150,14 +150,14 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     ///Class Methods
     void RayTrace();
     PetscReal CastRay(int theta, int phi, std::vector<PetscReal> intersect); //Class methods get declared here
-    PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
+    static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
     PetscReal Mag(std::vector<PetscReal> vector);
     void RayInit();
     void RaysGetLoc();
-    PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f);
+    static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f);
     std::vector<PetscReal> SolveParallelPlates();
-    std::vector<PetscReal> ReallySolveParallelPlates();
-    PetscReal EInteg(int order, double x);
+    static PetscReal ReallySolveParallelPlates(PetscReal z); //std::vector<PetscReal>
+    static PetscReal EInteg(int order, double x);
 
     ///Class Constants
     const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
