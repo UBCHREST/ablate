@@ -151,10 +151,8 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
             GetFaceRange(faceIS, fStart, fEnd, faces);
 
             faceInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, continuousFluxFunctionDescriptions, fStart, fEnd, faces, cellGeomVec);
-
             RestoreRange(faceIS, fStart, fEnd, faces);
         }
-
     } catch (std::exception& exception) {
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
     }

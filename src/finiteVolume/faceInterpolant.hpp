@@ -139,7 +139,6 @@ class FaceInterpolant {
      * @param faceAuxGradVec
      */
     void RestoreInterpolatedFaceVectors(Vec solutionVec, Vec auxVec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec);
-
 };
 
 }  // namespace ablate::finiteVolume

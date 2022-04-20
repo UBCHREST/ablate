@@ -930,6 +930,6 @@ INSTANTIATE_TEST_SUITE_P(
                                                                       .k = 1000.0},
                                                         .initialNx = 10,
                                                         .levels = 2,
-                                                        .expectedL2Convergence = {2, 2.2, 2.2, 2.2, 2.},
-                                                        .expectedLInfConvergence = {1.9, 2.2, 2.0, 2.0, 2.}}),
+                                                        .expectedL2Convergence = {2.1, 2.2, 2.2, 2.2, 2.},
+                                                        .expectedLInfConvergence = {1.9, 2.2, 2.0, 2.2, 2.}}),
     [](const testing::TestParamInfo<CompressibleFlowMmsTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });
