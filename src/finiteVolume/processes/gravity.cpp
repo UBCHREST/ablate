@@ -7,8 +7,7 @@ void ablate::finiteVolume::processes::Gravity::Initialize(ablate::finiteVolume::
     fv.RegisterRHSFunction(ComputeGravitySource, this, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::EULER_FIELD}, {});
 }
 
-PetscErrorCode ablate::finiteVolume::processes::Gravity::ComputeGravitySource(PetscInt dim, PetscReal time, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u,
-                                                                              const PetscScalar *const *gradU, const PetscInt *aOff, const PetscScalar *a, const PetscScalar *const *gradA,
+PetscErrorCode ablate::finiteVolume::processes::Gravity::ComputeGravitySource(PetscInt dim, PetscReal time, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u, const PetscInt *aOff, const PetscScalar *a,
                                                                               PetscScalar *f, void *ctx) {
     PetscFunctionBeginUser;
     const int EULER_FIELD = 0;

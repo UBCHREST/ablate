@@ -67,8 +67,7 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(T
 }
 
 PetscErrorCode ablate::finiteVolume::processes::Buoyancy::ComputeBuoyancySource(PetscInt dim, PetscReal time, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u,
-                                                                                const PetscScalar *const *gradU, const PetscInt *aOff, const PetscScalar *a, const PetscScalar *const *gradA,
-                                                                                PetscScalar *f, void *ctx) {
+                                                                                const PetscInt *aOff, const PetscScalar *a, PetscScalar *f, void *ctx) {
     PetscFunctionBeginUser;
     const int EULER_FIELD = 0;
     auto buoyancyProcess = (ablate::finiteVolume::processes::Buoyancy *)ctx;

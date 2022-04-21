@@ -814,9 +814,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputeFluxSourceTerms(DM dm, Pet
         for (std::size_t fun = 0; fun < discontinuousFluxFunctionDescriptions.size(); fun++) {
             PetscArrayzero(flux, totDim) >> checkError;
             const auto& rhsFluxFunctionDescription = discontinuousFluxFunctionDescriptions[fun];
-            rhsFluxFunctionDescription.function(
-                dim, fg, &uOff[fun][0], &uOff_x[fun][0], uL, uR, gradL, gradR, &aOff[fun][0], &aOff_x[fun][0], auxL, auxR, gradAuxL, gradAuxR, flux, rhsFluxFunctionDescription.context) >>
-                checkError;
+            rhsFluxFunctionDescription.function(dim, fg, uOff[fun].data(), uL, uR, aOff[fun].data(), auxL, auxR, flux, rhsFluxFunctionDescription.context) >> checkError;
 
             // add the flux back to the cell
             PetscScalar *fL = nullptr, *fR = nullptr;
@@ -918,8 +916,8 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
     GetCellRange(cellIS, cStart, cEnd, cells);
 
     // Get the pointer to the local grad arrays
-    const PetscScalar* const* gradU = locGradArrays.empty() ? nullptr : &locGradArrays[0];
-    const PetscScalar* const* gradAux = locAuxGradArrays.empty() ? nullptr : &locAuxGradArrays[0];
+    //    const PetscScalar* const* gradU = locGradArrays.empty() ? nullptr : &locGradArrays[0];
+    //    const PetscScalar* const* gradAux = locAuxGradArrays.empty() ? nullptr : &locAuxGradArrays[0];
 
     // March over each cell
     for (PetscInt c = cStart; c < cEnd; ++c) {
@@ -950,8 +948,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::ComputePointSourceTerms(DM dm, Pe
 
         // March over each functionDescriptions
         for (std::size_t fun = 0; fun < pointFunctionDescriptions.size(); fun++) {
-            // (PetscInt dim, const PetscFVCellGeom *cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[], PetscScalar f[], void *ctx)
-            pointFunctionDescriptions[fun].function(dim, time, cg, &uOff[fun][0], u, gradU, &aOff[fun][0], a, gradAux, fScratch, pointFunctionDescriptions[fun].context) >> checkError;
+            pointFunctionDescriptions[fun].function(dim, time, cg, uOff[fun].data(), u, aOff[fun].data(), a, fScratch, pointFunctionDescriptions[fun].context) >> checkError;
 
             // copy over each result flux field
             PetscInt r = 0;

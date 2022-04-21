@@ -24,11 +24,7 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(const std::share
 void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Register the euler source terms
     if (fluxCalculator) {
-        if (eos->GetSpecies().empty()) {
-            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD}, {});
-        } else {
-            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
-        }
+        flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD}, {});
 
         // PetscErrorCode PetscOptionsGetBool(PetscOptions options,const char pre[],const char name[],PetscBool *ivalue,PetscBool *set)
         flow.RegisterComputeTimeStepFunction(ComputeTimeStep, &advectionData, "cfl");
@@ -80,10 +76,8 @@ void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteV
     }
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscInt* uOff_x, const PetscScalar* fieldL,
-                                                                              const PetscScalar* fieldR, const PetscScalar* gradL, const PetscScalar* gradR, const PetscInt* aOff,
-                                                                              const PetscInt* aOff_x, const PetscScalar* auxL, const PetscScalar* auxR, const PetscScalar* gradAuxL,
-                                                                              const PetscScalar* gradAuxR, PetscScalar* flux, void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscScalar* fieldL, const PetscScalar* fieldR,
+                                                                              const PetscInt* aOff, const PetscScalar* auxL, const PetscScalar* auxR, PetscScalar* flux, void* ctx) {
     PetscFunctionBeginUser;
 
     auto eulerAdvectionData = (AdvectionData*)ctx;

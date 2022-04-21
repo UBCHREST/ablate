@@ -49,11 +49,7 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
             advectionData.computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
             advectionData.computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
 
-            if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::DENSITY_YI_FIELD)) {
-                flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
-            } else {
-                flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved}, {});
-            }
+            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved}, {});
         }
 
         if (transportModel) {
@@ -87,10 +83,8 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdateEVField(Petsc
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
-                                                                           const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff, const PetscInt *aOff_x,
-                                                                           const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL, const PetscScalar *gradAuxR,
-                                                                           PetscScalar *flux, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscScalar *fieldL, const PetscScalar *fieldR,
+                                                                           const PetscInt *aOff, const PetscScalar *auxL, const PetscScalar *auxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
     auto eulerAdvectionData = (AdvectionData *)ctx;
 
