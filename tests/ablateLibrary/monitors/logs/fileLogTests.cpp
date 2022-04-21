@@ -128,6 +128,5 @@ TEST_P(FileLogTestFixture, ShouldAppendToFileInOutputDirectory) {
     ASSERT_EQ(buffer.str(), "Log Out Log\nrank: 0\nLog Out 2\nrank: 0\n");
 }
 
-INSTANTIATE_TEST_SUITE_P(LogTests, FileLogTestFixture,
-                         testing::Values((MpiTestParameter){.testName = "logFile 1 proc", .nproc = 1, .arguments = ""}, (MpiTestParameter){.testName = "logFile 2 proc", .nproc = 2, .arguments = ""}),
+INSTANTIATE_TEST_SUITE_P(LogTests, FileLogTestFixture, testing::Values((MpiTestParameter){.testName = "logFile 1 proc", .nproc = 1, .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter> &info) { return info.param.getTestName(); });

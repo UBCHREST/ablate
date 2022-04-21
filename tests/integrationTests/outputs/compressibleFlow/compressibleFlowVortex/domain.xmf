@@ -1,15 +1,7 @@
 <?xml version="1.0" ?>
-<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" [
-<!ENTITY HeavyData "domain.hdf5">
-]>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
 <Xdmf>
   <Domain Name="domain">
-    <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
-      &HeavyData;:/viz/topology/cells
-    </DataItem>
-    <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-      &HeavyData;:/viz/geometry/vertices
-    </DataItem>
     <Grid CollectionType="Temporal" GridType="Collection" Name="TimeSeries">
       <Time TimeType="List">
         <DataItem Dimensions="26" Format="XML" NumberType="Float">
@@ -18,13 +10,13 @@
       </Time>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -33,7 +25,7 @@
               0 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -43,7 +35,7 @@
               0 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -53,7 +45,7 @@
               0 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -63,7 +55,7 @@
               0 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -73,7 +65,7 @@
               0 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -83,7 +75,7 @@
               0 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -93,20 +85,20 @@
               0 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -115,7 +107,7 @@
               1 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -125,7 +117,7 @@
               1 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -135,7 +127,7 @@
               1 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -145,7 +137,7 @@
               1 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -155,7 +147,7 @@
               1 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -165,7 +157,7 @@
               1 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -175,20 +167,20 @@
               1 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -197,7 +189,7 @@
               2 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -207,7 +199,7 @@
               2 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -217,7 +209,7 @@
               2 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -227,7 +219,7 @@
               2 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -237,7 +229,7 @@
               2 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -247,7 +239,7 @@
               2 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -257,20 +249,20 @@
               2 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -279,7 +271,7 @@
               3 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -289,7 +281,7 @@
               3 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -299,7 +291,7 @@
               3 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -309,7 +301,7 @@
               3 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -319,7 +311,7 @@
               3 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -329,7 +321,7 @@
               3 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -339,20 +331,20 @@
               3 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -361,7 +353,7 @@
               4 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -371,7 +363,7 @@
               4 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -381,7 +373,7 @@
               4 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -391,7 +383,7 @@
               4 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -401,7 +393,7 @@
               4 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -411,7 +403,7 @@
               4 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -421,20 +413,20 @@
               4 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -443,7 +435,7 @@
               5 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -453,7 +445,7 @@
               5 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -463,7 +455,7 @@
               5 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -473,7 +465,7 @@
               5 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -483,7 +475,7 @@
               5 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -493,7 +485,7 @@
               5 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -503,20 +495,20 @@
               5 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -525,7 +517,7 @@
               6 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -535,7 +527,7 @@
               6 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -545,7 +537,7 @@
               6 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -555,7 +547,7 @@
               6 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -565,7 +557,7 @@
               6 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -575,7 +567,7 @@
               6 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -585,20 +577,20 @@
               6 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -607,7 +599,7 @@
               7 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -617,7 +609,7 @@
               7 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -627,7 +619,7 @@
               7 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -637,7 +629,7 @@
               7 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -647,7 +639,7 @@
               7 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -657,7 +649,7 @@
               7 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -667,20 +659,20 @@
               7 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -689,7 +681,7 @@
               8 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -699,7 +691,7 @@
               8 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -709,7 +701,7 @@
               8 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -719,7 +711,7 @@
               8 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -729,7 +721,7 @@
               8 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -739,7 +731,7 @@
               8 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -749,20 +741,20 @@
               8 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -771,7 +763,7 @@
               9 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -781,7 +773,7 @@
               9 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -791,7 +783,7 @@
               9 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -801,7 +793,7 @@
               9 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -811,7 +803,7 @@
               9 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -821,7 +813,7 @@
               9 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -831,20 +823,20 @@
               9 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -853,7 +845,7 @@
               10 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -863,7 +855,7 @@
               10 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -873,7 +865,7 @@
               10 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -883,7 +875,7 @@
               10 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -893,7 +885,7 @@
               10 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -903,7 +895,7 @@
               10 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -913,20 +905,20 @@
               10 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -935,7 +927,7 @@
               11 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -945,7 +937,7 @@
               11 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -955,7 +947,7 @@
               11 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -965,7 +957,7 @@
               11 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -975,7 +967,7 @@
               11 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -985,7 +977,7 @@
               11 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -995,20 +987,20 @@
               11 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1017,7 +1009,7 @@
               12 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1027,7 +1019,7 @@
               12 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1037,7 +1029,7 @@
               12 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1047,7 +1039,7 @@
               12 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1057,7 +1049,7 @@
               12 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1067,7 +1059,7 @@
               12 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1077,20 +1069,20 @@
               12 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1099,7 +1091,7 @@
               13 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1109,7 +1101,7 @@
               13 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1119,7 +1111,7 @@
               13 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1129,7 +1121,7 @@
               13 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1139,7 +1131,7 @@
               13 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1149,7 +1141,7 @@
               13 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1159,20 +1151,20 @@
               13 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1181,7 +1173,7 @@
               14 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1191,7 +1183,7 @@
               14 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1201,7 +1193,7 @@
               14 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1211,7 +1203,7 @@
               14 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1221,7 +1213,7 @@
               14 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1231,7 +1223,7 @@
               14 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1241,20 +1233,20 @@
               14 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1263,7 +1255,7 @@
               15 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1273,7 +1265,7 @@
               15 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1283,7 +1275,7 @@
               15 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1293,7 +1285,7 @@
               15 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1303,7 +1295,7 @@
               15 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1313,7 +1305,7 @@
               15 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1323,20 +1315,20 @@
               15 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1345,7 +1337,7 @@
               16 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1355,7 +1347,7 @@
               16 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1365,7 +1357,7 @@
               16 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1375,7 +1367,7 @@
               16 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1385,7 +1377,7 @@
               16 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1395,7 +1387,7 @@
               16 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1405,20 +1397,20 @@
               16 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1427,7 +1419,7 @@
               17 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1437,7 +1429,7 @@
               17 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1447,7 +1439,7 @@
               17 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1457,7 +1449,7 @@
               17 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1467,7 +1459,7 @@
               17 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1477,7 +1469,7 @@
               17 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1487,20 +1479,20 @@
               17 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1509,7 +1501,7 @@
               18 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1519,7 +1511,7 @@
               18 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1529,7 +1521,7 @@
               18 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1539,7 +1531,7 @@
               18 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1549,7 +1541,7 @@
               18 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1559,7 +1551,7 @@
               18 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1569,20 +1561,20 @@
               18 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1591,7 +1583,7 @@
               19 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1601,7 +1593,7 @@
               19 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1611,7 +1603,7 @@
               19 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1621,7 +1613,7 @@
               19 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1631,7 +1623,7 @@
               19 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1641,7 +1633,7 @@
               19 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1651,20 +1643,20 @@
               19 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1673,7 +1665,7 @@
               20 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1683,7 +1675,7 @@
               20 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1693,7 +1685,7 @@
               20 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1703,7 +1695,7 @@
               20 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1713,7 +1705,7 @@
               20 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1723,7 +1715,7 @@
               20 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1733,20 +1725,20 @@
               20 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1755,7 +1747,7 @@
               21 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1765,7 +1757,7 @@
               21 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1775,7 +1767,7 @@
               21 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1785,7 +1777,7 @@
               21 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1795,7 +1787,7 @@
               21 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1805,7 +1797,7 @@
               21 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1815,20 +1807,20 @@
               21 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1837,7 +1829,7 @@
               22 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1847,7 +1839,7 @@
               22 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1857,7 +1849,7 @@
               22 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1867,7 +1859,7 @@
               22 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1877,7 +1869,7 @@
               22 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1887,7 +1879,7 @@
               22 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1897,20 +1889,20 @@
               22 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1919,7 +1911,7 @@
               23 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1929,7 +1921,7 @@
               23 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1939,7 +1931,7 @@
               23 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1949,7 +1941,7 @@
               23 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1959,7 +1951,7 @@
               23 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1969,7 +1961,7 @@
               23 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -1979,20 +1971,20 @@
               23 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -2001,7 +1993,7 @@
               24 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2011,7 +2003,7 @@
               24 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2021,7 +2013,7 @@
               24 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2031,7 +2023,7 @@
               24 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2041,7 +2033,7 @@
               24 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2051,7 +2043,7 @@
               24 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2061,20 +2053,20 @@
               24 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
       </Grid>
       <Grid GridType="Uniform" Name="domain">
         <Topology NumberOfElements="144" TopologyType="Quadrilateral">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_topology_cells"]
+          <DataItem Dimensions="144 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
         <Geometry GeometryType="XYZ">
-          <DataItem Reference="XML">
-            /Xdmf/Domain/DataItem[@Name="_viz_geometry_vertices"]
+          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
+            domain.hdf5:/viz/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -2083,7 +2075,7 @@
               25 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_pressure
+              domain.hdf5:/cell_fields/aux_pressure
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2093,7 +2085,7 @@
               25 0 0 1 1 1 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 1" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_temperature
+              domain.hdf5:/cell_fields/aux_temperature
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2103,7 +2095,7 @@
               25 0 0 1 1 1 1 144 2
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 2" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/aux_velocity
+              domain.hdf5:/cell_fields/aux_velocity
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2113,7 +2105,7 @@
               25 0 0 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2123,7 +2115,7 @@
               25 0 1 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2133,7 +2125,7 @@
               25 0 2 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>
@@ -2143,7 +2135,7 @@
               25 0 3 1 1 4 1 144 1
             </DataItem>
             <DataItem DataType="Float" Dimensions="26 144 4" Format="HDF" Precision="8">
-              &HeavyData;:/cell_fields/solution_euler
+              domain.hdf5:/cell_fields/solution_euler
             </DataItem>
           </DataItem>
         </Attribute>

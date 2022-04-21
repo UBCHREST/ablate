@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.14)
-
 find_package(PkgConfig REQUIRED)
 
 # Check if a C compiler is explicitly stated
@@ -17,7 +16,7 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
 endif ()
 
 # Set the project details
-project(ablateLibrary VERSION 0.7.44)
+project(ablateLibrary VERSION 0.8.4)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -38,18 +37,14 @@ if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif ()
 
 # Add required warnings for projects
-function(ablate_default_target_compile_options_c target)
-    target_compile_options(${target} PRIVATE $<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wno-unused-parameter>)
-    target_link_options(${target} PRIVATE $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Wl>)
-endfunction()
 function(ablate_default_target_compile_options_cxx target)
-    target_compile_options(${target} PRIVATE $<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wsuggest-override -Wno-unused-parameter >)
-    target_compile_options(${target} PRIVATE $<$<CXX_COMPILER_ID:GNU>: -Wno-missing-field-initializers -Wno-maybe-uninitialized>)
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:C>:$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wno-unused-parameter>>)
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wsuggest-override -Wno-unused-parameter >>)
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<CXX_COMPILER_ID:GNU>: -Wno-missing-field-initializers -Wno-maybe-uninitialized>>)
 endfunction()
 
 # Load in the subdirectories
-add_subdirectory(ablateCore)
-add_subdirectory(ablateLibrary)
+add_subdirectory(src)
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
@@ -70,3 +65,6 @@ endif ()
 add_executable(ablate main.cpp)
 target_link_libraries(ablate PRIVATE ablateLibrary)
 ablate_default_target_compile_options_cxx(ablate)
+
+# include system specific hacks
+include(systemHacks.cmake)
