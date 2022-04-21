@@ -6,11 +6,10 @@ ablate::domain::modifiers::TagLabelBoundary::TagLabelBoundary(std::shared_ptr<do
     : region(region), boundaryFaceRegion(boundaryFaceRegion), boundaryCellRegion(boundaryCellRegion) {}
 
 void ablate::domain::modifiers::TagLabelBoundary::Modify(DM &dm) {
+    region->CheckForLabel(dm);
+
     DMLabel label;
     DMGetLabel(dm, region->GetName().c_str(), &label) >> checkError;
-    if (label == nullptr) {
-        throw std::runtime_error("Label " + region->GetName() + " cannot be found in the dm.");
-    }
 
     // Create a new label
     DMCreateLabel(dm, boundaryFaceRegion->GetName().c_str()) >> checkError;

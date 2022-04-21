@@ -16,6 +16,13 @@ void ablate::domain::Region::GetLabel(const std::shared_ptr<Region>& region, DM 
         regionValue = region->GetValue();
     }
 }
+void ablate::domain::Region::CheckForLabel(DM dm) const {
+    DMLabel label = nullptr;
+    DMGetLabel(dm, GetName().c_str(), &label) >> checkError;
+    if (label == nullptr) {
+        throw std::invalid_argument("Unable to locate " + GetName() + " in domain");
+    }
+}
 
 std::ostream& ablate::domain::operator<<(std::ostream& os, const ablate::domain::Region& region) {
     os << region.ToString();

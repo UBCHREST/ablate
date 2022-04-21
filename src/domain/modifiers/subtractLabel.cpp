@@ -14,6 +14,7 @@ void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
     DMGetLabel(dm, differenceRegion->GetName().c_str(), &differenceLabel) >> checkError;
 
     // get the minuendIS
+    minuendRegion->CheckForLabel(dm);
     DMLabel minuendLabel = nullptr;
     DMGetLabel(dm, minuendRegion->GetName().c_str(), &minuendLabel) >> checkError;
     IS minuendIS = nullptr;

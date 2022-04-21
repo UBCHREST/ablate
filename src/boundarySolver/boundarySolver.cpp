@@ -58,6 +58,10 @@ static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel bounda
 void ablate::boundarySolver::BoundarySolver::Setup() {
     ablate::solver::CellSolver::Setup();
 
+    // do a simple sanity check for labels
+    GetRegion()->CheckForLabel(subDomain->GetDM());
+    fieldBoundary->CheckForLabel(subDomain->GetDM());
+
     // march over process and link to the flow
     for (auto& process : boundaryProcesses) {
         process->Initialize(*this);
