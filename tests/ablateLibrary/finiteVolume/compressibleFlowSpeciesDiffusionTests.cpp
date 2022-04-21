@@ -23,7 +23,6 @@
 #include "utilities/petscOptions.hpp"
 
 typedef struct {
-    PetscInt dim;
     PetscReal L;
     PetscReal diff;
     PetscReal rho;
@@ -76,7 +75,6 @@ static PetscErrorCode ComputeEulerExact(PetscInt dim, PetscReal time, const Pets
     euler[0] = parameters->rho;
     euler[1] = 0.0;
     euler[2] = 0.0;
-    euler[3] = 0.0;
 
     // compute the current yi
     std::vector<PetscReal> rhoYi(species.size());
@@ -150,10 +148,10 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
                     })),
                     std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
                     std::make_shared<domain::modifiers::GhostBoundaryCells>()},
-                std::vector<int>{(int)initialNx, (int)initialNx},
-                std::vector<double>{0.0, 0.0},
-                std::vector<double>{parameters.L, parameters.L},
-                std::vector<std::string>{"NONE", "PERIODIC"} /*boundary*/,
+                std::vector<int>{(int)initialNx},
+                std::vector<double>{0.0},
+                std::vector<double>{parameters.L},
+                std::vector<std::string>{"NONE"} /*boundary*/,
                 false /*simplex*/);
 
             // create a time stepper
@@ -162,15 +160,15 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
             // setup a flow parameters
             auto transportModel = std::make_shared<ablate::eos::transport::Constant>(0.0, 0.0, parameters.diff);
-            auto petscFlowOptions = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"yipetscfv_type", "leastsquares"}});
+            auto petscFlowOptions = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{});
 
             // create an eos with three species
             auto eosParameters = std::make_shared<ablate::parameters::MapParameters>();
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{4, 2}, eulerExactField),
-                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("left", std::vector<int>{4}, yiExactField),
-                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("right", std::vector<int>{2}, yiExactField)};
+                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("walls", std::vector<int>{2, 1}, eulerExactField, "", true),
+                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("left", std::vector<int>{2}, yiExactField, "", true),
+                std::make_shared<finiteVolume::boundaryConditions::EssentialGhost>("right", std::vector<int>{1}, yiExactField, "", true)};
 
             auto flowProcesses = std::vector<std::shared_ptr<ablate::finiteVolume::processes::Process>>{
                 std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eos, nullptr, transportModel),
@@ -217,22 +215,22 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
 INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowSpeciesDiffusionTestFixture,
                          testing::Values((CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species diffusion mpi 1", .nproc = 1, .arguments = ""},
-                                                                                      .parameters = {.dim = 2, .L = 0.1, .diff = 1.0E-5, .rho = 1.0},
+                                                                                      .parameters = {.L = 0.1, .diff = 1.0E-5, .rho = 1.0},
                                                                                       .initialNx = 3,
                                                                                       .levels = 3,
-                                                                                      .expectedL2Convergence = {NAN, 1.8, NAN, NAN, 1.8, 1.8, NAN},
-                                                                                      .expectedLInfConvergence = {NAN, 1.0, NAN, NAN, 1.0, 1.0, NAN}},
+                                                                                      .expectedL2Convergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN},
+                                                                                      .expectedLInfConvergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN}},
                                          (CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species diffusion mpi 1 density 2.0", .nproc = 1, .arguments = ""},
-                                                                                      .parameters = {.dim = 2, .L = 0.1, .diff = 1.0E-5, .rho = 2.0},
+                                                                                      .parameters = {.L = 0.1, .diff = 1.0E-5, .rho = 2.0},
                                                                                       .initialNx = 3,
                                                                                       .levels = 3,
-                                                                                      .expectedL2Convergence = {NAN, 1.8, NAN, NAN, 1.8, 1.8, NAN},
-                                                                                      .expectedLInfConvergence = {NAN, 1.0, NAN, NAN, 1.0, 1.0, NAN}},
+                                                                                      .expectedL2Convergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN},
+                                                                                      .expectedLInfConvergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN}},
                                          (CompressibleSpeciesDiffusionTestParameters){.mpiTestParameter = {.testName = "species diffusion mpi 2 density 2.0", .nproc = 2, .arguments = ""},
-                                                                                      .parameters = {.dim = 2, .L = 0.1, .diff = 1.0E-5, .rho = 2.0},
+                                                                                      .parameters = {.L = 0.1, .diff = 1.0E-5, .rho = 2.0},
                                                                                       .initialNx = 3,
                                                                                       .levels = 3,
-                                                                                      .expectedL2Convergence = {NAN, 1.8, NAN, NAN, 1.8, 1.8, NAN},
-                                                                                      .expectedLInfConvergence = {NAN, 1.0, NAN, NAN, 1.0, 1.0, NAN}}),
+                                                                                      .expectedL2Convergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN},
+                                                                                      .expectedLInfConvergence = {NAN, 2.2, NAN, 2.2, 2.2, NAN}}),
                          [](const testing::TestParamInfo<CompressibleSpeciesDiffusionTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
