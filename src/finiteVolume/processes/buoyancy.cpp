@@ -25,15 +25,13 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(T
     CHKERRQ(ierr);
 
     // Get the valid cell range over this region
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt *cells;
-    flow.GetCellRange(cellIS, cStart, cEnd, cells);
+    solver::Range cellRange;
+    flow.GetCellRange(cellRange);
 
     // March over each cell
-    for (PetscInt c = cStart; c < cEnd; ++c) {
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         // if there is a cell array, use it, otherwise it is just c
-        const PetscInt cell = cells ? cells[c] : c;
+        const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         // Get the current state variables for this cell
         const PetscScalar *euler;
@@ -59,7 +57,7 @@ PetscErrorCode ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity(T
     densityAvg = densitySum / cellCount;
 
     // cleanup
-    flow.RestoreRange(cellIS, cStart, cEnd, cells);
+    flow.RestoreRange(cellRange);
     ierr = VecRestoreArrayRead(globFlowVec, &flowArray);
     CHKERRQ(ierr);
 

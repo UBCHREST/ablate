@@ -119,10 +119,8 @@ TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         faceInterpolant.GetInterpolatedFaceVectors(subDomain->GetSolutionVector(), auxVec, faceSolutionVec, faceAuxVec, faceSolutionGradVec, faceAuxGradVec);
 
         // run over each face to see if it computed the gradient correctly
-        IS faceIS;
-        PetscInt fStart, fEnd;
-        const PetscInt* faces;
-        fvSolver->GetFaceRange(faceIS, fStart, fEnd, faces);
+        solver::Range faceRange;
+        fvSolver->GetFaceRange(faceRange);
 
         // extract the arrays for each of the vec
         DM faceSolutionDm, faceAuxDm;
@@ -148,8 +146,8 @@ TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
         // march over each face
-        for (PetscInt f = fStart; f < fEnd; f++) {
-            PetscInt face = faces ? faces[f] : f;
+        for (PetscInt f = faceRange.start; f < faceRange.end; f++) {
+            PetscInt face = faceRange.points ? faceRange.points[f] : f;
 
             // Get the face geom location
             PetscFVFaceGeom* fg;
@@ -218,6 +216,7 @@ TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         VecRestoreArrayRead(faceSolutionVec, &faceSolutionArray);
         VecRestoreArrayRead(faceAuxVec, &faceAuxArray);
         VecRestoreArrayRead(faceGeomVec, &faceGeomArray);
+        fvSolver->RestoreRange(faceRange);
 
         exit(PetscFinalize());
     EndWithMPI

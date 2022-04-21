@@ -205,10 +205,8 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
     DMPlexGetGeometryFVM(dm, NULL, NULL, &minCellRadius) >> checkError;
 
     // Get the valid cell range over this region
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt* cells;
-    flow.GetCellRange(cellIS, cStart, cEnd, cells);
+    solver::Range cellRange;
+    flow.GetCellRange(cellRange);
 
     const PetscScalar* x;
     VecGetArrayRead(v, &x) >> checkError;
@@ -225,8 +223,8 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
 
     // March over each cell
     PetscReal dtMin = 1000.0;
-    for (PetscInt c = cStart; c < cEnd; ++c) {
-        PetscInt cell = cells ? cells[c] : c;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         const PetscReal* euler;
         const PetscReal* conserved = NULL;
@@ -249,7 +247,7 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
         }
     }
     VecRestoreArrayRead(v, &x) >> checkError;
-    flow.RestoreRange(cellIS, cStart, cEnd, cells);
+    flow.RestoreRange(cellRange);
     return dtMin;
 }
 PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(PetscInt dim, const PetscReal* area, const PetscReal* normal, const PetscReal* centroid, const PetscInt uOff[],

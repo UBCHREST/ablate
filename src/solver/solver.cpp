@@ -187,21 +187,21 @@ PetscErrorCode ablate::solver::Solver::DMPlexInsertTimeDerivativeBoundaryValues_
     PetscFunctionReturn(0);
 }
 
-void ablate::solver::Solver::GetCellRange(IS &cellIS, PetscInt &cStart, PetscInt &cEnd, const PetscInt *&cells) const {
+void ablate::solver::Solver::GetCellRange(Range &cellRange) const {
     // Start out getting all the cells
     PetscInt depth;
     DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
-    GetRange(depth, cellIS, cStart, cEnd, cells);
+    GetRange(depth, cellRange);
 }
 
-void ablate::solver::Solver::GetFaceRange(IS &faceIS, PetscInt &fStart, PetscInt &fEnd, const PetscInt *&faces) const {
+void ablate::solver::Solver::GetFaceRange(Range &faceRange) const {
     // Start out getting all the faces
     PetscInt depth;
     DMPlexGetDepth(subDomain->GetDM(), &depth) >> checkError;
-    GetRange(depth - 1, faceIS, fStart, fEnd, faces);
+    GetRange(depth - 1, faceRange);
 }
 
-void ablate::solver::Solver::GetRange(PetscInt depth, IS &pointIS, PetscInt &pStart, PetscInt &pEnd, const PetscInt *&points) const {
+void ablate::solver::Solver::GetRange(PetscInt depth, Range &faceRange) const {
     // Start out getting all of the points
     IS allPointIS;
     DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> checkError;
@@ -216,31 +216,31 @@ void ablate::solver::Solver::GetRange(PetscInt depth, IS &pointIS, PetscInt &pSt
 
         IS labelIS;
         DMLabelGetStratumIS(label, GetRegion()->GetValue(), &labelIS) >> checkError;
-        ISIntersect_Caching_Internal(allPointIS, labelIS, &pointIS) >> checkError;
+        ISIntersect_Caching_Internal(allPointIS, labelIS, &faceRange.is) >> checkError;
         ISDestroy(&labelIS) >> checkError;
     } else {
         PetscObjectReference((PetscObject)allPointIS) >> checkError;
-        pointIS = allPointIS;
+        faceRange.is = allPointIS;
     }
 
     // Get the point range
-    if (pointIS == nullptr) {
+    if (faceRange.is == nullptr) {
         // There are no points in this region, so skip
-        pStart = 0;
-        pEnd = 0;
-        points = nullptr;
+        faceRange.start = 0;
+        faceRange.end = 0;
+        faceRange.points = nullptr;
     } else {
         // Get the range
-        ISGetPointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
+        ISGetPointRange(faceRange.is, &faceRange.start, &faceRange.end, &faceRange.points) >> checkError;
     }
 
     // Clean up the allCellIS
     ISDestroy(&allPointIS) >> checkError;
 }
 
-void ablate::solver::Solver::RestoreRange(IS &pointIS, PetscInt &pStart, PetscInt &pEnd, const PetscInt *&points) const {
-    if (pointIS) {
-        ISRestorePointRange(pointIS, &pStart, &pEnd, &points) >> checkError;
-        ISDestroy(&pointIS) >> checkError;
+void ablate::solver::Solver::RestoreRange(Range &range) const {
+    if (range.is) {
+        ISRestorePointRange(range.is, &range.start, &range.end, &range.points) >> checkError;
+        ISDestroy(&range.is) >> checkError;
     }
 }

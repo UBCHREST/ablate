@@ -264,13 +264,11 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
         ISGetPointRange(insideCellIS, &insideCellStart, &insideCellEnd, &insideCells);
 
         // March over each cell
-        IS boundaryCellIS;
-        PetscInt boundaryCellStart, boundaryCellEnd;
-        const PetscInt* boundaryCells;
-        boundarySolver->GetCellRange(boundaryCellIS, boundaryCellStart, boundaryCellEnd, boundaryCells);
-        for (PetscInt c = boundaryCellStart; c < boundaryCellEnd; ++c) {
+        solver::Range boundaryCellRange;
+        boundarySolver->GetCellRange(boundaryCellRange);
+        for (PetscInt c = boundaryCellRange.start; c < boundaryCellRange.end; ++c) {
             // if there is a cell array, use it, otherwise it is just c
-            const PetscInt cell = boundaryCells ? boundaryCells[c] : c;
+            const PetscInt cell = boundaryCellRange.points ? boundaryCellRange.points[c] : c;
 
             // Get the exact location of the face
             const auto& face = boundarySolver->GetBoundaryGeometry(cell);
@@ -285,8 +283,8 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
             boundarySolver->ComputeRHSFunction(0.0, globVec, gradVec) >> checkError;
 
             // Make sure that there is no source terms in this boundary solver region
-            for (PetscInt tc = boundaryCellStart; tc < boundaryCellEnd; ++tc) {
-                const PetscInt testCell = boundaryCells ? boundaryCells[tc] : tc;
+            for (PetscInt tc = boundaryCellRange.start; tc < boundaryCellRange.end; ++tc) {
+                const PetscInt testCell = boundaryCellRange.points ? boundaryCellRange.points[tc] : tc;
 
                 const PetscScalar* data;
                 DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), testCell, gradArray, &data) >> checkError;
@@ -378,7 +376,7 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
             }
         }
 
-        boundarySolver->RestoreRange(boundaryCellIS, boundaryCellStart, boundaryCellEnd, boundaryCells);
+        boundarySolver->RestoreRange(boundaryCellRange);
         VecRestoreArrayRead(gradVec, &gradArray) >> checkError;
 
         ISRestorePointRange(insideCellIS, &insideCellStart, &insideCellEnd, &insideCells);

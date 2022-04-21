@@ -32,10 +32,8 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Initialize(ablate::fi
         PetscReal velocityScratch[3];
 
         // Get the valid cell range over this region
-        IS cellIS;
-        PetscInt cStart, cEnd;
-        const PetscInt* cells;
-        fvSolver.GetCellRange(cellIS, cStart, cEnd, cells);
+        solver::Range cellRange;
+        fvSolver.GetCellRange(cellRange);
 
         // get the solution vec
         auto solutionVec = fvSolver.GetSubDomain().GetSolutionVector();
@@ -45,9 +43,9 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Initialize(ablate::fi
         auto dm = fvSolver.GetSubDomain().GetDM();
 
         // March over each cell
-        for (PetscInt c = cStart; c < cEnd; ++c) {
+        for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
             // if there is a cell array, use it, otherwise it is just c
-            const PetscInt cell = cells ? cells[c] : c;
+            const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
             PetscScalar* conservedValues = nullptr;
             DMPlexPointGlobalRead(dm, cell, solutionArray, &conservedValues);
@@ -75,7 +73,7 @@ void ablate::finiteVolume::processes::ConstantPressureFix::Initialize(ablate::fi
 
         // cleanup
         VecRestoreArray(solutionVec, &solutionArray) >> checkError;
-        fvSolver.RestoreRange(cellIS, cStart, cEnd, cells);
+        fvSolver.RestoreRange(cellRange);
     });
 }
 

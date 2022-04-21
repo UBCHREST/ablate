@@ -3,6 +3,7 @@
 
 #include <memory>
 #include "domain/subDomain.hpp"
+#include "solver/range.hpp"
 
 namespace ablate::finiteVolume {
 
@@ -18,7 +19,7 @@ class FaceInterpolant {
     PetscInt auxTotalSize = 0;
 
     //! store the global face start to compute stencil location
-    PetscInt globalFaceStart;
+    PetscInt globalFaceStart = -1;
 
     /**
      * Create a dm for all face values
@@ -52,8 +53,6 @@ class FaceInterpolant {
      * struct to hold the gradient stencil for the boundary
      */
     struct Stencil {
-        PetscInt faceId;
-
         /** Area-scaled normals */
         PetscReal area[3];
         /** normal **/
@@ -90,7 +89,7 @@ class FaceInterpolant {
      * @param faceGeomVec
      * @param cellGeomVec
      */
-    FaceInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomain, Vec faceGeomVec, Vec cellGeomVec);
+    FaceInterpolant(const std::shared_ptr<ablate::domain::SubDomain>& subDomain, Vec faceGeomVec, Vec cellGeomVec);
     ~FaceInterpolant();
 
     /**
@@ -119,7 +118,7 @@ class FaceInterpolant {
      * @param locFVec
      */
     void ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                    std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, PetscInt fStart, PetscInt fEnd, const PetscInt* faces, Vec cellGeomVec);
+                    std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, const solver::Range& faceRange, Vec cellGeomVec);
 
     /**
      * function to get the interpolated values on the face

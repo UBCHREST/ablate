@@ -260,13 +260,11 @@ void ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies(TS ts, 
     VecGetArray(solVec, &solutionArray) >> checkError;
 
     // March over each cell in this domain
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt *cells;
-    solver.GetCellRange(cellIS, cStart, cEnd, cells);
+    solver::Range cellRange;
+    solver.GetCellRange(cellRange);
 
-    for (PetscInt c = cStart; c < cEnd; ++c) {
-        PetscInt cell = cells ? cells[c] : c;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         // Get the euler and density field
         const PetscScalar *euler = nullptr;
@@ -307,7 +305,7 @@ void ablate::finiteVolume::processes::SpeciesTransport::NormalizeSpecies(TS ts, 
 
     // cleanup
     VecRestoreArray(solVec, &solutionArray) >> checkError;
-    solver.RestoreRange(cellIS, cStart, cEnd, cells);
+    solver.RestoreRange(cellRange);
 }
 
 #include "registrar.hpp"

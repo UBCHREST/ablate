@@ -41,8 +41,7 @@ TEST_P(EulerTransportFluxTestFixture, ShouldComputeCorrectFlux) {
     // act
     std::vector<PetscReal> computedFlux(params.expectedFlux.size());
     PetscInt uOff[1] = {0};
-    ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(
-        params.area.size(), &faceGeom, uOff, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, &computedFlux[0], &eulerFlowData);
+    ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(params.area.size(), &faceGeom, uOff, &params.xLeft[0], &params.xRight[0], NULL, NULL, NULL, &computedFlux[0], &eulerFlowData);
 
     // assert
     for (std::size_t i = 0; i < params.expectedFlux.size(); i++) {

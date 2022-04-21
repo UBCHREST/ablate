@@ -38,10 +38,8 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     CHKERRQ(ierr);
 
     // Get the valid cell range over this region
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt *cells;
-    flow.GetCellRange(cellIS, cStart, cEnd, cells);
+    solver::Range cellRange;
+    flow.GetCellRange(cellRange);
 
     // get decode state function/context
     eos::ThermodynamicFunction computeTemperature = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());
@@ -56,9 +54,9 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
 
     // March over each cell
-    for (PetscInt c = cStart; c < cEnd; ++c) {
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         // if there is a cell array, use it, otherwise it is just c
-        const PetscInt cell = cells ? cells[c] : c;
+        const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         PetscBool boundary;
         PetscInt ghost = -1;
@@ -112,7 +110,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     }
 
     // return the cell range
-    flow.RestoreRange(cellIS, cStart, cEnd, cells);
+    flow.RestoreRange(cellRange);
 
     // Take the global values
     auto comm = flow.GetSubDomain().GetComm();

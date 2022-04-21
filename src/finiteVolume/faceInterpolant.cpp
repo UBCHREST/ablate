@@ -1,7 +1,7 @@
 #include "faceInterpolant.hpp"
 #include "utilities/mathUtilities.hpp"
 
-ablate::finiteVolume::FaceInterpolant::FaceInterpolant(std::shared_ptr<ablate::domain::SubDomain> subDomain, Vec faceGeomVec, Vec cellGeomVec) : subDomain(subDomain) {
+ablate::finiteVolume::FaceInterpolant::FaceInterpolant(const std::shared_ptr<ablate::domain::SubDomain>& subDomain, Vec faceGeomVec, Vec cellGeomVec) : subDomain(subDomain) {
     auto ds = subDomain->GetDiscreteSystem();
     PetscDSGetTotalDimension(ds, &solTotalSize) >> checkError;
     CreateFaceDm(solTotalSize, subDomain->GetDM(), faceSolutionDm);
@@ -58,7 +58,6 @@ ablate::finiteVolume::FaceInterpolant::FaceInterpolant(std::shared_ptr<ablate::d
     PetscInt iFace = 0;
     for (PetscInt face = fStart; face < fEnd; face++) {
         auto& stencil = stencils[iFace++];
-        stencil.faceId = face;
 
         // make sure that this is a valid face
         PetscInt ghost, nsupp, nchild;
@@ -354,7 +353,8 @@ void ablate::finiteVolume::FaceInterpolant::GetInterpolatedFaceVectors(Vec solut
         VecRestoreArray(faceAuxGradVec, &faceAuxGradArray);
     }
 }
-void ablate::finiteVolume::FaceInterpolant::RestoreInterpolatedFaceVectors(Vec solutionVec, Vec auxVec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec) {
+
+void ablate::finiteVolume::FaceInterpolant::RestoreInterpolatedFaceVectors(Vec, Vec, Vec& faceSolutionVec, Vec& faceAuxVec, Vec& faceSolutionGradVec, Vec& faceAuxGradVec) {
     // Size the return vectors
     DMRestoreLocalVector(faceSolutionDm, &faceSolutionVec) >> checkError;
     DMRestoreLocalVector(faceSolutionGradDm, &faceSolutionGradVec) >> checkError;
@@ -366,8 +366,7 @@ void ablate::finiteVolume::FaceInterpolant::RestoreInterpolatedFaceVectors(Vec s
     }
 }
 void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                                                       std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, PetscInt fStart, PetscInt fEnd, const PetscInt* faces,
-                                                       Vec cellGeomVec) {
+                                                       std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, const solver::Range& faceRange, Vec cellGeomVec) {
     // get the dm
     auto dm = subDomain->GetDM();
 
@@ -453,8 +452,8 @@ void ablate::finiteVolume::FaceInterpolant::ComputeRHS(PetscReal time, Vec locXV
     }
 
     // march over each face
-    for (PetscInt f = fStart; f < fEnd; f++) {
-        PetscInt face = faces ? faces[f] : f;
+    for (PetscInt f = faceRange.start; f < faceRange.end; f++) {
+        PetscInt face = faceRange.points ? faceRange.points[f] : f;
 
         // extract the stencil for this face
         const auto& stencil = stencils[face - globalFaceStart];
