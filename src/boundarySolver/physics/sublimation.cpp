@@ -1,14 +1,13 @@
 #include "sublimation.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "finiteVolume/processes/flowProcess.hpp"
 #include "utilities/mathUtilities.hpp"
 
 using fp = ablate::finiteVolume::CompressibleFlowFields;
 
-ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::shared_ptr<ablate::mathFunctions::FieldFunction> massFractions,
-                                                          std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux)
+ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, const std::shared_ptr<ablate::eos::transport::TransportModel> &transportModel,
+                                                          std::shared_ptr<ablate::mathFunctions::FieldFunction> massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux)
     : latentHeatOfFusion(latentHeatOfFusion),
-      effectiveConductivity(effectiveConductivity),
+      transportModel(transportModel),
       additionalHeatFlux(additionalHeatFlux),
       massFractions(massFractions),
       massFractionsFunction(massFractions ? massFractions->GetFieldFunction()->GetPetscFunction() : nullptr),
@@ -34,6 +33,9 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
                                  {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                  BoundarySolver::BoundarySourceType::Distributed);
     }
+
+    // extract the effectiveConductivity model
+    effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, bSolver.GetSubDomain().GetFields());
 
     // If there is a additionalHeatFlux function, we need to update time
     if (additionalHeatFlux || massFractions) {
@@ -69,8 +71,12 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     PetscReal dTdn;
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[TEMPERATURE_LOC]], stencilSize, stencilTemperature.data(), stencilWeights, dTdn);
 
+    // compute the effectiveConductivity
+    PetscReal effectiveConductivity;
+    PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
+
     // compute the heat flux
-    PetscReal heatFluxIntoSolid = PetscMax(0.0, -dTdn * sublimation->effectiveConductivity);  // note that q = -dTdn as dTdN faces into the solid
+    PetscReal heatFluxIntoSolid = PetscMax(0.0, -dTdn * effectiveConductivity);  // note that q = -dTdn as dTdN faces into the solid
 
     // If there is an additional heat flux compute and add value
     if (sublimation->additionalHeatFlux) {
@@ -111,10 +117,15 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 
     PetscFunctionReturn(0);
 }
-void ablate::boundarySolver::physics::Sublimation::Initialize(PetscInt numberSpeciesIn) { numberSpecies = numberSpeciesIn; }
+void ablate::boundarySolver::physics::Sublimation::Initialize(PetscInt numberSpeciesIn) {
+    numberSpecies = numberSpeciesIn;
+    // for test code, extract the effectiveConductivity model without any fields
+    effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, {});
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physics::Sublimation, "Adds in the euler/yi sources for a sublimating material.  Should be used with a LODI boundary.",
-         ARG(double, "latentHeatOfFusion", "the latent heat of fusion [J/kg]"), ARG(double, "effectiveConductivity", "the effective conductivity to compute heat flux to the surface [W/(m⋅K)]"),
+         ARG(double, "latentHeatOfFusion", "the latent heat of fusion [J/kg]"),
+         ARG(ablate::eos::transport::TransportModel, "transportModel", "the effective conductivity model to compute heat flux to the surface [W/(m⋅K)]"),
          OPT(ablate::mathFunctions::FieldFunction, "massFractions", "the species to deposit the off gas mass to (required if solving species)"),
          OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"));

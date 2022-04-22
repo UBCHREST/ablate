@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_SUBLIMATION_HPP
 
 #include "boundarySolver/boundaryProcess.hpp"
+#include "eos/transport/transportModel.hpp"
 namespace ablate::boundarySolver::physics {
 
 /**
@@ -10,7 +11,8 @@ namespace ablate::boundarySolver::physics {
 class Sublimation : public BoundaryProcess {
    private:
     const PetscReal latentHeatOfFusion;
-    const PetscReal effectiveConductivity;
+    //! transport model used to compute the conductivity
+    const std::shared_ptr<ablate::eos::transport::TransportModel> transportModel;
     const std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux;
     PetscReal currentTime = 0.0;
 
@@ -20,8 +22,11 @@ class Sublimation : public BoundaryProcess {
     void *massFractionsContext;
     PetscInt numberSpecies = 0;
 
+    // store the effectiveConductivity function
+    eos::ThermodynamicTemperatureFunction effectiveConductivity;
+
    public:
-    explicit Sublimation(PetscReal latentHeatOfFusion, PetscReal effectiveConductivity, std::shared_ptr<ablate::mathFunctions::FieldFunction> = {},
+    explicit Sublimation(PetscReal latentHeatOfFusion, const std::shared_ptr<ablate::eos::transport::TransportModel> &transportModel, std::shared_ptr<ablate::mathFunctions::FieldFunction> = {},
                          std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {});
 
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;

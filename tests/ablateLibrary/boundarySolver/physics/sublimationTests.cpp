@@ -1,6 +1,7 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
 #include "boundarySolver/physics/sublimation.hpp"
+#include "eos/transport/constant.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 
@@ -32,7 +33,8 @@ TEST_P(SublimationTestFixture, ShouldComputeCorrectSourceTerm) {
     const auto& params = GetParam();
 
     // create the boundary
-    auto boundary = std::make_shared<ablate::boundarySolver::physics::Sublimation>(params.latentHeatOfFusion, params.effectiveConductivity, params.speciesMassFractions, params.additionalHeatTransfer);
+    auto transportModel = std::make_shared<ablate::eos::transport::Constant>(params.effectiveConductivity);
+    auto boundary = std::make_shared<ablate::boundarySolver::physics::Sublimation>(params.latentHeatOfFusion, transportModel, params.speciesMassFractions, params.additionalHeatTransfer);
 
     // initialization is not needed for testing if species are not set
     boundary->Initialize(params.numberSpecies);
