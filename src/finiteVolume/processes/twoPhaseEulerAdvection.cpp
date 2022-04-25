@@ -896,9 +896,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
     ke *= 0.5;
     (*internalEnergy) = (totalEnergy)-ke;
 
-    // mass fractions
-    PetscReal Yg = densityVF / (*density);
-    PetscReal Yl = ((*density) - densityVF) / (*density);
+//    // mass fractions
+//    PetscReal Yg = densityVF / (*density);
+//    PetscReal Yl = ((*density) - densityVF) / (*density);
 
     PetscReal cp1 = eosGas->GetSpecificHeatCp();
     PetscReal cp2 = eosLiquid->GetSpecificHeatCp();
@@ -933,17 +933,22 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
     //          default rtol = 10e-8
     // snes_fd: use FD Jacobian - SNESComputeJacobianDefault()
     // snes_monitor : view residuals for each iteration
-    PetscOptionsSetValue(NULL, "-snes_monitor", NULL);
-    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
+//    PetscOptionsSetValue(NULL, "-snes_monitor", NULL);
+//    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
     SNESSetFromOptions(snes);
     SNESSolve(snes, NULL, x);
-    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
+//    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
     const PetscScalar *ax;
     VecGetArrayRead(x, &ax);
     PetscReal rhoG = ax[0];
     PetscReal rhoL = ax[1];
     PetscReal eG = ax[2];
     PetscReal eL = ax[3];
+
+    SNESDestroy(&snes);
+    VecDestroy(&x);
+    VecDestroy(&r);
+
     PetscReal etG = eG + ke;
     PetscReal etL = eL + ke;
 
