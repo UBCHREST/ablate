@@ -23,7 +23,7 @@ PetscErrorCode ablate::finiteVolume::fieldFunctions::DensityExtraVariables::Comp
             u[s] = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO] * densityExtraVariables->evFunctions[s]->Eval(x, dim, time);
         }
     } catch (std::exception &exp) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
     }
     PetscFunctionReturn(0);
 }

@@ -148,7 +148,7 @@ PetscErrorCode ablate::mathFunctions::ParsedSeries::ParsedPetscSeries(PetscInt d
         }
 
     } catch (std::exception& exception) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
     }
     PetscFunctionReturn(0);
 }

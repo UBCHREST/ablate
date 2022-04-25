@@ -133,7 +133,7 @@ PetscErrorCode ablate::mathFunctions::LinearTable::LinearInterpolatorPetscFuncti
         table->Interpolate(independentValue, nf < (PetscInt)table->dependentValues.size() ? nf : table->dependentValues.size(), u);
 
     } catch (std::exception& exception) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
     }
     PetscFunctionReturn(0);
 }

@@ -187,7 +187,7 @@ PetscErrorCode ablate::solver::TimeStepper::TSPreStepFunction(TS ts) {
         try {
             solver->PreStep(ts);
         } catch (std::exception& exp) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
         }
     }
 
@@ -204,7 +204,7 @@ PetscErrorCode ablate::solver::TimeStepper::TSPreStageFunction(TS ts, PetscReal 
         try {
             solver->PreStage(ts, stagetime);
         } catch (std::exception& exp) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
         }
     }
 
@@ -221,7 +221,7 @@ PetscErrorCode ablate::solver::TimeStepper::TSPostStepFunction(TS ts) {
         try {
             solver->PostStep(ts);
         } catch (std::exception& exp) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
         }
     }
 
@@ -238,7 +238,7 @@ PetscErrorCode ablate::solver::TimeStepper::TSPostEvaluateFunction(TS ts) {
         try {
             solver->PostEvaluate(ts);
         } catch (std::exception& exp) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
         }
     }
 

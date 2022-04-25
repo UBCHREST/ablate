@@ -44,7 +44,7 @@ void ablate::monitors::logs::CsvLog::Print(const char *name, std::size_t num, co
 
         for (std::size_t i = 0; i < num; i++) {
             PetscFPrintf(PETSC_COMM_SELF, file, format, values[i]) >> checkError;
-            PetscFPrintf(PETSC_COMM_SELF, file, separator) >> checkError;
+            PetscFPrintf(PETSC_COMM_SELF, file, "%s", separator) >> checkError;
         }
     }
 }
