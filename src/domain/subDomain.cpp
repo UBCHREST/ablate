@@ -497,7 +497,7 @@ PetscErrorCode ablate::domain::SubDomain::GetFieldLocalVector(const ablate::doma
         ierr = VecGetSubVector(entireVec, *vecIs, vec);
         CHKERRQ(ierr);
     } else {
-        SETERRQ(GetComm(), PETSC_ERR_SUP, "Unknown field location");
+        SETERRQ(GetComm(), PETSC_ERR_SUP, "%s", "Unknown field location");
     }
 
     PetscFunctionReturn(0);
@@ -519,7 +519,7 @@ PetscErrorCode ablate::domain::SubDomain::RestoreFieldLocalVector(const ablate::
         CHKERRQ(ierr);
         ierr = DMDestroy(subdm);
     } else {
-        SETERRQ(GetComm(), PETSC_ERR_SUP, "Unknown field location");
+        SETERRQ(GetComm(), PETSC_ERR_SUP, "%s", "Unknown field location");
     }
 
     PetscFunctionReturn(0);

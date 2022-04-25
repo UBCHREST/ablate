@@ -58,7 +58,7 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
                 serializer->Save(hdf5Serializer->sequenceNumber, time);
             }
         } catch (std::exception& exception) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
         }
     }
     PetscFunctionReturn(0);

@@ -94,7 +94,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
         // Compute the RHS function
         ComputeSourceTerms(time, locXVec, subDomain->GetAuxVector(), locFVec);
     } catch (std::exception& exception) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
     }
 
     // iterate over any arbitrary RHS functions

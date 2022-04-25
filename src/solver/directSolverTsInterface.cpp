@@ -43,7 +43,7 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::PreStage(TS ts, PetscRea
             solver->PreStage(ts, stagetime);
         }
     } catch (std::exception& exp) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
     }
     PetscFunctionReturn(0);
 }
@@ -56,7 +56,7 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::PreStep(TS ts) {
             solver->PreStep(ts);
         }
     } catch (std::exception& exp) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
     }
     PetscFunctionReturn(0);
 }
@@ -69,7 +69,7 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::PostStep(TS ts) {
             solver->PostStep(ts);
         }
     } catch (std::exception& exp) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
     }
     PetscFunctionReturn(0);
 }
@@ -82,7 +82,7 @@ PetscErrorCode ablate::solver::DirectSolverTsInterface::PostEvaluate(TS ts) {
             solver->PostEvaluate(ts);
         }
     } catch (std::exception& exp) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
     }
     PetscFunctionReturn(0);
 }
