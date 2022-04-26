@@ -73,6 +73,18 @@ class SubDomain : public io::Serializable {
      */
     void CopyGlobalToSubVector(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
 
+    /**
+     * support call to copy from sub vec to global
+     * @param subDM
+     * @param gDM
+     * @param subVec
+     * @param globVec
+     * @param subFields
+     * @param gFields
+     * @param localVector
+     */
+    void CopySubVectorToGlobal(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
+
    public:
     SubDomain(Domain& domain, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields);
     ~SubDomain() override;
@@ -237,12 +249,6 @@ class SubDomain : public io::Serializable {
      * @return
      */
     inline Vec GetSolutionVector() noexcept { return domain.GetSolutionVector(); }
-
-    /**
-     * Return the local solution vector with information updated from the global solution vector
-     * @return
-     */
-    Vec GetSolutionLocalVector();
 
     /**
      * Returns the local aux vector

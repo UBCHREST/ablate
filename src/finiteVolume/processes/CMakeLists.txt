@@ -21,4 +21,6 @@ target_sources(ablateLibrary
         arbitrarySource.cpp
         buoyancy.hpp
         buoyancy.cpp
+        constantPressureFix.hpp
+        constantPressureFix.cpp
         )

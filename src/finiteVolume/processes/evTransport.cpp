@@ -49,11 +49,7 @@ void ablate::finiteVolume::processes::EVTransport::Initialize(ablate::finiteVolu
             advectionData.computeSpeedOfSound = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SpeedOfSound, flow.GetSubDomain().GetFields());
             advectionData.computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, flow.GetSubDomain().GetFields());
 
-            if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::DENSITY_YI_FIELD)) {
-                flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved, CompressibleFlowFields::DENSITY_YI_FIELD}, {});
-            } else {
-                flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved}, {});
-            }
+            flow.RegisterRHSFunction(AdvectionFlux, &advectionData, conserved, {CompressibleFlowFields::EULER_FIELD, conserved}, {});
         }
 
         if (transportModel) {
@@ -87,10 +83,8 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::UpdateEVField(Petsc
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
-                                                                           const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff, const PetscInt *aOff_x,
-                                                                           const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL, const PetscScalar *gradAuxR,
-                                                                           PetscScalar *flux, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscScalar *fieldL, const PetscScalar *fieldR,
+                                                                           const PetscInt *aOff, const PetscScalar *auxL, const PetscScalar *auxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;
     auto eulerAdvectionData = (AdvectionData *)ctx;
 
@@ -180,10 +174,9 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::AdvectionFlux(Petsc
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscInt *uOff_x, const PetscScalar *fieldL,
-                                                                             const PetscScalar *fieldR, const PetscScalar *gradL, const PetscScalar *gradR, const PetscInt *aOff,
-                                                                             const PetscInt *aOff_x, const PetscScalar *auxL, const PetscScalar *auxR, const PetscScalar *gradAuxL,
-                                                                             const PetscScalar *gradAuxR, PetscScalar *flux, void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(PetscInt dim, const PetscReal *area, const PetscReal *normal, const PetscReal *centroid, const PetscInt uOff[],
+                                                                             const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
+                                                                             const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int EULER_FIELD = 0;
@@ -192,14 +185,11 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
     auto flowParameters = (DiffusionData *)ctx;
 
     // get the current density from euler
-    const PetscReal density = 0.5 * (fieldL[uOff[EULER_FIELD] + CompressibleFlowFields::RHO] + fieldR[uOff[EULER_FIELD] + CompressibleFlowFields::RHO]);
+    const PetscReal density = field[uOff[EULER_FIELD] + CompressibleFlowFields::RHO];
 
     // compute diff
-    PetscReal diffLeft = 0.0;
-    flowParameters->diffFunction.function(fieldL, &diffLeft, flowParameters->diffFunction.context.get());
-    PetscReal diffRight = 0.0;
-    flowParameters->diffFunction.function(fieldR, &diffRight, flowParameters->diffFunction.context.get());
-    PetscReal diff = 0.5 * (diffLeft + diffRight);
+    PetscReal diff = 0.0;
+    flowParameters->diffFunction.function(field, &diff, flowParameters->diffFunction.context.get());
 
     // species equations
     for (PetscInt ev = 0; ev < flowParameters->numberEV; ++ev) {
@@ -207,7 +197,7 @@ PetscErrorCode ablate::finiteVolume::processes::EVTransport::DiffusionEVFlux(Pet
         for (PetscInt d = 0; d < dim; ++d) {
             // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
             const int offset = aOff_x[EV_FIELD] + (ev * dim) + d;
-            PetscReal evFlux = -fg->normal[d] * density * diff * 0.5 * (gradAuxL[offset] + gradAuxR[offset]);
+            PetscReal evFlux = -area[d] * density * diff * gradAux[offset];
             flux[ev] += evFlux;
         }
     }

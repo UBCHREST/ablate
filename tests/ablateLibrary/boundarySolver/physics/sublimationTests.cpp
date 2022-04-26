@@ -1,6 +1,8 @@
 #include <functional>
 #include "PetscTestFixture.hpp"
 #include "boundarySolver/physics/sublimation.hpp"
+#include "eos/mockEOS.hpp"
+#include "eos/transport/constant.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 
@@ -9,6 +11,7 @@ struct SublimationTestParameters {
     // Setup
     PetscReal latentHeatOfFusion;
     PetscReal effectiveConductivity;
+    PetscReal sensibleEnthalpy;
     std::shared_ptr<ablate::mathFunctions::MathFunction> additionalHeatTransfer = {};
     PetscInt numberSpecies = 0;
     std::shared_ptr<ablate::mathFunctions::FieldFunction> speciesMassFractions = {};
@@ -31,8 +34,16 @@ TEST_P(SublimationTestFixture, ShouldComputeCorrectSourceTerm) {
     // get the required variables
     const auto& params = GetParam();
 
+    // use a mock eos for testing the sensible enthalpy call
+    std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();
+    EXPECT_CALL(*eos, GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty::SensibleEnthalpy, testing::_))
+        .Times(::testing::Exactly(1))
+        .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicTemperatureFunction(
+            [params](const PetscReal conserved[], PetscReal temperature, PetscReal* property) { *property = params.sensibleEnthalpy; })));
+
     // create the boundary
-    auto boundary = std::make_shared<ablate::boundarySolver::physics::Sublimation>(params.latentHeatOfFusion, params.effectiveConductivity, params.speciesMassFractions, params.additionalHeatTransfer);
+    auto transportModel = std::make_shared<ablate::eos::transport::Constant>(params.effectiveConductivity);
+    auto boundary = std::make_shared<ablate::boundarySolver::physics::Sublimation>(params.latentHeatOfFusion, transportModel, eos, params.speciesMassFractions, params.additionalHeatTransfer);
 
     // initialization is not needed for testing if species are not set
     boundary->Initialize(params.numberSpecies);
@@ -68,7 +79,7 @@ TEST_P(SublimationTestFixture, ShouldComputeCorrectSourceTerm) {
 
     // assert
     for (std::size_t i = 0; i < GetParam().expectedResults.size(); i++) {
-        ASSERT_TRUE(PetscAbs(GetParam().expectedResults[i] - sourceResults[i]) / (GetParam().expectedResults[i] + 1E-30) < 1E-6)
+        ASSERT_TRUE(PetscAbs(GetParam().expectedResults[i] - sourceResults[i]) / PetscAbs(GetParam().expectedResults[i] + 1E-30) < 1E-6)
             << "The actual source term (" << sourceResults[i] << ") for index " << i << " should match expected " << GetParam().expectedResults[i];
     }
 }
@@ -80,6 +91,7 @@ INSTANTIATE_TEST_SUITE_P(
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 1,
                                     .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
@@ -87,11 +99,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 350,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0003125, -62.5, 0.000000162760417}},
+                                    .expectedResults = {0.0003125, 0.0003125 * 5.0E3 - 2.5 * 50.0 * .5, 0.000000162760417}},
         (SublimationTestParameters){.description = "1D left boundary with cooling",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 1,
                                     .fvFaceGeom = {.normal = {-1.0, NAN, NAN}, .areas = {-.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
@@ -99,11 +112,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 150,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0, 0.0, 0.0}},
+                                    .expectedResults = {0.0, 150 * 2.5 * .5, 0.0}},
         (SublimationTestParameters){.description = "1D left boundary with heating and additional heat transfer",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     .additionalHeatTransfer = ablate::mathFunctions::Create(25.0 * 2.5),
                                     // geometry
                                     .dim = 1,
@@ -112,11 +126,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 325,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0003125, -62.5, 0.000000162760417}},
+                                    .expectedResults = {0.0003125, 0.0003125 * 5.0E3 - 2.5 * 25.0 * .5, 0.000000162760417}},
         (SublimationTestParameters){.description = "1D right boundary with heating",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 1,
                                     .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
@@ -124,11 +139,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 250,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0003125, -62.5, -0.000000162760417}},
+                                    .expectedResults = {0.0003125, 0.0003125 * 5.0E3 - 2.5 * 50.0 * .5, -0.000000162760417}},
         (SublimationTestParameters){.description = "1D right boundary with cooling",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 1,
                                     .fvFaceGeom = {.normal = {1.0, NAN, NAN}, .areas = {.5, NAN, NAN}, .centroid = {NAN, NAN, NAN}},
@@ -136,11 +152,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 350,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0, 0.0, 0.0}},
+                                    .expectedResults = {0.0, 2.5 * 50.0 * .5, 0.0}},
         (SublimationTestParameters){.description = "3D bottom boundary with heating",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 3,
                                     .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {0.0, 0.0, -0.5}, .centroid = {NAN, NAN, NAN}},
@@ -148,11 +165,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 350,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0003125, -62.5, 0.0, 0.0, 0.000000162760417}},
+                                    .expectedResults = {0.0003125, 0.0003125 * 5.0E3 - 2.5 * 50.0 * .5, 0.0, 0.0, 0.000000162760417}},
         (SublimationTestParameters){.description = "3D bottom boundary with cooling",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 3,
                                     .fvFaceGeom = {.normal = {0.0, 0.0, -1.0}, .areas = {0.0, 0.0, -0.5}, .centroid = {NAN, NAN, NAN}},
@@ -160,11 +178,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 250,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0, 0.0, 0.0, 0.0, 0.0}},
+                                    .expectedResults = {0.0, 2.5 * 50.0 * .5, 0.0, 0.0, 0.0}},
         (SublimationTestParameters){.description = "3D top boundary with heating",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 3,
                                     .fvFaceGeom = {.normal = {0.0, 0.0, 1.0}, .areas = {0.0, 0.0, 0.5}, .centroid = {NAN, NAN, NAN}},
@@ -172,11 +191,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 250,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0003125, -62.5, 0.0, 0.0, -0.000000162760417}},
+                                    .expectedResults = {0.0003125, 0.0003125 * 5.0E3 - 2.5 * 50.0 * .5, 0.0, 0.0, -0.000000162760417}},
         (SublimationTestParameters){.description = "3D top boundary with cooling",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 3,
                                     .fvFaceGeom = {.normal = {0.0, 0.0, 1.0}, .areas = {0.0, 0.0, 0.5}, .centroid = {NAN, NAN, NAN}},
@@ -184,11 +204,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 350,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0, 0.0, 0.0, 0.0, 0.0}},
+                                    .expectedResults = {0.0, 2.5 * 50.0 * .5, 0.0, 0.0, 0.0}},
         (SublimationTestParameters){.description = "2D lower left corner boundary with heating",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 2,
                                     .fvFaceGeom = {.normal = {-0.70710678118655, -0.70710678118655}, .areas = {-0.3535533906, -0.3535533906}, .centroid = {NAN, NAN, NAN}},
@@ -196,13 +217,14 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 335.3553390593,  // note for this case a dT/dn of 50 is need on the diagonal
-                                    .expectedResults = {0.0003125, -62.5, 1.1508899433575995E-7, 1.1508899433575995E-7}},
+                                    .expectedResults = {0.0003125, 0.0003125 * 5.0E3 - 2.5 * 50 * .5, 1.1508899433575995E-7, 1.1508899433575995E-7}},
         (SublimationTestParameters){.description = "2D lower left corner boundary with cooling",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
-                                    .dim = 3,
+                                    .dim = 2,
                                     .fvFaceGeom = {.normal =
                                                        {
                                                            -0.70710678118655,
@@ -213,12 +235,13 @@ INSTANTIATE_TEST_SUITE_P(
                                     // values
                                     .boundaryValues = {1.2, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
-                                    .stencilTemperature = 250,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0, 0.0, 0.0, 0.0}},
+                                    .stencilTemperature = 264.6446609407,  // delta T = stencil-boundary ... stencil = boundary+deltaT
+                                    .expectedResults = {0.0, 2.5 * 50 * .5, 0.0, 0.0}},
         (SublimationTestParameters){.description = "2D upper right corner boundary with heating",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
                                     .dim = 2,
                                     .fvFaceGeom = {.normal = {0.70710678118655, 0.70710678118655}, .areas = {0.3535533906, 0.3535533906}, .centroid = {NAN, NAN, NAN}},
@@ -226,13 +249,14 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 264.6446609407,  // note for this case a dT/dn of 50 is need on the diagonal
-                                    .expectedResults = {0.0003125, -62.5, -1.1508899433575995E-7, -1.1508899433575995E-7}},
+                                    .expectedResults = {0.0003125, 0.0003125 * 5.0E3 - 2.5 * 50 * .5, -1.1508899433575995E-7, -1.1508899433575995E-7}},
         (SublimationTestParameters){.description = "2D upper right corner boundary with cooling",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     // geometry
-                                    .dim = 3,
+                                    .dim = 2,
                                     .fvFaceGeom = {.normal =
                                                        {
                                                            0.70710678118655,
@@ -243,12 +267,13 @@ INSTANTIATE_TEST_SUITE_P(
                                     // values
                                     .boundaryValues = {1.2, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
-                                    .stencilTemperature = 350,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0, 0.0, 0.0, 0.0}},
+                                    .stencilTemperature = 335.3553390593,  // delta T = stencil-boundary ... stencil = boundary+deltaT
+                                    .expectedResults = {0.0, 2.5 * 50 * .5, 0.0, 0.0}},
         (SublimationTestParameters){.description = "2D upper right corner boundary with heating and species",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     .numberSpecies = 3,
                                     .speciesMassFractions = std::make_shared<ablate::mathFunctions::FieldFunction>("massFractions", ablate::mathFunctions::Create(std::vector<double>{.5, .3, .2})),
                                     // geometry
@@ -258,11 +283,12 @@ INSTANTIATE_TEST_SUITE_P(
                                     .boundaryValues = {1.2, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
                                     .stencilTemperature = 264.6446609407,  // note for this case a dT/dn of 50 is need on the diagonal
-                                    .expectedResults = {0.0003125, -62.5, -1.1508899433575995E-7, -1.1508899433575995E-7, 0.0003125 * .5, 0.0003125 * .3, 0.0003125 * .2}},
+                                    .expectedResults = {0.0003125, 0.0003125 * 5.0E3 - 2.5 * 50 * .5, -1.1508899433575995E-7, -1.1508899433575995E-7, 0.0003125 * .5, 0.0003125 * .3, 0.0003125 * .2}},
         (SublimationTestParameters){.description = "2D upper right corner boundary with cooling and species",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     .numberSpecies = 3,
                                     .speciesMassFractions = std::make_shared<ablate::mathFunctions::FieldFunction>("massFractions", ablate::mathFunctions::Create(std::vector<double>{.5, .3, .2})),
                                     // geometry
@@ -277,12 +303,13 @@ INSTANTIATE_TEST_SUITE_P(
                                     // values
                                     .boundaryValues = {1.2, NAN, NAN, NAN},
                                     .boundaryTemperature = 300,
-                                    .stencilTemperature = 350,  // delta T = stencil-boundary ... stencil = boundary+deltaT
-                                    .expectedResults = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}},
+                                    .stencilTemperature = 335.3553390593,  // delta T = stencil-boundary ... stencil = boundary+deltaT
+                                    .expectedResults = {0.0, 2.5 * 50 * .5, 0.0, 0.0, 0.0, 0.0, 0.0}},
         (SublimationTestParameters){.description = "2D lower left no gradient",
                                     // setup
                                     .latentHeatOfFusion = 2.0e+5,
                                     .effectiveConductivity = 2.5,
+                                    .sensibleEnthalpy = 5.0E3,
                                     .numberSpecies = 0,
                                     // geometry
                                     .dim = 2,

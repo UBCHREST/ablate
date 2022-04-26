@@ -14,9 +14,7 @@ ablate::boundarySolver::BoundarySolver::~BoundarySolver() {
     }
 }
 
-static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel boundaryLabel, PetscInt boundaryValue, PetscInt depth, DM dm, PetscInt cell) {
-    const PetscInt maxDepth = 2;
-
+static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel boundaryLabel, PetscInt boundaryValue, PetscInt depth, DM dm, PetscInt cell, PetscInt maxDepth) {
     // Check to see if this cell is already in the list
     if (stencilSet.count(cell)) {
         return;
@@ -49,13 +47,19 @@ static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel bounda
             DMPlexGetSupportSize(dm, face, &numberNeighborCells) >> ablate::checkError;
             DMPlexGetSupport(dm, face, &neighborCells) >> ablate::checkError;
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, depth + 1, dm, neighborCells[n]);
+                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, depth + 1, dm, neighborCells[n], maxDepth);
             }
         }
     }
 }
 
 void ablate::boundarySolver::BoundarySolver::Setup() {
+    ablate::solver::CellSolver::Setup();
+
+    // do a simple sanity check for labels
+    GetRegion()->CheckForLabel(subDomain->GetDM());
+    fieldBoundary->CheckForLabel(subDomain->GetDM());
+
     // march over process and link to the flow
     for (auto& process : boundaryProcesses) {
         process->Initialize(*this);
@@ -79,8 +83,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     }
 
     // Get the geometry for the mesh
-    Vec faceGeomVec, cellGeomVec;
-    DMPlexGetGeometryFVM(subDomain->GetDM(), &faceGeomVec, &cellGeomVec, nullptr) >> checkError;
     DM faceDM, cellDM;
     VecGetDM(faceGeomVec, &faceDM) >> checkError;
     VecGetDM(cellGeomVec, &cellDM) >> checkError;
@@ -102,14 +104,15 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     // Keep track of the current maxFaces
     PetscInt maxFaces = 0;
 
+    // compute the max depth
+    PetscInt maxCellDepth = PetscMin(2, dim);
+
     // March over each cell in this region to create the stencil
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt* cells;
-    GetCellRange(cellIS, cStart, cEnd, cells);
-    for (PetscInt c = cStart; c < cEnd; ++c) {
+    solver::Range cellRange;
+    GetCellRange(cellRange);
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         // if there is a cell array, use it, otherwise it is just c
-        const PetscInt cell = cells ? cells[c] : c;
+        const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         // make sure we are not working on a ghost cell
         PetscInt ghost = -1;
@@ -135,17 +138,13 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         // Create a new BoundaryFVFaceGeom
         BoundaryFVFaceGeom geom{.normal = {0.0, 0.0, 0.0}, .areas = {0.0, 0.0, 0.0}, .centroid = {0.0, 0.0, 0.0}};
 
-        // Set the face centroid to be equal to the face for gradient calc
-        PetscFVCellGeom* cellGeom;
-        DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cellGeom);
-        PetscArraycpy(geom.centroid, cellGeom->centroid, dim) >> checkError;
-
         // Perform some error checking
         if (numberFaces < 1) {
             throw std::runtime_error("Isolated cell " + std::to_string(cell) + " cannot be used in BoundarySolver.");
         }
 
         // For each connected face
+        PetscInt usedFaceCount = 0;
         for (PetscInt f = 0; f < numberFaces; f++) {
             PetscInt face = cellFaces[f];
 
@@ -163,7 +162,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             DMPlexGetSupport(subDomain->GetDM(), face, &neighborCells) >> checkError;
 
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n]);
+                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n], maxCellDepth);
             }
 
             // Add this geometry to the BoundaryFVFaceGeom
@@ -176,13 +175,21 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
                 for (PetscInt d = 0; d < dim; d++) {
                     geom.normal[d] -= fg->normal[d];
                     geom.areas[d] -= fg->normal[d];
+                    geom.centroid[d] += fg->centroid[d];
                 }
             } else {
                 for (PetscInt d = 0; d < dim; d++) {
                     geom.normal[d] += fg->normal[d];
                     geom.areas[d] += fg->normal[d];
+                    geom.centroid[d] += fg->centroid[d];
                 }
             }
+            usedFaceCount++;
+        }
+
+        // take average face location
+        for (PetscInt d = 0; d < dim; d++) {
+            geom.centroid[d] /= usedFaceCount;
         }
 
         // compute the normal
@@ -230,7 +237,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
 
         maximumStencilSize = PetscMax(maximumStencilSize, (PetscInt)stencil.size());
     }
-    RestoreRange(cellIS, cStart, cEnd, cells);
+    RestoreRange(cellRange);
 
     // clean up the geom
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
@@ -282,11 +289,8 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
     // Extract the cell geometry, and the dm that holds the information
     auto dm = subDomain->GetDM();
     auto auxDM = subDomain->GetAuxDM();
-    Vec cellGeomVec;
     DM dmCell;
     const PetscScalar* cellGeomArray;
-    ierr = DMPlexGetGeometryFVM(dm, nullptr, &cellGeomVec, nullptr);
-    CHKERRQ(ierr);
     ierr = VecGetDM(cellGeomVec, &dmCell);
     CHKERRQ(ierr);
     ierr = VecGetArrayRead(cellGeomVec, &cellGeomArray);
@@ -320,11 +324,9 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
     DMLabel ghostLabel;
     DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
     // Get the region to march over
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt* cells;
-    GetCellRange(cellIS, cStart, cEnd, cells);
-    if (cEnd > cStart) {
+    solver::Range cellRange;
+    GetCellRange(cellRange);
+    if (cellRange.end > cellRange.start) {
         PetscInt dim = subDomain->GetDimensions();
 
         // Get pointers to sol, aux, and f vectors
@@ -361,9 +363,9 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
 
             // March over each cell in this region
             PetscInt cOffset = 0;  // Keep track of the cell offset
-            for (PetscInt c = cStart; c < cEnd; ++c, cOffset++) {
+            for (PetscInt c = cellRange.start; c < cellRange.end; ++c, cOffset++) {
                 // if there is a cell array, use it, otherwise it is just c
-                const PetscInt cell = cells ? cells[c] : c;
+                const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
                 // make sure we are not working on a ghost cell
                 PetscInt ghost = -1;
@@ -478,7 +480,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     }
 
-    RestoreRange(cellIS, cStart, cEnd, cells);
+    RestoreRange(cellRange);
 
     PetscFunctionReturn(0);
 }
@@ -496,10 +498,8 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
         VecGetArray(vec, &array) >> checkError;
 
         // March over each cell
-        IS cellIS;
-        PetscInt cStart, cEnd;
-        const PetscInt* cells;
-        GetCellRange(cellIS, cStart, cEnd, cells);
+        solver::Range cellRange;
+        GetCellRange(cellRange);
         PetscInt dim = subDomain->GetDimensions();
 
         // Get the petscFunction/context
@@ -508,9 +508,9 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
 
         // March over each cell in this region
         PetscInt cOffset = 0;  // Keep track of the cell offset
-        for (PetscInt c = cStart; c < cEnd; ++c, cOffset++) {
+        for (PetscInt c = cellRange.start; c < cellRange.end; ++c, cOffset++) {
             // if there is a cell array, use it, otherwise it is just c
-            const PetscInt cell = cells ? cells[c] : c;
+            const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
             // Get pointers to sol, aux, and f vectors
             PetscScalar* pt = nullptr;
@@ -527,7 +527,7 @@ void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vec
             }
         }
 
-        RestoreRange(cellIS, cStart, cEnd, cells);
+        RestoreRange(cellRange);
         VecRestoreArray(vec, &array);
     }
 }
@@ -558,15 +558,13 @@ void ablate::boundarySolver::BoundarySolver::ComputeGradientAlongNormal(PetscInt
 }
 
 const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom& ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt* cells;
-    GetCellRange(cellIS, cStart, cEnd, cells);
+    solver::Range cellRange;
+    GetCellRange(cellRange);
 
     // Locate the index
     PetscInt location;
-    ISLocate(cellIS, cell, &location) >> checkError;
-    RestoreRange(cellIS, cStart, cEnd, cells);
+    ISLocate(cellRange.is, cell, &location) >> checkError;
+    RestoreRange(cellRange);
 
     return gradientStencils[location].geometry;
 }

@@ -263,20 +263,29 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
         const PetscInt* insideCells;
         ISGetPointRange(insideCellIS, &insideCellStart, &insideCellEnd, &insideCells);
 
+        // get the cell geometry
+        Vec cellGeomVec;
+        const PetscScalar* cellGeomArray;
+        DM cellGeomDm;
+        DMPlexGetDataFVM(subDomain->GetDM(), nullptr, &cellGeomVec, nullptr, nullptr) >> checkError;
+        VecGetDM(cellGeomVec, &cellGeomDm) >> checkError;
+        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+
         // March over each cell
-        IS boundaryCellIS;
-        PetscInt boundaryCellStart, boundaryCellEnd;
-        const PetscInt* boundaryCells;
-        boundarySolver->GetCellRange(boundaryCellIS, boundaryCellStart, boundaryCellEnd, boundaryCells);
-        for (PetscInt c = boundaryCellStart; c < boundaryCellEnd; ++c) {
+        solver::Range boundaryCellRange;
+        boundarySolver->GetCellRange(boundaryCellRange);
+        for (PetscInt c = boundaryCellRange.start; c < boundaryCellRange.end; ++c) {
             // if there is a cell array, use it, otherwise it is just c
-            const PetscInt cell = boundaryCells ? boundaryCells[c] : c;
+            const PetscInt cell = boundaryCellRange.points ? boundaryCellRange.points[c] : c;
 
             // Get the exact location of the face
             const auto& face = boundarySolver->GetBoundaryGeometry(cell);
 
+            PetscFVCellGeom* cellGeom;
+            DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> checkError;
+
             // Set the current location
-            PetscArraycpy(activeCell, face.centroid, dim);
+            PetscArraycpy(activeCell, cellGeom->centroid, dim);
 
             // Reset the grad vec
             VecZeroEntries(gradVec) >> checkError;
@@ -285,8 +294,8 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
             boundarySolver->ComputeRHSFunction(0.0, globVec, gradVec) >> checkError;
 
             // Make sure that there is no source terms in this boundary solver region
-            for (PetscInt tc = boundaryCellStart; tc < boundaryCellEnd; ++tc) {
-                const PetscInt testCell = boundaryCells ? boundaryCells[tc] : tc;
+            for (PetscInt tc = boundaryCellRange.start; tc < boundaryCellRange.end; ++tc) {
+                const PetscInt testCell = boundaryCellRange.points ? boundaryCellRange.points[tc] : tc;
 
                 const PetscScalar* data;
                 DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), testCell, gradArray, &data) >> checkError;
@@ -378,13 +387,14 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
             }
         }
 
-        boundarySolver->RestoreRange(boundaryCellIS, boundaryCellStart, boundaryCellEnd, boundaryCells);
+        boundarySolver->RestoreRange(boundaryCellRange);
         VecRestoreArrayRead(gradVec, &gradArray) >> checkError;
 
         ISRestorePointRange(insideCellIS, &insideCellStart, &insideCellEnd, &insideCells);
 
         ISDestroy(&allCellIS);
         ISDestroy(&insideCellIS);
+        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
         // debug code
         DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDM");

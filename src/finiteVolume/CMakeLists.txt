@@ -8,8 +8,10 @@ target_sources(ablateLibrary
         compressibleFlowSolver.hpp
         reactingCompressibleFlowSolver.hpp
         reactingCompressibleFlowSolver.cpp
-        fvSupport.h
-        fvSupport.c
+        faceInterpolant.hpp
+        faceInterpolant.cpp
+        cellInterpolant.hpp
+        cellInterpolant.cpp
         )
 
 add_subdirectory(boundaryConditions)

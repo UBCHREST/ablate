@@ -224,14 +224,12 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
         auto expectedAuxBGradient = ablate::mathFunctions::Create(GetParam().expectedAuxBGradient);
 
         // March over each cell
-        IS cellIS;
-        PetscInt cStart, cEnd;
-        const PetscInt* cells;
-        boundarySolver->GetCellRange(cellIS, cStart, cEnd, cells);
+        solver::Range cellRange;
+        boundarySolver->GetCellRange(cellRange);
         PetscInt cOffset = 0;  // Keep track of the cell offset
-        for (PetscInt c = cStart; c < cEnd; ++c, cOffset++) {
+        for (PetscInt c = cellRange.start; c < cellRange.end; ++c, cOffset++) {
             // if there is a cell array, use it, otherwise it is just c
-            const PetscInt cell = cells ? cells[c] : c;
+            const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
             // Get the raw data at this point, this check assumes the order the fields
             const PetscScalar* data;
@@ -269,7 +267,7 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
             }
         }
 
-        boundarySolver->RestoreRange(cellIS, cStart, cEnd, cells);
+        boundarySolver->RestoreRange(cellRange);
         VecRestoreArrayRead(gradVec, &gradArray) >> checkError;
 
         // debug code

@@ -258,10 +258,8 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     }
 
     // Get the valid cell range over this region
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt* cells;
-    flow.GetCellRange(cellIS, cStart, cEnd, cells);
+    solver::Range cellRange;
+    flow.GetCellRange(cellRange);
 
     // get the dim
     PetscInt dim;
@@ -294,9 +292,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     eos::ThermodynamicFunction temperatureFunction = eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Temperature, flow.GetSubDomain().GetFields());
 
     // March over each cell
-    for (PetscInt c = cStart; c < cEnd; ++c) {
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         // if there is a cell array, use it, otherwise it is just c
-        const PetscInt cell = cells ? cells[c] : c;
+        const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         // Get the current state variables for this cell
         const PetscScalar* conserved = nullptr;
@@ -414,7 +412,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     }
 
     // cleanup
-    flow.RestoreRange(cellIS, cStart, cEnd, cells);
+    flow.RestoreRange(cellRange);
     ierr = VecRestoreArray(sourceVec, &sourceArray);
     CHKERRQ(ierr);
     ierr = VecRestoreArrayRead(globFlowVec, &flowArray);
@@ -430,14 +428,12 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
     auto process = (ablate::finiteVolume::processes::TChemReactions*)ctx;
 
     // get the cell range
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt* cells;
-    solver.GetCellRange(cellIS, cStart, cEnd, cells);
+    solver::Range cellRange;
+    solver.GetCellRange(cellRange);
 
     // get the dm for this
     PetscDS ds = nullptr;
-    ierr = DMGetCellDS(dm, cells ? cells[cStart] : cStart, &ds);
+    ierr = DMGetCellDS(dm, cellRange.points ? cellRange.points[cellRange.start] : cellRange.start, &ds);
     CHKERRQ(ierr);
 
     // get access to the fArray
@@ -456,9 +452,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
     CHKERRQ(ierr);
 
     // March over each cell
-    for (PetscInt c = cStart; c < cEnd; ++c) {
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         // if there is a cell array, use it, otherwise it is just c
-        const PetscInt cell = cells ? cells[c] : c;
+        const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         // read the global f
         PetscScalar* rhs;
@@ -480,12 +476,10 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
         }
     }
 
-    solver.RestoreRange(cellIS, cStart, cEnd, cells);
+    solver.RestoreRange(cellRange);
     ierr = VecRestoreArray(locFVec, &fArray);
     CHKERRQ(ierr);
     ierr = VecGetArrayRead(process->sourceVec, &sourceArray);
-    CHKERRQ(ierr);
-    ierr = ISDestroy(&cellIS);
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }

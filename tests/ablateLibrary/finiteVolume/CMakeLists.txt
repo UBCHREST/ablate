@@ -7,6 +7,7 @@ target_sources(libraryTests
         compressibleFlowSpeciesDiffusionTests.cpp
         compressibleFlowEvAdvectionTests.cpp
         compressibleFlowEvDiffusionTests.cpp
+        faceInterpolantTests.cpp
         )
 
 add_subdirectory(fluxCalculator)

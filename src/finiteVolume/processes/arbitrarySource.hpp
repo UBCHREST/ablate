@@ -14,8 +14,8 @@ class ArbitrarySource : public Process {
      * private function to compute  source
      * @return
      */
-    static PetscErrorCode ComputeArbitrarySource(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
-                                                 const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
+    static PetscErrorCode ComputeArbitrarySource(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[],
+                                                 PetscScalar f[], void* ctx);
 
     //! pre store the petsc function and context
     struct PetscFunctionStruct {

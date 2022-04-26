@@ -12,8 +12,13 @@ class EssentialGhost : public Ghost {
 
     const std::shared_ptr<ablate::mathFunctions::FieldFunction> boundaryFunction;
 
+    /**
+     * Uses linear interpolation to force the value at the face
+     */
+    const bool enforceAtFace;
+
    public:
-    EssentialGhost(std::string boundaryName, std::vector<int> labelId, std::shared_ptr<ablate::mathFunctions::FieldFunction> boundaryFunction, std::string labelName = {});
+    EssentialGhost(std::string boundaryName, std::vector<int> labelId, std::shared_ptr<ablate::mathFunctions::FieldFunction> boundaryFunction, std::string labelName = {}, bool enforceAtFace = false);
 };
 }  // namespace ablate::finiteVolume::boundaryConditions
 #endif  // ABLATELIBRARY_ESSENTIALGHOST_HPP

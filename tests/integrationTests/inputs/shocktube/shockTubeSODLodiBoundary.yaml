@@ -16,10 +16,6 @@ timestepper:
     faces: [ 5 ]
     lower: [ 0 ]
     upper: [ 1 ]
-    mainRegion:
-      name: mainSolver
-    boundaryFaceRegion:
-      name: boundaryFace
     preModifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 0
@@ -32,6 +28,8 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas: 287
+        region:
+          name: domain
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state: &flowFieldState
@@ -43,7 +41,7 @@ solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: flow solver
     region:
-      name: mainSolver
+      name: interiorCells
     parameters:
       cfl: .25
     eos: *eos
@@ -58,7 +56,7 @@ solvers:
     region:
       name: boundaryCellsRight
     fieldBoundary:
-      name: boundaryFace
+      name: boundaryFaces
     processes:
       - !ablate::boundarySolver::lodi::IsothermalWall
         eos: *eos
@@ -67,7 +65,7 @@ solvers:
     region:
       name: boundaryCellsLeft
     fieldBoundary:
-      name: boundaryFace
+      name: boundaryFaces
     processes:
       - !ablate::boundarySolver::lodi::OpenBoundary
         eos: *eos

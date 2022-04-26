@@ -15,10 +15,6 @@ timestepper:
     faces: [ 50 ]
     lower: [ 0 ]
     upper: [ 1 ]
-    mainRegion:
-      name: mainSolver
-    boundaryFaceRegion:
-      name: boundaryFace
     preModifiers:
       - !<!ablate::domain::modifiers::SetFromOptions>
         dm_refine: 0
@@ -31,14 +27,22 @@ timestepper:
           parameters:
             gamma: 0
             Rgas: 0
+        region:
+          name: domain
       - name: densityVF
         type: FVM
+        region:
+          name: domain
       - name: volumeFraction
         location: AUX
         type: FVM
+        region:
+          name: domain
       - name: pressure
         location: AUX
         type: FVM
+        region:
+          name: domain
   initialization:
     - &2
       fieldName: "euler" # T=300K, v=0m/s, p=100,000Pa
@@ -53,7 +57,7 @@ solvers:
   - !<!ablate::finiteVolume::FiniteVolumeSolver>
     id: flow solvers
     region:
-      name: mainSolver
+      name: interiorCells
     processes:
       - !<!ablate::finiteVolume::processes::TwoPhaseEulerAdvection>
         eosGas: !<!ablate::eos::PerfectGas> &4
@@ -91,7 +95,7 @@ solvers:
     region:
       name: boundaryCellsRight
     fieldBoundary:
-      name: boundaryFace
+      name: boundaryFaces
     processes:
       - !ablate::boundarySolver::lodi::OpenBoundary
         eos: *1
@@ -103,7 +107,7 @@ solvers:
     region:
       name: boundaryCellsLeft
     fieldBoundary:
-      name: boundaryFace
+      name: boundaryFaces
     processes:
       - !ablate::boundarySolver::lodi::IsothermalWall
         eos: *1
