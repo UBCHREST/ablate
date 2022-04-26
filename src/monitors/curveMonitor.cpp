@@ -64,7 +64,7 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
                     curveFile, cStart, cEnd, cellGeomVec, monitor->GetSolver()->GetSubDomain().GetFields(domain::FieldLocation::AUX), auxSubDM, monitor->GetSolver()->GetSubDomain().GetSubAuxVector());
             }
         } catch (std::exception& exp) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
         }
 
         curveFile.close();

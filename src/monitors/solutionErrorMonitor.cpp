@@ -44,7 +44,7 @@ PetscErrorCode ablate::monitors::SolutionErrorMonitor::MonitorError(TS ts, Petsc
     try {
         ferrors = errorMonitor->ComputeError(ts, crtime, u);
     } catch (std::exception& exception) {
-        SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_LIB, exception.what());
+        SETERRQ(PetscObjectComm((PetscObject)dm), PETSC_ERR_LIB, "%s", exception.what());
     }
 
     // get the error type
