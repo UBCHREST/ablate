@@ -18,7 +18,7 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     const std::string rpath = path / "regressor";
     const std::string wpath = path / "weights.csv";
     const std::string ipath = path / "weights_inv.csv";
-    const std::string spath = path / "scaler.txt";
+    const std::string spath = path / "scaling_params.txt";
 
     // Check for missing files
     if (!std::filesystem::exists(rpath)) {
@@ -62,11 +62,18 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     //load source energy scaler
     sourceEnergyScaler = (PetscReal *) malloc(2*sizeof(PetscReal));
     inputFileStream.open(spath.c_str(), std::ios::in);
-    std::string line;
+    std::string line,value;
+
     std::getline(inputFileStream, line);
-    sourceEnergyScaler[0] = std::stod(line);
+    std::stringstream lineStream1(line);
+    getline(lineStream1,value,' ');
+    sourceEnergyScaler[0] = std::stod(value);
+
     std::getline(inputFileStream, line);
-    sourceEnergyScaler[1] = std::stod(line);
+    std::stringstream lineStream2(line);
+    getline(lineStream2,value,' ');
+    sourceEnergyScaler[1] = std::stod(value);
+
     inputFileStream.close();
 }
 

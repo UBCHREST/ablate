@@ -143,7 +143,7 @@ TEST_P(ChemTabModelComputeSourceFunctionFixture, ShouldComputeCorrectSource) {
 
 INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeSourceFunctionFixture,
 		testing::Values((ChemTabModelComputeSourceFunctionParameters){
-			.modelPath = "inputs/chemistry/chemTabTestModel_1", .inputProgressVariables = {1., .1, .2, .2, .1}, .expectedSource = {39.918297, -32.271481,-26.513624,36.252228}, .expectedSourceEnergy = 76.633858}));
+			.modelPath = "inputs/chemistry/chemTabTestModel_1", .inputProgressVariables = {1., .1, .2, .2, .1}, .expectedSource = {39.918297, -32.271481,-26.513624,36.252228}, .expectedSourceEnergy = -3.1341994e+12}));
 
 /*******************************************************************************************************
  * Tests for getting the Progress Variables
