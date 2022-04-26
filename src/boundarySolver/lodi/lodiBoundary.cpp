@@ -111,49 +111,21 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::EULER_FIELD)) {
         nEqs += bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD).numberComponents;
 
-        if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD)) {
-            updateTemperatureData.computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
-            updateTemperatureData.numberSpecies = (PetscInt)eos->GetSpecies().size();
-
-            if (updateTemperatureData.numberSpecies > 0) {
-                // add in aux update variables
-                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
-                                               &updateTemperatureData,
-                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD});
-            } else {
-                // add in aux update variables
-                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
-                                               &updateTemperatureData,
-                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD});
-            }
-
-            if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::VELOCITY_FIELD)) {
-                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocityField,
-                                               nullptr,
-                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::VELOCITY_FIELD},
-                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD});
-            }
+        if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::VELOCITY_FIELD)) {
+            bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocityField,
+                                           nullptr,
+                                           std::vector<std::string>{finiteVolume::CompressibleFlowFields::VELOCITY_FIELD},
+                                           {finiteVolume::CompressibleFlowFields::EULER_FIELD});
         }
 
         if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD)) {
-            updateTemperatureData.computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
-            updateTemperatureData.numberSpecies = (PetscInt)eos->GetSpecies().size();
-
-            if (updateTemperatureData.numberSpecies > 0) {
-                // add in aux update variables
-                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
-                                               &updateTemperatureData,
-                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD});
-            } else {
-                // add in aux update variables
-                bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
-                                               &updateTemperatureData,
-                                               std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                               {finiteVolume::CompressibleFlowFields::EULER_FIELD});
-            }
+            // set decode state functions
+            computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
+            // add in aux update variables
+            bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
+                                           &computeTemperatureFunction,
+                                           std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
+                                           {});
         }
     }
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {

@@ -263,6 +263,14 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
         const PetscInt* insideCells;
         ISGetPointRange(insideCellIS, &insideCellStart, &insideCellEnd, &insideCells);
 
+        // get the cell geometry
+        Vec cellGeomVec;
+        const PetscScalar* cellGeomArray;
+        DM cellGeomDm;
+        DMPlexGetDataFVM(subDomain->GetDM(), nullptr, &cellGeomVec, nullptr, nullptr) >> checkError;
+        VecGetDM(cellGeomVec, &cellGeomDm) >> checkError;
+        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+
         // March over each cell
         solver::Range boundaryCellRange;
         boundarySolver->GetCellRange(boundaryCellRange);
@@ -273,8 +281,11 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
             // Get the exact location of the face
             const auto& face = boundarySolver->GetBoundaryGeometry(cell);
 
+            PetscFVCellGeom* cellGeom;
+            DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> checkError;
+
             // Set the current location
-            PetscArraycpy(activeCell, face.centroid, dim);
+            PetscArraycpy(activeCell, cellGeom->centroid, dim);
 
             // Reset the grad vec
             VecZeroEntries(gradVec) >> checkError;
@@ -383,6 +394,7 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
 
         ISDestroy(&allCellIS);
         ISDestroy(&insideCellIS);
+        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
         // debug code
         DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDM");

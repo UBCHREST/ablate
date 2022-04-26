@@ -47,12 +47,11 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
         // build the list of local coordinates
         auto subDM = monitor->GetSolver()->GetSubDomain().GetSubDM();
         Vec cellGeomVec;
-        PetscErrorCode ierr = DMPlexGetDataFVM(subDM, nullptr, &cellGeomVec, nullptr, nullptr);
+        PetscCall(DMPlexGetDataFVM(subDM, nullptr, &cellGeomVec, nullptr, nullptr));
 
         // March over each cell
         PetscInt cStart, cEnd;
-        ierr = DMPlexGetHeightStratum(subDM, 0, &cStart, &cEnd);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexGetHeightStratum(subDM, 0, &cStart, &cEnd));
 
         try {
             // Output the solution vars

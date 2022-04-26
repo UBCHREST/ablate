@@ -14,9 +14,7 @@ ablate::boundarySolver::BoundarySolver::~BoundarySolver() {
     }
 }
 
-static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel boundaryLabel, PetscInt boundaryValue, PetscInt depth, DM dm, PetscInt cell) {
-    const PetscInt maxDepth = 2;
-
+static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel boundaryLabel, PetscInt boundaryValue, PetscInt depth, DM dm, PetscInt cell, PetscInt maxDepth) {
     // Check to see if this cell is already in the list
     if (stencilSet.count(cell)) {
         return;
@@ -49,7 +47,7 @@ static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel bounda
             DMPlexGetSupportSize(dm, face, &numberNeighborCells) >> ablate::checkError;
             DMPlexGetSupport(dm, face, &neighborCells) >> ablate::checkError;
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, depth + 1, dm, neighborCells[n]);
+                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, depth + 1, dm, neighborCells[n], maxDepth);
             }
         }
     }
@@ -106,6 +104,9 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     // Keep track of the current maxFaces
     PetscInt maxFaces = 0;
 
+    // compute the max depth
+    PetscInt maxCellDepth = PetscMin(2, dim);
+
     // March over each cell in this region to create the stencil
     solver::Range cellRange;
     GetCellRange(cellRange);
@@ -137,17 +138,13 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         // Create a new BoundaryFVFaceGeom
         BoundaryFVFaceGeom geom{.normal = {0.0, 0.0, 0.0}, .areas = {0.0, 0.0, 0.0}, .centroid = {0.0, 0.0, 0.0}};
 
-        // Set the face centroid to be equal to the face for gradient calc
-        PetscFVCellGeom* cellGeom;
-        DMPlexPointLocalRead(cellDM, cell, cellGeomArray, &cellGeom);
-        PetscArraycpy(geom.centroid, cellGeom->centroid, dim) >> checkError;
-
         // Perform some error checking
         if (numberFaces < 1) {
             throw std::runtime_error("Isolated cell " + std::to_string(cell) + " cannot be used in BoundarySolver.");
         }
 
         // For each connected face
+        PetscInt usedFaceCount = 0;
         for (PetscInt f = 0; f < numberFaces; f++) {
             PetscInt face = cellFaces[f];
 
@@ -165,7 +162,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             DMPlexGetSupport(subDomain->GetDM(), face, &neighborCells) >> checkError;
 
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n]);
+                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n], maxCellDepth);
             }
 
             // Add this geometry to the BoundaryFVFaceGeom
@@ -178,13 +175,21 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
                 for (PetscInt d = 0; d < dim; d++) {
                     geom.normal[d] -= fg->normal[d];
                     geom.areas[d] -= fg->normal[d];
+                    geom.centroid[d] += fg->centroid[d];
                 }
             } else {
                 for (PetscInt d = 0; d < dim; d++) {
                     geom.normal[d] += fg->normal[d];
                     geom.areas[d] += fg->normal[d];
+                    geom.centroid[d] += fg->centroid[d];
                 }
             }
+            usedFaceCount++;
+        }
+
+        // take average face location
+        for (PetscInt d = 0; d < dim; d++) {
+            geom.centroid[d] /= usedFaceCount;
         }
 
         // compute the normal

@@ -3,6 +3,7 @@
 
 #include "boundarySolver/boundaryProcess.hpp"
 #include "eos/transport/transportModel.hpp"
+#include "finiteVolume/processes/eulerTransport.hpp"
 namespace ablate::boundarySolver::physics {
 
 /**
@@ -13,6 +14,7 @@ class Sublimation : public BoundaryProcess {
     const PetscReal latentHeatOfFusion;
     //! transport model used to compute the conductivity
     const std::shared_ptr<ablate::eos::transport::TransportModel> transportModel;
+    const std::shared_ptr<ablate::eos::EOS> eos;
     const std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux;
     PetscReal currentTime = 0.0;
 
@@ -25,9 +27,20 @@ class Sublimation : public BoundaryProcess {
     // store the effectiveConductivity function
     eos::ThermodynamicTemperatureFunction effectiveConductivity;
 
+    // reuse fv update temperature function
+    eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
+
+    // compute the sensible enthalpy for the blowing term
+    eos::ThermodynamicTemperatureFunction computeSensibleEnthalpy;
+
+    /**
+     * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
+     */
+    void UpdateSpecies(TS ts, ablate::solver::Solver &);
+
    public:
-    explicit Sublimation(PetscReal latentHeatOfFusion, const std::shared_ptr<ablate::eos::transport::TransportModel> &transportModel, std::shared_ptr<ablate::mathFunctions::FieldFunction> = {},
-                         std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {});
+    explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
+                         const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {});
 
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
 

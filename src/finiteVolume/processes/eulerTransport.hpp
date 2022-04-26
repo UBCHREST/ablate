@@ -37,19 +37,13 @@ class EulerTransport : public FlowProcess {
         eos::ThermodynamicTemperatureFunction muFunction;
     };
 
-    // Store ctx needed for static function diffusion function passed to PETSc
-    struct UpdateTemperatureData {
-        eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
-        PetscInt numberSpecies;
-    };
-
    private:
     const std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculator;
     const std::shared_ptr<eos::EOS> eos;
     const std::shared_ptr<eos::transport::TransportModel> transportModel;
     AdvectionData advectionData;
 
-    UpdateTemperatureData updateTemperatureData;
+    eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
 
     DiffusionData diffusionData;
 

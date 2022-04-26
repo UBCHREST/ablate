@@ -57,59 +57,67 @@ std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>> ablate::domain
     auto boundaryFaceRegion = std::make_shared<domain::Region>(boundaryFacesLabel);
     modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(interiorLabel, std::make_shared<ablate::mathFunctions::geom::Box>(lower, upper)));
 
-    // define a boundaryCellRegion
-    auto boundaryCellRegion = std::make_shared<domain::Region>(boundaryCellsLabel);
-    modifiers.push_back(std::make_shared<ablate::domain::modifiers::TagLabelBoundary>(interiorLabel, boundaryFaceRegion, boundaryCellRegion));
-
-    // define the ghost cells plus interior (leaves out corners)
-    auto entireDomainRegion = std::make_shared<domain::Region>(entireDomainLabel);
-    modifiers.push_back(std::make_shared<ablate::domain::modifiers::MergeLabels>(entireDomainRegion, std::vector<std::shared_ptr<domain::Region>>{interiorLabel, boundaryCellRegion}));
-
     const int X = 0;
     const int Y = 1;
     const int Z = 2;
     const double min = std::numeric_limits<double>::lowest();
     const double max = std::numeric_limits<double>::max();
 
+    // define a boundaryCellRegion
+    modifiers.push_back(std::make_shared<ablate::domain::modifiers::TagLabelBoundary>(interiorLabel, boundaryFaceRegion));
+
+    // preDefineAllBoundaryRegions
+    auto boundaryCellsFrontRegion = std::make_shared<domain::Region>(boundaryCellsFront);
+    auto boundaryCellsBackRegion = std::make_shared<domain::Region>(boundaryCellsBack);
+    auto boundaryCellsTopRegion = std::make_shared<domain::Region>(boundaryCellsTop);
+    auto boundaryCellsBottomRegion = std::make_shared<domain::Region>(boundaryCellsBottom);
+    auto boundaryCellsRightRegion = std::make_shared<domain::Region>(boundaryCellsRight);
+    auto boundaryCellsLeftRegion = std::make_shared<domain::Region>(boundaryCellsLeft);
+
     // Define a subset for the other boundary regions
+    std::vector<std::shared_ptr<domain::Region>> boundaryRegions;
     switch (lower.size()) {
         case 3:
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsFront),
-                std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], lower[Y], upper[Z]}, std::vector<double>{upper[X], upper[Y], max})));
+                boundaryCellsFrontRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], lower[Y], upper[Z]}, std::vector<double>{upper[X], upper[Y], max})));
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsBack),
-                std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], lower[Y], min}, std::vector<double>{upper[X], upper[Y], lower[Z]})));
+                boundaryCellsBackRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], lower[Y], min}, std::vector<double>{upper[X], upper[Y], lower[Z]})));
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsTop),
-                std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], upper[Y], lower[Z]}, std::vector<double>{upper[X], max, upper[Z]})));
+                boundaryCellsTopRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], upper[Y], lower[Z]}, std::vector<double>{upper[X], max, upper[Z]})));
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsBottom),
-                std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], min, lower[Z]}, std::vector<double>{upper[X], lower[Y], upper[Z]})));
+                boundaryCellsBottomRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], min, lower[Z]}, std::vector<double>{upper[X], lower[Y], upper[Z]})));
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsRight),
-                std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{upper[X], lower[Y], lower[Z]}, std::vector<double>{max, upper[Y], upper[Z]})));
+                boundaryCellsRightRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{upper[X], lower[Y], lower[Z]}, std::vector<double>{max, upper[Y], upper[Z]})));
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsLeft),
-                std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{min, lower[Y], lower[Z]}, std::vector<double>{lower[X], upper[Y], upper[Z]})));
+                boundaryCellsLeftRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{min, lower[Y], lower[Z]}, std::vector<double>{lower[X], upper[Y], upper[Z]})));
+            boundaryRegions = {boundaryCellsFrontRegion, boundaryCellsBackRegion, boundaryCellsTopRegion, boundaryCellsBottomRegion, boundaryCellsRightRegion, boundaryCellsLeftRegion};
             break;
         case 2:
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsTop), std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], upper[Y]}, std::vector<double>{upper[X], max})));
+                boundaryCellsTopRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], upper[Y]}, std::vector<double>{upper[X], max})));
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsBottom),
-                std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], min}, std::vector<double>{upper[X], lower[Y]})));
+                boundaryCellsBottomRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{lower[X], min}, std::vector<double>{upper[X], lower[Y]})));
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsRight), std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{upper[X], lower[Y]}, std::vector<double>{max, upper[Y]})));
+                boundaryCellsRightRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{upper[X], lower[Y]}, std::vector<double>{max, upper[Y]})));
             modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(
-                std::make_shared<domain::Region>(boundaryCellsLeft), std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{min, lower[Y]}, std::vector<double>{lower[X], upper[Y]})));
+                boundaryCellsLeftRegion, std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{min, lower[Y]}, std::vector<double>{lower[X], upper[Y]})));
+            boundaryRegions = {boundaryCellsTopRegion, boundaryCellsBottomRegion, boundaryCellsRightRegion, boundaryCellsLeftRegion};
             break;
         case 1:
-            modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(std::make_shared<domain::Region>(boundaryCellsRight),
+            modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(boundaryCellsRightRegion,
                                                                                          std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{upper[X]}, std::vector<double>{max})));
-            modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(std::make_shared<domain::Region>(boundaryCellsLeft),
+            modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(boundaryCellsLeftRegion,
                                                                                          std::make_shared<ablate::mathFunctions::geom::Box>(std::vector<double>{min}, std::vector<double>{lower[X]})));
+            boundaryRegions = {boundaryCellsRightRegion, boundaryCellsLeftRegion};
     }
+
+    // define a boundaryCellRegion
+    auto boundaryCellRegion = std::make_shared<domain::Region>(boundaryCellsLabel);
+    modifiers.push_back(std::make_shared<ablate::domain::modifiers::MergeLabels>(boundaryCellRegion, boundaryRegions));
+
+    // define the ghost cells plus interior (leaves out corners)
+    auto entireDomainRegion = std::make_shared<domain::Region>(entireDomainLabel);
+    modifiers.push_back(std::make_shared<ablate::domain::modifiers::MergeLabels>(entireDomainRegion, std::vector<std::shared_ptr<domain::Region>>{interiorLabel, boundaryCellRegion}));
 
     modifiers.insert(modifiers.end(), postModifiers.begin(), postModifiers.end());
 
