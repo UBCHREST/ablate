@@ -101,7 +101,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
 
         // March over each level
         for (PetscInt l = 1; l <= GetParam().levels; l++) {
-            PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d\n", l);
+            PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %" PetscInt_FMT "\n", l);
 
             // setup any global arguments
             ablate::utilities::PetscOptionsUtils::Set({{"dm_plex_separate_marker", ""}, {"petsclimiter_type", "none"}});
