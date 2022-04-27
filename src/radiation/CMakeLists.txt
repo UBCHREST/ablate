@@ -1,8 +1,7 @@
 target_sources(ablateLibrary
         PUBLIC
-        radiationSolver.hpp
-        radiationSolver.cpp
-        radiationProcess.hpp
+        radiation.hpp
+        radiation.cpp
         )
 
 #add_subdirectory(lodi)
