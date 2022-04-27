@@ -22,6 +22,7 @@ void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
 
     // Get the subtrahendIS
     DMLabel subtrahendLabel = nullptr;
+    subtrahendRegion->CheckForLabel(dm);
     DMGetLabel(dm, subtrahendRegion->GetName().c_str(), &subtrahendLabel) >> checkError;
     IS subtrahendIS = nullptr;
     DMLabelGetStratumIS(subtrahendLabel, subtrahendRegion->GetValue(), &subtrahendIS) >> checkError;

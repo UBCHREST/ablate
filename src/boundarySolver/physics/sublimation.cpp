@@ -1,5 +1,4 @@
 #include "sublimation.hpp"
-
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
@@ -37,8 +36,9 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
                                  BoundarySolver::BoundarySourceType::Distributed);
     }
 
-    // extract the effectiveConductivity model
+    // extract the effectiveConductivity and viscosity model
     effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, bSolver.GetSubDomain().GetFields());
+    viscosityFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, bSolver.GetSubDomain().GetFields());
 
     // If there is a additionalHeatFlux function, we need to update time
     if (additionalHeatFlux || massFractions) {
@@ -62,7 +62,10 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
     }
 
     computeSensibleEnthalpy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SensibleEnthalpy, bSolver.GetSubDomain().GetFields());
-    bSolver.RegisterPreStep([this](auto ts, auto &solver) { UpdateSpecies(ts, solver); });
+
+    if(bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {
+        bSolver.RegisterPreStep([this](auto ts, auto &solver) { UpdateSpecies(ts, solver); });
+    }
 }
 
 PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
@@ -105,14 +108,56 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     // Compute the area
     PetscReal area = utilities::MathUtilities::MagVector(dim, fg->areas);
 
+    // Determine the velocity in the normal coordinate system [nx, nt, nt]
+    PetscReal boundaryDensity = boundaryValues[uOff[EULER_LOC] + fp::RHO];
+    PetscReal velocityNormSystem[3] = {massFlux/boundaryDensity, 0.0, 0.0};
+
+    // Map this velocity into cartesian system
+    // Compute the transformation matrix
+    PetscReal transformationMatrix[3][3];
+    PetscReal velocityCartSystem[3];
+    utilities::MathUtilities::ComputeTransformationMatrix(dim, fg->normal, transformationMatrix);
+    ablate::utilities::MathUtilities::MultiplyTranspose(dim, transformationMatrix, velocityNormSystem, velocityCartSystem);
+
+    // store the gradient of velocity so that it can be used with CompressibleFlowComputeStressTensor [dudx, dudy, dudz, dvdx ...]
+    PetscReal gradBoundaryVelocity[9];
+    PetscArrayzero(gradBoundaryVelocity, 9);
+
+    // For each component of velocity
+    for (PetscInt v =0; v < dim; v++){
+        for (PetscInt s = 0; s < stencilSize; ++s) {
+            PetscReal stencilDensity = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHO];
+
+            PetscScalar delta = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHOU + v]/stencilDensity - velocityCartSystem[v];
+
+            for (PetscInt d = 0; d < dim; ++d) {
+                gradBoundaryVelocity[v*dim + d] += stencilWeights[s * dim + d] * delta;
+            }
+        }
+    }
+
+    // compute the effectiveConductivity
+    PetscReal viscosity;
+    PetscCall(sublimation->viscosityFunction.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &viscosity, sublimation->viscosityFunction.context.get()));
+
+    // Compute the stress tensor tau
+    PetscReal tau[9];  // Maximum size without symmetry
+    PetscCall(ablate::finiteVolume::processes::EulerTransport::CompressibleFlowComputeStressTensor(dim, viscosity, gradBoundaryVelocity, tau));
+
     // Add the source term, kg/s for rho
     source[sOff[EULER_LOC] + fp::RHO] = massFlux * area;
 
     // Add each momentum flux
-    PetscReal momentumFlux = massFlux * massFlux / boundaryValues[uOff[EULER_LOC] + fp::RHO];
+    PetscReal momentumFlux = massFlux * massFlux / boundaryDensity;
     // And the mom flux for each dir by g
     for (PetscInt dir = 0; dir < dim; dir++) {
-        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir];
+        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir] - 101325.0*fg->areas[dir];
+
+        // March over each direction for the viscus flux
+        for (PetscInt d = 0; d < dim; ++d) {
+//            source[sOff[EULER_LOC] + fp::RHOU + dir]  += -fg->areas[d] * tau[dir * dim + d];  // This is tau[c][d]
+        }
+
     }
 
     // compute the sensible enthalpy
@@ -141,6 +186,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(PetscInt numberSpe
     numberSpecies = numberSpeciesIn;
     // for test code, extract the effectiveConductivity model without any fields
     effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, {});
+    viscosityFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, {});
     computeSensibleEnthalpy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SensibleEnthalpy, {});
 }
 

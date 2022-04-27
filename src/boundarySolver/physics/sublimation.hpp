@@ -27,6 +27,9 @@ class Sublimation : public BoundaryProcess {
     // store the effectiveConductivity function
     eos::ThermodynamicTemperatureFunction effectiveConductivity;
 
+    // store the function to compute viscosity
+    eos::ThermodynamicTemperatureFunction viscosityFunction;
+
     // reuse fv update temperature function
     eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
 
