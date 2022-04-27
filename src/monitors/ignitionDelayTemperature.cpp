@@ -110,7 +110,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayTemperature::MonitorIgnition(TS ts
     monitor->temperatureHistory.push_back(T);
 
     if (monitor->historyLog) {
-        monitor->historyLog->Printf("%d Time: %g Temperature: %f\n", step, crtime, T);
+        monitor->historyLog->Printf("%" PetscInt_FMT " Time: %g Temperature: %f\n", step, crtime, T);
     }
 
     ierr = VecRestoreArrayRead(u, &uArray);

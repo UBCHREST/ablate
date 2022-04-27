@@ -168,7 +168,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
         // March over each level
         for (PetscInt l = 0; l < GetParam().levels; l++) {
-            PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d\n", l);
+            PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %" PetscInt_FMT "\n", l);
 
             DM dmCreate; /* problem definition */
             TS ts;       /* timestepper */
@@ -257,7 +257,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
         }
 
         // Fit each component and output
-        for (auto b = 0; b < blockSize; b++) {
+        for (PetscInt b = 0; b < blockSize; b++) {
             PetscReal l2Slope;
             PetscReal l2Intercept;
             PetscLinearRegression(hHistory.size(), &hHistory[0], &l2History[b][0], &l2Slope, &l2Intercept) >> testErrorChecker;
@@ -266,7 +266,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscReal lInfIntercept;
             PetscLinearRegression(hHistory.size(), &hHistory[0], &lInfHistory[b][0], &lInfSlope, &lInfIntercept) >> testErrorChecker;
 
-            PetscPrintf(PETSC_COMM_WORLD, "Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> testErrorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "Convergence[%\" PetscInt_FMT \"]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> testErrorChecker;
 
             if (std::isnan(GetParam().expectedL2Convergence[b])) {
                 ASSERT_TRUE(std::isnan(l2Slope)) << "incorrect L2 convergence order for component[" << b << "]";

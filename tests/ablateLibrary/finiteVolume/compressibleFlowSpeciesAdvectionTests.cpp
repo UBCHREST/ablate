@@ -62,7 +62,7 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             // Create a mesh
             PetscInt nx1D = initialNx * PetscPowRealInt(2, l);
 
-            PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d (%dx%d)\n", l, nx1D, nx1D);
+            PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %" PetscInt_FMT " (%" PetscInt_FMT "x%" PetscInt_FMT ")\n", l, nx1D, nx1D);
 
             // determine required fields for finite volume compressible flow
 

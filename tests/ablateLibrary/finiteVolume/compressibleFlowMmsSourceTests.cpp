@@ -572,7 +572,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
 
         // March over each level
         for (PetscInt l = 0; l < levels; l++) {
-            PetscPrintf(PETSC_COMM_WORLD, "Running RHS Calculation at Level %d\n", l);
+            PetscPrintf(PETSC_COMM_WORLD, "Running RHS Calculation at Level %" PetscInt_FMT "\n", l);
 
             DM dmCreate; /* problem definition */
             TS ts;       /* timestepper */
@@ -674,7 +674,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
         }
 
         // Fit each component and output
-        for (auto b = 0; b < blockSize; b++) {
+        for (PetscInt b = 0; b < blockSize; b++) {
             PetscReal l2Slope;
             PetscReal l2Intercept;
             PetscLinearRegression(hHistory.size(), &hHistory[0], &l2History[b][0], &l2Slope, &l2Intercept) >> testErrorChecker;
@@ -683,7 +683,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             PetscReal lInfIntercept;
             PetscLinearRegression(hHistory.size(), &hHistory[0], &lInfHistory[b][0], &lInfSlope, &lInfIntercept) >> testErrorChecker;
 
-            PetscPrintf(PETSC_COMM_WORLD, "RHS Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> testErrorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "RHS Convergence[%" PetscInt_FMT "]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> testErrorChecker;
 
             ASSERT_NEAR(l2Slope, GetParam().expectedL2Convergence[b], 0.2) << "incorrect L2 convergence order for component[" << b << "]";
             ASSERT_NEAR(lInfSlope, GetParam().expectedLInfConvergence[b], 0.2) << "incorrect LInf convergence order for component[" << b << "]";

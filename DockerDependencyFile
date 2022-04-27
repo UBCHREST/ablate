@@ -1,5 +1,5 @@
 # Use the petsc-build as the base
-FROM petsc-build
+FROM ghcr.io/ubchrest/petsc-docker/petsc-build:latest
 
 # Install any additional dependencies
 RUN apt-get update
