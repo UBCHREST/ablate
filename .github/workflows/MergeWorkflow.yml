@@ -96,7 +96,7 @@ jobs:
         run: docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --version > docs/_includes/generated/version.html
 
       - name: Get the PETSc version used to build/test
-        run: docker run --rm framework-test-image-${{ matrix.petscConfig }} git -C /petsc rev-parse --short HEAD > docs/_includes/generated/petscVersion.html
+        run: docker run --rm framework-test-image-${{ matrix.petscConfig }} git -C /petsc rev-parse --short HEAD | tr -d '\n' > docs/_includes/generated/petscVersion.html
 
       - name: Write the component docs
         run: docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --help > docs/_includes/generated/components.md
