@@ -1,14 +1,14 @@
 //
 // Created by owen on 3/19/22.
 //
-#ifndef ABLATELIBRARY_RADIATIONSOLVER_HPP
-#define ABLATELIBRARY_RADIATIONSOLVER_HPP
+#ifndef ABLATELIBRARY_RADIATION_HPP
+#define ABLATELIBRARY_RADIATION_HPP
 
 #include <memory>
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
 
-namespace ablate::radiationSolver {
+namespace ablate::radiation {
 
 class RadiationSolver : public solver::CellSolver, public solver::RHSFunction {  //Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
    public:
@@ -107,8 +107,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      * @param radiationProcesses a list of boundary processes
      * @param options other options
      */
-    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
-                    std::shared_ptr<parameters::Parameters> options);
+    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options);
     ~RadiationSolver() override;
 
     /** SubDomain Register and Setup **/
@@ -148,14 +147,10 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     ///Starting added radiation stuff here
 
     ///Class Methods
-    void RayTrace();
-    PetscReal CastRay(int theta, int phi, std::vector<PetscReal> intersect); //Class methods get declared here
+    void RayTrace(PetscReal time);
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
-    PetscReal Mag(std::vector<PetscReal> vector);
     void RayInit();
-    void RaysGetLoc();
     static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f);
-    std::vector<PetscReal> SolveParallelPlates();
     static PetscReal ReallySolveParallelPlates(PetscReal z); //std::vector<PetscReal>
     static PetscReal EInteg(int order, double x);
 
@@ -172,9 +167,9 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscInt dim; //Number of dimensions that the domain exists within
 
     PetscInt nSteps = 100; //number of steps that each ray will go through //This won't be used
-    PetscReal h = 0.002; //This is the DEFAULT step size which should be set by the user input
-    PetscInt nTheta = 100; //The DEFAULT number of angles to solve with, should be given by user input
-    PetscInt nPhi = 1; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscReal h = 0.02; //This is the DEFAULT step size which should be set by the user input
+    PetscInt nTheta = 10; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscInt nPhi = 5; //The DEFAULT number of angles to solve with, should be given by user input
 
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays;//(std::vector<std::vector<std::vector<PetscInt>>>()); //Indices: Cell, angle (theta), angle(phi), space steps
     //PetscReal radGain;
@@ -182,5 +177,5 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     Vec origin;
 };
 
-}  // namespace ablate::radiationSolver
+}  // namespace ablate::radiation
 #endif  // ABLATELIBRARY_BOUNDARYSOLVER_HPP

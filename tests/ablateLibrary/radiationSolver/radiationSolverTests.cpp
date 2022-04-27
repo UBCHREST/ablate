@@ -18,7 +18,7 @@
 #include "gtest/gtest.h"
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
-#include "radiationSolver/radiationSolver.hpp"
+#include "radiation/radiation.hpp"
 
 struct RadiationTestParameters {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -63,28 +63,20 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         // create a time stepper
         auto timeStepper = ablate::solver::TimeStepper("timeStepper", domain, {{"ts_max_steps", "0"}}, {}, {initialConditionEuler});
 
-        // Create an instance of the radiationSolver
-        auto radiationSolver =
-            std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("compressibleShockTube",
-                                                                           ablate::domain::Region::ENTIREDOMAIN,
-                                                                           nullptr /*options*/,
-                                                                           eos,
-                                                                           parameters,
-                                                                           nullptr /*transportModel*/,
-                                                                           std::make_shared<ablate::finiteVolume::fluxCalculator::Ausm>(),
-                                                                           std::vector<std::shared_ptr<ablate::finiteVolume::boundaryConditions::BoundaryCondition>>{} /*boundary conditions*/,
-                                                                           true /*physics time step*/);
+        // Create an instance of the radiation
+        auto radiation =
+            std::make_shared<ablate::radiation::RadiationSolver>("radiation",ablate::domain::Region::ENTIREDOMAIN,nullptr);
 
         // register the flowSolver with the timeStepper
-        timeStepper.Register(radiationSolver, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
+        timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
         timeStepper.Solve();
 
         // force the aux variables of temperature to a known value
-        auto auxVec = radiationSolver->GetSubDomain().GetAuxVector();
+        auto auxVec = radiation->GetSubDomain().GetAuxVector();
         auto auxFieldFunctions = {
             std::make_shared<ablate::mathFunctions::FieldFunction>(ablate::finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD, GetParam().temperatureField),
         };
-        radiationSolver->GetSubDomain().ProjectFieldFunctionsToLocalVector(auxFieldFunctions, auxVec);
+        radiation->GetSubDomain().ProjectFieldFunctionsToLocalVector(auxFieldFunctions, auxVec);
 
         // Setup the rhs for the test
         Vec rhs;
@@ -92,7 +84,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         VecZeroEntries(rhs) >> testErrorChecker;
 
         // Apply the rhs function for the radiation solver
-        radiationSolver->RayTrace() >> testErrorChecker;
+        radiation->RayTrace(0); //The ray tracing function needs to be renamed in order to occupy the role of compute right hand side function
 
         // determine the euler field
         const auto& eulerFieldInfo = domain->GetField("euler");
@@ -114,7 +106,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             IS cellIS;
             PetscInt cellStart, cellEnd;
             const PetscInt* cells;
-            radiationSolver->GetCellRange(cellIS, cellStart, cellEnd, cells);
+            radiation->GetCellRange(cellIS, cellStart, cellEnd, cells);
             // March over each cell
             for (PetscInt c = cellStart; c < cellEnd; ++c) {
                 // Get the cell location
@@ -127,11 +119,11 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                 // extract the result from the rhs
                 PetscScalar* rhsValues;
                 DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
-                PetscScalar actualResult = rhsArray[ablate::finiteVolume::CompressibleFlowFields::RHOE];
+                PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
 
                 // compute the expected result
                 //PetscScalar expectedResult = GetParam().expectedResult->Eval(cellGeom->centroid, domain->GetDimensions(), 0.0);
-                PetscScalar expectedResult = ablate::radiationSolver::RadiationSolver::ReallySolveParallelPlates(cellGeom->centroid[2]); //Compute the analytical solution at this z height.
+                PetscScalar expectedResult = ablate::radiation::RadiationSolver::ReallySolveParallelPlates(cellGeom->centroid[2]); //Compute the analytical solution at this z height.
 
                 ASSERT_NEAR(expectedResult, actualResult, 1E-3) << "The actual result should be near the expected at cell " << cell << " [" << cellGeom->centroid[0] << ", " << cellGeom->centroid[1]
                                                                 << ", " << cellGeom->centroid[2] << "]";
