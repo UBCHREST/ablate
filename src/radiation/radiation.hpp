@@ -5,6 +5,7 @@
 #define ABLATELIBRARY_RADIATION_HPP
 
 #include <memory>
+#include <set>
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
 
@@ -163,6 +164,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     DM faceDM, cellDM, vdm; //Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
     Vec loctemp;
     IS vis;
+    std::set<PetscInt> stencilSet;
 
     PetscInt dim; //Number of dimensions that the domain exists within
 
