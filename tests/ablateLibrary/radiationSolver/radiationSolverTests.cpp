@@ -48,12 +48,19 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto domain =
             std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                       fieldDescriptors,
-                                                      std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::DistributeWithGhostCells>(),
-                                                                                                                        std::make_shared<ablate::domain::modifiers::GhostBoundaryCells>()},
+                                                      std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
                                                       GetParam().meshFaces,
                                                       GetParam().meshStart,
-                                                      GetParam().meshEnd);
+                                                      GetParam().meshEnd,  std::vector<std::string>{}, false);
 
+        IS allPointIS;
+        DMGetStratumIS(domain->GetDM(), "dim",3, &allPointIS) >> testErrorChecker;
+        if (!allPointIS) {
+            DMGetStratumIS(domain->GetDM(), "depth", 3, &allPointIS) >> testErrorChecker;
+        }
+        PetscInt s;
+        ISGetSize(allPointIS, &s );;;;;;
+        DMView(domain->GetDM(), PETSC_VIEWER_STDOUT_WORLD);
         // Setup the flow data
         auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", ".4"}});
 
@@ -103,14 +110,12 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             const PetscScalar* rhsArray;
             VecGetArrayRead(rhs, &rhsArray) >> testErrorChecker;
 
-            IS cellIS;
-            PetscInt cellStart, cellEnd;
-            const PetscInt* cells;
-            radiation->GetCellRange(cellIS, cellStart, cellEnd, cells);
+            ablate::solver::Range cellRange;
+            radiation->GetCellRange(cellRange);
             // March over each cell
-            for (PetscInt c = cellStart; c < cellEnd; ++c) {
-                // Get the cell location
-                const PetscInt cell = cells ? cells[c] : c;
+            for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+                // if there is a cell array, use it, otherwise it is just c
+                const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
                 // Get the cell center
                 PetscFVCellGeom* cellGeom;
@@ -140,7 +145,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
 INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
                          testing::Values((RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature", .nproc = 1},
-                                                                   .meshFaces = { 3 , 3, 20},
+                                                                   .meshFaces = { 3, 3, 3},
                                                                    .meshStart = { 0 , 0 , -0.0105},
                                                                    .meshEnd = { 1 , 1 , 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("z < 0 ? (-6.349E6*z*z + 2000.0) : (-1.179E7*z*z + 2000.0)"),
