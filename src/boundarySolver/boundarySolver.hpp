@@ -28,7 +28,11 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     /**
      * Boundaries can be treated in two different ways, point source on the boundary or distributed in the other phase.  For the Distributed model, the source is divided by volume in each case
      */
-    enum class BoundarySourceType { Point, Distributed };
+    enum class BoundarySourceType {
+        Point, /** the source terms are added to boundary cell **/
+        Distributed//,  /** the source terms are distributed to neighbor cells based upon the stencil **/
+//        Flux /** the source term are added to only one neighbor cell.  Each cell faces are not merged **/
+    };
 
     /**
      * public helper function to compute the gradient
@@ -56,6 +60,8 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * struct to hold the gradient stencil for the boundary
      */
     struct GradientStencil {
+        /** the boundary cell for this stencil **/
+        PetscInt cellId;
         /** the boundary geom for this stencil **/
         BoundaryFVFaceGeom geometry;
         /** The points in the stencil*/
@@ -145,7 +151,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     /**
      * Return a reference to the boundary geometry.  This is a slow call and should only be done for init/debugging/testing
      */
-    const BoundaryFVFaceGeom& GetBoundaryGeometry(PetscInt cell) const;
+    std::vector<GradientStencil>::const_iterator GetBoundaryGeometry(PetscInt cell) const;
 };
 
 }  // namespace ablate::boundarySolver

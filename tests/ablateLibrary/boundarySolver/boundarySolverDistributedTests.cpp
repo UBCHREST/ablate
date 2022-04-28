@@ -332,7 +332,7 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
 
                     PetscReal distance = 0.0;
                     for (PetscInt d = 0; d < dim; d++) {
-                        distance += PetscSqr(centroid[d] - face.centroid[d]);
+                        distance += PetscSqr(centroid[d] - face->geometry.centroid[d]);
                     }
                     ASSERT_LT(PetscSqrtReal(distance), stencilRadius) << "Source terms should only be within the stencilRadius";
 
@@ -365,10 +365,10 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
             std::vector<PetscReal> exactGradB(3);
             std::vector<PetscReal> exactGradAuxA(3);
             std::vector<PetscReal> exactGradAuxB(3);
-            expectedFieldAGradient->Eval(face.centroid, dim, 0.0, exactGradA);
-            expectedFieldBGradient->Eval(face.centroid, dim, 0.0, exactGradB);
-            expectedAuxAGradient->Eval(face.centroid, dim, 0.0, exactGradAuxA);
-            expectedAuxBGradient->Eval(face.centroid, dim, 0.0, exactGradAuxB);
+            expectedFieldAGradient->Eval(face->geometry.centroid, dim, 0.0, exactGradA);
+            expectedFieldBGradient->Eval(face->geometry.centroid, dim, 0.0, exactGradB);
+            expectedAuxAGradient->Eval(face->geometry.centroid, dim, 0.0, exactGradAuxA);
+            expectedAuxBGradient->Eval(face->geometry.centroid, dim, 0.0, exactGradAuxB);
 
             // compare the results
             // March over each field

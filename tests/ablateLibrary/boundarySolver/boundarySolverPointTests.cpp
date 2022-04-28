@@ -249,19 +249,19 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
 
             // March over each field
             const double absError = 1E-8;
-            expectedFieldAGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            expectedFieldAGradient->Eval(face->geometry.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
                 ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for FieldA dir " << d << " in cell " << cell;
             }
-            expectedFieldBGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            expectedFieldBGradient->Eval(face->geometry.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
                 ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for FieldB dir " << d << " in cell " << cell;
             }
-            expectedAuxAGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            expectedAuxAGradient->Eval(face->geometry.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
                 ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for AuxA dir " << d << " in cell " << cell;
             }
-            expectedAuxBGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            expectedAuxBGradient->Eval(face->geometry.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
                 ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for AuxB dir " << d << " in cell " << cell;
             }

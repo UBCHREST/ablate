@@ -120,9 +120,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             DMLabelGetValue(ghostLabel, cell, &ghost);
         }
         if (ghost >= 0) {
-            // put in nan, should not be used
-            gradientStencils.emplace_back(
-                GradientStencil{.geometry = {.normal = {NAN, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}}, .stencil = {}, .gradientWeights = {}, .stencilSize = 0});
             continue;
         }
 
@@ -232,8 +229,13 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
         PetscFVComputeGradient(gradientCalculator, (PetscInt)stencil.size(), &dx[0], &gradientWeights[0]) >> checkError;
 
         // Store the stencil
-        gradientStencils.emplace_back(GradientStencil{
-            .geometry = geom, .stencil = stencil, .gradientWeights = gradientWeights, .stencilSize = (PetscInt)stencil.size(), .distributionWeights = distributionWeights, .volumes = volume});
+        gradientStencils.emplace_back(GradientStencil{.cellId = cell,
+                                                      .geometry = geom,
+                                                      .stencil = stencil,
+                                                      .gradientWeights = gradientWeights,
+                                                      .stencilSize = (PetscInt)stencil.size(),
+                                                      .distributionWeights = distributionWeights,
+                                                      .volumes = volume});
 
         maximumStencilSize = PetscMax(maximumStencilSize, (PetscInt)stencil.size());
     }
@@ -289,6 +291,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
     // Extract the cell geometry, and the dm that holds the information
     auto dm = subDomain->GetDM();
     auto auxDM = subDomain->GetAuxDM();
+    auto dim = subDomain->GetDimensions();
     DM dmCell;
     const PetscScalar* cellGeomArray;
     ierr = VecGetDM(cellGeomVec, &dmCell);
@@ -320,15 +323,8 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
     std::vector<PetscInt> inputOffsets(subDomain->GetFields().size(), -1);
     std::vector<PetscInt> auxOffsets(subDomain->GetFields(domain::FieldLocation::AUX).size(), -1);
 
-    // check to see if there is a ghost label
-    DMLabel ghostLabel;
-    DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
     // Get the region to march over
-    solver::Range cellRange;
-    GetCellRange(cellRange);
-    if (cellRange.end > cellRange.start) {
-        PetscInt dim = subDomain->GetDimensions();
-
+    if (!gradientStencils.empty()) {
         // Get pointers to sol, aux, and f vectors
         const PetscScalar *locXArray, *locAuxArray = nullptr;
         PetscScalar* locFArray;
@@ -362,33 +358,19 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
             auto auxOffsetsPointer = auxOffsets.data();
 
             // March over each cell in this region
-            PetscInt cOffset = 0;  // Keep track of the cell offset
-            for (PetscInt c = cellRange.start; c < cellRange.end; ++c, cOffset++) {
-                // if there is a cell array, use it, otherwise it is just c
-                const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-
-                // make sure we are not working on a ghost cell
-                PetscInt ghost = -1;
-                if (ghostLabel) {
-                    DMLabelGetValue(ghostLabel, cell, &ghost);
-                }
-                if (ghost >= 0) {
-                    continue;
-                }
-
+            for (const auto& stencilInfo : gradientStencils) {
                 // Get the cell geom
                 const PetscFVCellGeom* cg;
-                DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cg) >> checkError;
+                DMPlexPointLocalRead(dmCell, stencilInfo.cellId, cellGeomArray, &cg) >> checkError;
 
                 // Get pointers to the area of interest
                 const PetscScalar *solPt, *auxPt = nullptr;
-                DMPlexPointLocalRead(dm, cell, locXArray, &solPt) >> checkError;
+                DMPlexPointLocalRead(dm, stencilInfo.cellId, locXArray, &solPt) >> checkError;
                 if (auxDM) {
-                    DMPlexPointLocalRead(auxDM, cell, locAuxArray, &auxPt) >> checkError;
+                    DMPlexPointLocalRead(auxDM, stencilInfo.cellId, locAuxArray, &auxPt) >> checkError;
                 }
 
                 // Get each of the stencil pts
-                const auto& stencilInfo = gradientStencils[cOffset];
                 for (PetscInt p = 0; p < stencilInfo.stencilSize; p++) {
                     DMPlexPointLocalRead(dm, stencilInfo.stencil[p], locXArray, &inputStencilValues[p]) >> checkError;
                     if (auxDM) {
@@ -400,7 +382,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
                 switch (function.type) {
                     case BoundarySourceType::Point:
                         PetscScalar* rhs;
-                        DMPlexPointLocalRef(dm, cell, locFArray, &rhs) >> checkError;
+                        DMPlexPointLocalRef(dm, stencilInfo.cellId, locFArray, &rhs) >> checkError;
 
                         /*PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell,
                                            const PetscInt uOff[], const PetscScalar* boundaryValues, const PetscScalar* stencilValues[],
@@ -480,8 +462,6 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     }
 
-    RestoreRange(cellRange);
-
     PetscFunctionReturn(0);
 }
 void ablate::boundarySolver::BoundarySolver::InsertFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, PetscReal time) {
@@ -557,16 +537,8 @@ void ablate::boundarySolver::BoundarySolver::ComputeGradientAlongNormal(PetscInt
     }
 }
 
-const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom& ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {
-    solver::Range cellRange;
-    GetCellRange(cellRange);
-
-    // Locate the index
-    PetscInt location;
-    ISLocate(cellRange.is, cell, &location) >> checkError;
-    RestoreRange(cellRange);
-
-    return gradientStencils[location].geometry;
+std::vector<ablate::boundarySolver::BoundarySolver::GradientStencil>::const_iterator ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {
+    return std::find_if(gradientStencils.begin(), gradientStencils.end(), [cell](const auto& stencil) { return stencil.cellId == cell; });
 }
 
 #include "registrar.hpp"

@@ -124,17 +124,17 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     PetscArrayzero(gradBoundaryVelocity, 9);
 
     // For each component of velocity
-    for (PetscInt v =0; v < dim; v++){
-        for (PetscInt s = 0; s < stencilSize; ++s) {
-            PetscReal stencilDensity = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHO];
-
-            PetscScalar delta = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHOU + v]/stencilDensity - velocityCartSystem[v];
-
-            for (PetscInt d = 0; d < dim; ++d) {
-                gradBoundaryVelocity[v*dim + d] += stencilWeights[s * dim + d] * delta;
-            }
-        }
-    }
+//    for (PetscInt v =0; v < dim; v++){
+//        for (PetscInt s = 0; s < stencilSize; ++s) {
+//            PetscReal stencilDensity = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHO];
+//
+//            PetscScalar delta = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHOU + v]/stencilDensity - velocityCartSystem[v];
+//
+//            for (PetscInt d = 0; d < dim; ++d) {
+//                gradBoundaryVelocity[v*dim + d] += stencilWeights[s * dim + d] * delta;
+//            }
+//        }
+//    }
 
     // compute the effectiveConductivity
     PetscReal viscosity;
@@ -151,12 +151,12 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     PetscReal momentumFlux = massFlux * massFlux / boundaryDensity;
     // And the mom flux for each dir by g
     for (PetscInt dir = 0; dir < dim; dir++) {
-        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir] - 101325.0*fg->areas[dir];
+        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir];// - 101325.0*fg->areas[dir];
 
         // March over each direction for the viscus flux
-        for (PetscInt d = 0; d < dim; ++d) {
+//        for (PetscInt d = 0; d < dim; ++d) {
 //            source[sOff[EULER_LOC] + fp::RHOU + dir]  += -fg->areas[d] * tau[dir * dim + d];  // This is tau[c][d]
-        }
+//        }
 
     }
 
