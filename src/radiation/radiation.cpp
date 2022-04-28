@@ -442,7 +442,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                     PetscScalar* temperatureArray = nullptr;
                     subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
                     VecGetArray(loctemp, &temperatureArray);                                                     // Get the array that lives inside the vector
-                    DMPlexPointLocalRef(subDomain->GetDM(), rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);  // Gets the temperature from the cell index specified
+                    DMPlexPointLocalRef(vdm, rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);  // Gets the temperature from the cell index specified
 
                     // TODO: Input absorptivity (kappa) values from model here.
 
@@ -453,7 +453,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                         /// The ray intensity changes as a function of the environment at this point
                         rayIntensity = FlameIntensity(1 - exp(-kappa * h), temperature) + rayIntensity * exp(-kappa * h);
                         // PetscPrintf(PETSC_COMM_WORLD, "Intensity: %f\n", rayIntensity);
-                    }
+                    }//TODO: Pull tempe
                 }
                 /// The rays end here, their intensity is added to the total intensity of the cell
                 intensity += rayIntensity * sin(theta) * dTheta * dPhi;  // Gives the partial impact of the ray on the total sphere. The sin(theta) is a result of the polar coordinate discretization
@@ -473,7 +473,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
         PetscScalar* temperatureArray = nullptr;
         subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
         VecGetArray(loctemp, &temperatureArray);                                                     // Get the array that lives inside the vector
-        DMPlexPointLocalRef(subDomain->GetDM(), iCell, temperatureArray, &temperature);  // Gets the temperature from the cell index specified
+        DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);  // Gets the temperature from the cell index specified
 
         /// Put the irradiation into the right hand side function
         PetscScalar* rhsValues;
