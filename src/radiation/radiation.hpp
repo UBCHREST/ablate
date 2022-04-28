@@ -161,7 +161,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
 
     ///Class inputs and Variables
-    DM faceDM, cellDM, vdm; //Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
+    DM vdm; //Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
     Vec loctemp;
     IS vis;
     std::set<PetscInt> stencilSet;
