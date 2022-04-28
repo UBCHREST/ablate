@@ -11,7 +11,18 @@ namespace ablate::finiteVolume::processes {
 
 class TwoPhaseEulerAdvection : public Process {
    private:
-    struct DecodeDataStruct {
+    struct DecodeDataStructGas {
+        PetscReal etot;
+        PetscReal rhotot;
+        PetscReal Yg;
+        PetscReal Yl;
+        PetscReal gam1;
+        PetscReal gam2;
+        PetscReal cvg;
+        PetscReal cpl;
+        PetscReal p0l;
+    };
+    struct DecodeDataStructStiff {
         PetscReal etot;
         PetscReal rhotot;
         PetscReal Yg;
@@ -23,7 +34,8 @@ class TwoPhaseEulerAdvection : public Process {
         PetscReal p0g;
         PetscReal p0l;
     };
-    static PetscErrorCode FormFunction(SNES snes, Vec x, Vec F, void* ctx);
+    static PetscErrorCode FormFunctionGas(SNES snes, Vec x, Vec F, void* ctx);
+    static PetscErrorCode FormFunctionStiff(SNES snes, Vec x, Vec F, void* ctx);
 
     /**
      * General two phase decoder interface
