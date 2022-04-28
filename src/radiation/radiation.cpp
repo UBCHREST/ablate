@@ -138,15 +138,21 @@ void ablate::radiation::RadiationSolver::RayInit() {
                     const PetscSFNode* cell = NULL;
                     PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  // Using this to get the petsc int cell number from the struct (SF)
 
+                    //TODO: Make sure that whatever cell is returned is in the stencil set (and not outside oof the radiation domain)
+
                     /// IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
                     if (nFound > -1) {
                         /// This function returns multiple values if multiple points are input to it
                         if (cell[0].index >= 0) {
-                            /// Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
-                            rays[ncells][ntheta][nphi].push_back(cell[0].index);
-                            // rayPhis.push_back(cell[0].index);
-                            // PetscPrintf(PETSC_COMM_WORLD, "Intersect x: %f, y: %f, z: %f Value: %i\n", direction[0], direction[1], direction[2], cell[0].index);
-                            // PetscPrintf(PETSC_COMM_WORLD, "Cell: %i, nTheta: %i, Theta: %g, nPhi: %i, Phi: %g, Value: %i\n", iCell, ntheta, theta, nphi, phi, cell[p].index);
+                            if (stencilSet.count(iCell) != 0) {
+                                /// Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
+                                rays[ncells][ntheta][nphi].push_back(cell[0].index);
+                                // rayPhis.push_back(cell[0].index);
+                                // PetscPrintf(PETSC_COMM_WORLD, "Intersect x: %f, y: %f, z: %f Value: %i\n", direction[0], direction[1], direction[2], cell[0].index);
+                                // PetscPrintf(PETSC_COMM_WORLD, "Cell: %i, nTheta: %i, Theta: %g, nPhi: %i, Phi: %g, Value: %i\n", iCell, ntheta, theta, nphi, phi, cell[p].index);
+                            } else {
+                                boundary = true;
+                            }
                         } else {
                             boundary = true;
                         }
@@ -416,7 +422,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
 
     /// Declare the basic information
     // std::vector<PetscReal> radGain(stencilSet.size(), 0); //Represents the total final radiation intensity (for every cell, index as index)
-    PetscReal temperature;  // The temperature at any given location
+    PetscReal* temperature;  // The temperature at any given location
     PetscReal dTheta = pi / nTheta;
     PetscReal dPhi = (2 * pi) / nPhi;
     double kappa = 1;  // Absorptivity coefficient, property of each cell
@@ -447,13 +453,13 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                     // TODO: Input absorptivity (kappa) values from model here.
 
                     if(n == (numPoints - 1)) {
-                        rayIntensity = FlameIntensity(1, temperature);  // Set the initial ray intensity to the boundary intensity
+                        rayIntensity = FlameIntensity(1, *temperature);  // Set the initial ray intensity to the boundary intensity
                                                                         // TODO: Make intensity boundary conditions from boundary label
                     }else {
                         /// The ray intensity changes as a function of the environment at this point
-                        rayIntensity = FlameIntensity(1 - exp(-kappa * h), temperature) + rayIntensity * exp(-kappa * h);
+                        rayIntensity = FlameIntensity(1 - exp(-kappa * h), *temperature) + rayIntensity * exp(-kappa * h);
                         // PetscPrintf(PETSC_COMM_WORLD, "Intensity: %f\n", rayIntensity);
-                    }//TODO: Pull tempe
+                    }//TODO: Pull temperature field call out of the function so that it's only called once.
                 }
                 /// The rays end here, their intensity is added to the total intensity of the cell
                 intensity += rayIntensity * sin(theta) * dTheta * dPhi;  // Gives the partial impact of the ray on the total sphere. The sin(theta) is a result of the polar coordinate discretization
@@ -478,13 +484,13 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
         /// Put the irradiation into the right hand side function
         PetscScalar* rhsValues;
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += kappa*intensity;//4 * kappa * (sbc * temperature * temperature * temperature * temperature - intensity); //TODO: Put the losses in, too.
+        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += 4 * kappa * (sbc * *temperature * *temperature * *temperature * *temperature - intensity); //TODO: Put the losses in, too.
 
         //Total energy gain of the current cell depends on absorptivity at the current cell
         PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
         ncells++;
         // Cleanup
-        VecRestoreArrayRead(rhs, &rhsArray);
+        VecRestoreArrayRead(rhs, &rhsArray); //TODO: Make sure that this cleanup is complete with the other vectors and stuff
     }
 
     PetscFunctionReturn(0);
