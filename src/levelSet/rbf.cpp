@@ -22,9 +22,6 @@ void RBF::ShowParameters(){
   PetscPrintf(PETSC_COMM_WORLD, "%12s: %d\n", "Poly Order", RBF::p);
   PetscPrintf(PETSC_COMM_WORLD, "%12s: %d\n", "Has DM", RBF::dm!=nullptr);
 
-    //PetscInt  phsOrder = -1;    // The PHS order
-    //PetscReal mq_ga_Scale = -1;
-
 }
 
 // Distance between two points
@@ -130,7 +127,7 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
   // RBF contributions to the matrix
   for (i = 0; i < nCells; ++i) {
     for (j = i; j < nCells; ++j) {
-      vals[i*matSize + j] = vals[j*matSize + i] = RBF::Val(&x[i*dim], &x[j*dim]);
+      vals[i*matSize + j] = vals[j*matSize + i] = Val(&x[i*dim], &x[j*dim]);
     }
   }
 
@@ -170,7 +167,7 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
   // Derivatives of the RBF
   for (i = 0; i < nCells; ++i) {
     for (j = 0; j < nDer; ++j) {
-      vals[i + j*matSize] = RBF::Der(&x[i*dim], dx[j], dy[j], dz[j]);
+      vals[i + j*matSize] = Der(&x[i*dim], dx[j], dy[j], dz[j]);
     }
   }
 

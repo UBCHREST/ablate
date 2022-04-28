@@ -6,13 +6,7 @@
 #include <vector>
 #include <petsc.h>
 #include <petscdmplex.h>
-#include <petscdmswarm.h>
-#include <petscds.h>
 #include <petscksp.h>
-#include <petsc/private/vecimpl.h>
-#include <domain/region.hpp>
-#include <domain/subDomain.hpp>
-
 
 namespace ablate::levelSet {
 
