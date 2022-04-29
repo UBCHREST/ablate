@@ -9,7 +9,7 @@ PetscErrorCode plex::DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscRea
   PetscInt        cStart, cEnd, vStart, vEnd;
   PetscInt        cl, nClosure, *closure = NULL;
   PetscInt        st, nStar, *star = NULL;
-  PetscInt        n, list[100];  // As of right now just make it a list big enough to hold everything. There might be a better way of doing this.
+  PetscInt        n, list[100];  // As of right now just make it a list big enough to hold everything. There must be a better way of doing this.
   PetscInt        i, dim;
   PetscReal       x[3], dist;
   PetscErrorCode  ierr;

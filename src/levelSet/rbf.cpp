@@ -11,7 +11,7 @@ RBF::RBF(DM dm, PetscInt p){
   RBF::dm = dm;   // Set the DM
   RBF::p = p;     // The augmented polynomial order
 
-  DMGetDimension(dm, &(RBF::dim)) >> ablate::checkError; // Get the dimension of the problem
+//  DMGetDimension(dm, &(RBF::dim)) >> ablate::checkError; // Get the dimension of the problem
 
 }
 

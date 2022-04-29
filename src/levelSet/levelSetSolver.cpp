@@ -14,7 +14,7 @@ void ablate::levelSet::LevelSetSolver::Setup() {
       DMCopyDisc(subDomain->GetDM(), cdm) >> checkError;
       DMGetCoarseDM(cdm, &cdm) >> checkError;
   }
-printf("Setup\n");
+
   //// Register the aux fields updater if specified
   //if (!auxiliaryFieldsUpdaters.empty()) {
       //RegisterPreStep([&](TS ts, Solver &) { UpdateAuxFields(ts, *this); });
@@ -30,7 +30,7 @@ printf("Setup\n");
 }
 
 void ablate::levelSet::LevelSetSolver::Initialize() {
-printf("Initialize\n");
+
 }
 
 
