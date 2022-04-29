@@ -29,9 +29,9 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * Boundaries can be treated in two different ways, point source on the boundary or distributed in the other phase.  For the Distributed model, the source is divided by volume in each case
      */
     enum class BoundarySourceType {
-        Point, /** the source terms are added to boundary cell **/
-        Distributed//,  /** the source terms are distributed to neighbor cells based upon the stencil **/
-//        Flux /** the source term are added to only one neighbor cell.  Each cell faces are not merged **/
+        Point,       /** the source terms are added to boundary cell **/
+        Distributed, /** the source terms are distributed to neighbor cells based upon the stencil (divided by cell volume) **/
+        Flux         /** the source term are added to only one neighbor cell. (divided by cell volume)**/
     };
 
     /**
@@ -66,10 +66,10 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
         BoundaryFVFaceGeom geometry;
         /** The points in the stencil*/
         std::vector<PetscInt> stencil;
-        /** The weights in [point*dim + dir] order */
-        std::vector<PetscScalar> gradientWeights;
         /** store the stencil size for easy access */
         PetscInt stencilSize;
+        /** The weights in [point*dim + dir] order */
+        std::vector<PetscScalar> gradientWeights;
         /** The distribution weights in order */
         std::vector<PetscScalar> distributionWeights;
         /** Store the volume for each stencil cell */
@@ -107,6 +107,19 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     // The PetscFV (usually the least squares method) is used to compute the gradient weights
     PetscFV gradientCalculator = nullptr;
 
+    // Determine if multiple faces should be merged for a single cell
+    const bool mergeFaces;
+
+    /**
+     * private function compute weights and store a gradient stencil
+     * @param cellId
+     * @param geometry
+     * @param stencil
+     * @param cellDM
+     * @param cellGeomArray
+     */
+    void CreateGradientStencil(PetscInt cellId, const BoundaryFVFaceGeom& geometry, const std::vector<PetscInt>& stencil, DM cellDM, const PetscScalar* cellGeomArray);
+
    public:
     /**
      *
@@ -117,7 +130,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * @param options other options
      */
     BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary, std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses,
-                   std::shared_ptr<parameters::Parameters> options);
+                   std::shared_ptr<parameters::Parameters> options, bool mergeFaces = false);
     ~BoundarySolver() override;
 
     /** SubDomain Register and Setup **/
@@ -151,7 +164,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     /**
      * Return a reference to the boundary geometry.  This is a slow call and should only be done for init/debugging/testing
      */
-    std::vector<GradientStencil>::const_iterator GetBoundaryGeometry(PetscInt cell) const;
+    std::vector<GradientStencil> GetBoundaryGeometry(PetscInt cell) const;
 };
 
 }  // namespace ablate::boundarySolver
