@@ -420,6 +420,20 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                                                                       Vec rhs) {  // main interface for integrating in time Inputs: local vector, x vector (current solution), local f vector
     PetscFunctionBeginUser;                                                           // gets fields out of the main vector
 
+    /// Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable
+    // DMGetLocalVector(subDomain->GetDM(), &rhs);
+    const PetscScalar* rhsArray;
+    VecGetArrayRead(rhs, &rhsArray);
+
+    const auto& eulerFieldInfo = subDomain->GetField("euler");
+
+    /// Get the temperature of the current cell (in order to compute the losses)
+    // For ABLATE implementation, get temperature based on this function
+    const auto& temperatureField = subDomain->GetField("temperature");
+    PetscScalar* temperatureArray = nullptr;
+    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
+    VecGetArray(loctemp, &temperatureArray);
+
     /// Declare the basic information
     // std::vector<PetscReal> radGain(stencilSet.size(), 0); //Represents the total final radiation intensity (for every cell, index as index)
     PetscReal* temperature;  // The temperature at any given location
@@ -444,55 +458,44 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                 for (int n = (numPoints - 1); n >= 0; n--) {  /// Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
                     /// Define the absorptivity and temperature in this section
                     // For ABLATE implementation, get temperature based on this function
-                    const auto& temperatureField = subDomain->GetField("temperature");
+                    /*const auto& temperatureField = subDomain->GetField("temperature");
                     PetscScalar* temperatureArray = nullptr;
                     subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
-                    VecGetArray(loctemp, &temperatureArray);                                                     // Get the array that lives inside the vector
+                    VecGetArray(loctemp, &temperatureArray);*/                                                     // Get the array that lives inside the vector
                     DMPlexPointLocalRef(vdm, rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);  // Gets the temperature from the cell index specified
 
                     // TODO: Input absorptivity (kappa) values from model here.
 
                     if(n == (numPoints - 1)) {
                         rayIntensity = FlameIntensity(1, *temperature);  // Set the initial ray intensity to the boundary intensity
-                                                                        // TODO: Make intensity boundary conditions from boundary label
+                                                                        // TODO: Make intensity boundary conditions be set from boundary label
                     }else {
                         /// The ray intensity changes as a function of the environment at this point
                         rayIntensity = FlameIntensity(1 - exp(-kappa * h), *temperature) + rayIntensity * exp(-kappa * h);
                         // PetscPrintf(PETSC_COMM_WORLD, "Intensity: %f\n", rayIntensity);
-                    }//TODO: Pull temperature field call out of the function so that it's only called once.
+                    }
                 }
                 /// The rays end here, their intensity is added to the total intensity of the cell
                 intensity += rayIntensity * sin(theta) * dTheta * dPhi;  // Gives the partial impact of the ray on the total sphere. The sin(theta) is a result of the polar coordinate discretization
             }
             // PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
         }
-        /// Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable
-        // DMGetLocalVector(subDomain->GetDM(), &rhs);
-        const PetscScalar* rhsArray;
-        VecGetArrayRead(rhs, &rhsArray);
-
-        const auto& eulerFieldInfo = subDomain->GetField("euler");
-
-        /// Get the temperature of the current cell (in order to compute the losses)
-        // For ABLATE implementation, get temperature based on this function
-        const auto& temperatureField = subDomain->GetField("temperature");
-        PetscScalar* temperatureArray = nullptr;
-        subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
-        VecGetArray(loctemp, &temperatureArray);                                                     // Get the array that lives inside the vector
-        DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);  // Gets the temperature from the cell index specified
+        /// Gets the temperature from the cell index specified
+        DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);
 
         /// Put the irradiation into the right hand side function
         PetscScalar* rhsValues;
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += 4 * kappa * (sbc * *temperature * *temperature * *temperature * *temperature - intensity); //TODO: Put the losses in, too.
+        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += 4 * kappa * (sbc * *temperature * *temperature * *temperature * *temperature - intensity);
 
         //Total energy gain of the current cell depends on absorptivity at the current cell
         PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
         ncells++;
-        // Cleanup
-        VecRestoreArrayRead(rhs, &rhsArray); //TODO: Make sure that this cleanup is complete with the other vectors and stuff
-    }
 
+    }
+    // Cleanup
+    VecRestoreArrayRead(rhs, &rhsArray); //TODO: Make sure that this cleanup is complete with the other vectors and stuff
+    VecRestoreArray(loctemp, &temperatureArray);
     PetscFunctionReturn(0);
 }
 
