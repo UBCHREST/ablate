@@ -25,6 +25,9 @@ class Sublimation : public BoundaryProcess {
     void *massFractionsContext;
     PetscInt numberSpecies = 0;
 
+    // toggle to disable any contribution of pressure in the momentum equation
+    const bool disablePressure;
+
     // the pgs is needed for the pressure calculation
     const std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling;
 
@@ -51,7 +54,7 @@ class Sublimation : public BoundaryProcess {
    public:
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
-                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
+                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool disablePressure = false);
 
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
 

@@ -2,8 +2,8 @@
 #include "utilities/petscError.hpp"
 
 ablate::domain::modifiers::SubtractLabel::SubtractLabel(std::shared_ptr<domain::Region> differenceRegion, std::shared_ptr<domain::Region> minuendRegion,
-                                                        std::vector<std::shared_ptr<domain::Region>> subtrahendRegions)
-    : differenceRegion(differenceRegion), minuendRegion(minuendRegion), subtrahendRegions(subtrahendRegions) {}
+                                                        std::vector<std::shared_ptr<domain::Region>> subtrahendRegions, bool incompleteLabel)
+    : differenceRegion(differenceRegion), minuendRegion(minuendRegion), subtrahendRegions(subtrahendRegions), incompleteLabel(incompleteLabel) {}
 
 void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
     int rank;
@@ -47,6 +47,10 @@ void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
         DMLabelSetStratumIS(differenceLabel, differenceRegion->GetValue(), differenceIS) >> checkError;
     }
 
+    if (!incompleteLabel) {
+        DMPlexLabelComplete(dm, differenceLabel) >> checkError;
+    }
+
     // cleanup
     if (differenceIS) {
         ISDestroy(&differenceIS) >> checkError;
@@ -75,4 +79,6 @@ std::string ablate::domain::modifiers::SubtractLabel::ToString() const {
 #include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::SubtractLabel, "Cuts/removes the given region (difference = minuend - subtrahend)",
          ARG(ablate::domain::Region, "differenceRegion", "the result of the operation"), ARG(ablate::domain::Region, "minuendRegion", "the minuend region"),
-         ARG(std::vector<ablate::domain::Region>, "subtrahendRegions", "the region(s) to be removed"));
+         ARG(std::vector<ablate::domain::Region>, "subtrahendRegions", "the region(s) to be removed"),
+         OPT(bool, "incompleteLabel",
+             "determines if the DMPlexLabelComplete function for the new label is called. (true = DMPlexLabelComplete not called, false = DMPlexLabelComplete called, default is false"));

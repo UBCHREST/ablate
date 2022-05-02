@@ -443,6 +443,9 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     // Get the IS for this label
     IS regionIS;
     DMLabelGetStratumIS(regionLabel, region.GetValue(), &regionIS) >> checkError;
+    if (regionIS == nullptr) {
+        throw std::invalid_argument("Unable to locate RegionIS for " + region.ToString());
+    }
 
     // Check for an overlap
     IS overlapIS;

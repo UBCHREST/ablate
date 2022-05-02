@@ -13,9 +13,16 @@ class SubtractLabel : public Modifier {
     const std::shared_ptr<domain::Region> differenceRegion;
     const std::shared_ptr<domain::Region> minuendRegion;
     const std::vector<std::shared_ptr<domain::Region>> subtrahendRegions;
+    /**
+     * determine if DMPlexLabelComplete should be called on each label
+     * # External resources
+     * [DMPlexLabelComplete Documentation](https://petsc.org/main/docs/manualpages/DMPLEX/DMPlexLabelComplete.html)
+     */
+    const bool incompleteLabel;
 
    public:
-    SubtractLabel(std::shared_ptr<domain::Region> differenceRegion, std::shared_ptr<domain::Region> minuendRegion, std::vector<std::shared_ptr<domain::Region>> subtrahendRegions);
+    SubtractLabel(std::shared_ptr<domain::Region> differenceRegion, std::shared_ptr<domain::Region> minuendRegion, std::vector<std::shared_ptr<domain::Region>> subtrahendRegions,
+                  bool incompleteLabel = false);
 
     void Modify(DM&) override;
 

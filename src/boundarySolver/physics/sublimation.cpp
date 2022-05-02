@@ -7,7 +7,7 @@ using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
-                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
+                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool disablePressure)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -15,6 +15,7 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       massFractions(massFractions),
       massFractionsFunction(massFractions ? massFractions->GetFieldFunction()->GetPetscFunction() : nullptr),
       massFractionsContext(massFractions ? massFractions->GetFieldFunction()->GetContext() : nullptr),
+      disablePressure(disablePressure),
       pressureGradientScaling(std::move(pressureGradientScaling)) {}
 
 void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
@@ -25,7 +26,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
                                  {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD},
                                  {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD},
                                  {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                 BoundarySolver::BoundarySourceType::Distributed);
+                                 BoundarySolver::BoundarySourceType::Flux);
 
         numberSpecies = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).numberComponents;
 
@@ -154,10 +155,12 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     PetscReal momentumFlux = massFlux * massFlux / boundaryDensity;
 
     // compute the pressure on the face.  The first pressure in the stencil is always the node pressure on the face
-    PetscReal boundaryPressure;
-    PetscCall(sublimation->computePressure.function(stencilValues[0], stencilAuxValues[0][aOff[TEMPERATURE_LOC]], &boundaryPressure, sublimation->computePressure.context.get()));
-    if (sublimation->pressureGradientScaling) {
-        boundaryPressure /= PetscSqr(sublimation->pressureGradientScaling->GetAlpha());
+    PetscReal boundaryPressure = 0.0;
+    if (!sublimation->disablePressure) {
+        PetscCall(sublimation->computePressure.function(stencilValues[0], stencilAuxValues[0][aOff[TEMPERATURE_LOC]], &boundaryPressure, sublimation->computePressure.context.get()));
+        if (sublimation->pressureGradientScaling) {
+            boundaryPressure /= PetscSqr(sublimation->pressureGradientScaling->GetAlpha());
+        }
     }
 
     // And the mom flux for each dir by g
@@ -277,4 +280,5 @@ REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physic
          ARG(ablate::eos::EOS, "eos", "the eos used to compute temperature on the boundary"),
          OPT(ablate::mathFunctions::FieldFunction, "massFractions", "the species to deposit the off gas mass to (required if solving species)"),
          OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"),
-         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));
+         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
+         OPT(bool, "disablePressure", "disables the pressure contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"));
