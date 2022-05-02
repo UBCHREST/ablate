@@ -2,8 +2,8 @@
 #include "utilities/petscError.hpp"
 
 ablate::domain::modifiers::SubtractLabel::SubtractLabel(std::shared_ptr<domain::Region> differenceRegion, std::shared_ptr<domain::Region> minuendRegion,
-                                                        std::shared_ptr<domain::Region> subtrahendRegion)
-    : differenceRegion(differenceRegion), minuendRegion(minuendRegion), subtrahendRegion(subtrahendRegion) {}
+                                                        std::vector<std::shared_ptr<domain::Region>> subtrahendRegions)
+    : differenceRegion(differenceRegion), minuendRegion(minuendRegion), subtrahendRegions(subtrahendRegions) {}
 
 void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
     int rank;
@@ -20,18 +20,26 @@ void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
     IS minuendIS = nullptr;
     DMLabelGetStratumIS(minuendLabel, minuendRegion->GetValue(), &minuendIS) >> checkError;
 
-    // Get the subtrahendIS
-    DMLabel subtrahendLabel = nullptr;
-    subtrahendRegion->CheckForLabel(dm);
-    DMGetLabel(dm, subtrahendRegion->GetName().c_str(), &subtrahendLabel) >> checkError;
-    IS subtrahendIS = nullptr;
-    DMLabelGetStratumIS(subtrahendLabel, subtrahendRegion->GetValue(), &subtrahendIS) >> checkError;
+    // build the list of is to remove
+    std::vector<IS> isList;
+    for (const auto& subtrahendRegion : subtrahendRegions) {
+        subtrahendRegion->CheckForLabel(dm);
+        DMLabel subtrahendLabel;
+        DMGetLabel(dm, subtrahendRegion->GetName().c_str(), &subtrahendLabel) >> checkError;
+        IS subtrahendIS = nullptr;
+        DMLabelGetStratumIS(subtrahendLabel, subtrahendRegion->GetValue(), &subtrahendIS) >> checkError;
+        isList.push_back(subtrahendIS);
+    }
+
+    // Merge the regions
+    IS subtrahendsIS = nullptr;
+    ISConcatenate(PetscObjectComm(PetscObject(minuendIS)), isList.size(), isList.data(), &subtrahendsIS) >> checkError;
 
     // compute the difference
     IS differenceIS = nullptr;
 
     if (minuendIS) {
-        ISDifference(minuendIS, subtrahendIS, &differenceIS) >> checkError;
+        ISDifference(minuendIS, subtrahendsIS, &differenceIS) >> checkError;
     }
 
     // If the differenceIS is defined, apply it to the region
@@ -46,19 +54,25 @@ void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
     if (minuendIS) {
         ISDestroy(&minuendIS) >> checkError;
     }
-    if (subtrahendIS) {
+    for (auto& subtrahendIS : isList) {
         ISDestroy(&subtrahendIS) >> checkError;
+    }
+    if (subtrahendsIS) {
+        ISDestroy(&subtrahendsIS) >> checkError;
     }
 }
 std::string ablate::domain::modifiers::SubtractLabel::ToString() const {
     std::string string = "ablate::domain::modifiers::SubtractLabel\n";
     string += "\tdifferenceRegion: " + differenceRegion->ToString() + "\n";
     string += "\tminuendRegion: " + minuendRegion->ToString() + "\n";
-    string += "\tsubtrahendRegion: " + subtrahendRegion->ToString() + "\n";
+    string += "\tsubtrahendRegion(s): \n";
+    for (const auto& region : subtrahendRegions) {
+        string += "\t\t " + region->ToString() + " \n";
+    }
     return string;
 }
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::SubtractLabel, "Cuts/removes the given region (difference = minuend - subtrahend)",
          ARG(ablate::domain::Region, "differenceRegion", "the result of the operation"), ARG(ablate::domain::Region, "minuendRegion", "the minuend region"),
-         ARG(ablate::domain::Region, "subtrahendRegion", "the region to be removed"));
+         ARG(std::vector<ablate::domain::Region>, "subtrahendRegions", "the region(s) to be removed"));

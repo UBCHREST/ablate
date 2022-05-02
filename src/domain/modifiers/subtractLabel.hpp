@@ -12,10 +12,10 @@ class SubtractLabel : public Modifier {
    private:
     const std::shared_ptr<domain::Region> differenceRegion;
     const std::shared_ptr<domain::Region> minuendRegion;
-    const std::shared_ptr<domain::Region> subtrahendRegion;
+    const std::vector<std::shared_ptr<domain::Region>> subtrahendRegions;
 
    public:
-    SubtractLabel(std::shared_ptr<domain::Region> differenceRegion, std::shared_ptr<domain::Region> minuendRegion, std::shared_ptr<domain::Region> subtrahendRegion);
+    SubtractLabel(std::shared_ptr<domain::Region> differenceRegion, std::shared_ptr<domain::Region> minuendRegion, std::vector<std::shared_ptr<domain::Region>> subtrahendRegions);
 
     void Modify(DM&) override;
 

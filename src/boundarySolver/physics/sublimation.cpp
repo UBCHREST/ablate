@@ -6,14 +6,16 @@
 using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
-                                                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux)
+                                                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
+                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
       additionalHeatFlux(std::move(additionalHeatFlux)),
       massFractions(massFractions),
       massFractionsFunction(massFractions ? massFractions->GetFieldFunction()->GetPetscFunction() : nullptr),
-      massFractionsContext(massFractions ? massFractions->GetFieldFunction()->GetContext() : nullptr) {}
+      massFractionsContext(massFractions ? massFractions->GetFieldFunction()->GetContext() : nullptr),
+      pressureGradientScaling(std::move(pressureGradientScaling)) {}
 
 void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
@@ -33,7 +35,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
                                  {finiteVolume::CompressibleFlowFields::EULER_FIELD},
                                  {finiteVolume::CompressibleFlowFields::EULER_FIELD},
                                  {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                 BoundarySolver::BoundarySourceType::Distributed);
+                                 BoundarySolver::BoundarySourceType::Flux);
     }
 
     // extract the effectiveConductivity and viscosity model
@@ -62,6 +64,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
     }
 
     computeSensibleEnthalpy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SensibleEnthalpy, bSolver.GetSubDomain().GetFields());
+    computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, bSolver.GetSubDomain().GetFields());
 
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {
         bSolver.RegisterPreStep([this](auto ts, auto &solver) { UpdateSpecies(ts, solver); });
@@ -110,7 +113,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 
     // Determine the velocity in the normal coordinate system [nx, nt, nt]
     PetscReal boundaryDensity = boundaryValues[uOff[EULER_LOC] + fp::RHO];
-    PetscReal velocityNormSystem[3] = {massFlux / boundaryDensity, 0.0, 0.0};
+    PetscReal velocityNormSystem[3] = {-massFlux / boundaryDensity, 0.0, 0.0};  // note the minus sign because the normal points out of the domain
 
     // Map this velocity into cartesian system
     // Compute the transformation matrix
@@ -124,17 +127,17 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     PetscArrayzero(gradBoundaryVelocity, 9);
 
     // For each component of velocity
-    //    for (PetscInt v =0; v < dim; v++){
-    //        for (PetscInt s = 0; s < stencilSize; ++s) {
-    //            PetscReal stencilDensity = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHO];
-    //
-    //            PetscScalar delta = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHOU + v]/stencilDensity - velocityCartSystem[v];
-    //
-    //            for (PetscInt d = 0; d < dim; ++d) {
-    //                gradBoundaryVelocity[v*dim + d] += stencilWeights[s * dim + d] * delta;
-    //            }
-    //        }
-    //    }
+    for (PetscInt v = 0; v < dim; v++) {
+        for (PetscInt s = 0; s < stencilSize; ++s) {
+            PetscReal stencilDensity = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHO];
+
+            PetscScalar delta = stencilValues[s][uOff[EULER_LOC] + finiteVolume::CompressibleFlowFields::RHOU + v] / stencilDensity - velocityCartSystem[v];
+
+            for (PetscInt d = 0; d < dim; ++d) {
+                gradBoundaryVelocity[v * dim + d] += stencilWeights[s * dim + d] * delta;
+            }
+        }
+    }
 
     // compute the effectiveConductivity
     PetscReal viscosity;
@@ -149,14 +152,22 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 
     // Add each momentum flux
     PetscReal momentumFlux = massFlux * massFlux / boundaryDensity;
+
+    // compute the pressure on the face.  The first pressure in the stencil is always the node pressure on the face
+    PetscReal boundaryPressure;
+    PetscCall(sublimation->computePressure.function(stencilValues[0], stencilAuxValues[0][aOff[TEMPERATURE_LOC]], &boundaryPressure, sublimation->computePressure.context.get()));
+    if (sublimation->pressureGradientScaling) {
+        boundaryPressure /= PetscSqr(sublimation->pressureGradientScaling->GetAlpha());
+    }
+
     // And the mom flux for each dir by g
     for (PetscInt dir = 0; dir < dim; dir++) {
-        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir];  // - 101325.0*fg->areas[dir];
+        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir] - boundaryPressure * fg->areas[dir];
 
         // March over each direction for the viscus flux
-        //        for (PetscInt d = 0; d < dim; ++d) {
-        //            source[sOff[EULER_LOC] + fp::RHOU + dir]  += -fg->areas[d] * tau[dir * dim + d];  // This is tau[c][d]
-        //        }
+        for (PetscInt d = 0; d < dim; ++d) {
+            source[sOff[EULER_LOC] + fp::RHOU + dir] += fg->areas[d] * tau[dir * dim + d];  // This is tau[c][d]
+        }
     }
 
     // compute the sensible enthalpy
@@ -187,6 +198,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(PetscInt numberSpe
     effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, {});
     viscosityFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, {});
     computeSensibleEnthalpy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SensibleEnthalpy, {});
+    computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, {});
 }
 
 void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::solver::Solver &solver) {
@@ -264,4 +276,5 @@ REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physic
          ARG(ablate::eos::transport::TransportModel, "transportModel", "the effective conductivity model to compute heat flux to the surface [W/(m⋅K)]"),
          ARG(ablate::eos::EOS, "eos", "the eos used to compute temperature on the boundary"),
          OPT(ablate::mathFunctions::FieldFunction, "massFractions", "the species to deposit the off gas mass to (required if solving species)"),
-         OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"));
+         OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"),
+         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));
