@@ -14,9 +14,6 @@ ablate::radiation::RadiationSolver::RadiationSolver(std::string solverId, std::s
     : CellSolver(std::move(solverId), std::move(region), std::move(options)) {}
 
 ablate::radiation::RadiationSolver::~RadiationSolver() {
-    if (gradientCalculator) {
-        PetscFVDestroy(&gradientCalculator);
-    }
 }
 
 void ablate::radiation::RadiationSolver::Setup() {  // allows initialization after the subdomain and dm is established
@@ -91,11 +88,9 @@ void ablate::radiation::RadiationSolver::RayInit() {
                     Vec intersect;                                   // Intersect should point to the boundary, and then be pushed back to the origin, getting each cell
                     theta = ((double)ntheta / (double)nTheta) * pi;  // converts the present angle number into a real angle
                     phi = ((double)nphi / (double)nPhi) * 2.0 * pi;  // converts the present angle number into a real angle
-
-                    // TODO: Alter direction vector so the number of components matches number of dimensions (apply appropriate fixes)
                     PetscInt i[3] = {0, 1, 2};
-                    ;               //[dim] is not known so compiler doesn't like
-                    switch (dim) {  /// Accounting for the uncertainty in number of dimensions here
+                    //[dim] is not known so compiler doesn't like
+                    switch (dim) {  /// Accounting for dimensionality of the domain.
                         case 1:
                             theta = pi / 2.0;  // Set the value so that the intersect vector sits only in a plane
                             nTheta = 1;        // Set nTheta so that only one iteration of the theta angle runs
@@ -138,13 +133,13 @@ void ablate::radiation::RadiationSolver::RayInit() {
                     const PetscSFNode* cell = NULL;
                     PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  // Using this to get the petsc int cell number from the struct (SF)
 
-                    //TODO: Make sure that whatever cell is returned is in the stencil set (and not outside oof the radiation domain)
+
 
                     /// IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
                     if (nFound > -1) {
                         /// This function returns multiple values if multiple points are input to it
                         if (cell[0].index >= 0) {
-                            if (stencilSet.count(iCell) != 0) {
+                            if (stencilSet.count(iCell) != 0) { //Make sure that whatever cell is returned is in the stencil set (and not outside oof the radiation domain)
                                 /// Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
                                 rays[ncells][ntheta][nphi].push_back(cell[0].index);
                                 // rayPhis.push_back(cell[0].index);
@@ -289,7 +284,7 @@ void ablate::radiation::RadiationSolver::RayTrace(PetscReal time) {  /// Gets th
     stream.close();
 }
 
-PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscReal z) {  // std::vector<PetscReal>
+PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscReal z) {  ///Analytical solution of a special verification case.
     /// Define variables and basic information
     PetscReal G;
     PetscReal IT = FlameIntensity(1, 700);   // Intensity of rays originating from the top plate
@@ -298,20 +293,12 @@ PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscRea
     PetscReal zBottom = -0.0105;             // Prescribe the top and bottom heights for the domain
     PetscReal zTop = 0.0105;
 
-    PetscReal intensity;
     PetscReal temperature;
     PetscReal Ibz;
 
     PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-
-    /// Get the file path for the output
-    std::filesystem::path radOutput = environment::RunEnvironment::Get().GetOutputDirectory() / "analytical.txt";  // Will contain irradiation at each point
-    std::ofstream stream(radOutput);
+    const PetscReal sbc = 5.6696e-8;
     PetscReal nZp = 1000;
-
-    /// For every z
-    // for(double nz = 1; nz < (nZ-1); nz++) {
-    // PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
     Ibz = 0;
 
     std::vector<PetscReal> Iplus;
@@ -320,7 +307,6 @@ PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscRea
     for (double nzp = 1; nzp < (nZp - 1); nzp++) {             /// Plus integral goes from bottom to Z
         PetscReal zp = zBottom + (nzp / nZp) * (z - zBottom);  // Calculate the z height
         /// Get the temperature
-        // PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
         if (zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
             temperature = -6.349E6 * zp * zp + 2000.0;
         } else {
@@ -333,7 +319,6 @@ PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscRea
     for (double nzp = 1; nzp < (nZp - 1); nzp++) {    /// Minus integral goes from z to top
         PetscReal zp = z + (nzp / nZp) * (zTop - z);  // Calculate the zp height
         /// Get the temperature
-        // PetscReal z = zBottom + (nz/nZ)*(zTop-zBottom); //This calculates the z height based on the number of zs
         if (zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
             temperature = -6.349E6 * zp * zp + 2000.0;
         } else {
@@ -348,16 +333,19 @@ PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscRea
     PetscReal term2 = IT * EInteg(2, kappa * (zTop - z));
     PetscReal term3 = CSimp(zBottom, z, Iplus);
     PetscReal term4 = CSimp(z, zTop, Iminus);
-    // G.push_back(2 * pi * (term1 + term2 + term3 + term4));
+
     G = 2 * pi * (term1 + term2 + term3 + term4);
-    /// Write to the file
-    intensity = 2 * pi * (term1 + term2 + term3 + term4);
-    stream << z;
-    stream << ' ';
-    stream << intensity;
-    stream << '\n';
-    //}
-    return G;
+
+    ///Now compute the losses at the given input point (this is in order to match the output that is given by the ComputeRHSFunction)
+    if (z <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
+        temperature = -6.349E6 * z * z + 2000.0;
+    } else {
+        temperature = -1.179E7 * z * z + 2000.0;
+    }
+    PetscReal radTotal =  kappa * (4 * sbc * temperature * temperature * temperature * temperature - G);
+
+
+    return radTotal;
 }
 
 PetscReal ablate::radiation::RadiationSolver::EInteg(int order, double x) {
@@ -486,7 +474,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
         /// Put the irradiation into the right hand side function
         PetscScalar* rhsValues;
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += 4 * kappa * (sbc * *temperature * *temperature * *temperature * *temperature - intensity);
+        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += kappa * (4 * sbc * *temperature * *temperature * *temperature * *temperature - intensity);
 
         //Total energy gain of the current cell depends on absorptivity at the current cell
         PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
@@ -494,7 +482,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
 
     }
     // Cleanup
-    VecRestoreArrayRead(rhs, &rhsArray); //TODO: Make sure that this cleanup is complete with the other vectors and stuff
+    VecRestoreArrayRead(rhs, &rhsArray);
     VecRestoreArray(loctemp, &temperatureArray);
     PetscFunctionReturn(0);
 }
