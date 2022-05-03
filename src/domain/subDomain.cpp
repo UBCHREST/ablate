@@ -1,5 +1,6 @@
 #include "subDomain.hpp"
 #include <utilities/petscError.hpp>
+#include "utilities/mpiError.hpp"
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
     : domain(domainIn),
@@ -450,7 +451,10 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     if (!label) {
         return true;
     }
-    bool inside = false;
+
+    // Compute the size of region inside the subDomain label
+    PetscInt size;
+
     // Check to see if this region is inside of the dsLabel
     DMLabel regionLabel;
     DMGetLabel(domain.GetDM(), region.GetName().c_str(), &regionLabel) >> checkError;
@@ -465,26 +469,26 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     // Get the IS for this label
     IS regionIS;
     DMLabelGetStratumIS(regionLabel, region.GetValue(), &regionIS) >> checkError;
-    if (regionIS == nullptr) {
-        throw std::invalid_argument("Unable to locate RegionIS for " + region.ToString());
-    }
 
-    // Check for an overlap
-    IS overlapIS;
-    ISIntersect(dsLabelIS, regionIS, &overlapIS) >> checkError;
+    // each rank must check separately and then share the result
+    if (regionIS) {
+        // Check for an overlap
+        IS overlapIS;
+        ISIntersect(dsLabelIS, regionIS, &overlapIS) >> checkError;
 
-    // determine if there is an overlap
-    if (overlapIS) {
-        PetscInt size;
-        ISGetSize(overlapIS, &size) >> checkError;
-        if (size) {
-            inside = true;
+        // determine if there is an overlap
+        if (overlapIS) {
+            ISGetSize(overlapIS, &size) >> checkError;
+            ISDestroy(&overlapIS) >> checkError;
         }
-        ISDestroy(&overlapIS) >> checkError;
+        ISDestroy(&regionIS) >> checkError;
     }
-    ISDestroy(&regionIS) >> checkError;
     ISDestroy(&dsLabelIS) >> checkError;
-    return inside;
+
+    // Take the sum
+    PetscInt globalSize;
+    MPI_Allreduce(&size, &globalSize, 1, MPIU_INT, MPI_SUM, GetComm()) >> checkMpiError;
+    return globalSize > 0;
 }
 
 PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const ablate::domain::Field& field) {
