@@ -58,6 +58,44 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunc
 
 }
 
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJacobianGas(SNES snes, Vec x, Mat J, Mat P, void *ctx){
+    auto decodeDataStruct = (DecodeDataStructGas *)ctx;
+    const PetscReal *ax;
+    PetscReal v[16];
+    PetscInt row[4] = {0, 1, 2, 3}, col[4] = {0, 1, 2, 3};
+    VecGetArrayRead(x, &ax);
+    // ax = [rhog, rhol, eg, el]
+    PetscReal rhoG = ax[0];
+    PetscReal rhoL = ax[1];
+    PetscReal eG = ax[2];
+    PetscReal eL = ax[3];
+
+    PetscReal gamma1 = decodeDataStruct->gam1;
+    PetscReal gamma2 = decodeDataStruct->gam2;
+    PetscReal Y1 = decodeDataStruct->Yg;
+    PetscReal Y2 = decodeDataStruct->Yl;
+    PetscReal rho = decodeDataStruct->rhotot;
+//    PetscReal e = decodeDataStruct->etot;
+    PetscReal cv1 = decodeDataStruct->cvg;
+    PetscReal cp2 = decodeDataStruct->cpl;
+//    PetscReal p02 = decodeDataStruct->p0l;
+
+    v[0] = (gamma1-1)*eG; v[1] = -(gamma2-1)*eL; v[2] = (gamma1-1)*rhoG; v[3] = -(gamma2-1)*rhoL;
+    v[4] = 0.0; v[5] = eG/cv1 - gamma2*eG/cp2; v[6] = rhoL/cv1; v[7] = -gamma2*rhoL/cp2;
+    v[8] = Y2*rho-rhoL; v[9] = Y1*rho-rhoG; v[10] = 0.0; v[11] = 0.0;
+    v[12] = 0.0; v[13] = 0.0; v[14] = Y1; v[15] = Y2;
+    VecRestoreArrayRead(x, &ax);
+    MatSetValues(P,4,row,4,col,v,INSERT_VALUES);
+    MatAssemblyBegin(P,MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(P,MAT_FINAL_ASSEMBLY);
+    if (J!=P){
+        MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY);
+    }
+    return 0;
+
+}
+
 PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunctionStiff(SNES snes, Vec x, Vec F, void *ctx){
     auto decodeDataStruct = (DecodeDataStructStiff *)ctx;
     const PetscReal *ax;
@@ -88,6 +126,46 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunc
 
     VecRestoreArrayRead(x, &ax);
     VecRestoreArray(F, &aF);
+    return 0;
+
+}
+
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJacobianStiff(SNES snes, Vec x, Mat J, Mat P, void *ctx){
+    auto decodeDataStruct = (DecodeDataStructStiff *)ctx;
+    const PetscReal *ax;
+    PetscReal v[16];
+    PetscInt row[4] = {0, 1, 2, 3}, col[4] = {0, 1, 2, 3};
+    VecGetArrayRead(x, &ax);
+    // ax = [rhog, rhol, eg, el]
+    PetscReal rhoG = ax[0];
+    PetscReal rhoL = ax[1];
+    PetscReal eG = ax[2];
+    PetscReal eL = ax[3];
+
+    PetscReal gamma1 = decodeDataStruct->gam1;
+    PetscReal gamma2 = decodeDataStruct->gam2;
+    PetscReal Y1 = decodeDataStruct->Yg;
+    PetscReal Y2 = decodeDataStruct->Yl;
+    PetscReal rho = decodeDataStruct->rhotot;
+//    PetscReal e = decodeDataStruct->etot;
+    PetscReal cp1 = decodeDataStruct->cpg;
+    PetscReal cp2 = decodeDataStruct->cpl;
+    PetscReal p01 = decodeDataStruct->p0g;
+    PetscReal p02 = decodeDataStruct->p0l;
+
+    // need to check Jacobian, not getting correct solution
+    v[0] = (gamma1-1)*eG; v[1] = -(gamma2-1)*eL; v[2] = (gamma1-1)*rhoG; v[3] = -(gamma2-1)*rhoL;
+    v[4] = gamma1/cp1*eG*rhoL - gamma2/cp2*eL*rhoL + gamma2/cp2*p02; v[5] = gamma1/cp1*eG*rhoG - gamma1/cp1*p01 - gamma2/cp2*eL*rhoG; v[6] = gamma1/cp1*rhoG*rhoL; v[7] = -gamma2/cp2*rhoG*rhoL;
+    v[8] = Y2*rho-rhoL; v[9] = Y1*rho-rhoG; v[10] = 0.0; v[11] = 0.0;
+    v[12] = 0.0; v[13] = 0.0; v[14] = Y1; v[15] = Y2;
+    VecRestoreArrayRead(x, &ax);
+    MatSetValues(P,4,row,4,col,v,INSERT_VALUES);
+    MatAssemblyBegin(P,MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(P,MAT_FINAL_ASSEMBLY);
+    if (J!=P){
+        MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY);
+    }
     return 0;
 
 }
@@ -845,12 +923,19 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
 
     SNES snes;
     Vec x, r;
+    Mat J;
     VecCreate(PETSC_COMM_SELF, &x);
     VecSetSizes(x, PETSC_DECIDE, 4);
     VecSetFromOptions(x);
     VecSet(x, (*density)); // set initial guess to conserved density, [rho1, rho2, e1, e2] = [rho, rho, rho, rho]
-    VecSetValue(x, 0, 1, INSERT_VALUES);
+//    VecSetValue(x, 0, 1.0, INSERT_VALUES);
     VecDuplicate(x, &r);
+
+    MatCreate(PETSC_COMM_SELF, &J);
+    MatSetSizes(J, PETSC_DECIDE, PETSC_DECIDE, 4, 4);
+    MatSetFromOptions(J);
+    MatSetUp(J);
+
     SNESCreate(PETSC_COMM_SELF, &snes);
     DecodeDataStructGas decodeDataStruct{.etot = (*internalEnergy),
         .rhotot = (*density),
@@ -863,6 +948,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
         .p0l = p02,
     };
     SNESSetFunction(snes, r, FormFunctionGas, &decodeDataStruct);
+    SNESSetJacobian(snes, J, J, FormJacobianGas, &decodeDataStruct);
     // default Newton's method
     //      SNESSetType(snes, "newtontr");
     //      SNESSetTolerances(SNES snes, PetscReal atol, PetscReal rtol, PetscReal stol, PetscInt its, PetscInt fcts);
@@ -873,7 +959,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
 //    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
     SNESSetFromOptions(snes);
     SNESSolve(snes, NULL, x);
-//    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
+    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
     const PetscScalar *ax;
     VecGetArrayRead(x, &ax);
     PetscReal rhoG = ax[0];
@@ -884,6 +970,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     SNESDestroy(&snes);
     VecDestroy(&x);
     VecDestroy(&r);
+    MatDestroy(&J);
 
     PetscReal etG = eG + ke;
     PetscReal etL = eL + ke;
@@ -996,11 +1083,18 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
 
     SNES snes;
     Vec x, r;
+    Mat J;
     VecCreate(PETSC_COMM_SELF, &x);
     VecSetSizes(x, PETSC_DECIDE, 4);
     VecSetFromOptions(x);
     VecSet(x, (*density)); // set initial guess to conserved density, [rho1, rho2, e1, e2] = [rho, rho, rho, rho]
     VecDuplicate(x, &r);
+
+    MatCreate(PETSC_COMM_SELF, &J);
+    MatSetSizes(J, PETSC_DECIDE, PETSC_DECIDE, 4, 4);
+    MatSetFromOptions(J);
+    MatSetUp(J);
+
     SNESCreate(PETSC_COMM_SELF, &snes);
     DecodeDataStructStiff decodeDataStruct{.etot = (*internalEnergy),
         .rhotot = (*density),
@@ -1014,6 +1108,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
         .p0l = p02,
     };
     SNESSetFunction(snes, r, FormFunctionStiff, &decodeDataStruct);
+    SNESSetJacobian(snes, J, J, FormJacobianGas, &decodeDataStruct);
     // default Newton's method
     //      SNESSetType(snes, "newtontr");
     //      SNESSetTolerances(SNES snes, PetscReal atol, PetscReal rtol, PetscReal stol, PetscInt its, PetscInt fcts);
@@ -1035,6 +1130,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
     SNESDestroy(&snes);
     VecDestroy(&x);
     VecDestroy(&r);
+    MatDestroy(&J);
 
     PetscReal etG = eG + ke;
     PetscReal etL = eL + ke;
