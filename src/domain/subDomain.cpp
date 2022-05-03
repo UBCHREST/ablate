@@ -220,6 +220,17 @@ DM ablate::domain::SubDomain::GetSubDM() {
             DMAddField(subDM, nullptr, petscField) >> checkError;
         }
 
+        // add the names to each of the components in the dm section
+        PetscSection section;
+        DMGetLocalSection(subDM, &section) >> checkError;
+        for (const auto& field : GetFields()) {
+            if (field.numberComponents > 1) {
+                for (PetscInt c = 0; c < field.numberComponents; c++) {
+                    PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> checkError;
+                }
+            }
+        }
+
         DMCreateDS(subDM) >> checkError;
 
         // Copy over options
@@ -282,6 +293,17 @@ DM ablate::domain::SubDomain::GetSubAuxDM() {
     for (auto& fieldInfo : GetFields(FieldLocation::AUX)) {
         auto petscField = GetPetscFieldObject(fieldInfo);
         DMAddField(subAuxDM, nullptr, petscField) >> checkError;
+    }
+
+    // add the names to each of the components in the dm section
+    PetscSection section;
+    DMGetLocalSection(subAuxDM, &section) >> checkError;
+    for (const auto& field : GetFields(FieldLocation::AUX)) {
+        if (field.numberComponents > 1) {
+            for (PetscInt c = 0; c < field.numberComponents; c++) {
+                PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> checkError;
+            }
+        }
     }
 
     return subAuxDM;
