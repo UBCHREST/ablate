@@ -64,6 +64,9 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
 
     ///Class Methods
     void RayTrace(PetscReal time);
+
+    PetscErrorCode RayProduct(PetscReal time, PetscInt segSteps);
+
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
     void RayInit();
     static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f);
@@ -85,7 +88,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
 
     PetscInt nSteps = 100; //number of steps that each ray will go through //This won't be used
     PetscReal h = 0.02; //This is the DEFAULT step size which should be set by the user input
-    PetscInt nTheta = 1000; //The DEFAULT number of angles to solve with, should be given by user input probably?
+    PetscInt nTheta = 50; //The DEFAULT number of angles to solve with, should be given by user input probably?
     PetscInt nPhi = 1; //The DEFAULT number of angles to solve with, should be given by user input
 
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays;//(std::vector<std::vector<std::vector<PetscInt>>>()); //Indices: Cell, angle (theta), angle(phi), space steps

@@ -24,7 +24,11 @@ void ablate::radiation::RadiationSolver::Setup() {  // allows initialization aft
 void ablate::radiation::RadiationSolver::Initialize() {
     // this->reallySolveParallelPlates();
     this->RayInit();  // Runs the ray initialization finding cell indices
-    //this->RayTrace(0);
+    this->RayTrace(0);
+    for (int i = 1; i < 20; i++) {
+        this->RayProduct(0, i);
+    }
+
 }
 
 /// Declaring function for the initialization to call, draws each ray vector and gets all of the cells associated with it (sorted by distance and starting at the boundary working in)
@@ -59,18 +63,19 @@ void ablate::radiation::RadiationSolver::RayInit() {
         nTheta, rayThetas);                    // Make vector to store this dimensional row //Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
     rays.resize(stencilSet.size(), rayCells);  // Indices: Cell, angle (theta), angle(phi), space steps
 
+    /// Get setup things for the position vector of the current cell index
+    const PetscScalar* cellGeomArray;  // Declare the variables that will contain the geometry of the cells
+    Vec cellGeomVec;
+    PetscReal minCellRadius;
+    DMPlexGetGeometryFVM(subDomain->GetDM(), nullptr, &cellGeomVec, &minCellRadius);  // Obtain the geometric information about the cells in the DM?
+    VecGetArrayRead(cellGeomVec, &cellGeomArray);
+    PetscFVCellGeom* cellGeom;
+
     PetscInt ncells = 0;
     for (int iCell : stencilSet) {
         double percentComplete = 100.0 * double(ncells) / double(stencilSet.size());
         PetscPrintf(PETSC_COMM_WORLD, "Radiation Initializer Percent Complete: %f\n", percentComplete);
 
-        /// Get the position vector of the current cell index
-        const PetscScalar* cellGeomArray;  // Declare the variables that will contain the geometry of the cells
-        Vec cellGeomVec;
-        PetscReal minCellRadius;
-        DMPlexGetGeometryFVM(subDomain->GetDM(), nullptr, &cellGeomVec, &minCellRadius);  // Obtain the geometric information about the cells in the DM?
-        VecGetArrayRead(cellGeomVec, &cellGeomArray);
-        PetscFVCellGeom* cellGeom;
         DMPlexPointLocalRead(subDomain->GetDM(), iCell, cellGeomArray, &cellGeom);  // Reads the cell location from the current cell
 
         /// Set the spatial step size to the minimum cell radius
@@ -139,7 +144,7 @@ void ablate::radiation::RadiationSolver::RayInit() {
                     if (nFound > -1) {
                         /// This function returns multiple values if multiple points are input to it
                         if (cell[0].index >= 0) {
-                            if (stencilSet.count(iCell) != 0) { //Make sure that whatever cell is returned is in the stencil set (and not outside oof the radiation domain)
+                            if (stencilSet.count(cell[0].index) != 0) { //Make sure that whatever cell is returned is in the stencil set (and not outside of the radiation domain)
                                 /// Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
                                 rays[ncells][ntheta][nphi].push_back(cell[0].index);
                                 // rayPhis.push_back(cell[0].index);
@@ -174,11 +179,19 @@ void ablate::radiation::RadiationSolver::RayInit() {
 
 void ablate::radiation::RadiationSolver::RayTrace(PetscReal time) {  /// Gets the total intensity/radiative gain at a single cell
 
-    // std::cout << "Called ray tracing function. nTheta = " << nTheta << ", nPhi = " << nPhi << ", h step = " << h << "\n"; //DEBUGGING COMMENT
-    DM cellDM;
-    VecGetDM(cellGeomVec, &cellDM) >> checkError;
-    const PetscScalar* cellGeomArray;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    /// Get setup things for the position vector of the current cell index
+    const PetscScalar* cellGeomArray;  // Declare the variables that will contain the geometry of the cells
+    Vec cellGeomVec;
+    PetscReal minCellRadius;
+    DMPlexGetGeometryFVM(subDomain->GetDM(), nullptr, &cellGeomVec, &minCellRadius);  // Obtain the geometric information about the cells in the DM?
+    VecGetArrayRead(cellGeomVec, &cellGeomArray);
+    PetscFVCellGeom* cellGeom;
+
+    /// For ABLATE implementation, get temperature based on this function
+    const auto& temperatureField = subDomain->GetField("temperature");
+    PetscScalar* temperatureArray = nullptr;
+    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
+    VecGetArray(loctemp, &temperatureArray);                                                     // Get the array that lives inside the vector
 
     /// Declare the basic information
     // std::vector<PetscReal> radGain(stencilSet.size(), 0); //Represents the total final radiation intensity (for every cell, index as index)
@@ -189,7 +202,7 @@ void ablate::radiation::RadiationSolver::RayTrace(PetscReal time) {  /// Gets th
     double theta;
 
     /// Get the file path for the output
-    std::filesystem::path radOutput = environment::RunEnvironment::Get().GetOutputDirectory() / "tempPlot.txt";
+    std::filesystem::path radOutput = environment::RunEnvironment::Get().GetOutputDirectory() / "originalMethod.txt";
     std::ofstream stream(radOutput);
 
     std::vector<std::vector<PetscReal>> locations;  // 2 Dimensional vector which stores the locations of the cell centers
@@ -198,7 +211,6 @@ void ablate::radiation::RadiationSolver::RayTrace(PetscReal time) {  /// Gets th
     for (int iCell : stencilSet) {  // loop through subdomain cell indices
         /// Print location of the current cell
         for (int i = 0; i < dim; i++) {  // We will need an extra column to store the ray vector. This will probably need to be stored in a different vector
-            PetscFVCellGeom* cellGeom;
             DMPlexPointLocalRead(subDomain->GetDM(), iCell, cellGeomArray, &cellGeom);  // Reads the cell location from the point in question
             stream << cellGeom->centroid[i];
             //Print the value of the centroid to a 3 (4) column txt file of x,y,z, (ray number ?). (Ultimately these values will need to be stored in program or used)
@@ -221,32 +233,29 @@ void ablate::radiation::RadiationSolver::RayTrace(PetscReal time) {  /// Gets th
 
                 int numPoints = static_cast<int>(rays[ncells][ntheta][nphi].size());
                 for (int n = (numPoints - 1); n >= 0; n--) {  /// Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
-                    //std::vector<PetscReal> loc(3, 0);
-                    //for (int i = 0; i < dim; i++) {  // We will need an extra column to store the ray vector. This will probably need to be stored in a different vector
+                    std::vector<PetscReal> loc(3, 0);
+                    for (int i = 0; i < dim; i++) {  // We will need an extra column to store the ray vector. This will probably need to be stored in a different vector
                     //   PetscFVCellGeom* cellGeom;
-                    //    DMPlexPointLocalRead(subDomain->GetDM(), rays[ncells][ntheta][nphi][n], cellGeomArray, &cellGeom);  // Reads the cell location from the point in question
+                        DMPlexPointLocalRead(subDomain->GetDM(), rays[ncells][ntheta][nphi][n], cellGeomArray, &cellGeom);  // Reads the cell location from the point in question
 
-                    //    loc[i] = cellGeom->centroid[i];  // Get the location of the current cell and export it to the rest of the function
-                    //}
+                        loc[i] = cellGeom->centroid[i];  // Get the location of the current cell and export it to the rest of the function
+                    }
 
                     /// Define the absorptivity and temperature in this section
-                    // For ABLATE implementation, get temperature based on this function
-                    const auto& temperatureField = subDomain->GetField("temperature");
-                    PetscScalar* temperatureArray = nullptr;
-                    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
-                    VecGetArray(loctemp, &temperatureArray);                                                     // Get the array that lives inside the vector
                     DMPlexPointLocalRef(subDomain->GetDM(), rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);  // Gets the temperature from the cell index specified
+
+                    ///Get the local temperature at every point along the ray. For the analytical solution, the temperature at each point will be based on the spatial location of the cell.
+                    if(loc[2] <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
+                        temperature = -6.349E6*loc[2]*loc[2] + 2000.0;
+                    }else{
+                        temperature = -1.179E7*loc[2]*loc[2] + 2000.0;
+                    }
 
                     // TODO: Input absorptivity (kappa) values from model here.
 
-                    if(n == (numPoints - 1)) {
-                        rayIntensity = FlameIntensity(1, temperature);  // Set the initial ray intensity to the boundary intensity
-                                                                 // TODO: Make intensity boundary conditions from boundary label
-                    }else {
-                        /// The ray intensity changes as a function of the environment at this point
-                        rayIntensity = FlameIntensity(1 - exp(-kappa * h), temperature) + rayIntensity * exp(-kappa * h);
-                        // PetscPrintf(PETSC_COMM_WORLD, "Intensity: %f\n", rayIntensity);
-                    }
+                    /// The ray intensity changes as a function of the environment at this point
+                    rayIntensity = FlameIntensity(1 - exp(-kappa * h), temperature) + rayIntensity * exp(-kappa * h);
+                    // PetscPrintf(PETSC_COMM_WORLD, "Intensity: %f\n", rayIntensity);
                 }
                 /// The rays end here, their intensity is added to the total intensity of the cell
                 intensity += rayIntensity * sin(theta) * dTheta * dPhi;  // Gives the partial impact of the ray on the total sphere. The sin(theta) is a result of the polar coordinate discretization
@@ -279,7 +288,7 @@ void ablate::radiation::RadiationSolver::RayTrace(PetscReal time) {  /// Gets th
 
         ncells++;
         // Cleanup
-        VecRestoreArrayRead(rhs, &rhsArray);
+        VecRestoreArray(loctemp, &temperatureArray);
     }
     stream.close();
 }
@@ -297,7 +306,7 @@ PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscRea
     PetscReal Ibz;
 
     PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    const PetscReal sbc = 5.6696e-8;
+    //const PetscReal sbc = 5.6696e-8;
     PetscReal nZp = 1000;
     Ibz = 0;
 
@@ -342,10 +351,10 @@ PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscRea
     } else {
         temperature = -1.179E7 * z * z + 2000.0;
     }
-    PetscReal radTotal =  kappa * (4 * sbc * temperature * temperature * temperature * temperature - G);
+    //PetscReal radTotal =  kappa * (-4 * sbc * temperature * temperature * temperature * temperature + G);
 
 
-    return radTotal;
+    return G;
 }
 
 PetscReal ablate::radiation::RadiationSolver::EInteg(int order, double x) {
@@ -403,6 +412,126 @@ PetscReal ablate::radiation::RadiationSolver::CSimp(PetscReal a, PetscReal b, st
     return I;
 }
 
+PetscErrorCode ablate::radiation::RadiationSolver::RayProduct(PetscReal time, PetscInt segSteps) {
+    /// Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable
+
+    /// Get setup things for the position vector of the current cell index
+    const PetscScalar* cellGeomArray;  // Declare the variables that will contain the geometry of the cells
+    Vec cellGeomVec;
+    PetscReal minCellRadius;
+    DMPlexGetGeometryFVM(subDomain->GetDM(), nullptr, &cellGeomVec, &minCellRadius);  // Obtain the geometric information about the cells in the DM?
+    VecGetArrayRead(cellGeomVec, &cellGeomArray);
+    PetscFVCellGeom* cellGeom;
+
+    //const auto& eulerFieldInfo = subDomain->GetField("euler");
+
+    /// Get the temperature of the current cell (in order to compute the losses)
+    // For ABLATE implementation, get temperature based on this function
+    const auto& temperatureField = subDomain->GetField("temperature");
+    PetscScalar* temperatureArray = nullptr;
+    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
+    VecGetArray(loctemp, &temperatureArray);
+
+    /// Declare the basic information
+    // std::vector<PetscReal> radGain(stencilSet.size(), 0); //Represents the total final radiation intensity (for every cell, index as index)
+    PetscReal temperature;  // The temperature at any given location
+    PetscReal dTheta = pi / nTheta;
+    PetscReal dPhi = (2 * pi) / nPhi;
+    double kappa = 1;  // Absorptivity coefficient, property of each cell
+    double theta;
+
+    ///Things for this function in particular
+    PetscReal Io;
+    PetscReal Ib;
+
+    /// Get the file path for the output
+    std::filesystem::path radOutput = environment::RunEnvironment::Get().GetOutputDirectory() / std::to_string(segSteps);
+    std::ofstream stream(radOutput);
+
+    std::vector<std::vector<PetscReal>> locations;  // 2 Dimensional vector which stores the locations of the cell centers
+    PetscInt ncells = 0;
+
+    for (int iCell : stencilSet) {  // loop through subdomain cell indices
+        /// Print location of the current cell
+        for (int i = 0; i < dim; i++) {  // We will need an extra column to store the ray vector. This will probably need to be stored in a different vector
+            DMPlexPointLocalRead(subDomain->GetDM(), iCell, cellGeomArray, &cellGeom);  // Reads the cell location from the point in question
+            stream << cellGeom->centroid[i];
+            //Print the value of the centroid to a 3 (4) column txt file of x,y,z, (ray number ?). (Ultimately these values will need to be stored in program or used)
+            stream << " ";
+        }
+        PetscReal intensity = 0;
+        for (int ntheta = 0; ntheta < nTheta; ntheta++) {    // for every angle theta
+            theta = ((double)ntheta / (double)nTheta) * pi;  // converts the present angle number into a real angle
+            for (int nphi = 0; nphi < nPhi; nphi++) {
+                /// Each ray is born here. They begin at the far field temperature.
+                /// Initial ray intensity should be set based on which boundary it is coming from.
+                /// If the ray originates from the walls, then set the initial ray intensity to the wall temperature, etc.
+                PetscReal rayIntensity;
+                PetscReal rayIntensitySegment = 1; //So that it can be multiplied and become the first value
+                int numPoints = static_cast<int>(rays[ncells][ntheta][nphi].size());
+                for (int n = (numPoints - 1); n >= 0; n--) {  /// Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
+                    std::vector<PetscReal> loc(3, 0);
+                    for (int i = 0; i < dim; i++) {  // We will need an extra column to store the ray vector. This will probably need to be stored in a different vector
+                                                                                                                            //   PetscFVCellGeom* cellGeom;
+                        DMPlexPointLocalRead(subDomain->GetDM(), rays[ncells][ntheta][nphi][n], cellGeomArray, &cellGeom);  // Reads the cell location from the point in question
+
+                        loc[i] = cellGeom->centroid[i];  // Get the location of the current cell and export it to the rest of the function
+                    }
+
+                    /// Define the absorptivity and temperature in this section
+                    DMPlexPointLocalRef(subDomain->GetDM(), rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);  // Gets the temperature from the cell index specified
+
+                    ///Get the local temperature at every point along the ray. For the analytical solution, the temperature at each point will be based on the spatial location of the cell.
+                    if(loc[2] <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other?
+                        temperature = -6.349E6*loc[2]*loc[2] + 2000.0;
+                    }else{
+                        temperature = -1.179E7*loc[2]*loc[2] + 2000.0;
+                    }
+
+                    if (n == (numPoints - 1)) {
+                        rayIntensity = FlameIntensity(1, temperature);  // Set the initial ray intensity to the boundary intensity
+                        Io = rayIntensity; //Set the originating ray intensity
+                    }else {
+                        /// The ray intensity changes as a function of the environment at this point
+                        rayIntensity = FlameIntensity(1 - exp(-kappa * h), temperature) + rayIntensity * exp(-kappa * h);
+                    }
+                    //TODO: The rays should be split into segments and evaluated in parts.
+                    if (n % segSteps == 0) { //If the step number is at the end of a segment of 5 steps
+                        // TODO: This is where the ray segments are step-multiplied together (PI product thing)
+                        rayIntensitySegment *= rayIntensity; //Multiply the ray intensity again.
+                    }
+                }
+                //TODO: Finally, the ray is given its end intensity based on the guess of Ib. (The rest of that equation)
+                rayIntensity = Ib - (Ib - Io)*rayIntensitySegment;
+                /// The rays end here, their intensity is added to the total intensity of the cell
+                intensity += rayIntensity * sin(theta) * dTheta * dPhi;  // Gives the partial impact of the ray on the total sphere. The sin(theta) is a result of the polar coordinate discretization
+            }
+            // PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
+        }
+        /// Gets the temperature from the cell index specified
+        DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);
+
+        /// Put the irradiation into the right hand side function (net radiation)
+        //PetscScalar* rhsValues;
+        //DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
+        //rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += kappa * (4 * sbc * *temperature * *temperature * *temperature * *temperature - intensity);
+
+        //Total energy gain of the current cell depends on absorptivity at the current cell
+        PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
+        /// Print the radiative gain at each cell
+        stream << intensity;
+        stream << "\n";
+        ncells++;
+
+    }
+    // Cleanup
+    //VecRestoreArrayRead(rhs, &rhsArray);
+    VecRestoreArray(loctemp, &temperatureArray);
+    //VecRestoreArray(cellGeomVec, &cellGeomArray);
+    stream.close();
+    PetscFunctionReturn(0);
+}
+
 /// End of the added radiation stuff
 PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal time, Vec locXVec,
                                                                       Vec rhs) {  // main interface for integrating in time Inputs: local vector, x vector (current solution), local f vector
@@ -445,11 +574,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                 int numPoints = static_cast<int>(rays[ncells][ntheta][nphi].size());
                 for (int n = (numPoints - 1); n >= 0; n--) {  /// Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
                     /// Define the absorptivity and temperature in this section
-                    // For ABLATE implementation, get temperature based on this function
-                    /*const auto& temperatureField = subDomain->GetField("temperature");
-                    PetscScalar* temperatureArray = nullptr;
-                    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
-                    VecGetArray(loctemp, &temperatureArray);*/                                                     // Get the array that lives inside the vector
+                    // For ABLATE implementation, get temperature based on this function                     // Get the array that lives inside the vector
                     DMPlexPointLocalRef(vdm, rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);  // Gets the temperature from the cell index specified
 
                     // TODO: Input absorptivity (kappa) values from model here.
