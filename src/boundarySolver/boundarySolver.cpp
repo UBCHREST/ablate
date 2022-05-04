@@ -85,7 +85,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     // Get the geometry for the mesh
     DM faceDM, cellDM;
     VecGetDM(faceGeomVec, &faceDM) >> checkError;
-    VecGetDM(cellGeomVec, &cellDM) >> checkError;
+    VecGetDM(cellGeomVec, &cellDM) >> checkError; //
     const PetscScalar* cellGeomArray;
     const PetscScalar* faceGeomArray;
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
