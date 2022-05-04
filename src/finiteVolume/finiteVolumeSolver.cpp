@@ -115,7 +115,7 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
                 faceInterpolant = std::make_unique<FaceInterpolant>(subDomain, faceGeomVec, cellGeomVec);
             }
 
-            faceInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, GetRegion(), continuousFluxFunctionDescriptions, faceRange, cellGeomVec);
+            faceInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, GetRegion(), continuousFluxFunctionDescriptions, faceRange, cellGeomVec, faceGeomVec);
         }
         RestoreRange(faceRange);
         RestoreRange(cellRange);

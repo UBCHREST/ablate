@@ -241,7 +241,7 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
     flow.RestoreRange(cellRange);
     return dtMin;
 }
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(PetscInt dim, const PetscReal* area, const PetscReal* normal, const PetscReal* centroid, const PetscInt uOff[],
+PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[],
                                                                               const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
                                                                               const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx) {
     PetscFunctionBeginUser;
@@ -269,7 +269,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
 
         // March over each direction
         for (PetscInt d = 0; d < dim; ++d) {
-            viscousFlux += -area[d] * tau[c * dim + d];  // This is tau[c][d]
+            viscousFlux += -fg->normal[d] * tau[c * dim + d];  // This is tau[c][d]
         }
 
         // add in the contribution
@@ -289,7 +289,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
         heatFlux += k * gradAux[aOff_x[T] + d];
 
         // Multiply by the area normal
-        heatFlux *= -area[d];
+        heatFlux *= -fg->normal[d];
 
         flux[CompressibleFlowFields::RHOE] += heatFlux;
     }

@@ -79,7 +79,7 @@ class SpeciesTransport : public FlowProcess {
      * ctx = SpeciesDiffusionData
      * @return
      */
-    static PetscErrorCode DiffusionEnergyFlux(PetscInt dim, const PetscReal* area, const PetscReal* normal, const PetscReal* centroid, const PetscInt uOff[], const PetscInt uOff_x[],
+    static PetscErrorCode DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[],
                                               const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
                                               PetscScalar flux[], void* ctx);
     /**
@@ -90,7 +90,7 @@ class SpeciesTransport : public FlowProcess {
      * ctx = SpeciesDiffusionData
      * @return
      */
-    static PetscErrorCode DiffusionSpeciesFlux(PetscInt dim, const PetscReal* area, const PetscReal* normal, const PetscReal* centroid, const PetscInt uOff[], const PetscInt uOff_x[],
+    static PetscErrorCode DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[],
                                                const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
                                                const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 

@@ -4,6 +4,7 @@
 #include <memory>
 #include "domain/subDomain.hpp"
 #include "solver/range.hpp"
+#include "stencils/stencil.hpp"
 
 namespace ablate::finiteVolume {
 
@@ -50,30 +51,9 @@ class FaceInterpolant {
     static void CreateFaceDm(PetscInt totalDim, DM dm, DM& newDm);
 
     /**
-     * struct to hold the gradient stencil for the boundary
-     */
-    struct Stencil {
-        /** Area-scaled normals */
-        PetscReal area[3];
-        /** normal **/
-        PetscReal normal[3];
-        /** Location of centroid*/
-        PetscReal centroid[3];
-
-        /** store the stencil size for easy access */
-        PetscInt stencilSize;
-        /** The points in the stencil*/
-        std::vector<PetscInt> stencil;
-        /** The weights in [point*dim + dir] order */
-        std::vector<PetscScalar> weights;
-        /** The gradient weights in [point*dim + dir] order */
-        std::vector<PetscScalar> gradientWeights;
-    };
-
-    /**
      * Store the interpolant for every face
      */
-    std::vector<Stencil> stencils;
+    std::vector<stencil::Stencil> stencils;
 
     template <class I, class T>
     static inline void AddToArray(I size, const T* input, T* sum, T factor) {
@@ -95,7 +75,7 @@ class FaceInterpolant {
     /**
      * Function assumes that the left/right solution and aux variables are continuous across the interface and values are interpolated to the face
      */
-    using ContinuousFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscReal* area, const PetscReal* normal, const PetscReal* centroid, const PetscInt uOff[], const PetscInt uOff_x[],
+    using ContinuousFluxFunction = PetscErrorCode (*)(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[],
                                                       const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
                                                       const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 
@@ -118,7 +98,7 @@ class FaceInterpolant {
      * @param locFVec
      */
     void ComputeRHS(PetscReal time, Vec locXVec, Vec locAuxVec, Vec locFVec, const std::shared_ptr<domain::Region>& solverRegion,
-                    std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, const solver::Range& faceRange, Vec cellGeomVec);
+                    std::vector<FaceInterpolant::ContinuousFluxFunctionDescription>& rhsFunctions, const solver::Range& faceRange, Vec cellGeomVec, Vec faceGeomVec);
 
     /**
      * function to get the interpolated values on the face

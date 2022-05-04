@@ -1,7 +1,7 @@
 #include "distributeWithGhostCells.hpp"
 #include <utilities/petscError.hpp>
 
-ablate::domain::modifiers::DistributeWithGhostCells::DistributeWithGhostCells(int ghostCellDepthIn) : ghostCellDepth(ghostCellDepthIn < 1 ? 1 : ghostCellDepthIn) {}
+ablate::domain::modifiers::DistributeWithGhostCells::DistributeWithGhostCells(int ghostCellDepthIn) : ghostCellDepth(ghostCellDepthIn < 1 ? 2 : ghostCellDepthIn) {}
 void ablate::domain::modifiers::DistributeWithGhostCells::Modify(DM &dm) {
     // Make sure that the flow is setup distributed
     DM dmDist;
