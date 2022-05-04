@@ -27,11 +27,10 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      *
      * @param solverId the id for this solver
      * @param region the boundary cell region
-     * @param fieldBoundary the region describing the faces between the boundary and field
-     * @param radiationProcesses a list of boundary processes
+     * @param rayNumber
      * @param options other options
      */
-    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options);
+    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, int rayNumber, std::shared_ptr<parameters::Parameters> options);
     ~RadiationSolver() override;
 
     /** SubDomain Register and Setup **/
@@ -85,11 +84,12 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     std::set<PetscInt> stencilSet;
 
     PetscInt dim; //Number of dimensions that the domain exists within
+    PetscInt rayNumber;
 
     PetscInt nSteps = 100; //number of steps that each ray will go through //This won't be used
     PetscReal h = 0.02; //This is the DEFAULT step size which should be set by the user input
-    PetscInt nTheta = 50; //The DEFAULT number of angles to solve with, should be given by user input probably?
-    PetscInt nPhi = 1; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscInt nTheta = rayNumber; //The DEFAULT number of angles to solve with, should be given by user input probably?
+    PetscInt nPhi = 1;//2*rayNumber; //The DEFAULT number of angles to solve with, should be given by user input
 
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays;//(std::vector<std::vector<std::vector<PetscInt>>>()); //Indices: Cell, angle (theta), angle(phi), space steps
     //PetscReal radGain;
