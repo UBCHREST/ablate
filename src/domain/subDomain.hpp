@@ -205,7 +205,7 @@ class SubDomain : public io::Serializable {
      * The comm used to define this subDomain and resulting solvers
      * @return
      */
-    inline MPI_Comm GetComm() { return PetscObjectComm((PetscObject)GetDM()); }
+    inline MPI_Comm GetComm() const { return PetscObjectComm((PetscObject)domain.GetDM()); }
 
     /**
      * The label (if any) used to define this subDomain
@@ -237,6 +237,7 @@ class SubDomain : public io::Serializable {
      * @return
      */
     inline DM& GetDM() noexcept { return domain.GetDM(); }
+
     /**
      * Returns the dm describing the aux fields living in this subdomain.  The dm is defined across
      * the entire mesh, but the fields are only define under this subdomain

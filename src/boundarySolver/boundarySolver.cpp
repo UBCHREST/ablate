@@ -5,8 +5,8 @@
 #include "utilities/mathUtilities.hpp"
 
 ablate::boundarySolver::BoundarySolver::BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
-                                                       std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses, std::shared_ptr<parameters::Parameters> options)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)), boundaryProcesses(std::move(boundaryProcesses)) {}
+                                                       std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses, std::shared_ptr<parameters::Parameters> options, bool mergeFaces)
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)), fieldBoundary(std::move(fieldBoundary)), boundaryProcesses(std::move(boundaryProcesses)), mergeFaces(mergeFaces) {}
 
 ablate::boundarySolver::BoundarySolver::~BoundarySolver() {
     if (gradientCalculator) {
@@ -101,9 +101,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     DMLabel ghostLabel;
     DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
 
-    // Keep track of the current maxFaces
-    PetscInt maxFaces = 0;
-
     // compute the max depth
     PetscInt maxCellDepth = PetscMin(2, dim);
 
@@ -120,122 +117,164 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             DMLabelGetValue(ghostLabel, cell, &ghost);
         }
         if (ghost >= 0) {
-            // put in nan, should not be used
-            gradientStencils.emplace_back(
-                GradientStencil{.geometry = {.normal = {NAN, NAN, NAN}, .areas = {NAN, NAN, NAN}, .centroid = {NAN, NAN, NAN}}, .stencil = {}, .gradientWeights = {}, .stencilSize = 0});
             continue;
         }
 
-        // keep a list of cells in the stencil
-        std::set<PetscInt> stencilSet{cell};
+        // If merging faces, march over the multiple faces per cell
+        if (mergeFaces) {
+            // keep a list of cells in the stencil
+            std::set<PetscInt> stencilSet{cell};
 
-        // March over each face
-        PetscInt numberFaces;
-        const PetscInt* cellFaces;
-        DMPlexGetConeSize(subDomain->GetDM(), cell, &numberFaces) >> checkError;
-        DMPlexGetCone(subDomain->GetDM(), cell, &cellFaces) >> checkError;
+            // March over each face
+            PetscInt numberFaces;
+            const PetscInt* cellFaces;
+            DMPlexGetConeSize(subDomain->GetDM(), cell, &numberFaces) >> checkError;
+            DMPlexGetCone(subDomain->GetDM(), cell, &cellFaces) >> checkError;
 
-        // Create a new BoundaryFVFaceGeom
-        BoundaryFVFaceGeom geom{.normal = {0.0, 0.0, 0.0}, .areas = {0.0, 0.0, 0.0}, .centroid = {0.0, 0.0, 0.0}};
+            // Create a new BoundaryFVFaceGeom
+            BoundaryFVFaceGeom geom{.normal = {0.0, 0.0, 0.0}, .areas = {0.0, 0.0, 0.0}, .centroid = {0.0, 0.0, 0.0}};
 
-        // Perform some error checking
-        if (numberFaces < 1) {
-            throw std::runtime_error("Isolated cell " + std::to_string(cell) + " cannot be used in BoundarySolver.");
-        }
-
-        // For each connected face
-        PetscInt usedFaceCount = 0;
-        for (PetscInt f = 0; f < numberFaces; f++) {
-            PetscInt face = cellFaces[f];
-
-            // check to see if this face is in the boundary region
-            PetscInt faceValue;
-            DMLabelGetValue(boundaryLabel, face, &faceValue) >> checkError;
-            if (faceValue != boundaryValue) {
-                continue;
+            // Perform some error checking
+            if (numberFaces < 1) {
+                throw std::runtime_error("Isolated cell " + std::to_string(cell) + " cannot be used in BoundarySolver.");
             }
 
-            // Get the connected cells
-            PetscInt numberNeighborCells;
-            const PetscInt* neighborCells;
-            DMPlexGetSupportSize(subDomain->GetDM(), face, &numberNeighborCells) >> checkError;
-            DMPlexGetSupport(subDomain->GetDM(), face, &neighborCells) >> checkError;
+            // For each connected face
+            PetscInt usedFaceCount = 0;
+            PetscInt referenceCell = -1;  // The first cell connected to this face
+            for (PetscInt f = 0; f < numberFaces; f++) {
+                PetscInt face = cellFaces[f];
 
-            for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n], maxCellDepth);
-            }
-
-            // Add this geometry to the BoundaryFVFaceGeom
-            PetscFVFaceGeom* fg;
-            DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
-
-            // The normal should be pointing away from the other phase into the boundary solver domain.  The current fg support points from cell[0] -> cell[1]
-            // If the neighborCells[0] is in the boundary (this cell), flip the normal
-            if (neighborCells[0] == cell) {
-                for (PetscInt d = 0; d < dim; d++) {
-                    geom.normal[d] -= fg->normal[d];
-                    geom.areas[d] -= fg->normal[d];
-                    geom.centroid[d] += fg->centroid[d];
+                // check to see if this face is in the boundary region
+                PetscInt faceValue;
+                DMLabelGetValue(boundaryLabel, face, &faceValue) >> checkError;
+                if (faceValue != boundaryValue) {
+                    continue;
                 }
-            } else {
-                for (PetscInt d = 0; d < dim; d++) {
-                    geom.normal[d] += fg->normal[d];
-                    geom.areas[d] += fg->normal[d];
-                    geom.centroid[d] += fg->centroid[d];
+
+                // Get the connected cells
+                PetscInt numberNeighborCells;
+                const PetscInt* neighborCells;
+                DMPlexGetSupportSize(subDomain->GetDM(), face, &numberNeighborCells) >> checkError;
+                DMPlexGetSupport(subDomain->GetDM(), face, &neighborCells) >> checkError;
+                referenceCell = neighborCells[0] == cell ? neighborCells[1] : neighborCells[0];
+
+                for (PetscInt n = 0; n < numberNeighborCells; n++) {
+                    AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n], maxCellDepth);
                 }
+
+                // Add this geometry to the BoundaryFVFaceGeom
+                PetscFVFaceGeom* fg;
+                DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
+
+                // The normal should be pointing away from the other phase into the boundary solver domain.  The current fg support points from cell[0] -> cell[1]
+                // If the neighborCells[0] is in the boundary (this cell), flip the normal
+                if (neighborCells[0] == cell) {
+                    for (PetscInt d = 0; d < dim; d++) {
+                        geom.normal[d] -= fg->normal[d];
+                        geom.areas[d] -= fg->normal[d];
+                        geom.centroid[d] += fg->centroid[d];
+                    }
+                } else {
+                    for (PetscInt d = 0; d < dim; d++) {
+                        geom.normal[d] += fg->normal[d];
+                        geom.areas[d] += fg->normal[d];
+                        geom.centroid[d] += fg->centroid[d];
+                    }
+                }
+                usedFaceCount++;
             }
-            usedFaceCount++;
-        }
 
-        // take average face location
-        for (PetscInt d = 0; d < dim; d++) {
-            geom.centroid[d] /= usedFaceCount;
-        }
-
-        // compute the normal
-        utilities::MathUtilities::NormVector(dim, geom.normal);
-
-        // remove the boundary cell from the stencil
-        stencilSet.erase(cell);
-
-        // Compute the weights for the stencil
-        std::vector<PetscInt> stencil(stencilSet.begin(), stencilSet.end());
-        std::vector<PetscScalar> gradientWeights(stencil.size() * dim, 0.0);
-        std::vector<PetscScalar> dx(stencil.size() * dim);
-        std::vector<PetscScalar> volume(stencil.size());
-
-        // Use a Reciprocal distance interpolate for the distribution weights.  This can be abstracted away in the future.
-        std::vector<PetscScalar> distributionWeights(stencil.size(), 0.0);
-        PetscScalar distributionWeightSum = 0.0;
-        for (std::size_t n = 0; n < stencil.size(); n++) {
-            PetscFVCellGeom* cg;
-            DMPlexPointLocalRead(cellDM, stencil[n], cellGeomArray, &cg);
-            for (PetscInt d = 0; d < dim; ++d) {
-                dx[n * dim + d] = cg->centroid[d] - geom.centroid[d];
-                distributionWeights[n] += PetscSqr(cg->centroid[d] - geom.centroid[d]);
+            // take average face location
+            for (PetscInt d = 0; d < dim; d++) {
+                geom.centroid[d] /= usedFaceCount;
             }
-            distributionWeights[n] = 1.0 / PetscSqrtScalar(distributionWeights[n]);
-            distributionWeightSum += distributionWeights[n];
 
-            // store the volume
-            volume[n] = cg->volume;
+            // compute the normal
+            utilities::MathUtilities::NormVector(dim, geom.normal);
+
+            // remove the boundary cell from the stencil
+            stencilSet.erase(cell);
+            stencilSet.erase(referenceCell);
+
+            // Add the stencil gradient
+            std::vector<PetscInt> stencil{referenceCell};
+            stencil.insert(stencil.end(), stencilSet.begin(), stencilSet.end());
+            CreateGradientStencil(cell, geom, stencil, cellDM, cellGeomArray);
+        } else {
+            // March over each face
+            PetscInt numberFaces;
+            const PetscInt* cellFaces;
+            DMPlexGetConeSize(subDomain->GetDM(), cell, &numberFaces) >> checkError;
+            DMPlexGetCone(subDomain->GetDM(), cell, &cellFaces) >> checkError;
+
+            // Perform some error checking
+            if (numberFaces < 1) {
+                throw std::runtime_error("Isolated cell " + std::to_string(cell) + " cannot be used in BoundarySolver.");
+            }
+
+            // Create a different stencil per face
+            for (PetscInt f = 0; f < numberFaces; f++) {
+                // keep a list of cells in the stencil
+                std::set<PetscInt> stencilSet{cell};
+
+                // extract the face
+                PetscInt face = cellFaces[f];
+
+                // check to see if this face is in the boundary region
+                PetscInt faceValue;
+                DMLabelGetValue(boundaryLabel, face, &faceValue) >> checkError;
+                if (faceValue != boundaryValue) {
+                    continue;
+                }
+
+                // Create a new BoundaryFVFaceGeom
+                BoundaryFVFaceGeom geom{.normal = {0.0, 0.0, 0.0}, .areas = {0.0, 0.0, 0.0}, .centroid = {0.0, 0.0, 0.0}};
+
+                // Get the connected cells
+                PetscInt numberNeighborCells;
+                const PetscInt* neighborCells;
+                DMPlexGetSupportSize(subDomain->GetDM(), face, &numberNeighborCells) >> checkError;
+                DMPlexGetSupport(subDomain->GetDM(), face, &neighborCells) >> checkError;
+
+                for (PetscInt n = 0; n < numberNeighborCells; n++) {
+                    AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n], maxCellDepth);
+                }
+
+                // Add this geometry to the BoundaryFVFaceGeom
+                PetscFVFaceGeom* fg;
+                DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
+
+                // The normal should be pointing away from the other phase into the boundary solver domain.  The current fg support points from cell[0] -> cell[1]
+                PetscInt referenceCell = neighborCells[0] == cell ? neighborCells[1] : neighborCells[0];
+                // If the neighborCells[0] is in the boundary (this cell), flip the normal
+                if (neighborCells[0] == cell) {
+                    for (PetscInt d = 0; d < dim; d++) {
+                        geom.normal[d] -= fg->normal[d];
+                        geom.areas[d] -= fg->normal[d];
+                        geom.centroid[d] += fg->centroid[d];
+                    }
+                } else {
+                    for (PetscInt d = 0; d < dim; d++) {
+                        geom.normal[d] += fg->normal[d];
+                        geom.areas[d] += fg->normal[d];
+                        geom.centroid[d] += fg->centroid[d];
+                    }
+                }
+
+                // compute the normal
+                utilities::MathUtilities::NormVector(dim, geom.normal);
+
+                // remove the boundary cell from the stencil
+                stencilSet.erase(cell);
+                stencilSet.erase(referenceCell);
+
+                // Add the stencil gradient
+                std::vector<PetscInt> stencil{referenceCell};
+                stencil.insert(stencil.end(), stencilSet.begin(), stencilSet.end());
+                CreateGradientStencil(cell, geom, stencil, cellDM, cellGeomArray);
+            }
         }
-
-        // normalize the distributionWeights
-        utilities::MathUtilities::ScaleVector(distributionWeights.size(), distributionWeights.data(), 1.0 / distributionWeightSum);
-
-        // Compute gradients
-        if ((PetscInt)stencil.size() > maxFaces) {
-            maxFaces = (PetscInt)stencil.size();
-            PetscFVLeastSquaresSetMaxFaces(gradientCalculator, maxFaces) >> checkError;
-        }
-        PetscFVComputeGradient(gradientCalculator, (PetscInt)stencil.size(), &dx[0], &gradientWeights[0]) >> checkError;
-
-        // Store the stencil
-        gradientStencils.emplace_back(GradientStencil{
-            .geometry = geom, .stencil = stencil, .gradientWeights = gradientWeights, .stencilSize = (PetscInt)stencil.size(), .distributionWeights = distributionWeights, .volumes = volume});
-
-        maximumStencilSize = PetscMax(maximumStencilSize, (PetscInt)stencil.size());
     }
     RestoreRange(cellRange);
 
@@ -289,6 +328,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
     // Extract the cell geometry, and the dm that holds the information
     auto dm = subDomain->GetDM();
     auto auxDM = subDomain->GetAuxDM();
+    auto dim = subDomain->GetDimensions();
     DM dmCell;
     const PetscScalar* cellGeomArray;
     ierr = VecGetDM(cellGeomVec, &dmCell);
@@ -320,15 +360,8 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
     std::vector<PetscInt> inputOffsets(subDomain->GetFields().size(), -1);
     std::vector<PetscInt> auxOffsets(subDomain->GetFields(domain::FieldLocation::AUX).size(), -1);
 
-    // check to see if there is a ghost label
-    DMLabel ghostLabel;
-    DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
     // Get the region to march over
-    solver::Range cellRange;
-    GetCellRange(cellRange);
-    if (cellRange.end > cellRange.start) {
-        PetscInt dim = subDomain->GetDimensions();
-
+    if (!gradientStencils.empty()) {
         // Get pointers to sol, aux, and f vectors
         const PetscScalar *locXArray, *locAuxArray = nullptr;
         PetscScalar* locFArray;
@@ -362,33 +395,19 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
             auto auxOffsetsPointer = auxOffsets.data();
 
             // March over each cell in this region
-            PetscInt cOffset = 0;  // Keep track of the cell offset
-            for (PetscInt c = cellRange.start; c < cellRange.end; ++c, cOffset++) {
-                // if there is a cell array, use it, otherwise it is just c
-                const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-
-                // make sure we are not working on a ghost cell
-                PetscInt ghost = -1;
-                if (ghostLabel) {
-                    DMLabelGetValue(ghostLabel, cell, &ghost);
-                }
-                if (ghost >= 0) {
-                    continue;
-                }
-
+            for (const auto& stencilInfo : gradientStencils) {
                 // Get the cell geom
                 const PetscFVCellGeom* cg;
-                DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cg) >> checkError;
+                DMPlexPointLocalRead(dmCell, stencilInfo.cellId, cellGeomArray, &cg) >> checkError;
 
                 // Get pointers to the area of interest
                 const PetscScalar *solPt, *auxPt = nullptr;
-                DMPlexPointLocalRead(dm, cell, locXArray, &solPt) >> checkError;
+                DMPlexPointLocalRead(dm, stencilInfo.cellId, locXArray, &solPt) >> checkError;
                 if (auxDM) {
-                    DMPlexPointLocalRead(auxDM, cell, locAuxArray, &auxPt) >> checkError;
+                    DMPlexPointLocalRead(auxDM, stencilInfo.cellId, locAuxArray, &auxPt) >> checkError;
                 }
 
                 // Get each of the stencil pts
-                const auto& stencilInfo = gradientStencils[cOffset];
                 for (PetscInt p = 0; p < stencilInfo.stencilSize; p++) {
                     DMPlexPointLocalRead(dm, stencilInfo.stencil[p], locXArray, &inputStencilValues[p]) >> checkError;
                     if (auxDM) {
@@ -400,7 +419,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
                 switch (function.type) {
                     case BoundarySourceType::Point:
                         PetscScalar* rhs;
-                        DMPlexPointLocalRef(dm, cell, locFArray, &rhs) >> checkError;
+                        DMPlexPointLocalRef(dm, stencilInfo.cellId, locFArray, &rhs) >> checkError;
 
                         /*PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell,
                                            const PetscInt uOff[], const PetscScalar* boundaryValues, const PetscScalar* stencilValues[],
@@ -460,6 +479,36 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
                         }
 
                         break;
+                    case BoundarySourceType::Flux:
+                        // zero out the distributedSourceScratch
+                        PetscArrayzero(distributedSourceScratch.data(), (PetscInt)distributedSourceScratch.size()) >> checkError;
+
+                        ierr = function.function(dim,
+                                                 &stencilInfo.geometry,
+                                                 cg,
+                                                 inputOffsetsPointer,
+                                                 solPt,
+                                                 inputStencilValues.data(),
+                                                 auxOffsetsPointer,
+                                                 auxPt,
+                                                 auxStencilValues.data(),
+                                                 stencilInfo.stencilSize,
+                                                 stencilInfo.stencil.data(),
+                                                 stencilInfo.gradientWeights.data(),
+                                                 sourceOffsetsPointer,
+                                                 distributedSourceScratch.data(),
+                                                 function.context);
+
+                        // the first cell in the stencil is always the neighbor cell
+                        // Get the point in the rhs for this point.  It might be ghost but that is ok, the values are added together later
+                        DMPlexPointLocalRef(dm, stencilInfo.stencil.front(), locFArray, &rhs) >> checkError;
+
+                        // Now over the entire rhs, the function should have added the values correctly using the sourceOffsetsPointer
+                        for (PetscInt sc = 0; sc < scratchSize; sc++) {
+                            rhs[sc] += distributedSourceScratch[sc] / stencilInfo.volumes.front();
+                        }
+
+                        break;
                 }
 
                 CHKERRQ(ierr);
@@ -479,8 +528,6 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
         // clean up the geom
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     }
-
-    RestoreRange(cellRange);
 
     PetscFunctionReturn(0);
 }
@@ -557,20 +604,60 @@ void ablate::boundarySolver::BoundarySolver::ComputeGradientAlongNormal(PetscInt
     }
 }
 
-const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom& ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {
-    solver::Range cellRange;
-    GetCellRange(cellRange);
+std::vector<ablate::boundarySolver::BoundarySolver::GradientStencil> ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {
+    std::vector<ablate::boundarySolver::BoundarySolver::GradientStencil> searchResult;
+    std::copy_if(gradientStencils.begin(), gradientStencils.end(), std::back_inserter(searchResult), [cell](const auto& stencil) { return stencil.cellId == cell; });
+    return searchResult;
+}
 
-    // Locate the index
-    PetscInt location;
-    ISLocate(cellRange.is, cell, &location) >> checkError;
-    RestoreRange(cellRange);
+void ablate::boundarySolver::BoundarySolver::CreateGradientStencil(PetscInt cellId, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom& geometry, const std::vector<PetscInt>& stencil,
+                                                                   DM cellDM, const PetscScalar* cellGeomArray) {
+    // Compute the weights for the stencil
+    auto newStencil = GradientStencil{.cellId = cellId, .geometry = std::move(geometry), .stencil = stencil, .stencilSize = (PetscInt)stencil.size()};
 
-    return gradientStencils[location].geometry;
+    // resize stencil weights
+    auto dim = subDomain->GetDimensions();
+    newStencil.gradientWeights.resize(newStencil.stencilSize * dim, 0.0);
+    // Use a Reciprocal distance interpolate for the distribution weights.  This can be abstracted away in the future.
+    newStencil.distributionWeights.resize(newStencil.stencilSize * dim, 0.0);
+    newStencil.volumes.resize(newStencil.stencilSize, 0.0);
+
+    // Size up the dx for scratch space
+    std::vector<PetscScalar> dx(newStencil.stencilSize * dim);
+
+    // add in each cell contribution
+    PetscScalar distributionWeightSum = 0.0;
+    for (std::size_t n = 0; n < stencil.size(); n++) {
+        PetscFVCellGeom* cg;
+        DMPlexPointLocalRead(cellDM, stencil[n], cellGeomArray, &cg);
+        for (PetscInt d = 0; d < dim; ++d) {
+            dx[n * dim + d] = cg->centroid[d] - newStencil.geometry.centroid[d];
+            newStencil.distributionWeights[n] += PetscSqr(cg->centroid[d] - newStencil.geometry.centroid[d]);
+        }
+        newStencil.distributionWeights[n] = 1.0 / PetscSqrtScalar(newStencil.distributionWeights[n]);
+        distributionWeightSum += newStencil.distributionWeights[n];
+
+        // store the volume
+        newStencil.volumes[n] = cg->volume;
+    }
+
+    // normalize the distributionWeights
+    utilities::MathUtilities::ScaleVector(newStencil.distributionWeights.size(), newStencil.distributionWeights.data(), 1.0 / distributionWeightSum);
+
+    // Reset the least squares calculator if needed
+    if ((PetscInt)stencil.size() > maximumStencilSize) {
+        maximumStencilSize = (PetscInt)stencil.size();
+        PetscFVLeastSquaresSetMaxFaces(gradientCalculator, maximumStencilSize) >> checkError;
+    }
+    PetscFVComputeGradient(gradientCalculator, (PetscInt)stencil.size(), dx.data(), newStencil.gradientWeights.data()) >> checkError;
+
+    // Store the stencil
+    gradientStencils.push_back(std::move(newStencil));
 }
 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::boundarySolver::BoundarySolver, "A solver used to compute boundary values in boundary cells", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "the region describing the faces between the boundary and field"),
          ARG(std::vector<ablate::boundarySolver::BoundaryProcess>, "processes", "a list of boundary processes"),
-         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"));
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
+         OPT(bool, "mergeFaces", "determine if multiple faces should be merged for a single cell, default if false"));

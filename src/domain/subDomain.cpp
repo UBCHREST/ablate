@@ -1,5 +1,6 @@
 #include "subDomain.hpp"
 #include <utilities/petscError.hpp>
+#include "utilities/mpiError.hpp"
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
     : domain(domainIn),
@@ -220,6 +221,17 @@ DM ablate::domain::SubDomain::GetSubDM() {
             DMAddField(subDM, nullptr, petscField) >> checkError;
         }
 
+        // add the names to each of the components in the dm section
+        PetscSection section;
+        DMGetLocalSection(subDM, &section) >> checkError;
+        for (const auto& field : GetFields()) {
+            if (field.numberComponents > 1) {
+                for (PetscInt c = 0; c < field.numberComponents; c++) {
+                    PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> checkError;
+                }
+            }
+        }
+
         DMCreateDS(subDM) >> checkError;
 
         // Copy over options
@@ -282,6 +294,17 @@ DM ablate::domain::SubDomain::GetSubAuxDM() {
     for (auto& fieldInfo : GetFields(FieldLocation::AUX)) {
         auto petscField = GetPetscFieldObject(fieldInfo);
         DMAddField(subAuxDM, nullptr, petscField) >> checkError;
+    }
+
+    // add the names to each of the components in the dm section
+    PetscSection section;
+    DMGetLocalSection(subAuxDM, &section) >> checkError;
+    for (const auto& field : GetFields(FieldLocation::AUX)) {
+        if (field.numberComponents > 1) {
+            for (PetscInt c = 0; c < field.numberComponents; c++) {
+                PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> checkError;
+            }
+        }
     }
 
     return subAuxDM;
@@ -428,7 +451,10 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     if (!label) {
         return true;
     }
-    bool inside = false;
+
+    // Compute the size of region inside the subDomain label
+    PetscInt size;
+
     // Check to see if this region is inside of the dsLabel
     DMLabel regionLabel;
     DMGetLabel(domain.GetDM(), region.GetName().c_str(), &regionLabel) >> checkError;
@@ -444,22 +470,25 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     IS regionIS;
     DMLabelGetStratumIS(regionLabel, region.GetValue(), &regionIS) >> checkError;
 
-    // Check for an overlap
-    IS overlapIS;
-    ISIntersect(dsLabelIS, regionIS, &overlapIS) >> checkError;
+    // each rank must check separately and then share the result
+    if (regionIS) {
+        // Check for an overlap
+        IS overlapIS;
+        ISIntersect(dsLabelIS, regionIS, &overlapIS) >> checkError;
 
-    // determine if there is an overlap
-    if (overlapIS) {
-        PetscInt size;
-        ISGetSize(overlapIS, &size) >> checkError;
-        if (size) {
-            inside = true;
+        // determine if there is an overlap
+        if (overlapIS) {
+            ISGetSize(overlapIS, &size) >> checkError;
+            ISDestroy(&overlapIS) >> checkError;
         }
-        ISDestroy(&overlapIS) >> checkError;
+        ISDestroy(&regionIS) >> checkError;
     }
-    ISDestroy(&regionIS) >> checkError;
     ISDestroy(&dsLabelIS) >> checkError;
-    return inside;
+
+    // Take the sum
+    PetscInt globalSize;
+    MPI_Allreduce(&size, &globalSize, 1, MPIU_INT, MPI_SUM, GetComm()) >> checkMpiError;
+    return globalSize > 0;
 }
 
 PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const ablate::domain::Field& field) {
