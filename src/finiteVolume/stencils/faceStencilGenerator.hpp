@@ -14,7 +14,7 @@ class FaceStencilGenerator {
    public:
     virtual ~FaceStencilGenerator() = default;
 
-    virtual void Generate(PetscInt face, Stencil& stencil, const domain::SubDomain& subDomain,  DM cellDM, const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray) =0;
+    virtual void Generate(PetscInt face, Stencil& stencil, const domain::SubDomain& subDomain, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray) = 0;
 };
 
 }  // namespace ablate::finiteVolume::stencil

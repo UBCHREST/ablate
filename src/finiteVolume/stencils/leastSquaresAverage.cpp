@@ -28,28 +28,41 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face,
     ComputeNeighborCellStencil(cells[0], leftStencil, subDomain, cellDM, cellGeomArray, faceDM, faceGeomArray);
 
     Stencil rightStencil;
-    if(numCells > 1)
-    ComputeNeighborCellStencil(cells[1], rightStencil, subDomain, cellDM, cellGeomArray, faceDM, faceGeomArray);
+    if (numCells > 1) ComputeNeighborCellStencil(cells[1], rightStencil, subDomain, cellDM, cellGeomArray, faceDM, faceGeomArray);
 
     // Merge the stencils together
-    PetscInt totalStencilSize = (leftStencil.stencilSize ? 1 : 0) + (rightStencil.stencilSize ? 1 : 0);
-    if (leftStencil.stencilSize) {
-        ablate::utilities::MathUtilities::ScaleVector(leftStencil.weights.size(), leftStencil.weights.data(), 1.0 / totalStencilSize);
-        ablate::utilities::MathUtilities::ScaleVector(leftStencil.gradientWeights.size(), leftStencil.gradientWeights.data(), 1.0 / totalStencilSize);
-
-        stencil.stencil.insert(stencil.stencil.end(), leftStencil.stencil.begin(), leftStencil.stencil.end());
-        stencil.weights.insert(stencil.weights.end(), leftStencil.weights.begin(), leftStencil.weights.end());
-        stencil.gradientWeights.insert(stencil.gradientWeights.end(), leftStencil.gradientWeights.begin(), leftStencil.gradientWeights.end());
-    }
-    if (rightStencil.stencilSize) {
-        ablate::utilities::MathUtilities::ScaleVector(rightStencil.weights.size(), rightStencil.weights.data(), 1.0 / totalStencilSize);
-        ablate::utilities::MathUtilities::ScaleVector(rightStencil.gradientWeights.size(), rightStencil.gradientWeights.data(), 1.0 / totalStencilSize);
-
-        stencil.stencil.insert(stencil.stencil.end(), rightStencil.stencil.begin(), rightStencil.stencil.end());
-        stencil.weights.insert(stencil.weights.end(), rightStencil.weights.begin(), rightStencil.weights.end());
-        stencil.gradientWeights.insert(stencil.gradientWeights.end(), rightStencil.gradientWeights.begin(), rightStencil.gradientWeights.end());
-    }
+    stencil.stencil = leftStencil.stencil;
+    stencil.stencil.insert(stencil.stencil.end(), rightStencil.stencil.begin(), rightStencil.stencil.end());
+    std::sort(stencil.stencil.begin(), stencil.stencil.end());
+    stencil.stencil.erase(std::unique(stencil.stencil.begin(), stencil.stencil.end()), stencil.stencil.end());
     stencil.stencilSize = stencil.stencil.size();
+
+    // resize the weight arrays and init to zero
+    stencil.weights.resize(stencil.stencilSize, 0.0);
+    stencil.gradientWeights.resize(stencil.stencilSize * dim, 0.0);
+
+    // add the contributions for each cell
+    PetscInt numberStencils = (leftStencil.stencilSize ? 1 : 0) + (rightStencil.stencilSize ? 1 : 0);
+
+    for (std::size_t i = 0; i < leftStencil.stencil.size(); i++) {
+        auto stencilIt = std::find(stencil.stencil.begin(), stencil.stencil.end(), leftStencil.stencil[i]);
+        auto stencilLocation = std::distance(stencil.stencil.begin(), stencilIt);
+
+        stencil.weights[stencilLocation] += leftStencil.weights[i] / numberStencils;
+        for (PetscInt d = 0; d < dim; d++) {
+            stencil.gradientWeights[stencilLocation * dim + d] += leftStencil.gradientWeights[i * dim + d] / numberStencils;
+        }
+    }
+
+    for (std::size_t i = 0; i < rightStencil.stencil.size(); i++) {
+        auto stencilIt = std::find(stencil.stencil.begin(), stencil.stencil.end(), rightStencil.stencil[i]);
+        auto stencilLocation = std::distance(stencil.stencil.begin(), stencilIt);
+
+        stencil.weights[stencilLocation] += rightStencil.weights[i] / numberStencils;
+        for (PetscInt d = 0; d < dim; d++) {
+            stencil.gradientWeights[stencilLocation * dim + d] += rightStencil.gradientWeights[i * dim + d] / numberStencils;
+        }
+    }
 }
 
 void ablate::finiteVolume::stencil::LeastSquaresAverage::ComputeNeighborCellStencil(PetscInt cell, ablate::finiteVolume::stencil::Stencil& stencil, const ablate::domain::SubDomain& subDomain,

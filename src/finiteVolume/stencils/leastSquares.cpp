@@ -2,13 +2,13 @@
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscError.hpp"
 
-void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate::finiteVolume::stencil::Stencil& stencil, const domain::SubDomain& subDomain,  DM cellDM, const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray) {
-
+void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate::finiteVolume::stencil::Stencil& stencil, const domain::SubDomain& subDomain, DM cellDM,
+                                                           const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray) {
     auto dm = subDomain.GetDM();
     auto dim = subDomain.GetDimensions();
 
     // compute the grad calculator if needed
-    if (!gradientCalculator){
+    if (!gradientCalculator) {
         PetscFVCreate(PETSC_COMM_SELF, &gradientCalculator) >> checkError;
         // Set least squares as the default type
         PetscFVSetType(gradientCalculator, PETSCFVLEASTSQUARES) >> checkError;
@@ -16,7 +16,6 @@ void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate
         PetscFVSetFromOptions(gradientCalculator) >> checkError;
         PetscFVSetNumComponents(gradientCalculator, 1) >> checkError;
         PetscFVSetSpatialDimension(gradientCalculator, dim) >> checkError;
-
     }
     // get the face geom
     PetscFVFaceGeom* fg;
@@ -122,7 +121,7 @@ void ablate::finiteVolume::stencil::LeastSquares::Generate(PetscInt face, ablate
 }
 
 ablate::finiteVolume::stencil::LeastSquares::~LeastSquares() {
-    if(gradientCalculator) {
+    if (gradientCalculator) {
         PetscFVDestroy(&gradientCalculator);
     }
 }

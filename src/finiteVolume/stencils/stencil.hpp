@@ -7,7 +7,7 @@
 namespace ablate::finiteVolume::stencil {
 
 /**
-     * struct to hold the gradient stencil for the boundary
+ * struct to hold the gradient stencil for the boundary
  */
 struct Stencil {
     /** store the stencil size for easy access */
@@ -20,5 +20,5 @@ struct Stencil {
     std::vector<PetscScalar> gradientWeights;
 };
 
-}
+}  // namespace ablate::finiteVolume::stencil
 #endif  // ABLATELIBRARY_STENCIL_HPP

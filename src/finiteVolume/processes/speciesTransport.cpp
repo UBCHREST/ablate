@@ -74,9 +74,9 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::UpdateAuxMassF
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[],
-                                                                                      const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
-                                                                                      const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                      const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
+                                                                                      const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;
@@ -119,9 +119,9 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnerg
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[],
-                                                                                       const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
-                                                                                       const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                       const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
+                                                                                       const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;

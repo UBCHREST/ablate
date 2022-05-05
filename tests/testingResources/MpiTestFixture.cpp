@@ -207,6 +207,10 @@ void testingResources::MpiTestFixture::CompareOutputFile(const std::string& expe
                         // is anything of length
                         ASSERT_TRUE(!actualValueString.empty()) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                         break;
+                    case 'z':
+                        // should be close to zer
+                        ASSERT_LT(std::abs(std::stod(actualValueString)), 1.0E-13) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
+                        break;
                     case 'n': {
                         // the value is near percent difference < 1E-3
                         auto percentDifference = PetscAbs((std::stod(actualValueString) - expectedValue) / expectedValue);

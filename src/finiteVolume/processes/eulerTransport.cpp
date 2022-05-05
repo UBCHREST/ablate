@@ -241,9 +241,9 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
     flow.RestoreRange(cellRange);
     return dtMin;
 }
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[],
-                                                                              const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
-                                                                              const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+                                                                              const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                              const PetscScalar gradAux[], PetscScalar flux[], void* ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int T = 0;
