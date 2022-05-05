@@ -12,7 +12,11 @@
 
 ablate::radiation::RadiationSolver::RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, int rayNumber,
                                                     std::shared_ptr<parameters::Parameters> options)
-    : CellSolver(std::move(solverId), std::move(region),  std::move(options)) {}
+    : CellSolver(std::move(solverId), std::move(region),  std::move(options)) {
+    raynumber = rayNumber;
+    nTheta = raynumber; //The DEFAULT number of angles to solve with, should be given by user input probably?
+    nPhi = 3;//2*rayNumber; //The DEFAULT number of angles to solve with, should be given by user input
+}
 
 ablate::radiation::RadiationSolver::~RadiationSolver() {
 }
@@ -515,13 +519,26 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                                                                       Vec rhs) {  // main interface for integrating in time Inputs: local vector, x vector (current solution), local f vector
     PetscFunctionBeginUser;                                                           // gets fields out of the main vector
 
+    /// Get setup things for the position vector of the current cell index
+    /*const auto& errorField = subDomain->GetField("error");
+    PetscScalar* errorArray = nullptr;
+    const PetscScalar* cellGeomArray;  // Declare the variables that will contain the geometry of the cells
+    subDomain->GetFieldLocalVector(errorField, time, &eis, &errors, &edm);
+    VecGetArray(errors,&errorArray);
+    PetscReal minCellRadius;
+    DM cellDM;
+    VecGetDM(cellGeomVec, &cellDM);
+    DMPlexGetGeometryFVM(cellDM, nullptr, &cellGeomVec, &minCellRadius);  // Obtain the geometric information about the cells in the DM?
+    VecGetArrayRead(cellGeomVec, &cellGeomArray);
+    PetscFVCellGeom* cellGeom;*/
+
     /// Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable
     const PetscScalar* rhsArray;
     VecGetArrayRead(rhs, &rhsArray);
 
     const auto& eulerFieldInfo = subDomain->GetField("euler");
 
-    /// Get the temperature of the current cell (in order to compute the losses)
+    /// Get the temperature field
     // For ABLATE implementation, get temperature based on this function
     const auto& temperatureField = subDomain->GetField("temperature");
     PetscScalar* temperatureArray = nullptr;
@@ -562,9 +579,9 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                                                                         // TODO: Make intensity boundary conditions be set from boundary label
                         ///For debugging purposes
                         if (theta > pi / 2) {                        // If sitting on the bottom boundary (everything on the lower half of the angles)
-                            rayIntensity = FlameIntensity(1, 700);  // Set the initial ray intensity to the bottom wall intensity
+                            rayIntensity = FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity
                         } else if (theta < pi / 2) {                 // If sitting on the top boundary
-                            rayIntensity = FlameIntensity(1, 1300);   // Set the initial ray intensity to the top wall intensity
+                            rayIntensity = FlameIntensity(1, 700);   // Set the initial ray intensity to the top wall intensity
                         }
                     }else {
                         /// The ray intensity changes as a function of the environment at this point
@@ -585,6 +602,14 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (4 * sbc * *temperature * *temperature * *temperature * *temperature - intensity);
 
+        /*PetscReal actualResult = -kappa * (4 * sbc * *temperature * *temperature * *temperature * *temperature - intensity);
+        DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);
+        PetscScalar analyticalResult = ablate::radiation::RadiationSolver::ReallySolveParallelPlates(cellGeom->centroid[2]);
+        PetscScalar* errorValues;
+        DMPlexPointLocalRef(edm, iCell, errorArray, &errorValues);
+        double error = 100*(analyticalResult-actualResult)/analyticalResult;
+        errorValues[0] = error;*/
+
         //Total energy gain of the current cell depends on absorptivity at the current cell
         // PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
         ncells++;
@@ -592,7 +617,11 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     }
     // Cleanup
     VecRestoreArrayRead(rhs, &rhsArray);
+    //VecRestoreArray(errors, &errorArray);
     VecRestoreArray(loctemp, &temperatureArray);
+    //subDomain->RestoreFieldLocalVector(errorField, &eis, &errors, &edm);
+    subDomain->RestoreFieldLocalVector(temperatureField, &vis, &loctemp, &vdm);
+    //VecView(rhs, PETSC_VIEWER_STDOUT_WORLD);
     PetscFunctionReturn(0);
 }
 

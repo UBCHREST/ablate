@@ -13,6 +13,8 @@ namespace ablate::radiation {
 
 class RadiationSolver : public solver::CellSolver, public solver::RHSFunction {  //Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
    public:
+    PetscInt raynumber;
+
     /**
      * Boundary information.
      */
@@ -81,15 +83,17 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     DM vdm; //Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
     Vec loctemp;
     IS vis;
+    Vec errors;
+    DM edm;
+    IS eis;
     std::set<PetscInt> stencilSet;
 
     PetscInt dim; //Number of dimensions that the domain exists within
-    PetscInt rayNumber;
 
     PetscInt nSteps = 100; //number of steps that each ray will go through //This won't be used
     PetscReal h = 0.02; //This is the DEFAULT step size which should be set by the user input
-    PetscInt nTheta = rayNumber; //The DEFAULT number of angles to solve with, should be given by user input probably?
-    PetscInt nPhi = 1;//2*rayNumber; //The DEFAULT number of angles to solve with, should be given by user input
+    PetscInt nTheta; //The DEFAULT number of angles to solve with, should be given by user input probably?
+    PetscInt nPhi;//2*rayNumber; //The DEFAULT number of angles to solve with, should be given by user input
 
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays;//(std::vector<std::vector<std::vector<PetscInt>>>()); //Indices: Cell, angle (theta), angle(phi), space steps
     //PetscReal radGain;
