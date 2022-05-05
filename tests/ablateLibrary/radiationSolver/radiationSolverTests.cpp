@@ -19,6 +19,7 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
+#include "convergenceTester.hpp"
 
 struct RadiationTestParameters {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -40,10 +41,14 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         // initialize petsc and mpi
         PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
 
+        // keep track of history
+        testingResources::ConvergenceTester l2History("l2");
+
         auto eos = std::make_shared<ablate::eos::PerfectGas>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"gamma", "1.4"}}));
 
         // determine required fields for radiation, this will include euler and temperature
-        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos)};
+        std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos),
+            std::make_shared<ablate::domain::FieldDescription>("error","error",eos->GetSpecies(),ablate::domain::FieldLocation::AUX, ablate::domain::FieldType::FVM)};
 
         auto domain =
             std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
@@ -70,9 +75,9 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         // create a time stepper
         auto timeStepper = ablate::solver::TimeStepper("timeStepper", domain, {{"ts_max_steps", "0"}}, {}, {initialConditionEuler});
 
-        // Create an instance of the radiation
+        // Create an instance of radiation
         auto radiation =
-            std::make_shared<ablate::radiation::RadiationSolver>("radiation",ablate::domain::Region::ENTIREDOMAIN,15,nullptr);
+            std::make_shared<ablate::radiation::RadiationSolver>("radiation",ablate::domain::Region::ENTIREDOMAIN,20,nullptr);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
@@ -110,12 +115,22 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             const PetscScalar* rhsArray;
             VecGetArrayRead(rhs, &rhsArray) >> testErrorChecker;
 
+            ///Declare L2 norm variables
+            std::vector<PetscReal> l2Norm; //Not sure how to declare or where
+            PetscReal l2sum;
+            double N = 1; //Number of cells in the domain
+            std::set<PetscInt> stencilSet;
+
             ablate::solver::Range cellRange;
             radiation->GetCellRange(cellRange);
             // March over each cell
             for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
                 // if there is a cell array, use it, otherwise it is just c
                 const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+                stencilSet.insert(cell);
+            }
+
+            for (auto cell : stencilSet) {
 
                 // Get the cell center
                 PetscFVCellGeom* cellGeom;
@@ -133,10 +148,17 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                 //if (cellGeom->centroid[1] < 0.05 && cellGeom->centroid[1] > -0.05 && cellGeom->centroid[0] < 0.05 && cellGeom->centroid[0] > -0.05) {
                     //ASSERT_NEAR(analyticalResult, actualResult, 3E4)
                     //    << "The actual result should be near the expected at cell " << cell << " [" << cellGeom->centroid[0] << ", " << cellGeom->centroid[1] << ", " << cellGeom->centroid[2] << "]";
-                    double error = 100*(analyticalResult-actualResult)/analyticalResult;
-                    PetscPrintf(MPI_COMM_WORLD,"Radiation %% Error: %f, Height: %f\n",error,cellGeom->centroid[2]);
+                    ///Summing of the L2 norm values
+                    l2sum += (analyticalResult-actualResult)*(analyticalResult-actualResult);
+
+                    //PetscPrintf(MPI_COMM_WORLD,"Radiation %% Error: %f, Height: %f\n",error,cellGeom->centroid[2]);
                 //}
             }
+            ///Add this L2 norm to the multicase L2 norm vector
+            N = stencilSet.size();
+
+            PetscPrintf(MPI_COMM_WORLD,"L2 Norm: %f\n",sqrt(l2sum)/N);
+            l2Norm.push_back(sqrt(l2sum)/N); //L2 norm equation
 
             VecRestoreArrayRead(rhs, &rhsArray) >> testErrorChecker;
             VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
@@ -149,7 +171,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
 INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
                          testing::Values((RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature", .nproc = 1},
-                                                                   .meshFaces = { 3 , 3 , 10},
+                                                                   .meshFaces = { 3 , 3 , 5},
                                                                    .meshStart = { -0.25 , -0.25 , -0.0105},
                                                                    .meshEnd = { 0.25 , 0.25 , 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("z < 0 ? (-6.349E6*z*z + 2000.0) : (-1.179E7*z*z + 2000.0)"),
