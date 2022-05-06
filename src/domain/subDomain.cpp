@@ -356,7 +356,7 @@ void ablate::domain::SubDomain::CopyGlobalToSubVector(DM sDM, DM gDM, Vec subVec
 
     // March over the global section
     PetscSection section;
-    DMGetGlobalSection(sDM, &section) >> checkError;
+    DMGetLocalSection(sDM, &section) >> checkError;
 
     PetscInt pStart, pEnd;
     PetscSectionGetChart(section, &pStart, &pEnd) >> checkError;

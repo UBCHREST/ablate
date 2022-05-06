@@ -4,7 +4,9 @@
 #include "finiteVolume/stencils/leastSquaresAverage.hpp"
 #include "utilities/mathUtilities.hpp"
 
-ablate::finiteVolume::FaceInterpolant::FaceInterpolant(const std::shared_ptr<ablate::domain::SubDomain>& subDomain, Vec faceGeomVec, Vec cellGeomVec) : subDomain(subDomain) {
+ablate::finiteVolume::FaceInterpolant::FaceInterpolant(const std::shared_ptr<ablate::domain::SubDomain>& subDomain, const std::shared_ptr<domain::Region> solverRegion, Vec faceGeomVec,
+                                                       Vec cellGeomVec)
+    : subDomain(subDomain) {
     auto ds = subDomain->GetDiscreteSystem();
     PetscDSGetTotalDimension(ds, &solTotalSize) >> checkError;
     CreateFaceDm(solTotalSize, subDomain->GetDM(), faceSolutionDm);
@@ -62,7 +64,7 @@ ablate::finiteVolume::FaceInterpolant::FaceInterpolant(const std::shared_ptr<abl
         DMPlexGetTreeChildren(subDomain->GetDM(), face, &nchild, nullptr) >> checkError;
         if (ghost >= 0 || nsupp > 2 || nchild > 0) continue;
 
-        faceStencilGenerator->Generate(face, stencil, *subDomain, cellDM, cellGeomArray, faceDM, faceGeomArray);
+        faceStencilGenerator->Generate(face, stencil, *subDomain, solverRegion, cellDM, cellGeomArray, faceDM, faceGeomArray);
     }
 
     // clean up the geom

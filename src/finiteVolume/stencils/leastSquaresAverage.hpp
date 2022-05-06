@@ -16,13 +16,15 @@ class LeastSquaresAverage : public FaceStencilGenerator {
     PetscFV gradientCalculator = nullptr;
 
    public:
-    void Generate(PetscInt face, Stencil& stencil, const domain::SubDomain& subDomain, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray) override;
+    void Generate(PetscInt face, Stencil& stencil, const domain::SubDomain& subDomain, const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
+                  const PetscScalar* faceGeomArray) override;
     ~LeastSquaresAverage() override;
 
     /**
      * helper function to compute left or right stencil
      */
-    void ComputeNeighborCellStencil(PetscInt cell, Stencil& stencil, const domain::SubDomain& subDomain, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray);
+    void ComputeNeighborCellStencil(PetscInt cell, Stencil& stencil, const domain::SubDomain& subDomain, const std::shared_ptr<domain::Region> solverRegion, DM cellDM,
+                                    const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray);
 };
 
 }  // namespace ablate::finiteVolume::stencil

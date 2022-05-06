@@ -2,8 +2,9 @@
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscError.hpp"
 
-void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face, ablate::finiteVolume::stencil::Stencil& stencil, const domain::SubDomain& subDomain, DM cellDM,
-                                                                  const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray) {
+void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face, ablate::finiteVolume::stencil::Stencil& stencil, const domain::SubDomain& subDomain,
+                                                                  const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
+                                                                  const PetscScalar* faceGeomArray) {
     auto dm = subDomain.GetDM();
     auto dim = subDomain.GetDimensions();
 
@@ -25,10 +26,10 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face,
 
     // Create the stencil for the left and right cells first
     Stencil leftStencil;
-    ComputeNeighborCellStencil(cells[0], leftStencil, subDomain, cellDM, cellGeomArray, faceDM, faceGeomArray);
+    ComputeNeighborCellStencil(cells[0], leftStencil, subDomain, solverRegion, cellDM, cellGeomArray, faceDM, faceGeomArray);
 
     Stencil rightStencil;
-    if (numCells > 1) ComputeNeighborCellStencil(cells[1], rightStencil, subDomain, cellDM, cellGeomArray, faceDM, faceGeomArray);
+    if (numCells > 1) ComputeNeighborCellStencil(cells[1], rightStencil, subDomain, solverRegion, cellDM, cellGeomArray, faceDM, faceGeomArray);
 
     // Merge the stencils together
     stencil.stencil = leftStencil.stencil;
@@ -66,7 +67,8 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::Generate(PetscInt face,
 }
 
 void ablate::finiteVolume::stencil::LeastSquaresAverage::ComputeNeighborCellStencil(PetscInt cell, ablate::finiteVolume::stencil::Stencil& stencil, const ablate::domain::SubDomain& subDomain,
-                                                                                    DM cellDM, const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray) {
+                                                                                    const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
+                                                                                    const PetscScalar* faceGeomArray) {
     // only add the cells if they are in the ds
     if (!subDomain.InRegion(cell)) {
         return;
@@ -98,7 +100,7 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::ComputeNeighborCellSten
         // determine which one is the neighbor
         PetscInt neighborCell = neighborCells[0] == cell ? neighborCells[1] : neighborCells[0];
 
-        if (subDomain.InRegion(neighborCell)) {
+        if (subDomain.InRegion(neighborCell) && domain::Region::InRegion(solverRegion, dm, cellFaces[f])) {
             stencil.stencil.push_back(neighborCell);
         }
     }

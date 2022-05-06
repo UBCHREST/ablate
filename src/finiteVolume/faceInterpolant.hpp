@@ -69,7 +69,7 @@ class FaceInterpolant {
      * @param faceGeomVec
      * @param cellGeomVec
      */
-    FaceInterpolant(const std::shared_ptr<ablate::domain::SubDomain>& subDomain, Vec faceGeomVec, Vec cellGeomVec);
+    FaceInterpolant(const std::shared_ptr<ablate::domain::SubDomain>& subDomain, const std::shared_ptr<domain::Region> solverRegion, Vec faceGeomVec, Vec cellGeomVec);
     ~FaceInterpolant();
 
     /**

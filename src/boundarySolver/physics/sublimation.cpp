@@ -248,15 +248,15 @@ void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::
         PetscScalar *densityYi;
         DMPlexPointGlobalFieldRef(dm, cell, densityYiFieldInfo.id, solutionArray, &densityYi) >> checkError;
         PetscScalar *yi;
-        DMPlexPointGlobalFieldRef(auxDm, cell, yiFieldInfo.id, auxArray, &yi) >> checkError;
+        DMPlexPointLocalFieldRead(auxDm, cell, yiFieldInfo.id, auxArray, &yi) >> checkError;
         PetscFVCellGeom *cellGeom;
         DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> checkError;
 
+        // compute the mass fractions on the boundary
+        massFractionsFunction(dim, time, cellGeom->centroid, yiFieldInfo.numberComponents, yi, massFractionsContext);
+
         // Only update if in the global vector
         if (euler) {
-            // compute the mass fractions on the boundary
-            massFractionsFunction(dim, time, cellGeom->centroid, yiFieldInfo.numberComponents, yi, massFractionsContext);
-
             // Get density
             const PetscScalar density = euler[finiteVolume::CompressibleFlowFields::RHO];
 

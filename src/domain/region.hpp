@@ -29,6 +29,8 @@ class Region {
 
     static void GetLabel(const std::shared_ptr<Region>& region, DM dm, DMLabel& regionLabel, PetscInt& regionValue);
 
+    static bool InRegion(const std::shared_ptr<Region>& region, DM dm, PetscInt point);
+
     /**
      * throws exception if the label is not in the dm
      * @param region
