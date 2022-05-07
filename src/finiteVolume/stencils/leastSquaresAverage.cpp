@@ -136,18 +136,18 @@ void ablate::finiteVolume::stencil::LeastSquaresAverage::ComputeNeighborCellSten
         }
 
         // compute the gradient weights and offset by the dim for the first weight
-        PetscFVComputeGradient(gradientCalculator, stencil.stencilSize - 1, dx.data(), stencil.gradientWeights.data() + dim) >> checkError;
+        if (!PetscFVComputeGradient(gradientCalculator, stencil.stencilSize - 1, dx.data(), stencil.gradientWeights.data() + dim)) {
+            // now combine the gradient weights with the stencil weights so that we don't need to precompute the stencil value and compute dx
+            const auto gradientWeightsOrg = stencil.gradientWeights;
 
-        // now combine the gradient weights with the stencil weights so that we don't need to precompute the stencil value and compute dx
-        const auto gradientWeightsOrg = stencil.gradientWeights;
-
-        // march over the gradient stencil
-        for (PetscInt gn = 0; gn < stencil.stencilSize; gn++) {
-            // march over each face stencil
-            for (PetscInt fn = 0; fn < stencil.stencilSize; fn++) {
-                // add the contribution for the gradient stencil * (-) the face stencil to the face stencil node location
-                for (PetscInt d = 0; d < dim; ++d) {
-                    stencil.gradientWeights[fn * dim + d] -= gradientWeightsOrg[gn * dim + d] * stencil.weights[fn];
+            // march over the gradient stencil
+            for (PetscInt gn = 0; gn < stencil.stencilSize; gn++) {
+                // march over each face stencil
+                for (PetscInt fn = 0; fn < stencil.stencilSize; fn++) {
+                    // add the contribution for the gradient stencil * (-) the face stencil to the face stencil node location
+                    for (PetscInt d = 0; d < dim; ++d) {
+                        stencil.gradientWeights[fn * dim + d] -= gradientWeightsOrg[gn * dim + d] * stencil.weights[fn];
+                    }
                 }
             }
         }
