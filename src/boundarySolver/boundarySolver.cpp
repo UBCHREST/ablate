@@ -409,7 +409,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
                 inputOffsets[i] = offsetsTotal[function.inputFields[i]];
             }
             for (std::size_t i = 0; i < function.auxFields.size(); i++) {
-                auxOffsets[i] = auxOffTotal[function.inputFields[i]];
+                auxOffsets[i] = auxOffTotal[function.auxFields[i]];
             }
 
             auto sourceOffsetsPointer = sourceOffsets.data();
@@ -723,7 +723,7 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS ts, ablat
                 inputOffsets[i] = offsetsTotal[function.inputFields[i]];
             }
             for (std::size_t i = 0; i < function.auxFields.size(); i++) {
-                auxOffsets[i] = auxOffTotal[function.inputFields[i]];
+                auxOffsets[i] = auxOffTotal[function.auxFields[i]];
             }
 
             auto inputOffsetsPointer = inputOffsets.data();
