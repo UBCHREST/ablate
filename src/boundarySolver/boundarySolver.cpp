@@ -686,6 +686,11 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS ts, ablat
     VecGetDM(cellGeomVec, &dmCell) >> checkError;
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
+    // get the local x vector for ghost node information
+    Vec locXVec;
+    DMGetLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
+    DMGlobalToLocalBegin(subDomain->GetDM(), subDomain->GetSolutionVector(), INSERT_VALUES, locXVec) >> checkError;
+
     // prepare to compute the source, u, and a offsets
     PetscInt nf;
     PetscDSGetNumFields(subDomain->GetDiscreteSystem(), &nf) >> checkError;
@@ -708,6 +713,8 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS ts, ablat
     std::vector<PetscInt> inputOffsets(subDomain->GetFields().size(), -1);
     std::vector<PetscInt> auxOffsets(subDomain->GetFields(domain::FieldLocation::AUX).size(), -1);
 
+    DMGlobalToLocalEnd(subDomain->GetDM(), subDomain->GetSolutionVector(), INSERT_VALUES, locXVec) >> checkError;
+
     // Get the region to march over
     if (!gradientStencils.empty()) {
         // Get pointers to sol, aux, and f vectors
@@ -716,6 +723,9 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS ts, ablat
         if (auto locAuxVec = subDomain->GetAuxVector()) {
             VecGetArray(locAuxVec, &locAuxArray) >> checkError;
         }
+
+        const PetscScalar* localXArray;
+        VecGetArrayRead(locXVec, &localXArray);
 
         // March over each boundary function
         for (const auto& function : boundaryUpdateFunctions) {
@@ -748,9 +758,9 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS ts, ablat
 
                 // Get each of the stencil pts
                 const PetscScalar *solStencilPt, *auxStencilPt = nullptr;
-                DMPlexPointGlobalRef(dm, stencilInfo.stencil.front(), globXArray, &solStencilPt) >> checkError;
+                DMPlexPointLocalRead(dm, stencilInfo.stencil.front(), localXArray, &solStencilPt) >> checkError;
                 if (auxDM) {
-                    DMPlexPointLocalRef(auxDM, stencilInfo.stencil.front(), locAuxArray, &auxStencilPt) >> checkError;
+                    DMPlexPointLocalRead(auxDM, stencilInfo.stencil.front(), locAuxArray, &auxStencilPt) >> checkError;
                 }
 
                 // update
@@ -768,6 +778,7 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS ts, ablat
 
         // clean up the geom
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+        DMRestoreLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
     }
 }
 
