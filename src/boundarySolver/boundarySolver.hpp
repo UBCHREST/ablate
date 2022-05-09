@@ -26,6 +26,12 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
                                                       PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[], PetscScalar source[], void* ctx);
 
     /**
+     * Update the solution or aux field before each time step
+     */
+    using BoundaryUpdateFunction = PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[], PetscScalar* boundaryValues,
+                                                      const PetscScalar* stencilValues, const PetscInt aOff[], PetscScalar* auxValues, const PetscScalar* stencilAuxValues, void* ctx);
+
+    /**
      * Boundaries can be treated in two different ways, point source on the boundary or distributed in the other phase.  For the Distributed model, the source is divided by volume in each case
      */
     enum class BoundarySourceType {
@@ -79,7 +85,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     /**
      * struct to describe how to compute the source terms for boundary
      */
-    struct BoundaryFunctionDescription {
+    struct BoundarySourceFunctionDescription {
         BoundarySourceFunction function;
         void* context;
         BoundarySourceType type;
@@ -89,11 +95,25 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
         std::vector<PetscInt> auxFields;
     };
 
+    /**
+     * struct to describe how to compute the boundary update functions
+     */
+    struct BoundaryUpdateFunctionDescription {
+        BoundaryUpdateFunction function;
+        void* context;
+
+        std::vector<PetscInt> inputFields;
+        std::vector<PetscInt> auxFields;
+    };
+
     // Hold the region used to define the boundary faces
     const std::shared_ptr<domain::Region> fieldBoundary;
 
     // hold the update functions for flux and point sources
-    std::vector<BoundaryFunctionDescription> boundaryFunctions;
+    std::vector<BoundarySourceFunctionDescription> boundarySourceFunctions;
+
+    // hold the update functions for flux and point sources
+    std::vector<BoundaryUpdateFunctionDescription> boundaryUpdateFunctions;
 
     // Hold a list of boundaryProcesses that contribute to this solver
     std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses;
@@ -120,6 +140,11 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      */
     void CreateGradientStencil(PetscInt cellId, const BoundaryFVFaceGeom& geometry, const std::vector<PetscInt>& stencil, DM cellDM, const PetscScalar* cellGeomArray);
 
+    /**
+     * Prestep to update boundary variables
+     */
+    void UpdateVariablesPreStep(TS ts, ablate::solver::Solver&);
+
    public:
     /**
      *
@@ -144,6 +169,13 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      */
     void RegisterFunction(BoundarySourceFunction function, void* context, const std::vector<std::string>& sourceFields, const std::vector<std::string>& inputFields,
                           const std::vector<std::string>& auxFields, BoundarySourceType type = BoundarySourceType::Point);
+
+    /**
+     * Register an update function.
+     * @param function
+     * @param context
+     */
+    void RegisterFunction(BoundaryUpdateFunction function, void* context, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
 
     /**
      * Function passed into PETSc to compute the FV RHS

@@ -16,7 +16,8 @@ class LeastSquares : public FaceStencilGenerator {
     PetscFV gradientCalculator = nullptr;
 
    public:
-    void Generate(PetscInt face, Stencil& stencil, const domain::SubDomain& subDomain, const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM, const PetscScalar* faceGeomArray) override;
+    void Generate(PetscInt face, Stencil& stencil, const domain::SubDomain& subDomain, const std::shared_ptr<domain::Region> solverRegion, DM cellDM, const PetscScalar* cellGeomArray, DM faceDM,
+                  const PetscScalar* faceGeomArray) override;
     ~LeastSquares() override;
 };
 
