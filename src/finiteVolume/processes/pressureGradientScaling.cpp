@@ -1,5 +1,4 @@
 #include "pressureGradientScaling.hpp"
-#include <petscviewerhdf5.h>
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"

@@ -31,7 +31,11 @@ INSTANTIATE_TEST_SUITE_P(
                            .expectedOutputFile = "outputs/compressibleFlow/steadyCompressibleFlowLodiTest.txt",
                            .arguments = ""},
         (MpiTestParameter){
-            .testName = "inputs/compressibleFlow/compressibleFlowVortexLodi.yaml", .nproc = 2, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowVortexLodi.txt", .arguments = ""}),
+            .testName = "inputs/compressibleFlow/compressibleFlowVortexLodi.yaml", .nproc = 2, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowVortexLodi.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/compressibleFlow/compressibleSublimationPipe.yaml",
+                           .nproc = 2,
+                           .expectedOutputFile = "outputs/compressibleFlow/compressibleSublimationPipe/compressibleSublimationPipe.txt",
+                           .arguments = ""}),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 

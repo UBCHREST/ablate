@@ -1,0 +1,159 @@
+---
+# Simple pipe flow with isothermal boundary wall and a sublimation boundary condition
+#
+environment:
+  title: _compressibleFlowPgsLodi
+  tagDirectory: false
+arguments: {}
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 50
+    ts_dt: 1.0E-10
+    ts_adapt_safety: 0.9
+  io:
+    interval: 5
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [ 50, 10]
+    lower: [ 0.0, 0.0 ]
+    upper: [ .5, .1 ]
+    simplex: false
+    preModifiers:
+      - !ablate::domain::modifiers::SetFromOptions
+        dm_refine: 0
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+    postModifiers:
+     - !ablate::domain::modifiers::TagLabelInterface
+       # tag the bottom boundary faces
+       leftRegion:
+         name: boundaryCellsBottom
+       rightRegion:
+         name: interiorCells
+       boundaryFaceRegion:
+         name: boundaryFaceBottom
+     - !ablate::domain::modifiers::SubtractLabel
+       # define the flow solver without the rightBoundary
+       differenceRegion:
+         name: flowRegion
+       minuendRegion:
+         name: interiorCells
+       subtrahendRegions:
+         - name: boundaryFaceBottom
+       incompleteLabel: true
+     - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas : 287.0
+          species: [ N2, H2O, O2 ]
+        region:
+          name: domain
+      - name: pressure
+        location: AUX
+        type: FVM
+        region:
+          name: domain
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        &flowFieldState
+        eos: *eos
+        pressure: 101325.0
+        temperature: 300
+        velocity: "0.0, 0.0"
+        massFractions: !ablate::finiteVolume::fieldFunctions::MassFractions
+          &massFractions
+          eos: *eos
+          values:
+            - fieldName: N2
+              field: "x > .1 ? .2 : 1.0"
+            - fieldName: H2O
+              field: " x> .1 ? .3 :0"
+            - fieldName: O2
+              field: " x > .1 ? .5 : 0"
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *flowFieldState
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    region:
+      name: flowRegion
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::PressureGradientScaling
+        &pgs
+        eos: *eos
+        alphaInit: 100.0
+        maxAlphaAllowed: 100.0
+        domainLength: 0.165354
+        log: !ablate::monitors::logs::CsvLog
+          name: pgsLog
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      pgs: *pgs
+    parameters:
+      cfl: 0.5
+    transport:
+      &transportModel
+      k: .2
+      mu: .1
+      diff: 1E-4
+    eos: *eos
+    monitors:
+      - !ablate::monitors::TimeStepMonitor
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: boundaryCellsLeft
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: false
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+        pgs: *pgs
+        velocity: "min(10, 10*t), 0"
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: boundaryCellsRight
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 101325.0
+        maxAcousticsLength: 1
+        pgs: *pgs
+  - !ablate::boundarySolver::BoundarySolver
+    id: topBoundary
+    region:
+      name: boundaryCellsTop
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::IsothermalWall
+        eos: *eos
+        pgs: *pgs
+  - !ablate::boundarySolver::BoundarySolver
+    id: bottomBoundary
+    region:
+      name: boundaryCellsBottom
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::physics::Sublimation
+        latentHeatOfFusion: 1E30 # very high to turn off boundary sublimation for testing
+        transportModel: *transportModel
+        eos: *eos
+        pgs: *pgs
+        massFractions: *massFractions
+
+

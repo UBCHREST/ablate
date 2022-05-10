@@ -69,6 +69,9 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
 
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {
         bSolver.RegisterPreStep([this](auto ts, auto &solver) { UpdateSpecies(ts, solver); });
+        if (!massFractionsFunction) {
+            throw std::invalid_argument("The massFractions must be specified for ablate::boundarySolver::physics::Sublimation when DENSITY_YI_FIELD is active.");
+        }
     }
 }
 
