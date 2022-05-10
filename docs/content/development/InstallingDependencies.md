@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Installing Dependencies Locally
-parent: Development Guides
+parent: Code Development
 nav_order: 3
 ---
 

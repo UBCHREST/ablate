@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Building ABLATE Locally
-parent: Development Guides
+parent: Code Development
 nav_order: 4
 ---
 
