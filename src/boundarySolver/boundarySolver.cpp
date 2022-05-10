@@ -778,8 +778,8 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS ts, ablat
 
         // clean up the geom
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-        DMRestoreLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
     }
+    DMRestoreLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
 }
 
 #include "registrar.hpp"
