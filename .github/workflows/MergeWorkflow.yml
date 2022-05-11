@@ -109,7 +109,7 @@ jobs:
       - name: Write the component docs
         run: docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --help > components.md
 
-      - name: Run tye python configure script
+      - name: Run tye python websiteDocsGenerator script
         run: |
           python docs/websiteDocsGenerator.py \
             --componentListSource  components.md 
