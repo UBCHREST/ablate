@@ -131,5 +131,5 @@ jobs:
           default_author: github_actions
           pull_strategy: 'NO-PULL'
           message: 'auto-generated documentation'
-          add: 'docs/_includes/generated/* docs/sourceDocs docs/content/simulations/components/* docs/content/simulations/examples* --force'
+          add: 'docs/_includes/generated/* docs/sourceDocs docs/content/simulations/components/* docs/content/simulations/examples/* --force'
           push:  'origin HEAD:gh-pages --force'

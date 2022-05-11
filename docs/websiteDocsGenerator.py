@@ -9,7 +9,7 @@ import inflection
 SimulationsTitle = "Running Simulations"
 ComponentsTitle = "Component List"
 ExamplesTitle = "Examples Input Files"
-ExamplesIndex = "exampleList.md"
+ExamplesIndex = "_exampleList.md"
 BaseExampleUrl = "https://github.com/UBCHREST/ablate/tree/main/tests/integrationTests/inputs/"
 
 
