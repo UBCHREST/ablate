@@ -1,18 +1,23 @@
----
 # This test show the use of a PGS with the compressible flow field and lodi boundaries.
-#
+---
+# metadata for the simulation
 environment:
   title: _compressibleFlowPgsLodi
   tagDirectory: false
 arguments: {}
+# set up the time stepper responsible for marching in time
 timestepper:
   name: theMainTimeStepper
+  # time stepper specific input arguments.  By default, the time stepper will use TSADAPTBASIC
   arguments:
     ts_type: rk
     ts_max_steps: 25
     ts_max_time: 0.002655211423
-  io:
+  # io controls how often the results are saved to a file for visualization and restart
+  io: # by default the ablate::io::Hdf5Serializer serializer is used
     interval: 0
+  # the BoxMeshBoundaryCells domain adds an extra layer of boundary cells to the outside of the domain and
+  # tags these cells with special labels
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
     faces: [ 25, 25]
@@ -20,10 +25,13 @@ timestepper:
     upper: [ 1.0, .5 ]
     simplex: false
     preModifiers:
+      # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 0
+      # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
     postModifiers:
+      # to simplify setup, the boundaryCellsRight, boundaryCellsTop, boundaryCellsBottom are all labeled as openBoundaryLabel
       - !ablate::domain::modifiers::MergeLabels
         mergedRegion:
           name: openBoundaryLabel
@@ -31,16 +39,22 @@ timestepper:
           - name: boundaryCellsRight
           - name: boundaryCellsTop
           - name: boundaryCellsBottom
+      # if using a FVM ghost boundary cells must be added
       - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::PerfectGas &eos
           parameters:
             gamma: 1.4
             Rgas : 287.0
+        # define the field only over the domain cells, this prevents cells from being defined in unused corners
         region:
           name: domain
+  # set the initial conditions of the flow field
   initialization:
+    # the
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
         eos: *eos

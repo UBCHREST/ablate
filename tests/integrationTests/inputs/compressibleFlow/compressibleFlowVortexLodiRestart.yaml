@@ -1,4 +1,3 @@
----
 # This is the lodi validation case from Poinsot and Lele (Boundary Conditions for Direct Simulations of Compressible Viscous Flows)
 # parameters:
 #   l = .5
@@ -20,6 +19,7 @@
 # p = pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2))
 # T = p/(Rgas*rho) = 1/(Rgas*rho) * (pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2)))
 # timeEnd = 2*l/c = 0.002655211423
+---
 environment:
   title: compressibleFlowVortex
   tagDirectory: false

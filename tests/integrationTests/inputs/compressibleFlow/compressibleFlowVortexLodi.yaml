@@ -1,25 +1,35 @@
+# This is the lodi validation case from Poinsot and Lele [Boundary Conditions for Direct Simulations of Compressible Viscous Flows](https://www.sciencedirect.com/science/article/pii/0021999192900462)
+#
+# ### parameters
+#
+# | parameters | formula | value |
+# |:----------|:---------|:------|
+# | l         | | .5   |
+# | L         | | 1   |
+# | pInf      | | 101325.0 |
+# | rhoInit   | | 1.0      |
+# | gamma     | |1.4       |
+# | Rgas      | | 287.0    |
+# | c  | sqrt(gamma*p/rho) | ~ 376.6178434435 |
+# | uo | 1.1*c | 414.2796277878 |
+# | Re | uo * l/nu = rho * uo * l /mu | 10,000 |
+# | mu | (rho * uo * l)/Re | 0.02071398139 |
+#
+# ### Vortex Params
+#
+# | parameters  | value |
+# |:-----------|:------|
+# | C/(cl)     |  -.0005  |
+# | C         |  -0.09415446086  |
+# | Rc = 0.15*l        |  0.075  |
+#
+# ### Fields
+# - $$u_x = uo - C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*y$$
+# - $$u_y =  + C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*x$$
+# - $$p = pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2))$$
+# - $$T = p/(Rgas*rho) = 1/(Rgas*rho) * (pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2))) $$
+# - $$ timeEnd = 2*l/c = 0.002655211423 $$
 ---
-# This is the lodi validation case from Poinsot and Lele (Boundary Conditions for Direct Simulations of Compressible Viscous Flows)
-# parameters:
-#   l = .5
-#   L = 1
-#   pInf = 101325.0
-#   rhoInit = 1.0
-#   gamma = 1.4
-#   Rgas = 287.0
-#   c = sqrt(gamma*p/rho) ~ 376.6178434435
-#   uo = 1.1*c = 414.2796277878
-#   Re = uo * l/nu = rho * uo * l /mu = 10,000
-#       ... mu = (rho * uo * l)/Re = 0.02071398139
-# Vortex Params
-#   C/(cl) = -.0005 ... C = -0.09415446086
-#   Rc = 0.15*l = 0.075
-# Fields
-# u_x = uo - C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*y
-# u_y =  + C/(rho*Rc^2) * exp((-x^2 - y^2)/(2*Rc^2))*x
-# p = pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2))
-# T = p/(Rgas*rho) = 1/(Rgas*rho) * (pinf + (rho*C^2)/Rc^2 * exp(-(x^2 - y^2)/(2*Rc^2)))
-# timeEnd = 2*l/c = 0.002655211423
 environment:
   title: compressibleFlowVortex
   tagDirectory: false
