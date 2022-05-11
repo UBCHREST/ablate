@@ -259,8 +259,14 @@ Vec ablate::domain::SubDomain::GetSubSolutionVector() {
         PetscObjectSetName((PetscObject)subSolutionVec, vecName) >> checkError;
     }
 
-    CopyGlobalToSubVector(subDM, GetDM(), subSolutionVec, GetSolutionVector(), GetFields());
+    // Make a local version of the vector
+    Vec localSolutionVec;
+    DMGetLocalVector(GetDM(), &localSolutionVec) >> checkError;
+    DMGlobalToLocalBegin(GetDM(), GetSolutionVector(), INSERT_VALUES, localSolutionVec) >> checkError;
+    DMGlobalToLocalEnd(GetDM(), GetSolutionVector(), INSERT_VALUES, localSolutionVec) >> checkError;
 
+    CopyGlobalToSubVector(subDM, GetDM(), subSolutionVec, localSolutionVec, GetFields(), GetFields(), true);
+    DMRestoreLocalVector(GetDM(), &localSolutionVec) >> checkError;
     return subSolutionVec;
 }
 
@@ -350,7 +356,7 @@ void ablate::domain::SubDomain::CopyGlobalToSubVector(DM sDM, DM gDM, Vec subVec
 
     // March over the global section
     PetscSection section;
-    DMGetGlobalSection(sDM, &section) >> checkError;
+    DMGetLocalSection(sDM, &section) >> checkError;
 
     PetscInt pStart, pEnd;
     PetscSectionGetChart(section, &pStart, &pEnd) >> checkError;

@@ -297,11 +297,15 @@ void ablate::boundarySolver::BoundarySolver::Initialize() {
 
         DMRestoreLocalVector(solver.GetSubDomain().GetDM(), &locXVec) >> checkError;
     });
+
+    if (!boundaryUpdateFunctions.empty()) {
+        RegisterPreStep([this](auto ts, auto& solver) { UpdateVariablesPreStep(ts, solver); });
+    }
 }
 void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySolver::BoundarySolver::BoundarySourceFunction function, void* context, const std::vector<std::string>& sourceFields,
                                                               const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields, BoundarySourceType type) {
     // Create the FVMRHS Function
-    BoundaryFunctionDescription functionDescription{.function = function, .context = context, .type = type};
+    BoundarySourceFunctionDescription functionDescription{.function = function, .context = context, .type = type};
 
     for (auto& sourceField : sourceFields) {
         auto& fieldId = subDomain->GetField(sourceField);
@@ -318,8 +322,26 @@ void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySo
         functionDescription.auxFields.push_back(auxFieldId.subId);
     }
 
-    boundaryFunctions.push_back(functionDescription);
+    boundarySourceFunctions.push_back(functionDescription);
 }
+
+void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySolver::BoundarySolver::BoundaryUpdateFunction function, void* context, const std::vector<std::string>& inputFields,
+                                                              const std::vector<std::string>& auxFields) {
+    BoundaryUpdateFunctionDescription functionDescription{.function = function, .context = context};
+
+    for (auto& inputField : inputFields) {
+        auto& inputFieldId = subDomain->GetField(inputField);
+        functionDescription.inputFields.push_back(inputFieldId.subId);
+    }
+
+    for (const auto& auxField : auxFields) {
+        auto& auxFieldId = subDomain->GetField(auxField);
+        functionDescription.auxFields.push_back(auxFieldId.subId);
+    }
+
+    boundaryUpdateFunctions.push_back(functionDescription);
+}
+
 PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) {
     PetscFunctionBeginUser;
 
@@ -379,7 +401,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
         std::vector<const PetscScalar*> auxStencilValues(maximumStencilSize);
 
         // March over each boundary function
-        for (const auto& function : boundaryFunctions) {
+        for (const auto& function : boundarySourceFunctions) {
             for (std::size_t i = 0; i < function.sourceFields.size(); i++) {
                 sourceOffsets[i] = offsetsTotal[function.sourceFields[i]];
             }
@@ -387,7 +409,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
                 inputOffsets[i] = offsetsTotal[function.inputFields[i]];
             }
             for (std::size_t i = 0; i < function.auxFields.size(); i++) {
-                auxOffsets[i] = auxOffTotal[function.inputFields[i]];
+                auxOffsets[i] = auxOffTotal[function.auxFields[i]];
             }
 
             auto sourceOffsetsPointer = sourceOffsets.data();
@@ -519,7 +541,7 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
         ierr = VecRestoreArrayRead(locXVec, &locXArray);
         CHKERRQ(ierr);
         if (auto locAuxVec = subDomain->GetAuxVector()) {
-            ierr = VecRestoreArrayRead(locAuxVec, &locXArray);
+            ierr = VecRestoreArrayRead(locAuxVec, &locAuxArray);
             CHKERRQ(ierr);
         }
         VecRestoreArray(locFVec, &locFArray) >> checkError;
@@ -653,6 +675,111 @@ void ablate::boundarySolver::BoundarySolver::CreateGradientStencil(PetscInt cell
 
     // Store the stencil
     gradientStencils.push_back(std::move(newStencil));
+}
+void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS ts, ablate::solver::Solver&) {
+    // Extract the cell geometry, and the dm that holds the information
+    auto dm = subDomain->GetDM();
+    auto auxDM = subDomain->GetAuxDM();
+    auto dim = subDomain->GetDimensions();
+    DM dmCell;
+    const PetscScalar* cellGeomArray;
+    VecGetDM(cellGeomVec, &dmCell) >> checkError;
+    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+
+    // get the local x vector for ghost node information
+    Vec locXVec;
+    DMGetLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
+    DMGlobalToLocalBegin(subDomain->GetDM(), subDomain->GetSolutionVector(), INSERT_VALUES, locXVec) >> checkError;
+
+    // prepare to compute the source, u, and a offsets
+    PetscInt nf;
+    PetscDSGetNumFields(subDomain->GetDiscreteSystem(), &nf) >> checkError;
+
+    // Create the required offset arrays. These are sized for the max possible value
+    PetscInt* offsetsTotal;
+    PetscDSGetComponentOffsets(subDomain->GetDiscreteSystem(), &offsetsTotal) >> checkError;
+    PetscInt* auxOffTotal = nullptr;
+    if (auto auxDS = subDomain->GetAuxDiscreteSystem()) {
+        PetscDSGetComponentOffsets(auxDS, &auxOffTotal) >> checkError;
+    }
+
+    // Get the size of the field
+    PetscInt scratchSize;
+    PetscDSGetTotalDimension(subDomain->GetDiscreteSystem(), &scratchSize) >> checkError;
+    std::vector<PetscScalar> distributedSourceScratch(scratchSize);
+
+    // presize the offsets
+    std::vector<PetscInt> sourceOffsets(subDomain->GetFields().size(), -1);
+    std::vector<PetscInt> inputOffsets(subDomain->GetFields().size(), -1);
+    std::vector<PetscInt> auxOffsets(subDomain->GetFields(domain::FieldLocation::AUX).size(), -1);
+
+    DMGlobalToLocalEnd(subDomain->GetDM(), subDomain->GetSolutionVector(), INSERT_VALUES, locXVec) >> checkError;
+
+    // Get the region to march over
+    if (!gradientStencils.empty()) {
+        // Get pointers to sol, aux, and f vectors
+        PetscScalar *globXArray, *locAuxArray = nullptr;
+        VecGetArray(subDomain->GetSolutionVector(), &globXArray);
+        if (auto locAuxVec = subDomain->GetAuxVector()) {
+            VecGetArray(locAuxVec, &locAuxArray) >> checkError;
+        }
+
+        const PetscScalar* localXArray;
+        VecGetArrayRead(locXVec, &localXArray);
+
+        // March over each boundary function
+        for (const auto& function : boundaryUpdateFunctions) {
+            for (std::size_t i = 0; i < function.inputFields.size(); i++) {
+                inputOffsets[i] = offsetsTotal[function.inputFields[i]];
+            }
+            for (std::size_t i = 0; i < function.auxFields.size(); i++) {
+                auxOffsets[i] = auxOffTotal[function.auxFields[i]];
+            }
+
+            auto inputOffsetsPointer = inputOffsets.data();
+            auto auxOffsetsPointer = auxOffsets.data();
+
+            // March over each cell in this region
+            for (const auto& stencilInfo : gradientStencils) {
+                if (!stencilInfo.stencilSize) {
+                    continue;
+                }
+
+                // Get the cell geom
+                const PetscFVCellGeom* cg;
+                DMPlexPointLocalRead(dmCell, stencilInfo.cellId, cellGeomArray, &cg) >> checkError;
+
+                // Get pointers to the area of interest
+                PetscScalar *solPt = nullptr, *auxPt = nullptr;
+                DMPlexPointGlobalRef(dm, stencilInfo.cellId, globXArray, &solPt) >> checkError;
+                if (auxDM) {
+                    DMPlexPointLocalRef(auxDM, stencilInfo.cellId, locAuxArray, &auxPt) >> checkError;
+                }
+
+                // Get each of the stencil pts
+                const PetscScalar *solStencilPt, *auxStencilPt = nullptr;
+                DMPlexPointLocalRead(dm, stencilInfo.stencil.front(), localXArray, &solStencilPt) >> checkError;
+                if (auxDM) {
+                    DMPlexPointLocalRead(auxDM, stencilInfo.stencil.front(), locAuxArray, &auxStencilPt) >> checkError;
+                }
+
+                // update
+                if (solPt) {
+                    function.function(dim, &stencilInfo.geometry, cg, inputOffsetsPointer, solPt, solStencilPt, auxOffsetsPointer, auxPt, auxStencilPt, function.context) >> checkError;
+                }
+            }
+        }
+
+        // clean up access
+        VecRestoreArray(subDomain->GetSolutionVector(), &globXArray) >> checkError;
+        if (auto locAuxVec = subDomain->GetAuxVector()) {
+            VecRestoreArray(locAuxVec, &locAuxArray) >> checkError;
+        }
+
+        // clean up the geom
+        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    }
+    DMRestoreLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
 }
 
 #include "registrar.hpp"

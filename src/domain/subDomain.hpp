@@ -192,7 +192,7 @@ class SubDomain : public io::Serializable {
      * @param point
      * @return
      */
-    inline bool InRegion(PetscInt point) {
+    inline bool InRegion(PetscInt point) const {
         if (!label) {
             return true;
         }
@@ -236,7 +236,7 @@ class SubDomain : public io::Serializable {
      * Returns raw access to the global dm
      * @return
      */
-    inline DM& GetDM() noexcept { return domain.GetDM(); }
+    inline DM& GetDM() const noexcept { return domain.GetDM(); }
 
     /**
      * Returns the dm describing the aux fields living in this subdomain.  The dm is defined across

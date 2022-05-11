@@ -151,3 +151,4 @@ and one value equal to 2.  When using the compare tool, you must escape all rege
 | ~                    | any number is accepted                                                                                                                     |
 | *                    | any string is accepted                                                                                                                     |
 | n                    | should be near value (percent difference <=1E-3)                                                                                           |
+| z                    | should be near zero (<1E-13)                                                                                                               |

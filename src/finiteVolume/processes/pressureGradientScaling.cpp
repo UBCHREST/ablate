@@ -1,5 +1,4 @@
 #include "pressureGradientScaling.hpp"
-#include <petscviewerhdf5.h>
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/processes/flowProcess.hpp"
@@ -163,10 +162,17 @@ void ablate::finiteVolume::processes::PressureGradientScaling::Initialize(ablate
 
 void ablate::finiteVolume::processes::PressureGradientScaling::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     // Use time stepping.
+    PetscMPIInt rank;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)viewer), &rank) >> checkMpiError;
+
+    // create a very simple vector
     Vec pgsAlphaVec;
-    VecCreateMPI(PetscObjectComm((PetscObject)viewer), PETSC_DECIDE, 1, &pgsAlphaVec) >> checkError;
+    VecCreateMPI(PetscObjectComm((PetscObject)viewer), rank == 0 ? 1 : 0, 1, &pgsAlphaVec) >> checkError;
     PetscObjectSetName((PetscObject)pgsAlphaVec, "pressureGradientScalingAlpha") >> checkError;
-    VecSetValue(pgsAlphaVec, 0, alpha, INSERT_VALUES) >> checkError;
+    if (rank == 0) {
+        PetscInt globOwnership = 0;
+        VecSetValues(pgsAlphaVec, 1, &globOwnership, &alpha, INSERT_VALUES) >> checkError;
+    }
     VecAssemblyBegin(pgsAlphaVec) >> checkError;
     VecAssemblyEnd(pgsAlphaVec) >> checkError;
     VecView(pgsAlphaVec, viewer);

@@ -7,345 +7,345 @@ MinMaxAvg temperature for timestep 0000:
 	max: [ 0]
 	avg: [ 0]
 MinMaxAvg euler for timestep 0001:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0001:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0002:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0002:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0003:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0003:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0004:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0004:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0005:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0005:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0006:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0006:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0007:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0007:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0008:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0008:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0009:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0009:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0010:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0010:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0011:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0011:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0012:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0012:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0013:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0013:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0014:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0014:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0015:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0015:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0016:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0016:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0017:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0017:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0018:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0018:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0019:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0019:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0020:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0020:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0021:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0021:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0022:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0022:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0023:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0023:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0024:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0024:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0025:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0025:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0026:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0026:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0027:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0027:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0028:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0028:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0029:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0029:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0030:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0030:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0031:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0031:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0032:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0032:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0033:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0033:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0034:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0034:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0035:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0035:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0036:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0036:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0037:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0037:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0038:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0038:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0039:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0039:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0040:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0040:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0041:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0041:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0042:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0042:
 	min: [353]
 	max: [353]
 	avg: [353]
 MinMaxAvg euler for timestep 0043:
-	min: [ 1, 3.39e+05, 414,  0]
-	max: [ 1, 3.39e+05, 414,  0]
-	avg: [ 1, 3.39e+05, 414,  0]
+	min: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	max: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
+	avg: \[ (.*), (.*), (.*), (.*)\]<expects>=1 =3.39e+05 =414 z
 MinMaxAvg temperature for timestep 0043:
 	min: [353]
 	max: [353]
