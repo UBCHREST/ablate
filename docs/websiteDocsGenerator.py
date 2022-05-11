@@ -16,6 +16,7 @@ BaseExampleUrl = "https://github.com/UBCHREST/ablate/tree/main/tests/integration
 def format_title(title):
     return title
 
+
 def print_interface_file(interface_name, component_output_dir, interface_documentation):
     # write the buffer to the file
     component_file_path = component_output_dir / (interface_name + ".md")
@@ -75,6 +76,7 @@ def split_component_list(component_list_source, component_output_dir):
         # print the last item
         if interface_documentation:
             print_interface_file(interface_name, component_output_dir, interface_documentation)
+
 
 @dataclass
 class ExampleMetaData:
@@ -142,28 +144,11 @@ def create_example_files(example_input_directory, example_output_directory):
                                 else:
                                     markdown_file.write(row)
 
-
                             # close off input
                             markdown_file.write("\n```")
 
         if example_meta_datas:
             categories_meta_data[example_category_title] = example_meta_datas
-            #
-            # # output an index file
-            # with open(output_category_directory / 'index.md', 'w') as index_file:
-            #
-            #     # write the header
-            #     index_file.write('---\n')
-            #     index_file.write('layout: default\n')
-            #     index_file.write(f'title: {example_category_title}\n')
-            #     index_file.write(f'parent: {ExamplesTitle}\n')
-            #     index_file.write(f'grand_parent: {SimulationsTitle}\n')
-            #     index_file.write(f'has_children: true\n')
-            #     index_file.write('---\n')
-
-            # copy over each file
-
-        # print(example_directory_title)
 
     # output an index file
     with open(example_output_directory / ExamplesIndex, 'w') as index_file:
@@ -173,54 +158,6 @@ def create_example_files(example_input_directory, example_output_directory):
             for meta_data in meta_data_list:
                 index_file.write(f'- [{meta_data.title}]({meta_data.doc_url}) [📁]({meta_data.file_url})\n')
             index_file.write('\n')
-
-
-#
-# # parse once to create a list of known interfaces
-# known_interfaces = set()
-# with open(component_list_source, 'r') as text_file:
-#     for row in text_file:
-#         if row.startswith('# '):
-#             # set the interface_name
-#             known_interfaces.add(format_title(row[2:-1]))
-#
-# # separate each file
-# interface_name = ''
-# interface_documentation = []
-#
-# # march over each line
-# with open(component_list_source, 'r') as text_file:
-#     for row in text_file:
-#         if row.startswith('# ') and interface_documentation:
-#             # write the buffer to the file
-#             component_file_path = component_output_dir / (interface_name + ".md")
-#             with open(component_file_path, 'w') as component_file:
-#                 # write the header
-#                 component_file.write('---\n')
-#                 component_file.write('layout: default\n')
-#                 component_file.write(f'title: {interface_name}\n')
-#                 component_file.write('parent: Component List\n')
-#                 component_file.write('grand_parent: Running Simulations\n')
-#                 component_file.write('nav_exclude: true\n')
-#                 component_file.write('---\n')
-#
-#                 component_file.writelines(interface_documentation)
-#
-#             # clear the buffer
-#             interface_documentation.clear()
-#
-#         if row.startswith('# '):
-#             # set the interface_name
-#             interface_name = format_title(row[2:-1])
-#
-#         # check the row for known interfaces
-#         match_results = re.findall(r'(ablate::.*?)(,|\s|\))', row)
-#         for match in match_results:
-#             test_name = match[0]
-#             if test_name in known_interfaces:
-#                 row = row.replace(test_name, f'[{test_name}](./{test_name}.html)')
-#
-#         interface_documentation.append(row)
 
 
 # Main function to parser input files and run the document generator
