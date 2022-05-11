@@ -115,7 +115,7 @@ jobs:
             --componentListSource  components.md 
             --componentOutputDir docs/content/simulations/components/ \
             --exampleInputDir tests/integrationTests/inputs \
-            --exampleOutputDir docs/content/simulations/examples
+            --exampleOutputDir docs/content/simulations/examples/
 
       - name: Update the doxyfile.config with the version
         run:  echo "PROJECT_NUMBER = $(docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --version)" >> doxyfile.config
@@ -131,5 +131,5 @@ jobs:
           default_author: github_actions
           pull_strategy: 'NO-PULL'
           message: 'auto-generated documentation'
-          add: 'docs/_includes/generated/* docs/sourceDocs docs/content/simulations/components/* --force'
+          add: 'docs/_includes/generated/* docs/sourceDocs docs/content/simulations/components/* docs/content/simulations/examples* --force'
           push:  'origin HEAD:gh-pages --force'

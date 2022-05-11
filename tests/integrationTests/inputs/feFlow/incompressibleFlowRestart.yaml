@@ -1,5 +1,5 @@
+# Example setup for incompressible flow that uses a finite volume solver and checks for simulation restart using output at a specified interval
 ---
-# Example setup for incompressible flow
 environment:
   title: incompessibleFlow
   tagDirectory: true
