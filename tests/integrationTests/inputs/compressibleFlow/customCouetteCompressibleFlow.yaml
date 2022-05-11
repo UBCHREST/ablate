@@ -1,16 +1,20 @@
+# This test shows how to create a compressible flow (Couette) field without using the compressible flow object.  The fields and processes are added individually instead of using predefined classes.
+
 ---
-# This test shows how to create a compressible flow (Couette) field without using the compressible flow object
+# metadata for the simulation
 environment:
-  title: compressibleCouette
+  title: _compressibleCouette
   tagDirectory: false
 arguments: 
   dm_plex_separate_marker: ""
+# set up the time stepper responsible for marching in time
 timestepper:
   name: theMainTimeStepper
   arguments:
     ts_type: rk
     ts_adapt_type: none
     ts_max_steps: 20
+  # sets a single box domain
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 12, 12 ]
@@ -18,31 +22,40 @@ timestepper:
     upper: [ 1, 1 ]
     boundary: [ "PERIODIC", "NONE" ]
     simplex: false
+
+    #  all fields must be defined before solvers.  In this example this is done by specify each .
     fields:
+      # instead of using the !ablate::finiteVolume::CompressibleFlowFields the euler field can be specified manually
       - name: euler
-        components: [ "rho", "rhoE", "rhoVel0", "rhoVel1" ]
-        type: FVM
+        components: [ "rho", "rhoE", "rhoVel0", "rhoVel1" ] # this order is always assumed
+        type: FVM # the field must be FVM to use with the finite volume method
         options:
+          # use least squares reconstruction for the cell based operations without a limiter
           petscfv_type: leastsquares
           petsclimiter_type: none
+      # the !ablate::finiteVolume::CompressibleFlowFields class usually adds temperature, but it can be done manually instead
       - name: temperature
-        location: AUX
+        location: AUX # the AUX location indicated that the field is computed from other fields and not integrated directly in the timesteppper
         type: FVM
         options:
           petscfv_type: leastsquares
           petsclimiter_type: none
       - name: velocity
-        components: [ "vel0", "vel1" ]
+        components: [ "vel0", "vel1" ] # fields can have multiple components, such as velocity
         location: AUX
         type: FVM
         options:
           petscfv_type: leastsquares
           petsclimiter_type: none
     modifiers:
+      # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 0
-      - !ablate::domain::modifiers::GhostBoundaryCells
+      # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
+        # if using a FVM ghost boundary cells must be added
+      - !ablate::domain::modifiers::GhostBoundaryCells
+
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
       field: >-
@@ -57,21 +70,31 @@ timestepper:
         1.0 * (215250.0 + (0.5 * (50 * y)^2)),
         1.0 * 50 * y,
         1.0 * 0.0
+
+# this problem uses a single solver (!ablate::finiteVolume::FiniteVolumeSolver) instead of the CompressibleFlowSolver.
 solver: !ablate::finiteVolume::FiniteVolumeSolver
   id: compressibleFlowField
+
+  # all the processes must be specified because FiniteVolumeSolver was specified directly
   processes:
+    # the EulerTransport processes handles bulk advection and diffusion
     - !ablate::finiteVolume::processes::EulerTransport
       parameters:
         cfl: 0.5
+      # a flux calculator must be specified to so solver for advection
       fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
+      # define a perfect gas eos to use with transport
       eos: !ablate::eos::PerfectGas
         parameters:
           gamma: 1.4
           Rgas : 287.0
+      # the default transport object assumes constant values for k, mu, diff
       transport:
         k: 0.0
         mu: 1.0
+  # overwrite and set the time step based upon the CFL constraint
   computePhysicsTimeStep: true
+  # using constant boundary condition values on sides 1,3 with the specified values for euler
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost
       boundaryName: "walls"
@@ -87,6 +110,7 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
         field: "1.0, 216500.0, 50.0, 0.0"
   
   monitors:
+    # computes the standard l2 norm error and outputs to standard out
     - !ablate::monitors::SolutionErrorMonitor
       scope: component
       type: l2_norm

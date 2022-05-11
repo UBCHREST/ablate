@@ -66,6 +66,14 @@ jobs:
     if: github.event_name == 'push'
 
     steps:
+      # setup python for later use
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+      - name: Install python dep
+        run: pip install inflection
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
@@ -99,12 +107,20 @@ jobs:
         run: docker run --rm framework-test-image-${{ matrix.petscConfig }} git -C /petsc rev-parse --short HEAD | tr -d '\n' > docs/_includes/generated/petscVersion.html
 
       - name: Write the component docs
-        run: docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --help > docs/_includes/generated/components.md
+        run: docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --help > components.md
+
+      - name: Run tye python websiteDocsGenerator script
+        run: |
+          python docs/websiteDocsGenerator.py \
+            --componentListSource  components.md 
+            --componentOutputDir docs/content/simulations/components/ \
+            --exampleInputDir tests/integrationTests/inputs \
+            --exampleOutputDir docs/content/simulations/examples/
 
       - name: Update the doxyfile.config with the version
         run:  echo "PROJECT_NUMBER = $(docker run --rm framework-test-image-${{ matrix.petscConfig }} ./ablate --version)" >> doxyfile.config
 
-      - name: Generate Source File Documetnation
+      - name: Generate Source File Documentation
         uses: mattnotmitt/doxygen-action@v1.9.2
         with:
           doxyfile-path: 'doxyfile.config'
@@ -115,5 +131,5 @@ jobs:
           default_author: github_actions
           pull_strategy: 'NO-PULL'
           message: 'auto-generated documentation'
-          add: 'docs/_includes/generated/* docs/sourceDocs --force'
+          add: 'docs/_includes/generated/* docs/sourceDocs docs/content/simulations/components/* docs/content/simulations/examples/* --force'
           push:  'origin HEAD:gh-pages --force'

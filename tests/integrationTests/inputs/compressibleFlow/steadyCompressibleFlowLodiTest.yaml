@@ -1,7 +1,7 @@
 ---
 # This is the lodi validation for what should be uniform flow
 environment:
-  title: uniformFlow
+  title: _uniformFlow
   tagDirectory: false
 arguments:
   petsclimiter_type: none

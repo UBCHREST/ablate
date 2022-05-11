@@ -1,7 +1,7 @@
+# Example setup for incompressible flow that uses a finite volume solver and checks for simulation restart using output at a specified interval with an offset number of max steps.
 ---
-# Example setup for incompressible flow
 environment:
-  title: incompessibleFlowInterval
+  title: _incompressibleFlowInterval
   tagDirectory: true
 arguments:
   dm_plex_separate_marker: ""
@@ -57,7 +57,7 @@ timestepper:
     - *temperatureField
 solver: !ablate::finiteElement::IncompressibleFlowSolver
   id: theFlowField
-  options: {}
+  options: { }
   parameters:
     strouhal: 1.0
     reynolds: 1.0
@@ -68,11 +68,11 @@ solver: !ablate::finiteElement::IncompressibleFlowSolver
   boundaryConditions:
     - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall velocity"
-      labelIds: [3, 1, 2, 4]
+      labelIds: [ 3, 1, 2, 4 ]
       boundaryValue: *velocityField
     - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall temp"
-      labelIds: [3, 1, 2, 4]
+      labelIds: [ 3, 1, 2, 4 ]
       boundaryValue: *temperatureField
   monitors:
     - !ablate::monitors::FieldErrorMonitor

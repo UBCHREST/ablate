@@ -1,29 +1,37 @@
----
 # This test show the use of a PGS with the compressible flow field and lodi boundaries.
-#
+---
+# metadata for the simulation
 environment:
   title: _compressibleFlowPgsLodi
   tagDirectory: false
-arguments: {}
+arguments: { }
+# set up the time stepper responsible for marching in time
 timestepper:
   name: theMainTimeStepper
+  # time stepper specific input arguments.  By default, the time stepper will use TSADAPTBASIC
   arguments:
     ts_type: rk
     ts_max_steps: 25
     ts_max_time: 0.002655211423
-  io:
+  # io controls how often the results are saved to a file for visualization and restart
+  io: # by default the ablate::io::Hdf5Serializer serializer is used
     interval: 0
+  # the BoxMeshBoundaryCells domain adds an extra layer of boundary cells to the outside of the domain and
+  # tags these cells with special labels
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
-    faces: [ 25, 25]
+    faces: [ 25, 25 ]
     lower: [ 0.0, -.5 ]
     upper: [ 1.0, .5 ]
     simplex: false
     preModifiers:
+      # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
       - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 0
+        dm_refine: 0 # must be zero when using the BoxMeshBoundaryCells
+      # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
     postModifiers:
+      # to simplify setup, the boundaryCellsRight, boundaryCellsTop, boundaryCellsBottom are all labeled as openBoundaryLabel
       - !ablate::domain::modifiers::MergeLabels
         mergedRegion:
           name: openBoundaryLabel
@@ -31,47 +39,73 @@ timestepper:
           - name: boundaryCellsRight
           - name: boundaryCellsTop
           - name: boundaryCellsBottom
+      # if using a FVM ghost boundary cells must be added
       - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::PerfectGas &eos
           parameters:
             gamma: 1.4
-            Rgas : 287.0
+            Rgas: 287.0
+        # define the field only over the domain cells, this prevents cells from being defined in unused corners
         region:
           name: domain
+  # set the initial conditions of the flow field
   initialization:
+    # the ablate::finiteVolume::fieldFunctions::Euler field functions computes density, energy, velocity from temperature and pressure autocially simplifying setup
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
         eos: *eos
         pressure: 101325.0
         temperature: 300
         velocity: !ablate::mathFunctions::geom::Sphere
-          center: [0.0, 0.0]
+          center: [ 0.0, 0.0 ]
           radius: 0.1
           insideValues: "5, 0"
+
 solvers:
+  # The compressible flow solver will solve the compressible flow equations over the interiorCells
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: vortexFlowField
+
+    # only apply this solver to the interior cells
     region:
       name: interiorCells
+
+    # overwrite and set the time step based upon the CFL constraint
     computePhysicsTimeStep: true
+
     additionalProcesses:
+      # in addition to the default process PressureGradientScaling can be used to speed up the simulation.
+      # the pgs must be supplied to other components to keep consistent calculations
       - !ablate::finiteVolume::processes::PressureGradientScaling
         &pgs
         eos: *eos
         alphaInit: 1.0
         maxAlphaAllowed: 100.0
         domainLength: 0.165354
+        # output the history of the pgs to standard out
         log: !ablate::monitors::logs::StdOut
+
+    # a flux calculator must be specified to so solver for advection
     fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
       mInf: .3
       pgs: *pgs
+
+    # cfl is used to compute the physics time step
     parameters:
       cfl: 0.5
+
+    # the default transport object assumes constant values for k, mu, diff
     transport:
-      mu:  0.02071398139
+      mu: 0.02071398139
+
+    # share the existing eos with the compressible flow solver
     eos: *eos
+
+  # use a boundary solver to update the cells in the boundaryCellsLeft region to represent an inlet
   - !ablate::boundarySolver::BoundarySolver
     id: inlet
     region:
@@ -82,6 +116,8 @@ solvers:
       - !ablate::boundarySolver::lodi::Inlet
         eos: *eos
         pgs: *pgs
+
+  # use a boundary solver to update the cells in the openBoundaryLabel region to represent an open boundary
   - !ablate::boundarySolver::BoundarySolver
     id: openBoundary
     region:
