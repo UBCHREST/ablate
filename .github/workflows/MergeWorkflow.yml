@@ -112,7 +112,7 @@ jobs:
       - name: Run tye python websiteDocsGenerator script
         run: |
           python docs/websiteDocsGenerator.py \
-            --componentListSource  components.md 
+            --componentListSource  components.md \
             --componentOutputDir docs/content/simulations/components/ \
             --exampleInputDir tests/integrationTests/inputs \
             --exampleOutputDir docs/content/simulations/examples/
