@@ -8,7 +8,7 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
                                          std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances)
-    : name(nameIn),
+    : name(nameIn.empty() ? "timeStepper" : nameIn),
       domain(domain),
       serializer(serializerIn),
       initializations(initializations),
@@ -48,7 +48,7 @@ ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
 
 void ablate::solver::TimeStepper::Solve() {
     if (solvers.empty()) {
-        throw std::runtime_error("No solvers have been set.");
+        return;
     }
 
     domain->InitializeSubDomains(solvers, initializations, exactSolutions);
@@ -303,7 +303,7 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm,
 }
 
 #include "registrar.hpp"
-REGISTER_DEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
+REGISTER_DEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", OPT(std::string, "name", "the optional time stepper name"),
                  ARG(ablate::domain::Domain, "domain", "the mesh used for the simulation"), ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
                  OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"),
                  OPT(std::vector<ablate::mathFunctions::FieldFunction>, "initialization", "initialization field functions"),

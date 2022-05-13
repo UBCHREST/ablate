@@ -4,15 +4,7 @@ ablate::domain::modifiers::GhostBoundaryCells::GhostBoundaryCells(std::string la
 void ablate::domain::modifiers::GhostBoundaryCells::Modify(DM &dm) {
     DM gdm;
     DMPlexConstructGhostCells(dm, labelName.empty() ? nullptr : labelName.c_str(), NULL, &gdm) >> checkError;
-
-    // Copy over the options object
-    PetscOptions options;
-    PetscObjectGetOptions((PetscObject)dm, &options) >> checkError;
-    PetscObjectSetOptions((PetscObject)gdm, options) >> checkError;
-
-    // destroy the old dm
-    DMDestroy(&dm) >> checkError;
-    dm = gdm;
+    ReplaceDm(dm, gdm);
 }
 
 #include "registrar.hpp"
