@@ -244,3 +244,4 @@ void ablate::solver::Solver::RestoreRange(Range &range) const {
         ISDestroy(&range.is) >> checkError;
     }
 }
+ablate::solver::Solver::Solver() {}
