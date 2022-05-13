@@ -7,10 +7,12 @@ target_sources(ablateLibrary
         boxMesh.cpp
         dmWrapper.cpp
         dmPlex.cpp
-        fileMesh.cpp
+        meshFile.cpp
         region.cpp
         fieldDescription.cpp
         boxMeshBoundaryCells.cpp
+        cadFile.cpp
+
         PUBLIC
         domain.hpp
         subDomain.hpp
@@ -19,11 +21,12 @@ target_sources(ablateLibrary
         boxMesh.hpp
         dmWrapper.hpp
         dmPlex.hpp
-        fileMesh.hpp
+        meshFile.hpp
         region.hpp
         fieldDescription.hpp
         fieldDescriptor.hpp
         boxMeshBoundaryCells.hpp
+        cadFile.hpp
         )
 
 add_subdirectory(modifiers)

@@ -221,6 +221,32 @@ TEST_F(RunEnvironmentTestFixture, ShouldUseWithoutTaggingSpecifiedOutputDirector
     std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
 }
 
+TEST_F(RunEnvironmentTestFixture, ShouldReplaceVariablesWhenAvaiable) {
+    // arrange
+    auto outputDirectory = std::filesystem::temp_directory_path() / ("specified_output_dir_" + std::to_string(rand()));
+
+    // setup the mock parameters
+    ablateTesting::parameters::MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString("title")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(uniqueTitle));
+    EXPECT_CALL(mockParameters, GetString("tagDirectory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("false"));
+    EXPECT_CALL(mockParameters, GetString("directory")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(outputDirectory.string()));
+
+    std::string value1 = "This/Is/Value/One/With/No/OutputDirectory/In/Variable";
+    std::string value2 = "This/Is/Value/One/With/No/$OutputDirectory/In/Variable";
+
+    // act
+    ablate::environment::RunEnvironment runEnvironment(mockParameters);
+    runEnvironment.ExpandVariables(value1);
+    runEnvironment.ExpandVariables(value2);
+
+    // assert
+    ASSERT_EQ(value1, "This/Is/Value/One/With/No/OutputDirectory/In/Variable");
+    ASSERT_EQ(value2, "This/Is/Value/One/With/No/" + runEnvironment.GetOutputDirectory().string() + "/In/Variable");
+
+    // cleanup
+    std::filesystem::remove_all(runEnvironment.GetOutputDirectory());
+}
+
 TEST(RunEnvironmentTest, ShouldProvideDefaultEnvironment) {
     // arrange
     // act

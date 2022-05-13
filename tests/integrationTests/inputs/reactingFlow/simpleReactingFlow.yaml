@@ -22,8 +22,6 @@ timestepper:
     boundary: [ "NONE", "NONE" ]
     simplex: false
     modifiers:
-      - !ablate::domain::modifiers::SetFromOptions
-          dm_refine: 0
       - !ablate::domain::modifiers::GhostBoundaryCells
       - !ablate::domain::modifiers::DistributeWithGhostCells
     fields:

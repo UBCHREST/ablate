@@ -31,10 +31,9 @@ timestepper:
     faces: [ 4, 4 ]
     lower: [ 0, 0 ]
     upper: [ 1, 1 ]
-    modifiers:
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 0
-        dm_distribute: true
+    options:
+      dm_refine: 0
+      dm_distribute: true
     fields:
       - !ablate::finiteElement::LowMachFlowFields
   initialization:

@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <functional>
 #include <memory>
+#include <regex>
 #include <string>
 #include "parameters/parameters.hpp"
 
@@ -29,6 +30,9 @@ class RunEnvironment {
 
     // default empty funEnvironment
     explicit RunEnvironment();
+
+    //! store known directory variables
+    static const inline std::regex OutputDirectoryVariable = std::regex("\\$OutputDirectory");
 
     /**
      * Struct to hold the name and function to be called in first in/first out clean up order
@@ -64,6 +68,15 @@ class RunEnvironment {
     }
 
     inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
+
+    /**
+     * replaces any known runtime variables with known values
+     *  supported values:
+     *      - $OutputDirectory is replaced with outputDirectory
+     * @param value
+     * @return
+     */
+    void ExpandVariables(std::string& value) const;
 
     /**
      * initialize ablate
