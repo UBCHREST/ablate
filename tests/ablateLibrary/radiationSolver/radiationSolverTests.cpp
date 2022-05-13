@@ -59,12 +59,12 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                                                       GetParam().meshEnd,  std::vector<std::string>{}, false);
 
         IS allPointIS;
-        DMGetStratumIS(domain->GetDM(), "dim",3, &allPointIS) >> testErrorChecker;
+        DMGetStratumIS(domain->GetDM(), "dim",2, &allPointIS) >> testErrorChecker;
         if (!allPointIS) {
-            DMGetStratumIS(domain->GetDM(), "depth", 3, &allPointIS) >> testErrorChecker;
+            DMGetStratumIS(domain->GetDM(), "depth", 2, &allPointIS) >> testErrorChecker;
         }
         PetscInt s;
-        ISGetSize(allPointIS, &s );;;;;;
+        ISGetSize(allPointIS, &s );
         DMView(domain->GetDM(), PETSC_VIEWER_STDOUT_WORLD);
         // Setup the flow data
         auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", ".4"}});
@@ -77,7 +77,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // Create an instance of radiation
         auto radiation =
-            std::make_shared<ablate::radiation::RadiationSolver>("radiation",ablate::domain::Region::ENTIREDOMAIN,20,nullptr);
+            std::make_shared<ablate::radiation::RadiationSolver>("radiation",ablate::domain::Region::ENTIREDOMAIN,10,nullptr);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
@@ -116,9 +116,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             VecGetArrayRead(rhs, &rhsArray) >> testErrorChecker;
 
             ///Declare L2 norm variables
-            std::vector<PetscReal> l2Norm; //Not sure how to declare or where
             PetscReal l2sum;
-            double N = 1; //Number of cells in the domain
+            double error; //Number of cells in the domain
             std::set<PetscInt> stencilSet;
 
             ablate::solver::Range cellRange;
@@ -140,25 +139,28 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                 PetscScalar* rhsValues;
                 DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
                 PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
+                PetscScalar analyticalResult = ablate::radiation::RadiationSolver::ReallySolveParallelPlates(cellGeom->centroid[1]); //Compute the analytical solution at this z height.
+                // anavg += analyticalResult;
 
-                // compute the expected result
-                //PetscScalar expectedResult = GetParam().expectedResult->Eval(cellGeom->centroid, domain->GetDimensions(), 0.0);
-                PetscScalar analyticalResult = ablate::radiation::RadiationSolver::ReallySolveParallelPlates(cellGeom->centroid[2]); //Compute the analytical solution at this z height.
+                ///Summing of the L2 norm values
+                error = (analyticalResult-actualResult);
+                l2sum += error*error;
 
-                //if (cellGeom->centroid[1] < 0.05 && cellGeom->centroid[1] > -0.05 && cellGeom->centroid[0] < 0.05 && cellGeom->centroid[0] > -0.05) {
-                    //ASSERT_NEAR(analyticalResult, actualResult, 3E4)
-                    //    << "The actual result should be near the expected at cell " << cell << " [" << cellGeom->centroid[0] << ", " << cellGeom->centroid[1] << ", " << cellGeom->centroid[2] << "]";
-                    ///Summing of the L2 norm values
-                    l2sum += (analyticalResult-actualResult)*(analyticalResult-actualResult);
-
-                    //PetscPrintf(MPI_COMM_WORLD,"Radiation %% Error: %f, Height: %f\n",error,cellGeom->centroid[2]);
-                //}
+                //PetscPrintf(MPI_COMM_WORLD,"Radiation %% Error: %f, Height: %f\n",error,cellGeom->centroid[2]);
             }
-            ///Add this L2 norm to the multicase L2 norm vector
-            N = stencilSet.size();
+            ///Compute the L2 Norm error
+            double N = stencilSet.size();
+            double l2 = sqrt(l2sum)/N;
 
+            if (l2 > 100000) {
+                FAIL() << "Radiation test error exceeded.";
+            }
             PetscPrintf(MPI_COMM_WORLD,"L2 Norm: %f\n",sqrt(l2sum)/N);
-            l2Norm.push_back(sqrt(l2sum)/N); //L2 norm equation
+
+            /*
+             * 10 Deep L2 Norm: 0.068057
+             * 20 Deep L2 Norm: 0.030259
+             * */
 
             VecRestoreArrayRead(rhs, &rhsArray) >> testErrorChecker;
             VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
@@ -171,9 +173,9 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
 INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
                          testing::Values((RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature", .nproc = 1},
-                                                                   .meshFaces = { 3 , 3 , 5},
-                                                                   .meshStart = { -0.25 , -0.25 , -0.0105},
-                                                                   .meshEnd = { 0.25 , 0.25 , 0.0105},
-                                                                   .temperatureField = ablate::mathFunctions::Create("z < 0 ? (-6.349E6*z*z + 2000.0) : (-1.179E7*z*z + 2000.0)"),
-                                                                   .expectedResult = ablate::mathFunctions::Create("x + y + z")}),
+                                                                   .meshFaces = {3 , 15},
+                                                                   .meshStart = {-0.25 , -0.0105},
+                                                                   .meshEnd = {0.25 , 0.0105},
+                                                                   .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y")}),
                          [](const testing::TestParamInfo<RadiationTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });
