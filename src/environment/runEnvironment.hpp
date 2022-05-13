@@ -2,6 +2,7 @@
 #define ABLATELIBRARY_RUNENVIRONMENT_HPP
 #include <filesystem>
 #include <memory>
+#include <regex>
 #include <string>
 #include "parameters/parameters.hpp"
 
@@ -13,6 +14,9 @@ class RunEnvironment {
 
     // default empty funEnvironment
     explicit RunEnvironment();
+
+    //! store known directory variables
+    static const inline std::regex OutputDirectoryVariable = std::regex("\\$OutputDirectory");
 
    public:
     explicit RunEnvironment(const parameters::Parameters&, std::filesystem::path inputPath = {});
@@ -35,6 +39,15 @@ class RunEnvironment {
     }
 
     inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
+
+    /**
+     * replaces any known runtime variables with known values
+     *  supported values:
+     *      - $OutputDirectory is replaced with outputDirectory
+     * @param value
+     * @return
+     */
+    void ExpandVariables(std::string& value) const;
 
    private:
     inline static std::unique_ptr<RunEnvironment> runEnvironment = std::unique_ptr<RunEnvironment>();

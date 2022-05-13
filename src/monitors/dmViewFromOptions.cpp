@@ -1,6 +1,7 @@
 #include "dmViewFromOptions.hpp"
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
+#include "environment/runEnvironment.hpp"
 #include "solver/solver.hpp"
 
 ablate::monitors::DmViewFromOptions::DmViewFromOptions(Scope scope, std::string options, std::string optionNameIn)
@@ -10,10 +11,13 @@ ablate::monitors::DmViewFromOptions::DmViewFromOptions(Scope scope, std::string 
         PetscOptionsCreate(&petscOptions) >> checkError;
 
         // build the string
+        ablate::environment::RunEnvironment::Get().ExpandVariables(options);
         std::string optionString = optionName + " " + options;
         PetscOptionsInsertString(petscOptions, optionString.c_str());
     }
 }
+
+ablate::monitors::DmViewFromOptions::DmViewFromOptions(std::string options, std::string optionNameIn) : DmViewFromOptions(Scope::INITIAL, options, optionNameIn) {}
 
 ablate::monitors::DmViewFromOptions::~DmViewFromOptions() {
     if (petscOptions) {
@@ -76,6 +80,7 @@ PetscErrorCode ablate::monitors::DmViewFromOptions::CallDmViewFromOptions(TS ts,
 
     PetscFunctionReturn(0);
 }
+void ablate::monitors::DmViewFromOptions::Modify(DM& dm) { DMViewFromOptions(dm) >> checkError; }
 
 std::ostream& ablate::monitors::operator<<(std::ostream& os, const ablate::monitors::DmViewFromOptions::Scope& v) {
     switch (v) {
@@ -105,5 +110,9 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::D
 #include "registrar.hpp"
 REGISTER(ablate::monitors::Monitor, ablate::monitors::DmViewFromOptions, "replicates the DMViewFromOptions function in PETSC",
          ENUM(ablate::monitors::DmViewFromOptions::Scope, "scope", "determines if DMViewFromOptions is called initially (initial) or every time step (monitor)"),
+         OPT(std::string, "options", "if provided these options are used for the DMView call, otherwise global options is used"),
+         OPT(std::string, "optionName", "if provided the optionsName is used for DMViewFromOptions.  Needed if using global options."));
+
+REGISTER(ablate::domain::modifiers::Modifier, ablate::monitors::DmViewFromOptions, "replicates the DMViewFromOptions function in PETSC",
          OPT(std::string, "options", "if provided these options are used for the DMView call, otherwise global options is used"),
          OPT(std::string, "optionName", "if provided the optionsName is used for DMViewFromOptions.  Needed if using global options."));

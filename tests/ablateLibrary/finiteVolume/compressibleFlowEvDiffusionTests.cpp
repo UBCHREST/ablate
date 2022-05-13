@@ -9,7 +9,6 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
-#include "domain/modifiers/setFromOptions.hpp"
 #include "eos/mockEOS.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/essentialGhost.hpp"
@@ -110,21 +109,19 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>> fieldDescriptors = {
                 std::make_shared<ablate::finiteVolume::CompressibleFlowFields>(eos, std::vector<std::string>{"ev1", "ev2"})};
 
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>(
-                "simpleMesh",
-                fieldDescriptors,
-                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{
-                    std::make_shared<domain::modifiers::SetFromOptions>(std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{
-                        {"dm_refine", std::to_string(l)},
-                        {"dm_distribute", ""},
-                    })),
-                    std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
-                    std::make_shared<domain::modifiers::GhostBoundaryCells>()},
-                std::vector<int>{(int)initialNx},
-                std::vector<double>{0.0},
-                std::vector<double>{parameters.L},
-                std::vector<std::string>{"NONE"} /*boundary*/,
-                false /*simplex*/);
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
+                                                                  fieldDescriptors,
+                                                                  std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::DistributeWithGhostCells>(),
+                                                                                                                                    std::make_shared<domain::modifiers::GhostBoundaryCells>()},
+                                                                  std::vector<int>{(int)initialNx},
+                                                                  std::vector<double>{0.0},
+                                                                  std::vector<double>{parameters.L},
+                                                                  std::vector<std::string>{"NONE"} /*boundary*/,
+                                                                  false /*simplex*/,
+                                                                  ablate::parameters::MapParameters::Create({
+                                                                      {"dm_refine", std::to_string(l)},
+                                                                      {"dm_distribute", ""},
+                                                                  }));
 
             // create a constant density field
             auto eulerExact = mathFunctions::Create(ComputeEulerExact, &parameters);

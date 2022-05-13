@@ -10,7 +10,6 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "domain/boxMesh.hpp"
-#include "domain/modifiers/setFromOptions.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlowSolver.hpp"
 #include "finiteElement/lowMachFlowFields.hpp"
@@ -576,12 +575,8 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            auto mesh = std::make_shared<domain::BoxMesh>("mesh",
-                                                          fieldDescriptors,
-                                                          std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::SetFromOptions>()},
-                                                          std::vector<int>{2, 2},
-                                                          std::vector<double>{0.0, 0.0},
-                                                          std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<domain::BoxMesh>(
+                "mesh", fieldDescriptors, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{}, std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
             TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 

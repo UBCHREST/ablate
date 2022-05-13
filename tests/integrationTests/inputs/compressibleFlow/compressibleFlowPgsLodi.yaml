@@ -24,10 +24,10 @@ timestepper:
     lower: [ 0.0, -.5 ]
     upper: [ 1.0, .5 ]
     simplex: false
-    preModifiers:
+    options:
       # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 0 # must be zero when using the BoxMeshBoundaryCells
+      dm_refine: 0 # must be zero when using the BoxMeshBoundaryCells
+    preModifiers:
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
     postModifiers:

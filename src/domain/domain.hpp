@@ -25,7 +25,8 @@ class SubDomain;
 
 class Domain {
    protected:
-    Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers);
+    Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
+           const std::shared_ptr<parameters::Parameters>& options = {});
     virtual ~Domain();
 
     // The primary dm
@@ -55,8 +56,11 @@ class Domain {
     // keep a list of functions that modify the dm
     std::vector<std::shared_ptr<modifiers::Modifier>> modifiers;
 
+    //! the petsc options object to be applied to the main dm.
+    PetscOptions petscOptions = nullptr;
+
    public:
-    std::string GetName() const { return name; }
+    [[nodiscard]] std::string GetName() const { return name; }
 
     inline DM& GetDM() noexcept { return dm; }
 
@@ -72,9 +76,9 @@ class Domain {
      */
     void RegisterField(const ablate::domain::FieldDescription& fieldDescription);
 
-    PetscInt GetDimensions() const noexcept;
+    [[nodiscard]] PetscInt GetDimensions() const noexcept;
 
-    void InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
                               const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
 
     /**
@@ -84,7 +88,7 @@ class Domain {
      */
     void ProjectFieldFunctions(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec globVec, PetscReal time = 0.0);
 
-    std::shared_ptr<SubDomain> GetSubDomain(std::shared_ptr<Region> name);
+    std::shared_ptr<SubDomain> GetSubDomain(const std::shared_ptr<Region>& name);
 
     /**
      * Provide a list of serialize subDomains
@@ -103,9 +107,9 @@ class Domain {
      * @param fieldId
      * @return
      */
-    inline const Field& GetField(int fieldId) const { return fields[fieldId]; }
+    [[nodiscard]] inline const Field& GetField(int fieldId) const { return fields[fieldId]; }
 
-    inline const Field& GetField(const std::string& fieldName) const {
+    [[nodiscard]] inline const Field& GetField(const std::string& fieldName) const {
         auto field = std::find_if(fields.begin(), fields.end(), [&fieldName](auto field) { return field.name == fieldName; });
         if (field != fields.end()) {
             return *field;
@@ -119,7 +123,7 @@ class Domain {
      * @param fieldId
      * @return
      */
-    inline const std::vector<Field>& GetFields() const { return fields; }
+    [[nodiscard]] inline const std::vector<Field>& GetFields() const { return fields; }
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H
