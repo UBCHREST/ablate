@@ -15,7 +15,7 @@ ablate::radiation::RadiationSolver::RadiationSolver(std::string solverId, std::s
     : CellSolver(std::move(solverId), std::move(region),  std::move(options)) {
     raynumber = rayNumber;
     nTheta = raynumber; //The DEFAULT number of angles to solve with, should be given by user input probably?
-    nPhi = 3;//2*rayNumber; //The DEFAULT number of angles to solve with, should be given by user input
+    nPhi = 2 * raynumber; //The DEFAULT number of angles to solve with, should be given by user input
 }
 
 ablate::radiation::RadiationSolver::~RadiationSolver() {
@@ -87,7 +87,7 @@ void ablate::radiation::RadiationSolver::RayInit() {
         /// Set the spatial step size to the minimum cell radius
         h = minCellRadius;
 
-        for (int ntheta = 0; ntheta < nTheta; ntheta++) {  // for every angle theta
+        for (int ntheta = 1; ntheta < nTheta; ntheta++) {  // for every angle theta
             // precalculate sin and cosine of the angle theta because it is used frequently?
             for (int nphi = 0; nphi < nPhi; nphi++) {  // for every angle phi
                 PetscReal magnitude = h;
@@ -101,18 +101,6 @@ void ablate::radiation::RadiationSolver::RayInit() {
                     phi = ((double)nphi / (double)nPhi) * 2.0 * pi;  // converts the present angle number into a real angle
                     PetscInt i[3] = {0, 1, 2};
                     //[dim] is not known so compiler doesn't like
-                    switch (dim) {  /// Accounting for dimensionality of the domain.
-                        case 1:
-                            theta = pi / 2.0;  // Set the value so that the intersect vector sits only in a plane
-                            nTheta = 1;        // Set nTheta so that only one iteration of the theta angle runs
-                            break;
-                        case 2:
-                            theta = pi / 2.0;  // Set the value so that the intersect vector sits only in a plane
-                            nTheta = 1;        // Set nTheta so that only one iteration of the theta angle runs
-                            break;
-                        case 3:
-                            break;
-                    }
 
                     PetscReal direction[3] = {
                         (magnitude * sin(theta) * cos(phi)) + cellGeom->centroid[0],  // x component conversion from spherical coordinates, adding the position of the current cell
@@ -332,7 +320,8 @@ PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscRea
     } else {
         temperature = -1.179E7 * z * z + 2000.0;
     }
-    PetscReal radTotal =  -kappa * (4 * sbc * temperature * temperature * temperature * temperature - G);
+    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
+    PetscReal radTotal =  -kappa * (losses - G);
 
 
     return radTotal;
@@ -520,7 +509,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     PetscFunctionBeginUser;                                                           // gets fields out of the main vector
 
     /// Get setup things for the position vector of the current cell index
-    /*const auto& errorField = subDomain->GetField("error");
+    /* const auto& errorField = subDomain->GetField("error");
     PetscScalar* errorArray = nullptr;
     const PetscScalar* cellGeomArray;  // Declare the variables that will contain the geometry of the cells
     subDomain->GetFieldLocalVector(errorField, time, &eis, &errors, &edm);
@@ -530,7 +519,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     VecGetDM(cellGeomVec, &cellDM);
     DMPlexGetGeometryFVM(cellDM, nullptr, &cellGeomVec, &minCellRadius);  // Obtain the geometric information about the cells in the DM?
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
-    PetscFVCellGeom* cellGeom;*/
+    PetscFVCellGeom* cellGeom; */
 
     /// Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable
     const PetscScalar* rhsArray;
@@ -539,6 +528,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     const auto& eulerFieldInfo = subDomain->GetField("euler");
 
     /// Get the temperature field
+    // For ABLATE implementation, get temperature based on this function
     // For ABLATE implementation, get temperature based on this function
     const auto& temperatureField = subDomain->GetField("temperature");
     PetscScalar* temperatureArray = nullptr;
@@ -574,16 +564,16 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
 
                     // TODO: Input absorptivity (kappa) values from model here.
 
-                    if(n == (numPoints - 1)) {
-                        //rayIntensity = FlameIntensity(1, *temperature);  // Set the initial ray intensity to the boundary intensity
-                                                                        // TODO: Make intensity boundary conditions be set from boundary label
-                        ///For debugging purposes
-                        if (theta > pi / 2) {                        // If sitting on the bottom boundary (everything on the lower half of the angles)
+                    if (n == (numPoints - 1)) {
+                        rayIntensity = FlameIntensity(1, *temperature);  // Set the initial ray intensity to the boundary intensity
+                        // TODO: Make intensity boundary conditions be set from boundary label
+                        /// For debugging purposes VVV
+                        /*if (theta > pi / 2) {                        // If sitting on the bottom boundary (everything on the lower half of the angles)
                             rayIntensity = FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity
                         } else if (theta < pi / 2) {                 // If sitting on the top boundary
                             rayIntensity = FlameIntensity(1, 700);   // Set the initial ray intensity to the top wall intensity
-                        }
-                    }else {
+                        }*/
+                    } else {
                         /// The ray intensity changes as a function of the environment at this point
                         rayIntensity = FlameIntensity(1 - exp(-kappa * h), *temperature) + rayIntensity * exp(-kappa * h);
                         // PetscPrintf(PETSC_COMM_WORLD, "Intensity: %f\n", rayIntensity);
@@ -592,7 +582,6 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                 /// The rays end here, their intensity is added to the total intensity of the cell
                 intensity += rayIntensity * sin(theta) * dTheta * dPhi;  // Gives the partial impact of the ray on the total sphere. The sin(theta) is a result of the polar coordinate discretization
             }
-            // PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
         }
         /// Gets the temperature from the cell index specified
         DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);
@@ -600,15 +589,17 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
         /// Put the irradiation into the right hand side function
         PetscScalar* rhsValues;
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (4 * sbc * *temperature * *temperature * *temperature * *temperature - intensity);
+        PetscReal losses = 4 * sbc * *temperature * *temperature * *temperature * *temperature;
+        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - intensity);
+        PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
 
-        /*PetscReal actualResult = -kappa * (4 * sbc * *temperature * *temperature * *temperature * *temperature - intensity);
+        /* // PetscReal actualResult = -kappa * (losses - losses - intensity);
         DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);
-        PetscScalar analyticalResult = ablate::radiation::RadiationSolver::ReallySolveParallelPlates(cellGeom->centroid[2]);
-        PetscScalar* errorValues;
-        DMPlexPointLocalRef(edm, iCell, errorArray, &errorValues);
-        double error = 100*(analyticalResult-actualResult)/analyticalResult;
-        errorValues[0] = error;*/
+        PetscScalar analyticalResult = ablate::radiation::RadiationSolver::ReallySolveParallelPlates(cellGeom->centroid[dim-1]);
+        // PetscScalar* errorValues;
+        // DMPlexPointLocalRef(edm, iCell, errorArray, &errorValues);
+        // double error = (analyticalResult);
+        // errorValues[0] = error; */
 
         //Total energy gain of the current cell depends on absorptivity at the current cell
         // PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
@@ -617,9 +608,9 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     }
     // Cleanup
     VecRestoreArrayRead(rhs, &rhsArray);
-    //VecRestoreArray(errors, &errorArray);
+    // VecRestoreArray(errors, &errorArray);
     VecRestoreArray(loctemp, &temperatureArray);
-    //subDomain->RestoreFieldLocalVector(errorField, &eis, &errors, &edm);
+    // subDomain->RestoreFieldLocalVector(errorField, &eis, &errors, &edm);
     subDomain->RestoreFieldLocalVector(temperatureField, &vis, &loctemp, &vdm);
     //VecView(rhs, PETSC_VIEWER_STDOUT_WORLD);
     PetscFunctionReturn(0);
