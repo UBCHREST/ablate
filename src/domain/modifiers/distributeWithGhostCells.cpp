@@ -8,15 +8,7 @@ void ablate::domain::modifiers::DistributeWithGhostCells::Modify(DM &dm) {
     // create any ghost cells that are needed
     DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE) >> checkError;
     DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist) >> checkError;
-    if (dmDist) {
-        // Copy over the options object
-        PetscOptions options;
-        PetscObjectGetOptions((PetscObject)dm, &options) >> checkError;
-        PetscObjectSetOptions((PetscObject)dmDist, options) >> checkError;
-
-        DMDestroy(&dm) >> checkError;
-        dm = dmDist;
-    }
+    ReplaceDm(dm, dmDist);
 }
 
 #include "registrar.hpp"

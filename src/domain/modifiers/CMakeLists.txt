@@ -20,4 +20,6 @@ target_sources(ablateLibrary
         tagLabelInterface.cpp
         labelSupport.hpp
         labelSupport.cpp
+        extrudeLabel.hpp
+        extrudeLabel.cpp
         )
