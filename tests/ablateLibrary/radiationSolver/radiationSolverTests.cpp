@@ -152,10 +152,10 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             double N = stencilSet.size();
             double l2 = sqrt(l2sum)/N;
 
-            if (l2 > 100000) {
+            if (l2 > 45000) {
                 FAIL() << "Radiation test error exceeded.";
             }
-            PetscPrintf(MPI_COMM_WORLD,"L2 Norm: %f\n",sqrt(l2sum)/N);
+            // PetscPrintf(MPI_COMM_WORLD,"L2 Norm: %f\n",sqrt(l2sum)/N);
 
             /*
              * 10 Deep L2 Norm: 0.068057

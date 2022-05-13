@@ -79,8 +79,8 @@ void ablate::radiation::RadiationSolver::RayInit() {
 
     PetscInt ncells = 0;
     for (auto iCell : stencilSet) {
-        double percentComplete = 100.0 * double(ncells) / double(stencilSet.size());
-        PetscPrintf(PETSC_COMM_WORLD, "Radiation Initializer Percent Complete: %f\n", percentComplete);
+        // double percentComplete = 100.0 * double(ncells) / double(stencilSet.size());
+        // PetscPrintf(PETSC_COMM_WORLD, "Radiation Initializer Percent Complete: %f\n", percentComplete);
 
         DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);  // Reads the cell location from the current cell
 
@@ -591,7 +591,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         PetscReal losses = 4 * sbc * *temperature * *temperature * *temperature * *temperature;
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - intensity);
-        PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
+        // PetscPrintf(PETSC_COMM_WORLD, "Radiative Gain: %g\n", intensity);
 
         /* // PetscReal actualResult = -kappa * (losses - losses - intensity);
         DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);
