@@ -1,0 +1,58 @@
+Timestep: 0000 time = (.*) dt = (.*)<expects> z          n1e-10
+Timestep: 0001 time = (.*) dt = (.*)<expects> n1e-10     n1e-09
+Timestep: 0002 time = (.*) dt = (.*)<expects> n1.1e-09   n1e-08
+Timestep: 0003 time = (.*) dt = (.*)<expects> n1.11e-08  n1e-07
+Timestep: 0004 time = (.*) dt = (.*)<expects> n1.111e-07 n1e-06
+Timestep: 0005 time = (.*) dt = (.*)<expects> n1.111e-06 n1e-05
+Timestep: 0006 time = (.*) dt = (.*)<expects> n1.111e-05 n0.0001
+Timestep: 0007 time = (.*) dt = (.*)<expects> n0.0001111 n0.001
+Timestep: 0008 time = (.*) dt = (.*)<expects> n0.001111  n0.00284731
+Timestep: 0009 time = (.*) dt = (.*)<expects> n0.001975  n0.00154425
+Timestep: 0010 time = (.*) dt = (.*)<expects> n0.003197  n0.00138903
+Timestep: 0011 time = (.*) dt = (.*)<expects> n0.004586  n0.00130395
+Timestep: 0012 time = (.*) dt = (.*)<expects> n0.005469  n0.00107401
+Timestep: 0013 time = (.*) dt = (.*)<expects> n0.006401  n0.00100169
+Timestep: 0014 time = (.*) dt = (.*)<expects> n0.00727   n0.000936703
+Timestep: 0015 time = (.*) dt = (.*)<expects> n0.008206  n0.000867019
+Timestep: 0016 time = (.*) dt = (.*)<expects> n0.009073  n0.000792773
+Timestep: 0017 time = (.*) dt = (.*)<expects> n0.009866  n0.000797733
+Timestep: 0018 time = (.*) dt = (.*)<expects> n0.01066   n0.000865193
+Timestep: 0019 time = (.*) dt = (.*)<expects> n0.01153   n0.000879788
+Timestep: 0020 time = (.*) dt = (.*)<expects> n0.01241   n0.000836911
+Timestep: 0021 time = (.*) dt = (.*)<expects> n0.01325   n0.000798968
+Timestep: 0022 time = (.*) dt = (.*)<expects> n0.01404   n0.000819078
+Timestep: 0023 time = (.*) dt = (.*)<expects> n0.01486   n0.000852925
+Timestep: 0024 time = (.*) dt = (.*)<expects> n0.01572   n0.000856271
+Timestep: 0025 time = (.*) dt = (.*)<expects> n0.01657   n0.000823763
+Timestep: 0026 time = (.*) dt = (.*)<expects> n0.0174    n0.000811342
+Timestep: 0027 time = (.*) dt = (.*)<expects> n0.01821   n0.000826243
+Timestep: 0028 time = (.*) dt = (.*)<expects> n0.01903   n0.000847428
+Timestep: 0029 time = (.*) dt = (.*)<expects> n0.01988   n0.000839348
+Timestep: 0030 time = (.*) dt = (.*)<expects> n0.02072   n0.000822378
+Timestep: 0031 time = (.*) dt = (.*)<expects> n0.02154   n0.00081706
+Timestep: 0032 time = (.*) dt = (.*)<expects> n0.02236   n0.000830995
+Timestep: 0033 time = (.*) dt = (.*)<expects> n0.02319   n0.000837904
+Timestep: 0034 time = (.*) dt = (.*)<expects> n0.02403   n0.000831873
+Timestep: 0035 time = (.*) dt = (.*)<expects> n0.02486   n0.00082036
+Timestep: 0036 time = (.*) dt = (.*)<expects> n0.02568   n0.000821746
+Timestep: 0037 time = (.*) dt = (.*)<expects> n0.0265    n0.000828797
+Timestep: 0038 time = (.*) dt = (.*)<expects> n0.02733   n0.000832173
+Timestep: 0039 time = (.*) dt = (.*)<expects> n0.02816   n0.000825253
+Timestep: 0040 time = (.*) dt = (.*)<expects> n0.02899   n0.000820419
+Timestep: 0041 time = (.*) dt = (.*)<expects> n0.02981   n0.000821481
+Timestep: 0042 time = (.*) dt = (.*)<expects> n0.03063   n0.00082648
+Timestep: 0043 time = (.*) dt = (.*)<expects> n0.03146   n0.000825678
+Timestep: 0044 time = (.*) dt = (.*)<expects> n0.03228   n0.000821562
+Timestep: 0045 time = (.*) dt = (.*)<expects> n0.03311   n0.000818414
+Timestep: 0046 time = (.*) dt = (.*)<expects> n0.03392   n0.000820358
+Timestep: 0047 time = (.*) dt = (.*)<expects> n0.03474   n0.000821955
+Timestep: 0048 time = (.*) dt = (.*)<expects> n0.03557   n0.000820885
+Timestep: 0049 time = (.*) dt = (.*)<expects> n0.03639   n0.00081738
+Timestep: 0050 time = (.*) dt = (.*)<expects> n0.0372    n0.000816283
+ResultFiles:
+domain.hdf5
+domain.xmf
+pgsLog
+restart.rst
+vortexFlowField.hdf5
+vortexFlowField.xmf

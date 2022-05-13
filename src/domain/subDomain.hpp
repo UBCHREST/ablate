@@ -192,7 +192,7 @@ class SubDomain : public io::Serializable {
      * @param point
      * @return
      */
-    inline bool InRegion(PetscInt point) {
+    inline bool InRegion(PetscInt point) const {
         if (!label) {
             return true;
         }
@@ -205,7 +205,7 @@ class SubDomain : public io::Serializable {
      * The comm used to define this subDomain and resulting solvers
      * @return
      */
-    inline MPI_Comm GetComm() { return PetscObjectComm((PetscObject)GetDM()); }
+    inline MPI_Comm GetComm() const { return PetscObjectComm((PetscObject)domain.GetDM()); }
 
     /**
      * The label (if any) used to define this subDomain
@@ -236,7 +236,8 @@ class SubDomain : public io::Serializable {
      * Returns raw access to the global dm
      * @return
      */
-    inline DM& GetDM() noexcept { return domain.GetDM(); }
+    inline DM& GetDM() const noexcept { return domain.GetDM(); }
+
     /**
      * Returns the dm describing the aux fields living in this subdomain.  The dm is defined across
      * the entire mesh, but the fields are only define under this subdomain

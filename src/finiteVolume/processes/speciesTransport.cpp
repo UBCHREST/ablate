@@ -74,9 +74,9 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::UpdateAuxMassF
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnergyFlux(PetscInt dim, const PetscReal *area, const PetscReal *normal, const PetscReal *centroid, const PetscInt uOff[],
-                                                                                      const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
-                                                                                      const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                      const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
+                                                                                      const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;
@@ -112,16 +112,16 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionEnerg
         for (PetscInt d = 0; d < dim; ++d) {
             // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
             const int offset = aOff_x[yi] + (sp * dim) + d;
-            PetscReal speciesFlux = -area[d] * density * diff * flowParameters->speciesSpeciesSensibleEnthalpy[sp] * gradAux[offset];
+            PetscReal speciesFlux = -fg->normal[d] * density * diff * flowParameters->speciesSpeciesSensibleEnthalpy[sp] * gradAux[offset];
             flux[CompressibleFlowFields::RHOE] += speciesFlux;
         }
     }
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeciesFlux(PetscInt dim, const PetscReal *area, const PetscReal *normal, const PetscReal *centroid, const PetscInt uOff[],
-                                                                                       const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
-                                                                                       const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
+PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscInt uOff_x[],
+                                                                                       const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[],
+                                                                                       const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void *ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int yi = 0;
@@ -147,13 +147,14 @@ PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::DiffusionSpeci
         for (PetscInt d = 0; d < dim; ++d) {
             // speciesFlux(-rho Di dYi/dx - rho Di dYi/dy - rho Di dYi//dz) . n A
             const int offset = aOff_x[yi] + (sp * dim) + d;
-            PetscReal speciesFlux = -area[d] * density * diff * gradAux[offset];
+            PetscReal speciesFlux = -fg->normal[d] * density * diff * gradAux[offset];
             flux[sp] += speciesFlux;
         }
     }
 
     PetscFunctionReturn(0);
 }
+
 PetscErrorCode ablate::finiteVolume::processes::SpeciesTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt *uOff, const PetscScalar *fieldL, const PetscScalar *fieldR,
                                                                                 const PetscInt *aOff, const PetscScalar *auxL, const PetscScalar *auxR, PetscScalar *flux, void *ctx) {
     PetscFunctionBeginUser;

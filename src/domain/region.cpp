@@ -24,6 +24,15 @@ void ablate::domain::Region::CheckForLabel(DM dm) const {
     }
 }
 
+bool ablate::domain::Region::InRegion(const std::shared_ptr<Region>& region, DM dm, PetscInt point) {
+    if (!region) {
+        return true;
+    }
+    PetscInt ptValue;
+    DMGetLabelValue(dm, region->name.c_str(), point, &ptValue) >> checkError;
+    return ptValue == region->value;
+}
+
 std::ostream& ablate::domain::operator<<(std::ostream& os, const ablate::domain::Region& region) {
     os << region.ToString();
     return os;

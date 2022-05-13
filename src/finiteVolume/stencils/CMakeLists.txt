@@ -1,0 +1,9 @@
+target_sources(ablateLibrary
+        PUBLIC
+        stencil.hpp
+        faceStencilGenerator.hpp
+        leastSquares.hpp
+        leastSquares.cpp
+        leastSquaresAverage.hpp
+        leastSquaresAverage.cpp
+        )

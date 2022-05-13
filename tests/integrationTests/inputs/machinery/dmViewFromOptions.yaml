@@ -1,5 +1,6 @@
+# Simple test that checks for DmViewFromOptions monitor
+
 ---
-# Example setup for incompressible flow
 environment:
   title: incompessibleFlow
   tagDirectory: false
@@ -55,7 +56,7 @@ timestepper:
     - *temperatureField
 solver: !ablate::finiteElement::IncompressibleFlowSolver
   id: theFlowField
-  options: {}
+  options: { }
   parameters:
     strouhal: 1.0
     reynolds: 1.0
@@ -66,16 +67,18 @@ solver: !ablate::finiteElement::IncompressibleFlowSolver
   boundaryConditions:
     - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall velocity"
-      labelIds: [3, 1, 2, 4]
+      labelIds: [ 3, 1, 2, 4 ]
       boundaryValue: *velocityField
     - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall temp"
-      labelIds: [3, 1, 2, 4]
+      labelIds: [ 3, 1, 2, 4 ]
       boundaryValue: *temperatureField
   monitors:
+    # the DmViewFromOptions should output once with full mesh/dm details
     - !ablate::monitors::DmViewFromOptions
       scope: initial
       options: ascii::ascii_info_detail
+    # the DmViewFromOptions should output at every interval with mesh/dm information
     - !ablate::monitors::DmViewFromOptions
       scope: monitor
       options: ascii::ascii_info

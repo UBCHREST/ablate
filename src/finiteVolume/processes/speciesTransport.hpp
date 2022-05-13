@@ -79,9 +79,8 @@ class SpeciesTransport : public FlowProcess {
      * ctx = SpeciesDiffusionData
      * @return
      */
-    static PetscErrorCode DiffusionEnergyFlux(PetscInt dim, const PetscReal* area, const PetscReal* normal, const PetscReal* centroid, const PetscInt uOff[], const PetscInt uOff_x[],
-                                              const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[],
-                                              PetscScalar flux[], void* ctx);
+    static PetscErrorCode DiffusionEnergyFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                              const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
     /**
      * This computes the species transfer for species diffusion fluxy
      * f = "densityYi"
@@ -90,9 +89,8 @@ class SpeciesTransport : public FlowProcess {
      * ctx = SpeciesDiffusionData
      * @return
      */
-    static PetscErrorCode DiffusionSpeciesFlux(PetscInt dim, const PetscReal* area, const PetscReal* normal, const PetscReal* centroid, const PetscInt uOff[], const PetscInt uOff_x[],
-                                               const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
-                                               const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+    static PetscErrorCode DiffusionSpeciesFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                               const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 
     /**
      * This Computes the advection flux for each species (Yi)

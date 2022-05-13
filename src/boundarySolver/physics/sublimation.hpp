@@ -4,6 +4,7 @@
 #include "boundarySolver/boundaryProcess.hpp"
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
+#include "finiteVolume/processes/pressureGradientScaling.hpp"
 namespace ablate::boundarySolver::physics {
 
 /**
@@ -24,14 +25,26 @@ class Sublimation : public BoundaryProcess {
     void *massFractionsContext;
     PetscInt numberSpecies = 0;
 
+    // toggle to disable any contribution of pressure in the momentum equation
+    const bool disablePressure;
+
+    // the pgs is needed for the pressure calculation
+    const std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling;
+
     // store the effectiveConductivity function
     eos::ThermodynamicTemperatureFunction effectiveConductivity;
+
+    // store the function to compute viscosity
+    eos::ThermodynamicTemperatureFunction viscosityFunction;
 
     // reuse fv update temperature function
     eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
 
     // compute the sensible enthalpy for the blowing term
     eos::ThermodynamicTemperatureFunction computeSensibleEnthalpy;
+
+    // compute the pressure needed for the momentum equation
+    eos::ThermodynamicTemperatureFunction computePressure;
 
     /**
      * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
@@ -40,7 +53,8 @@ class Sublimation : public BoundaryProcess {
 
    public:
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
-                         const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {});
+                         const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
+                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool disablePressure = false);
 
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
 
