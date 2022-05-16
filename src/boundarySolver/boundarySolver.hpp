@@ -10,7 +10,7 @@ namespace ablate::boundarySolver {
 // forward declare the boundaryProcess
 class BoundaryProcess;
 
-class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {  //Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
+class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
    public:
     /**
      * Boundary information.

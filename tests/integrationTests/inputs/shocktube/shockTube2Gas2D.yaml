@@ -48,39 +48,32 @@ timestepper:
     - &3
       fieldName: densityVF
       field: "x < 0.5 ? 0.0 : 0.125"
-solvers:
-  - !<!ablate::finiteVolume::FiniteVolumeSolver
-    id: SOD Problem
-    processes:
-      - !ablate::finiteVolume::processes::TwoPhaseEulerAdvection
-        parameters:
-          g: [0.0, 0.0, 0.0]
-        eosGas: !ablate::eos::PerfectGas &4
-          parameters: # air
-            gamma: 1.4
-            Rgas : 287.0
-        eosLiquid: !ablate::eos::PerfectGas &1
-          parameters: # argon
-            gamma: 1.67
-            Rgas : 208.1
-        fluxCalculatorGasGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
-          eosL: *4
-          eosR: *4
-        fluxCalculatorGasLiquid: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
-          eosL: *4
-          eosR: *1
-        fluxCalculatorLiquidGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
-          eosL: *1
-          eosR: *4
-        fluxCalculatorLiquidLiquid: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
-          eosL: *1
-          eosR: *1
-  - !<!ablate::radiationSolver::RadiationSolver>
-    id: radiate
-    region:
-      name: mainSolver
-    fieldBoundary:
-      name: boundaryFace
+solver: !ablate::finiteVolume::FiniteVolumeSolver
+  id: SOD Problem
+  processes:
+    - !ablate::finiteVolume::processes::TwoPhaseEulerAdvection
+      parameters:
+        g: [0.0, 0.0, 0.0]
+      eosGas: !ablate::eos::PerfectGas &4
+        parameters: # air
+          gamma: 1.4
+          Rgas : 287.0
+      eosLiquid: !ablate::eos::PerfectGas &1
+        parameters: # argon
+          gamma: 1.67
+          Rgas : 208.1
+      fluxCalculatorGasGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *4
+        eosR: *4
+      fluxCalculatorGasLiquid: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *4
+        eosR: *1
+      fluxCalculatorLiquidGas: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *1
+        eosR: *4
+      fluxCalculatorLiquidLiquid: !ablate::finiteVolume::fluxCalculator::Riemann2Gas
+        eosL: *1
+        eosR: *1
 
   boundaryConditions:
     - !ablate::finiteVolume::boundaryConditions::EssentialGhost

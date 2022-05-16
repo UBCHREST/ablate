@@ -43,7 +43,6 @@ class Solver {
     static PetscErrorCode DMPlexInsertTimeDerivativeBoundaryValues_Plex(DM dm, PetscDS ds, PetscBool insertEssential, Vec locX, PetscReal time, Vec faceGeomFVM, Vec cellGeomFVM, Vec gradFVM);
 
    public:
-    Solver();
     virtual ~Solver();
 
     /** Register all needed fields with the subDomain **/

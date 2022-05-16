@@ -18,7 +18,7 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
         throw std::invalid_argument("The ExtractLineMonitor monitor can only be used with ablate::finiteVolume::FiniteVolume");
     }
 
-    // check the size of the subdomain for which the line monitor has been called?
+    // check the size
     int size;
     MPI_Comm_size(flow->GetSubDomain().GetComm(), &size) >> checkMpiError;
     if (size != 1) {
@@ -33,56 +33,56 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
     // get the min cell size
     PetscReal minCellRadius;
     DMPlexGetGeometryFVM(flow->GetSubDomain().GetDM(), NULL, &cellGeomVec, &minCellRadius) >> checkError;
-    VecGetDM(cellGeomVec, &dmCell) >> checkError; //Gets the DM defining the data layout of the vector
+    VecGetDM(cellGeomVec, &dmCell) >> checkError;
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
     PetscMPIInt rank;
     MPI_Comm_rank(flow->GetSubDomain().GetComm(), &rank) >> checkMpiError;
 
     PetscInt dim;
-    DMGetDimension(flow->GetSubDomain().GetDM(), &dim) >> checkError; //Gets the number of dimensions which the domain exists in?
+    DMGetDimension(flow->GetSubDomain().GetDM(), &dim) >> checkError;
 
     // Now march over each subsegment in the line
-    double ds = minCellRadius / 10.0; //Sets the minimum step size which the line monitor is allowed to take
-    double s = 0.0; //s represents how far the line has been marched through?
-    double L = 0.0; //L represents the length of the line?
-    std::vector<double> lineVec; //Vector in the direction of the line
-    for (std::size_t d = 0; d < start.size(); d++) { //
-        L += PetscSqr(end[d] - start[d]); //PetscSqr: squares a number?
-        lineVec.push_back(end[d] - start[d]); //What is push_back? Adds a new element to the vector
+    double ds = minCellRadius / 10.0;
+    double s = 0.0;
+    double L = 0.0;
+    std::vector<double> lineVec;
+    for (std::size_t d = 0; d < start.size(); d++) {
+        L += PetscSqr(end[d] - start[d]);
+        lineVec.push_back(end[d] - start[d]);
     }
-    L = PetscSqrtReal(L); //Takes the square root of the sum of differences?
+    L = PetscSqrtReal(L);
     for (auto& c : lineVec) {
-        c /= L; //TODO: What does c represent?
+        c /= L;
     }
 
-    // Create a location vector (Location of what? The current cell?)
-    Vec locVec; //Vector representing the location of a cell?
-    VecCreateSeq(PETSC_COMM_SELF, dim, &locVec) >> checkError; //Creates the vector with a length equal to the number of dimensions
-    VecSetBlockSize(locVec, dim) >> checkError; //TODO: What is vec set block size? Probably something related to memory management
+    // Create a location vector
+    Vec locVec;
+    VecCreateSeq(PETSC_COMM_SELF, dim, &locVec) >> checkError;
+    VecSetBlockSize(locVec, dim) >> checkError;
 
-    while (s < L) { //While the vector traveled distance is less than the line length total?
+    while (s < L) {
         // Compute the current location
-        for (PetscInt d = 0; d < dim; d++) { //For each index in the vector? (For 3d, this would be three-dimensional, therefore this writes the location into a petsc vector)
-            VecSetValue(locVec, d, s * lineVec[d], INSERT_VALUES) >> checkError; //Insert s*lineVec[d] into the locVec vector at index d
+        for (PetscInt d = 0; d < dim; d++) {
+            VecSetValue(locVec, d, s * lineVec[d], INSERT_VALUES) >> checkError;
         }
-        VecAssemblyBegin(locVec) >> checkError; //Initiates the MPI passing for nonlocal operations (execute the index writing)
-        VecAssemblyEnd(locVec) >> checkError; //Same as above
+        VecAssemblyBegin(locVec) >> checkError;
+        VecAssemblyEnd(locVec) >> checkError;
 
         // find the point in the mesh
-        PetscSF cellSF = NULL; //PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
-        DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError; //Locate the points in v in the mesh and return a PetscSF of the containing cells
+        PetscSF cellSF = NULL;
+        DMLocatePoints(flow->GetSubDomain().GetDM(), locVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
 
         const PetscSFNode* cells;
-        PetscInt numberFound; //Number of what found? Points
-        PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError; //Get the graph specifying a parallel star forest //TODO: what is a parallel star forest exactly?
+        PetscInt numberFound;
+        PetscSFGetGraph(cellSF, NULL, &numberFound, NULL, &cells) >> checkError;
         if (cells[0].rank == rank) {
             // search over the history of indexes
             if (std::find(indexLocations.begin(), indexLocations.end(), cells[0].index) == indexLocations.end()) {
                 // we have not counted this cell
                 indexLocations.push_back(cells[0].index);
 
-                // get the center location of this cell //TODO: This can be used in order to find the cell locations based on index?
+                // get the center location of this cell
                 PetscFVCellGeom* cellGeom;
                 DMPlexPointLocalRead(dmCell, cells[0].index, cellGeomArray, &cellGeom) >> checkError;
                 // figure out where this cell is along the line
@@ -90,7 +90,7 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
                 for (PetscInt d = 0; d < dim; d++) {
                     alongLine += PetscSqr(cellGeom->centroid[d] - start[d]);
                 }
-                distanceAlongLine.push_back(PetscSqrtReal(alongLine)); //Adds the distance that this cell step has traveled?
+                distanceAlongLine.push_back(PetscSqrtReal(alongLine));
             }
         }
         PetscSFDestroy(&cellSF) >> checkError;

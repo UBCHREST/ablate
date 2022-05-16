@@ -42,7 +42,7 @@ void ablate::monitors::Probes::Register(std::shared_ptr<solver::Solver> solver) 
         }
         VecCreateSeqWithArray(PETSC_COMM_SELF, dim, (PetscInt)globalPointsScalar.size(), globalPointsScalar.data(), &pointVec);
 
-        // Locate the points in the DM ///Takes a list of points and finds the cells that they live in
+        // Locate the points in the DM
         PetscSF cellSF = nullptr;
         DMLocatePoints(solver->GetSubDomain().GetDM(), pointVec, DM_POINTLOCATION_REMOVE, &cellSF) >> checkMpiError;
         PetscInt numFound;
