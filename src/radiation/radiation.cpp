@@ -142,7 +142,7 @@ void ablate::radiation::RadiationSolver::RayInit() {
                      * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
                      * The boundary has been reached if any of these conditions don't hold
                      * */
-                    if (nFound > -1 && cell[0].index >= 0) {  // TODO: Need to make sure that the cell index is within the cellRange, how to check for this?
+                    if (nFound > -1 && cell[0].index >= 0 && subDomain->InRegion(cell[0].index)) {
                         rays[ncells][ntheta][nphi].push_back(cell[0].index);
                     } else {
                         boundary = true;  //!< The boundary has been reached if any of these conditions don't hold

@@ -241,7 +241,6 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             /// Declare L2 norm variables
             PetscReal l2sum;
             double error;  // Number of cells in the domain
-            std::set<PetscInt> stencilSet;
 
             ablate::solver::Range cellRange;
             radiation->GetCellRange(cellRange);
@@ -266,10 +265,10 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                 // PetscPrintf(MPI_COMM_WORLD,"Radiation %% Error: %f, Height: %f\n",error,cellGeom->centroid[2]);
             }
             /// Compute the L2 Norm error
-            double N = stencilSet.size();
+            double N = (cellRange.end - cellRange.start);
             double l2 = sqrt(l2sum) / N;
 
-            // PetscPrintf(MPI_COMM_WORLD,"L2 Norm: %f\n",sqrt(l2sum)/N);
+            PetscPrintf(MPI_COMM_WORLD,"L2 Norm: %f\n",sqrt(l2sum)/N);
             if (l2 > 45000) {
                 FAIL() << "Radiation test error exceeded.";
             }
