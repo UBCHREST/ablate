@@ -21,6 +21,7 @@ void ablate::radiation::RadiationSolver::Setup() { /** allows initialization aft
     ablate::solver::CellSolver::Setup();
     dim = subDomain->GetDimensions();  //!< Number of dimensions already defined in the setup
 }
+
 void ablate::radiation::RadiationSolver::Initialize() {
     /** Runs the ray initialization, finding cell indices
      * Initialize the log if provided
@@ -31,25 +32,18 @@ void ablate::radiation::RadiationSolver::Initialize() {
     }
 }
 
-/** Declaring function for the initialization to call, draws each ray vector and gets all of the cells associated with it (sorted by distance and starting at the boundary working in)*/
 void ablate::radiation::RadiationSolver::RayInit() {
+    /** Initialization to call, draws each ray vector and gets all of the cells associated with it
+     * (sorted by distance and starting at the boundary working in)
+     * */
+
     double theta;  //!< represents the actual current angle (inclination)
     double phi;    //!< represents the actual current angle (rotation)
 
     /**Locally get a range of cells that are included in this subdomain at this time step for the ray initialization
-     * Clear the existing set because a new set of cells will be created below
-     * if there is a cell array, use it, otherwise it is just c
-     * keep a list of cells in the stencil
      * */
-    stencilSet.clear();
     solver::Range cellRange;
     GetCellRange(cellRange);
-    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-        // if there is a cell array, use it, otherwise it is just c
-        const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-        // keep a list of cells in the stencil
-        stencilSet.insert(cell);
-    }
 
     /** Create a nested vector which can store cell locations based on origin cell, theta, phi, and space step
      * Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
@@ -59,7 +53,7 @@ void ablate::radiation::RadiationSolver::RayInit() {
     std::vector<PetscInt> rayPhis;
     std::vector<std::vector<PetscInt>> rayThetas(nPhi, rayPhis);
     std::vector<std::vector<std::vector<PetscInt>>> rayCells(nTheta, rayThetas);
-    rays.resize(stencilSet.size(), rayCells);
+    rays.resize((cellRange.end - cellRange.start), rayCells);
 
     /** Get setup things for the position vector of the current cell index
      * Declare the variables that will contain the geometry of the cells
@@ -74,12 +68,13 @@ void ablate::radiation::RadiationSolver::RayInit() {
     PetscFVCellGeom* cellGeom;
 
     PetscInt ncells = 0;
-    for (auto iCell : stencilSet) {
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
         /** Provide progress updates if the log is enabled.
          * Initializer described how many of the cell ray locations have been stored.
          */
         if (log) {
-            double percentComplete = 100.0 * double(ncells) / double(stencilSet.size());
+            double percentComplete = 100.0 * double(ncells) / double((cellRange.end - cellRange.start));
             log->Printf("Radiation Initializer Percent Complete: %f\n", percentComplete);
         }
 
@@ -147,7 +142,7 @@ void ablate::radiation::RadiationSolver::RayInit() {
                      * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
                      * The boundary has been reached if any of these conditions don't hold
                      * */
-                    if (nFound > -1 && cell[0].index >= 0 && stencilSet.count(cell[0].index) != 0) {
+                    if (nFound > -1 && cell[0].index >= 0) {  // TODO: Need to make sure that the cell index is within the cellRange, how to check for this?
                         rays[ncells][ntheta][nphi].push_back(cell[0].index);
                     } else {
                         boundary = true;  //!< The boundary has been reached if any of these conditions don't hold
@@ -186,7 +181,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     const auto& eulerFieldInfo = subDomain->GetField("euler");
 
     /** Get the temperature field
-        For ABLATE implementation, get temperature based on this function
+     * For ABLATE implementation, get temperature based on this function
      */
     const auto& temperatureField = subDomain->GetField("temperature");
     PetscScalar* temperatureArray = nullptr;
@@ -207,9 +202,12 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
      * for every angle theta
      * converts the present angle number into a real angle
      * */
-    for (auto iCell : stencilSet) {
+    solver::Range cellRange;
+    GetCellRange(cellRange);
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
         PetscReal intensity = 0;
-        for (int ntheta = 0; ntheta < nTheta; ntheta++) {    // for every angle theta
+        for (int ntheta = 1; ntheta < nTheta; ntheta++) {    // for every angle theta
             theta = ((double)ntheta / (double)nTheta) * pi;  // converts the present angle number into a real angle
             for (int nphi = 0; nphi < nPhi; nphi++) {
                 /** Each ray is born here. They begin at the far field temperature.
@@ -219,22 +217,24 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                 PetscReal rayIntensity;
                 int numPoints = static_cast<int>(rays[ncells][ntheta][nphi].size());
 
-                for (int n = (numPoints - 1); n >= 0; n--) {
-                    /** Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
-                        Define the absorptivity and temperature in this section
-                        For ABLATE implementation, get temperature based on this function
-                        Get the array that lives inside the vector
-                        Gets the temperature from the cell index specified
-                    */
-                    DMPlexPointLocalRef(vdm, rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);
-                    /// Input absorptivity (kappa) values from model here.
+                if (numPoints > 0) {
+                    for (int n = (numPoints - 1); n >= 0; n--) {
+                        /** Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
+                            Define the absorptivity and temperature in this section
+                            For ABLATE implementation, get temperature based on this function
+                            Get the array that lives inside the vector
+                            Gets the temperature from the cell index specified
+                        */
+                        DMPlexPointLocalRef(vdm, rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);
+                        /// Input absorptivity (kappa) values from model here.
 
-                    if (n == (numPoints - 1)) {                          /** If this is the beginning of the ray, set this as the initial intensity.*/
-                        rayIntensity = FlameIntensity(1, *temperature);  //!< Set the initial ray intensity to the boundary intensity
-                        /// Make intensity boundary conditions be set from boundary label
-                    } else {
-                        /** The ray intensity changes as a function of the environment at this point*/
-                        rayIntensity = FlameIntensity(1 - exp(-kappa * h), *temperature) + rayIntensity * exp(-kappa * h);
+                        if (n == (numPoints - 1)) {                          /** If this is the beginning of the ray, set this as the initial intensity.*/
+                            rayIntensity = FlameIntensity(1, *temperature);  //!< Set the initial ray intensity to the boundary intensity
+                            /// Make intensity boundary conditions be set from boundary label
+                        } else {
+                            /** The ray intensity changes as a function of the environment at this point*/
+                            rayIntensity = FlameIntensity(1 - exp(-kappa * h), *temperature) + rayIntensity * exp(-kappa * h);
+                        }
                     }
                 }
                 /** The rays end here, their intensity is added to the total intensity of the cell
@@ -243,13 +243,14 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                  * */
                 intensity += rayIntensity * sin(theta) * dTheta * dPhi;
             }
-            /** Provide progress updates if the log is enabled.
-             * Radiative gain can be useful for debugging purposes.
-             */
-            if (log) {
-                log->Printf("Radiative Gain: %g\n", intensity);
-            }
         }
+        /** Provide progress updates if the log is enabled.
+         * Radiative gain can be useful for debugging purposes.
+         */
+        if (log) {
+            log->Printf("Radiative Gain: %g\n", intensity);
+        }
+
         /** Gets the temperature from the cell index specified*/
         DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);
 
@@ -270,139 +271,13 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     PetscFunctionReturn(0);
 }
 
-PetscReal ablate::radiation::RadiationSolver::ReallySolveParallelPlates(PetscReal z) {
-    /** Analytical solution of a special verification case.
-     * Define variables and basic information
-     * Intensity of rays originating from the top plate
-     * Set the initial ray intensity to the bottom wall intensity
-     * Intensity of rays originating from the bottom plate
-     * Kappa is not spatially dependant in this special case
-     * Prescribe the top and bottom heights for the domain
-     * */
-    PetscReal G;
-    PetscReal IT = FlameIntensity(1, 700);   // Intensity of rays originating from the top plate
-    PetscReal IB = FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
-    PetscReal kappa = 1;                     // Kappa is not spatially dependant in this special case
-    PetscReal zBottom = -0.0105;             // Prescribe the top and bottom heights for the domain
-    PetscReal zTop = 0.0105;
-
-    PetscReal temperature;
-    PetscReal Ibz;
-
-    PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    const PetscReal sbc = 5.6696e-8;
-    PetscReal nZp = 1000;
-    Ibz = 0;
-
-    std::vector<PetscReal> Iplus;
-    std::vector<PetscReal> Iminus;
-
-    for (double nzp = 1; nzp < (nZp - 1); nzp++) {
-        /** Plus integral goes from bottom to Z
-         * Calculate the z height
-         * Get the temperature
-         * Two parabolas, is the z coordinate in one half of the domain or the other
-         * */
-        PetscReal zp = zBottom + (nzp / nZp) * (z - zBottom);  // Calculate the z height
-        if (zp <= 0) {                                         // Two parabolas, is the z coordinate in one half of the domain or the other
-            temperature = -6.349E6 * zp * zp + 2000.0;
-        } else {
-            temperature = -1.179E7 * zp * zp + 2000.0;
-        }
-        /** Get the black body intensity here*/
-        Ibz = FlameIntensity(1, temperature);
-        Iplus.push_back(Ibz * EInteg(1, kappa * (z - zp)));
-    }
-    for (double nzp = 1; nzp < (nZp - 1); nzp++) {    /** Minus integral goes from z to top*/
-        PetscReal zp = z + (nzp / nZp) * (zTop - z);  // Calculate the zp height
-        /** Get the temperature*/
-        if (zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
-            temperature = -6.349E6 * zp * zp + 2000.0;
-        } else {
-            temperature = -1.179E7 * zp * zp + 2000.0;
-        }
-        /** Get the black body intensity here*/
-        Ibz = FlameIntensity(1, temperature);
-        Iminus.push_back(Ibz * EInteg(1, kappa * (zp - z)));
-    }
-
-    PetscReal term1 = IB * EInteg(2, kappa * (z - zBottom));
-    PetscReal term2 = IT * EInteg(2, kappa * (zTop - z));
-    PetscReal term3 = CSimp(zBottom, z, Iplus);
-    PetscReal term4 = CSimp(z, zTop, Iminus);
-
-    G = 2 * pi * (term1 + term2 + term3 + term4);
-
-    /**Now compute the losses at the given input point (this is in order to match the output that is given by the ComputeRHSFunction)*/
-    if (z <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
-        temperature = -6.349E6 * z * z + 2000.0;
-    } else {
-        temperature = -1.179E7 * z * z + 2000.0;
-    }
-    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
-    PetscReal radTotal = -kappa * (losses - G);
-
-    return radTotal;
-}
-
-PetscReal ablate::radiation::RadiationSolver::EInteg(int order, double x) {
-    if (x == 0 && order != 1) return 1 / (order - 1);  // Simple solution in this case, exit
-    std::vector<PetscReal> En;
-    double N = 100;
-    for (double n = 1; n < N; n++) {
-        double mu = n / N;
-        if (order == 1) {
-            En.push_back(exp(-x / mu) / mu);
-        }
-        if (order == 2) {
-            En.push_back(exp(-x / mu));
-        }
-        if (order == 3) {
-            En.push_back(exp(-x / mu) * mu);
-        }
-    }
-    PetscReal final = CSimp(0, 1, En);
-    return final;
-}
-
 PetscReal ablate::radiation::RadiationSolver::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity*/
     const PetscReal sbc = 5.6696e-8;                                                               //!< Stefan-Boltzman Constant (J/K)
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
     return epsilon * sbc * temperature * temperature * temperature * temperature / pi;
 }
 
-PetscReal ablate::radiation::RadiationSolver::CSimp(PetscReal a, PetscReal b, std::vector<double> f) {
-    /** b-a represents the size of the total domain that is being integrated over
-     * The number of elements in the vector that is being integrated over
-     * Initialize the sum of all middle elements
-     * Weight lightly on the borders
-     * Weight heavily in the center
-     * Add this value to the total every time
-     * Compute the total final integral
-     * */
-    PetscReal I;
-    PetscReal n = static_cast<double>(f.size());  //!< The number of elements in the vector that is being integrated over
-    int margin = 0;
-    PetscReal f_sum = 0;  //!< Initialize the sum of all middle elements
-
-    if (a != b) {
-        /** Loop through every point except the first and last*/
-        for (int i = margin; i < (n - margin); i++) {
-            if (i % 2 == 0) {
-                f[i] = 2 * f[i];  //!< Weight lightly on the borders
-            } else {
-                f[i] = 4 * f[i];  //!< Weight heavily in the center
-            }
-            f_sum += f[i];  //!< Add this value to the total every time
-        }
-        I = ((b - a) / (3 * n)) * (f[0] + f_sum + f[n]);  //!< Compute the total final integral
-    } else {
-        I = 0;
-    }
-    return I;
-}
-
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::radiation::RadiationSolver, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
-         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"));
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

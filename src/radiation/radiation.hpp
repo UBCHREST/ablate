@@ -17,16 +17,6 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscInt raynumber;
 
     /**
-     * Boundary information.
-     */
-    typedef struct {
-        PetscReal normal[3];   /* normals (pointing into the boundary from the other region) */
-        PetscReal areas[3];    /* Area-scaled normals */
-        PetscReal centroid[3]; /* Location of centroid (quadrature point) */
-    } BoundaryFVFaceGeom;
-
-   public:
-    /**
      *
      * @param solverId the id for this solver
      * @param region the boundary cell region
@@ -54,25 +44,20 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
 
     /// Class Methods
     void RayInit();
-    static PetscReal ReallySolveParallelPlates(PetscReal z);
 
     /// Class Constants
     const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
 
     /// Class inputs and Variables
-    std::set<PetscInt> stencilSet;  // Contains the cells that are in the radiation subdomain
-
     PetscInt dim;     // Number of dimensions that the domain exists within
     PetscReal h;      // This is the DEFAULT step size which should be set by the user input
     PetscInt nTheta;  // The number of angles to solve with, given by user input
     PetscInt nPhi;    // The number of angles to solve with, given by user input
 
-   private:
-    static PetscReal EInteg(int order, double x);
-    static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f);
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
+   private:
     /**
      * Store a log used to output the required information
      */

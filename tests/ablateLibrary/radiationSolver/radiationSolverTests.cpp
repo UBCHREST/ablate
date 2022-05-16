@@ -31,6 +31,132 @@ class RadiationTestFixture : public testingResources::MpiTestFixture, public ::t
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
+static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f) {
+    /** b-a represents the size of the total domain that is being integrated over
+     * The number of elements in the vector that is being integrated over
+     * Initialize the sum of all middle elements
+     * Weight lightly on the borders
+     * Weight heavily in the center
+     * Add this value to the total every time
+     * Compute the total final integral
+     * */
+    PetscReal I;
+    PetscReal n = static_cast<double>(f.size());  //!< The number of elements in the vector that is being integrated over
+    int margin = 0;
+    PetscReal f_sum = 0;  //!< Initialize the sum of all middle elements
+
+    if (a != b) {
+        /** Loop through every point except the first and last*/
+        for (int i = margin; i < (n - margin); i++) {
+            if (i % 2 == 0) {
+                f[i] = 2 * f[i];  //!< Weight lightly on the borders
+            } else {
+                f[i] = 4 * f[i];  //!< Weight heavily in the center
+            }
+            f_sum += f[i];  //!< Add this value to the total every time
+        }
+        I = ((b - a) / (3 * n)) * (f[0] + f_sum + f[n]);  //!< Compute the total final integral
+    } else {
+        I = 0;
+    }
+    return I;
+}
+
+static PetscReal EInteg(int order, double x) {
+    if (x == 0 && order != 1) return 1 / (order - 1);  // Simple solution in this case, exit
+    std::vector<PetscReal> En;
+    double N = 100;
+    for (double n = 1; n < N; n++) {
+        double mu = n / N;
+        if (order == 1) {
+            En.push_back(exp(-x / mu) / mu);
+        }
+        if (order == 2) {
+            En.push_back(exp(-x / mu));
+        }
+        if (order == 3) {
+            En.push_back(exp(-x / mu) * mu);
+        }
+    }
+    PetscReal final = CSimp(0, 1, En);
+    return final;
+}
+
+static PetscReal ReallySolveParallelPlates(PetscReal z) {
+    /** Analytical solution of a special verification case.
+     * Define variables and basic information
+     * Intensity of rays originating from the top plate
+     * Set the initial ray intensity to the bottom wall intensity
+     * Intensity of rays originating from the bottom plate
+     * Kappa is not spatially dependant in this special case
+     * Prescribe the top and bottom heights for the domain
+     * */
+    PetscReal G;
+    PetscReal IT = ablate::radiation::RadiationSolver::FlameIntensity(1, 700);   // Intensity of rays originating from the top plate
+    PetscReal IB = ablate::radiation::RadiationSolver::FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
+    PetscReal kappa = 1;                                                         // Kappa is not spatially dependant in this special case
+    PetscReal zBottom = -0.0105;                                                 // Prescribe the top and bottom heights for the domain
+    PetscReal zTop = 0.0105;
+
+    PetscReal temperature;
+    PetscReal Ibz;
+
+    PetscReal pi = 3.1415926535897932384626433832795028841971693993;
+    const PetscReal sbc = 5.6696e-8;
+    PetscReal nZp = 1000;
+    Ibz = 0;
+
+    std::vector<PetscReal> Iplus;
+    std::vector<PetscReal> Iminus;
+
+    for (double nzp = 1; nzp < (nZp - 1); nzp++) {
+        /** Plus integral goes from bottom to Z
+         * Calculate the z height
+         * Get the temperature
+         * Two parabolas, is the z coordinate in one half of the domain or the other
+         * */
+        PetscReal zp = zBottom + (nzp / nZp) * (z - zBottom);  // Calculate the z height
+        if (zp <= 0) {                                         // Two parabolas, is the z coordinate in one half of the domain or the other
+            temperature = -6.349E6 * zp * zp + 2000.0;
+        } else {
+            temperature = -1.179E7 * zp * zp + 2000.0;
+        }
+        /** Get the black body intensity here*/
+        Ibz = ablate::radiation::RadiationSolver::FlameIntensity(1, temperature);
+        Iplus.push_back(Ibz * EInteg(1, kappa * (z - zp)));
+    }
+    for (double nzp = 1; nzp < (nZp - 1); nzp++) {    /** Minus integral goes from z to top*/
+        PetscReal zp = z + (nzp / nZp) * (zTop - z);  // Calculate the zp height
+        /** Get the temperature*/
+        if (zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
+            temperature = -6.349E6 * zp * zp + 2000.0;
+        } else {
+            temperature = -1.179E7 * zp * zp + 2000.0;
+        }
+        /** Get the black body intensity here*/
+        Ibz = ablate::radiation::RadiationSolver::FlameIntensity(1, temperature);
+        Iminus.push_back(Ibz * EInteg(1, kappa * (zp - z)));
+    }
+
+    PetscReal term1 = IB * EInteg(2, kappa * (z - zBottom));
+    PetscReal term2 = IT * EInteg(2, kappa * (zTop - z));
+    PetscReal term3 = CSimp(zBottom, z, Iplus);
+    PetscReal term4 = CSimp(z, zTop, Iminus);
+
+    G = 2 * pi * (term1 + term2 + term3 + term4);
+
+    /**Now compute the losses at the given input point (this is in order to match the output that is given by the ComputeRHSFunction)*/
+    if (z <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
+        temperature = -6.349E6 * z * z + 2000.0;
+    } else {
+        temperature = -1.179E7 * z * z + 2000.0;
+    }
+    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
+    PetscReal radTotal = -kappa * (losses - G);
+
+    return radTotal;
+}
+
 TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
     StartWithMPI
 
@@ -121,12 +247,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             radiation->GetCellRange(cellRange);
             // March over each cell
             for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-                // if there is a cell array, use it, otherwise it is just c
                 const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-                stencilSet.insert(cell);
-            }
-
-            for (auto cell : stencilSet) {
                 // Get the cell center
                 PetscFVCellGeom* cellGeom;
                 DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cellGeom) >> testErrorChecker;
@@ -135,7 +256,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                 PetscScalar* rhsValues;
                 DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
                 PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
-                PetscScalar analyticalResult = ablate::radiation::RadiationSolver::ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
+                PetscScalar analyticalResult = ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
                 // anavg += analyticalResult;
 
                 /// Summing of the L2 norm values
@@ -148,10 +269,10 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             double N = stencilSet.size();
             double l2 = sqrt(l2sum) / N;
 
+            // PetscPrintf(MPI_COMM_WORLD,"L2 Norm: %f\n",sqrt(l2sum)/N);
             if (l2 > 45000) {
                 FAIL() << "Radiation test error exceeded.";
             }
-            // PetscPrintf(MPI_COMM_WORLD,"L2 Norm: %f\n",sqrt(l2sum)/N);
 
             /*
              * 10 Deep L2 Norm: 0.068057
