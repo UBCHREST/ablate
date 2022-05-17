@@ -24,6 +24,9 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~RadiationSolver() override;
 
+    /** Returns the black body intensity for a given temperature and emissivity*/
+    static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
+
     /** SubDomain Register and Setup **/
     void Setup() override;
     void Initialize() override;
@@ -55,8 +58,6 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
     PetscReal h;      // This is the step size which should be set as the minimum cell radius
     PetscInt nTheta;  // The number of angles to solve with, given by user input
     PetscInt nPhi;    // The number of angles to solve with, given by user input (x2)
-
-    static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
     /**
      * Store a log used to output the required information
