@@ -273,9 +273,7 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
                        (double)ferrors[0],
                        (double)ferrors[1],
                        (double)ferrors[2],
-                       particleCount,
-                       (double)avg[0],
-                       (double)avg[1]);
+                       particleCount);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
     ierr = PetscPrintf(PETSC_COMM_WORLD, "Avg Particle Location: [%2.3g, %2.3g, %2.3g]\n", (double)avg[0], (double)avg[1], (double)avg[2]);
 

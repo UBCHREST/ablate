@@ -656,7 +656,7 @@ static PetscErrorCode BuildGradientReconstruction_Internal(DM dm, DMLabel region
         PetscCall(DMPlexPointLocalRead(dmCell, c, cgeom, &cg));
         PetscCall(DMPlexGetConeSize(dm, c, &numFaces));
         PetscCall(DMPlexGetCone(dm, c, &faces));
-        PetscCheckFalse(numFaces < dim, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Cell %" PetscInt_FMT " has only %" PetscInt_FMT " faces, not enough for gradient reconstruction", c, numFaces);
+        PetscCheck(!(numFaces < dim), PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Cell %" PetscInt_FMT " has only %" PetscInt_FMT " faces, not enough for gradient reconstruction", c, numFaces);
         for (f = 0, usedFaces = 0; f < numFaces; ++f) {
             PetscFVCellGeom* cg1;
             PetscFVFaceGeom* fg;
@@ -804,7 +804,7 @@ static PetscErrorCode BuildGradientReconstruction_Internal_Tree(DM dm, DMLabel r
         if (ghostLabel) PetscCall(DMLabelGetValue(ghostLabel, c, &ghost));
         if (ghost >= 0) continue;
 
-        PetscCheckFalse(numFaces < dim, PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Cell %" PetscInt_FMT " has only %" PetscInt_FMT " faces, not enough for gradient reconstruction", c, numFaces);
+        PetscCheck(!(numFaces < dim), PETSC_COMM_SELF, PETSC_ERR_ARG_INCOMP, "Cell %" PetscInt_FMT " has only %" PetscInt_FMT " faces, not enough for gradient reconstruction", c, numFaces);
         for (f = 0; f < numFaces; ++f) {
             PetscFVCellGeom* cg1;
             PetscFVFaceGeom* fg;

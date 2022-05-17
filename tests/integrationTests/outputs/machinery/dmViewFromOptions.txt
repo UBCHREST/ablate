@@ -1,4 +1,4 @@
-DM Object: 1 MPI processes
+DM Object: 1 MPI process
   type: plex
 (.*) in 2 dimensions:<expects> *
 Supports:
@@ -154,7 +154,7 @@ Label 'celltype':
 [0]: 22 (1)
 [0]: 23 (1)
 [0]: 24 (1)
-DM Object: (.*) 1 MPI processes<expects> *
+DM Object: (.*) 1 MPI process<expects> *
   type: plex
 (.*) in 2 dimensions:<expects> *
   Number of 0-cells per rank: 9
@@ -171,7 +171,7 @@ Field pressure:
   adjacency FEM
 Field temperature:
   adjacency FEM
-DM Object: (.*) 1 MPI processes<expects> *
+DM Object: (.*) 1 MPI process<expects> *
   type: plex
 (.*) in 2 dimensions:<expects> *
   Number of 0-cells per rank: 9
@@ -188,7 +188,7 @@ Field pressure:
   adjacency FEM
 Field temperature:
   adjacency FEM
-DM Object: (.*) 1 MPI processes<expects> *
+DM Object: (.*) 1 MPI process<expects> *
   type: plex
 (.*) in 2 dimensions:<expects> *
   Number of 0-cells per rank: 9
