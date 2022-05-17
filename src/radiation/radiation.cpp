@@ -7,10 +7,9 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
 
-ablate::radiation::RadiationSolver::RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, int rayNumber, std::shared_ptr<parameters::Parameters> options,
+ablate::radiation::RadiationSolver::RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
                                                     std::shared_ptr<ablate::monitors::logs::Log> log)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)), log(std::move(log)) {
-    raynumber = rayNumber;
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)), raynumber(raynumber), log(std::move(log)) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
@@ -26,10 +25,10 @@ void ablate::radiation::RadiationSolver::Initialize() {
     /** Runs the ray initialization, finding cell indices
      * Initialize the log if provided
      */
-    this->RayInit();
     if (log) {
         log->Initialize(subDomain->GetComm());
     }
+    this->RayInit();
 }
 
 void ablate::radiation::RadiationSolver::RayInit() {
@@ -63,7 +62,7 @@ void ablate::radiation::RadiationSolver::RayInit() {
     PetscReal minCellRadius;
     DM cellDM;
     VecGetDM(cellGeomVec, &cellDM);
-    DMPlexGetGeometryFVM(cellDM, nullptr, &cellGeomVec, &minCellRadius);
+    DMPlexGetGeometryFVM(cellDM, nullptr, nullptr, &minCellRadius);
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
     PetscFVCellGeom* cellGeom;
 
@@ -74,8 +73,8 @@ void ablate::radiation::RadiationSolver::RayInit() {
          * Initializer described how many of the cell ray locations have been stored.
          */
         if (log) {
-            double percentComplete = 100.0 * double(ncells) / double((cellRange.end - cellRange.start));
-            log->Printf("Radiation Initializer Percent Complete: %f\n", percentComplete);
+             double percentComplete = 100.0 * double(ncells) / double((cellRange.end - cellRange.start));
+             log->Printf("Radiation Initializer Percent Complete: %.1f\n", percentComplete);
         }
 
         DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);  //!< Reads the cell location from the current cell
@@ -163,6 +162,9 @@ void ablate::radiation::RadiationSolver::RayInit() {
         }
         ncells++;  //!< Increase the number of cells that have been finished.
     }
+    /** Cleanup*/
+    VecRestoreArrayRead(cellGeomVec, &cellGeomArray);
+    RestoreRange(cellRange);
 }
 
 PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec rhs) {
@@ -267,8 +269,9 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     VecRestoreArrayRead(rhs, &rhsArray);
     VecRestoreArray(loctemp, &temperatureArray);
     subDomain->RestoreFieldLocalVector(temperatureField, &vis, &loctemp, &vdm);
+    RestoreRange(cellRange);
 
-    PetscFunctionReturn(0);
+   PetscFunctionReturn(0);
 }
 
 PetscReal ablate::radiation::RadiationSolver::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity*/

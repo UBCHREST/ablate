@@ -14,8 +14,6 @@ namespace ablate::radiation {
 
 class RadiationSolver : public solver::CellSolver, public solver::RHSFunction {  // Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
    public:
-    PetscInt raynumber;
-
     /**
      *
      * @param solverId the id for this solver
@@ -23,7 +21,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      * @param rayNumber
      * @param options other options
      */
-    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, int rayNumber, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~RadiationSolver() override;
 
     /** SubDomain Register and Setup **/
@@ -42,6 +40,9 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      */
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
+    const PetscInt raynumber;
+
+   private:
     /// Class Methods
     void RayInit();
 
@@ -51,20 +52,18 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
 
     /// Class inputs and Variables
     PetscInt dim;     // Number of dimensions that the domain exists within
-    PetscReal h;      // This is the DEFAULT step size which should be set by the user input
+    PetscReal h;      // This is the step size which should be set as the minimum cell radius
     PetscInt nTheta;  // The number of angles to solve with, given by user input
-    PetscInt nPhi;    // The number of angles to solve with, given by user input
+    PetscInt nPhi;    // The number of angles to solve with, given by user input (x2)
 
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
-   private:
     /**
      * Store a log used to output the required information
      */
     const std::shared_ptr<ablate::monitors::logs::Log> log;
 
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps
-    Vec origin;
 };
 
 }  // namespace ablate::radiation
