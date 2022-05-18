@@ -268,12 +268,12 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             double N = (cellRange.end - cellRange.start);
             double l2 = sqrt(l2sum) / N;
 
-            PetscPrintf(MPI_COMM_WORLD,"L2 Norm: %f\n",sqrt(l2sum)/N);
+            PetscPrintf(MPI_COMM_WORLD, "L2 Norm: %f\n", sqrt(l2sum) / N);
             if (l2 > 45000) {
                 FAIL() << "Radiation test error exceeded.";
             }
 
-            /*
+            /**
              * 10 Deep L2 Norm: 0.068057
              * 20 Deep L2 Norm: 0.030259
              * */

@@ -21,7 +21,8 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      * @param rayNumber
      * @param options other options
      */
-    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
+                    std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~RadiationSolver() override;
 
     /** Returns the black body intensity for a given temperature and emissivity*/

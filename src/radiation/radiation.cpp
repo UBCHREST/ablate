@@ -73,8 +73,8 @@ void ablate::radiation::RadiationSolver::RayInit() {
          * Initializer described how many of the cell ray locations have been stored.
          */
         if (log) {
-             double percentComplete = 100.0 * double(ncells) / double((cellRange.end - cellRange.start));
-             log->Printf("Radiation Initializer Percent Complete: %.1f\n", percentComplete);
+            double percentComplete = 100.0 * double(ncells) / double((cellRange.end - cellRange.start));
+            log->Printf("Radiation Initializer Percent Complete: %.1f\n", percentComplete);
         }
 
         DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);  //!< Reads the cell location from the current cell
@@ -271,7 +271,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     subDomain->RestoreFieldLocalVector(temperatureField, &vis, &loctemp, &vdm);
     RestoreRange(cellRange);
 
-   PetscFunctionReturn(0);
+    PetscFunctionReturn(0);
 }
 
 PetscReal ablate::radiation::RadiationSolver::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity*/
