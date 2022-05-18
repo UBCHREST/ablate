@@ -170,6 +170,7 @@ add_subdirectory(eos)
 add_subdirectory(environment)
 add_subdirectory(io)
 add_subdirectory(chemistry)
+add_subdirectory(radiation)
 
 # Add required warnings for the ablate library
 ablate_default_target_compile_options_cxx(ablateLibrary)

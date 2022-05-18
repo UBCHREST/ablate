@@ -106,7 +106,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::GetmdFdn(const PetscInt sOff[],
 }
 
 void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
-    // Compute the number of equations that need to be solve
+    // Compute the number of equations that need to be solved
     dims = bSolver.GetSubDomain().GetDimensions();
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::EULER_FIELD)) {
         nEqs += bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD).numberComponents;
