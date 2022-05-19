@@ -16,27 +16,31 @@ PetscErrorCode ablate::eos::radiationProperties::Constant::ConstantTemperatureFu
     PetscFunctionReturn(0);
 }
 
-ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Constant::GetRadiationPropertiesFunction(radiationModel::RadiationProperty property, const std::vector<domain::Field> &fields) const {
+ablate::eos::ThermodynamicFunction ablate::eos::radiationProperties::Constant::GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field> &fields) const {
     if (!active) {
         return ThermodynamicFunction{.function = nullptr, .context = nullptr};
     }
     switch (property) {
-        case radiationModel::RadiationProperty::Absorptivity:
+        case RadiationProperty::Absorptivity:
             return ThermodynamicFunction{.function = ConstantFunction, .context = std::make_shared<double>(absorptivity)};
         default:
             throw std::invalid_argument("Unknown radiationProperties property ablate::eos::radiationProperties::Constant");
     }
 }
 
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Constant::GetRadiationPropertiesTemperatureFunction(radiationModel::RadiationProperty property,
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::Constant::GetRadiationPropertiesTemperatureFunction(RadiationProperty property,
                                                                                                                 const std::vector<domain::Field> &fields) const {
     if (!active) {
         return ThermodynamicTemperatureFunction{.function = nullptr, .context = nullptr};
     }
     switch (property) {
-        case radiationModel::RadiationProperty::Absorptivity:
+        case RadiationProperty::Absorptivity:
             return ThermodynamicTemperatureFunction{.function = ConstantTemperatureFunction, .context = std::make_shared<double>(absorptivity)};
         default:
             throw std::invalid_argument("Unknown radiationProperties property in ablate::eos::radiationProperties::Constant");
     }
 }
+
+#include "registrar.hpp"
+REGISTER_DEFAULT(ablate::eos::radiationProperties::RadiationModel, ablate::eos::transport::Constant, "constant value transport model (often used for testing)",
+                 OPT(double, "k", "thermal conductivity [W/(m K)]"), OPT(double, "mu", "viscosity [Pa s]"), OPT(double, "diff", "diffusivity [m2/s]"));

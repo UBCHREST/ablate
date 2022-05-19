@@ -8,7 +8,7 @@
 
 namespace ablate::eos::radiationProperties {
 
-class Constant : public radiationModel::RadiationModel {
+class Constant : public RadiationModel {
    private:
     const bool active;
     const PetscReal absorptivity;
@@ -40,7 +40,7 @@ class Constant : public radiationModel::RadiationModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] ThermodynamicFunction GetRadiationPropertiesFunction(radiationModel::RadiationProperty property, const std::vector<domain::Field>& fields) const;
+    [[nodiscard]] ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
 
     /**
      * Single function to produce thermodynamic function for any property based upon the available fields and temperature
@@ -48,7 +48,7 @@ class Constant : public radiationModel::RadiationModel {
      * @param fields
      * @return
      */
-    [[nodiscard]] ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(radiationModel::RadiationProperty property, const std::vector<domain::Field>& fields) const;
+    [[nodiscard]] ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const;
 };
 
 }
