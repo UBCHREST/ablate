@@ -44,7 +44,7 @@ jobs:
             --tag framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} \
             --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
             --build-arg ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
-            --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE
+            --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE \
             --load \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" 
