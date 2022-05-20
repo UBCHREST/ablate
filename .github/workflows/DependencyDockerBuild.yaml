@@ -71,9 +71,10 @@ jobs:
   push-latest:
     needs: [build]
     runs-on: ubuntu-latest
-    matrix:
-      compiler: [ { cc: gcc, cxx: g++, id: -gcc }, { cc: clang, cxx: clang++, id: -clang } ]
-      indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
+    strategy:
+      matrix:
+        compiler: [ { cc: gcc, cxx: g++, id: -gcc }, { cc: clang, cxx: clang++, id: -clang } ]
+        indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
 
     steps:
       - name: Set up Docker Buildx
