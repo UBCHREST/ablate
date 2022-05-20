@@ -216,7 +216,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                     Initial ray intensity should be set based on which boundary it is coming from.
                     If the ray originates from the walls, then set the initial ray intensity to the wall temperature, etc.
                  */
-                PetscReal rayIntensity;
+                PetscReal rayIntensity = 0.0;
                 int numPoints = static_cast<int>(rays[ncells][ntheta][nphi].size());
 
                 if (numPoints > 0) {
