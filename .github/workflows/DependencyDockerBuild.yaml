@@ -52,7 +52,7 @@ jobs:
       - name: Build image
         run: |
           # define the image id and petsc image id
-          PETSC_IMAGE_ID=$PETSC_IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}${{matrix.arch.id}}:latest
+          PETSC_IMAGE_ID=$PETSC_IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}:latest
           IMAGE_ID=ghcr.io/${{ github.repository }}/$IMAGE_NAME${{matrix.compiler.id}}${{matrix.indices.id}}${{matrix.arch.id}}
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
 
@@ -66,7 +66,7 @@ jobs:
             --build-arg PETSC_BASE_IMAGE=${PETSC_IMAGE_ID} \
             --push \
             --tag $IMAGE_ID:latest \
-            --file DockerDependencyFile \
+            --file DockerDependencyFile 
   
   # Push the latest tag if everything build
   push-latest:
