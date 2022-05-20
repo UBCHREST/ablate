@@ -1,5 +1,5 @@
 ARG ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies-gcc:latest
-FROM ABLATE_DEPENDENCY_IMAGE
+FROM $ABLATE_DEPENDENCY_IMAGE
 
 # Setup the petsc env for tests
 ARG PETSC_BUILD_ARCH=arch-ablate-opt
