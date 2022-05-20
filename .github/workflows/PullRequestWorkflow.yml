@@ -9,10 +9,12 @@ jobs:
   test-matrix:
     strategy:
       matrix:
-        machineConfig: [ { runson: ARM64, arch: ARM64 }, { runson: ubuntu-latest, arch: AMD64 } ]
-        petscConfig: [arch-ablate-opt, arch-ablate-opt-64]
+        arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
+        compiler: [ { cc: gcc, cxx: g++, id: -gcc }, { cc: clang, cxx: clang++, id: -clang } ]
+        indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
+        petscConfig: [arch-ablate-opt]
         tensorFlowConfig: ["", "enabled_tf"]
-    runs-on: ${{ matrix.machineConfig.runson }}
+    runs-on: ${{ matrix.arch.runson }}
     timeout-minutes: 90
 
     steps:
@@ -29,23 +31,26 @@ jobs:
         id: cache
         with:
           path: /tmp/.buildx-cache
-          key: ${{ matrix.machineConfig.arch }}-${{matrix.tensorFlowConfig}}-${{matrix.petscConfig}}-${{ runner.os }}-buildx-${{ github.sha }}
+          key: ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-${{ github.sha }}
           restore-keys: |
-            ${{ matrix.machineConfig.arch }}-${{matrix.tensorFlowConfig}}-${{matrix.petscConfig}}-${{ runner.os }}-buildx-
+            ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-
 
       - name: Building tests
         run: |
+          ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}${{matrix.arch.id}}:latest
+          
           docker buildx build .\
             --file DockerTestFile \
-            --tag framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }} \
+            --tag framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} \
             --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
             --build-arg ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
+            --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE
             --load \
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache" 
 
       - name: Get the version from the build file
-        run: echo "VERSION=$(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }} awk -F= '/CMAKE_PROJECT_VERSION:/ {print $NF}' CMakeCache.txt )" >> $GITHUB_ENV
+        run: echo "VERSION=$(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} awk -F= '/CMAKE_PROJECT_VERSION:/ {print $NF}' CMakeCache.txt )" >> $GITHUB_ENV
 
       - name: Check for version
         run: |
@@ -58,7 +63,7 @@ jobs:
           fi
 
       - name: Run tests
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}
+        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
 
   test:
     runs-on: ubuntu-latest
