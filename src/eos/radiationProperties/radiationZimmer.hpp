@@ -1,13 +1,23 @@
-#ifndef ABLATELIBRARY_RADIATIONPROPERTIESCONSTANT_H
-#define ABLATELIBRARY_RADIATIONPROPERTIESCONSTANT_H
+#ifndef ABLATELIBRARY_RADIATIONPROPERTIESZIMMER_H
+#define ABLATELIBRARY_RADIATIONPROPERTIESZIMMER_H
 
 #include "radiationProperties.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "utilities/mathUtilities.hpp"
+#include "solver/cellSolver.hpp"
+#include "eos/radiationProperties/radiationProperties.hpp"
 
 namespace ablate::eos::radiationProperties {
 
-class Constant : public RadiationModel {
+class Zimmer : public RadiationModel {
+
    private:
-    const PetscReal absorptivity;
+    struct FunctionContext {
+        PetscInt densityYiH2OOffset;
+        PetscInt densityYiCO2Offset;
+        PetscInt densityYiCOOffset;
+        PetscInt densityYiCH4Offset;
+    };
 
     /**
      * private static function for evaluating constant properties without temperature
@@ -15,7 +25,7 @@ class Constant : public RadiationModel {
      * @param property
      * @param ctx
      */
-    static PetscErrorCode ConstantFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode ZimmerFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 
     /**
      * private static function for evaluating constant properties without temperature
@@ -23,12 +33,12 @@ class Constant : public RadiationModel {
      * @param property
      * @param ctx
      */
-    static PetscErrorCode ConstantTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+    static PetscErrorCode ZimmerTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
 
    public:
-    explicit Constant(double absorptivity);
-    explicit Constant(const Constant&) = delete;
-    void operator=(const Constant&) = delete;
+    explicit Zimmer(std::shared_ptr<parameters::Parameters> options);
+    explicit Zimmer(const Zimmer&) = delete;
+    void operator=(const Zimmer&) = delete;
 
     /**
      * Single function to produce radiation properties function for any property based upon the available fields
@@ -45,8 +55,9 @@ class Constant : public RadiationModel {
      * @return
      */
     [[nodiscard]] ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
+
 };
 
-}  // namespace ablate::eos::radiationProperties
+}
 
-#endif  // ABLATELIBRARY_CONSTANT_H
+#endif  // ABLATELIBRARY_RADIATIONPROPERTIESZIMMER_H

@@ -9,6 +9,8 @@
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
+#include "eos/radiationProperties/radiationProperties.hpp"
+#include "finiteVolume/finiteVolumeSolver.hpp"
 
 namespace ablate::radiation {
 
@@ -22,7 +24,7 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      * @param options other options
      */
     RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
-                    std::shared_ptr<ablate::monitors::logs::Log> = {});
+                    std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel, std::shared_ptr<ablate::monitors::logs::Log> = {});
     ~RadiationSolver() override;
 
     /** Returns the black body intensity for a given temperature and emissivity*/
@@ -49,6 +51,9 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
    private:
     /// Class Methods
     void RayInit();
+
+    eos::ThermodynamicTemperatureFunction absorptivityFunction;
+    const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
 
     /// Class Constants
     const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)

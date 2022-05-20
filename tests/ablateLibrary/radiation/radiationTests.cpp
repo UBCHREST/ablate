@@ -11,11 +11,13 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "eos/perfectGas.hpp"
+#include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
+#include "eos/radiationProperties/radiationConstant.hpp"
 
 struct RadiationTestParameters {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -24,6 +26,7 @@ struct RadiationTestParameters {
     std::vector<double> meshEnd;
     std::shared_ptr<ablate::mathFunctions::MathFunction> temperatureField;
     std::shared_ptr<ablate::mathFunctions::MathFunction> expectedResult;
+    double absorptivity;
 };
 
 class RadiationTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RadiationTestParameters> {
@@ -200,7 +203,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         auto timeStepper = ablate::solver::TimeStepper("timeStepper", domain, {{"ts_max_steps", "0"}}, {}, {initialConditionEuler});
 
         // Create an instance of radiation
-        auto radiation = std::make_shared<ablate::radiation::RadiationSolver>("radiation", ablate::domain::Region::ENTIREDOMAIN, 10, nullptr);
+        auto radiationModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
+        auto radiation = std::make_shared<ablate::radiation::RadiationSolver>("radiation", ablate::domain::Region::ENTIREDOMAIN, 10, nullptr, radiationModel);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
@@ -256,13 +260,11 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                 DMPlexPointLocalFieldRead(domain->GetDM(), cell, eulerFieldInfo.id, rhsArray, &rhsValues) >> testErrorChecker;
                 PetscScalar actualResult = rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE];
                 PetscScalar analyticalResult = ReallySolveParallelPlates(cellGeom->centroid[1]);  // Compute the analytical solution at this z height.
-                // anavg += analyticalResult;
 
                 /// Summing of the L2 norm values
                 error = (analyticalResult - actualResult);
                 l2sum += error * error;
 
-                // PetscPrintf(MPI_COMM_WORLD,"Radiation %% Error: %f, Height: %f\n",error,cellGeom->centroid[2]);
             }
             /// Compute the L2 Norm error
             double N = (cellRange.end - cellRange.start);
@@ -272,11 +274,6 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             if (l2 > 45000) {
                 FAIL() << "Radiation test error exceeded.";
             }
-
-            /**
-             * 10 Deep L2 Norm: 0.068057
-             * 20 Deep L2 Norm: 0.030259
-             * */
 
             VecRestoreArrayRead(rhs, &rhsArray) >> testErrorChecker;
             VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> testErrorChecker;
@@ -288,10 +285,18 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 }
 
 INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
-                         testing::Values((RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature", .nproc = 1},
+                         testing::Values((RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 1", .nproc = 1},
                                                                    .meshFaces = {3, 15},
                                                                    .meshStart = {-0.25, -0.0105},
                                                                    .meshEnd = {0.25, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
-                                                                   .expectedResult = ablate::mathFunctions::Create("x + y")}),
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                                                   .absorptivity = 1.0},
+                                         (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 1.1", .nproc = 1},
+                                                                   .meshFaces = {3, 15},
+                                                                   .meshStart = {-0.25, -0.0105},
+                                                                   .meshEnd = {0.25, 0.0105},
+                                                                   .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                                                   .absorptivity = 1.1}),
                          [](const testing::TestParamInfo<RadiationTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });

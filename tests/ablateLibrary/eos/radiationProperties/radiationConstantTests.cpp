@@ -1,11 +1,8 @@
-//
-// Created by owen on 5/19/22.
-//
 #include "eos/radiationProperties/radiationConstant.hpp"
 #include "gtest/gtest.h"
 
 
-TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectFunction) {
+TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectRadiationFunction) {
     // ARRANGE
     const PetscReal expectedAbsorptivity = 1;
 
@@ -22,37 +19,19 @@ TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectFunction) {
     ASSERT_DOUBLE_EQ(expectedAbsorptivity, computedAbsorptivity);
 }
 
-TEST(ConstantTransportTests, ShouldReturnNullFunctionsIfAllValuesZeroForDirectFunction) {
-    // ARRANGE
-    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>();
-
-    // ACT
-    // ASSERT
-    ASSERT_TRUE(constantModel->GetRadiationPropertiesFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {}).function == nullptr);
-}
-
-TEST(ConstantTransportTests, ShouldRecordConstantValuesForTemperatureFunction) {
+TEST(ConstantTransportTests, ShouldRecordConstantValuesForRadiationTemperatureFunction) {
     // ARRANGE
     const PetscReal expectedAbsorptivity = 1;
 
     auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>(expectedAbsorptivity);
 
-    auto conductivityFunction = constantModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
+    auto absorptivityFunction = constantModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {});
 
     // ACT
     PetscReal computedAbsorptivity = NAN;
 
-    conductivityFunction.function(nullptr, NAN, &computedAbsorptivity, conductivityFunction.context.get());
+    absorptivityFunction.function(nullptr, NAN, &computedAbsorptivity, absorptivityFunction.context.get());
 
     // ASSERT
     ASSERT_DOUBLE_EQ(expectedAbsorptivity, computedAbsorptivity);
-}
-
-TEST(ConstantTransportTests, ShouldReturnNullFunctionsIfAllValuesZeroForTemperatureFunction) {
-    // ARRANGE
-    auto constantModel = std::make_shared<ablate::eos::radiationProperties::Constant>();
-
-    // ACT
-    // ASSERT
-    ASSERT_TRUE(constantModel->GetRadiationPropertiesTemperatureFunction(ablate::eos::radiationProperties::RadiationProperty::Absorptivity, {}).function == nullptr);
 }
