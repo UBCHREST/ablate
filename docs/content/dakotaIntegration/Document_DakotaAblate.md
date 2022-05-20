@@ -127,44 +127,46 @@ import os
 import subprocess
 
 
-#-----------------------------------------------------------------
+# Pre-processing: Create ABLATE input file using values from the DAKOTA parameters file
+# --------------------------------------------------------------------------------------
+
+# parameter sample from DAKOTA 
 params, results = di.read_parameters_file()
 x1=params['x1']*1E+15
 x2=params['x2']*1E+9
 
-#-----------------------------------------------------------------
-
+# generate a new 2S_CH4_CM2.mech.dat with new parameter values (sample)
 with open ('ORIGINAL_2S_CH4_CM2.mech.dat', "r") as myfile:
     inputfile = myfile.readlines()
-    #print(inputfile[19])
     inputfile[19] = 'CH4+1.5O2=>CO+2H2O '+str(x1)+'  0.00   35000.00\n'
     inputfile[22] = 'CO+0.5O2<=>CO2 '+str(x2)+'  0.000   12000.00\n'
-    #for i in range(len(inputfile)):
-    #        inputfile[i] = inputfile[i][0:-1]
     np.savetxt('2S_CH4_CM2.mech.dat', inputfile, fmt='%s',delimiter='')
 
-#-----------------------------------------------------------------
+
+# Run: Run the ABLATE simulation using the .yaml input and the new 2S_CH4_CM2.mech.dat
+# --------------------------------------------------------------------------------------
 command = 'module use /projects/academic/chrest/modules; module load chrest/release ; $ABLATE_DIR/ablate --input ignitionDelay2S_CH4_CM2.yaml  '
-
 p = subprocess.Popen(command, stdout=subprocess.PIPE, shell=True)
-
 (stdout, err) = p.communicate()
-
 output = stdout.splitlines()
 
 
-#-----------------------------------------------------------------
+# Post-processing: Extract simulation outputs (ignition delay) from the ABLATE output file 
+# and write them to the named DAKOTA results file
+# --------------------------------------------------------------------------------------
+
+# extract ignition delay value from the ABALTE output ignitionDelayTemperature.txt
 with open ('_ignitionDelay2S_CH4_CM2/ignitionDelayTemperature.txt', "r") as myoutfile:
     outfile = myoutfile.readlines()
     targetline = outfile[0].split(':')
     QoI = float(targetline[1])
     print(QoI)
 
+# remove the temporary ABLATE input/output files  
 os.remove('2S_CH4_CM2.mech.dat')
 os.remove('_ignitionDelay2S_CH4_CM2/ignitionDelayTemperature.txt')
 
-
-#-----------------------------------------------------------------
+# write the output to the DAKOTA results files
 for i, r in enumerate(results.responses()):
     r.function = QoI
 results.write()
@@ -179,5 +181,5 @@ After setting up the ABLATE chemical kinetics simulation, DAKOTA sensitivity ana
 srun --overlap dakota -i sensitivity.in
 ```
 
-In this example, the estimated sensitivity indices for the two parameters are 1.0645523590e+00 for `x1` and 7.3777144909e-03 for `x2`, showing that the activation energy of the reaction of the first chemical interaction (CH4+1.5O2=>CO+2H2O) is the most important parameter, while the second parameter does not contribute to the ignition delay.
+In this example, the estimated sensitivity indices for the two parameters are 1.0291374111e+00 for `x1` and 6.5804625316e-03 for `x2`, showing that the activation energy of the reaction of the first chemical interaction (CH4+1.5O2=>CO+2H2O) is the most important parameter, while the second parameter does not contribute to the ignition delay.
 
