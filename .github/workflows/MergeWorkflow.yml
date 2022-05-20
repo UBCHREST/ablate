@@ -41,7 +41,7 @@ jobs:
 
       - name: Build the docker image
         run: |
-          ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}${{matrix.arch.id}}:latest
+          ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
           
           docker buildx build .\
             --file DockerTestFile \
@@ -95,12 +95,12 @@ jobs:
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-${{ github.sha }}
-            restore-keys: |
-              ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-
+          restore-keys: |
+            ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-
 
       - name: Build the docker image
         run: |
-          ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}${{matrix.arch.id}}:latest
+          ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
           
           docker buildx build .\
             --file DockerTestFile \
