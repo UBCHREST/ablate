@@ -1,6 +1,6 @@
 #include <numeric>
 #include "PetscTestFixture.hpp"
-#include "eos/tChem.hpp"
+#include "eos/tChemV1.hpp"
 #include "gtest/gtest.h"
 
 /**
@@ -47,7 +47,7 @@ class TChemCreateAndViewFixture : public testingResources::PetscTestFixture, pub
 
 TEST_P(TChemCreateAndViewFixture, ShouldCreateAndView) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemV1>(GetParam().mechFile, GetParam().thermoFile);
 
     std::stringstream outputStream;
 
@@ -78,7 +78,7 @@ class TChemGetSpeciesFixture : public testingResources::PetscTestFixture, public
 
 TEST_P(TChemGetSpeciesFixture, ShouldGetCorrectSpecies) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemV1>(GetParam().mechFile, GetParam().thermoFile);
 
     // act
     auto species = eos->GetSpecies();
@@ -114,7 +114,7 @@ class TCThermodynamicPropertyTestFixture : public testingResources::PetscTestFix
 
 TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemV1>(GetParam().mechFile, GetParam().thermoFile);
 
     // get the test params
     const auto& params = GetParam();
@@ -333,7 +333,7 @@ class TCFieldFunctionTestFixture : public testingResources::PetscTestFixture, pu
 
 TEST_P(TCFieldFunctionTestFixture, ShouldComputeField) {
     // arrange
-    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+    std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemV1>(GetParam().mechFile, GetParam().thermoFile);
     auto yi = GetMassFraction(eos->GetSpecies(), GetParam().yiMap);
 
     // get the test params

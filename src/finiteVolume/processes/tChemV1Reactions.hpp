@@ -1,12 +1,12 @@
-#ifndef ABLATELIBRARY_TCHEMREACTIONS_HPP
-#define ABLATELIBRARY_TCHEMREACTIONS_HPP
+#ifndef ABLATELIBRARY_TCHEMV1REACTIONS_HPP
+#define ABLATELIBRARY_TCHEMV1REACTIONS_HPP
 
-#include <eos/tChem.hpp>
+#include <eos/tChemV1.hpp>
 #include "process.hpp"
 
 namespace ablate::finiteVolume::processes {
 
-class TChemReactions : public Process {
+class TChemV1Reactions : public Process {
    private:
     DM fieldDm;
     Vec sourceVec;
@@ -14,7 +14,7 @@ class TChemReactions : public Process {
     // Petsc options specific to the chemTs. These may be null by default
     PetscOptions petscOptions;
 
-    std::shared_ptr<eos::TChem> eos;
+    std::shared_ptr<eos::TChemV1> eos;
     const size_t numberSpecies;
     inline const static PetscReal dtInitDefault = 1E-5;
     PetscReal dtInit; /** this may be different than default if set with petsc options **/
@@ -69,9 +69,9 @@ class TChemReactions : public Process {
     static PetscErrorCode AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
-    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::string> inertSpecies = {},
-                            std::vector<double> massFractionBounds = {});
-    ~TChemReactions() override;
+    explicit TChemV1Reactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::string> inertSpecies = {},
+                              std::vector<double> massFractionBounds = {});
+    ~TChemV1Reactions() override;
     /**
      * public function to link this process with the flow
      * @param flow
@@ -79,4 +79,4 @@ class TChemReactions : public Process {
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
 };
 }  // namespace ablate::finiteVolume::processes
-#endif  // ABLATELIBRARY_TCHEMREACTIONS_HPP
+#endif  // ABLATELIBRARY_TCHEMV1REACTIONS_HPP

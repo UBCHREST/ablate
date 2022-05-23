@@ -1,4 +1,4 @@
-#include "tChemReactions.hpp"
+#include "tChemV1Reactions.hpp"
 #include <utilities/petscError.hpp>
 #include "finiteVolume/compressibleFlowFields.hpp"
 
@@ -17,12 +17,12 @@
 #error TChem is required for this example.  Reconfigure PETSc using --download-tchem.
 #endif
 
-ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> options, std::vector<std::string> inertSpecies,
-                                                                std::vector<double> massFractionBounds)
+ablate::finiteVolume::processes::TChemV1Reactions::TChemV1Reactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> options, std::vector<std::string> inertSpecies,
+                                                                    std::vector<double> massFractionBounds)
     : fieldDm(nullptr),
       sourceVec(nullptr),
       petscOptions(nullptr),
-      eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)),
+      eos(std::dynamic_pointer_cast<eos::TChemV1>(eosIn)),
       numberSpecies(eosIn->GetSpecies().size()),
       dtInit(NAN),
       ts(nullptr),
@@ -33,7 +33,7 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
       rows(nullptr),
       massFractionBounds(massFractionBounds) {
     // make sure that the eos is set
-    if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
+    if (!std::dynamic_pointer_cast<eos::TChemV1>(eosIn)) {
         throw std::invalid_argument("ablate::finiteVolume::processes::TChemReactions only accepts EOS of type eos::TChem");
     }
 
@@ -93,7 +93,7 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
         throw std::invalid_argument("If specified, the massFractionBounds must be of length 2.");
     }
 }
-ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {
+ablate::finiteVolume::processes::TChemV1Reactions::~TChemV1Reactions() {
     if (fieldDm) {
         DMDestroy(&fieldDm) >> checkError;
     }
@@ -115,7 +115,7 @@ ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {
     PetscFree3(tchemScratch, jacobianScratch, rows) >> checkError;
 }
 
-void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
+void ablate::finiteVolume::processes::TChemV1Reactions::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Create a copy of the dm for the solver
     DM coordDM;
     DMGetCoordinateDM(flow.GetSubDomain().GetDM(), &coordDM) >> checkError;
@@ -144,15 +144,15 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     VecZeroEntries(sourceVec) >> checkError;
 
     // Before each step, compute the source term over the entire dt
-    auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemV1Reactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
     flow.RegisterPreStage(chemistryPreStage);
 
     // Add the rhs point function for the source
     flow.RegisterRHSFunction(AddChemistrySourceToFlow, this);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemistryRHS(TS ts, PetscReal t, Vec X, Vec F, void* ptr) {
-    auto solver = (ablate::finiteVolume::processes::TChemReactions*)ptr;
+PetscErrorCode ablate::finiteVolume::processes::TChemV1Reactions::SinglePointChemistryRHS(TS ts, PetscReal t, Vec X, Vec F, void* ptr) {
+    auto solver = (ablate::finiteVolume::processes::TChemV1Reactions*)ptr;
     PetscErrorCode ierr;
     PetscScalar* fArray;
     const PetscScalar* xArray;
@@ -186,8 +186,8 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemistryJacobian(TS ts, PetscReal t, Vec X, Mat aMat, Mat pMat, void* ptr) {
-    auto solver = (ablate::finiteVolume::processes::TChemReactions*)ptr;
+PetscErrorCode ablate::finiteVolume::processes::TChemV1Reactions::SinglePointChemistryJacobian(TS ts, PetscReal t, Vec X, Mat aMat, Mat pMat, void* ptr) {
+    auto solver = (ablate::finiteVolume::processes::TChemV1Reactions*)ptr;
     PetscErrorCode ierr;
     const PetscInt nEeq = (PetscInt)solver->numberSpecies + 1;
 
@@ -244,7 +244,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::SinglePointChemi
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage(TS flowTs, ablate::solver::Solver& flow, PetscReal stagetime) {
+PetscErrorCode ablate::finiteVolume::processes::TChemV1Reactions::ChemistryFlowPreStage(TS flowTs, ablate::solver::Solver& flow, PetscReal stagetime) {
     PetscInt stepNumber;
     TSGetStepNumber(flowTs, &stepNumber);
     PetscReal time;
@@ -329,7 +329,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
 
             // Compute the total energy sen + hof
             PetscReal hof;
-            err = eos::TChem::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, hof);
+            err = eos::TChemV1::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, hof);
             TCCHKERRQ(err);
             PetscReal enerTotal =
                 hof + conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHO];
@@ -388,7 +388,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
 
             // Use the point array to compute the hof
             double updatedHof;
-            err = eos::TChem::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, updatedHof);
+            err = eos::TChemV1::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, updatedHof);
             TCCHKERRQ(err);
             double updatedInternalEnergy = enerTotal - updatedHof;
 
@@ -421,11 +421,11 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::TChemV1Reactions::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, DM dm, PetscReal time, Vec locX, Vec locFVec, void* ctx) {
     PetscErrorCode ierr;
 
     PetscFunctionBegin;
-    auto process = (ablate::finiteVolume::processes::TChemReactions*)ctx;
+    auto process = (ablate::finiteVolume::processes::TChemV1Reactions*)ctx;
 
     // get the cell range
     solver::Range cellRange;
@@ -485,6 +485,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem v1 library", ARG(ablate::eos::EOS, "eos", "the tChem v1 eos"),
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemV1Reactions, "reactions using the TChem v1 library", ARG(ablate::eos::EOS, "eos", "the tChem v1 eos"),
          OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"), OPT(std::vector<std::string>, "inertSpecies", "fix the Jacobian for any undetermined inertSpecies"),
          OPT(std::vector<double>, "massFractionBounds", "sets the minimum/maximum mass fraction passed to TChem Library. Must be a vector of size two [min,max] (default is no bounds)"));

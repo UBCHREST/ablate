@@ -13,7 +13,7 @@ namespace ablate::eos {
         if (ierr) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in TChem library, return code %d", ierr); \
     } while (0)
 
-class TChem : public EOS {
+class TChemV1 : public EOS {
    private:
     // this is bad practice but only one instance of the TCHEM library can be inited at once, so keep track of the number of classes using the library and prevent multiple uses
     inline static bool libUsed = false;
@@ -44,7 +44,7 @@ class TChem : public EOS {
         PetscInt dim;
         PetscInt eulerOffset;
         PetscInt densityYiOffset;
-        const TChem* tChem;
+        const TChemV1* tChem;
     };
 
     /**
@@ -139,8 +139,8 @@ class TChem : public EOS {
         {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}};
 
    public:
-    TChem(std::filesystem::path mechFile, std::filesystem::path thermoFile);
-    ~TChem() override;
+    TChemV1(std::filesystem::path mechFile, std::filesystem::path thermoFile);
+    ~TChemV1() override;
 
     // general functions
     void View(std::ostream& stream) const override;

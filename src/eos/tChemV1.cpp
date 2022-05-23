@@ -1,4 +1,4 @@
-#include "tChem.hpp"
+#include "tChemV1.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 
 #include <fstream>
@@ -18,7 +18,7 @@
 #error TChem is required.  Reconfigure PETSc using --download-tchem.
 #endif
 
-ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::path thermoFileIn)
+ablate::eos::TChemV1::TChemV1(std::filesystem::path mechFileIn, std::filesystem::path thermoFileIn)
     : EOS("TChemV1"), errorChecker("Error in TChem library, return code "), mechFile(mechFileIn), thermoFile(thermoFileIn) {
     // TChem requires a periodic file in the working directory.  To simplify setup, we will just write it every time we are run
     int size = 1;
@@ -73,7 +73,7 @@ ablate::eos::TChem::TChem(std::filesystem::path mechFileIn, std::filesystem::pat
     }
 }
 
-ablate::eos::TChem::~TChem() {
+ablate::eos::TChemV1::~TChemV1() {
     /* Free memory and reset variables to allow TC_initchem to be called again */
     if (libUsed) {
         TC_reset();
@@ -81,9 +81,9 @@ ablate::eos::TChem::~TChem() {
     libUsed = false;
 }
 
-const std::vector<std::string> &ablate::eos::TChem::GetSpecies() const { return species; }
+const std::vector<std::string> &ablate::eos::TChemV1::GetSpecies() const { return species; }
 
-void ablate::eos::TChem::View(std::ostream &stream) const {
+void ablate::eos::TChemV1::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;
     stream << "\tmechFile: " << mechFile << std::endl;
     stream << "\tthermoFile: " << thermoFile << std::endl;
@@ -95,7 +95,7 @@ void ablate::eos::TChem::View(std::ostream &stream) const {
  * @param T
  * @return
  */
-int ablate::eos::TChem::ComputeEnthalpyOfFormation(int numSpec, double *tempYiWorkingArray, double &enthalpyOfFormation) {
+int ablate::eos::TChemV1::ComputeEnthalpyOfFormation(int numSpec, double *tempYiWorkingArray, double &enthalpyOfFormation) {
     // compute the heat of formation
     double currentT = tempYiWorkingArray[0];
     tempYiWorkingArray[0] = TREF;
@@ -110,7 +110,7 @@ int ablate::eos::TChem::ComputeEnthalpyOfFormation(int numSpec, double *tempYiWo
  * @param T
  * @return
  */
-int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
+int ablate::eos::TChemV1::ComputeSensibleInternalEnergyInternal(int numSpec, double *tempYiWorkingArray, double mwMix, double &internalEnergy) {
     // get the required values
     double totalEnthalpy;
     int err = TC_getMs2HmixMs(tempYiWorkingArray, numSpec + 1, &totalEnthalpy);
@@ -126,7 +126,7 @@ int ablate::eos::TChem::ComputeSensibleInternalEnergyInternal(int numSpec, doubl
     return err;
 }
 
-PetscErrorCode ablate::eos::TChem::ComputeTemperatureInternal(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T) {
+PetscErrorCode ablate::eos::TChemV1::ComputeTemperatureInternal(int numSpec, double *tempYiWorkingArray, PetscReal internalEnergyRef, double mwMix, double &T) {
     PetscFunctionBeginUser;
     // This is an iterative process to go compute temperature from density
     double t2 = tempYiWorkingArray[0];
@@ -174,7 +174,7 @@ PetscErrorCode ablate::eos::TChem::ComputeTemperatureInternal(int numSpec, doubl
     PetscFunctionReturn(0);
 }
 
-void ablate::eos::TChem::FillWorkingVectorFromMassFractions(int numSpec, double temperature, const double *yi, double *workingVector) {
+void ablate::eos::TChemV1::FillWorkingVectorFromMassFractions(int numSpec, double temperature, const double *yi, double *workingVector) {
     workingVector[0] = temperature;
     PetscScalar yiSum = 0.0;
     for (PetscInt sp = 0; sp < numSpec - 1; sp++) {
@@ -199,7 +199,7 @@ void ablate::eos::TChem::FillWorkingVectorFromMassFractions(int numSpec, double 
  * @param numSpec
  * @param yi
  */
-void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(int numSpec, double density, double temperature, const double *densityYi, double *workingVector) {
+void ablate::eos::TChemV1::FillWorkingVectorFromDensityMassFractions(int numSpec, double density, double temperature, const double *densityYi, double *workingVector) {
     workingVector[0] = temperature;
     PetscScalar yiSum = 0.0;
     for (PetscInt sp = 0; sp < numSpec - 1; sp++) {
@@ -219,7 +219,7 @@ void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(int numSpec, 
     }
 }
 
-ablate::eos::ThermodynamicFunction ablate::eos::TChem::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
+ablate::eos::ThermodynamicFunction ablate::eos::TChemV1::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
@@ -236,7 +236,7 @@ ablate::eos::ThermodynamicFunction ablate::eos::TChem::GetThermodynamicFunction(
                                      FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .densityYiOffset = densityYiField->offset, .tChem = this})};
 }
 
-ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChem::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChemV1::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
     // Look for the euler field
     auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
     if (eulerField == fields.end()) {
@@ -253,8 +253,8 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChem::GetThermodynam
                                                 FunctionContext{.dim = eulerField->numberComponents - 2, .eulerOffset = eulerField->offset, .densityYiOffset = densityYiField->offset, .tChem = this})};
 }
 
-PetscErrorCode ablate::eos::TChem::TemperatureFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return TemperatureTemperatureFunction(conserved, 300, property, ctx); }
-PetscErrorCode ablate::eos::TChem::TemperatureTemperatureFunction(const PetscReal *conserved, PetscReal temperatureGuess, PetscReal *temperature, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::TemperatureFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return TemperatureTemperatureFunction(conserved, 300, property, ctx); }
+PetscErrorCode ablate::eos::TChemV1::TemperatureTemperatureFunction(const PetscReal *conserved, PetscReal temperatureGuess, PetscReal *temperature, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     auto tChem = functionContext->tChem;
@@ -283,7 +283,7 @@ PetscErrorCode ablate::eos::TChem::TemperatureTemperatureFunction(const PetscRea
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::PressureFunction(const PetscReal *conserved, PetscReal *pressure, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::PressureFunction(const PetscReal *conserved, PetscReal *pressure, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
     PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
@@ -292,7 +292,7 @@ PetscErrorCode ablate::eos::TChem::PressureFunction(const PetscReal *conserved, 
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::PressureTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *pressure, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::PressureTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *pressure, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     auto tChem = functionContext->tChem;
@@ -315,7 +315,7 @@ PetscErrorCode ablate::eos::TChem::PressureTemperatureFunction(const PetscReal *
     *pressure = density * temperature * R;
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyFunction(const PetscReal *conserved, PetscReal *sensibleInternalEnergy, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::InternalSensibleEnergyFunction(const PetscReal *conserved, PetscReal *sensibleInternalEnergy, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
 
@@ -328,7 +328,7 @@ PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyFunction(const PetscRea
     *sensibleInternalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *sensibleInternalEnergy, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::InternalSensibleEnergyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *sensibleInternalEnergy, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     auto tChem = functionContext->tChem;
@@ -352,7 +352,7 @@ PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyTemperatureFunction(con
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *sensibleEnthalpy, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *sensibleEnthalpy, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
     PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
@@ -361,7 +361,7 @@ PetscErrorCode ablate::eos::TChem::SensibleEnthalpyFunction(const PetscReal *con
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *sensibleEnthalpy, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *sensibleEnthalpy, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     auto tChem = functionContext->tChem;
@@ -386,7 +386,7 @@ PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureFunction(const Pet
     *sensibleEnthalpy = totalEnthalpy - enthalpyOfFormation;
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeFunction(const PetscReal *conserved, PetscReal *cv, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SpecificHeatConstantVolumeFunction(const PetscReal *conserved, PetscReal *cv, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
     PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
@@ -395,7 +395,7 @@ PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeFunction(const Pets
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *cv, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SpecificHeatConstantVolumeTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *cv, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     auto tChem = functionContext->tChem;
@@ -411,7 +411,7 @@ PetscErrorCode ablate::eos::TChem::SpecificHeatConstantVolumeTemperatureFunction
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureFunction(const PetscReal *conserved, PetscReal *cp, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SpecificHeatConstantPressureFunction(const PetscReal *conserved, PetscReal *cp, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
     PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
@@ -420,7 +420,7 @@ PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureFunction(const Pe
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *cp, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SpecificHeatConstantPressureTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *cp, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     auto tChem = functionContext->tChem;
@@ -436,7 +436,7 @@ PetscErrorCode ablate::eos::TChem::SpecificHeatConstantPressureTemperatureFuncti
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SpeedOfSoundFunction(const PetscReal *conserved, PetscReal *speedOfSound, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SpeedOfSoundFunction(const PetscReal *conserved, PetscReal *speedOfSound, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
     PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
@@ -445,7 +445,7 @@ PetscErrorCode ablate::eos::TChem::SpeedOfSoundFunction(const PetscReal *conserv
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SpeedOfSoundTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *speedOfSound, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SpeedOfSoundTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *speedOfSound, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     auto tChem = functionContext->tChem;
@@ -472,7 +472,7 @@ PetscErrorCode ablate::eos::TChem::SpeedOfSoundTemperatureFunction(const PetscRe
     *speedOfSound = PetscSqrtReal(gamma * R * temperature);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *hi, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SpeciesSensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *hi, void *ctx) {
     PetscFunctionBeginUser;
     PetscReal temperature;
     PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
@@ -481,7 +481,7 @@ PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyFunction(const PetscRe
     CHKERRQ(ierr);
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *hi, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *hi, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     auto tChem = functionContext->tChem;
@@ -497,19 +497,19 @@ PetscErrorCode ablate::eos::TChem::SpeciesSensibleEnthalpyTemperatureFunction(co
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::DensityFunction(const PetscReal *conserved, PetscReal *density, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::DensityFunction(const PetscReal *conserved, PetscReal *density, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::DensityTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *density, void *ctx) {
+PetscErrorCode ablate::eos::TChemV1::DensityTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *density, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
     PetscFunctionReturn(0);
 }
-ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2) const {
+ablate::eos::FieldFunction ablate::eos::TChemV1::GetFieldFunctionFunction(const std::string &field, ablate::eos::ThermodynamicProperty property1, ablate::eos::ThermodynamicProperty property2) const {
     if (finiteVolume::CompressibleFlowFields::EULER_FIELD == field) {
         if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
@@ -692,7 +692,7 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
     }
 }
 
-const char *ablate::eos::TChem::periodicTable =
+const char *ablate::eos::TChemV1::periodicTable =
     "102 10\n"
     "H          HE         LI         BE         B          C          N          O          F          NE\n"
     "  1.00797    4.00260    6.93900    9.01220   10.81100   12.01115   14.00670   15.99940   18.99840   20.18300\n"
@@ -719,5 +719,5 @@ const char *ablate::eos::TChem::periodicTable =
     "";
 
 #include "registrar.hpp"
-REGISTER(ablate::eos::EOS, ablate::eos::TChem, "TChem ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format)"),
+REGISTER(ablate::eos::EOS, ablate::eos::TChemV1, "TChem ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format)"),
          ARG(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format)"));
