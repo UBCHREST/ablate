@@ -90,5 +90,5 @@ solvers:
     region:
       name: interiorCells
     rays: 15
-    properties:
+    properties: !ablate::eos::radiationProperties::Constant
       absorptivity: 1

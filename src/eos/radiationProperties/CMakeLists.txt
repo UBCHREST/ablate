@@ -3,4 +3,6 @@ target_sources(ablateLibrary
         radiationProperties.hpp
         radiationConstant.hpp
         radiationConstant.cpp
+        radiationZimmer.cpp
+        radiationZimmer.hpp
         )

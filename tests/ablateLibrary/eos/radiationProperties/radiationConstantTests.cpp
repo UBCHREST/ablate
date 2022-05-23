@@ -1,7 +1,6 @@
 #include "eos/radiationProperties/radiationConstant.hpp"
 #include "gtest/gtest.h"
 
-
 TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectRadiationFunction) {
     // ARRANGE
     const PetscReal expectedAbsorptivity = 1;

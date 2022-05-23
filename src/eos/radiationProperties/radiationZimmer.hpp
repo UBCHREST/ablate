@@ -1,23 +1,29 @@
 #ifndef ABLATELIBRARY_RADIATIONPROPERTIESZIMMER_H
 #define ABLATELIBRARY_RADIATIONPROPERTIESZIMMER_H
 
-#include "radiationProperties.hpp"
-#include "finiteVolume/compressibleFlowFields.hpp"
-#include "utilities/mathUtilities.hpp"
-#include "solver/cellSolver.hpp"
 #include "eos/radiationProperties/radiationProperties.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
+#include "radiationProperties.hpp"
+#include "solver/cellSolver.hpp"
+#include "utilities/mathUtilities.hpp"
 
 namespace ablate::eos::radiationProperties {
 
 class Zimmer : public RadiationModel {
-
    private:
     struct FunctionContext {
         PetscInt densityYiH2OOffset;
         PetscInt densityYiCO2Offset;
         PetscInt densityYiCOOffset;
         PetscInt densityYiCH4Offset;
+        const ThermodynamicFunction temperatureFunction;
+        const ThermodynamicFunction densityFunction;
     };
+
+    /**
+     * Eos is needed to compute field values
+     */
+    const std::shared_ptr<eos::EOS> eos;
 
     /**
      * private static function for evaluating constant properties without temperature
@@ -56,8 +62,9 @@ class Zimmer : public RadiationModel {
      */
     [[nodiscard]] ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
 
+    PetscInt GetFieldComponentOffset(const std::string &str, const domain::Field &field) const;
 };
 
-}
+}  // namespace ablate::eos::radiationProperties
 
 #endif  // ABLATELIBRARY_RADIATIONPROPERTIESZIMMER_H
