@@ -42,7 +42,7 @@ class Zimmer : public RadiationModel {
     static PetscErrorCode ZimmerTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
 
    public:
-    explicit Zimmer(std::shared_ptr<parameters::Parameters> options);
+    explicit Zimmer(std::shared_ptr<eos::EOS> eosIn);
     explicit Zimmer(const Zimmer&) = delete;
     void operator=(const Zimmer&) = delete;
 
