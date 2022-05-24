@@ -4,6 +4,7 @@
 #include "domain/dmWrapper.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
@@ -13,11 +14,11 @@
 #include "finiteVolume/fluxCalculator/ausmpUp.hpp"
 #include "finiteVolume/fluxCalculator/averageFlux.hpp"
 #include "finiteVolume/processes/arbitrarySource.hpp"
-#include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
 #include "solver/directSolverTsInterface.hpp"
+#include "utilities/petscUtilities.hpp"
 
 #define Pi PETSC_PI
 #define Sin PetscSinReal
@@ -559,7 +560,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
         PetscErrorCode ierr;
 
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        ablate::utilities::PetscUtilities::Initialize(argc, argv);
 
         Constants constants = GetParam().constants;
         PetscInt blockSize = 2 + constants.dim;
@@ -689,8 +690,8 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             ASSERT_NEAR(lInfSlope, GetParam().expectedLInfConvergence[b], 0.2) << "incorrect LInf convergence order for component[" << b << "]";
         }
 
-        ierr = PetscFinalize();
-        exit(ierr);
+        ablate::environment::RunEnvironment::Get().CleanUp();
+        exit(0);
 
     EndWithMPI
 }

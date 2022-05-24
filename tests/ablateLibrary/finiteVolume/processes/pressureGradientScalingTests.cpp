@@ -7,6 +7,7 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
@@ -19,6 +20,7 @@
 #include "mathFunctions/geom/sphere.hpp"
 #include "parameters/mapParameters.hpp"
 #include "solver/directSolverTsInterface.hpp"
+#include "utilities/petscUtilities.hpp"
 
 typedef struct {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -47,7 +49,7 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
         PetscErrorCode ierr;
 
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        ablate::utilities::PetscUtilities::Initialize(argc, argv);
 
         const auto& parameters = GetParam();
 
@@ -95,9 +97,8 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
 
         // cleanup
         TSDestroy(&testTs) >> testErrorChecker;
-        ierr = PetscFinalize();
-        exit(ierr);
-
+        ablate::environment::RunEnvironment::Get().CleanUp();
+        exit(0);
     EndWithMPI
 }
 

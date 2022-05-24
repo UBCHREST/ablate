@@ -5,7 +5,9 @@
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "domain/dmPlex.hpp"
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 
@@ -25,7 +27,7 @@ TEST_P(DMPlexTestFixture, ShouldCreateAndViewDMPlex) {
         {
             // arrange
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            ablate::utilities::PetscUtilities::Initialize(argc, argv);
 
             // Get the testing param
             auto &testingParam = GetParam();
@@ -39,7 +41,7 @@ TEST_P(DMPlexTestFixture, ShouldCreateAndViewDMPlex) {
             // assert - print the dmPlex to standard out
             DMView(dmPlex->GetDM(), PETSC_VIEWER_STDOUT_WORLD) >> testErrorChecker;
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Get().CleanUp();
     EndWithMPI
 }
 

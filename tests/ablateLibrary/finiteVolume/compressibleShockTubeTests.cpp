@@ -10,14 +10,15 @@ static char help[] = "Compressible ShockTube 1D Tests";
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
 #include "domain/dmWrapper.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/fluxCalculator/ausm.hpp"
-#include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 
@@ -147,7 +148,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             auto &testingParam = GetParam();
 
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, help) >> testErrorChecker;
+            ablate::utilities::PetscUtilities::Initialize(argc, argv, help);
 
             // Create a ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
@@ -219,7 +220,8 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Get().CleanUp();
+        exit(0);
     EndWithMPI
 }
 

@@ -14,6 +14,19 @@ class RunEnvironment {
     // default empty funEnvironment
     explicit RunEnvironment();
 
+    /**
+     * Struct to hold the name and function to be called in first in/first out clean up order
+     */
+    struct CleanupFunction {
+        std::string name;
+        std::function<void()> function;
+    };
+
+    /**
+     * functions to be called externally by the cleanup first in/first out function
+     */
+    std::vector<CleanupFunction> cleanUpFunctions;
+
    public:
     explicit RunEnvironment(const parameters::Parameters&, std::filesystem::path inputPath = {});
     ~RunEnvironment() = default;
@@ -35,6 +48,17 @@ class RunEnvironment {
     }
 
     inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
+
+    /**
+     * function to register cleanup function
+     */
+    static void RegisterCleanUpFunction(const std::string& name, std::function<void()>);
+
+    /**
+     * Last thing that any program should do is cleanup
+     * @param name
+     */
+    void CleanUp() const;
 
    private:
     inline static std::unique_ptr<RunEnvironment> runEnvironment = std::unique_ptr<RunEnvironment>();

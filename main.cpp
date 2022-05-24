@@ -9,6 +9,7 @@
 #include "listing.hpp"
 #include "localPath.hpp"
 #include "utilities/petscError.hpp"
+#include "utilities/petscUtilities.hpp"
 #include "yamlParser.hpp"
 
 using namespace ablate;
@@ -17,7 +18,7 @@ const char* replacementInputPrefix = "-yaml::";
 
 int main(int argc, char** args) {
     // initialize petsc and mpi
-    PetscInitialize(&argc, &args, NULL, NULL) >> checkError;
+    ablate::utilities::PetscUtilities::Initialize(&argc, &args);
 
     // check to see if we should print version
     PetscBool printInfo = PETSC_FALSE;
@@ -106,5 +107,5 @@ int main(int argc, char** args) {
             }
         }
     }
-    PetscFinalize() >> checkError;
+    ablate::environment::RunEnvironment::Get().CleanUp();
 }

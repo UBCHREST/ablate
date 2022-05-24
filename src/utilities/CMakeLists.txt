@@ -13,5 +13,7 @@ target_sources(ablateLibrary
         loggable.hpp
         mathUtilities.hpp
         vectorUtilities.hpp
+        petscUtilities.hpp
+        petscUtilities.cpp
         temporaryWorkingDirectory.hpp
         )

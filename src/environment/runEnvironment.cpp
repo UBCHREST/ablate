@@ -57,4 +57,21 @@ void ablate::environment::RunEnvironment::Setup(const ablate::parameters::Parame
     environment::RunEnvironment::runEnvironment = std::unique_ptr<environment::RunEnvironment>(new environment::RunEnvironment(parameters, inputPath));
 }
 
+void ablate::environment::RunEnvironment::RegisterCleanUpFunction(const std::string& name, std::function<void()> newFunction) {
+    Get();
+    auto iterator = std::find_if(runEnvironment->cleanUpFunctions.begin(), runEnvironment->cleanUpFunctions.end(), [&name](const auto& function) { return function.name == name; });
+    if (iterator == runEnvironment->cleanUpFunctions.end()) {
+        runEnvironment->cleanUpFunctions.push_back({.name = name, .function = newFunction});
+    } else {
+        iterator->function = newFunction;
+    }
+}
+
+void ablate::environment::RunEnvironment::CleanUp() const {
+    /* Iterate vector in reverse order */
+    for (auto cleanUpFunction = cleanUpFunctions.rbegin(); cleanUpFunction != cleanUpFunctions.rend(); ++cleanUpFunction) {
+        cleanUpFunction->function();
+    }
+}
+
 void ablate::environment::RunEnvironment::Setup() { environment::RunEnvironment::runEnvironment = std::unique_ptr<environment::RunEnvironment>(new environment::RunEnvironment()); }

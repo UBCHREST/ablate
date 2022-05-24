@@ -2,6 +2,7 @@
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/setFromOptions.hpp"
+#include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlow.h"
 #include "finiteElement/incompressibleFlowSolver.hpp"
@@ -14,6 +15,7 @@
 #include "particles/inertial.hpp"
 #include "particles/initializers/boxInitializer.hpp"
 #include "solver/directSolverTsInterface.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 using namespace ablate::finiteElement;
@@ -197,7 +199,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             auto testingParam = GetParam();
 
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            ablate::utilities::PetscUtilities::Initialize(argc, argv);
 
             // setup the required fields for the flow
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
@@ -300,7 +302,8 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Get().CleanUp();
+        exit(0);
     EndWithMPI
 }
 

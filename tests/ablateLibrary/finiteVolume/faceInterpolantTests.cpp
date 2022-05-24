@@ -6,19 +6,16 @@
 #include "PetscTestErrorChecker.hpp"
 #include "boundarySolver/boundarySolver.hpp"
 #include "domain/boxMesh.hpp"
-#include "domain/modifiers/createLabel.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
-#include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "domain/modifiers/mergeLabels.hpp"
-#include "domain/modifiers/tagLabelBoundary.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
-#include "mathFunctions/geom/sphere.hpp"
-#include "utilities/mathUtilities.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 
@@ -43,7 +40,7 @@ class FaceInterpolantTestFixture : public testingResources::MpiTestFixture, publ
 TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
     StartWithMPI
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, nullptr, "HELP") >> testErrorChecker;
+        ablate::utilities::PetscUtilities::Initialize(argc, argv);
 
         // get the exactGrads
         auto expectedFieldA = ablate::mathFunctions::Create(GetParam().fieldAFunction);
@@ -218,7 +215,8 @@ TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         VecRestoreArrayRead(faceGeomVec, &faceGeomArray);
         fvSolver->RestoreRange(faceRange);
 
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Get().CleanUp();
+        exit(0);
     EndWithMPI
 }
 

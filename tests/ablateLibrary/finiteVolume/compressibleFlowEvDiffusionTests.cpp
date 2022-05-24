@@ -10,6 +10,7 @@
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "domain/modifiers/setFromOptions.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/mockEOS.hpp"
 #include "eos/transport/constant.hpp"
 #include "finiteVolume/boundaryConditions/essentialGhost.hpp"
@@ -23,6 +24,7 @@
 #include "parameters/mapParameters.hpp"
 #include "solver/timeStepper.hpp"
 #include "utilities/petscOptions.hpp"
+#include "utilities/petscUtilities.hpp"
 
 typedef struct {
     PetscReal L;
@@ -79,7 +81,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
         PetscErrorCode ierr;
 
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        ablate::utilities::PetscUtilities::Initialize(argc, argv);
 
         // keep track of history
         testingResources::ConvergenceTester l2History("l2");
@@ -192,9 +194,8 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             FAIL() << lInfMessage;
         }
 
-        ierr = PetscFinalize();
-        exit(ierr);
-
+        ablate::environment::RunEnvironment::Get().CleanUp();
+        exit(0);
     EndWithMPI
 }
 

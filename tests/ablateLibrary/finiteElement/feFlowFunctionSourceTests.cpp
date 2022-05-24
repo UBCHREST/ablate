@@ -11,6 +11,7 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include "PetscTestErrorChecker.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/setFromOptions.hpp"
+#include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlowSolver.hpp"
 #include "finiteElement/lowMachFlowFields.hpp"
@@ -19,6 +20,7 @@ domain, using a parallel unstructured mesh (DMPLEX) to discretize it.\n\n\n";
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "solver/directSolverTsInterface.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 using namespace ablate::finiteElement;
@@ -569,7 +571,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             auto testingParam = GetParam();
 
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, help);
+            ablate::utilities::PetscUtilities::Initialize(argc, argv, help);
 
             // setup the required fields for the flow
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
@@ -651,7 +653,8 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Get().CleanUp();
+        exit(0);
     EndWithMPI
 }
 

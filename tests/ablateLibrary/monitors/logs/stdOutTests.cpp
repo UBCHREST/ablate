@@ -3,9 +3,10 @@
 #include <cmath>
 #include <memory>
 #include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "monitors/logs/stdOut.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 
@@ -16,7 +17,7 @@ TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
         {
             // arrange
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            ablate::utilities::PetscUtilities::Initialize(argc, argv);
 
             // Create the stdOut
             monitors::logs::StdOut log;
@@ -29,7 +30,8 @@ TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
             log.Print("Standard Out Log\n");
             log.Printf("rank: %d\n", rank);
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Get().CleanUp();
+        exit(0);
     EndWithMPI
 }
 
