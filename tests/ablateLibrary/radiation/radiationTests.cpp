@@ -11,13 +11,13 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "eos/perfectGas.hpp"
+#include "eos/radiationProperties/radiationConstant.hpp"
 #include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
-#include "eos/radiationProperties/radiationConstant.hpp"
 
 struct RadiationTestParameters {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -264,7 +264,6 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
                 /// Summing of the L2 norm values
                 error = (analyticalResult - actualResult);
                 l2sum += error * error;
-
             }
             /// Compute the L2 Norm error
             double N = (cellRange.end - cellRange.start);
