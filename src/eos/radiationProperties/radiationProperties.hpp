@@ -22,7 +22,7 @@ class RadiationModel {
      * @return
      */
     [[nodiscard]] virtual ThermodynamicFunction GetRadiationPropertiesFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
-    
+
     /**
      * Single function to produce radiation properties based upon the available fields and temperature
      * @param property
@@ -30,7 +30,6 @@ class RadiationModel {
      * @return
      */
     [[nodiscard]] virtual ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const = 0;
-
 };
 
 /**
@@ -81,7 +80,6 @@ inline std::istream& operator>>(std::istream& in, RadiationProperty& prop) {
     return in;
 }
 
-
-}
+}  // namespace ablate::eos::radiationProperties
 
 #endif  // ABLATELIBRARY_RADIATIONMODEL_H
