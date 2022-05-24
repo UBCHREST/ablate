@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_TCHEMV1REACTIONS_HPP
 #define ABLATELIBRARY_TCHEMV1REACTIONS_HPP
 
-#include <eos/tChemV1.hpp>
+#include <eos/tChem.hpp>
 #include "process.hpp"
 
 namespace ablate::finiteVolume::processes {
@@ -14,7 +14,7 @@ class TChemV1Reactions : public Process {
     // Petsc options specific to the chemTs. These may be null by default
     PetscOptions petscOptions;
 
-    std::shared_ptr<eos::TChemV1> eos;
+    std::shared_ptr<eos::TChem> eos;
     const size_t numberSpecies;
     inline const static PetscReal dtInitDefault = 1E-5;
     PetscReal dtInit; /** this may be different than default if set with petsc options **/

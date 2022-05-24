@@ -13,7 +13,7 @@ ablate::finiteVolume::ReactingCompressibleFlowSolver::ReactingCompressibleFlowSo
     : CompressibleFlowSolver(std::move(solverId), std::move(region), std::move(options), eosIn, std::move(parameters), std::move(transport), std::move(fluxCalculatorIn),
                              ablate::utilities::VectorUtilities::Merge(
                                  {std::make_shared<ablate::finiteVolume::processes::TChemV1Reactions>(
-                                     std::dynamic_pointer_cast<eos::TChemV1>(eosIn) ? std::dynamic_pointer_cast<eos::TChemV1>(eosIn) : throw std::invalid_argument("The eos must of type eos::TChem"))},
+                                     std::dynamic_pointer_cast<eos::TChem>(eosIn) ? std::dynamic_pointer_cast<eos::TChem>(eosIn) : throw std::invalid_argument("The eos must of type eos::TChem"))},
                                  additionalProcesses),
                              std::move(boundaryConditions), computePhysicsTimeStep) {}
 

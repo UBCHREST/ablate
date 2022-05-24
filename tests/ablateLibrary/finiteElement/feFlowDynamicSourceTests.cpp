@@ -122,7 +122,8 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             auto testingParam = GetParam();
 
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv, help);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize(help);
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
@@ -206,7 +207,7 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
         }
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

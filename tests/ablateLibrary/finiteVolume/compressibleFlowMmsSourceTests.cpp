@@ -560,7 +560,8 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
         PetscErrorCode ierr;
 
         // initialize petsc and mpi
-        ablate::utilities::PetscUtilities::Initialize(argc, argv);
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         Constants constants = GetParam().constants;
         PetscInt blockSize = 2 + constants.dim;
@@ -690,7 +691,7 @@ TEST_P(CompressibleFlowMmsTestFixture, ShouldComputeCorrectFlux) {
             ASSERT_NEAR(lInfSlope, GetParam().expectedLInfConvergence[b], 0.2) << "incorrect LInf convergence order for component[" << b << "]";
         }
 
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
 
     EndWithMPI

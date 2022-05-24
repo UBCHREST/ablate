@@ -21,7 +21,8 @@ TEST_P(FileLogTestFixture, ShouldPrintToFile) {
         {
             // arrange
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Create the fileLog
             auto logPath = MakeTemporaryPath("logFile.txt");
@@ -35,7 +36,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFile) {
             log.Print("Log Out Log\n");
             log.Printf("rank: %d\n", rank);
         }
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 
@@ -52,7 +53,8 @@ TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
         {
             // arrange
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
@@ -69,7 +71,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
             log.Print("Log Out Log\n");
             log.Printf("rank: %d\n", rank);
         }
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 
@@ -87,7 +89,8 @@ TEST_P(FileLogTestFixture, ShouldAppendToFileInOutputDirectory) {
         {
             // arrange
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
@@ -118,7 +121,7 @@ TEST_P(FileLogTestFixture, ShouldAppendToFileInOutputDirectory) {
                 log.Printf("rank: %d\n", rank);
             }
         }
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 

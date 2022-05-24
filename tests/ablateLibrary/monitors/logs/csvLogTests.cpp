@@ -18,7 +18,8 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFile) {
         {
             // arrange
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Create the fileLog
             auto logPath = MakeTemporaryPath("logFile.csv", PETSC_COMM_WORLD);
@@ -40,6 +41,7 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFile) {
             otherData = {5.5, 6.6, 7.7};
             log->Print("otherData", otherData);
         }
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 
@@ -56,7 +58,8 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFileInOutputDirectory) {
         {
             // arrange
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
@@ -81,6 +84,7 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFileInOutputDirectory) {
             otherData = {5.5, 6.6, 7.7};
             log->Print("otherData", otherData);
         }
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 
@@ -98,7 +102,8 @@ TEST_P(CsvLogTestFixture, ShouldAppendToFileInOutputDirectory) {
         {
             // arrange
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
@@ -145,6 +150,7 @@ TEST_P(CsvLogTestFixture, ShouldAppendToFileInOutputDirectory) {
                 log->Print("otherData", otherData);
             }
         }
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 

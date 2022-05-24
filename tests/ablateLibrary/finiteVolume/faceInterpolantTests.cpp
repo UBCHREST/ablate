@@ -40,7 +40,8 @@ class FaceInterpolantTestFixture : public testingResources::MpiTestFixture, publ
 TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
     StartWithMPI
         // initialize petsc and mpi
-        ablate::utilities::PetscUtilities::Initialize(argc, argv);
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         // get the exactGrads
         auto expectedFieldA = ablate::mathFunctions::Create(GetParam().fieldAFunction);
@@ -215,7 +216,7 @@ TEST_P(FaceInterpolantTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         VecRestoreArrayRead(faceGeomVec, &faceGeomArray);
         fvSolver->RestoreRange(faceRange);
 
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

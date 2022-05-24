@@ -8,7 +8,22 @@
 namespace ablate::environment {
 class RunEnvironment {
    private:
+    //! Store default arguments
+    inline static int DefaultGlobalArgc = 0;
+
+    //! Store default arguments
+    inline static char** DefaultGlobalArgs = nullptr;
+
+    //! Store the global main arg count
+    inline static int* GlobalArgc = &DefaultGlobalArgc;
+
+    //! Store the global main args
+    inline static char*** GlobalArgs = &DefaultGlobalArgs;
+
+    //! the directory to store output
     std::filesystem::path outputDirectory;
+
+    //! the title of the simulation
     const std::string title;
 
     // default empty funEnvironment
@@ -17,15 +32,15 @@ class RunEnvironment {
     /**
      * Struct to hold the name and function to be called in first in/first out clean up order
      */
-    struct CleanupFunction {
+    struct FinalizeFunction {
         std::string name;
         std::function<void()> function;
     };
 
     /**
-     * functions to be called externally by the cleanup first in/first out function
+     * functions to be called externally by the finalize first in/first out function
      */
-    std::vector<CleanupFunction> cleanUpFunctions;
+    inline static std::vector<FinalizeFunction> finalizeFunctions;
 
    public:
     explicit RunEnvironment(const parameters::Parameters&, std::filesystem::path inputPath = {});
@@ -50,6 +65,11 @@ class RunEnvironment {
     inline const std::filesystem::path& GetOutputDirectory() const { return outputDirectory; }
 
     /**
+     * initialize ablate
+     */
+    static void Initialize(int* argc, char*** args);
+
+    /**
      * function to register cleanup function
      */
     static void RegisterCleanUpFunction(const std::string& name, std::function<void()>);
@@ -58,7 +78,11 @@ class RunEnvironment {
      * Last thing that any program should do is cleanup
      * @param name
      */
-    void CleanUp() const;
+    static void Finalize();
+
+    static inline int* GetArgCount() { return GlobalArgc; }
+
+    static inline char*** GetArgs() { return GlobalArgs; }
 
    private:
     inline static std::unique_ptr<RunEnvironment> runEnvironment = std::unique_ptr<RunEnvironment>();

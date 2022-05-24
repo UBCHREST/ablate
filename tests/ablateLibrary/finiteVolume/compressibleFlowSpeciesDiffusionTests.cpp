@@ -87,12 +87,12 @@ static PetscErrorCode ComputeEulerExact(PetscInt dim, PetscReal time, const Pets
 
     PetscFunctionReturn(0);
 }
+
 TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        PetscErrorCode ierr;
-
         // initialize petsc and mpi
-        ablate::utilities::PetscUtilities::Initialize(argc, argv);
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         // keep track of history
         testingResources::ConvergenceTester l2History("l2");
@@ -209,7 +209,7 @@ TEST_P(CompressibleFlowSpeciesDiffusionTestFixture, ShouldConvergeToExactSolutio
             FAIL() << lInfMessage;
         }
 
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

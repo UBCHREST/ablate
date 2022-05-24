@@ -17,7 +17,8 @@ TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
         {
             // arrange
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Create the stdOut
             monitors::logs::StdOut log;
@@ -30,7 +31,7 @@ TEST_P(StdOutLogTestFixture, ShouldPrintToStdOut) {
             log.Print("Standard Out Log\n");
             log.Printf("rank: %d\n", rank);
         }
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

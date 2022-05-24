@@ -81,7 +81,8 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
         PetscErrorCode ierr;
 
         // initialize petsc and mpi
-        ablate::utilities::PetscUtilities::Initialize(argc, argv);
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         // keep track of history
         testingResources::ConvergenceTester l2History("l2");
@@ -194,7 +195,7 @@ TEST_P(CompressibleFlowEvDiffusionTestFixture, ShouldConvergeToExactSolution) {
             FAIL() << lInfMessage;
         }
 
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

@@ -15,5 +15,9 @@ target_sources(ablateLibrary
         vectorUtilities.hpp
         petscUtilities.hpp
         petscUtilities.cpp
+        kokkosUtilities.hpp
+        kokkosUtilities.cpp
+        mpiUtilities.hpp
+        mpiUtilities.cpp
         temporaryWorkingDirectory.hpp
         )

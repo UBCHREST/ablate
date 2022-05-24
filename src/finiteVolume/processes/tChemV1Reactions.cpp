@@ -9,8 +9,8 @@
 #if defined(MIN)
 #undef MIN
 #endif
-#include <TC_interface.h>
-#include <TC_params.h>
+//#include <TC_interface.h>
+//#include <TC_params.h>
 #include <finiteVolume/processes/eulerTransport.hpp>
 #include <utilities/petscOptions.hpp>
 #else
@@ -22,7 +22,7 @@ ablate::finiteVolume::processes::TChemV1Reactions::TChemV1Reactions(std::shared_
     : fieldDm(nullptr),
       sourceVec(nullptr),
       petscOptions(nullptr),
-      eos(std::dynamic_pointer_cast<eos::TChemV1>(eosIn)),
+      eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)),
       numberSpecies(eosIn->GetSpecies().size()),
       dtInit(NAN),
       ts(nullptr),
@@ -33,7 +33,7 @@ ablate::finiteVolume::processes::TChemV1Reactions::TChemV1Reactions(std::shared_
       rows(nullptr),
       massFractionBounds(massFractionBounds) {
     // make sure that the eos is set
-    if (!std::dynamic_pointer_cast<eos::TChemV1>(eosIn)) {
+    if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
         throw std::invalid_argument("ablate::finiteVolume::processes::TChemReactions only accepts EOS of type eos::TChem");
     }
 
@@ -177,8 +177,8 @@ PetscErrorCode ablate::finiteVolume::processes::TChemV1Reactions::SinglePointChe
     }
 
     // get the source (assuming constant pressure/mass)
-    ierr = TC_getSrc(solver->tchemScratch, (PetscInt)solver->numberSpecies + 1, fArray);
-    TCCHKERRQ(ierr);
+    //    ierr = TC_getSrc(solver->tchemScratch, (PetscInt)solver->numberSpecies + 1, fArray);
+    //    TCCHKERRQ(ierr);
 
     ierr = VecRestoreArrayRead(X, &xArray);
     CHKERRQ(ierr);
@@ -211,7 +211,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemV1Reactions::SinglePointChe
     }
 
     // compute the analytical jacobian assuming constant pressure
-    ierr = TC_getJacTYN(solver->tchemScratch, (int)solver->numberSpecies, solver->jacobianScratch, 1);
+    //    ierr = TC_getJacTYN(solver->tchemScratch, (int)solver->numberSpecies, solver->jacobianScratch, 1);
     CHKERRQ(ierr);
 
     // Set the Jacobian value to unity in the diagonal for any inert species
@@ -318,19 +318,19 @@ PetscErrorCode ablate::finiteVolume::processes::TChemV1Reactions::ChemistryFlowP
             }
 
             // precompute some values with the point array
-            double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-            int err = TC_getMs2Wmix(pointArray + 1, (int)numberSpecies, &mwMix);
-            TCCHKERRQ(err);
+            double mwMix = NAN;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
+                                 //            TC_getMs2Wmix(pointArray + 1, (int)numberSpecies, &mwMix);
+                                 //            TCCHKERRQ(err);
 
             // compute the pressure as this node from T, Yi
             double R = 1000.0 * RUNIV / mwMix;
             PetscReal pressure = conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHO] * temperature * R;
-            TC_setThermoPres(pressure);
+            //            TC_setThermoPres(pressure);
 
             // Compute the total energy sen + hof
-            PetscReal hof;
-            err = eos::TChemV1::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, hof);
-            TCCHKERRQ(err);
+            PetscReal hof = 0.0;
+            //            err = eos::TChem::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, hof);//TODO: restore ComputeEnthalpyOfFormation
+            //            TCCHKERRQ(err);
             PetscReal enerTotal =
                 hof + conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / conserved[flowEulerId.offset + ablate::finiteVolume::CompressibleFlowFields::RHO];
 
@@ -387,9 +387,9 @@ PetscErrorCode ablate::finiteVolume::processes::TChemV1Reactions::ChemistryFlowP
             VecGetArray(pointData, &pointArray) >> checkError;
 
             // Use the point array to compute the hof
-            double updatedHof;
-            err = eos::TChemV1::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, updatedHof);
-            TCCHKERRQ(err);
+            double updatedHof = 0.0;
+            //            err = eos::TChem::ComputeEnthalpyOfFormation((int)numberSpecies, pointArray, updatedHof);//TODO: restore
+            //            TCCHKERRQ(err);
             double updatedInternalEnergy = enerTotal - updatedHof;
 
             // store the computed source terms

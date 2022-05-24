@@ -167,7 +167,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
     StartWithMPI
 
         // initialize petsc and mpi
-        ablate::utilities::PetscUtilities::Initialize(argc, argv);
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         // keep track of history
         testingResources::ConvergenceTester l2History("l2");
@@ -283,7 +284,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         }
 
         DMRestoreLocalVector(domain->GetDM(), &rhs);
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

@@ -8,7 +8,7 @@ class PetscUtilities {
     /**
      * static call to setup petsc petsc and register cleanup call
      */
-    static void Initialize(int*, char***, const char[] = nullptr);
+    static void Initialize(const char[] = nullptr);
 
    private:
     PetscUtilities() = delete;

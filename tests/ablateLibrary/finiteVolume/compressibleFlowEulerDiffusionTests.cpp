@@ -157,7 +157,8 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
         PetscErrorCode ierr;
 
         // initialize petsc and mpi
-        ablate::utilities::PetscUtilities::Initialize(argc, argv);
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         InputParameters parameters = GetParam().parameters;
         parameters.dim = 1;
@@ -282,7 +283,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             }
         }
 
-        environment::RunEnvironment::Get().CleanUp();
+        environment::RunEnvironment::Get().Finalize();
         exit(ierr);
 
     EndWithMPI

@@ -49,7 +49,8 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
         PetscErrorCode ierr;
 
         // initialize petsc and mpi
-        ablate::utilities::PetscUtilities::Initialize(argc, argv);
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         const auto& parameters = GetParam();
 
@@ -97,7 +98,7 @@ TEST_P(PressureGradientScalingTestFixture, ShouldUpdatePgsCorrectly) {
 
         // cleanup
         TSDestroy(&testTs) >> testErrorChecker;
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

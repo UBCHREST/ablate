@@ -10,7 +10,8 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
         }
         PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> testErrorChecker;
         PetscOptionsSetValue(NULL, "-checkstack", "true") >> testErrorChecker;
-        ablate::utilities::PetscUtilities::Initialize(argc, argv, "Integration Level Testing");
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize("Integration Level Testing");
         {
             int rank;
             MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -47,7 +48,7 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
                 }
             }
         }
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }
@@ -58,7 +59,8 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
         // initialize petsc and mpi
         PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> testErrorChecker;
         PetscOptionsSetValue(NULL, "-checkstack", "true") >> testErrorChecker;
-        ablate::utilities::PetscUtilities::Initialize(argc, argv, "Integration Level Testing");
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize("Integration Level Testing");
 
         int rank;
         MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -116,7 +118,7 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
             }
         }
 
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

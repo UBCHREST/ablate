@@ -44,7 +44,8 @@ class CompressibleFlowEvAdvectionFixture : public testingResources::MpiTestFixtu
 TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
         // initialize petsc and mpi
-        ablate::utilities::PetscUtilities::Initialize(argc, argv);
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         PetscInt initialNx = GetParam().initialNx;
 
@@ -144,7 +145,7 @@ TEST_P(CompressibleFlowEvAdvectionFixture, ShouldConvergeToExactSolution) {
             FAIL() << lInfMessage;
         }
 
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

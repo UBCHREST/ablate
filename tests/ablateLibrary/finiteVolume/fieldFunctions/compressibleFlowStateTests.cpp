@@ -1,4 +1,4 @@
-#include <eos/tChemV1.hpp>
+#include <eos/tChem.hpp>
 #include <finiteVolume/fieldFunctions/compressibleFlowState.hpp>
 #include <finiteVolume/fieldFunctions/massFractions.hpp>
 #include <mathFunctions/fieldFunction.hpp>
@@ -106,7 +106,7 @@ INSTANTIATE_TEST_SUITE_P(
                         .expectedEuler = {.9, .9 * 1.56E5, 0},
                         .expectedDensityYi = {}},
                     (CompressibleFlowStateTestParameters){.location = {0.0, 0.0, 0.0},
-                                                          .eosFunction = []() { return std::make_shared<eos::TChemV1>("inputs/eos/grimech30.dat", "inputs/eos/thermo30.dat"); },
+                                                          .eosFunction = []() { return std::make_shared<eos::TChem>("inputs/eos/grimech30.dat", "inputs/eos/thermo30.dat"); },
                                                           .temperature = mathFunctions::Create(499.25),
                                                           .pressure = mathFunctions::Create(197710.5),
                                                           .velocity = mathFunctions::Create(std::vector<double>{10, -20, 30}),
@@ -120,7 +120,7 @@ INSTANTIATE_TEST_SUITE_P(
                                                           .expectedDensityYi = {0, 0, 0, 1.2 * 0.3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.2 * 0.2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,        0,
                                                                                 0, 0, 0, 0,         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1.2 * 0.5}},
                     (CompressibleFlowStateTestParameters){.location = {0.0, 0.0, 0.0},
-                                                          .eosFunction = []() { return std::make_shared<eos::TChemV1>("inputs/eos/grimech30.dat", "inputs/eos/thermo30.dat"); },
+                                                          .eosFunction = []() { return std::make_shared<eos::TChem>("inputs/eos/grimech30.dat", "inputs/eos/thermo30.dat"); },
                                                           .temperature = mathFunctions::Create(762.664),
                                                           .pressure = mathFunctions::Create(189973.54),
                                                           .velocity = mathFunctions::Create(std::vector<double>{0.0, 0.0, 0.0}),

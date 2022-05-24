@@ -148,7 +148,8 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             auto &testingParam = GetParam();
 
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv, help);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize(help);
 
             // Create a ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
@@ -220,7 +221,7 @@ TEST_P(CompressibleShockTubeTestFixture, ShouldReproduceExpectedResult) {
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
         }
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

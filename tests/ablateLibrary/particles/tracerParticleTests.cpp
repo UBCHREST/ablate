@@ -293,7 +293,8 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             omega = testingParam.omega;
 
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // setup the required fields for the flow
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
@@ -391,7 +392,7 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
         }
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

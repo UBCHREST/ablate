@@ -571,7 +571,8 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             auto testingParam = GetParam();
 
             // initialize petsc and mpi
-            ablate::utilities::PetscUtilities::Initialize(argc, argv, help);
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize(help);
 
             // setup the required fields for the flow
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
@@ -653,7 +654,7 @@ TEST_P(FEFlowMMSTestFixture, ShouldConvergeToExactSolution) {
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
         }
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }

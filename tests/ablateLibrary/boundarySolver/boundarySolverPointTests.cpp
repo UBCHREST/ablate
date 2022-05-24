@@ -50,7 +50,8 @@ static void FillStencilValues(PetscInt loc, const PetscScalar* stencilValues[], 
 TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
     StartWithMPI
         // initialize petsc and mpi
-        ablate::utilities::PetscUtilities::Initialize(argc, argv);
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         // Define regions for this test
         auto insideRegion = std::make_shared<ablate::domain::Region>("insideRegion");
@@ -279,7 +280,7 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
 
         VecDestroy(&gradVec) >> checkError;
 
-        ablate::environment::RunEnvironment::Get().CleanUp();
+        ablate::environment::RunEnvironment::Finalize();
         exit(0);
     EndWithMPI
 }
