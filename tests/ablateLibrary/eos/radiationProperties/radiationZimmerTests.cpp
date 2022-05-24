@@ -48,7 +48,7 @@ INSTANTIATE_TEST_SUITE_P(RadationZimmerTests, ZimmerTestFixture,
                                                                            ablate::domain::Field{.name = "densityYi", .numberComponents = 4, .components = {"h2o", "co2", "ch4", "co"}, .offset = 5}},
                                                                 .conservedValues = {0.01, NAN, NAN, NAN, NAN, 0.0025, 0.0025, 0.0025, 0.0025},  //!< The Density Yi values live here
                                                                 .temperatureIn = 300.0,
-                                                                .densityIn = 0.01,
+                                                                .densityIn = 0.01, //!< The density is read through the equation of state above, not here
                                                                 .expectedAbsorptivity = 0.268109},
                                          /** A test with three valid species for the Zimmer model. */
                                          (ZimmerTestParameters){.fields = {ablate::domain::Field{.name = "euler", .numberComponents = 5, .offset = 0},
