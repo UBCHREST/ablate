@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18.4)
+cmake_minimum_required(VERSION 3.14)
 find_package(PkgConfig REQUIRED)
 
 # Check if a C compiler is explicitly stated

@@ -37,15 +37,15 @@ static void FillDensityMassFraction(const ablate::domain::Field& densityYiField,
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS create and view tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct TChemCreateAndViewParameters {
+struct TChemV1CreateAndViewParameters {
     std::filesystem::path mechFile;
     std::filesystem::path thermoFile;
     std::string expectedView;
 };
 
-class TChemCreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemCreateAndViewParameters> {};
+class TChemV1CreateAndViewFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemV1CreateAndViewParameters> {};
 
-TEST_P(TChemCreateAndViewFixture, ShouldCreateAndView) {
+TEST_P(TChemV1CreateAndViewFixture, ShouldCreateAndView) {
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemV1>(GetParam().mechFile, GetParam().thermoFile);
 
@@ -59,24 +59,24 @@ TEST_P(TChemCreateAndViewFixture, ShouldCreateAndView) {
     ASSERT_EQ(outputString, GetParam().expectedView);
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, TChemCreateAndViewFixture,
-                         testing::Values((TChemCreateAndViewParameters){.mechFile = "inputs/eos/grimech30.dat",
+INSTANTIATE_TEST_SUITE_P(TChemV1Tests, TChemV1CreateAndViewFixture,
+                         testing::Values((TChemV1CreateAndViewParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                         .thermoFile = "inputs/eos/thermo30.dat",
                                                                         .expectedView = "EOS: TChemV1\n\tmechFile: \"inputs/eos/grimech30.dat\"\n\tthermoFile: \"inputs/eos/thermo30.dat\"\n"}),
-                         [](const testing::TestParamInfo<TChemCreateAndViewParameters>& info) { return info.param.mechFile.stem().string() + "_" + info.param.thermoFile.stem().string(); });
+                         [](const testing::TestParamInfo<TChemV1CreateAndViewParameters>& info) { return info.param.mechFile.stem().string() + "_" + info.param.thermoFile.stem().string(); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS Get Species Tests
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-struct TChemGetSpeciesParameters {
+struct TChemV1GetSpeciesParameters {
     std::filesystem::path mechFile;
     std::filesystem::path thermoFile;
     std::vector<std::string> expectedSpecies;
 };
 
-class TChemGetSpeciesFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemGetSpeciesParameters> {};
+class TChemV1GetSpeciesFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemV1GetSpeciesParameters> {};
 
-TEST_P(TChemGetSpeciesFixture, ShouldGetCorrectSpecies) {
+TEST_P(TChemV1GetSpeciesFixture, ShouldGetCorrectSpecies) {
     // arrange
     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemV1>(GetParam().mechFile, GetParam().thermoFile);
 
@@ -87,14 +87,14 @@ TEST_P(TChemGetSpeciesFixture, ShouldGetCorrectSpecies) {
     ASSERT_EQ(species, GetParam().expectedSpecies);
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, TChemGetSpeciesFixture,
-                         testing::Values((TChemGetSpeciesParameters){
+INSTANTIATE_TEST_SUITE_P(TChemV1Tests, TChemV1GetSpeciesFixture,
+                         testing::Values((TChemV1GetSpeciesParameters){
                              .mechFile = "inputs/eos/grimech30.dat",
                              .thermoFile = "inputs/eos/thermo30.dat",
                              .expectedSpecies = {"H2",    "H",    "O",     "O2",  "OH",   "H2O",  "HO2",  "H2O2", "C",    "CH",   "CH2",   "CH2(S)", "CH3",  "CH4",  "CO",     "CO2",    "HCO", "CH2O",
                                                  "CH2OH", "CH3O", "CH3OH", "C2H", "C2H2", "C2H3", "C2H4", "C2H5", "C2H6", "HCCO", "CH2CO", "HCCOH",  "N",    "NH",   "NH2",    "NH3",    "NNH", "NO",
                                                  "NO2",   "N2O",  "HNO",   "CN",  "HCN",  "H2CN", "HCNN", "HCNO", "HOCN", "HNCO", "NCO",   "AR",     "C3H7", "C3H8", "CH2CHO", "CH3CHO", "N2"}}),
-                         [](const testing::TestParamInfo<TChemGetSpeciesParameters>& info) { return info.param.mechFile.stem().string() + "_" + info.param.thermoFile.stem().string(); });
+                         [](const testing::TestParamInfo<TChemV1GetSpeciesParameters>& info) { return info.param.mechFile.stem().string() + "_" + info.param.thermoFile.stem().string(); });
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// EOS Thermodynamic property tests
@@ -167,7 +167,7 @@ TEST_P(TCThermodynamicPropertyTestFixture, ShouldComputeProperty) {
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    TChemTests, TCThermodynamicPropertyTestFixture,
+    TChemV1Tests, TCThermodynamicPropertyTestFixture,
     testing::Values(
         (TCTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                            .thermoFile = "inputs/eos/thermo30.dat",
@@ -358,7 +358,7 @@ TEST_P(TCFieldFunctionTestFixture, ShouldComputeField) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemTests, TCFieldFunctionTestFixture,
+INSTANTIATE_TEST_SUITE_P(TChemV1Tests, TCFieldFunctionTestFixture,
                          testing::Values((TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                          .thermoFile = "inputs/eos/thermo30.dat",
                                                                          .property1 = ablate::eos::ThermodynamicProperty::Temperature,

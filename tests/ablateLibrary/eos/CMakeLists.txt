@@ -2,7 +2,7 @@ target_sources(libraryTests
         PRIVATE
         mockEOS.hpp
         perfectGasTests.cpp
-        tChemTests.cpp
+        tChemV1Tests.cpp
         stiffenedGasTests.cpp
         )
 
