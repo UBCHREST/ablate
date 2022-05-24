@@ -1,16 +1,13 @@
-//
-// Created by owen on 3/19/22.
-//
 #ifndef ABLATELIBRARY_RADIATION_HPP
 #define ABLATELIBRARY_RADIATION_HPP
 
 #include <memory>
 #include <set>
+#include "eos/radiationProperties/radiationProperties.hpp"
+#include "finiteVolume/finiteVolumeSolver.hpp"
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
-#include "eos/radiationProperties/radiationProperties.hpp"
-#include "finiteVolume/finiteVolumeSolver.hpp"
 
 namespace ablate::radiation {
 
