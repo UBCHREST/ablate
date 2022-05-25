@@ -1,5 +1,5 @@
 #include <eos/mockEOS.hpp>
-#include "eos/radiationProperties/radiationZimmer.hpp"
+#include "eos/radiationProperties/Zimmer.hpp"
 #include "gtest/gtest.h"
 
 struct ZimmerTestParameters {
@@ -14,8 +14,6 @@ class ZimmerTestFixture : public ::testing::TestWithParam<ZimmerTestParameters> 
 
 TEST_P(ZimmerTestFixture, ShouldProduceExpectedValuesForField) {
     // ARRANGE
-    //    const PetscReal expectedAbsorptivity = 1;  //!< The absorptivity that we expect from the set field of components
-
     std::shared_ptr<ablateTesting::eos::MockEOS> eos = std::make_shared<ablateTesting::eos::MockEOS>();  //!< Create a mock eos with parameters to feed to the Zimmer model.
     /** Input values for the mock eos to carry into the Zimer model. This will require values for each of the fields. */
     EXPECT_CALL(*eos, GetThermodynamicFunction(ablate::eos::ThermodynamicProperty::Temperature, testing::_))

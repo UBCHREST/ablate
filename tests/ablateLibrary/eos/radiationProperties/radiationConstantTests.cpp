@@ -1,4 +1,4 @@
-#include "eos/radiationProperties/radiationConstant.hpp"
+#include "eos/radiationProperties/Constant.hpp"
 #include "gtest/gtest.h"
 
 TEST(RadiationConstantTests, ShouldRecordConstantValuesForDirectRadiationFunction) {

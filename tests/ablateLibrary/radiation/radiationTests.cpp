@@ -11,7 +11,7 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "eos/perfectGas.hpp"
-#include "eos/radiationProperties/radiationConstant.hpp"
+#include "eos/radiationProperties/Constant.hpp"
 #include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "gtest/gtest.h"

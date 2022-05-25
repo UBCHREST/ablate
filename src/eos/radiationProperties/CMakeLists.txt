@@ -1,8 +1,8 @@
 target_sources(ablateLibrary
         PUBLIC
         radiationProperties.hpp
-        radiationConstant.hpp
-        radiationConstant.cpp
-        radiationZimmer.cpp
-        radiationZimmer.hpp
+        Constant.hpp
+        Constant.cpp
+        Zimmer.cpp
+        Zimmer.hpp
         )
