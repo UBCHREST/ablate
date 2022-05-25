@@ -95,8 +95,8 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
      * Prescribe the top and bottom heights for the domain
      * */
     PetscReal G;
-    PetscReal IT = ablate::radiation::RadiationSolver::FlameIntensity(1, 700);   // Intensity of rays originating from the top plate
-    PetscReal IB = ablate::radiation::RadiationSolver::FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
+    PetscReal IT = ablate::radiation::Radiation::FlameIntensity(1, 700);   // Intensity of rays originating from the top plate
+    PetscReal IB = ablate::radiation::Radiation::FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
     PetscReal kappa = 1;                                                         // Kappa is not spatially dependant in this special case
     PetscReal zBottom = -0.0105;                                                 // Prescribe the top and bottom heights for the domain
     PetscReal zTop = 0.0105;
@@ -125,7 +125,7 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
             temperature = -1.179E7 * zp * zp + 2000.0;
         }
         /** Get the black body intensity here*/
-        Ibz = ablate::radiation::RadiationSolver::FlameIntensity(1, temperature);
+        Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
         Iplus.push_back(Ibz * EInteg(1, kappa * (z - zp)));
     }
     for (double nzp = 1; nzp < (nZp - 1); nzp++) {    /** Minus integral goes from z to top*/
@@ -137,7 +137,7 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
             temperature = -1.179E7 * zp * zp + 2000.0;
         }
         /** Get the black body intensity here*/
-        Ibz = ablate::radiation::RadiationSolver::FlameIntensity(1, temperature);
+        Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
         Iminus.push_back(Ibz * EInteg(1, kappa * (zp - z)));
     }
 
@@ -204,7 +204,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // Create an instance of radiation
         auto radiationModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
-        auto radiation = std::make_shared<ablate::radiation::RadiationSolver>("radiation", ablate::domain::Region::ENTIREDOMAIN, 10, nullptr, radiationModel);
+        auto radiation = std::make_shared<ablate::radiation::Radiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, 10, nullptr, radiationModel);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
