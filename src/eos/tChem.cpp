@@ -1,4 +1,6 @@
 #include "tChem.hpp"
+#include "eos/tChem/temperature.hpp"
+#include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/kokkosUtilities.hpp"
 #include "utilities/mpiUtilities.hpp"
 
@@ -17,23 +19,83 @@ ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem
     });
 
     // get the device KineticsModelData
-    kineticsModelDataDevice = tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(kineticsModel);
+    kineticsModelDataDevice = std::make_shared<tChemLib::KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type>>(
+        tChemLib::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(kineticsModel));
 
     // copy the species information
-    const auto speciesNamesHost = Kokkos::create_mirror_view(kineticsModelDataDevice.speciesNames);
-    Kokkos::deep_copy(speciesNamesHost, kineticsModelDataDevice.speciesNames);
+    const auto speciesNamesHost = Kokkos::create_mirror_view(kineticsModelDataDevice->speciesNames);
+    Kokkos::deep_copy(speciesNamesHost, kineticsModelDataDevice->speciesNames);
     // resize the species data
-    species.resize(kineticsModelDataDevice.nSpec);
+    species.resize(kineticsModelDataDevice->nSpec);
     auto speciesArray = species.data();
 
     Kokkos::parallel_for(
-        "speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice.nSpec), KOKKOS_LAMBDA(const auto i) {
+        "speciesInit", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, kineticsModelDataDevice->nSpec), KOKKOS_LAMBDA(const auto i) {
             speciesArray[i] = std::string(&speciesNamesHost(i, 0));
         });
     Kokkos::fence();
 }
 
-void ablate::eos::TChem::View(std::ostream& stream) const {
+std::shared_ptr<ablate::eos::TChem::FunctionContext> ablate::eos::TChem::BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
+    // Look for the euler field
+    auto eulerField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD; });
+    if (eulerField == fields.end()) {
+        throw std::invalid_argument("The ablate::eos::TChem requires the ablate::finiteVolume::CompressibleFlowFields::EULER_FIELD Field");
+    }
+
+    auto densityYiField = std::find_if(fields.begin(), fields.end(), [](const auto &field) { return field.name == ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD; });
+    if (densityYiField == fields.end()) {
+        throw std::invalid_argument("The ablate::eos::TChem requires the ablate::finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD Field");
+    }
+
+    // determine the state vector size
+    const ordinal_type stateVecDim = tChemLib::Impl::getStateVectorSize(kineticsModelDataDevice->nSpec);
+    const ordinal_type batchSize = 1;
+
+    // get the property string
+    auto propertyName = std::string(eos::to_string(property));
+
+    // set device information
+    real_type_2d_view stateDevice(propertyName + " state device", batchSize, stateVecDim);
+    real_type_2d_view perSpeciesDevice(propertyName + " perSpecies device", batchSize, stateVecDim);
+    real_type_1d_view mixtureDevice(propertyName + " mixture device", batchSize);
+
+    ordinal_type per_team_scratch_cp = tChemLib::Scratch<real_type_1d_view>::shmem_size(100);
+
+    auto policy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(batchSize, Kokkos::AUTO());
+    policy.set_scratch_size(1, Kokkos::PerTeam(per_team_scratch_cp));
+
+    return std::make_shared<FunctionContext>(FunctionContext{.dim = eulerField->numberComponents - 2,
+                                                             .eulerOffset = eulerField->offset,
+                                                             .densityYiOffset = densityYiField->offset,
+                                                             .batchSize = batchSize,
+
+                                                             // set device information
+                                                             .stateDevice = stateDevice,
+                                                             .perSpeciesDevice = perSpeciesDevice,
+                                                             .mixtureDevice = mixtureDevice,
+
+                                                             // copy host info
+                                                             .stateHost = Kokkos::create_mirror_view(stateDevice),
+                                                             .perSpeciesHost = Kokkos::create_mirror_view(perSpeciesDevice),
+                                                             .mixtureHost = Kokkos::create_mirror_view(mixtureDevice),
+
+                                                             // policy
+                                                             .policy = policy,
+
+                                                             // kinetics data
+                                                             .kineticsModelDataDevice = kineticsModelDataDevice});
+}
+
+ablate::eos::ThermodynamicFunction ablate::eos::TChem::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
+    return ThermodynamicFunction{.function = thermodynamicFunctions.at(property).first, .context = BuildFunctionContext(property, fields)};
+}
+
+ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChem::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
+    return ThermodynamicTemperatureFunction{.function = thermodynamicFunctions.at(property).second, .context = BuildFunctionContext(property, fields)};
+}
+
+void ablate::eos::TChem::View(std::ostream &stream) const {
     stream << "EOS: " << type << std::endl;
     stream << "\tmechFile: " << mechanismFile << std::endl;
     if (!thermoFile.empty()) {
@@ -42,4 +104,70 @@ void ablate::eos::TChem::View(std::ostream& stream) const {
     stream << "\tnumberSpecies: " << species.size() << std::endl;
     tChemLib::exec_space::print_configuration(stream, true);
     tChemLib::host_exec_space::print_configuration(stream, true);
+}
+
+PetscErrorCode ablate::eos::TChem::DensityFunction(const PetscReal *conserved, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::DensityTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *density, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::TemperatureFunction(const PetscReal *conserved, PetscReal *property, void *ctx) { return TemperatureTemperatureFunction(conserved, 300, property, ctx); }
+PetscErrorCode ablate::eos::TChem::TemperatureTemperatureFunction(const PetscReal *conserved, PetscReal temperatureGuess, PetscReal *temperature, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    // Compute the internal energy from total ener
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscReal speedSquare = 0.0;
+    for (PetscInt d = 0; d < functionContext->dim; d++) {
+        speedSquare += PetscSqr(conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
+    }
+
+    // assumed eos
+    PetscReal internalEnergyRef = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
+
+    // Fill the working array
+    auto stateHost = Impl::StateVector<real_type_1d_view_host>(functionContext->kineticsModelDataDevice->nSpec, Kokkos::subview(functionContext->stateHost, 0, Kokkos::ALL()));
+    FillWorkingVectorFromDensityMassFractions(density, temperatureGuess, conserved + functionContext->densityYiOffset, stateHost);
+    functionContext->mixtureHost[0] = internalEnergyRef;
+    Kokkos::deep_copy(functionContext->mixtureDevice, functionContext->mixtureHost);
+    Kokkos::deep_copy(functionContext->stateDevice, functionContext->stateHost);
+
+    // compute the temperature
+    ablate::eos::tChem::Temperature::runDeviceBatch(
+        functionContext->policy, functionContext->stateDevice, functionContext->mixtureDevice, functionContext->perSpeciesDevice, *functionContext->kineticsModelDataDevice);
+
+    // copy back the results
+    Kokkos::deep_copy(functionContext->stateHost, functionContext->stateDevice);
+    *temperature = stateHost.Temperature();
+
+    PetscFunctionReturn(0);
+}
+void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(double density, double temperature, const double *densityYi, Impl::StateVector<real_type_1d_view_host> stateVector) {
+    stateVector.Temperature() = temperature;
+    stateVector.Density() = density;
+    stateVector.Pressure() = NAN;
+
+    auto ys = stateVector.MassFractions();
+    real_type yiSum = 0.0;
+    for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
+        ys[s] = PetscMax(0.0, densityYi[s] / density);
+        ys[s] = PetscMin(1.0, ys[s]);
+        yiSum += ys[s];
+    }
+    if (yiSum > 1.0) {
+        for (PetscInt s = 0; s < stateVector.NumSpecies() - 1; s++) {
+            // Limit the bounds
+            ys[s] /= yiSum;
+        }
+        ys[stateVector.NumSpecies()] = 0.0;
+    } else {
+        ys[stateVector.NumSpecies()] = 1.0 - yiSum;
+    }
 }
