@@ -97,8 +97,8 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
     PetscReal G;
     PetscReal IT = ablate::radiation::Radiation::FlameIntensity(1, 700);   // Intensity of rays originating from the top plate
     PetscReal IB = ablate::radiation::Radiation::FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
-    PetscReal kappa = 1;                                                         // Kappa is not spatially dependant in this special case
-    PetscReal zBottom = -0.0105;                                                 // Prescribe the top and bottom heights for the domain
+    PetscReal kappa = 1;                                                   // Kappa is not spatially dependant in this special case
+    PetscReal zBottom = -0.0105;                                           // Prescribe the top and bottom heights for the domain
     PetscReal zTop = 0.0105;
 
     PetscReal temperature;
