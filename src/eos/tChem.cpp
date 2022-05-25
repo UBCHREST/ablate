@@ -1,4 +1,5 @@
 #include "tChem.hpp"
+#include "eos/tChem/sensibleInternalEnergy.hpp"
 #include "eos/tChem/temperature.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/kokkosUtilities.hpp"
@@ -60,7 +61,7 @@ std::shared_ptr<ablate::eos::TChem::FunctionContext> ablate::eos::TChem::BuildFu
     real_type_2d_view perSpeciesDevice(propertyName + " perSpecies device", batchSize, stateVecDim);
     real_type_1d_view mixtureDevice(propertyName + " mixture device", batchSize);
 
-    ordinal_type per_team_scratch_cp = tChemLib::Scratch<real_type_1d_view>::shmem_size(100);
+    ordinal_type per_team_scratch_cp = tChemLib::Scratch<real_type_1d_view>::shmem_size(std::get<2>(thermodynamicFunctions.at(property))(kineticsModelDataDevice->nSpec));
 
     auto policy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(batchSize, Kokkos::AUTO());
     policy.set_scratch_size(1, Kokkos::PerTeam(per_team_scratch_cp));
@@ -88,11 +89,11 @@ std::shared_ptr<ablate::eos::TChem::FunctionContext> ablate::eos::TChem::BuildFu
 }
 
 ablate::eos::ThermodynamicFunction ablate::eos::TChem::GetThermodynamicFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
-    return ThermodynamicFunction{.function = thermodynamicFunctions.at(property).first, .context = BuildFunctionContext(property, fields)};
+    return ThermodynamicFunction{.function = std::get<0>(thermodynamicFunctions.at(property)), .context = BuildFunctionContext(property, fields)};
 }
 
 ablate::eos::ThermodynamicTemperatureFunction ablate::eos::TChem::GetThermodynamicTemperatureFunction(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field> &fields) const {
-    return ThermodynamicTemperatureFunction{.function = thermodynamicFunctions.at(property).second, .context = BuildFunctionContext(property, fields)};
+    return ThermodynamicTemperatureFunction{.function = std::get<1>(thermodynamicFunctions.at(property)), .context = BuildFunctionContext(property, fields)};
 }
 
 void ablate::eos::TChem::View(std::ostream &stream) const {
@@ -149,6 +150,102 @@ PetscErrorCode ablate::eos::TChem::TemperatureTemperatureFunction(const PetscRea
 
     PetscFunctionReturn(0);
 }
+PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyFunction(const PetscReal *conserved, PetscReal *sensibleInternalEnergy, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+    PetscReal speedSquare = 0.0;
+    for (PetscInt d = 0; d < functionContext->dim; d++) {
+        speedSquare += PetscSqr(conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOU + d] / density);
+    }
+
+    *sensibleInternalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - 0.5 * speedSquare;
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::InternalSensibleEnergyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *sensibleEnergyTemperature, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+
+    // Fill the working array
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+
+    // Fill the working array
+    auto stateHost = Impl::StateVector<real_type_1d_view_host>(functionContext->kineticsModelDataDevice->nSpec, Kokkos::subview(functionContext->stateHost, 0, Kokkos::ALL()));
+    FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
+    Kokkos::deep_copy(functionContext->stateDevice, functionContext->stateHost);
+
+    ablate::eos::tChem::SensibleInternalEnergy::runDeviceBatch(
+        functionContext->policy, functionContext->stateDevice, functionContext->mixtureDevice, functionContext->perSpeciesDevice, *functionContext->kineticsModelDataDevice);
+
+    Kokkos::deep_copy(functionContext->mixtureHost, functionContext->mixtureDevice);
+    *sensibleEnergyTemperature = functionContext->mixtureHost(0);
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::PressureFunction(const PetscReal *conserved, PetscReal *pressure, void *ctx) {
+    PetscFunctionBeginUser;
+
+    PetscReal temperature;
+    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
+    CHKERRQ(ierr);
+    ierr = PressureTemperatureFunction(conserved, temperature, pressure, ctx);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::PressureTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *pressure, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+    // Compute the internal energy from total ener
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+
+    // Fill the working array
+    auto stateHost = Impl::StateVector<real_type_1d_view_host>(functionContext->kineticsModelDataDevice->nSpec, Kokkos::subview(functionContext->stateHost, 0, Kokkos::ALL()));
+    FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
+    Kokkos::deep_copy(functionContext->stateDevice, functionContext->stateHost);
+
+    // compute the temperature
+    ablate::eos::tChem::Pressure::runDeviceBatch(functionContext->policy, functionContext->stateDevice, *functionContext->kineticsModelDataDevice);
+
+    // copy back the results
+    Kokkos::deep_copy(functionContext->stateHost, functionContext->stateDevice);
+    *pressure = stateHost.Pressure();
+
+    PetscFunctionReturn(0);
+}
+
+PetscErrorCode ablate::eos::TChem::SensibleEnthalpyFunction(const PetscReal *conserved, PetscReal *sensibleEnthalpy, void *ctx) {
+    PetscFunctionBeginUser;
+    PetscReal temperature;
+    PetscErrorCode ierr = TemperatureFunction(conserved, &temperature, ctx);
+    CHKERRQ(ierr);
+    ierr = SensibleEnthalpyTemperatureFunction(conserved, temperature, sensibleEnthalpy, ctx);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+PetscErrorCode ablate::eos::TChem::SensibleEnthalpyTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *sensibleEnthalpy, void *ctx) {
+    PetscFunctionBeginUser;
+    auto functionContext = (FunctionContext *)ctx;
+
+    // Fill the working array
+    PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
+
+    // Fill the working array
+    auto stateHost = Impl::StateVector<real_type_1d_view_host>(functionContext->kineticsModelDataDevice->nSpec, Kokkos::subview(functionContext->stateHost, 0, Kokkos::ALL()));
+    FillWorkingVectorFromDensityMassFractions(density, temperature, conserved + functionContext->densityYiOffset, stateHost);
+    Kokkos::deep_copy(functionContext->stateDevice, functionContext->stateHost);
+
+    ablate::eos::tChem::SensibleEnthalpy::runDeviceBatch(
+        functionContext->policy, functionContext->stateDevice, functionContext->mixtureDevice, functionContext->perSpeciesDevice, *functionContext->kineticsModelDataDevice);
+
+    Kokkos::deep_copy(functionContext->mixtureHost, functionContext->mixtureDevice);
+    *sensibleEnthalpy = functionContext->mixtureHost(0);
+
+    PetscFunctionReturn(0);
+}
+
 void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(double density, double temperature, const double *densityYi, Impl::StateVector<real_type_1d_view_host> stateVector) {
     stateVector.Temperature() = temperature;
     stateVector.Density() = density;

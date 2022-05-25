@@ -1,12 +1,12 @@
-#ifndef ABLATELIBRARY_SENSIBLEINTERNALENERGY_HPP
-#define ABLATELIBRARY_SENSIBLEINTERNALENERGY_HPP
+#ifndef ABLATELIBRARY_PRESSURE_HPP
+#define ABLATELIBRARY_PRESSURE_HPP
 
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"
 
 namespace ablate::eos::tChem {
 
-struct SensibleInternalEnergy {
+struct Pressure {
     using host_device_type = typename Tines::UseThisDevice<host_exec_space>::type;
     using device_type = typename Tines::UseThisDevice<exec_space>::type;
 
@@ -20,26 +20,22 @@ struct SensibleInternalEnergy {
     using kinetic_model_host_type = KineticModelConstData<host_device_type>;
 
     static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) {
-        return numberSpecies;
+        return 0;
     }
 
     /**
-     * tchem like function to compute sensible internal energy on device
+     * tchem like function to compute temperature on device
      * @param policy
      * @param state
      * @param internalEnergyRef
-     * @param enthalpyMass
+     * @param mwMix
      * @param temperature
      * @param kmcd
      */
     static void runDeviceBatch(  /// thread block size
         typename UseThisTeamPolicy<exec_space>::type& policy,
-        //// input
+        /// the output is the updated pressure in the state
         const real_type_2d_view_type& state,
-        /// output
-        const real_type_1d_view_type& internalEnergy,
-        /// useful scratch
-        const real_type_2d_view_type& enthalpyMass,
         /// const data from kinetic model
         const kinetic_model_type& kmcd);
 
@@ -48,21 +44,17 @@ struct SensibleInternalEnergy {
      * @param policy
      * @param state
      * @param internalEnergyRef
-     * @param enthalpyMass
+     * @param mwMix
      * @param temperature
      * @param kmcd
      */
     static void runHostBatch(  /// thread block size
         typename UseThisTeamPolicy<host_exec_space>::type& policy,
-        /// input
+        /// the output is the updated pressure in the state
         const real_type_2d_view_host_type& state,
-        /// output
-        const real_type_1d_view_host_type& internalEnergy,
-        /// useful scratch
-        const real_type_2d_view_host_type& enthalpyMass,
         /// const data from kinetic model
-        const kinetic_model_type& kmcd);
+        const kinetic_model_host_type& kmcd);
 };
 
 }  // namespace ablate::eos::tChem
-#endif  // ABLATELIBRARY_TCHEMTEMPERATURE_HPP
+#endif  // ABLATELIBRARY_TEMPERATURE_HPP

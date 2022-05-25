@@ -5,4 +5,9 @@ target_sources(ablateLibrary
         sensibleInternalEnergy.hpp
         sensibleInternalEnergy.cpp
         sensibleInternalEnergyFcn.hpp
+        pressure.hpp
+        pressure.cpp
+        sensibleEnthalpy.hpp
+        sensibleEnthalpy.cpp
+        sensibleEnthalpyFcn.hpp
         )

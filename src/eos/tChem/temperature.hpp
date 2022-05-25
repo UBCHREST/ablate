@@ -19,9 +19,8 @@ struct Temperature {
     using kinetic_model_type = KineticModelConstData<device_type>;
     using kinetic_model_host_type = KineticModelConstData<host_device_type>;
 
-    template<typename DeviceType>
-    static inline ordinal_type getWorkSpaceSize(const KineticModelConstData<DeviceType>& kmcd) {
-        return kmcd.nSpec;
+    static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) {
+        return numberSpecies;
     }
 
     /**

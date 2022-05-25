@@ -1,12 +1,12 @@
-#ifndef ABLATELIBRARY_SENSIBLEINTERNALENERGY_HPP
-#define ABLATELIBRARY_SENSIBLEINTERNALENERGY_HPP
+#ifndef ABLATELIBRARY_SENSIBLEENTHALPY_HPP
+#define ABLATELIBRARY_SENSIBLEENTHALPY_HPP
 
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"
 
 namespace ablate::eos::tChem {
 
-struct SensibleInternalEnergy {
+struct SensibleEnthalpy {
     using host_device_type = typename Tines::UseThisDevice<host_exec_space>::type;
     using device_type = typename Tines::UseThisDevice<exec_space>::type;
 
@@ -37,7 +37,7 @@ struct SensibleInternalEnergy {
         //// input
         const real_type_2d_view_type& state,
         /// output
-        const real_type_1d_view_type& internalEnergy,
+        const real_type_1d_view_type& enthalpyMassMixture,
         /// useful scratch
         const real_type_2d_view_type& enthalpyMass,
         /// const data from kinetic model
@@ -57,7 +57,7 @@ struct SensibleInternalEnergy {
         /// input
         const real_type_2d_view_host_type& state,
         /// output
-        const real_type_1d_view_host_type& internalEnergy,
+        const real_type_1d_view_host_type& enthalpyMassMixture,
         /// useful scratch
         const real_type_2d_view_host_type& enthalpyMass,
         /// const data from kinetic model

@@ -6,6 +6,10 @@
 #include <memory>
 #include "TChem_KineticModelData.hpp"
 #include "eos.hpp"
+#include "eos/tChem/pressure.hpp"
+#include "eos/tChem/sensibleEnthalpy.hpp"
+#include "eos/tChem/sensibleInternalEnergy.hpp"
+#include "eos/tChem/temperature.hpp"
 #include "utilities/intErrorChecker.hpp"
 
 namespace ablate::eos {
@@ -131,9 +135,9 @@ class TChem : public EOS {
      */
     static PetscErrorCode DensityFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode TemperatureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-//    static PetscErrorCode PressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-//    static PetscErrorCode InternalSensibleEnergyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-//    static PetscErrorCode SensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode PressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode InternalSensibleEnergyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 //    static PetscErrorCode SpecificHeatConstantVolumeFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 //    static PetscErrorCode SpecificHeatConstantPressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
 //    static PetscErrorCode SpeedOfSoundFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
@@ -151,9 +155,9 @@ class TChem : public EOS {
      */
     static PetscErrorCode DensityTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode TemperatureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-//    static PetscErrorCode PressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-//    static PetscErrorCode InternalSensibleEnergyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-//    static PetscErrorCode SensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode PressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode InternalSensibleEnergyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
 //    static PetscErrorCode SpecificHeatConstantVolumeTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
 //    static PetscErrorCode SpecificHeatConstantPressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
 //    static PetscErrorCode SpeedOfSoundTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
@@ -171,12 +175,12 @@ class TChem : public EOS {
      */
     using ThermodynamicStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal* property, void* ctx);
     using ThermodynamicTemperatureStaticFunction = PetscErrorCode (*)(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
-    std::map<ThermodynamicProperty, std::pair<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction>> thermodynamicFunctions = {
-        {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction}},
-//        {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction}},
-        {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction}},
-//        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction}},
-//        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction}},
+    std::map<ThermodynamicProperty, std::tuple<ThermodynamicStaticFunction, ThermodynamicTemperatureStaticFunction,std::function<ordinal_type(ordinal_type)>>> thermodynamicFunctions = {
+        {ThermodynamicProperty::Density, {DensityFunction, DensityTemperatureFunction, [](auto){return 0;}}},
+        {ThermodynamicProperty::Pressure, {PressureFunction, PressureTemperatureFunction, ablate::eos::tChem::Temperature::getWorkSpaceSize}}/**note size of temperature because it has a larger scratch space */,
+        {ThermodynamicProperty::Temperature, {TemperatureFunction, TemperatureTemperatureFunction, ablate::eos::tChem::Temperature::getWorkSpaceSize}},
+        {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction,ablate::eos::tChem::SensibleInternalEnergy::getWorkSpaceSize}},
+        {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction, ablate::eos::tChem::SensibleEnthalpy::getWorkSpaceSize}},
 //        {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction, SpecificHeatConstantVolumeTemperatureFunction}},
 //        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction, SpecificHeatConstantPressureTemperatureFunction}},
 //        {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction}},

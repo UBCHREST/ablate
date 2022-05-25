@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_SENSIBLEINTERNALENERGYFCN_HPP
-#define ABLATELIBRARY_SENSIBLEINTERNALENERGYFCN_HPP
+#ifndef ABLATELIBRARY_SENSIBLEENTHALPYFCN_HPP
+#define ABLATELIBRARY_SENSIBLEENTHALPYFCN_HPP
 
 #include <TChem_Impl_EnthalpySpecMl.hpp>
 #include "TChem_KineticModelData.hpp"
@@ -9,7 +9,7 @@
 namespace ablate::eos::tChem::impl {
 
 template <typename ValueType, typename DeviceType>
-struct SensibleInternalEnergyFcn {
+struct SensibleEnthalpyFcn {
     using value_type = ValueType;
     using device_type = DeviceType;
     using scalar_type = typename ats<value_type>::scalar_type;
@@ -31,10 +31,11 @@ struct SensibleInternalEnergyFcn {
                                                          const KineticModelConstDataType& kmcd) {
         // compute the enthalpyOfFormation
         tChemLib::Impl::EnthalpySpecMlFcn<value_type, device_type>::team_invoke(member, ablate::eos::TChem::TREF, hi, cpks, kmcd);
+        member.team_barrier();
+
         value_type enthalpyOfFormation = 0.0;
         Kokkos::parallel_reduce(
             Kokkos::TeamVectorRange(member, kmcd.nSpec), [&](const ordinal_type& k, real_type& update) { update += hi(k) * ys(k) / kmcd.sMass(k); }, enthalpyOfFormation);
-        member.team_barrier();
 
         // compute the enthalpy of each species at temperature
         tChemLib::Impl::EnthalpySpecMlFcn<value_type, device_type>::team_invoke(member, temperature, hi, cpks, kmcd);
@@ -43,9 +44,7 @@ struct SensibleInternalEnergyFcn {
         // compute the sensibleInternalEnergy
         value_type sensibleInternalEnergy;
         Kokkos::parallel_reduce(
-            Kokkos::TeamVectorRange(member, kmcd.nSpec),
-            [&](const ordinal_type& k, real_type& update) { update += (hi(k) / kmcd.sMass(k) - kmcd.Runiv * temperature / kmcd.sMass(k)) * ys(k); },
-            sensibleInternalEnergy);
+            Kokkos::TeamVectorRange(member, kmcd.nSpec), [&](const ordinal_type& k, real_type& update) { update += (hi(k) / kmcd.sMass(k)) * ys(k); }, sensibleInternalEnergy);
 
         sensibleInternalEnergy -= enthalpyOfFormation;
         return sensibleInternalEnergy;

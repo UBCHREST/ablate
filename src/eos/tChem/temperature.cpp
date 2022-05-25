@@ -15,7 +15,7 @@ void Temperature_TemplateRun(const std::string& profile_name,
     using real_type_0d_view_type = Tines::value_type_0d_view<real_type, device_type>;
 
     const ordinal_type level = 1;
-    const ordinal_type per_team_extent = Temperature::getWorkSpaceSize(kmcd);
+    const ordinal_type per_team_extent = Temperature::getWorkSpaceSize(kmcd.nSpec);
 
     Kokkos::parallel_for(
         profile_name, policy, KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
@@ -39,23 +39,22 @@ void Temperature_TemplateRun(const std::string& profile_name,
                 const auto ITERMAX_T = 100;
 
                 // compute the first error
-                double e2;
-                ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, e2, hi_at_i, cpks, kmcd);
+                double e2 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, kmcd);
                 double f2 = internalEnergyRef_at_i() - e2;
                 if (PetscAbs(f2) > EPS_T_RHO_E) {
                     double t0 = t2;
                     double f0 = f2;
                     double t1 = t0 + 1;
-                    double e1;
+
                     t = t1;
-                    ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, e1, hi_at_i, cpks, kmcd);
+                    double e1 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, kmcd);
                     double f1 = internalEnergyRef_at_i() - e1;
 
                     for (int it = 0; it < ITERMAX_T; it++) {
                         t2 = t1 - f1 * (t1 - t0) / (f1 - f0 + 1E-30);
                         t2 = PetscMax(1.0, t2);
                         t = t2;
-                        ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, e2, hi_at_i, cpks, kmcd);
+                        e2 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, kmcd);
                         f2 = internalEnergyRef_at_i() - e2;
                         if (PetscAbs(f2) <= EPS_T_RHO_E) {
                             t = t2;
