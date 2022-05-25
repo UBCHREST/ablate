@@ -1,4 +1,4 @@
-#include "Zimmer.hpp"
+#include "zimmer.hpp"
 #include "math.h"
 
 ablate::eos::radiationProperties::Zimmer::Zimmer(std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {}

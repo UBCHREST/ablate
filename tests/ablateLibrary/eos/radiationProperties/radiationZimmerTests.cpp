@@ -1,5 +1,5 @@
 #include <eos/mockEOS.hpp>
-#include "eos/radiationProperties/Zimmer.hpp"
+#include "eos/radiationProperties/zimmer.hpp"
 #include "gtest/gtest.h"
 
 struct ZimmerTestParameters {

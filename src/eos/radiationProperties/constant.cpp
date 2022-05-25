@@ -1,4 +1,4 @@
-#include "Constant.hpp"
+#include "constant.hpp"
 
 ablate::eos::radiationProperties::Constant::Constant(double absorptivity) : absorptivity(absorptivity) {}
 
