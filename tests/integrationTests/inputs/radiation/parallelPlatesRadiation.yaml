@@ -85,8 +85,8 @@ solvers:
     processes:
       - !ablate::boundarySolver::lodi::Inlet
         eos: *eos
-  - !ablate::radiation::RadiationSolver
-    id: radiate
+  - !ablate::radiation::Radiation
+    id: radiation
     region:
       name: interiorCells
     rays: 15
