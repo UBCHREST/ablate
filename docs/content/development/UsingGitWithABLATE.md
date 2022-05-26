@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Using Git with ABLATE
-parent: Development Guides
+parent: Code Development
 nav_order: 2
 ---
 

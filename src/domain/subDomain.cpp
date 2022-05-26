@@ -1,5 +1,6 @@
 #include "subDomain.hpp"
 #include <utilities/petscError.hpp>
+#include "utilities/mpiError.hpp"
 
 ablate::domain::SubDomain::SubDomain(Domain& domainIn, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields)
     : domain(domainIn),
@@ -220,6 +221,17 @@ DM ablate::domain::SubDomain::GetSubDM() {
             DMAddField(subDM, nullptr, petscField) >> checkError;
         }
 
+        // add the names to each of the components in the dm section
+        PetscSection section;
+        DMGetLocalSection(subDM, &section) >> checkError;
+        for (const auto& field : GetFields()) {
+            if (field.numberComponents > 1) {
+                for (PetscInt c = 0; c < field.numberComponents; c++) {
+                    PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> checkError;
+                }
+            }
+        }
+
         DMCreateDS(subDM) >> checkError;
 
         // Copy over options
@@ -247,8 +259,14 @@ Vec ablate::domain::SubDomain::GetSubSolutionVector() {
         PetscObjectSetName((PetscObject)subSolutionVec, vecName) >> checkError;
     }
 
-    CopyGlobalToSubVector(subDM, GetDM(), subSolutionVec, GetSolutionVector(), GetFields());
+    // Make a local version of the vector
+    Vec localSolutionVec;
+    DMGetLocalVector(GetDM(), &localSolutionVec) >> checkError;
+    DMGlobalToLocalBegin(GetDM(), GetSolutionVector(), INSERT_VALUES, localSolutionVec) >> checkError;
+    DMGlobalToLocalEnd(GetDM(), GetSolutionVector(), INSERT_VALUES, localSolutionVec) >> checkError;
 
+    CopyGlobalToSubVector(subDM, GetDM(), subSolutionVec, localSolutionVec, GetFields(), GetFields(), true);
+    DMRestoreLocalVector(GetDM(), &localSolutionVec) >> checkError;
     return subSolutionVec;
 }
 
@@ -282,6 +300,17 @@ DM ablate::domain::SubDomain::GetSubAuxDM() {
     for (auto& fieldInfo : GetFields(FieldLocation::AUX)) {
         auto petscField = GetPetscFieldObject(fieldInfo);
         DMAddField(subAuxDM, nullptr, petscField) >> checkError;
+    }
+
+    // add the names to each of the components in the dm section
+    PetscSection section;
+    DMGetLocalSection(subAuxDM, &section) >> checkError;
+    for (const auto& field : GetFields(FieldLocation::AUX)) {
+        if (field.numberComponents > 1) {
+            for (PetscInt c = 0; c < field.numberComponents; c++) {
+                PetscSectionSetComponentName(section, field.id, c, field.components[c].c_str()) >> checkError;
+            }
+        }
     }
 
     return subAuxDM;
@@ -327,7 +356,7 @@ void ablate::domain::SubDomain::CopyGlobalToSubVector(DM sDM, DM gDM, Vec subVec
 
     // March over the global section
     PetscSection section;
-    DMGetGlobalSection(sDM, &section) >> checkError;
+    DMGetLocalSection(sDM, &section) >> checkError;
 
     PetscInt pStart, pEnd;
     PetscSectionGetChart(section, &pStart, &pEnd) >> checkError;
@@ -368,11 +397,70 @@ void ablate::domain::SubDomain::CopyGlobalToSubVector(DM sDM, DM gDM, Vec subVec
     ISRestoreIndices(subpointIS, &subpointIndices) >> checkError;
 }
 
+void ablate::domain::SubDomain::CopySubVectorToGlobal(DM sDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields, bool localVector) const {
+    /* Get the map from the subVec to global */
+    IS subpointIS;
+    const PetscInt* subpointIndices = nullptr;
+    DMPlexGetSubpointIS(sDM, &subpointIS) >> checkError;
+    ISGetIndices(subpointIS, &subpointIndices) >> checkError;
+
+    // Get array access to the vec
+    PetscScalar* globalVecArray;
+    const PetscScalar* subVecArray;
+    VecGetArray(globVec, &globalVecArray) >> checkError;
+    VecGetArrayRead(subVec, &subVecArray) >> checkError;
+
+    // March over the global section
+    PetscSection section;
+    DMGetGlobalSection(sDM, &section) >> checkError;
+
+    PetscInt pStart, pEnd;
+    PetscSectionGetChart(section, &pStart, &pEnd) >> checkError;
+
+    // For each field in the subDM
+    for (std::size_t i = 0; i < subFields.size(); i++) {
+        const auto& subFieldInfo = subFields[i];
+        const auto& globFieldInfo = gFields.empty() ? GetField(subFieldInfo.name) : gFields[i];
+
+        // Get the size of the data
+        PetscInt numberComponents;
+        PetscSectionGetFieldComponents(section, subFieldInfo.id, &numberComponents) >> checkError;
+
+        // March over each of the points
+        for (PetscInt p = pStart; p < pEnd; p++) {
+            // Get the global cell number
+            PetscInt gP = subpointIndices ? subpointIndices[p] : p;
+
+            // Hold a ref to the values
+            const PetscScalar* subRef = nullptr;
+            PetscScalar* ref = nullptr;
+
+            DMPlexPointGlobalFieldRead(sDM, p, subFieldInfo.id, subVecArray, &subRef) >> checkError;
+            if (localVector) {
+                DMPlexPointLocalFieldRef(gDM, gP, globFieldInfo.id, globalVecArray, &ref) >> checkError;
+            } else {
+                DMPlexPointGlobalFieldRef(gDM, gP, globFieldInfo.id, globalVecArray, &ref) >> checkError;
+            }
+
+            if (subRef && ref) {
+                // Copy the point
+                PetscArraycpy(ref, subRef, numberComponents) >> checkError;
+            }
+        }
+    }
+    VecRestoreArray(globVec, &globalVecArray) >> checkError;
+    VecRestoreArrayRead(subVec, &subVecArray) >> checkError;
+    ISRestoreIndices(subpointIS, &subpointIndices) >> checkError;
+}
+
 bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     if (!label) {
         return true;
     }
-    bool inside = false;
+
+    // Compute the size of region inside the subDomain label
+    PetscInt size;
+
     // Check to see if this region is inside of the dsLabel
     DMLabel regionLabel;
     DMGetLabel(domain.GetDM(), region.GetName().c_str(), &regionLabel) >> checkError;
@@ -388,22 +476,25 @@ bool ablate::domain::SubDomain::InRegion(const domain::Region& region) const {
     IS regionIS;
     DMLabelGetStratumIS(regionLabel, region.GetValue(), &regionIS) >> checkError;
 
-    // Check for an overlap
-    IS overlapIS;
-    ISIntersect(dsLabelIS, regionIS, &overlapIS) >> checkError;
+    // each rank must check separately and then share the result
+    if (regionIS) {
+        // Check for an overlap
+        IS overlapIS;
+        ISIntersect(dsLabelIS, regionIS, &overlapIS) >> checkError;
 
-    // determine if there is an overlap
-    if (overlapIS) {
-        PetscInt size;
-        ISGetSize(overlapIS, &size) >> checkError;
-        if (size) {
-            inside = true;
+        // determine if there is an overlap
+        if (overlapIS) {
+            ISGetSize(overlapIS, &size) >> checkError;
+            ISDestroy(&overlapIS) >> checkError;
         }
-        ISDestroy(&overlapIS) >> checkError;
+        ISDestroy(&regionIS) >> checkError;
     }
-    ISDestroy(&regionIS) >> checkError;
     ISDestroy(&dsLabelIS) >> checkError;
-    return inside;
+
+    // Take the sum
+    PetscInt globalSize;
+    MPI_Allreduce(&size, &globalSize, 1, MPIU_INT, MPI_SUM, GetComm()) >> checkMpiError;
+    return globalSize > 0;
 }
 
 PetscObject ablate::domain::SubDomain::GetPetscFieldObject(const ablate::domain::Field& field) {
@@ -518,6 +609,7 @@ PetscErrorCode ablate::domain::SubDomain::RestoreFieldLocalVector(const ablate::
         ierr = ISDestroy(vecIs);
         CHKERRQ(ierr);
         ierr = DMDestroy(subdm);
+        CHKERRQ(ierr);
     } else {
         SETERRQ(GetComm(), PETSC_ERR_SUP, "%s", "Unknown field location");
     }
@@ -594,7 +686,14 @@ void ablate::domain::SubDomain::Save(PetscViewer viewer, PetscInt sequenceNumber
 void ablate::domain::SubDomain::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     // The only item that needs to be explicitly restored is the flowField
     DMSetOutputSequenceNumber(GetDM(), sequenceNumber, time) >> checkError;
-    VecLoad(GetSolutionVector(), viewer) >> checkError;
+    DMSetOutputSequenceNumber(GetSubDM(), sequenceNumber, time) >> checkError;
+    auto solutionVector = GetSubSolutionVector();
+    VecLoad(solutionVector, viewer) >> checkError;
+
+    // copy back if needed
+    if (subSolutionVec == solutionVector) {
+        CopySubVectorToGlobal(subDM, GetDM(), subSolutionVec, GetSolutionVector(), GetFields());
+    }
 }
 void ablate::domain::SubDomain::ProjectFieldFunctionsToLocalVector(const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& fieldFunctions, Vec locVec, PetscReal time) const {
     PetscInt numberFields;

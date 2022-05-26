@@ -1,7 +1,7 @@
 ---
 layout: default
 title: DAKOTA Integration
-parent: Development Guides
+parent: Code Development
 nav_order: 13
 ---
 

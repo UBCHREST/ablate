@@ -11,4 +11,5 @@ target_sources(ablateLibrary
         boundaryFunction.hpp
         cellSolver.hpp
         cellSolver.cpp
+        range.hpp
         )

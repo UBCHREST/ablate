@@ -126,7 +126,7 @@ PetscErrorCode ablate::monitors::IgnitionDelayPeakYi::MonitorIgnition(TS ts, Pet
     monitor->yiHistory.push_back(yi);
 
     if (monitor->historyLog) {
-        monitor->historyLog->Printf("%d Time: %g Yi: %f\n", step, crtime, yi);
+        monitor->historyLog->Printf("%" PetscInt_FMT " Time: %g Yi: %f\n", step, crtime, yi);
     }
 
     ierr = VecRestoreArrayRead(u, &uArray);

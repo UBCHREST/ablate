@@ -96,7 +96,7 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
 
         // create a boundarySolver
         auto boundarySolver =
-            std::make_shared<boundarySolver::BoundarySolver>("testSolver", boundaryCellRegion, boundaryFaceRegion, std::vector<std::shared_ptr<boundarySolver::BoundaryProcess>>{}, nullptr);
+            std::make_shared<boundarySolver::BoundarySolver>("testSolver", boundaryCellRegion, boundaryFaceRegion, std::vector<std::shared_ptr<boundarySolver::BoundaryProcess>>{}, nullptr, true);
 
         // Init the subDomain
         mesh->InitializeSubDomains({boundarySolver}, {});
@@ -263,20 +263,29 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
         const PetscInt* insideCells;
         ISGetPointRange(insideCellIS, &insideCellStart, &insideCellEnd, &insideCells);
 
+        // get the cell geometry
+        Vec cellGeomVec;
+        const PetscScalar* cellGeomArray;
+        DM cellGeomDm;
+        DMPlexGetDataFVM(subDomain->GetDM(), nullptr, &cellGeomVec, nullptr, nullptr) >> checkError;
+        VecGetDM(cellGeomVec, &cellGeomDm) >> checkError;
+        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+
         // March over each cell
-        IS boundaryCellIS;
-        PetscInt boundaryCellStart, boundaryCellEnd;
-        const PetscInt* boundaryCells;
-        boundarySolver->GetCellRange(boundaryCellIS, boundaryCellStart, boundaryCellEnd, boundaryCells);
-        for (PetscInt c = boundaryCellStart; c < boundaryCellEnd; ++c) {
+        solver::Range boundaryCellRange;
+        boundarySolver->GetCellRange(boundaryCellRange);
+        for (PetscInt c = boundaryCellRange.start; c < boundaryCellRange.end; ++c) {
             // if there is a cell array, use it, otherwise it is just c
-            const PetscInt cell = boundaryCells ? boundaryCells[c] : c;
+            const PetscInt cell = boundaryCellRange.points ? boundaryCellRange.points[c] : c;
 
             // Get the exact location of the face
             const auto& face = boundarySolver->GetBoundaryGeometry(cell);
 
+            PetscFVCellGeom* cellGeom;
+            DMPlexPointLocalRead(cellGeomDm, cell, cellGeomArray, &cellGeom) >> checkError;
+
             // Set the current location
-            PetscArraycpy(activeCell, face.centroid, dim);
+            PetscArraycpy(activeCell, cellGeom->centroid, dim);
 
             // Reset the grad vec
             VecZeroEntries(gradVec) >> checkError;
@@ -285,8 +294,8 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
             boundarySolver->ComputeRHSFunction(0.0, globVec, gradVec) >> checkError;
 
             // Make sure that there is no source terms in this boundary solver region
-            for (PetscInt tc = boundaryCellStart; tc < boundaryCellEnd; ++tc) {
-                const PetscInt testCell = boundaryCells ? boundaryCells[tc] : tc;
+            for (PetscInt tc = boundaryCellRange.start; tc < boundaryCellRange.end; ++tc) {
+                const PetscInt testCell = boundaryCellRange.points ? boundaryCellRange.points[tc] : tc;
 
                 const PetscScalar* data;
                 DMPlexPointLocalRead(boundarySolver->GetSubDomain().GetDM(), testCell, gradArray, &data) >> checkError;
@@ -323,7 +332,7 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
 
                     PetscReal distance = 0.0;
                     for (PetscInt d = 0; d < dim; d++) {
-                        distance += PetscSqr(centroid[d] - face.centroid[d]);
+                        distance += PetscSqr(centroid[d] - face.front().geometry.centroid[d]);
                     }
                     ASSERT_LT(PetscSqrtReal(distance), stencilRadius) << "Source terms should only be within the stencilRadius";
 
@@ -356,10 +365,10 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
             std::vector<PetscReal> exactGradB(3);
             std::vector<PetscReal> exactGradAuxA(3);
             std::vector<PetscReal> exactGradAuxB(3);
-            expectedFieldAGradient->Eval(face.centroid, dim, 0.0, exactGradA);
-            expectedFieldBGradient->Eval(face.centroid, dim, 0.0, exactGradB);
-            expectedAuxAGradient->Eval(face.centroid, dim, 0.0, exactGradAuxA);
-            expectedAuxBGradient->Eval(face.centroid, dim, 0.0, exactGradAuxB);
+            expectedFieldAGradient->Eval(face.front().geometry.centroid, dim, 0.0, exactGradA);
+            expectedFieldBGradient->Eval(face.front().geometry.centroid, dim, 0.0, exactGradB);
+            expectedAuxAGradient->Eval(face.front().geometry.centroid, dim, 0.0, exactGradAuxA);
+            expectedAuxBGradient->Eval(face.front().geometry.centroid, dim, 0.0, exactGradAuxB);
 
             // compare the results
             // March over each field
@@ -378,13 +387,14 @@ TEST_P(BoundarySolverDistributedTestFixture, ShouldComputeCorrectGradientsOnBoun
             }
         }
 
-        boundarySolver->RestoreRange(boundaryCellIS, boundaryCellStart, boundaryCellEnd, boundaryCells);
+        boundarySolver->RestoreRange(boundaryCellRange);
         VecRestoreArrayRead(gradVec, &gradArray) >> checkError;
 
         ISRestorePointRange(insideCellIS, &insideCellStart, &insideCellEnd, &insideCells);
 
         ISDestroy(&allCellIS);
         ISDestroy(&insideCellIS);
+        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
         // debug code
         DMViewFromOptions(mesh->GetDM(), nullptr, "-viewTestDM");

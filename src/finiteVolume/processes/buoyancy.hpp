@@ -25,8 +25,8 @@ class Buoyancy : public FlowProcess {
      * private function to compute gravity source
      * @return
      */
-    static PetscErrorCode ComputeBuoyancySource(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
-                                                const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
+    static PetscErrorCode ComputeBuoyancySource(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[],
+                                                PetscScalar f[], void* ctx);
 
    public:
     explicit Buoyancy(std::vector<double> buoyancyVector);

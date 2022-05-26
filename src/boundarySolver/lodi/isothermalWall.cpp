@@ -10,6 +10,11 @@ ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos
 void ablate::boundarySolver::lodi::IsothermalWall::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
     bSolver.RegisterFunction(IsothermalWallFunction, this, fieldNames, fieldNames, {});
+
+    if (nSpecEqs) {
+        bSolver.RegisterFunction(
+            MirrorSpecies, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD}, {finiteVolume::CompressibleFlowFields::YI_FIELD});
+    }
 }
 
 PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
@@ -144,7 +149,26 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
 
     PetscFunctionReturn(0);
 }
+PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::MirrorSpecies(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell,
+                                                                           const PetscInt *uOff, PetscScalar *boundaryValues, const PetscScalar *stencilValues, const PetscInt *aOff,
+                                                                           PetscScalar *auxValues, const PetscScalar *stencilAuxValues, void *ctx) {
+    PetscFunctionBeginUser;
+    auto isothermalWall = (IsothermalWall *)ctx;
+    const PetscInt EULER_FIELD = 0;
+    const PetscInt DENSITY_YI = 1;
+    const PetscInt YI = 0;
 
+    PetscScalar boundaryDensity = boundaryValues[uOff[EULER_FIELD] + RHO];
+    PetscScalar stencilDensity = stencilValues[uOff[EULER_FIELD] + RHO];
+    for (PetscInt sp = 0; sp < isothermalWall->nSpecEqs; sp++) {
+        PetscScalar yi = stencilValues[uOff[DENSITY_YI] + sp] / stencilDensity;
+
+        boundaryValues[uOff[DENSITY_YI] + sp] = yi * boundaryDensity;
+        auxValues[aOff[YI] + sp] = yi;
+    }
+
+    PetscFunctionReturn(0);
+}
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::IsothermalWall, "Enforces a isothermal wall with fixed velocity/temperature",
          ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the wall"),

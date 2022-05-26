@@ -53,7 +53,7 @@ ablate::eos::FieldFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(c
             auto tp = [this](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 // Compute the density
                 PetscReal gam = parameters.gamma;
-                PetscReal density = (pressure + parameters.p0) / (gam - 1) * gam / parameters.Cp / temperature;
+                PetscReal density = ((pressure + parameters.p0) / (gam - 1)) * gam / parameters.Cp / temperature;
 
                 // compute the sensible internal energy
                 PetscReal sensibleInternalEnergy = temperature * parameters.Cp / parameters.gamma + parameters.p0 / density;
@@ -67,7 +67,7 @@ ablate::eos::FieldFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(c
 
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
                 conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + sensibleInternalEnergy);
-                ;
+
                 for (PetscInt d = 0; d < dim; d++) {
                     conserved[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = density * velocity[d];
                 }
@@ -80,6 +80,37 @@ ablate::eos::FieldFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(c
                 };
             }
         }
+
+        // pressure and energy
+        if ((property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::InternalSensibleEnergy) ||
+            (property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure)) {
+            auto iep = [this](PetscReal internalSensibleEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // Compute the density
+                PetscReal density = (pressure + parameters.gamma * parameters.p0) / ((parameters.gamma - 1.0) * internalSensibleEnergy);
+
+                // convert to total sensibleEnergy
+                PetscReal kineticEnergy = 0;
+                for (PetscInt d = 0; d < dim; d++) {
+                    kineticEnergy += PetscSqr(velocity[d]);
+                }
+                kineticEnergy *= 0.5;
+
+                conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
+                conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + internalSensibleEnergy);
+
+                for (PetscInt d = 0; d < dim; d++) {
+                    conserved[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = density * velocity[d];
+                }
+            };
+            if (property1 == ThermodynamicProperty::InternalSensibleEnergy) {
+                return iep;
+            } else {
+                return [iep](PetscReal pressure, PetscReal internalSensibleEnergy, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                    iep(internalSensibleEnergy, pressure, dim, velocity, yi, conserved);
+                };
+            }
+        }
+
         throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
 
     } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field) {
@@ -96,6 +127,24 @@ ablate::eos::FieldFunction ablate::eos::StiffenedGas::GetFieldFunctionFunction(c
             return [this](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
                 // Compute the density
                 PetscReal density = (pressure + parameters.p0) / (parameters.gamma - 1.0) * parameters.gamma / parameters.Cp / temperature;
+
+                for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
+                    conserved[c] = density * yi[c];
+                }
+            };
+        } else if (property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure) {
+            return [this](PetscReal internalSensibleEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // Compute the density
+                PetscReal density = (pressure + parameters.gamma * parameters.p0) / ((parameters.gamma - 1.0) * internalSensibleEnergy);
+
+                for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
+                    conserved[c] = density * yi[c];
+                }
+            };
+        } else if (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::InternalSensibleEnergy) {
+            return [this](PetscReal pressure, PetscReal internalSensibleEnergy, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // Compute the density
+                PetscReal density = (pressure + parameters.gamma * parameters.p0) / ((parameters.gamma - 1.0) * internalSensibleEnergy);
 
                 for (PetscInt c = 0; c < parameters.numberSpecies; c++) {
                     conserved[c] = density * yi[c];
@@ -124,7 +173,6 @@ PetscErrorCode ablate::eos::StiffenedGas::PressureFunction(const PetscReal *cons
     // assumed eos
     PetscReal internalEnergy = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHOE] / density - ke;
     *p = (functionContext->parameters.gamma - 1.0) * density * (internalEnergy)-functionContext->parameters.gamma * functionContext->parameters.p0;
-    //*a = PetscSqrtReal(parameters->gamma * ((*p) + parameters->p0) / density);
     PetscFunctionReturn(0);
 }
 

@@ -5,6 +5,15 @@
 ablate::solver::CellSolver::CellSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
     : Solver(std::move(solverId), std::move(region), std::move(options)) {}
 
+ablate::solver::CellSolver::~CellSolver() {
+    if (cellGeomVec) {
+        VecDestroy(&cellGeomVec) >> checkError;
+    }
+    if (faceGeomVec) {
+        VecDestroy(&faceGeomVec) >> checkError;
+    }
+}
+
 void ablate::solver::CellSolver::RegisterAuxFieldUpdate(ablate::solver::CellSolver::AuxFieldUpdateFunction function, void* context, const std::vector<std::string>& auxFields,
                                                         const std::vector<std::string>& inputFields) {
     AuxFieldUpdateFunctionDescription functionDescription{.function = function, .context = context, .inputFields = {}, .auxFields = {}};
@@ -37,16 +46,12 @@ void ablate::solver::CellSolver::UpdateAuxFields(PetscReal time, Vec locXVec, Ve
     DMConvert(GetSubDomain().GetDM(), DMPLEX, &plex) >> checkError;
 
     // Get the valid cell range over this region
-    IS cellIS;
-    PetscInt cStart, cEnd;
-    const PetscInt* cells;
-    GetCellRange(cellIS, cStart, cEnd, cells);
+    solver::Range cellRange;
+    GetCellRange(cellRange);
 
     // Extract the cell geometry, and the dm that holds the information
-    Vec cellGeomVec;
     DM dmCell;
     const PetscScalar* cellGeomArray;
-    DMPlexGetGeometryFVM(plex, nullptr, &cellGeomVec, nullptr) >> checkError;
     VecGetDM(cellGeomVec, &dmCell) >> checkError;
     VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
 
@@ -82,13 +87,13 @@ void ablate::solver::CellSolver::UpdateAuxFields(PetscReal time, Vec locXVec, Ve
     }
 
     // March over each cell volume
-    for (PetscInt c = cStart; c < cEnd; ++c) {
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         PetscFVCellGeom* cellGeom;
         const PetscReal* fieldValues;
         PetscReal* auxValues;
 
         // Get the cell location
-        const PetscInt cell = cells ? cells[c] : c;
+        const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
         DMPlexPointLocalRead(dmCell, cell, cellGeomArray, &cellGeom) >> checkError;
         DMPlexPointLocalRead(plex, cell, locFlowFieldArray, &fieldValues) >> checkError;
@@ -106,7 +111,12 @@ void ablate::solver::CellSolver::UpdateAuxFields(PetscReal time, Vec locXVec, Ve
     VecRestoreArrayRead(locXVec, &locFlowFieldArray) >> checkError;
     VecRestoreArray(locAuxField, &localAuxFlowFieldArray) >> checkError;
 
-    RestoreRange(cellIS, cStart, cEnd, cells);
+    RestoreRange(cellRange);
 
     DMDestroy(&plex) >> checkError;
+}
+
+void ablate::solver::CellSolver::Setup() {
+    // Compute the dm geometry
+    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;
 }

@@ -96,7 +96,7 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
 
         // create a boundarySolver
         auto boundarySolver =
-            std::make_shared<boundarySolver::BoundarySolver>("testSolver", boundaryCellRegion, boundaryFaceRegion, std::vector<std::shared_ptr<boundarySolver::BoundaryProcess>>{}, nullptr);
+            std::make_shared<boundarySolver::BoundarySolver>("testSolver", boundaryCellRegion, boundaryFaceRegion, std::vector<std::shared_ptr<boundarySolver::BoundaryProcess>>{}, nullptr, true);
 
         // Init the subDomain
         mesh->InitializeSubDomains({boundarySolver}, {});
@@ -224,14 +224,12 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
         auto expectedAuxBGradient = ablate::mathFunctions::Create(GetParam().expectedAuxBGradient);
 
         // March over each cell
-        IS cellIS;
-        PetscInt cStart, cEnd;
-        const PetscInt* cells;
-        boundarySolver->GetCellRange(cellIS, cStart, cEnd, cells);
+        solver::Range cellRange;
+        boundarySolver->GetCellRange(cellRange);
         PetscInt cOffset = 0;  // Keep track of the cell offset
-        for (PetscInt c = cStart; c < cEnd; ++c, cOffset++) {
+        for (PetscInt c = cellRange.start; c < cellRange.end; ++c, cOffset++) {
             // if there is a cell array, use it, otherwise it is just c
-            const PetscInt cell = cells ? cells[c] : c;
+            const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
 
             // Get the raw data at this point, this check assumes the order the fields
             const PetscScalar* data;
@@ -243,7 +241,8 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
             }
 
             // Get the exact location of the face
-            const auto& face = boundarySolver->GetBoundaryGeometry(cell);
+            const auto& faces = boundarySolver->GetBoundaryGeometry(cell);
+            const auto& face = faces.front();
 
             // March over each source and compare against the known solution assuming field order
             PetscInt offset = resultGradOffset;
@@ -251,25 +250,25 @@ TEST_P(BoundarySolverPointTestFixture, ShouldComputeCorrectGradientsOnBoundary) 
 
             // March over each field
             const double absError = 1E-8;
-            expectedFieldAGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            expectedFieldAGradient->Eval(face.geometry.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
                 ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for FieldA dir " << d << " in cell " << cell;
             }
-            expectedFieldBGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            expectedFieldBGradient->Eval(face.geometry.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
                 ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for FieldB dir " << d << " in cell " << cell;
             }
-            expectedAuxAGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            expectedAuxAGradient->Eval(face.geometry.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
                 ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for AuxA dir " << d << " in cell " << cell;
             }
-            expectedAuxBGradient->Eval(face.centroid, dim, 0.0, exactGrad);
+            expectedAuxBGradient->Eval(face.geometry.centroid, dim, 0.0, exactGrad);
             for (PetscInt d = 0; d < dim; d++) {
                 ASSERT_NEAR(exactGrad[d], data[offset++], absError) << "Expected gradient not found for AuxB dir " << d << " in cell " << cell;
             }
         }
 
-        boundarySolver->RestoreRange(cellIS, cStart, cEnd, cells);
+        boundarySolver->RestoreRange(cellRange);
         VecRestoreArrayRead(gradVec, &gradArray) >> checkError;
 
         // debug code

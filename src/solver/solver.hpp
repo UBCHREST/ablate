@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "io/serializable.hpp"
+#include "range.hpp"
 
 namespace ablate::solver {
 
@@ -53,7 +54,8 @@ class Solver {
     /** Finalize the Setup of the subDomain before running **/
     virtual void Initialize() = 0;
 
-    inline const std::string& GetSolverId() const { return solverId; }
+    /** string id for this solver **/
+    [[nodiscard]] inline const std::string& GetSolverId() const { return solverId; }
 
     /**
      * Get the sub domain used in this solver
@@ -65,7 +67,7 @@ class Solver {
      * Get the region used to define this solver
      * @return
      */
-    inline std::shared_ptr<domain::Region> GetRegion() const noexcept { return region; }
+    [[nodiscard]] inline std::shared_ptr<domain::Region> GetRegion() const noexcept { return region; }
 
     // Support for timestepping calls
     void PreStage(TS ts, PetscReal stagetime);
@@ -77,25 +79,25 @@ class Solver {
      * Adds function to be called before each flow step
      * @param preStep
      */
-    inline void RegisterPreStep(std::function<void(TS ts, Solver&)> preStep) { this->preStepFunctions.push_back(preStep); }
+    inline void RegisterPreStep(const std::function<void(TS ts, Solver&)>& preStep) { this->preStepFunctions.push_back(preStep); }
 
     /**
      * Adds function to be called before each flow stage
      * @param preStep
      */
-    inline void RegisterPreStage(std::function<void(TS ts, Solver&, PetscReal)> preStage) { this->preStageFunctions.push_back(preStage); }
+    inline void RegisterPreStage(const std::function<void(TS ts, Solver&, PetscReal)>& preStage) { this->preStageFunctions.push_back(preStage); }
 
     /**
      * Adds function to be called after each flow step
      * @param preStep
      */
-    inline void RegisterPostStep(std::function<void(TS ts, Solver&)> postStep) { this->postStepFunctions.push_back(postStep); }
+    inline void RegisterPostStep(const std::function<void(TS ts, Solver&)>& postStep) { this->postStepFunctions.push_back(postStep); }
 
     /**
      * Adds function after each evaluated.  This is where the solution can be modified if needed.
      * @param postStep
      */
-    inline void RegisterPostEvaluate(std::function<void(TS ts, Solver&)> postEval) { this->postEvaluateFunctions.push_back(postEval); }
+    inline void RegisterPostEvaluate(const std::function<void(TS ts, Solver&)>& postEval) { this->postEvaluateFunctions.push_back(postEval); }
 
     /**
      * Get the cellIS and range over valid cells in this region
@@ -104,7 +106,7 @@ class Solver {
      * @param pEnd
      * @param points
      */
-    void GetCellRange(IS& cellIS, PetscInt& cStart, PetscInt& cEnd, const PetscInt*& cells) const;
+    void GetCellRange(Range& cellRange) const;
 
     /**
      * Get the faceIS and range over valid faces in this region
@@ -113,7 +115,7 @@ class Solver {
      * @param pEnd
      * @param points
      */
-    void GetFaceRange(IS& faceIS, PetscInt& fStart, PetscInt& fEnd, const PetscInt*& faces) const;
+    void GetFaceRange(Range& faceRange) const;
 
     /**
      * Get the valid range over specified depth
@@ -122,7 +124,7 @@ class Solver {
      * @param pEnd
      * @param points
      */
-    void GetRange(PetscInt depth, IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) const;
+    void GetRange(PetscInt depth, Range& range) const;
 
     /**
      * Restores the is and range
@@ -131,7 +133,7 @@ class Solver {
      * @param pEnd
      * @param points
      */
-    void RestoreRange(IS& pointIS, PetscInt& pStart, PetscInt& pEnd, const PetscInt*& points) const;
+    void RestoreRange(Range& range) const;
 };
 
 }  // namespace ablate::solver

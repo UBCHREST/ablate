@@ -1,7 +1,7 @@
 #ifndef ABLATELIBRARY_VECTORUTILITIES_HPP
 #define ABLATELIBRARY_VECTORUTILITIES_HPP
+#include <numeric>
 #include <vector>
-
 namespace ablate::utilities {
 class VectorUtilities {
    public:

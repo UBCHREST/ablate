@@ -9,7 +9,7 @@ target_link_libraries(ablateLibrary PUBLIC PkgConfig::PETSc)
 FetchContent_Declare(
         cppParser
         GIT_REPOSITORY https://github.com/UBCHREST/CppParser.git
-        GIT_TAG v0.1.7
+        GIT_TAG v0.1.9
 )
 FetchContent_MakeAvailable(cppParser)
 target_link_libraries(ablateLibrary PUBLIC cppParserLibrary)
@@ -170,6 +170,7 @@ add_subdirectory(eos)
 add_subdirectory(environment)
 add_subdirectory(io)
 add_subdirectory(chemistry)
+add_subdirectory(radiation)
 
 # Add required warnings for the ablate library
 ablate_default_target_compile_options_cxx(ablateLibrary)
