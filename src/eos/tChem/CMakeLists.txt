@@ -10,4 +10,6 @@ target_sources(ablateLibrary
         sensibleEnthalpy.hpp
         sensibleEnthalpy.cpp
         sensibleEnthalpyFcn.hpp
+        speedOfSound.hpp
+        speedOfSound.cpp
         )

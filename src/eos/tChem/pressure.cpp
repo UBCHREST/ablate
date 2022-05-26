@@ -1,6 +1,7 @@
 #include "pressure.hpp"
 #include "TChem_Impl_MolarWeights.hpp"
-#include "eos/tChem/sensibleInternalEnergyFcn.hpp"
+
+namespace tChemLib = TChem;
 
 namespace ablate::eos::tChem::impl {
 template <typename PolicyType, typename DeviceType>
