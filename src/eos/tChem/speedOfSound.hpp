@@ -17,11 +17,8 @@ struct SpeedOfSound {
     using real_type_2d_view_host_type = Tines::value_type_2d_view<real_type, host_device_type>;
 
     using kinetic_model_type = KineticModelConstData<device_type>;
-    using kinetic_model_host_type = KineticModelConstData<host_device_type>;
 
-    static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) {
-        return numberSpecies;
-    }
+    static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) { return numberSpecies; }
 
     /**
      * tchem like function to compute sensible internal energy on device
@@ -32,7 +29,7 @@ struct SpeedOfSound {
      * @param temperature
      * @param kmcd
      */
-    static void runDeviceBatch(  /// thread block size
+    [[maybe_unused]] static void runDeviceBatch(  /// thread block size
         typename UseThisTeamPolicy<exec_space>::type& policy,
         //// input
         const real_type_2d_view_type& state,
@@ -50,7 +47,7 @@ struct SpeedOfSound {
      * @param temperature
      * @param kmcd
      */
-    static void runHostBatch(  /// thread block size
+    [[maybe_unused]] static void runHostBatch(  /// thread block size
         typename UseThisTeamPolicy<host_exec_space>::type& policy,
         /// input
         const real_type_2d_view_host_type& state,
@@ -61,4 +58,4 @@ struct SpeedOfSound {
 };
 
 }  // namespace ablate::eos::tChem
-#endif  // ABLATELIBRARY_TCHEMTEMPERATURE_HPP
+#endif

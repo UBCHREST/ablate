@@ -6,7 +6,8 @@ template <typename PolicyType, typename DeviceType>
 void SensibleEnthalpy_TemplateRun(const std::string& profile_name,
                                   /// team size setting
                                   const PolicyType& policy, const Tines::value_type_2d_view<real_type, DeviceType>& state, const Tines::value_type_1d_view<real_type, DeviceType>& enthalpyMassMixture,
-                                  const Tines::value_type_2d_view<real_type, DeviceType>& enthalpyMass, const KineticModelConstData<DeviceType>& kmcd) {
+                                  const Tines::value_type_2d_view<real_type, DeviceType>& enthalpyMass, const Tines::value_type_1d_view<real_type, DeviceType>& enthalpyRef,
+                                  const KineticModelConstData<DeviceType>& kmcd) {
     Kokkos::Profiling::pushRegion(profile_name);
     using policy_type = PolicyType;
     using device_type = DeviceType;
@@ -34,7 +35,7 @@ void SensibleEnthalpy_TemplateRun(const std::string& profile_name,
                 const real_type_1d_view_type ys = sv_at_i.MassFractions();
 
                 // compute on this team thread
-                hMix_at_i() = ablate::eos::tChem::impl::SensibleEnthalpyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, kmcd);
+                hMix_at_i() = ablate::eos::tChem::impl::SensibleEnthalpyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, enthalpyRef, kmcd);
             }
         });
     Kokkos::Profiling::popRegion();
@@ -42,14 +43,16 @@ void SensibleEnthalpy_TemplateRun(const std::string& profile_name,
 
 }  // namespace ablate::eos::tChem::impl
 
-void ablate::eos::tChem::SensibleEnthalpy::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const SensibleInternalEnergy::real_type_2d_view_type& state,
+[[maybe_unused]] void ablate::eos::tChem::SensibleEnthalpy::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const SensibleInternalEnergy::real_type_2d_view_type& state,
                                                           const SensibleInternalEnergy::real_type_1d_view_type& enthalpyMassMixture, const SensibleInternalEnergy::real_type_2d_view_type& enthalpyMass,
-                                                          const SensibleInternalEnergy::kinetic_model_type& kmcd) {
-    ablate::eos::tChem::impl::SensibleEnthalpy_TemplateRun("ablate::eos::tChem::SensibleEnthalpy::runDeviceBatch", policy, state, enthalpyMassMixture, enthalpyMass, kmcd);
+                                                          const SensibleInternalEnergy::real_type_1d_view_type& enthalpyRef, const SensibleInternalEnergy::kinetic_model_type& kmcd) {
+    ablate::eos::tChem::impl::SensibleEnthalpy_TemplateRun("ablate::eos::tChem::SensibleEnthalpy::runDeviceBatch", policy, state, enthalpyMassMixture, enthalpyMass, enthalpyRef, kmcd);
 }
-void ablate::eos::tChem::SensibleEnthalpy::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy, const ablate::eos::tChem::SensibleInternalEnergy::real_type_2d_view_host_type& state,
+
+[[maybe_unused]] void ablate::eos::tChem::SensibleEnthalpy::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy, const ablate::eos::tChem::SensibleInternalEnergy::real_type_2d_view_host_type& state,
                                                         const ablate::eos::tChem::SensibleInternalEnergy::real_type_1d_view_host_type& enthalpyMassMixture,
                                                         const ablate::eos::tChem::SensibleInternalEnergy::real_type_2d_view_host_type& enthalpyMass,
+                                                        const ablate::eos::tChem::SensibleInternalEnergy::real_type_1d_view_host_type& enthalpyRef,
                                                         const ablate::eos::tChem::SensibleInternalEnergy::kinetic_model_type& kmcd) {
-    ablate::eos::tChem::impl::SensibleEnthalpy_TemplateRun("ablate::eos::tChem::SensibleEnthalpy::runHostBatch", policy, state, enthalpyMassMixture, enthalpyMass, kmcd);
+    ablate::eos::tChem::impl::SensibleEnthalpy_TemplateRun("ablate::eos::tChem::SensibleEnthalpy::runHostBatch", policy, state, enthalpyMassMixture, enthalpyMass, enthalpyRef, kmcd);
 }

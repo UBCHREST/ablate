@@ -6,7 +6,8 @@ template <typename PolicyType, typename DeviceType>
 void Temperature_TemplateRun(const std::string& profile_name,
                              /// team size setting
                              const PolicyType& policy, const Tines::value_type_2d_view<real_type, DeviceType>& state, const Tines::value_type_1d_view<real_type, DeviceType>& internalEnergyRef,
-                             const Tines::value_type_2d_view<real_type, DeviceType>& enthalpyMass, const KineticModelConstData<DeviceType>& kmcd) {
+                             const Tines::value_type_2d_view<real_type, DeviceType>& enthalpyMass, const Tines::value_type_1d_view<real_type, DeviceType>& enthalpyReference,
+                             const KineticModelConstData<DeviceType>& kmcd) {
     Kokkos::Profiling::pushRegion(profile_name);
     using policy_type = PolicyType;
     using device_type = DeviceType;
@@ -39,24 +40,24 @@ void Temperature_TemplateRun(const std::string& profile_name,
                 const auto ITERMAX_T = 100;
 
                 // compute the first error
-                double e2 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, kmcd);
+                double e2 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, enthalpyReference, kmcd);
                 double f2 = internalEnergyRef_at_i() - e2;
-                if (PetscAbs(f2) > EPS_T_RHO_E) {
+                if (Tines::ats<real_type>::abs(f2) > EPS_T_RHO_E) {
                     double t0 = t2;
                     double f0 = f2;
                     double t1 = t0 + 1;
 
                     t = t1;
-                    double e1 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, kmcd);
+                    double e1 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, enthalpyReference, kmcd);
                     double f1 = internalEnergyRef_at_i() - e1;
 
                     for (int it = 0; it < ITERMAX_T; it++) {
                         t2 = t1 - f1 * (t1 - t0) / (f1 - f0 + 1E-30);
-                        t2 = PetscMax(1.0, t2);
+                        t2 = std::max(1.0, t2);
                         t = t2;
-                        e2 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, kmcd);
+                        e2 = ablate::eos::tChem::impl::SensibleInternalEnergyFcn<real_type, device_type>::team_invoke(member, t, ys, hi_at_i, cpks, enthalpyReference, kmcd);
                         f2 = internalEnergyRef_at_i() - e2;
-                        if (PetscAbs(f2) <= EPS_T_RHO_E) {
+                        if (Tines::ats<real_type>::abs(f2) <= EPS_T_RHO_E) {
                             t = t2;
                             return;
                         }
@@ -74,14 +75,16 @@ void Temperature_TemplateRun(const std::string& profile_name,
 
 }  // namespace ablate::eos::tChem::impl
 
-void ablate::eos::tChem::Temperature::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const Temperature::real_type_2d_view_type& state,
-                                                     const Temperature::real_type_1d_view_type& internalEnergyRef, const Temperature::real_type_2d_view_type& enthalpyMass,
-                                                     const Temperature::kinetic_model_type& kmcd) {
-    ablate::eos::tChem::impl::Temperature_TemplateRun("ablate::eos::tChem::Temperature::runDeviceBatch", policy, state, internalEnergyRef, enthalpyMass, kmcd);
+[[maybe_unused]] void ablate::eos::tChem::Temperature::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const Temperature::real_type_2d_view_type& state,
+                                                                      const Temperature::real_type_1d_view_type& internalEnergyRef, const Temperature::real_type_2d_view_type& enthalpyMass,
+                                                                      const Temperature::real_type_1d_view_type& enthalpyReference, const Temperature::kinetic_model_type& kmcd) {
+    ablate::eos::tChem::impl::Temperature_TemplateRun("ablate::eos::tChem::Temperature::runDeviceBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyReference, kmcd);
 }
 
-void ablate::eos::tChem::Temperature::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy, const ablate::eos::tChem::Temperature::real_type_2d_view_host_type& state,
-                                                   const ablate::eos::tChem::Temperature::real_type_1d_view_host_type& internalEnergyRef, const Temperature::real_type_2d_view_host_type& enthalpyMass,
-                                                   const ablate::eos::tChem::Temperature::kinetic_model_host_type& kmcd) {
-    ablate::eos::tChem::impl::Temperature_TemplateRun("ablate::eos::tChem::Temperature::runHostBatch", policy, state, internalEnergyRef, enthalpyMass, kmcd);
+[[maybe_unused]] void ablate::eos::tChem::Temperature::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy,
+                                                                    const ablate::eos::tChem::Temperature::real_type_2d_view_host_type& state,
+                                                                    const ablate::eos::tChem::Temperature::real_type_1d_view_host_type& internalEnergyRef,
+                                                                    const Temperature::real_type_2d_view_host_type& enthalpyMass, const Temperature::real_type_1d_view_host_type& enthalpyReference,
+                                                                    const ablate::eos::tChem::Temperature::kinetic_model_host_type& kmcd) {
+    ablate::eos::tChem::impl::Temperature_TemplateRun("ablate::eos::tChem::Temperature::runHostBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyReference, kmcd);
 }

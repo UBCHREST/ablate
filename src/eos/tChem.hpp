@@ -40,6 +40,11 @@ class TChem : public EOS {
      */
     std::vector<std::string> species;
 
+    /**
+     * The reference enthalpy per species
+     */
+    real_type_1d_view enthalpyReference;
+
    public:
     /**
      * The tChem EOS can utzlie either a mechanical & thermo file using the Chemkin file format for a modern yaml file.
@@ -92,9 +97,6 @@ class TChem : public EOS {
         PetscInt eulerOffset;
         PetscInt densityYiOffset;
 
-        //! store the size used to create the views
-        int batchSize = 0;
-
         //! per species state
         real_type_2d_view stateDevice;
         //! per species array
@@ -108,6 +110,9 @@ class TChem : public EOS {
         real_type_2d_view perSpeciesHost;
         //! mass weighted mixture
         real_type_1d_view mixtureHost;
+
+        // store the enthalpyReferencePerSpecies
+        real_type_1d_view enthalpyReference;
 
         //! the kokkos team policy for this function
         tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type policy;
@@ -123,7 +128,7 @@ class TChem : public EOS {
      * @param fields
      * @return
      */
-    std::shared_ptr<FunctionContext> BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const;
+    [[nodiscard]] std::shared_ptr<FunctionContext> BuildFunctionContext(ablate::eos::ThermodynamicProperty property, const std::vector<domain::Field>& fields) const;
 
     /** @name Direct Thermodynamic Properties Functions
      * These functions are used to compute the direct thermodynamic properties (without temperature).  They are not called directly but a pointer to them is returned
@@ -141,7 +146,7 @@ class TChem : public EOS {
     static PetscErrorCode SpecificHeatConstantVolumeFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SpecificHeatConstantPressureFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SpeedOfSoundFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
-    //    static PetscErrorCode SpeciesSensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SpeciesSensibleEnthalpyFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     /** @} */
 
     /** @name Temperature Based Thermodynamic Properties Functions
@@ -161,7 +166,7 @@ class TChem : public EOS {
     static PetscErrorCode SpecificHeatConstantVolumeTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpecificHeatConstantPressureTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     static PetscErrorCode SpeedOfSoundTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
-    //    static PetscErrorCode SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
+    static PetscErrorCode SpeciesSensibleEnthalpyTemperatureFunction(const PetscReal conserved[], PetscReal T, PetscReal* property, void* ctx);
     /** @} */
 
     /**
@@ -181,9 +186,15 @@ class TChem : public EOS {
         {ThermodynamicProperty::InternalSensibleEnergy, {InternalSensibleEnergyFunction, InternalSensibleEnergyTemperatureFunction, ablate::eos::tChem::SensibleInternalEnergy::getWorkSpaceSize}},
         {ThermodynamicProperty::SensibleEnthalpy, {SensibleEnthalpyFunction, SensibleEnthalpyTemperatureFunction, ablate::eos::tChem::SensibleEnthalpy::getWorkSpaceSize}},
         {ThermodynamicProperty::SpecificHeatConstantVolume, {SpecificHeatConstantVolumeFunction, SpecificHeatConstantVolumeTemperatureFunction, [](auto nSpec) { return nSpec; }}},
-        {ThermodynamicProperty::SpecificHeatConstantPressure, {SpecificHeatConstantPressureFunction, SpecificHeatConstantPressureTemperatureFunction, ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */,
+        {ThermodynamicProperty::SpecificHeatConstantPressure,
+         {SpecificHeatConstantPressureFunction,
+          SpecificHeatConstantPressureTemperatureFunction,
+          ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */,
         {ThermodynamicProperty::SpeedOfSound, {SpeedOfSoundFunction, SpeedOfSoundTemperatureFunction, ablate::eos::tChem::SpeedOfSound::getWorkSpaceSize}},
-        //        {ThermodynamicProperty::SpeciesSensibleEnthalpy, {SpeciesSensibleEnthalpyFunction, SpeciesSensibleEnthalpyTemperatureFunction}}
+        {ThermodynamicProperty::SpeciesSensibleEnthalpy,
+         {SpeciesSensibleEnthalpyFunction,
+          SpeciesSensibleEnthalpyTemperatureFunction,
+          ablate::eos::tChem::Temperature::getWorkSpaceSize}} /**note size of temperature because it has a larger scratch space */
     };
 
     /**
@@ -191,7 +202,7 @@ class TChem : public EOS {
      * @param numSpec
      * @param yi
      */
-    static void FillWorkingVectorFromDensityMassFractions(double density, double temperature, const double* densityYi, tChemLib::Impl::StateVector<real_type_1d_view_host> stateVector);
+    static void FillWorkingVectorFromDensityMassFractions(double density, double temperature, const double* densityYi, const tChemLib::Impl::StateVector<real_type_1d_view_host>& stateVector);
 
    public:
     // Private static helper functions

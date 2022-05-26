@@ -13,10 +13,6 @@ void Pressure_TemplateRun(const std::string& profile_name,
     using device_type = DeviceType;
 
     using real_type_1d_view_type = Tines::value_type_1d_view<real_type, device_type>;
-    using real_type_0d_view_type = Tines::value_type_0d_view<real_type, device_type>;
-
-    const ordinal_type level = 1;
-    const ordinal_type per_team_extent = Pressure::getWorkSpaceSize(kmcd.nSpec);
 
     Kokkos::parallel_for(
         profile_name, policy, KOKKOS_LAMBDA(const typename policy_type::member_type& member) {
@@ -39,11 +35,11 @@ void Pressure_TemplateRun(const std::string& profile_name,
 
 }  // namespace ablate::eos::tChem::impl
 
-void ablate::eos::tChem::Pressure::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const Pressure::real_type_2d_view_type& state, const Pressure::kinetic_model_type& kmcd) {
+[[maybe_unused]] void ablate::eos::tChem::Pressure::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const Pressure::real_type_2d_view_type& state, const Pressure::kinetic_model_type& kmcd) {
     ablate::eos::tChem::impl::Pressure_TemplateRun("ablate::eos::tChem::Pressure::runDeviceBatch", policy, state, kmcd);
 }
 
-void ablate::eos::tChem::Pressure::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy, const ablate::eos::tChem::Pressure::real_type_2d_view_host_type& state,
+[[maybe_unused]] void ablate::eos::tChem::Pressure::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy, const ablate::eos::tChem::Pressure::real_type_2d_view_host_type& state,
                                                 const ablate::eos::tChem::Pressure::kinetic_model_host_type& kmcd) {
     ablate::eos::tChem::impl::Pressure_TemplateRun("ablate::eos::tChem::Pressure::runHostBatch", policy, state, kmcd);
 }

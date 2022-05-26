@@ -54,12 +54,13 @@ void SpeedOfSound_TemplateRun(const std::string& profile_name,
 
 }  // namespace ablate::eos::tChem::impl
 
-void ablate::eos::tChem::SpeedOfSound::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const SpeedOfSound::real_type_2d_view_type& state,
+[[maybe_unused]] void ablate::eos::tChem::SpeedOfSound::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const SpeedOfSound::real_type_2d_view_type& state,
                                                           const SpeedOfSound::real_type_1d_view_type& speedOfSound,
                                                           const SpeedOfSound::kinetic_model_type& kmcd) {
     ablate::eos::tChem::impl::SpeedOfSound_TemplateRun("ablate::eos::tChem::SensibleEnthalpy::runDeviceBatch", policy, state, speedOfSound, kmcd);
 }
-void ablate::eos::tChem::SpeedOfSound::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy, const ablate::eos::tChem::SpeedOfSound::real_type_2d_view_host_type& state,
+
+[[maybe_unused]]  void ablate::eos::tChem::SpeedOfSound::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy, const ablate::eos::tChem::SpeedOfSound::real_type_2d_view_host_type& state,
                                                         const ablate::eos::tChem::SpeedOfSound::real_type_1d_view_host_type& speedOfSound,
                                                         const ablate::eos::tChem::SpeedOfSound::kinetic_model_type& kmcd) {
     ablate::eos::tChem::impl::SpeedOfSound_TemplateRun("ablate::eos::tChem::SensibleEnthalpy::runHostBatch", policy, state, speedOfSound, kmcd);

@@ -32,13 +32,14 @@ struct Temperature {
      * @param temperature
      * @param kmcd
      */
-    static void runDeviceBatch(  /// thread block size
+    [[maybe_unused]] static void runDeviceBatch(  /// thread block size
         typename UseThisTeamPolicy<exec_space>::type& policy,
         /// the output is the updated temperature in the state
         const real_type_2d_view_type& state, const real_type_1d_view_type& internalEnergyRef,
         /// useful scratch
         const real_type_2d_view_type& enthalpyMass,
         /// const data from kinetic model
+        const real_type_1d_view_type& enthalpyReference,
         const kinetic_model_type& kmcd);
 
     /**
@@ -50,13 +51,14 @@ struct Temperature {
      * @param temperature
      * @param kmcd
      */
-    static void runHostBatch(  /// thread block size
+    [[maybe_unused]] static void runHostBatch(  /// thread block size
         typename UseThisTeamPolicy<host_exec_space>::type& policy,
         /// the output is the updated temperature in the state
         const real_type_2d_view_host_type& state, const real_type_1d_view_host_type& internalEnergyRef,
         /// useful scratch
         const real_type_2d_view_host_type& enthalpyMass,
         /// const data from kinetic model
+        const real_type_1d_view_host_type& enthalpyReference,
         const kinetic_model_host_type& kmcd);
 };
 

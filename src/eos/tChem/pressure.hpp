@@ -13,15 +13,12 @@ struct Pressure {
     using real_type_1d_view_type = Tines::value_type_1d_view<real_type, device_type>;
     using real_type_2d_view_type = Tines::value_type_2d_view<real_type, device_type>;
 
-    using real_type_1d_view_host_type = Tines::value_type_1d_view<real_type, host_device_type>;
     using real_type_2d_view_host_type = Tines::value_type_2d_view<real_type, host_device_type>;
 
     using kinetic_model_type = KineticModelConstData<device_type>;
     using kinetic_model_host_type = KineticModelConstData<host_device_type>;
 
-    static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) {
-        return 0;
-    }
+    static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) { return 0; }
 
     /**
      * tchem like function to compute temperature on device
@@ -32,7 +29,7 @@ struct Pressure {
      * @param temperature
      * @param kmcd
      */
-    static void runDeviceBatch(  /// thread block size
+    [[maybe_unused]] static void runDeviceBatch(  /// thread block size
         typename UseThisTeamPolicy<exec_space>::type& policy,
         /// the output is the updated pressure in the state
         const real_type_2d_view_type& state,
@@ -48,7 +45,7 @@ struct Pressure {
      * @param temperature
      * @param kmcd
      */
-    static void runHostBatch(  /// thread block size
+    [[maybe_unused]] static void runHostBatch(  /// thread block size
         typename UseThisTeamPolicy<host_exec_space>::type& policy,
         /// the output is the updated pressure in the state
         const real_type_2d_view_host_type& state,
@@ -57,4 +54,4 @@ struct Pressure {
 };
 
 }  // namespace ablate::eos::tChem
-#endif  // ABLATELIBRARY_TEMPERATURE_HPP
+#endif
