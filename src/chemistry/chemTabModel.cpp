@@ -82,6 +82,10 @@ ablate::chemistry::ChemTabModel::~ChemTabModel() {
     TF_DeleteSession(session, status);
     TF_DeleteSessionOptions(sessionOpts);
     TF_DeleteStatus(status);
+    free(sourceEnergyScaler);
+    for (std::size_t i = 0; i < speciesNames.size(); i++) free(Wmat[i]);
+    for (std::size_t i = 0; i < progressVariablesNames.size(); i++) free(iWmat[i]);
+
     free(Wmat);
     free(iWmat);
 }
@@ -225,6 +229,11 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     for (size_t i = 0; i < progressVariableSourceSize; i++) {
         progressVariableSource[i] = (PetscReal)outputArray[i];
     }
+    // free allocated vectors
+    free(inputValues);
+    free(outputValues);
+    free(input);
+    free(output);
 }
 
 const std::vector<std::string> &ablate::chemistry::ChemTabModel::GetSpecies() const { return speciesNames; }
