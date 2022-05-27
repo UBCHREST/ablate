@@ -1,18 +1,17 @@
-//
-// Created by owen on 3/19/22.
-//
 #ifndef ABLATELIBRARY_RADIATION_HPP
 #define ABLATELIBRARY_RADIATION_HPP
 
 #include <memory>
 #include <set>
+#include "eos/radiationProperties/radiationProperties.hpp"
+#include "finiteVolume/finiteVolumeSolver.hpp"
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
 
 namespace ablate::radiation {
 
-class RadiationSolver : public solver::CellSolver, public solver::RHSFunction {  // Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
+class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
    public:
     /**
      *
@@ -21,9 +20,9 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
      * @param rayNumber
      * @param options other options
      */
-    RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
-                    std::shared_ptr<ablate::monitors::logs::Log> = {});
-    ~RadiationSolver() override;
+    Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
+              std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    ~Radiation() override;
 
     /** Returns the black body intensity for a given temperature and emissivity*/
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
@@ -49,6 +48,9 @@ class RadiationSolver : public solver::CellSolver, public solver::RHSFunction { 
    private:
     /// Class Methods
     void RayInit();
+
+    eos::ThermodynamicTemperatureFunction absorptivityFunction;
+    const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
 
     /// Class Constants
     const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
