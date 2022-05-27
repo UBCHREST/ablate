@@ -15,13 +15,13 @@ CLion is a C/C++ IDE that uses cmake files for configuration. These directions o
 1. Download and install [Docker](https://www.docker.com) or docker desktop.
 2. Pull the latest ablate dependency docker image
    ```bash
-   docker pull ghcr.io/ubchrest/ablate/ablate-dependencies:latest
+   docker pull ghcr.io/ubchrest/ablate/ablate-dependencies-gcc:latest
    ```
 3. Download and Install [CLion](https://www.jetbrains.com/clion/). For Windows users it is recommended that CLion be [installed under WSL2 linux](https://docs.microsoft.com/en-us/windows/wsl/tutorials/gui-apps).
 4. Open CLion and select *Get From VCS* from the welcome window and either
    - (recommended) Select GitHub and Login/Authorize access. Then follow on-screen instructions to clone your [fork of ABLATE]({{ site.baseurl}}{%link content/development/UsingGitWithABLATE.md  %}#forking-ablate).
    - Select Git from the *Version Control* dropdown and enter your [ABLATE fork url]({{ site.baseurl}}{%link content/development/UsingGitWithABLATE.md  %}#forking-ablate).
-4. Set the toolchain in CLion using the [instructions](https://www.jetbrains.com/help/clion/clion-toolchains-in-docker.html).  Select the ```ghcr.io/ubchrest/ablate/ablate-dependencies:latest``` image in the UI.
+4. Set the toolchain in CLion using the [instructions](https://www.jetbrains.com/help/clion/clion-toolchains-in-docker.html).  Select the ```ghcr.io/ubchrest/ablate/ablate-dependencies-gcc:latest``` image in the UI.
 5. Enable the ```docker-ablate-debug``` and ```docker-ablate-opt``` build profiles.
    - If not opened by default, open the  Settings / Preferences > Build, Execution, Deployment > CMake preference window from the menu bar.
    - Select the ```docker-ablate-debug```  and click the "Enable profile". Repeat for the ```docker-ablate-opt``` and apply/close the window.

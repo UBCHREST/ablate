@@ -1,37 +1,39 @@
-//
-// Created by owen on 3/19/22.
-//
 #include "radiation.hpp"
 #include <set>
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "finiteVolume/finiteVolumeSolver.hpp"
 #include "utilities/mathUtilities.hpp"
 
-ablate::radiation::RadiationSolver::RadiationSolver(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
-                                                    std::shared_ptr<ablate::monitors::logs::Log> log)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)), raynumber(raynumber), log(std::move(log)) {
+ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
+                                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)), raynumber(raynumber), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
 
-ablate::radiation::RadiationSolver::~RadiationSolver() {}
+ablate::radiation::Radiation::~Radiation() {}
 
-void ablate::radiation::RadiationSolver::Setup() { /** allows initialization after the subdomain and dm is established*/
+void ablate::radiation::Radiation::Setup() { /** allows initialization after the subdomain and dm is established*/
     ablate::solver::CellSolver::Setup();
     dim = subDomain->GetDimensions();  //!< Number of dimensions already defined in the setup
 }
 
-void ablate::radiation::RadiationSolver::Initialize() {
-    /** Runs the ray initialization, finding cell indices
+void ablate::radiation::Radiation::Initialize() {
+    /** Begins radiation properties model
+     * Runs the ray initialization, finding cell indices
      * Initialize the log if provided
      */
+    // Store the required data for the low level c functions
+    absorptivityFunction = radiationModel->GetRadiationPropertiesTemperatureFunction(eos::radiationProperties::RadiationProperty::Absorptivity, subDomain->GetFields());
+
     if (log) {
         log->Initialize(subDomain->GetComm());
     }
     this->RayInit();
 }
 
-void ablate::radiation::RadiationSolver::RayInit() {
+void ablate::radiation::Radiation::RayInit() {
     /** Initialization to call, draws each ray vector and gets all of the cells associated with it
      * (sorted by distance and starting at the boundary working in)
      * */
@@ -167,7 +169,7 @@ void ablate::radiation::RadiationSolver::RayInit() {
     RestoreRange(cellRange);
 }
 
-PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal time, Vec locXVec, Vec rhs) {
+PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
     PetscFunctionBeginUser;
     /** Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
      * These DM objects belong to the temperature field which is used to calculate radiation transport
@@ -180,7 +182,12 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     const PetscScalar* rhsArray;
     VecGetArrayRead(rhs, &rhsArray);
 
+    /** Get the array of the solution vector*/
+    const PetscScalar* solArray;
+    VecGetArrayRead(solVec, &solArray);
+
     const auto& eulerFieldInfo = subDomain->GetField("euler");
+    auto dm = subDomain->GetDM();  //!< Get the main DM for the solution vector
 
     /** Get the temperature field
      * For ABLATE implementation, get temperature based on this function
@@ -191,6 +198,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     VecGetArray(loctemp, &temperatureArray);
 
     /** Declare the basic information*/
+    PetscReal* sol;          //!< The solution value at any given location
     PetscReal* temperature;  //!< The temperature at any given location
     PetscReal dTheta = pi / nTheta;
     PetscReal dPhi = (2 * pi) / nPhi;
@@ -199,6 +207,8 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
 
     std::vector<std::vector<PetscReal>> locations;  //!< 2 Dimensional vector which stores the locations of the cell centers
     PetscInt ncells = 0;
+
+    auto absorptivityFunctionContext = absorptivityFunction.context.get();
 
     /** loop through subdomain cell indices
      * for every angle theta
@@ -216,7 +226,7 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                     Initial ray intensity should be set based on which boundary it is coming from.
                     If the ray originates from the walls, then set the initial ray intensity to the wall temperature, etc.
                  */
-                PetscReal rayIntensity;
+                PetscReal rayIntensity = 0.0;
                 int numPoints = static_cast<int>(rays[ncells][ntheta][nphi].size());
 
                 if (numPoints > 0) {
@@ -227,8 +237,10 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
                             Get the array that lives inside the vector
                             Gets the temperature from the cell index specified
                         */
-                        DMPlexPointLocalRef(vdm, rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);
-                        /// Input absorptivity (kappa) values from model here.
+                        DMPlexPointLocalRead(vdm, rays[ncells][ntheta][nphi][n], temperatureArray, &temperature);
+                        DMPlexPointLocalRead(dm, rays[ncells][ntheta][nphi][n], solArray, &sol);
+                        /** Input absorptivity (kappa) values from model here.*/
+                        absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 
                         if (n == (numPoints - 1)) {                          /** If this is the beginning of the ray, set this as the initial intensity.*/
                             rayIntensity = FlameIntensity(1, *temperature);  //!< Set the initial ray intensity to the boundary intensity
@@ -274,13 +286,14 @@ PetscErrorCode ablate::radiation::RadiationSolver::ComputeRHSFunction(PetscReal 
     PetscFunctionReturn(0);
 }
 
-PetscReal ablate::radiation::RadiationSolver::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity*/
-    const PetscReal sbc = 5.6696e-8;                                                               //!< Stefan-Boltzman Constant (J/K)
+PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity*/
+    const PetscReal sbc = 5.6696e-8;                                                         //!< Stefan-Boltzman Constant (J/K)
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
     return epsilon * sbc * temperature * temperature * temperature * temperature / pi;
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::radiation::RadiationSolver, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
+REGISTER(ablate::solver::Solver, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
-         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
+         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

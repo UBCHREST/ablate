@@ -25,7 +25,7 @@
 environment:
   title: _rad
   tagDirectory: true
-arguments: {}
+arguments: { }
 timestepper:
   name: theMainTimeStepper
   io:
@@ -35,9 +35,9 @@ timestepper:
     ts_max_steps: 4
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
-    faces: [3, 20]
-    lower: [ 0 , -0.0105]
-    upper: [ 0.5 , 0.0105]
+    faces: [ 3, 20 ]
+    lower: [ 0 , -0.0105 ]
+    upper: [ 0.5 , 0.0105 ]
     simplex: false
     preModifiers:
       - !ablate::domain::modifiers::SetFromOptions
@@ -51,7 +51,7 @@ timestepper:
         eos: !ablate::eos::PerfectGas &eos
           parameters:
             gamma: 1.4
-            Rgas : 287.0
+            Rgas: 287.0
         name: domain
       - !ablate::domain::FieldDescription
         name: error
@@ -85,8 +85,10 @@ solvers:
     processes:
       - !ablate::boundarySolver::lodi::Inlet
         eos: *eos
-  - !ablate::radiation::RadiationSolver
-    id: radiate
+  - !ablate::radiation::Radiation
+    id: radiation
     region:
       name: interiorCells
     rays: 15
+    properties: !ablate::eos::radiationProperties::Constant
+      absorptivity: 1

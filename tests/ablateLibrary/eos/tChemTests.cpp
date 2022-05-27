@@ -3,8 +3,8 @@
 #include "eos/tChem.hpp"
 #include "gtest/gtest.h"
 
-/*
- * Helper function to fill mass fraction
+/**
+ * Helper functions to fill mass fraction
  */
 static std::vector<PetscReal> GetMassFraction(const std::vector<std::string>& species, const std::map<std::string, PetscReal>& yiIn) {
     std::vector<PetscReal> yi(species.size(), 0.0);
