@@ -338,139 +338,139 @@ INSTANTIATE_TEST_SUITE_P(
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// Perfect Gas FieldFunctionTests
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// struct TCFieldFunctionTestParameters {
-//     // eos init
-//     std::filesystem::path mechFile;
-//     std::filesystem::path thermoFile;
-//
-//     // field function init
-//     ablate::eos::ThermodynamicProperty property1;
-//     ablate::eos::ThermodynamicProperty property2;
-//
-//     // inputs
-//     PetscReal property1Value;
-//     PetscReal property2Value;
-//     std::vector<PetscReal> velocity;
-//     std::map<std::string, PetscReal> yiMap;
-//     std::vector<PetscReal> expectedEulerValue;
-// };
-//
-// class TCFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TCFieldFunctionTestParameters> {};
-//
-// TEST_P(TCFieldFunctionTestFixture, ShouldComputeField) {
-//     // arrange
-//     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChemV1>(GetParam().mechFile, GetParam().thermoFile);
-//     auto yi = GetMassFraction(eos->GetSpecies(), GetParam().yiMap);
-//
-//     // get the test params
-//     const auto& params = GetParam();
-//     std::vector<PetscReal> actualEulerValue(params.expectedEulerValue.size(), NAN);
-//     std::vector<PetscReal> actualDensityYiValue(eos->GetSpecies().size(), NAN);
-//
-//     // act
-//     auto stateEulerFunction = eos->GetFieldFunctionFunction("euler", params.property1, params.property2);
-//     stateEulerFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), yi.data(), actualEulerValue.data());
-//     auto stateDensityYiFunction = eos->GetFieldFunctionFunction("densityYi", params.property1, params.property2);
-//     stateDensityYiFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), yi.data(), actualDensityYiValue.data());
-//
-//     // assert
-//     for (std::size_t c = 0; c < params.expectedEulerValue.size(); c++) {
-//         ASSERT_LT(PetscAbs(params.expectedEulerValue[c] - actualEulerValue[c]) / (params.expectedEulerValue[c] + 1E-30), 1E-3)
-//             << "for component[" << c << "] of expectedEulerValue (" << params.expectedEulerValue[c] << " vs " << actualEulerValue[c] << ")";
-//     }
-//     for (std::size_t c = 0; c < yi.size(); c++) {
-//         ASSERT_LT(PetscAbs(yi[c] * params.expectedEulerValue[0] - actualDensityYiValue[c]) / (yi[c] * params.expectedEulerValue[0] + 1E-30), 1E-3)
-//             << "for component[" << c << "] of densityYi (" << yi[c] * params.expectedEulerValue[0] << " vs " << actualDensityYiValue[c] << ")";
-//     }
-// }
-//
-// INSTANTIATE_TEST_SUITE_P(TChemV1Tests, TCFieldFunctionTestFixture,
-//                          testing::Values((TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
-//                                                                          .thermoFile = "inputs/eos/thermo30.dat",
-//                                                                          .property1 = ablate::eos::ThermodynamicProperty::Temperature,
-//                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-//                                                                          .property1Value = 499.25,
-//                                                                          .property2Value = 197710.5,
-//                                                                          .velocity = {10, 20, 30},
-//                                                                          .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-//                                                                          .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
-//                                          (TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
-//                                                                          .thermoFile = "inputs/eos/thermo30.dat",
-//                                                                          .property1 = ablate::eos::ThermodynamicProperty::Temperature,
-//                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-//                                                                          .property1Value = 762.664,
-//                                                                          .property2Value = 189973.54,
-//                                                                          .velocity = {0.0, 0.0, 0.0},
-//                                                                          .yiMap = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
-//                                                                          .expectedEulerValue = {0.8, 0.8 * 3.2E5, 0.0, 0.0, 0.0}},
-//                                          (TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
-//                                                                          .thermoFile = "inputs/eos/thermo30.dat",
-//                                                                          .property1 = ablate::eos::ThermodynamicProperty::Temperature,
-//                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-//                                                                          .property1Value = 418.079,
-//                                                                          .property2Value = 409488.10,
-//                                                                          .velocity = {0, 2, 4},
-//                                                                          .yiMap = {{"N2", 1.0}},
-//                                                                          .expectedEulerValue = {3.3, 3.3 * 1000, 0.0, 3.3 * 2, 3.3 * 4}},
-//                                          (TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
-//                                                                          .thermoFile = "inputs/eos/thermo30.dat",
-//                                                                          .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-//                                                                          .property2 = ablate::eos::ThermodynamicProperty::Temperature,
-//                                                                          .property1Value = 7411.11,
-//                                                                          .property2Value = 437.46,
-//                                                                          .velocity = {-1, -2, -3},
-//                                                                          .yiMap = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
-//                                                                          .expectedEulerValue = {0.01, 0.01 * 1E5, .01 * -1, .01 * -2, .01 * -3}},
-//                                          (TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
-//                                                                          .thermoFile = "inputs/eos/thermo30.dat",
-//                                                                          .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-//                                                                          .property2 = ablate::eos::ThermodynamicProperty::Temperature,
-//                                                                          .property1Value = 281125963.5,
-//                                                                          .property2Value = 394.59,
-//                                                                          .velocity = {-10, -20, -300},
-//                                                                          .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-//                                                                          .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
-//
-//                                          (TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
-//                                                                          .thermoFile = "inputs/eos/thermo30.dat",
-//                                                                          .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-//                                                                          .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-//                                                                          .property1Value = 281125963.5,
-//                                                                          .property2Value = -35256.942891550425,
-//                                                                          .velocity = {-10, -20, -300},
-//                                                                          .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-//                                                                          .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
-//                                          (TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
-//                                                                          .thermoFile = "inputs/eos/thermo30.dat",
-//                                                                          .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-//                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-//                                                                          .property1Value = -35256.942891550425,
-//                                                                          .property2Value = 281125963.5,
-//                                                                          .velocity = {-10, -20, -300},
-//                                                                          .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
-//                                                                          .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
-//
-//                                          (TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
-//                                                                          .thermoFile = "inputs/eos/thermo30.dat",
-//                                                                          .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-//                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
-//                                                                          .property1Value = 99291.694615827029,
-//                                                                          .property2Value = 197710.5,
-//                                                                          .velocity = {10, 20, 30},
-//                                                                          .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-//                                                                          .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
-//                                          (TCFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
-//                                                                          .thermoFile = "inputs/eos/thermo30.dat",
-//                                                                          .property1 = ablate::eos::ThermodynamicProperty::Pressure,
-//                                                                          .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
-//                                                                          .property1Value = 197710.5,
-//                                                                          .property2Value = 99291.694615827029,
-//                                                                          .velocity = {10, 20, 30},
-//                                                                          .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
-//                                                                          .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}}
-//
-//                                          ),
-//
-//                          [](const testing::TestParamInfo<TCFieldFunctionTestParameters>& info) {
-//                              return std::to_string(info.index) + "_from_" + std::string(to_string(info.param.property1)) + "_" + std::string(to_string(info.param.property2));
-//                          });
+ struct TChemFieldFunctionTestParameters {
+     // eos init
+     std::filesystem::path mechFile;
+     std::filesystem::path thermoFile;
+
+     // field function init
+     ablate::eos::ThermodynamicProperty property1;
+     ablate::eos::ThermodynamicProperty property2;
+
+     // inputs
+     PetscReal property1Value;
+     PetscReal property2Value;
+     std::vector<PetscReal> velocity;
+     std::map<std::string, PetscReal> yiMap;
+     std::vector<PetscReal> expectedEulerValue;
+ };
+
+ class TChemFieldFunctionTestFixture : public testingResources::PetscTestFixture, public ::testing::WithParamInterface<TChemFieldFunctionTestParameters> {};
+
+ TEST_P(TChemFieldFunctionTestFixture, ShouldComputeField) {
+     // arrange
+     std::shared_ptr<ablate::eos::EOS> eos = std::make_shared<ablate::eos::TChem>(GetParam().mechFile, GetParam().thermoFile);
+     auto yi = GetMassFraction(eos->GetSpecies(), GetParam().yiMap);
+
+     // get the test params
+     const auto& params = GetParam();
+     std::vector<PetscReal> actualEulerValue(params.expectedEulerValue.size(), NAN);
+     std::vector<PetscReal> actualDensityYiValue(eos->GetSpecies().size(), NAN);
+
+     // act
+     auto stateEulerFunction = eos->GetFieldFunctionFunction("euler", params.property1, params.property2);
+     stateEulerFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), yi.data(), actualEulerValue.data());
+     auto stateDensityYiFunction = eos->GetFieldFunctionFunction("densityYi", params.property1, params.property2);
+     stateDensityYiFunction(params.property1Value, params.property2Value, params.velocity.size(), params.velocity.data(), yi.data(), actualDensityYiValue.data());
+
+     // assert
+     for (std::size_t c = 0; c < params.expectedEulerValue.size(); c++) {
+         ASSERT_LT(PetscAbs(params.expectedEulerValue[c] - actualEulerValue[c]) / (params.expectedEulerValue[c] + 1E-30), 1E-3)
+             << "for component[" << c << "] of expectedEulerValue (" << params.expectedEulerValue[c] << " vs " << actualEulerValue[c] << ")";
+     }
+     for (std::size_t c = 0; c < yi.size(); c++) {
+         ASSERT_LT(PetscAbs(yi[c] * params.expectedEulerValue[0] - actualDensityYiValue[c]) / (yi[c] * params.expectedEulerValue[0] + 1E-30), 1E-3)
+             << "for component[" << c << "] of densityYi (" << yi[c] * params.expectedEulerValue[0] << " vs " << actualDensityYiValue[c] << ")";
+     }
+ }
+
+ INSTANTIATE_TEST_SUITE_P(TChemV1Tests, TChemFieldFunctionTestFixture,
+                          testing::Values((TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                          .thermoFile = "inputs/eos/thermo30.dat",
+                                                                          .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                          .property1Value = 499.25,
+                                                                          .property2Value = 197710.5,
+                                                                          .velocity = {10, 20, 30},
+                                                                          .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
+                                                                          .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
+                                          (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                          .thermoFile = "inputs/eos/thermo30.dat",
+                                                                          .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                          .property1Value = 762.664,
+                                                                          .property2Value = 189973.54,
+                                                                          .velocity = {0.0, 0.0, 0.0},
+                                                                          .yiMap = {{"O2", .3}, {"N2", .4}, {"CH2", .1}, {"NO", .2}},
+                                                                          .expectedEulerValue = {0.8, 0.8 * 3.2E5, 0.0, 0.0, 0.0}},
+                                          (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                          .thermoFile = "inputs/eos/thermo30.dat",
+                                                                          .property1 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                          .property1Value = 418.079,
+                                                                          .property2Value = 409488.10,
+                                                                          .velocity = {0, 2, 4},
+                                                                          .yiMap = {{"N2", 1.0}},
+                                                                          .expectedEulerValue = {3.3, 3.3 * 1000, 0.0, 3.3 * 2, 3.3 * 4}},
+                                          (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                          .thermoFile = "inputs/eos/thermo30.dat",
+                                                                          .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                          .property2 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                          .property1Value = 7411.11,
+                                                                          .property2Value = 437.46,
+                                                                          .velocity = {-1, -2, -3},
+                                                                          .yiMap = {{"H2", .35}, {"H2O", .35}, {"N2", .3}},
+                                                                          .expectedEulerValue = {0.01, 0.01 * 1E5, .01 * -1, .01 * -2, .01 * -3}},
+                                          (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                          .thermoFile = "inputs/eos/thermo30.dat",
+                                                                          .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                          .property2 = ablate::eos::ThermodynamicProperty::Temperature,
+                                                                          .property1Value = 281125963.5,
+                                                                          .property2Value = 394.59,
+                                                                          .velocity = {-10, -20, -300},
+                                                                          .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
+                                                                          .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
+
+                                          (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                          .thermoFile = "inputs/eos/thermo30.dat",
+                                                                          .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                          .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                                          .property1Value = 281125963.5,
+                                                                          .property2Value = -35256.942891550425,
+                                                                          .velocity = {-10, -20, -300},
+                                                                          .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
+                                                                          .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
+                                          (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                          .thermoFile = "inputs/eos/thermo30.dat",
+                                                                          .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                          .property1Value = -35256.942891550425,
+                                                                          .property2Value = 281125963.5,
+                                                                          .velocity = {-10, -20, -300},
+                                                                          .yiMap = {{"H2", .1}, {"H2O", .2}, {"N2", .3}, {"CO", .4}},
+                                                                          .expectedEulerValue = {999.9, 999.9 * 1E4, 999.9 * -10, 999.9 * -20, 999.9 * -300}},
+
+                                          (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                          .thermoFile = "inputs/eos/thermo30.dat",
+                                                                          .property1 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                                          .property2 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                          .property1Value = 99291.694615827029,
+                                                                          .property2Value = 197710.5,
+                                                                          .velocity = {10, 20, 30},
+                                                                          .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
+                                                                          .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}},
+                                          (TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
+                                                                          .thermoFile = "inputs/eos/thermo30.dat",
+                                                                          .property1 = ablate::eos::ThermodynamicProperty::Pressure,
+                                                                          .property2 = ablate::eos::ThermodynamicProperty::InternalSensibleEnergy,
+                                                                          .property1Value = 197710.5,
+                                                                          .property2Value = 99291.694615827029,
+                                                                          .velocity = {10, 20, 30},
+                                                                          .yiMap = {{"CH4", .2}, {"O2", .3}, {"N2", .5}},
+                                                                          .expectedEulerValue = {1.2, 1.2 * 99993.99, 1.2 * 10, 1.2 * 20, 1.2 * 30}}
+
+                                          ),
+
+                          [](const testing::TestParamInfo<TChemFieldFunctionTestParameters>& info) {
+                              return std::to_string(info.index) + "_from_" + std::string(to_string(info.param.property1)) + "_" + std::string(to_string(info.param.property2));
+                          });

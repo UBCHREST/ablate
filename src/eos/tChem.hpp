@@ -75,7 +75,7 @@ class TChem : public EOS {
      * @param property1
      * @param property2
      */
-    [[nodiscard]] FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override { return {}; }
+    [[nodiscard]] FieldFunction GetFieldFunctionFunction(const std::string& field, ThermodynamicProperty property1, ThermodynamicProperty property2) const override;
 
     /**
      * Species supported by this EOS
