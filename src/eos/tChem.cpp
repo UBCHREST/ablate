@@ -258,7 +258,7 @@ PetscErrorCode ablate::eos::TChem::TemperatureTemperatureFunction(const PetscRea
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     auto tChem = functionContext->tChem;
-    // Compute the internal energy from total ener
+    // Compute the internal energy from total energy
     PetscReal density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
     PetscReal speedSquare = 0.0;
     for (PetscInt d = 0; d < functionContext->dim; d++) {
