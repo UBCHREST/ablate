@@ -18,9 +18,7 @@ struct SensibleInternalEnergy {
 
     using kinetic_model_type = KineticModelConstData<device_type>;
 
-    static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) {
-        return numberSpecies;
-    }
+    static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) { return numberSpecies; }
 
     /**
      * tchem like function to compute sensible internal energy on device
@@ -40,8 +38,7 @@ struct SensibleInternalEnergy {
         /// useful scratch
         const real_type_2d_view_type& enthalpyMass,
         /// const data from kinetic model
-        const real_type_1d_view_type& enthalpyReference,
-        const kinetic_model_type& kmcd);
+        const real_type_1d_view_type& enthalpyReference, const kinetic_model_type& kmcd);
 
     /**
      * tchem like function to compute temperature on host
@@ -61,8 +58,7 @@ struct SensibleInternalEnergy {
         /// useful scratch
         const real_type_2d_view_host_type& enthalpyMass,
         /// const data from kinetic model[
-        const real_type_1d_view_host_type& enthalpyReference,
-        const kinetic_model_type& kmcd);
+        const real_type_1d_view_host_type& enthalpyReference, const kinetic_model_type& kmcd);
 };
 
 }  // namespace ablate::eos::tChem

@@ -49,7 +49,7 @@ ablate::eos::TChem::TChem(std::filesystem::path mechanismFileIn, std::filesystem
         const auto per_team_extent_h = tChemLib::EnthalpyMass::getWorkSpaceSize(*kineticsModelDataDevice);
         const auto per_team_scratch_h = Scratch<real_type_1d_view>::shmem_size(per_team_extent_h);
         typename tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type policy_enthalpy(1, Kokkos::AUTO());
-        policy_enthalpy.set_scratch_size(1, Kokkos::PerTeam(tChemLib::Scratch<real_type_1d_view>::shmem_size((int)per_team_scratch_h)));
+        policy_enthalpy.set_scratch_size(1, Kokkos::PerTeam((int)tChemLib::Scratch<real_type_1d_view>::shmem_size(per_team_scratch_h)));
 
         // set the state
         real_type_2d_view stateDevice(" state device", 1, tChemLib::Impl::getStateVectorSize(kineticsModelDataDevice->nSpec));
@@ -150,7 +150,7 @@ PetscErrorCode ablate::eos::TChem::DensityFunction(const PetscReal *conserved, P
     *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::eos::TChem::DensityTemperatureFunction(const PetscReal *conserved, PetscReal T, PetscReal *density, void *ctx) {
+PetscErrorCode ablate::eos::TChem::DensityTemperatureFunction(const PetscReal *conserved, PetscReal, PetscReal *density, void *ctx) {
     PetscFunctionBeginUser;
     auto functionContext = (FunctionContext *)ctx;
     *density = conserved[functionContext->eulerOffset + ablate::finiteVolume::CompressibleFlowFields::RHO];
@@ -455,7 +455,7 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
             // prepare to compute SensibleInternalEnergy
             typename tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type policy(1, Kokkos::AUTO());
             auto per_team_extent = (int)tChem::SensibleInternalEnergy::getWorkSpaceSize(kineticsModelDataDevice->nSpec);
-            policy.set_scratch_size(1, Kokkos::PerTeam(tChemLib::Scratch<real_type_1d_view>::shmem_size((int)per_team_extent)));
+            policy.set_scratch_size(1, Kokkos::PerTeam((int)tChemLib::Scratch<real_type_1d_view>::shmem_size(per_team_extent)));
             // store hi for the
             real_type_1d_view_host enthalpy("enthalpy", kineticsModelDataDevice->nSpec);
 
@@ -509,38 +509,60 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
         }
         if ((property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure) ||
             (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::InternalSensibleEnergy)) {
-            auto iep = [](PetscReal sensibleInternalEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
-//                // Compute the density
-//                // Fill the working array
-//                auto tempYiWorkingArray = tempYiWorkingVector.data();
-//                FillWorkingVectorFromMassFractions(numberSpecies, 300, yi, tempYiWorkingArray);
-//
-//                // precompute some values
-//                double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-//                TC_getMs2Wmix(tempYiWorkingArray + 1, numberSpecies, &mwMix) >> errorChecker;
-//
-//                // compute r
-//                double R = 1000.0 * RUNIV / mwMix;
-//
-//                // compute the temperature
-//                PetscReal temperature;
-//                ComputeTemperatureInternal(numberSpecies, tempYiWorkingArray, sensibleInternalEnergy, mwMix, temperature) >> errorChecker;
-//
-//                // compute pressure p = rho*R*T
-//                PetscReal density = pressure / (temperature * R);
-//
-//                // convert to total sensibleEnergy
-//                PetscReal kineticEnergy = 0;
-//                for (PetscInt d = 0; d < dim; d++) {
-//                    kineticEnergy += PetscSqr(velocity[d]);
-//                }
-//                kineticEnergy *= 0.5;
-//
-//                conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
-//                conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + sensibleInternalEnergy);
-//                for (PetscInt d = 0; d < dim; d++) {
-//                    conserved[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = density * velocity[d];
-//                }
+            // assume that the lambda are running on host
+            using host_device_type = typename Tines::UseThisDevice<host_exec_space>::type;
+            using host_type = tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type::member_type;
+
+            // create reusable data for the lambda (all on host)
+            auto kineticsModelDataHost = tChemLib::createGasKineticModelConstData<host_device_type>(kineticsModel);
+            real_type_2d_view_host stateHostView("state device", 1, tChemLib::Impl::getStateVectorSize(kineticsModelDataDevice->nSpec));
+            auto stateHost = Impl::StateVector<real_type_1d_view_host>(kineticsModelDataDevice->nSpec, Kokkos::subview(stateHostView, 0, Kokkos::ALL()));
+
+            // prepare to compute SensibleInternalEnergy
+            typename tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type policy(1, Kokkos::AUTO());
+            auto per_team_extent = (int)tChem::Temperature::getWorkSpaceSize(kineticsModelDataDevice->nSpec);
+            policy.set_scratch_size(1, Kokkos::PerTeam((int)tChemLib::Scratch<real_type_1d_view>::shmem_size((int)per_team_extent)));
+
+            // store internal energy for the
+            real_type_1d_view_host internalEnergy("internal energy", 1);
+            real_type_2d_view_host enthalpy("enthalpy", 1, kineticsModelDataDevice->nSpec);
+            real_type_1d_view_host mwMix("mwMix", 1);
+
+            auto iep = [=](PetscReal sensibleInternalEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // fill most of the host
+                stateHost.Temperature() = 300;  // init guess
+                stateHost.Pressure() = pressure;
+                internalEnergy() = sensibleInternalEnergy;
+                auto yiHost = stateHost.MassFractions();
+                Kokkos::parallel_for(
+                    "tp init", policy, KOKKOS_LAMBDA(const host_type &member) {
+                        // fill the state
+                        Kokkos::parallel_for(Tines::RangeFactory<real_type>::TeamVectorRange(member, kineticsModelDataHost.nSpec), [&](const ordinal_type &i) { yiHost[i] = yi[i]; });
+
+                        // compute the mw of the mix
+                        mwMix() = tChemLib::Impl::MolarWeights<real_type, host_device_type>::team_invoke(member, yiHost, kineticsModelDataHost);
+                    });
+
+                double R = kineticsModelDataHost.Runiv / mwMix();
+
+                // compute the temperature
+                eos::tChem::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReference, kineticsModelDataHost);
+
+                // compute pressure p = rho*R*T
+                PetscReal density = pressure / (stateHost.Temperature() * R);
+
+                // convert to total sensibleEnergy
+                PetscReal kineticEnergy = 0;
+                for (PetscInt d = 0; d < dim; d++) {
+                    kineticEnergy += PetscSqr(velocity[d]);
+                }
+                kineticEnergy *= 0.5;
+
+                conserved[ablate::finiteVolume::CompressibleFlowFields::RHO] = density;
+                conserved[ablate::finiteVolume::CompressibleFlowFields::RHOE] = density * (kineticEnergy + sensibleInternalEnergy);
+                for (PetscInt d = 0; d < dim; d++) {
+                    conserved[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = density * velocity[d];
+                }
             };
             if (property1 == ThermodynamicProperty::InternalSensibleEnergy) {
                 return iep;
@@ -552,92 +574,109 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
         }
 
         throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");
-
     } else if (finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD == field) {
-        if (property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) {
-            return [](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
-//                auto tempYiWorkingArray = tempYiWorkingVector.data();
-//                FillWorkingVectorFromMassFractions(numberSpecies, temperature, yi, tempYiWorkingArray);
-//
-//                // precompute some values
-//                double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-//                TC_getMs2Wmix(tempYiWorkingArray + 1, numberSpecies, &mwMix) >> errorChecker;
-//
-//                // compute r
-//                double R = 1000.0 * RUNIV / mwMix;
-//
-//                // compute pressure p = rho*R*T
-//                PetscReal density = pressure / (temperature * R);
-//
-//                for (PetscInt c = 0; c < numberSpecies; c++) {
-//                    conserved[c] = density * yi[c];
-//                }
+        if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure) ||
+            (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature)) {
+            // assume that the lambda are running on host
+            using host_device_type = typename Tines::UseThisDevice<host_exec_space>::type;
+            using host_type = tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type::member_type;
+
+            // create reusable data for the lambda (all on host)
+            auto kineticsModelDataHost = tChemLib::createGasKineticModelConstData<host_device_type>(kineticsModel);
+            real_type_1d_view_host stateHostView("state device", tChemLib::Impl::getStateVectorSize(kineticsModelDataDevice->nSpec));
+            auto stateHost = Impl::StateVector<real_type_1d_view_host>(kineticsModelDataDevice->nSpec, stateHostView);
+
+            // prepare to compute SensibleInternalEnergy
+            typename tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type policy(1, Kokkos::AUTO());
+
+            auto densityYiFromTP = [=](PetscReal temperature, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                Kokkos::parallel_for(
+                    "densityYi init from T & P", policy, KOKKOS_LAMBDA(const host_type &member) {
+                        // fill the state
+                        stateHost.Temperature() = temperature;
+                        stateHost.Pressure() = pressure;
+                        auto yiHost = stateHost.MassFractions();
+                        Kokkos::parallel_for(Tines::RangeFactory<real_type>::TeamVectorRange(member, kineticsModelDataHost.nSpec), [&](const ordinal_type &i) { yiHost[i] = yi[i]; });
+
+                        // compute the mw of the mix
+                        const real_type mwMix = tChemLib::Impl::MolarWeights<real_type, host_device_type>::team_invoke(member, yiHost, kineticsModelDataHost);
+                        member.team_barrier();
+
+                        // compute r
+                        double R = kineticsModelDataHost.Runiv / mwMix;
+
+                        // compute pressure p = rho*R*T
+                        PetscReal density = pressure / (temperature * R);
+
+                        Kokkos::parallel_for(Tines::RangeFactory<real_type>::TeamVectorRange(member, kineticsModelDataHost.nSpec), [&](const ordinal_type &i) { conserved[i] = density * yi[i]; });
+                    });
             };
-        } else if (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::Temperature) {
-            return [](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
-//                auto tempYiWorkingArray = tempYiWorkingVector.data();
-//                FillWorkingVectorFromMassFractions(numberSpecies, temperature, yi, tempYiWorkingArray);
-//
-//                // precompute some values
-//                double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-//                TC_getMs2Wmix(tempYiWorkingArray + 1, numberSpecies, &mwMix) >> errorChecker;
-//
-//                // compute r
-//                double R = 1000.0 * RUNIV / mwMix;
-//
-//                // compute pressure p = rho*R*T
-//                PetscReal density = pressure / (temperature * R);
-//
-//                for (PetscInt c = 0; c < numberSpecies; c++) {
-//                    conserved[c] = density * yi[c];
-//                }
+
+            if ((property1 == ThermodynamicProperty::Temperature && property2 == ThermodynamicProperty::Pressure)) {
+                return densityYiFromTP;
+            } else {
+                return [=](PetscReal pressure, PetscReal temperature, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                    densityYiFromTP(temperature, pressure, dim, velocity, yi, conserved);
+                };
+            }
+
+        } else if ((property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure) ||
+                   (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::InternalSensibleEnergy)) {
+            // assume that the lambda are running on host
+            using host_device_type = typename Tines::UseThisDevice<host_exec_space>::type;
+            using host_type = tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type::member_type;
+
+            // create reusable data for the lambda (all on host)
+            auto kineticsModelDataHost = tChemLib::createGasKineticModelConstData<host_device_type>(kineticsModel);
+            real_type_2d_view_host stateHostView("state device", 1, tChemLib::Impl::getStateVectorSize(kineticsModelDataDevice->nSpec));
+            auto stateHost = Impl::StateVector<real_type_1d_view_host>(kineticsModelDataDevice->nSpec, Kokkos::subview(stateHostView, 0, Kokkos::ALL()));
+
+            // prepare to compute SensibleInternalEnergy
+            typename tChemLib::UseThisTeamPolicy<tChemLib::host_exec_space>::type policy(1, Kokkos::AUTO());
+            auto per_team_extent = (int)tChem::Temperature::getWorkSpaceSize(kineticsModelDataDevice->nSpec);
+            policy.set_scratch_size(1, Kokkos::PerTeam((int)tChemLib::Scratch<real_type_1d_view>::shmem_size(per_team_extent)));
+
+            // store internal energy for the
+            real_type_1d_view_host internalEnergy("internal energy", 1);
+            real_type_2d_view_host enthalpy("enthalpy", 1, kineticsModelDataDevice->nSpec);
+            real_type_1d_view_host mwMix("mwMix", 1);
+
+            auto densityYiFromIeP = [=](PetscReal sensibleInternalEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                // fill most of the host
+                stateHost.Temperature() = 300;  // init guess
+                stateHost.Pressure() = pressure;
+                internalEnergy() = sensibleInternalEnergy;
+                auto yiHost = stateHost.MassFractions();
+                Kokkos::parallel_for(
+                    policy, KOKKOS_LAMBDA(const host_type &member) {
+                        // fill the state
+                        Kokkos::parallel_for(Tines::RangeFactory<real_type>::TeamVectorRange(member, kineticsModelDataHost.nSpec), [&](const ordinal_type &i) { yiHost[i] = yi[i]; });
+
+                        // compute the mw of the mix
+                        mwMix() = tChemLib::Impl::MolarWeights<real_type, host_device_type>::team_invoke(member, yiHost, kineticsModelDataHost);
+                    });
+
+                double R = kineticsModelDataHost.Runiv / mwMix();
+
+                // compute the temperature
+                eos::tChem::Temperature::runHostBatch(policy, stateHostView, internalEnergy, enthalpy, enthalpyReference, kineticsModelDataHost);
+
+                // compute pressure p = rho*R*T
+                PetscReal density = pressure / (stateHost.Temperature() * R);
+
+                Kokkos::parallel_for(
+                    policy, KOKKOS_LAMBDA(const host_type &member) {
+                        Kokkos::parallel_for(Tines::RangeFactory<real_type>::TeamVectorRange(member, kineticsModelDataHost.nSpec), [&](const ordinal_type &i) { conserved[i] = density * yi[i]; });
+                    });
             };
-        } else if (property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure) {
-            return [](PetscReal sensibleInternalEnergy, PetscReal pressure, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
-//                auto tempYiWorkingArray = tempYiWorkingVector.data();
-//                FillWorkingVectorFromMassFractions(numberSpecies, 300.0, yi, tempYiWorkingArray);
-//
-//                // precompute some values
-//                double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-//                TC_getMs2Wmix(tempYiWorkingArray + 1, numberSpecies, &mwMix) >> errorChecker;
-//
-//                // compute the temperature
-//                PetscReal temperature;
-//                ComputeTemperatureInternal(numberSpecies, tempYiWorkingArray, sensibleInternalEnergy, mwMix, temperature) >> errorChecker;
-//
-//                // compute r
-//                double R = 1000.0 * RUNIV / mwMix;
-//
-//                // compute pressure p = rho*R*T
-//                PetscReal density = pressure / (temperature * R);
-//
-//                for (PetscInt c = 0; c < numberSpecies; c++) {
-//                    conserved[c] = density * yi[c];
-//                }
-            };
-        } else if (property1 == ThermodynamicProperty::Pressure && property2 == ThermodynamicProperty::InternalSensibleEnergy) {
-            return [](PetscReal pressure, PetscReal sensibleInternalEnergy, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
-//                auto tempYiWorkingArray = tempYiWorkingVector.data();
-//                FillWorkingVectorFromMassFractions(numberSpecies, 300, yi, tempYiWorkingArray);
-//
-//                // precompute some values
-//                double mwMix;  // This is kinda of a hack, just pass in the tempYi working array while skipping the first index
-//                TC_getMs2Wmix(tempYiWorkingArray + 1, numberSpecies, &mwMix) >> errorChecker;
-//
-//                // compute the temperature
-//                PetscReal temperature;
-//                ComputeTemperatureInternal(numberSpecies, tempYiWorkingArray, sensibleInternalEnergy, mwMix, temperature) >> errorChecker;
-//
-//                // compute r
-//                double R = 1000.0 * RUNIV / mwMix;
-//
-//                // compute pressure p = rho*R*T
-//                PetscReal density = pressure / (temperature * R);
-//
-//                for (PetscInt c = 0; c < numberSpecies; c++) {
-//                    conserved[c] = density * yi[c];
-//                }
-            };
+
+            if (property1 == ThermodynamicProperty::InternalSensibleEnergy && property2 == ThermodynamicProperty::Pressure) {
+                return densityYiFromIeP;
+            } else {
+                return [=](PetscReal pressure, PetscReal sensibleInternalEnergy, PetscInt dim, const PetscReal velocity[], const PetscReal yi[], PetscReal conserved[]) {
+                    densityYiFromIeP(sensibleInternalEnergy, pressure, dim, velocity, yi, conserved);
+                };
+            }
         }
 
         throw std::invalid_argument("Unknown property combination(" + std::string(to_string(property1)) + "," + std::string(to_string(property2)) + ") for " + field + " for ablate::eos::PerfectGas.");

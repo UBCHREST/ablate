@@ -29,9 +29,7 @@ struct SensibleInternalEnergyFcn {
                                                          /// work space
                                                          const value_type_1d_view_type& hi, const value_type_1d_view_type& cpks,
                                                          /// const input from kinetic model
-                                                         const value_type_1d_view_type& hi_ref,
-                                                         const KineticModelConstDataType& kmcd) {
-
+                                                         const value_type_1d_view_type& hi_ref, const KineticModelConstDataType& kmcd) {
         // compute the enthalpy of each species at temperature
         tChemLib::Impl::EnthalpySpecMlFcn<value_type, device_type>::team_invoke(member, temperature, hi, cpks, kmcd);
         member.team_barrier();

@@ -19,9 +19,7 @@ struct Temperature {
     using kinetic_model_type = KineticModelConstData<device_type>;
     using kinetic_model_host_type = KineticModelConstData<host_device_type>;
 
-    static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) {
-        return numberSpecies;
-    }
+    static inline ordinal_type getWorkSpaceSize(ordinal_type numberSpecies) { return numberSpecies; }
 
     /**
      * tchem like function to compute temperature on device
@@ -39,8 +37,7 @@ struct Temperature {
         /// useful scratch
         const real_type_2d_view_type& enthalpyMass,
         /// const data from kinetic model
-        const real_type_1d_view_type& enthalpyReference,
-        const kinetic_model_type& kmcd);
+        const real_type_1d_view_type& enthalpyReference, const kinetic_model_type& kmcd);
 
     /**
      * tchem like function to compute temperature on host
@@ -52,14 +49,13 @@ struct Temperature {
      * @param kmcd
      */
     [[maybe_unused]] static void runHostBatch(  /// thread block size
-        typename UseThisTeamPolicy<host_exec_space>::type& policy,
+        const typename UseThisTeamPolicy<host_exec_space>::type& policy,
         /// the output is the updated temperature in the state
         const real_type_2d_view_host_type& state, const real_type_1d_view_host_type& internalEnergyRef,
         /// useful scratch
         const real_type_2d_view_host_type& enthalpyMass,
         /// const data from kinetic model
-        const real_type_1d_view_host_type& enthalpyReference,
-        const kinetic_model_host_type& kmcd);
+        const real_type_1d_view_host_type& enthalpyReference, const kinetic_model_host_type& kmcd);
 };
 
 }  // namespace ablate::eos::tChem

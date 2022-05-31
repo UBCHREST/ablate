@@ -35,11 +35,12 @@ void Pressure_TemplateRun(const std::string& profile_name,
 
 }  // namespace ablate::eos::tChem::impl
 
-[[maybe_unused]] void ablate::eos::tChem::Pressure::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const Pressure::real_type_2d_view_type& state, const Pressure::kinetic_model_type& kmcd) {
+[[maybe_unused]] void ablate::eos::tChem::Pressure::runDeviceBatch(typename UseThisTeamPolicy<exec_space>::type& policy, const Pressure::real_type_2d_view_type& state,
+                                                                   const Pressure::kinetic_model_type& kmcd) {
     ablate::eos::tChem::impl::Pressure_TemplateRun("ablate::eos::tChem::Pressure::runDeviceBatch", policy, state, kmcd);
 }
 
 [[maybe_unused]] void ablate::eos::tChem::Pressure::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy, const ablate::eos::tChem::Pressure::real_type_2d_view_host_type& state,
-                                                const ablate::eos::tChem::Pressure::kinetic_model_host_type& kmcd) {
+                                                                 const ablate::eos::tChem::Pressure::kinetic_model_host_type& kmcd) {
     ablate::eos::tChem::impl::Pressure_TemplateRun("ablate::eos::tChem::Pressure::runHostBatch", policy, state, kmcd);
 }

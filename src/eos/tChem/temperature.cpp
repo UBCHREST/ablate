@@ -81,7 +81,7 @@ void Temperature_TemplateRun(const std::string& profile_name,
     ablate::eos::tChem::impl::Temperature_TemplateRun("ablate::eos::tChem::Temperature::runDeviceBatch", policy, state, internalEnergyRef, enthalpyMass, enthalpyReference, kmcd);
 }
 
-[[maybe_unused]] void ablate::eos::tChem::Temperature::runHostBatch(typename UseThisTeamPolicy<host_exec_space>::type& policy,
+[[maybe_unused]] void ablate::eos::tChem::Temperature::runHostBatch(const typename UseThisTeamPolicy<host_exec_space>::type& policy,
                                                                     const ablate::eos::tChem::Temperature::real_type_2d_view_host_type& state,
                                                                     const ablate::eos::tChem::Temperature::real_type_1d_view_host_type& internalEnergyRef,
                                                                     const Temperature::real_type_2d_view_host_type& enthalpyMass, const Temperature::real_type_1d_view_host_type& enthalpyReference,
