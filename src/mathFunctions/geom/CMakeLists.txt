@@ -8,4 +8,14 @@ target_sources(ablateLibrary
         box.cpp
         surface.hpp
         surface.cpp
+        cylinderShell.hpp
+        cylinderShell.cpp
+        cylinder.hpp
+        cylinder.cpp
+        union.hpp
+        union.cpp
+        difference.hpp
+        difference.cpp
+        inverse.hpp
+        inverse.cpp
         )
