@@ -4,9 +4,20 @@ target_sources(ablateLibrary
         sphere.cpp
         box.cpp
         surface.cpp
+        cylinderShell.cpp
+        cylinder.cpp
+        union.cpp
+        difference.cpp
+        inverse.cpp
+
         PUBLIC
         geometry.hpp
         sphere.hpp
         box.hpp
         surface.hpp
+        cylinderShell.hpp
+        cylinder.hpp
+        union.hpp
+        difference.hpp
+        inverse.hpp
         )
