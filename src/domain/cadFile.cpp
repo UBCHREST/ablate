@@ -2,10 +2,10 @@
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
-ablate::domain::CadFile::CadFile(const std::string& nameIn, const std::filesystem::path& pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
+ablate::domain::CadFile::CadFile(const std::string& nameIn, const std::filesystem::path& pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string generator,
                                  std::vector<std::shared_ptr<modifiers::Modifier>> modifiers, const std::shared_ptr<parameters::Parameters>& options,
                                  const std::shared_ptr<parameters::Parameters>& surfaceOptions)
-    : Domain(ReadDMFromCadFile(nameIn, pathIn, surfaceOptions), nameIn, std::move(fieldDescriptors), std::move(modifiers), options) {}
+    : Domain(ReadDMFromCadFile(nameIn, pathIn, surfaceOptions, generator), nameIn, std::move(fieldDescriptors), std::move(modifiers), options) {}
 
 ablate::domain::CadFile::~CadFile() {
     if (dm) {
@@ -13,7 +13,7 @@ ablate::domain::CadFile::~CadFile() {
     }
 }
 
-DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std::filesystem::path& path, const std::shared_ptr<parameters::Parameters>& surfaceOptions) {
+DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std::filesystem::path& path, const std::shared_ptr<parameters::Parameters>& surfaceOptions, const std::string& generator) {
     // the directly read cad mesh used to describe the surface
     DM surfaceDm = nullptr;
 
@@ -38,11 +38,11 @@ DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std
 
     // provide a way to view the surface mesh
     auto surfaceDmViewString = "-" + surfaceDmName + "_view";
-    DMViewFromOptions(surfaceDm, NULL, surfaceDmViewString.c_str());
+    DMViewFromOptions(surfaceDm, nullptr, surfaceDmViewString.c_str());
 
     // with the surface mesh created, compute the volumetric dm
     DM dm;
-    DMPlexGenerate(surfaceDm, nullptr, PETSC_TRUE, &dm) >> checkError;
+    DMPlexGenerate(surfaceDm, generator.empty() ? nullptr : generator.c_str(), PETSC_TRUE, &dm) >> checkError;
     PetscObjectSetName((PetscObject)dm, name.c_str()) >> checkError;
     DMPlexSetRefinementUniform(dm, PETSC_TRUE) >> checkError;
 
@@ -60,6 +60,7 @@ DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std
 #include "registrar.hpp"
 REGISTER(ablate::domain::Domain, ablate::domain::CadFile, "read a cad from a file", ARG(std::string, "name", "the name of the domain/mesh object"),
          ARG(std::filesystem::path, "path", "the path to the cad file"), OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
+         OPT(std::string, "generator", "the mesh generation package name (default is petscDecide)"),
          OPT(std::vector<ablate::domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"),
          OPT(ablate::parameters::Parameters, "options", "PETSc options specific to this dm.  Default value allows the dm to access global options."),
          OPT(ablate::parameters::Parameters, "surfaceOptions", "PETSc options specific to the temporary surface dm.  Default value allows the dm to access global options."));
