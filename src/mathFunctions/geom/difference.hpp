@@ -11,7 +11,7 @@ class Difference : public Geometry {
     const std::shared_ptr<ablate::mathFunctions::geom::Geometry> subtrahend;
 
    public:
-    explicit Difference(std::shared_ptr<ablate::mathFunctions::geom::Geometry>  minuend, std::shared_ptr<ablate::mathFunctions::geom::Geometry>  subtrahend,
+    explicit Difference(std::shared_ptr<ablate::mathFunctions::geom::Geometry> minuend, std::shared_ptr<ablate::mathFunctions::geom::Geometry> subtrahend,
                         const std::shared_ptr<mathFunctions::MathFunction>& insideValues = {}, const std::shared_ptr<mathFunctions::MathFunction>& outsideValues = {});
 
     bool InsideGeometry(const double* xyz, const int& ndims, const double& time) const override;

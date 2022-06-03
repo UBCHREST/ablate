@@ -34,7 +34,6 @@ bool ablate::mathFunctions::geom::CylinderShell::InsideGeometry(const double *xy
     double dsq = ablate::utilities::MathUtilities::DotVector(ndims, testDx, testDx) - dot * dot / (length * length);
 
     return !((dsq > (radiusMax * radiusMax)) || (radiusMin > 0.0 && dsq < (radiusMin * radiusMin)));
-
 }
 
 #include "registrar.hpp"

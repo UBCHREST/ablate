@@ -10,7 +10,7 @@ class Union : public Geometry {
     const std::vector<std::shared_ptr<ablate::mathFunctions::geom::Geometry>> geometries;
 
    public:
-    explicit Union(std::vector<std::shared_ptr<ablate::mathFunctions::geom::Geometry>>  geometries, const std::shared_ptr<mathFunctions::MathFunction>& insideValues = {},
+    explicit Union(std::vector<std::shared_ptr<ablate::mathFunctions::geom::Geometry>> geometries, const std::shared_ptr<mathFunctions::MathFunction>& insideValues = {},
                    const std::shared_ptr<mathFunctions::MathFunction>& outsideValues = {});
 
     bool InsideGeometry(const double* xyz, const int& ndims, const double& time) const override;

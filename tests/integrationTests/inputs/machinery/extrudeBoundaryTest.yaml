@@ -1,7 +1,7 @@
 # Simple test for extruding the boundary in 2D
 ---
 environment:
-  title: _extrudeBoundarytest
+  title: _extrudeBoundaryTest
   tagDirectory: false
 arguments:
   dm_plex_separate_marker: ""
@@ -10,7 +10,7 @@ timestepper:
     interval: 0
   arguments: {}
   domain: !ablate::domain::BoxMesh
-    name: simpleBoxField
+    name: extrudedMesh
     faces: [ 4, 4 ]
     lower: [ 0, 0 ]
     upper: [ 1, 1 ]
@@ -23,6 +23,8 @@ timestepper:
     modifiers:
       - !ablate::domain::modifiers::ExtrudeLabel
         regions:
+          - name: marker
+            value: 1
           - name: marker
             value: 4
       - !ablate::monitors::DmViewFromOptions
