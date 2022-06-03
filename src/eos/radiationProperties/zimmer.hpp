@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_RADIATIONPROPERTIESZIMMER_H
 #define ABLATELIBRARY_RADIATIONPROPERTIESZIMMER_H
 
+#include <array>
 #include "eos/radiationProperties/radiationProperties.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "radiationProperties.hpp"

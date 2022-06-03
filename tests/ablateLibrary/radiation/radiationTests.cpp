@@ -10,6 +10,7 @@
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "domain/modifiers/setFromOptions.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "eos/radiationProperties/radiationProperties.hpp"
@@ -34,7 +35,7 @@ class RadiationTestFixture : public testingResources::MpiTestFixture, public ::t
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
-static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f) {
+static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double>& f) {
     /** b-a represents the size of the total domain that is being integrated over
      * The number of elements in the vector that is being integrated over
      * Initialize the sum of all middle elements
@@ -44,7 +45,7 @@ static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f) {
      * Compute the total final integral
      * */
     PetscReal I;
-    PetscReal n = static_cast<double>(f.size());  //!< The number of elements in the vector that is being integrated over
+    int n = (int)f.size();  //!< The number of elements in the vector that is being integrated over
     int margin = 0;
     PetscReal f_sum = 0;  //!< Initialize the sum of all middle elements
 
@@ -58,7 +59,7 @@ static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double> f) {
             }
             f_sum += f[i];  //!< Add this value to the total every time
         }
-        I = ((b - a) / (3 * n)) * (f[0] + f_sum + f[n]);  //!< Compute the total final integral
+        I = ((b - a) / (3 * n)) * (f[0] + f_sum + f[n - 1]);  //!< Compute the total final integral
     } else {
         I = 0;
     }
@@ -178,7 +179,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         auto domain = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                 fieldDescriptors,
-                                                                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
+                                                                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::SetFromOptions>(
+                                                                    ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}))},
                                                                 GetParam().meshFaces,
                                                                 GetParam().meshStart,
                                                                 GetParam().meshEnd,

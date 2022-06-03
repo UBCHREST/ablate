@@ -20,9 +20,8 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      * @param rayNumber
      * @param options other options
      */
-    Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
+    Radiation(std::string solverId, std::shared_ptr<domain::Region> region, PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
               std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel, std::shared_ptr<ablate::monitors::logs::Log> = {});
-    ~Radiation() override;
 
     /** Returns the black body intensity for a given temperature and emissivity*/
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
@@ -43,8 +42,6 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      */
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
-    const PetscInt raynumber;
-
    private:
     /// Class Methods
     void RayInit();
@@ -57,10 +54,10 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
 
     /// Class inputs and Variables
-    PetscInt dim;     // Number of dimensions that the domain exists within
-    PetscReal h;      // This is the step size which should be set as the minimum cell radius
-    PetscInt nTheta;  // The number of angles to solve with, given by user input
-    PetscInt nPhi;    // The number of angles to solve with, given by user input (x2)
+    PetscInt dim = 0;  // Number of dimensions that the domain exists within
+    PetscReal h = 0;   // This is the step size which should be set as the minimum cell radius
+    PetscInt nTheta;   // The number of angles to solve with, given by user input
+    PetscInt nPhi;     // The number of angles to solve with, given by user input (x2)
 
     /**
      * Store a log used to output the required information
@@ -71,4 +68,4 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
 };
 
 }  // namespace ablate::radiation
-#endif  // ABLATELIBRARY_BOUNDARYSOLVER_HPP
+#endif
