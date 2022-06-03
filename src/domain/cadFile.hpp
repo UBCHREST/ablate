@@ -10,10 +10,10 @@ namespace ablate::domain {
 class CadFile : public Domain {
    private:
     //! read in the cad file and expand to volumetric mesh
-    static DM ReadDMFromCadFile(const std::string& name, const std::filesystem::path& path, const std::shared_ptr<parameters::Parameters>& surfaceOptions);
+    static DM ReadDMFromCadFile(const std::string& name, const std::filesystem::path& path, const std::shared_ptr<parameters::Parameters>& surfaceOptions, const std::string& generator);
 
    public:
-    explicit CadFile(const std::string& nameIn, const std::filesystem::path& path, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
+    explicit CadFile(const std::string& nameIn, const std::filesystem::path& path, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string generator,
                      std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {}, const std::shared_ptr<parameters::Parameters>& options = {},
                      const std::shared_ptr<parameters::Parameters>& surfaceOptions = {});
 
