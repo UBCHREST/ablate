@@ -1,13 +1,14 @@
 #include "extrudeLabel.hpp"
 #include <petsc/private/dmimpl.h>
 #include <petscdmplextransform.h>
+#include <utility>
 #include "utilities/petscError.hpp"
 
-ablate::domain::modifiers::ExtrudeLabel::ExtrudeLabel(std::vector<std::shared_ptr<domain::Region>> regions) : regions(regions) {}
+ablate::domain::modifiers::ExtrudeLabel::ExtrudeLabel(std::vector<std::shared_ptr<domain::Region>> regions, double thickness) : regions(std::move(regions)), thickness(thickness) {}
 
 std::string ablate::domain::modifiers::ExtrudeLabel::ToString() const {
-    std::string string = "ablate::domain::modifiers::ExtrudeLabel: (" ;
-    for(const auto& region : regions){
+    std::string string = "ablate::domain::modifiers::ExtrudeLabel: (";
+    for (const auto &region : regions) {
         string += region->ToString() + ",";
     }
     string.back() = ')';
@@ -43,9 +44,25 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
         ISDestroy(&bdIS) >> checkError;
     }
 
+    // set the options for the transform
+    PetscOptions transformOptions;
+    PetscOptionsCreate(&transformOptions) >> checkError;
+    PetscOptionsInsertString(transformOptions, "-dm_plex_transform_type extrude");
+    PetscOptionsInsertString(transformOptions, "-dm_plex_transform_extrude_use_tensor 0");
+
+    // determine if the thickness needs to be computed
+    PetscReal extrudeThickness = thickness;
+    if (extrudeThickness == 0.0) {
+        // Get the fv geom
+        DMPlexGetGeometryFVM(dm, nullptr, nullptr, &extrudeThickness) >> checkError;
+        extrudeThickness *= 2.0;  // double the thickness
+    }
+    const auto extrudeThicknessString = std::to_string(extrudeThickness);
+    PetscOptionsSetValue(transformOptions, "-dm_plex_transform_extrude_thickness", extrudeThicknessString.c_str());
+
     // extrude the mesh
     DM dmAdapt;
-    DMPlexTransformAdaptLabel(dm, nullptr, adaptLabel, nullptr, &dmAdapt) >> checkError;
+    DMPlexTransformAdaptLabel(dm, nullptr, adaptLabel, nullptr, transformOptions, &dmAdapt) >> checkError;
 
     if (dmAdapt) {
         (dmAdapt)->prealloc_only = dm->prealloc_only; /* maybe this should go .... */
@@ -56,26 +73,22 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
     }
     ReplaceDm(dm, dmAdapt);
 
+    PetscOptionsDestroy(&transformOptions) >> checkError;
     DMLabelDestroy(&adaptLabel) >> checkError;
 }
 
-PetscErrorCode ablate::domain::modifiers::ExtrudeLabel::DMPlexTransformAdaptLabel(DM dm, Vec metric, DMLabel adaptLabel, DMLabel rgLabel, DM *rdm) {
+PetscErrorCode ablate::domain::modifiers::ExtrudeLabel::DMPlexTransformAdaptLabel(DM dm, Vec, DMLabel adaptLabel, DMLabel, PetscOptions transformOptions, DM *rdm) {
     DMPlexTransform tr;
     DM cdm, rcdm;
-    PetscOptions petscOptions;
 
     PetscFunctionBegin;
     PetscCall(DMPlexTransformCreate(PetscObjectComm((PetscObject)dm), &tr));
-
-    PetscOptionsCreate(&petscOptions) >> checkError;
-    // build the string
-    PetscOptionsInsertString(petscOptions, "-dm_plex_transform_type extrude");
-    PetscCall(PetscObjectSetOptions((PetscObject)tr, petscOptions));
+    PetscCall(PetscObjectSetOptions((PetscObject)tr, transformOptions));
     PetscCall(DMPlexTransformSetDM(tr, dm));
     PetscCall(DMPlexTransformSetFromOptions(tr));
     PetscCall(DMPlexTransformSetActive(tr, adaptLabel));
     PetscCall(DMPlexTransformSetUp(tr));
-    PetscCall(PetscObjectViewFromOptions((PetscObject)tr, NULL, "-dm_plex_transform_view"));
+    PetscCall(PetscObjectViewFromOptions((PetscObject)tr, nullptr, "-dm_plex_transform_view"));
     PetscCall(DMPlexTransformApply(tr, dm, rdm));
     PetscCall(DMCopyDisc(dm, *rdm));
     PetscCall(DMGetCoordinateDM(dm, &cdm));
@@ -84,10 +97,10 @@ PetscErrorCode ablate::domain::modifiers::ExtrudeLabel::DMPlexTransformAdaptLabe
     PetscCall(DMPlexTransformCreateDiscLabels(tr, *rdm));
     PetscCall(DMCopyDisc(dm, *rdm));
     PetscCall(DMPlexTransformDestroy(&tr));
-    PetscCall(PetscOptionsDestroy(&petscOptions));
     PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::ExtrudeLabel, "Extrudes a layer of cells based upon the region provided",
-         ARG(std::vector<ablate::domain::Region>, "regions", "the region(s) describing the boundary cells"));
+         ARG(std::vector<ablate::domain::Region>, "regions", "the region(s) describing the boundary cells"),
+         OPT(double, "thickness", "thickness for the extruded cells. If default (0) the 2 * minimum cell radius is used"));

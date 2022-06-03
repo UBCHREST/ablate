@@ -1,4 +1,4 @@
-DM Object: 1 MPI process
+DM Object: simpleBoxField 1 MPI process
   type: plex
 (.*) in 2 dimensions:<expects> *
 Supports:

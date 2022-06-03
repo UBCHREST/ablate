@@ -2,7 +2,7 @@
 #include <stdexcept>
 #include "utilities/petscError.hpp"
 
-ablate::mathFunctions::geom::Surface::Surface(const std::filesystem::path& meshPath, const std::shared_ptr<mathFunctions::MathFunction> &insideValues,
+ablate::mathFunctions::geom::Surface::Surface(const std::filesystem::path &meshPath, const std::shared_ptr<mathFunctions::MathFunction> &insideValues,
                                               const std::shared_ptr<mathFunctions::MathFunction> &outsideValues, int egadsVerboseLevel)
     : Geometry(insideValues, outsideValues) {
     // Create a surface from the meshFile

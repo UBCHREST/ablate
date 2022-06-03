@@ -84,6 +84,7 @@ INSTANTIATE_TEST_SUITE_P(ReactingFlow, IntegrationTestsSpecifier,
 INSTANTIATE_TEST_SUITE_P(
     Machinery, IntegrationTestsSpecifier,
     testing::Values((MpiTestParameter){.testName = "inputs/machinery/dmViewFromOptions.yaml", .nproc = 1, .expectedOutputFile = "outputs/machinery/dmViewFromOptions.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/machinery/extrudeBoundaryTest.yaml", .nproc = 1, .expectedOutputFile = "outputs/machinery/extrudeBoundaryTest.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/machinery/subDomainFVM.yaml",
                                        .nproc = 1,
                                        .expectedOutputFile = "outputs/machinery/subDomainFVM/subDomainFVM.txt",

@@ -8,10 +8,10 @@
 #include "mathFunctions/geom/cylinderShell.hpp"
 #include "mathFunctions/geom/difference.hpp"
 #include "mathFunctions/geom/geometry.hpp"
+#include "mathFunctions/geom/inverse.hpp"
 #include "mathFunctions/geom/sphere.hpp"
 #include "mathFunctions/geom/surface.hpp"
 #include "mathFunctions/geom/union.hpp"
-#include "mathFunctions/geom/inverse.hpp"
 
 using namespace ablate::mathFunctions::geom;
 namespace ablateTesting::mathFunctions::geom {
@@ -209,9 +209,7 @@ INSTANTIATE_TEST_SUITE_P(
                 []() {
                     return std::make_shared<Inverse>(std::make_shared<Sphere>(std::vector<double>{0.0, 0.0, 1.99}, 2, ablate::mathFunctions::Create("20"), ablate::mathFunctions::Create("4.2")));
                 },
-            .expectedResults = {{.xyz = {0.0, 0.0, 2.0}, .value = 4.2},
-                                {.xyz = {0.0, 0.0, 4.0}, .value = 20}
-            }}));
+            .expectedResults = {{.xyz = {0.0, 0.0, 2.0}, .value = 4.2}, {.xyz = {0.0, 0.0, 4.0}, .value = 20}}}));
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 struct GeometryTestVectorParameters {
@@ -454,14 +452,11 @@ INSTANTIATE_TEST_SUITE_P(
                                                         ablate::mathFunctions::Create(-10.0));
                 },
             .expectedResults = {{.xyz = {1.25, 1.25}, .value = {10}}, {.xyz = {1.75, 1.75}, .value = {-10}}, {.xyz = {2.25, 2.25}, .value = {-10}}, {.xyz = {2.25, 1.25}, .value = {-10}}}},
-        (GeometryTestVectorParameters){
-            .createGeom =
-                []() {
-                    return std::make_shared<Inverse>(std::make_shared<Sphere>(std::vector<double>{0.0, 0.0, 1.99}, 2, ablate::mathFunctions::Create("20, 13"), ablate::mathFunctions::Create("4.2, 4.2")));
-                },
-            .expectedResults = {{.xyz = {0.0, 0.0, 2.0}, .value = {4.2, 4.2}},
-                                {.xyz = {0.0, 0.0, 4.0}, .value = {20, 13}}
-            }}
-        ));
+        (GeometryTestVectorParameters){.createGeom =
+                                           []() {
+                                               return std::make_shared<Inverse>(std::make_shared<Sphere>(
+                                                   std::vector<double>{0.0, 0.0, 1.99}, 2, ablate::mathFunctions::Create("20, 13"), ablate::mathFunctions::Create("4.2, 4.2")));
+                                           },
+                                       .expectedResults = {{.xyz = {0.0, 0.0, 2.0}, .value = {4.2, 4.2}}, {.xyz = {0.0, 0.0, 4.0}, .value = {20, 13}}}}));
 
 }  // namespace ablateTesting::mathFunctions::geom

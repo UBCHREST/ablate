@@ -8,6 +8,12 @@ std::ostream& ablate::domain::modifiers::operator<<(std::ostream& os, const abla
 }
 void ablate::domain::modifiers::Modifier::ReplaceDm(DM& originalDm, DM& replaceDm) {
     if (replaceDm) {
+        // copy over the name
+        const char* name;
+        PetscObjectName((PetscObject)originalDm) >> ablate::checkError;
+        PetscObjectGetName((PetscObject)originalDm, &name) >> ablate::checkError;
+        PetscObjectSetName((PetscObject)replaceDm, name) >> ablate::checkError;
+
         // Copy over the options object
         PetscOptions options;
         PetscObjectGetOptions((PetscObject)originalDm, &options) >> checkError;
