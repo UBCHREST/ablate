@@ -6,6 +6,8 @@ environment:
 arguments:
   dm_plex_separate_marker: ""
 timestepper:
+  io:
+    interval: 0
   arguments: {}
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
@@ -16,17 +18,19 @@ timestepper:
       dm_refine: 0
     fields:
       - name: exampleFVField
-        components: ["x", "y"]
+        components: ["xx", "yy"]
         type: FVM
     modifiers:
       - !ablate::domain::modifiers::ExtrudeLabel
         regions:
-          - name: Face Sets
+          - name: marker
             value: 4
       - !ablate::monitors::DmViewFromOptions
         options: ascii::ascii_info_detail
       - !ablate::monitors::DmViewFromOptions
         options: ":$OutputDirectory/mesh.tex:ascii_latex"
+      - !ablate::monitors::DmViewFromOptions
+        options: "hdf5:$OutputDirectory/dm.h5"
   initialization:
     - fieldName: "exampleFVField"
       field: "x, y"

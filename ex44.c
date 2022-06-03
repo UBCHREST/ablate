@@ -84,6 +84,12 @@ int main(int argc, char **argv)
     if (adaptLabel) {PetscCall(DMAdaptLabel(dm, adaptLabel, &dma));}
     else            {PetscCall(DMExtrude(dm, 3, &dma));}
     PetscCall(PetscObjectSetName((PetscObject) dma, "Adapted Mesh"));
+
+    PetscInt dim;
+    PetscCall(DMGetDimension( dma,&dim));
+    printf("Dim %d", dim);
+
+
     PetscCall(DMLabelDestroy(&adaptLabel));
     PetscCall(DMDestroy(&dm));
     PetscCall(DMViewFromOptions(dma, NULL, "-adapt_dm_view"));
