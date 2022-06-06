@@ -74,5 +74,9 @@ add_executable(ex37 ex37.c)
 target_link_libraries(ex37 PRIVATE ablateLibrary)
 ablate_default_target_compile_options_cxx(ex37)
 
+add_executable(extrudeExample extrudeExample.c)
+target_link_libraries(extrudeExample PRIVATE ablateLibrary)
+ablate_default_target_compile_options_cxx(extrudeExample)
+
 # include system specific hacks
 include(systemHacks.cmake)

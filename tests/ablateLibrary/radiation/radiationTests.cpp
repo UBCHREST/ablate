@@ -10,7 +10,6 @@
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
-#include "domain/modifiers/setFromOptions.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "eos/radiationProperties/radiationProperties.hpp"
@@ -179,13 +178,13 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         auto domain = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                 fieldDescriptors,
-                                                                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::SetFromOptions>(
-                                                                    ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}))},
+                                                                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
                                                                 GetParam().meshFaces,
                                                                 GetParam().meshStart,
                                                                 GetParam().meshEnd,
                                                                 std::vector<std::string>{},
-                                                                false);
+                                                                false,
+                                                                ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}));
 
         IS allPointIS;
         DMGetStratumIS(domain->GetDM(), "dim", 2, &allPointIS) >> testErrorChecker;

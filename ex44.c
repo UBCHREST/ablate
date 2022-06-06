@@ -86,7 +86,7 @@ int main(int argc, char **argv)
     PetscCall(PetscObjectSetName((PetscObject) dma, "Adapted Mesh"));
 
     PetscInt dim;
-    PetscCall(DMGetDimension( dma,&dim));
+    PetscCall(DMGetDimension( dm,&dim));
     printf("Dim %d", dim);
 
 

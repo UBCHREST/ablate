@@ -22,4 +22,6 @@ target_sources(ablateLibrary
         labelSupport.cpp
         extrudeLabel.hpp
         extrudeLabel.cpp
+        tagMeshBoundaryFaces.hpp
+        tagMeshBoundaryFaces.cpp
         )
