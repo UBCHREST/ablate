@@ -42,7 +42,7 @@ DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std
 
     // with the surface mesh created, compute the volumetric dm
     DM dm;
-    DMPlexGenerate(surfaceDm, generator.empty() ? nullptr : generator.c_str(), PETSC_TRUE, &dm) >> checkError;
+    DMPlexGenerate(surfaceDm, generator.empty() ? "tetgen" : generator.c_str(), PETSC_TRUE, &dm) >> checkError;
     PetscObjectSetName((PetscObject)dm, name.c_str()) >> checkError;
     DMPlexSetRefinementUniform(dm, PETSC_TRUE) >> checkError;
 
@@ -60,7 +60,7 @@ DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std
 #include "registrar.hpp"
 REGISTER(ablate::domain::Domain, ablate::domain::CadFile, "read a cad from a file", ARG(std::string, "name", "the name of the domain/mesh object"),
          ARG(std::filesystem::path, "path", "the path to the cad file"), OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
-         OPT(std::string, "generator", "the mesh generation package name (default is petscDecide)"),
+         OPT(std::string, "generator", "the mesh generation package name (default is 'tetgen')"),
          OPT(std::vector<ablate::domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"),
          OPT(ablate::parameters::Parameters, "options", "PETSc options specific to this dm.  Default value allows the dm to access global options."),
          OPT(ablate::parameters::Parameters, "surfaceOptions", "PETSc options specific to the temporary surface dm.  Default value allows the dm to access global options."));
