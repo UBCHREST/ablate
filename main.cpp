@@ -4,10 +4,10 @@
 #include <parameters/petscPrefixOptions.hpp>
 #include <utilities/mpiError.hpp>
 #include "builder.hpp"
-#include "cmake-build-debug-ablate/default/_deps/cppparser-src/src/localPath.hpp"
 #include "environment/download.hpp"
 #include "environment/runEnvironment.hpp"
 #include "listing.hpp"
+#include "localPath.hpp"
 #include "utilities/petscError.hpp"
 #include "yamlParser.hpp"
 
@@ -62,10 +62,10 @@ int main(int argc, char** args) {
 
     // locate or download the file
     std::filesystem::path filePath;
-    if(ablate::environment::Download::IsUrl(filename)){
+    if (ablate::environment::Download::IsUrl(filename)) {
         ablate::environment::Download downloader(filename);
         filePath = downloader.Locate();
-    }else{
+    } else {
         cppParser::LocalPath locator(filename);
         filePath = locator.Locate();
     }
