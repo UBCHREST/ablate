@@ -17,6 +17,8 @@ target_sources(testingResources
         convergenceTester.cpp
         temporaryPath.hpp
         temporaryPath.cpp
+        testRunEnvironment.hpp
+        testRunEnvironment.cpp
         )
 
 # Allow public access to the header files in the directory

@@ -5,10 +5,9 @@
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "monitors/logs/fileLog.hpp"
-#include "parameters/mapParameters.hpp"
+#include "testRunEnvironment.hpp"
 
 using namespace ablate;
 
@@ -53,8 +52,7 @@ TEST_P(FileLogTestFixture, ShouldPrintToFileInOutputDirectory) {
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
-            parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
-            environment::RunEnvironment::Setup(parameters);
+            testingResources::TestRunEnvironment testRunEnvironment(tempDir, "");
 
             // Create the fileLog
             monitors::logs::FileLog log("logFile.txt");
@@ -88,8 +86,7 @@ TEST_P(FileLogTestFixture, ShouldAppendToFileInOutputDirectory) {
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
-            parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
-            environment::RunEnvironment::Setup(parameters);
+            testingResources::TestRunEnvironment testRunEnvironment(tempDir);
 
             {
                 // Create the fileLog
