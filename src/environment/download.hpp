@@ -1,8 +1,10 @@
 #ifndef ABLATELIBRARY_DOWNLOAD_HPP
 #define ABLATELIBRARY_DOWNLOAD_HPP
 
+#include <algorithm>
 #include <array>
 #include "pathLocator.hpp"
+
 namespace ablate::environment {
 class Download : public cppParser::PathLocator {
    private:
@@ -35,7 +37,7 @@ class Download : public cppParser::PathLocator {
      * simple helper function to determine if the provided string is a url
      * @return
      */
-    static bool IsUrl(const std::string& testUrl) {
+    inline static bool IsUrl(const std::string& testUrl) {
         return std::any_of(urlPrefixes.begin(), urlPrefixes.end(), [&testUrl](const auto& prefix) { return testUrl.rfind(prefix, 0) == 0; });
     }
 };
