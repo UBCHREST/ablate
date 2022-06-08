@@ -1,10 +1,11 @@
 #include "dmViewFromOptions.hpp"
 #include <utilities/petscError.hpp>
 #include <utilities/petscOptions.hpp>
+#include <utility>
 #include "environment/runEnvironment.hpp"
 #include "solver/solver.hpp"
 
-ablate::monitors::DmViewFromOptions::DmViewFromOptions(Scope scope, std::string options, std::string optionNameIn)
+ablate::monitors::DmViewFromOptions::DmViewFromOptions(Scope scope, std::string options, const std::string& optionNameIn)
     : petscOptions(nullptr), optionName(optionNameIn.empty() ? "-CallDmViewFromOptions" : optionNameIn), scope(scope) {
     // Set the options
     if (!options.empty()) {
@@ -17,7 +18,7 @@ ablate::monitors::DmViewFromOptions::DmViewFromOptions(Scope scope, std::string 
     }
 }
 
-ablate::monitors::DmViewFromOptions::DmViewFromOptions(std::string options, std::string optionNameIn) : DmViewFromOptions(Scope::INITIAL, options, optionNameIn) {}
+ablate::monitors::DmViewFromOptions::DmViewFromOptions(std::string options, std::string optionNameIn) : DmViewFromOptions(Scope::INITIAL, std::move(options), std::move(optionNameIn)) {}
 
 ablate::monitors::DmViewFromOptions::~DmViewFromOptions() {
     if (petscOptions) {
@@ -46,7 +47,7 @@ PetscErrorCode ablate::monitors::DmViewFromOptions::DMViewFromOptions(DM dm) {
     PetscBool flg;
     PetscViewerFormat format;
 
-    ierr = PetscOptionsGetViewer(PetscObjectComm((PetscObject)dm), petscOptions, NULL, optionName.c_str(), &viewer, &format, &flg);
+    ierr = PetscOptionsGetViewer(PetscObjectComm((PetscObject)dm), petscOptions, nullptr, optionName.c_str(), &viewer, &format, &flg);
     CHKERRQ(ierr);
 
     if (flg) {
@@ -65,14 +66,14 @@ PetscErrorCode ablate::monitors::DmViewFromOptions::DMViewFromOptions(DM dm) {
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::monitors::DmViewFromOptions::CallDmViewFromOptions(TS ts, PetscInt steps, PetscReal time, Vec u, void* mctx) {
+PetscErrorCode ablate::monitors::DmViewFromOptions::CallDmViewFromOptions(TS ts, PetscInt, PetscReal, Vec, void* mctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
     DM dm;
     ierr = TSGetDM(ts, &dm);
     CHKERRQ(ierr);
 
-    DmViewFromOptions* monitor = (DmViewFromOptions*)mctx;
+    auto monitor = (DmViewFromOptions*)mctx;
     if (monitor->scope == Scope::MONITOR) {
         ierr = monitor->DMViewFromOptions(dm);
     }
@@ -108,11 +109,13 @@ std::istream& ablate::monitors::operator>>(std::istream& is, ablate::monitors::D
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::monitors::Monitor, ablate::monitors::DmViewFromOptions, "replicates the DMViewFromOptions function in PETSC",
+REGISTER(ablate::monitors::Monitor, ablate::monitors::DmViewFromOptions,
+         "replicates the [DMViewFromOptions](https://petsc.org/release/docs/manualpages/Viewer/PetscOptionsGetViewer.html) function in PETSC",
          ENUM(ablate::monitors::DmViewFromOptions::Scope, "scope", "determines if DMViewFromOptions is called initially (initial) or every time step (monitor)"),
          OPT(std::string, "options", "if provided these options are used for the DMView call, otherwise global options is used"),
          OPT(std::string, "optionName", "if provided the optionsName is used for DMViewFromOptions.  Needed if using global options."));
 
-REGISTER(ablate::domain::modifiers::Modifier, ablate::monitors::DmViewFromOptions, "replicates the DMViewFromOptions function in PETSC",
+REGISTER(ablate::domain::modifiers::Modifier, ablate::monitors::DmViewFromOptions,
+         "replicates the [DMViewFromOptions](https://petsc.org/release/docs/manualpages/Viewer/PetscOptionsGetViewer.html) function in PETSC",
          OPT(std::string, "options", "if provided these options are used for the DMView call, otherwise global options is used"),
          OPT(std::string, "optionName", "if provided the optionsName is used for DMViewFromOptions.  Needed if using global options."));

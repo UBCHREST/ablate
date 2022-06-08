@@ -44,8 +44,30 @@ DM ablate::domain::BoxMesh::CreateBoxDM(const std::string& name, std::vector<int
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::domain::Domain, ablate::domain::BoxMesh, "simple uniform box mesh", ARG(std::string, "name", "the name of the domain/mesh object"),
-         OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
+REGISTER(ablate::domain::Domain, ablate::domain::BoxMesh,
+         "Create a simple box mesh (1,2,3) dimension When used with the dm_plex_separate_marker each boundary \"marker\" or \"Face Sets\" as  1D:\n"
+         "### 1D\n"
+         "| Direction | Description | Value |\n"
+         "| --- | --- | --- |\n"
+         "|  x- | left  |1|\n"
+         "|  x+ | right |2|\n"
+         "### 2D:\n"
+         "| Direction | Description | Value |\n"
+         "| --- | --- |-----|\n"
+         "|y+  | top    | 3   |\n"
+         "|y-  | bottom | 1   |\n"
+         "|x+  | right  | 2   |\n"
+         "|x-  | left   | 4   |\n"
+         " ### 3D:\n"
+         "| Direction | Description | Value |\n"
+         "| --- | --- |-----|\n"
+         " | y- | bottom | 1 |\n"
+         " | y+ | top    | 2|\n"
+         " | z+ | front  | 3|\n"
+         " | z- | back   | 4|\n"
+         " | x+ | right  | 5|\n"
+         " | x- | left   | 6|",
+         ARG(std::string, "name", "the name of the domain/mesh object"), OPT(std::vector<ablate::domain::FieldDescriptor>, "fields", "a list of fields/field descriptors"),
          OPT(std::vector<ablate::domain::modifiers::Modifier>, "modifiers", "a list of domain modifier"), ARG(std::vector<int>, "faces", "the number of faces in each direction"),
          ARG(std::vector<double>, "lower", "the lower bound of the mesh"), ARG(std::vector<double>, "upper", "the upper bound of the mesh"),
          OPT(std::vector<std::string>, "boundary", "custom boundary types (NONE, GHOSTED, MIRROR, PERIODIC)"), OPT(bool, "simplex", "sets if the elements/cells are simplex"),

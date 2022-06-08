@@ -33,7 +33,7 @@ class DmViewFromOptions : public Monitor, public ablate::domain::modifiers::Modi
      * @param options
      * @param optionName
      */
-    explicit DmViewFromOptions(Scope scope, std::string options = {}, std::string optionName = {});
+    explicit DmViewFromOptions(Scope scope, std::string options = {}, const std::string& optionName = {});
 
     /**
      * constructor without allowing the monitor to be set (Set to INITIAL by default)

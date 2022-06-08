@@ -13,8 +13,17 @@ namespace ablate::domain::modifiers {
  */
 class ExtrudeLabel : public Modifier {
    private:
-    //! label to create
+    //! boundary labels to create.  The labels must be complete
     const std::vector<std::shared_ptr<domain::Region>> regions;
+
+    //! optional label to tag the new boundary interface (between original and extruded regions)
+    const std::shared_ptr<domain::Region> boundaryRegion;
+
+    //! optional label to tag the original cell
+    const std::shared_ptr<domain::Region> originalRegion;
+
+    //! optional label to tag the newly extruded cell
+    std::shared_ptr<domain::Region> extrudedRegion;
 
     //! thickness for the extruded cells. If default (0) the 2 * minimum cell radius is used
     const double thickness;
@@ -32,7 +41,16 @@ class ExtrudeLabel : public Modifier {
     static PetscErrorCode DMPlexTransformAdaptLabel(DM dm, PETSC_UNUSED Vec metric, DMLabel adaptLabel, PETSC_UNUSED DMLabel rgLabel, PetscOptions transformOptions, DM *rdm);
 
    public:
-    explicit ExtrudeLabel(std::vector<std::shared_ptr<domain::Region>>, double thickness = {});
+    /**
+     * extrude a label on a boundary
+     * @param regions the label(s) describing the faces to extrude
+     * @param boundaryRegion the new label describing the faces between the original and extruded regions
+     * @param originalRegion label describing the original mesh
+     * @param extrudedRegion label describing the new extruded cells
+     * @param thickness
+     */
+    explicit ExtrudeLabel(std::vector<std::shared_ptr<domain::Region>> regions, std::shared_ptr<domain::Region> boundaryRegion, std::shared_ptr<domain::Region> originalRegion,
+                          std::shared_ptr<domain::Region> extrudedRegion, double thickness = {});
 
     void Modify(DM &) override;
 

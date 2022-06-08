@@ -41,6 +41,7 @@ int main(int argc, char **argv)
     PetscCall(DMCreateLabel(dm, "marker"));
     PetscCall(DMGetLabel(dm, "marker", &marker));
     PetscCall(DMPlexMarkBoundaryFaces(dm, 1, marker));
+    PetscCall(DMPlexLabelComplete(dm, marker));
 
     // now extrude boundary
     DM dma;
