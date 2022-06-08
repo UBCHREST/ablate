@@ -1108,7 +1108,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
         .p0l = p02,
     };
     SNESSetFunction(snes, r, FormFunctionStiff, &decodeDataStruct);
-    SNESSetJacobian(snes, J, J, FormJacobianGas, &decodeDataStruct);
+    SNESSetJacobian(snes, J, J, FormJacobianStiff, &decodeDataStruct);
     // default Newton's method
     //      SNESSetType(snes, "newtontr");
     //      SNESSetTolerances(SNES snes, PetscReal atol, PetscReal rtol, PetscReal stol, PetscInt its, PetscInt fcts);
