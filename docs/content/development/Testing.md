@@ -17,11 +17,11 @@ There are some useful command line flags that can be used when debugging tests:
 Automated testing is performed on a series of linux Docker images automatically before a pull request can be merged.  If the tests are passing locally but failing for a pull request you can debug using the same environment as the pull request using [Downloading and Building with CLion (with docker dependencies)]({{ site.baseurl }}{%link content/development/BuildingAblateLocally.md %}).  Tests can also be run directly in docker using the following commands.
 
 ```bash
-# Build the docker testing image
+# Build the default docker testing image
 docker build -t testing_image -f DockerTestFile .
 
-# or for 64 bit ints
-docker build -t testing_image --build-arg PETSC_BUILD_ARCH='arch-ablate-opt-64' -f DockerTestFile .
+# or select a specific base version from https://github.com/orgs/UBCHREST/packages?tab=packages&q=ablate-dependencies
+docker build -t testing_image --build-arg ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies-clang-index64:latest -f DockerTestFile .
 
 # Run the built tests and view results
 docker run --rm testing_image 
