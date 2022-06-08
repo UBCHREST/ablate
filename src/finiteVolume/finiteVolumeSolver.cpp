@@ -27,11 +27,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     PetscDSSetFromOptions(subDomain->GetDiscreteSystem()) >> checkError;
 
     // Some petsc code assumes that a ghostLabel has created, so create one
-    PetscBool ghostLabel;
-    DMHasLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
-    if (!ghostLabel) {
-        throw std::runtime_error("The FiniteVolumeSolver expects ghost cells around the boundary even if the FiniteVolumeSolver region does not include the boundary.");
-    }
+    DMCreateLabel(subDomain->GetDM(), "ghost") >> checkError;
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {

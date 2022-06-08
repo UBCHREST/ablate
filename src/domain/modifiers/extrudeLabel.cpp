@@ -2,9 +2,12 @@
 #include <petsc/private/dmimpl.h>
 #include <petscdmplextransform.h>
 #include <utility>
+#include "tagLabelInterface.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::domain::modifiers::ExtrudeLabel::ExtrudeLabel(std::vector<std::shared_ptr<domain::Region>> regions, double thickness) : regions(std::move(regions)), thickness(thickness) {}
+ablate::domain::modifiers::ExtrudeLabel::ExtrudeLabel(std::vector<std::shared_ptr<domain::Region>> regions, std::shared_ptr<domain::Region> boundaryRegion,
+                                                      std::shared_ptr<domain::Region> originalRegion, std::shared_ptr<domain::Region> extrudedRegion, double thickness)
+    : regions(std::move(regions)), boundaryRegion(std::move(std::move(boundaryRegion))), originalRegion(std::move(originalRegion)), extrudedRegion(std::move(extrudedRegion)), thickness(thickness) {}
 
 std::string ablate::domain::modifiers::ExtrudeLabel::ToString() const {
     std::string string = "ablate::domain::modifiers::ExtrudeLabel: (";
@@ -71,8 +74,39 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
         PetscFree((dmAdapt)->mattype);
         PetscStrallocpy(dm->mattype, (char **)&(dmAdapt)->mattype);
     }
+
+    // create hew new labels for each region (on the new adapted dm)
+    DMLabel originalRegionLabel, extrudedRegionLabel;
+    PetscInt originalRegionValue, extrudedRegionValue;
+    originalRegion->CreateLabel(dmAdapt, originalRegionLabel, originalRegionValue);
+    extrudedRegion->CreateLabel(dmAdapt, extrudedRegionLabel, extrudedRegionValue);
+
+    // Determine the current max cell int
+    PetscInt originalMaxCell;
+    DMPlexGetHeightStratum(dm, 0, nullptr, &originalMaxCell) >> checkError;
+
+    // March over each cell in this rank and determine if it is original or not
+    PetscInt cStart, cEnd;
+    DMPlexGetHeightStratum(dmAdapt, 0, &cStart, &cEnd) >> checkError;
+    for (PetscInt c = cStart; c < cEnd; ++c) {
+        if (c < originalMaxCell) {
+            DMLabelSetValue(originalRegionLabel, c, originalRegionValue) >> checkError;
+        } else {
+            DMLabelSetValue(extrudedRegionLabel, c, extrudedRegionValue) >> checkError;
+        }
+    }
+
+    // complete the labels
+    DMPlexLabelComplete(dmAdapt, originalRegionLabel);
+    DMPlexLabelComplete(dmAdapt, extrudedRegionLabel);
+
+    // tag the interface between the faces (reuse modifier)
+    TagLabelInterface(originalRegion, extrudedRegion, boundaryRegion).Modify(dmAdapt);
+
+    // replace the dm
     ReplaceDm(dm, dmAdapt);
 
+    // cleanup
     PetscOptionsDestroy(&transformOptions) >> checkError;
     DMLabelDestroy(&adaptLabel) >> checkError;
 }
@@ -103,4 +137,6 @@ PetscErrorCode ablate::domain::modifiers::ExtrudeLabel::DMPlexTransformAdaptLabe
 #include "registrar.hpp"
 REGISTER(ablate::domain::modifiers::Modifier, ablate::domain::modifiers::ExtrudeLabel, "Extrudes a layer of cells based upon the region provided",
          ARG(std::vector<ablate::domain::Region>, "regions", "the region(s) describing the boundary cells"),
+         ARG(ablate::domain::Region, "boundaryRegion", "the new label describing the faces between the original and extruded regions"),
+         ARG(ablate::domain::Region, "originalRegion", "the region describing the original mesh"), ARG(ablate::domain::Region, "extrudedRegion", "the region describing the new extruded cells"),
          OPT(double, "thickness", "thickness for the extruded cells. If default (0) the 2 * minimum cell radius is used"));

@@ -12,6 +12,7 @@ void ablate::domain::modifiers::TagMeshBoundaryFaces::Modify(DM &dm) {
 
     // mark the boundary faces
     DMPlexMarkBoundaryFaces(dm, region->GetValue(), boundaryFaceLabel) >> checkError;
+    DMPlexLabelComplete(dm, boundaryFaceLabel) >> checkError;
 }
 
 #include "registrar.hpp"

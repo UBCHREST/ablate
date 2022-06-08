@@ -1,0 +1,211 @@
+# This problem statement tests pipe flow results suing both a lodi isothermal wall and sublimation boundary condition using extruded boundaries.  The sublimation uses a very high latentHeatOfFusion resulting is no blowing and therefore should behave like a wall.
+#
+---
+# metadata for the simulation
+environment:
+  title: _sublimationPipeWithExtrude
+  tagDirectory: false
+arguments:
+  # ask petsc to label the boundary values
+  dm_plex_separate_marker: ""
+# set up the time stepper responsible for marching in time
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 50
+    ts_dt: 1.0E-10
+    ts_adapt_safety: 0.9
+  # io controls how often the results are saved to a file for visualization and restart
+  io:
+    interval: 0 # results are saved at every 5 steps.  In real simulations this should be much larger.
+
+  # Create a simple box mesh to start
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 50, 10 ]
+    lower: [ 0.0, 0.0 ]
+    upper: [ .5, .1 ]
+    simplex: false
+    # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
+    options:
+      dm_label_view: flowRegion
+    modifiers:
+      # if using mpi, this modifier distributes cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+
+      # extrude all boundaries
+      - !ablate::domain::modifiers::ExtrudeLabel
+        # use the labels defined by the dm_plex_separate_marker option
+        regions:
+          - name: marker
+            value: 1 # this is the bottom boundary value
+          - name: marker
+            value: 2 # this is the right boundary value
+          - name: marker
+            value: 3 # this is the top boundary value
+          - name: marker
+            value: 4 # this is the left boundary value
+        # define a region for the new interface between the originalRegion and extrudedRegion
+        boundaryRegion:
+          name: boundaryFaces
+        # for all cells/faces/points that were in the original mesh before extrusion
+        originalRegion:
+          name: interiorCells
+        # for all cells/faces/points that were extruded.  This does include overlap faces that are in the boundaryRegion, originalRegion, and extrudedRegion regions
+        extrudedRegion:
+          name: boundaryCells
+
+      # remove the boundaryFaceBottom from the interiorCells and name the result as flowRegion
+      - !ablate::domain::modifiers::SubtractLabel
+        differenceRegion:
+          name: flowRegion
+        minuendRegion:
+          name: interiorCells
+        subtrahendRegions:
+          - name: marker
+            value: 1
+        incompleteLabel: true
+    fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+          # species are added to the flow through the eos.  This allows testing of the species transport equations
+          species: [ N2, H2O, O2 ]
+      # by adding a pressure field the code will compute and output pressure
+      - name: pressure
+        location: AUX
+        type: FVM
+  # set the initial conditions of the flow field
+  initialization:
+    # The ablate::finiteVolume::CompressibleFlowFields is a helper
+    # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        &flowFieldState
+        eos: *eos
+        pressure: 101325.0
+        temperature: 300
+        velocity: "0.0, 0.0"
+        # individual mass fractions must be passed to the flow field state to compute density, energy, etc.
+        massFractions: !ablate::finiteVolume::fieldFunctions::MassFractions
+          &massFractions
+          eos: *eos
+          values:
+            - fieldName: N2
+              field: "x > .1 ? .2 : 1.0"
+            - fieldName: H2O
+              field: " x> .1 ? .3 :0"
+            - fieldName: O2
+              field: " x > .1 ? .5 : 0"
+    # the same state can be used to internalize the DensityMassFractions field from density and mass fractions
+    - !ablate::finiteVolume::fieldFunctions::DensityMassFractions
+      state: *flowFieldState
+solvers:
+  # The compressible flow solver will solve the compressible flow equations over the interiorCells
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    # only apply this solver to the flowRegion, area without faces
+    region:
+      name: flowRegion
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::PressureGradientScaling
+        &pgs
+        eos: *eos
+        alphaInit: 100.0
+        maxAlphaAllowed: 100.0
+        domainLength: 0.165354
+        log: !ablate::monitors::logs::CsvLog
+          name: pgsLog
+
+    # a flux calculator must be specified to so solver for advection
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      pgs: *pgs
+
+    # cfl is used to compute the physics time step
+    parameters:
+      cfl: 0.5
+
+    # the default transport object assumes constant values for k, mu, diff
+    transport:
+      &transportModel
+      k: .2
+      mu: .1
+      diff: 1E-4
+
+    # share the existing eos with the compressible flow solver
+    eos: *eos
+
+    monitors:
+      # output the timestep and dt at each time step
+      - !ablate::monitors::TimeStepMonitor
+
+  # use a boundary solver to update the cells in the boundaryCellsLeft region to represent an inlet
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: marker
+      value: 4
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: false
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+        pgs: *pgs
+        velocity: "min(10, 10*t), 0" # for stability, increase the velocity slowly
+
+  # use a boundary solver to update the cells in the boundaryCellsRight region to represent an open pipe
+  - !ablate::boundarySolver::BoundarySolver
+    id: openBoundary
+    region:
+      name: marker
+      value: 2
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 101325.0
+        maxAcousticsLength: 1
+        pgs: *pgs
+
+  # use a boundary solver to update the cells in the boundaryCellsTop region to represent standard wall
+  - !ablate::boundarySolver::BoundarySolver
+    id: topBoundary
+    region:
+      name: marker
+      value: 3
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::IsothermalWall
+        eos: *eos
+        pgs: *pgs
+
+  # use a boundary solver to update the cells in the boundaryCellsBottom region to represent standard wall with a Sublimation BC
+  - !ablate::boundarySolver::BoundarySolver
+    id: bottomBoundary
+    region:
+      name: marker
+      value: 1
+    fieldBoundary:
+      name: boundaryFaces
+    processes:
+      - !ablate::boundarySolver::physics::Sublimation
+        latentHeatOfFusion: 1E30 # very high to turn off boundary sublimation for testing
+        transportModel: *transportModel
+        eos: *eos
+        pgs: *pgs
+        massFractions: *massFractions
+
+

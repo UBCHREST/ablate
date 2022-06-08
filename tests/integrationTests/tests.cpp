@@ -35,6 +35,10 @@ INSTANTIATE_TEST_SUITE_P(
         (MpiTestParameter){.testName = "inputs/compressibleFlow/compressibleSublimationPipe.yaml",
                            .nproc = 2,
                            .expectedOutputFile = "outputs/compressibleFlow/compressibleSublimationPipe/compressibleSublimationPipe.txt",
+                           .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/compressibleFlow/compressibleSublimationPipeWithExtrude.yaml",
+                           .nproc = 2,
+                           .expectedOutputFile = "outputs/compressibleFlow/compressibleSublimationPipe/compressibleSublimationPipe.txt",
                            .arguments = ""}),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
