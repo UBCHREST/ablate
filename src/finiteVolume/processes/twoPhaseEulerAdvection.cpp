@@ -928,7 +928,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     VecSetSizes(x, PETSC_DECIDE, 4);
     VecSetFromOptions(x);
     VecSet(x, (*density)); // set initial guess to conserved density, [rho1, rho2, e1, e2] = [rho, rho, rho, rho]
-//    VecSetValue(x, 0, 1.0, INSERT_VALUES);
+    VecSetValue(x, 0, 1.0, INSERT_VALUES);
+    VecSetValue(x, 1, 1000.0, INSERT_VALUES);
     VecDuplicate(x, &r);
 
     MatCreate(PETSC_COMM_SELF, &J);
@@ -959,7 +960,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
 //    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
     SNESSetFromOptions(snes);
     SNESSolve(snes, NULL, x);
-    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
+//    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
     const PetscScalar *ax;
     VecGetArrayRead(x, &ax);
     PetscReal rhoG = ax[0];
