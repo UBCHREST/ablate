@@ -55,7 +55,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
 
     /// Class inputs and Variables
     PetscInt dim = 0;  // Number of dimensions that the domain exists within
-    PetscReal h = 0;   // This is the step size which should be set as the minimum cell radius
+                       //    PetscReal h = 0;   // This is the step size which should be set as the minimum cell radius
     PetscInt nTheta;   // The number of angles to solve with, given by user input
     PetscInt nPhi;     // The number of angles to solve with, given by user input (x2)
 
@@ -64,7 +64,16 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      */
     const std::shared_ptr<ablate::monitors::logs::Log> log;
 
-    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps
+    std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
+    std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>> h;     //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
+    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij1;               //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij;                //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Izeros;            //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+
+    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Krad;
+    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Kones;
+
+    PetscInt domainPoints = 10;  //!< The number of points in each domain.
 };
 
 }  // namespace ablate::radiation
