@@ -54,14 +54,19 @@ void ablate::radiation::Radiation::RayInit() {
     std::vector<std::vector<std::vector<PetscInt>>> rayThetas(nPhi, rayPhis);
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rayCells(nTheta, rayThetas);
     rays.resize((cellRange.end - cellRange.start), rayCells);
-    h.resize((cellRange.end - cellRange.start), rayCells);  //!< Store a vector of space steps that the solver will use to compute absorption effects
-
+    
     std::vector<PetscReal> Ij1Phis;
     std::vector<std::vector<PetscReal>> Ij1Thetas(nPhi, Ij1Phis);
     std::vector<std::vector<std::vector<PetscReal>>> Ij1Cells(nTheta, Ij1Thetas);
     Ij1.resize((cellRange.end - cellRange.start), Ij1Cells);  //!< This sets the previous iteration intensity so that each ray can store multiple intensities.
 
     Krad.resize((cellRange.end - cellRange.start), Ij1Cells);
+    
+    std::vector<PetscReal> hDomains;
+    std::vector<std::vector<PetscReal>> hPhis;
+    std::vector<std::vector<std::vector<PetscReal>>> hThetas(nPhi, hPhis);
+    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> hCells(nTheta, hThetas);
+    h.resize((cellRange.end - cellRange.start), hCells);  //!< Store a vector of space steps that the solver will use to compute absorption effects
 
     /** Get setup things for the position vector of the current cell index
      * Declare the variables that will contain the geometry of the cells
@@ -120,10 +125,10 @@ void ablate::radiation::Radiation::RayInit() {
                     Ij1[ncells][ntheta][nphi].push_back(initialValue);  //!< The initial value to input for Ij1 should be 0 for the number of domains that the ray crosses
                     Krad[ncells][ntheta][nphi].push_back(anotherInitialValue);
                     rays[ncells][ntheta][nphi].push_back(rayDomains);
-                    h[ncells][ntheta][nphi].push_back(rayDomains);
+                    h[ncells][ntheta][nphi].push_back(hDomains);
 
                     PetscReal hhere = 0;       //!< Represents the space step of the current cell
-                    PetscInt currentCell = 0;  //!< Represents the cell that the ray is currently in. If the cell that the ray is in changes, then this cell should be added to the ray. Also, the space
+                    PetscInt currentCell = -1;  //!< Represents the cell that the ray is currently in. If the cell that the ray is in changes, then this cell should be added to the ray. Also, the space
                                                //!< step that was taken between cells should be saved.
 
                     nsteps = 0;                      //!< Reset the number of steps that the domain contains, moving on to a new domain
@@ -179,6 +184,7 @@ void ablate::radiation::Radiation::RayInit() {
                                 rays[ncells][ntheta][nphi][ndomain].push_back(cell[0].index);
                                 h[ncells][ntheta][nphi][ndomain].push_back(hhere);
                                 hhere = 0;
+                                currentCell = cell[0].index;
                             } else {
                                 hhere += hstep;
                             }

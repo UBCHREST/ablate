@@ -65,7 +65,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     const std::shared_ptr<ablate::monitors::logs::Log> log;
 
     std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
-    std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>> h;     //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
+    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> h;     //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
     std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij1;               //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
     std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij;                //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
     std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Izeros;            //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
