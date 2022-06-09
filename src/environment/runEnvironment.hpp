@@ -22,6 +22,9 @@ class RunEnvironment {
     RunEnvironment(RunEnvironment& other) = delete;
     void operator=(const RunEnvironment&) = delete;
 
+    // create an empty run env
+    static void Setup();
+
     // static access methods
     static void Setup(const parameters::Parameters&, std::filesystem::path inputPath = {});
     inline static const RunEnvironment& Get() {
