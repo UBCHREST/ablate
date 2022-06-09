@@ -9,6 +9,15 @@ class DistributeWithGhostCells : public Modifier {
    private:
     const int ghostCellDepth;
 
+    /***
+     * Tags the mpi ghost cells. This is a duplicate of the DMPlexCreateVTKLabel_Internal call in PETSc but works without calling DMPlexConstructGhostCells
+     * @param dm
+     * @param dmNew
+     * @return
+     */
+    PetscErrorCode TagMpiGhostCells(DM dmNew);
+
+
    public:
     explicit DistributeWithGhostCells(int ghostCellDepth = {});
 
