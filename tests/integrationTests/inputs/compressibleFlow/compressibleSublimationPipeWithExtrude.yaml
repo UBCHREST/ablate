@@ -30,12 +30,9 @@ timestepper:
     simplex: false
     # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
     options:
-      dm_label_view: flowRegion
+      dm_distribute: true # turn off default dm_distribute so that we can extrude label first
+      dm_distribute_overlap: 0
     modifiers:
-      # if using mpi, this modifier distributes cells
-      - !ablate::domain::modifiers::DistributeWithGhostCells
-        ghostCellDepth: 2
-
       # extrude all boundaries
       - !ablate::domain::modifiers::ExtrudeLabel
         # use the labels defined by the dm_plex_separate_marker option
@@ -57,7 +54,9 @@ timestepper:
         # for all cells/faces/points that were extruded.  This does include overlap faces that are in the boundaryRegion, originalRegion, and extrudedRegion regions
         extrudedRegion:
           name: boundaryCells
-
+      # if using mpi, this modifier distributes cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
       # remove the boundaryFaceBottom from the interiorCells and name the result as flowRegion
       - !ablate::domain::modifiers::SubtractLabel
         differenceRegion:
@@ -68,6 +67,11 @@ timestepper:
           - name: marker
             value: 1
         incompleteLabel: true
+
+      - !ablate::monitors::DmViewFromOptions
+        options: ":$OutputDirectory/mesh.tex:ascii_latex"
+      - !ablate::monitors::DmViewFromOptions
+        options: ascii::ascii_info_detail
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
