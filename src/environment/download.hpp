@@ -16,7 +16,7 @@ class Download : public cppParser::PathLocator {
     /**
      * keep list of urlPrefixes
      */
-    constexpr static std::array<std::string_view, 4> urlPrefixes = {"https://", "http://", "file://", "https://"};
+    constexpr static std::array<std::string_view, 4> urlPrefixes = {"https://", "http://", "file://", "ftp://"};
 
    public:
     /**
