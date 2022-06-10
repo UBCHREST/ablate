@@ -5,18 +5,23 @@
 ablate::domain::CadFile::CadFile(const std::string& nameIn, const std::filesystem::path& pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string generator,
                                  std::vector<std::shared_ptr<modifiers::Modifier>> modifiers, const std::shared_ptr<parameters::Parameters>& options,
                                  const std::shared_ptr<parameters::Parameters>& surfaceOptions)
-    : Domain(ReadDMFromCadFile(nameIn, pathIn, surfaceOptions, generator), nameIn, std::move(fieldDescriptors), std::move(modifiers), options) {}
+    : Domain(ReadDMFromCadFile(nameIn, pathIn, surfaceOptions, generator, surfacePetscOptions, surfaceDm), nameIn, std::move(fieldDescriptors), std::move(modifiers), options) {}
 
 ablate::domain::CadFile::~CadFile() {
     if (dm) {
-        DMDestroy(&dm);
+        DMDestroy(&dm) >> checkError;
+    }
+    // cleanup
+    if (surfacePetscOptions) {
+        ablate::utilities::PetscOptionsDestroyAndCheck("ablate::domain::CadFile::ReadDMFromCadFile", &surfacePetscOptions);
+    }
+    if (surfaceDm) {
+        DMDestroy(&surfaceDm) >> checkError;
     }
 }
 
-DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std::filesystem::path& path, const std::shared_ptr<parameters::Parameters>& surfaceOptions, const std::string& generator) {
-    // the directly read cad mesh used to describe the surface
-    DM surfaceDm = nullptr;
-
+DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std::filesystem::path& path, const std::shared_ptr<parameters::Parameters>& surfaceOptions, const std::string& generator,
+                                              PetscOptions& surfacePetscOptions, DM& surfaceDm) {
     // check the path to make sure it is there
     if (!exists(path)) {
         throw std::invalid_argument("Cannot locate CAD file " + path.string());
@@ -28,7 +33,6 @@ DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std
     PetscObjectSetName((PetscObject)surfaceDm, surfaceDmName.c_str()) >> checkError;
 
     // if provided set the options
-    PetscOptions surfacePetscOptions = nullptr;
     if (surfaceOptions) {
         PetscOptionsCreate(&surfacePetscOptions) >> checkError;
         surfaceOptions->Fill(surfacePetscOptions);
@@ -48,12 +52,6 @@ DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std
 
     // inflate the mesh
     DMPlexInflateToGeomModel(dm) >> checkError;
-
-    // cleanup
-    if (surfacePetscOptions) {
-        ablate::utilities::PetscOptionsDestroyAndCheck("ablate::domain::CadFile::ReadDMFromCadFile", &surfacePetscOptions);
-    }
-    DMDestroy(&surfaceDm) >> checkError;
     return dm;
 }
 
