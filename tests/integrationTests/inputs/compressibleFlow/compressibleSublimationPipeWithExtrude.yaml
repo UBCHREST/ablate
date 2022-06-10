@@ -69,9 +69,7 @@ timestepper:
         incompleteLabel: true
 
       - !ablate::monitors::DmViewFromOptions
-        options: ":$OutputDirectory/mesh.tex:ascii_latex"
-      - !ablate::monitors::DmViewFromOptions
-        options: ascii::ascii_info_detail
+        options: ascii
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
