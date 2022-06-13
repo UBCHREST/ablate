@@ -45,6 +45,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
    private:
     /// Class Methods
     void RayInit();
+    void fillRay(PetscReal xpos, PetscReal ypos, PetscReal zpos);
 
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
@@ -67,8 +68,11 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
     std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> h;    //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
     std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij1;               //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
-    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij;                //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij;                //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity)
     std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Izeros;            //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> broadcast;    //!< Indices: Cell, angle (theta), angle(phi), [xpos ypos zpos xdir ydir zdir] location vector
+    std::vector<std::vector<std::vector<bool>>> claims;    //!< Indices: Cell, angle (theta), angle(phi), is the ray claimed by a domain or not?
+    std::vector<std::vector<std::vector<std::vector<PetscInt>>>> ranks;    //!< Indices: Cell, angle (theta), angle(phi), [xpos ypos zpos xdir ydir zdir] location vector
 
     std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Krad;
     std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Kones;
