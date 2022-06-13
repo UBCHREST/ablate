@@ -54,14 +54,14 @@ void ablate::radiation::Radiation::RayInit() {
     std::vector<std::vector<std::vector<PetscInt>>> rayThetas(nPhi, rayPhis);
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rayCells(nTheta, rayThetas);
     rays.resize((cellRange.end - cellRange.start), rayCells);
-    
+
     std::vector<PetscReal> Ij1Phis;
     std::vector<std::vector<PetscReal>> Ij1Thetas(nPhi, Ij1Phis);
     std::vector<std::vector<std::vector<PetscReal>>> Ij1Cells(nTheta, Ij1Thetas);
     Ij1.resize((cellRange.end - cellRange.start), Ij1Cells);  //!< This sets the previous iteration intensity so that each ray can store multiple intensities.
 
     Krad.resize((cellRange.end - cellRange.start), Ij1Cells);
-    
+
     std::vector<PetscReal> hDomains;
     std::vector<std::vector<PetscReal>> hPhis;
     std::vector<std::vector<std::vector<PetscReal>>> hThetas(nPhi, hPhis);
@@ -100,6 +100,25 @@ void ablate::radiation::Radiation::RayInit() {
         /** Set the spatial step size to the minimum cell radius */
         PetscReal hstep = minCellRadius;
 
+        /** This is a sketch for the parallel version of the cell search.
+         * With this search, the ray must be able to travel across domains
+         * and all of the information required to create a cooperative
+         * cell storage system has to be passed between the processes.*/
+
+        // TODO: Parallel Cell Search Logic
+        // TODO: For each cell, enter a set of broadcast positions into a vector which stores the position and direction of each ray
+        // TODO: Begin loop: While the number of broadcast positions and locations is not zero:
+        // TODO:    Every domain should search every entry of the broadcast vector to check for entries belonging to that domain
+        // TODO:        If a position does not belong to any of the domains, it should be deleted from the broadcast vector (when in the loops should this be done?)
+        // TODO:        If a position does belong to a domain, that domain should fill the ray for that entry
+        // TODO:        When the end of the ray has been reached, enter the next position into the broadcast vector for the next process to pick up
+        // TODO:    When the end of the broadcast vector has been reached by this process, wait for the rest of the processes and repeat the entire loop
+
+        /** This way, the rays will be sequentially filled until all sections of the ray are accounted for. Granted, the method of determining what process a given ray region belongs to is somewhat
+         * of a brute force method. This can only be eliminated if it can be determined exactly what process a given coordinate point belongs to. If this is a function in PETSc (it may be) then
+         * instead of running the location search for every domain, each domain can simply loop through the rank vector until it finds a position that is associated with it. Then it can loop through
+         * much more quickly. */
+
         /** for every angle theta
          * for every angle phi
          */
@@ -127,9 +146,9 @@ void ablate::radiation::Radiation::RayInit() {
                     rays[ncells][ntheta][nphi].push_back(rayDomains);
                     h[ncells][ntheta][nphi].push_back(hDomains);
 
-                    PetscReal hhere = 0;       //!< Represents the space step of the current cell
-                    PetscInt currentCell = -1;  //!< Represents the cell that the ray is currently in. If the cell that the ray is in changes, then this cell should be added to the ray. Also, the space
-                                               //!< step that was taken between cells should be saved.
+                    PetscReal hhere = 0;        //!< Represents the space step of the current cell
+                    PetscInt currentCell = -1;  //!< Represents the cell that the ray is currently in. If the cell that the ray is in changes, then this cell should be added to the ray. Also, the
+                                                //!< space step that was taken between cells should be saved.
 
                     nsteps = 0;                      //!< Reset the number of steps that the domain contains, moving on to a new domain
                     while (nsteps < domainPoints) {  //!< While there are fewer points in this domain than there should be TODO: This condition should represent the moment that the domain is crossed
@@ -269,6 +288,10 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * */
     solver::Range cellRange;
     GetCellRange(cellRange);
+    // TODO: Parallel Radiation Computation
+    // TODO: Loop through every ray segment in the rays vector, finding those that are associated with this domain.
+    // TODO:    Compute the black body source and the absorption for every ray individually.
+    // TODO: Loop through all cells, computing the radiative gain for only the cells belonging to this domain.
 
     /** TODO: For MPI purposes, should all of the domain computations be accomplished before the individual additions are considered for the cells?
      * In this case, two separate loops should be travelled through because the domains will need to change within this loop otherwise
@@ -293,6 +316,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 PetscReal I0 = 0;
 
                 /** TODO: This is the point where MPI should split for domain computation
+                 * TODO: "If this ray segment belongs to me, run the computation on it, if not pass over it."
                  * Each rank will loop through all of the domains and search for domains which match its rank
                  * If the rank matches then the absorption and source should be computed for the domain in question
                  * At the end of this process the properties will have been computed for each domain independently
@@ -326,6 +350,10 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                         }
                     }
                 }
+
+                // TODO: The looping though all of the cells / rays should be broken and repeated here so that the computations finish before any addition occurs?
+
+                // TODO: If the cell belongs to me, run this for loop on it along with the intensity addition
                 /** The rays end here, their intensity is added to the total intensity of the cell
                  * Gives the partial impact of the ray on the total sphere.
                  * The sin(theta) is a result of the polar coordinate discretization
