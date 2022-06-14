@@ -121,17 +121,17 @@ PetscErrorCode ablate::finiteVolume::FiniteVolumeSolver::ComputeRHSFunction(Pets
         SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in CellInterpolant pointFunctionDescriptions: %s", exception.what());
     }
 
-//    try {
-//        if (!continuousFluxFunctionDescriptions.empty()) {
-//            if (faceInterpolant == nullptr) {
-//                faceInterpolant = std::make_unique<FaceInterpolant>(subDomain, GetRegion(), faceGeomVec, cellGeomVec);
-//            }
-//
-//            faceInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, GetRegion(), continuousFluxFunctionDescriptions, faceRange, cellGeomVec, faceGeomVec);
-//        }
-//    } catch (std::exception& exception) {
-//        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in FaceInterpolant continuousFluxFunctionDescriptions: %s", exception.what());
-//    }
+    try {
+        if (!continuousFluxFunctionDescriptions.empty()) {
+            if (faceInterpolant == nullptr) {
+                faceInterpolant = std::make_unique<FaceInterpolant>(subDomain, GetRegion(), faceGeomVec, cellGeomVec);
+            }
+
+            faceInterpolant->ComputeRHS(time, locXVec, subDomain->GetAuxVector(), locFVec, GetRegion(), continuousFluxFunctionDescriptions, faceRange, cellGeomVec, faceGeomVec);
+        }
+    } catch (std::exception& exception) {
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "Error in FaceInterpolant continuousFluxFunctionDescriptions: %s", exception.what());
+    }
 
     RestoreRange(faceRange);
     RestoreRange(cellRange);

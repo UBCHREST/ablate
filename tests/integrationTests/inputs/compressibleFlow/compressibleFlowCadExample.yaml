@@ -46,6 +46,7 @@ timestepper:
           name: flowRegion
         extrudedRegion:
           name: boundaryCells
+        thickness: 0.001
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
         ghostCellDepth: 2
@@ -121,22 +122,21 @@ solvers:
     region:
       name: flowRegion
 
-#    additionalProcesses:
-#      - !ablate::finiteVolume::processes::PressureGradientScaling
-#        &pgs
-#        eos: *eos
-#        alphaInit: 1.0
-#        maxAlphaAllowed: 100.0
-#        domainLength: 0.2
-#        log: !ablate::monitors::logs::StdOut
+    additionalProcesses:
+      - !ablate::finiteVolume::processes::PressureGradientScaling
+        &pgs
+        eos: *eos
+        alphaInit: 1.0
+        maxAlphaAllowed: 100.0
+        domainLength: 0.2
+        log: !ablate::monitors::logs::StdOut
 
     # overwrite and set the time step based upon the CFL constraint
     computePhysicsTimeStep: false
 
     # a flux calculator must be specified to so solver for advection
     fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
-      mInf: .3
-#      pgs: *pgs
+      pgs: *pgs
 
     # the cfl is used to compute the physics time step
     parameters:
@@ -164,7 +164,7 @@ solvers:
     processes:
       - !ablate::boundarySolver::lodi::IsothermalWall
         eos: *eos
-#        pgs: *pgs
+        pgs: *pgs
   - !ablate::boundarySolver::BoundarySolver
     id: inlet
     region:
@@ -175,8 +175,8 @@ solvers:
     processes:
       - !ablate::boundarySolver::lodi::Inlet
         eos: *eos
-#        pgs: *pgs
-#
+        pgs: *pgs
+
   - !ablate::boundarySolver::BoundarySolver
     id: outlet
     region:
@@ -190,4 +190,4 @@ solvers:
         reflectFactor: 0.0
         referencePressure: 101325.0
         maxAcousticsLength: 0.1
-#        pgs: *pgs
+        pgs: *pgs
