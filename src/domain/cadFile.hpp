@@ -14,10 +14,10 @@ class CadFile : public Domain {
                                 PetscOptions& surfacePetscOptions, DM& surfaceDm);
 
     // the options must be kept while the dm is in use
-    PetscOptions surfacePetscOptions = nullptr;
+    PetscOptions surfacePetscOptions;
 
     // the surface dm must be kept while the dm is in use
-    DM surfaceDm = nullptr;
+    DM surfaceDm;
 
    public:
     explicit CadFile(const std::string& nameIn, const std::filesystem::path& path, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string generator,

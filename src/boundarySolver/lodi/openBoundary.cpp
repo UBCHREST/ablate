@@ -102,9 +102,9 @@ PetscErrorCode ablate::boundarySolver::lodi::OpenBoundary::OpenBoundaryFunction(
         BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryVelNormCord[d], stencilSize, &stencilNormalCoordsVel[d][0], stencilWeights, dVeldNorm[d]);
     }
     PetscScalar dRhodNorm;
-    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryDensity, stencilSize, &stencilDensity[0], stencilWeights, dRhodNorm);
+    BoundarySolver::ComputeNormalizedGradientAlongNormal(dim, fg, boundaryDensity, stencilSize, &stencilDensity[0], stencilWeights, dRhodNorm);
     PetscScalar dPdNorm;
-    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryPressure, stencilSize, &stencilPressure[0], stencilWeights, dPdNorm);
+    BoundarySolver::ComputeNormalizedGradientAlongNormal(dim, fg, boundaryPressure, stencilSize, &stencilPressure[0], stencilWeights, dPdNorm);
 
     // compute boundary ev, yi
     std::vector<PetscReal> boundaryYi(boundary->nSpecEqs);

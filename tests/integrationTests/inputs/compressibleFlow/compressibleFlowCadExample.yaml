@@ -1,0 +1,193 @@
+# Simple test 3D cad reading/halo using cylinder reading
+# The cad file was generated using [FreeCad](https://www.freecadweb.org) and exported as a 
+# .stp file.  When exporting the mesh, select Meter from the "Units for export of STEP" in preferences
+# to ensure the mesh is in SI units.
+---
+environment:
+  title: _compressibleFlowCadExample
+  tagDirectory: false
+arguments: { }
+timestepper:
+  # setup default controls for the time stepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 1000
+    ts_dt: 1.0E-10
+#    ts_adapt: none
+    ts_adapt_safety: 0.9
+  # io controls how often the results are saved to a file for visualization and restart
+#  io:
+#    interval: 0 # results are saved at every step.  In real simulations this should be much larger.
+
+  domain: !ablate::domain::CadFile
+    name: exampleNozzle
+    path: ../mesh/cylinder.stp
+#    surfaceOptions:
+#      dm_refine: 1
+#      dm_plex_check_all: true
+    options:
+      dm_label_view: wallBoundaryCells
+      dm_refine: 3
+      dm_plex_check_all: true
+    modifiers:
+      # label all boundary faces as "marker" to allow extruding
+      - !ablate::domain::modifiers::TagMeshBoundaryFaces
+        region:
+          name: marker
+      # extrude all boundaries to add needed ghost cells for the boundary solver
+      - !ablate::domain::modifiers::ExtrudeLabel
+        regions:
+          - name: marker
+            value: 1
+        boundaryRegion:
+          name: boundaryFaces
+        originalRegion:
+          name: flowRegion
+        extrudedRegion:
+          name: boundaryCells
+      # if using mpi, this modifier distributes cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+
+      # tag the inlet boundary
+      - !ablate::domain::modifiers::CreateLabel
+        region:
+          name: inletBoundaryCells
+        function: "z < 0 ? 1.0 : 0"
+
+      # repeat for the outlet
+      - !ablate::domain::modifiers::CreateLabel
+        region:
+          name: outletBoundaryCells
+        function: "z > 0.1 ? 1.0 : 0"
+
+      # repeat for the outlet
+      - !ablate::domain::modifiers::CreateLabel
+        region:
+          name: wallBoundaryCells
+        function: !ablate::mathFunctions::geom::CylinderShell
+          start: [0.0, 0.0, 0.0]
+          end: [0.0, 0.0, .1]
+          radiusMin: 0.01
+          radiusMax: 10
+
+     # create a wall boundary that is all boundary cells minus inlet/outlet
+#      - !ablate::domain::modifiers::SubtractLabel
+#        differenceRegion:
+#          name: wallBoundaryCells
+#        minuendRegion:
+#          name: boundaryCells
+#        subtrahendRegions:
+#          - name: outletBoundaryCells
+#          - name: inletBoundaryCells
+#      - !ablate::monitors::DmViewFromOptions
+#        options: "hdf5:$OutputDirectory/dm.h5"
+      - !ablate::monitors::DmViewFromOptions
+        options: ascii::ascii_info_detail
+
+    fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+  # set the initial conditions of the flow field
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state: &initFlowState
+        eos: *eos
+        pressure: 101325.0
+        temperature: 300
+        velocity: !ablate::mathFunctions::geom::Cylinder
+          start: [0.0, 0.0, -1]
+          end: [0.0, 0.0, .05]
+          radius: 0.005
+          insideValues: "0.0, 0.0, 10.0"
+          outsideValues: "0.0, 0.0, 0.0"
+
+
+    # when extruding from a tet mesh, the boundary cells must be explicitly set as well
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      region:
+        name: boundaryCells
+      state: *initFlowState
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: vortexFlowField
+    # only apply this solver to the flowRegion
+    region:
+      name: flowRegion
+
+#    additionalProcesses:
+#      - !ablate::finiteVolume::processes::PressureGradientScaling
+#        &pgs
+#        eos: *eos
+#        alphaInit: 1.0
+#        maxAlphaAllowed: 100.0
+#        domainLength: 0.2
+#        log: !ablate::monitors::logs::StdOut
+
+    # overwrite and set the time step based upon the CFL constraint
+    computePhysicsTimeStep: false
+
+    # a flux calculator must be specified to so solver for advection
+    fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+      mInf: .3
+#      pgs: *pgs
+
+    # the cfl is used to compute the physics time step
+    parameters:
+      cfl: 0.25
+
+    # set the eos and transport
+    eos: *eos
+    transport: !ablate::eos::transport::Sutherland
+      eos: *eos
+
+    monitors:
+      # output time step information for each time step
+      - !ablate::monitors::TimeStepMonitor
+      - !ablate::monitors::MaxMinAverage
+        field: velocity
+
+  # use a boundary solver to update the cells in the boundaryCellsTop region to represent standard wall
+  - !ablate::boundarySolver::BoundarySolver
+    id: wallBoundary
+    region:
+      name: wallBoundaryCells
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::IsothermalWall
+        eos: *eos
+#        pgs: *pgs
+  - !ablate::boundarySolver::BoundarySolver
+    id: inlet
+    region:
+      name: inletBoundaryCells
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::Inlet
+        eos: *eos
+#        pgs: *pgs
+#
+  - !ablate::boundarySolver::BoundarySolver
+    id: outlet
+    region:
+      name: outletBoundaryCells
+    fieldBoundary:
+      name: boundaryFaces
+    mergeFaces: true
+    processes:
+      - !ablate::boundarySolver::lodi::OpenBoundary
+        eos: *eos
+        reflectFactor: 0.0
+        referencePressure: 101325.0
+        maxAcousticsLength: 0.1
+#        pgs: *pgs

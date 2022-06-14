@@ -18,10 +18,14 @@ ablate::domain::CadFile::~CadFile() {
     if (surfaceDm) {
         DMDestroy(&surfaceDm) >> checkError;
     }
+    std::cout << "~CadFile" << std::endl;
 }
 
 DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std::filesystem::path& path, const std::shared_ptr<parameters::Parameters>& surfaceOptions, const std::string& generator,
                                               PetscOptions& surfacePetscOptions, DM& surfaceDm) {
+    surfacePetscOptions = nullptr;
+    surfaceDm = nullptr;
+
     // check the path to make sure it is there
     if (!exists(path)) {
         throw std::invalid_argument("Cannot locate CAD file " + path.string());

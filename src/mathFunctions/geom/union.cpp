@@ -1,5 +1,5 @@
 #include "union.hpp"
-
+#include <algorithm>
 #include <utility>
 
 ablate::mathFunctions::geom::Union::Union(std::vector<std::shared_ptr<ablate::mathFunctions::geom::Geometry>> geometries, const std::shared_ptr<mathFunctions::MathFunction> &insideValues,
