@@ -61,6 +61,19 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     static void ComputeGradientAlongNormal(PetscInt dim, const BoundaryFVFaceGeom* fg, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues,
                                            const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm);
 
+    /**
+     * public helper function to compute dPhiDNorm where phi is normalized by the boundary value
+     * @param dim
+     * @param boundaryValue
+     * @param stencilValues
+     * @param stencilWeights
+     * @param grad
+     */
+    static void ComputeNormalizedGradientAlongNormal(PetscInt dim, const BoundaryFVFaceGeom* fg, PetscScalar boundaryValue, PetscInt stencilSize, const PetscScalar* stencilValues,
+                                           const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm);
+
+    static inline bool active = false;
+
    private:
     /**
      * struct to hold the gradient stencil for the boundary

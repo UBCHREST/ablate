@@ -79,7 +79,7 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     PetscScalar dVeldNorm;
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryNormalVelocity, stencilSize, &stencilNormalVelocity[0], stencilWeights, dVeldNorm);
     PetscScalar dPdNorm;
-    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryPressure, stencilSize, &stencilPressure[0], stencilWeights, dPdNorm);
+    BoundarySolver::ComputeNormalizedGradientAlongNormal(dim, fg, boundaryPressure, stencilSize, &stencilPressure[0], stencilWeights, dPdNorm);
 
     // Compute the cp, cv from the eos
     std::vector<PetscReal> boundaryYi(isothermalWall->nSpecEqs);
@@ -131,21 +131,21 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     }
 
     // Directly compute the source terms, note that this may be problem in the future with multiple source terms on the same boundary cell
-    isothermalWall->GetmdFdn(sOff,
-                             boundaryVelNormCord,
-                             boundaryDensity,
-                             boundaryTemperature,
-                             boundaryCp,
-                             boundaryCv,
-                             boundarySpeedOfSound,
-                             boundarySensibleEnthalpy,
-                             velNormPrim,
-                             speedOfSoundPrim,
-                             boundaryDensityYi /* PetscReal* Yi*/,
-                             isothermalWall->nEvEqs > 0 ? boundaryValues + uOff[isothermalWall->evId] : nullptr /* PetscReal* EV*/,
-                             scriptL.data(),
-                             transformationMatrix,
-                             source);
+//    isothermalWall->GetmdFdn(sOff,
+//                             boundaryVelNormCord,
+//                             boundaryDensity,
+//                             boundaryTemperature,
+//                             boundaryCp,
+//                             boundaryCv,
+//                             boundarySpeedOfSound,
+//                             boundarySensibleEnthalpy,
+//                             velNormPrim,
+//                             speedOfSoundPrim,
+//                             boundaryDensityYi /* PetscReal* Yi*/,
+//                             isothermalWall->nEvEqs > 0 ? boundaryValues + uOff[isothermalWall->evId] : nullptr /* PetscReal* EV*/,
+//                             scriptL.data(),
+//                             transformationMatrix,
+//                             source);
 
     PetscFunctionReturn(0);
 }

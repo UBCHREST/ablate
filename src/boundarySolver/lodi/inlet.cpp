@@ -88,9 +88,9 @@ PetscErrorCode ablate::boundarySolver::lodi::Inlet::InletFunction(PetscInt dim, 
 
     // Interpolate the normal velocity gradient to the surface
     PetscScalar dVeldNorm;
-    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryNormalVelocity, stencilSize, &stencilNormalVelocity[0], stencilWeights, dVeldNorm);
+    BoundarySolver::ComputeNormalizedGradientAlongNormal(dim, fg, boundaryNormalVelocity, stencilSize, &stencilNormalVelocity[0], stencilWeights, dVeldNorm);
     PetscScalar dPdNorm;
-    BoundarySolver::ComputeGradientAlongNormal(dim, fg, boundaryPressure, stencilSize, &stencilPressure[0], stencilWeights, dPdNorm);
+    BoundarySolver::ComputeNormalizedGradientAlongNormal(dim, fg, boundaryPressure, stencilSize, &stencilPressure[0], stencilWeights, dPdNorm);
 
     // Compute the cp, cv from the eos
     std::vector<PetscReal> boundaryYi(inletBoundary->nSpecEqs);

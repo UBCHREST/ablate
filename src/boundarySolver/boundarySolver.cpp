@@ -626,6 +626,19 @@ void ablate::boundarySolver::BoundarySolver::ComputeGradientAlongNormal(PetscInt
     }
 }
 
+void ablate::boundarySolver::BoundarySolver::ComputeNormalizedGradientAlongNormal(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom* fg, PetscScalar boundaryValue,
+                                                                                  PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm) {
+    dPhiDNorm = 0.0;
+    for (PetscInt c = 0; c < stencilSize; ++c) {
+        PetscScalar delta = stencilValues[c] / (boundaryValue + 1E-30) - 1.0;
+
+        for (PetscInt d = 0; d < dim; ++d) {
+            dPhiDNorm += stencilWeights[c * dim + d] * delta * fg->normal[d];
+        }
+    }
+    dPhiDNorm *= boundaryValue;
+}
+
 std::vector<ablate::boundarySolver::BoundarySolver::GradientStencil> ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {
     std::vector<ablate::boundarySolver::BoundarySolver::GradientStencil> searchResult;
     std::copy_if(gradientStencils.begin(), gradientStencils.end(), std::back_inserter(searchResult), [cell](const auto& stencil) { return stencil.cellId == cell; });
