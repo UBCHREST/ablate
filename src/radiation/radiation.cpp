@@ -78,9 +78,12 @@ void ablate::radiation::Radiation::RayInit() {
     std::vector<std::vector<PetscReal>> Ij1Thetas(nPhi, Ij1Phis);
     std::vector<std::vector<std::vector<PetscReal>>> Ij1Cells(nTheta, Ij1Thetas);
     Ij1.resize((cellRange.end - cellRange.start), Ij1Cells);  //!< This sets the previous iteration intensity so that each ray can store multiple intensities.
-
     Krad.resize((cellRange.end - cellRange.start), Ij1Cells);
-    broadcast.resize((cellRange.end - cellRange.start), Ij1Cells);  //!< Store a vector of ray positions and directions which the processes can use to communicate information
+
+    std::vector<PetscReal> broadcastPhis = {0, 0, 0};
+    std::vector<std::vector<PetscReal>> broadcastThetas(nPhi, broadcastPhis);
+    std::vector<std::vector<std::vector<PetscReal>>> broadcastCells(nTheta, broadcastThetas);
+    broadcast.resize((cellRange.end - cellRange.start), broadcastCells);  //!< Store a vector of ray positions and directions which the processes can use to communicate information
 
     std::vector<PetscReal> hDomains;
     std::vector<std::vector<PetscReal>> hPhis;
@@ -103,8 +106,8 @@ void ablate::radiation::Radiation::RayInit() {
     PetscFVCellGeom* cellGeom;
     //    PetscFVFaceGeom* faceGeom;
 
-    PetscInt rank = 0; //!< Declare a variable to store the rank that this process is occupying
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank); //!< Grab the rank of the current process in order to use for comparison against the stored ranks vector
+    PetscInt rank = 0;                     //!< Declare a variable to store the rank that this process is occupying
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);  //!< Grab the rank of the current process in order to use for comparison against the stored ranks vector
 
     /** Fill the broadcast vector with values from every cell before doing anything else
      * This way, the loop can be the same during the entire process and none of the code is repeated
@@ -112,35 +115,66 @@ void ablate::radiation::Radiation::RayInit() {
      * Unless we can make it guess the domain close to the origin cell or something
      * It's not a major concern at the moment */
 
+    PetscInt commsize = 0;
+    MPI_Comm_size(MPI_COMM_WORLD, &commsize);
+    void* rbuf = malloc(commsize * 6 * sizeof(PetscReal));  //!< The pointer which receives information from the MPI Gather
+    void* claimsbuf = malloc(commsize * 4 * sizeof(PetscInt));
+
+    PetscReal identifier[6];
+
     PetscInt ncells = 0;
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
         if (/* this cell is in my domain */ true) {
             for (int ntheta = 1; ntheta < nTheta; ntheta++) {
                 for (int nphi = 0; nphi < nPhi; nphi++) {
-                    /** Input the boundary position into the broadcast vector
-                     * This will give information to the other domains about where the ray has left off
-                     * There is one set of coordinates for each ray so that each process can check that each ray is accounted for */
-                    broadcast[ncells][ntheta][nphi].push_back(cellGeom->centroid[0]);  //!< x-position where the ray has left off
-                    broadcast[ncells][ntheta][nphi].push_back(cellGeom->centroid[1]);  //!< y-position where the ray has left off
-                    broadcast[ncells][ntheta][nphi].push_back(cellGeom->centroid[2]);  //!< z-position where the ray has left off
-                    //                    broadcast[ncells][ntheta][nphi].push_back(sin(theta) * cos(phi));  //!< x-unit vector (direction)
-                    //                    broadcast[ncells][ntheta][nphi].push_back(sin(theta) * sin(phi));  //!< y-unit vector (direction)
-                    //                    broadcast[ncells][ntheta][nphi].push_back(cos(theta));             //!< z-unit vector (direction)
                     // Preallocate 3 entries to this vector
                     claims[ncells][ntheta][nphi] = true;  //!< Set the claims vector to true so that the loop executes the first time
+
+                    // The broadcast vector cannot be globally overwritten at certain indices by a simple MPI function. Therefore, the information to be broadcast along with the ray
+                    // identification must be gathered by the root process.
+                    // Create an array that identifies the ray and gives location information. This can be transferred to the rays vector.
+
+                    /** THE PURPOSE OF THIS IS TO UPDATE THE BROADCAST VECTOR FROM LOCAL CHANGES TO A GLOBAL VARIABLE
+                     * Input the boundary position into the identifying vector
+                     * This will give information to the other domains about where the ray has left off
+                     * There is one set of coordinates for each ray so that each process can check that each ray is accounted for
+                     * */
+                    identifier[0] = (double)ncells;
+                    identifier[1] = (double)ntheta;
+                    identifier[2] = (double)nphi;
+                    identifier[3] = cellGeom->centroid[0];  //!< x-position where the ray has left off, which is the origin of the cell before the ray has started
+                    identifier[4] = cellGeom->centroid[1];  //!< y-position where the ray has left off
+                    identifier[5] = cellGeom->centroid[2];  //!< z-position where the ray has left off
+                    
+                    MPI_Gather(&identifier, 6, MPI_REAL, &rbuf, 6, MPI_REAL, 0, MPI_COMM_WORLD);  //!< Gather the identifier to the root process
+
+                    if (rank == 0) {  //!< If you are the root process, sort through the recieved information by matching
+                        for (int n = 0; n < commsize * 6 * sizeof(PetscReal); n = n + 6) {
+                            //!< Overwrite the indices specified by the identifying information
+                            broadcast[identifier[n]][identifier[n + 1]][identifier[n + 2]][0] = identifier[n + 3];  //!< Puts the identifier information into the broadcast vector
+                            broadcast[identifier[n]][identifier[n + 1]][identifier[n + 2]][1] = identifier[n + 4];
+                            broadcast[identifier[n]][identifier[n + 1]][identifier[n + 2]][2] = identifier[n + 5];
+                        }
+                    }
                 }
             }
         }
         ncells++;
     }
 
+    // TODO: This overwritten vector should be broadcast to all of the processes.
+    MPI_Bcast(&broadcast.front(), broadcast.size(), MPI_REAL, 0, MPI_COMM_WORLD);  //!< MPI Broadcast the broadcast vector, giving every process the information
+    MPI_Bcast(&claims.front(), claims.size(), MPI_REAL, 0, MPI_COMM_WORLD);        //!< MPI Broadcast the claims vector, giving every process the information
+
     // TODO: Broadcast the broadcast vector
     // MPI Broadcast the broadcast vector
     // Each process should then pick up the broadcast vector, if that's how it works
 
-    while (!std::equal(claims.begin(), claims.end(), false)) { //!< While not all values of the claims vector are false
-        std::fill(claims.begin(), claims.end(), false);  //!< Write the entire claims vector false so that the rays can start being claimed by domains
+    while (!std::equal(claims.begin(), claims.end(), false)) {  //!< While not all values of the claims vector are false
+        std::fill(claims.begin(), claims.end(), false);         //!< Write the entire claims vector false so that the rays can start being claimed by domains
+        
+        //TODO: The claims vector needs each process to tell it what to be
 
         for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
             const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
@@ -149,8 +183,8 @@ void ablate::radiation::Radiation::RayInit() {
              * Initializer described how many of the cell ray locations have been stored.
              */
             if (log) {
-                double percentComplete = 100.0 * double(ncells) / double((cellRange.end - cellRange.start));
-                log->Printf("Radiation Initializer Percent Complete: %.1f\n", percentComplete);
+                //                double percentComplete = 100.0 * double(ncells) / double((cellRange.end - cellRange.start));
+                //                log->Printf("Radiation Initializer Percent Complete: %.1f\n", percentComplete);
             }
 
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);  //!< Reads the cell location from the current cell
@@ -165,10 +199,19 @@ void ablate::radiation::Radiation::RayInit() {
             for (int ntheta = 1; ntheta < nTheta; ntheta++) {
                 for (int nphi = 0; nphi < nPhi; nphi++) {
                     if (/* this position of the broadcast vector is in my domain */ true) {
-                        claims[ncells][ntheta][nphi] = true;  //!< Mark that this domain has been claimed by filling the claims vector true (marks that a ray has been claimed by a domain)
-                        ranks[ncells][ntheta][nphi].push_back(
-                            rank);  //!< Mark that this ray segment belongs to this domain by pushing back a value to the ranks vector
+                        claims[ncells][ntheta][nphi] = true;          //!< Mark that this domain has been claimed by filling the claims vector true (marks that a ray has been claimed by a domain)
+                        ranks[ncells][ntheta][nphi].push_back(rank);  //!< Mark that this ray segment belongs to this domain by pushing back a value to the ranks vector
 
+                        /** Mark this ray as having true */
+                        PetscInt claimsid[4] = {ncells, ntheta, nphi, true};
+                        MPI_Gather(&claimsid, 4, MPI_REAL, &claimsbuf, 4, MPI_REAL, 0, MPI_COMM_WORLD);  //!< Gather the identifier to the root process
+                        if (rank == 0) {  //!< If you are the root process, sort through the recieved information by matching
+                            for (int n = 0; n < commsize * 4 * sizeof(PetscInt); n = n + 4) {
+                                //!< Overwrite the indices specified by the identifying information
+                                claims[claimsid[n]][claimsid[n + 1]][claimsid[n + 2]] = claimsid[n + 3];  //!< Puts the claimsid information into the claims vector
+                            }
+                        }
+                        
                         /** Should represent the distance from the origin cell to the boundary. How to get this? By marching out of the domain! (and checking whether we are still inside)
                          * Number of spatial steps that  the ray has taken towards the origin
                          * Keeps track of whether the ray has intersected the boundary at this point or not
@@ -300,8 +343,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     Vec loctemp;
     IS vis;
 
-    PetscInt rank = 0; //!< Declare a variable to store the rank that this process is occupying
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank); //!< Grab the rank of the current process in order to use for comparison against the stored ranks vector
+    PetscInt rank = 0;                     //!< Declare a variable to store the rank that this process is occupying
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);  //!< Grab the rank of the current process in order to use for comparison against the stored ranks vector
 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable*/
     const PetscScalar* rhsArray;
@@ -341,13 +384,13 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * */
     solver::Range cellRange;
     GetCellRange(cellRange);
-    // TODO: Parallel Radiation Computation
-    // TODO: Loop through every ray segment in the rays vector, finding those that are associated with this domain.
-    // TODO:    Compute the black body source and the absorption for every ray individually.
-    // TODO: Loop through all cells, computing the radiative gain for only the cells belonging to this domain.
 
-    /** TODO: For MPI purposes, should all of the domain computations be accomplished before the individual additions are considered for the cells? Probably yes
-     * In this case, two separate loops should be travelled through because the domains will need to change within this loop otherwise
+    /**  Parallel Radiation Computation
+    //  Loop through every ray segment in the rays vector, finding those that are associated with this domain.
+    //     Compute the black body source and the absorption for every ray individually.
+    //  Loop through all cells, computing the radiative gain for only the cells belonging to this domain. */
+
+    /** In this case, two separate loops should be travelled through because the domains will need to change within this loop otherwise
      * If the loops are separated then the MPI splitting might be less complicated. I don't know whether this will effect speed significantly, but I would guess not.*/
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
@@ -377,37 +420,36 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 for (int ndomain = (nDomain - 1); ndomain >= 0; ndomain--) {
                     /** This is the point where MPI should split for domain computation
                      * "If this ray segment belongs to me, run the computation on it, if not pass over it." */
-                     if (ranks[ncells][ntheta][nphi][ndomain] == rank) { //!< Compares the current rank of this process against the rank of the stored ray segment
-                         /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
-                         int numPoints = static_cast<int>(rays[ncells][ntheta][nphi][ndomain].size());
-                         rayIntensity = 0;
+                    if (ranks[ncells][ntheta][nphi][ndomain] == rank) {  //!< Compares the current rank of this process against the rank of the stored ray segment
+                        /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
+                        int numPoints = static_cast<int>(rays[ncells][ntheta][nphi][ndomain].size());
+                        rayIntensity = 0;
 
-                         if (numPoints > 0) {
-                             for (int n = 0; n < (numPoints); n++) {
-                                 /** Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
-                                     Define the absorptivity and temperature in this section
-                                     For ABLATE implementation, get temperature based on this function
-                                     Get the array that lives inside the vector
-                                     Gets the temperature from the cell index specified
-                                 */
-                                 DMPlexPointLocalRead(vdm, rays[ncells][ntheta][nphi][ndomain][n], temperatureArray, &temperature);
-                                 DMPlexPointLocalRead(dm, rays[ncells][ntheta][nphi][ndomain][n], solArray, &sol);
-                                 /** Input absorptivity (kappa) values from model here. */
-                                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
+                        if (numPoints > 0) {
+                            for (int n = 0; n < (numPoints); n++) {
+                                /** Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
+                                    Define the absorptivity and temperature in this section
+                                    For ABLATE implementation, get temperature based on this function
+                                    Get the array that lives inside the vector
+                                    Gets the temperature from the cell index specified
+                                */
+                                DMPlexPointLocalRead(vdm, rays[ncells][ntheta][nphi][ndomain][n], temperatureArray, &temperature);
+                                DMPlexPointLocalRead(dm, rays[ncells][ntheta][nphi][ndomain][n], solArray, &sol);
+                                /** Input absorptivity (kappa) values from model here. */
+                                absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 
-                                 Ij[ncells][ntheta][nphi][ndomain] += FlameIntensity(1 - exp(-kappa * h[ncells][ntheta][nphi][ndomain][n]), *temperature) * Krad[ncells][ntheta][nphi][ndomain];
-                                 Krad[ncells][ntheta][nphi][ndomain] *= exp(-kappa * h[ncells][ntheta][nphi][ndomain][n]);  //!< Compute the total absorption for this domain
+                                Ij[ncells][ntheta][nphi][ndomain] += FlameIntensity(1 - exp(-kappa * h[ncells][ntheta][nphi][ndomain][n]), *temperature) * Krad[ncells][ntheta][nphi][ndomain];
+                                Krad[ncells][ntheta][nphi][ndomain] *= exp(-kappa * h[ncells][ntheta][nphi][ndomain][n]);  //!< Compute the total absorption for this domain
 
-                                 if (n == (numPoints - 1) && ndomain == (nDomain - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. */
-                                     I0 = FlameIntensity(1, *temperature);               //!< Set the initial intensity of the ray for the linearized assumption
-                                 }
-                             }
-                         }
-                     }
+                                if (n == (numPoints - 1) && ndomain == (nDomain - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. */
+                                    I0 = FlameIntensity(1, *temperature);               //!< Set the initial intensity of the ray for the linearized assumption
+                                }
+                            }
+                        }
+                    }
                 }
 
-                // TODO: Now wait until all of the domains have been checked and calculated before adding the intensity of any ray
-                //TODO: Do an MPI buffer or whatever it's called
+                MPI_Barrier(MPI_COMM_WORLD); //!< Now wait until all of the domains have been checked and calculated before adding the intensity of any ray
 
                 /** The rays end here, their intensity is added to the total intensity of the cell
                  * Gives the partial impact of the ray on the total sphere.
