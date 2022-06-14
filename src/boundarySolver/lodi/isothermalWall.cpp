@@ -131,21 +131,21 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunct
     }
 
     // Directly compute the source terms, note that this may be problem in the future with multiple source terms on the same boundary cell
-//    isothermalWall->GetmdFdn(sOff,
-//                             boundaryVelNormCord,
-//                             boundaryDensity,
-//                             boundaryTemperature,
-//                             boundaryCp,
-//                             boundaryCv,
-//                             boundarySpeedOfSound,
-//                             boundarySensibleEnthalpy,
-//                             velNormPrim,
-//                             speedOfSoundPrim,
-//                             boundaryDensityYi /* PetscReal* Yi*/,
-//                             isothermalWall->nEvEqs > 0 ? boundaryValues + uOff[isothermalWall->evId] : nullptr /* PetscReal* EV*/,
-//                             scriptL.data(),
-//                             transformationMatrix,
-//                             source);
+    isothermalWall->GetmdFdn(sOff,
+                             boundaryVelNormCord,
+                             boundaryDensity,
+                             boundaryTemperature,
+                             boundaryCp,
+                             boundaryCv,
+                             boundarySpeedOfSound,
+                             boundarySensibleEnthalpy,
+                             velNormPrim,
+                             speedOfSoundPrim,
+                             boundaryDensityYi /* PetscReal* Yi*/,
+                             isothermalWall->nEvEqs > 0 ? boundaryValues + uOff[isothermalWall->evId] : nullptr /* PetscReal* EV*/,
+                             scriptL.data(),
+                             transformationMatrix,
+                             source);
 
     PetscFunctionReturn(0);
 }
