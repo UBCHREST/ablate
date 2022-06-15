@@ -8,6 +8,7 @@
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
+#include "particles/particles.hpp"
 
 namespace ablate::radiation {
 
@@ -44,6 +45,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
 
    protected:
     DM radDM; //!< DM associated with the radiation particles
+    std::vector<ParticleField> particleFieldDescriptors; //
 
    private:
     /// Class Methods

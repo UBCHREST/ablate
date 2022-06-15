@@ -3,6 +3,7 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
+#include "particles/particles.hpp"
 #include "utilities/mathUtilities.hpp"
 
 ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
@@ -18,37 +19,52 @@ void ablate::radiation::Radiation::Setup() { /** allows initialization after the
 }
 
 void ablate::radiation::Radiation::Initialize() {
-    /** Create a DM that is associated with the radiation particle field */
-    DMCreate(PETSC_COMM_WORLD, &radDM) >> checkError;
-    DMSetType(radDM, DMSWARM) >> checkError;
-    DMSetDimension(radDM, dim) >> checkError;
-    DMSwarmSetType(radDM, DMSWARM_PIC) >> checkError;
-
     // TODO: For the solving step
     // TODO: The swarm particles can be teleported directly from one rank to another without removing the points from the current rank
     //     TODO: This means that the particles and their information can be sent during the solve without needing to send them back
-    /** I'm still not clear on how to transport a particle from one location to another, maybe this simply happens within a coordinate field during the initialization
-     * The initialization can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments
-     * This field could be essentially deleted during the solve portion
+
+    /** To transport a particle from one location to another, this simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
+     * is called. The initialization particle field can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field could be
+     * essentially deleted during the solve portion. It must be replaced with a set of particles associated with every ray segment. The field initialized for the solve portion will have more particles
+     * than the initial field. Having two fields is easier than dynamically adjusting the size of the particle field as the ray length increases for each ray.
      *
      * Steps of the search:
-     *      Initialize a particle field with particles at the coordinates of their origin cell, one for each ray
-     *      Store the direction of the ray motion in the particle as a field
-     *      March the particle coordinates in the direction of the direction vector
-     *          Do existing ray filling routine
-     *          Run swarm migrate and check if the particle has left the domain
-     *          If yes: Finish that ray segment and store it with its ray ID / domain number
-     *          If no: Repeat march and filling routine
-     *      Should the rays be stored as
-     *
-     * During the solve portion, the only information that needs to be transported is: ray ID, K, Ij, and domain #.
+     *      Initialize a particle field with particles at the coordinates of their origin cell, one for each ray. (The search field should probably be a PIC field because it interacts with the mesh)
+     *      Store the direction of the ray motion in the particle as a field.
+     *      Loop through the particles that are present within a given domain.
+     *      March the particle coordinates in the direction of the direction vector.
+     *          Do existing ray filling routine.
+     *          Run swarm migrate and check if the particle has left the domain for every space step that is taken. This is currently the best known way to check for domain crosses.
+     *          If yes: Finish that ray segment and store it with its ray ID / domain number.
+     *          If no: Repeat march and filling routine.
+     *      The ray segments should be stored as vectors, with the indices matching the ray identity. These indices can be the same as the existing rays vector most likely.
+     *      The difference is that this is an entirely local variable. Only the local ray segment identities which have ray segments passing through this domain will be non-empty for the local rays
+     *      vector. This provides a global indexing scheme that the particles and domains can interface between without occupying a lot of local memory.
+     *          Sub-task: During the cell search, form a vector (the same rays vector) from the information provided by the particle. In other words, the particle will "seed" the ray segments
+     *          within each domain. Just pack the ray segment into whatever rays index matches the global scheme. This way when the particles are looped through in their local configuration, the
+     *          memory location of the local ray segment can be accessed immediately.
+     *          Sub-task: As the particle search routine is taking place, they should be simultaneously forming a particle field containing the solve field characterstics. This includes the
      *
      * Steps of the solve:
-     *      Locally compute the source and absorption for each stored ray ID
-     *      Update the values to the fields of the particles (based on this ray ID)
-     *      Send the particles to their origin ranks
-     *      Compute energy for every cell by searching through all present particles
-     *      Delete the particles that are not from this rank
+     *      Locally compute the source and absorption for each stored ray ID. (Loop through the local ray segments by index and run through them if they are not empty).
+     *      Update the values to the fields of the particles (based on this ray ID). (Loop through the particles in the domain and update the values by the assocated index)
+     *      Send the particles to their origin ranks.
+     *      Compute energy for every cell by searching through all present particles.
+     *      Delete the particles that are not from this rank.
+     *
+     * The local calculation of the ray absorption and intensity needs to be enabled by the local storage of ray segment cell indices.
+     * This could be achieved by storing them within a vector that contains identifying information.
+     *      Sub-task: The local calculation must loop through all ray identities, doing the calculation for only those rays that are present within the process. (If this segment index !empty)
+     *      Sub-task: The ray segments must update the particle field by looping though the particles present in the domain and grabbing the calculated values from their associated ray segments.
+     *      Since the associated ray segments are globally indexed, this might be faster.
+     *
+     * During the communication solve portion, the only information that needs to be transported is: ray ID, K, Ij, and domain #.
+     *      Sub-task: Loop through every particle and call a non-deleting migrate on every particle in the domain (which does not belong to this domain).
+     *
+     *
+     * During the global solve, each process needs to loop through the ray identities that are stored within that subdomain.
+     *      Sub-task: Figure out how to iterate through cells within a single process and not the global subdomain.
+     *      Sub-task: Delete the cells that are not from this rank.
      * */
 
     /** Begins radiation properties model
@@ -69,6 +85,30 @@ void ablate::radiation::Radiation::RayInit() {
      * (sorted by distance and starting at the boundary working in)
      * */
 
+    // TODO: Setup the particles and their associated fields including: ray identifier, domains crossed, coordinates, ray direction, origin domain. Instantiate ray particles for each local cell only
+
+    /** Instantiate a vector of fields which can store the information required in the search particles? */
+    std::vector<ParticleField> fields;
+
+    /** Create a DM that is associated with the radiation particle field
+     * This is the feild that will be associated with the particle search
+     * */
+    DMCreate(PETSC_COMM_WORLD, &radDM) >> checkError;
+    DMSetType(radDM, DMSWARM) >> checkError;
+    DMSetDimension(radDM, dim) >> checkError;
+    DMSwarmSetType(radDM, DMSWARM_PIC) >> checkError;
+    std::vector<std::string> coordComponents;  //!< Record the defaul fields.
+    coordComponents = {"X", "Y", "Z"};         //!< The number of coordinate components will always be three because of the nature of the radiation solver.
+
+    auto coordField = ParticleField{.name = DMSwarmPICField_coor, .components = coordComponents, .type = domain::FieldLocation::SOL, .dataType = PETSC_REAL};
+    particleFieldDescriptors.push_back(coordField);
+    particleFieldDescriptors.emplace_back(ParticleField{.name = DMSwarmField_pid, .type = domain::FieldLocation::AUX, .dataType = PETSC_INT64});
+
+    for (auto& field : fields) {
+        RegisterParticleField(field);  //!< register each field
+    }
+
+    /** Declare some local variables */
     double theta;  //!< represents the actual current angle (inclination)
     double phi;    //!< represents the actual current angle (rotation)
 
@@ -76,6 +116,8 @@ void ablate::radiation::Radiation::RayInit() {
      * */
     solver::Range cellRange;
     GetCellRange(cellRange);
+
+    // TODO: This is still relevant, as there will be global indexing of these values but with local information only
 
     /** Create a nested vector which can store cell locations based on origin cell, theta, phi, and space step
      * Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
@@ -96,6 +138,8 @@ void ablate::radiation::Radiation::RayInit() {
 
     Krad.resize((cellRange.end - cellRange.start), Ij1Cells);
 
+    // TODO: The direction vector of the ray will become the coordinates of the particle
+
     /** Get setup things for the position vector of the current cell index
      * Declare the variables that will contain the geometry of the cells
      * Obtain the geometric information about the cells in the DM
@@ -112,14 +156,14 @@ void ablate::radiation::Radiation::RayInit() {
     //    PetscFVFaceGeom* faceGeom;
 
     PetscInt ncells = 0;
-    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {  // TODO: Only for cells within my rank domain
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
         /** Provide progress updates if the log is enabled.
          * Initializer described how many of the cell ray locations have been stored.
          */
         if (log) {
             double percentComplete = 100.0 * double(ncells) / double((cellRange.end - cellRange.start));
-            log->Printf("Radiation Initializer Percent Complete: %.1f\n", percentComplete);
+            log->Printf("Radiation Initializer Percent Complete: %3.1f\n", percentComplete);
         }
 
         DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);  //!< Reads the cell location from the current cell
@@ -143,6 +187,10 @@ void ablate::radiation::Radiation::RayInit() {
                 bool boundary = false;
 
                 while (!boundary) {
+                    // TODO: Create a particle for every new ray at this coordinate with this direction, putting in the origin rank, ray id, domains crossed, etc.
+                        //TODO: Maybe because of this, the particles need to be created individually and this will change the field initialization?
+                    // TODO: All of the actual marching should be seperated into a second step which loops over present particles. The seperation will not be completely clean.
+
                     /** Insert zeros into the Ij1 initialization so that the solver has an initial assumption of 0 to work with.
                      * Put as many zeros as there are domains so that there are matching indices
                      * Domain split every x points
@@ -150,6 +198,9 @@ void ablate::radiation::Radiation::RayInit() {
                     PetscReal initialValue = 0.0;  //!< This is the intensity being given to the initial values of the rays
                     PetscReal anotherInitialValue = 1;
                     //                    std::vector<PetscInt> rayDomain;
+
+                    // TODO: All of this still applies. They will be local variables that are indexed globally.
+
                     Ij1[ncells][ntheta][nphi].push_back(initialValue);  //!< The initial value to input for Ij1 should be 0 for the number of domains that the ray crosses
                     Krad[ncells][ntheta][nphi].push_back(anotherInitialValue);
                     rays[ncells][ntheta][nphi].push_back(rayDomains);
@@ -160,7 +211,7 @@ void ablate::radiation::Radiation::RayInit() {
                                                //!< step that was taken between cells should be saved.
 
                     nsteps = 0;                      //!< Reset the number of steps that the domain contains, moving on to a new domain
-                    while (nsteps < domainPoints) {  //!< While there are fewer points in this domain than there should be TODO: This condition should represent the moment that the domain is crossed
+                    while (nsteps < domainPoints) {  //!< While there are fewer points in this domain than there should be
                         /** Draw a point on which to grab the cells of the DM
                          * Intersect should point to the boundary, and then be pushed back to the origin, getting each cell
                          * converts the present angle number into a real angle
@@ -212,6 +263,7 @@ void ablate::radiation::Radiation::RayInit() {
                                 rays[ncells][ntheta][nphi][ndomain].push_back(cell[0].index);
                                 h[ncells][ntheta][nphi][ndomain].push_back(hhere);
                                 hhere = 0;
+                                // TODO: DMSwarm Migrate to move the ray into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment
                             } else {
                                 hhere += hstep;
                             }
