@@ -17,7 +17,6 @@ class DistributeWithGhostCells : public Modifier {
      */
     PetscErrorCode TagMpiGhostCells(DM dmNew);
 
-
    public:
     explicit DistributeWithGhostCells(int ghostCellDepth = {});
 

@@ -93,18 +93,6 @@ endif ()
 add_executable(ablate main.cpp)
 target_link_libraries(ablate PUBLIC ablateLibrary PRIVATE chrestCompilerFlags)
 
-# keep a separate main statement
-add_executable(ex44 ex44.c)
-target_link_libraries(ex44 PRIVATE ablateLibrary)
-ablate_default_target_compile_options_cxx(ex44)
-add_executable(ex37 ex37.c)
-target_link_libraries(ex37 PRIVATE ablateLibrary)
-ablate_default_target_compile_options_cxx(ex37)
-
-add_executable(extrudeExample extrudeExample.c)
-target_link_libraries(extrudeExample PRIVATE ablateLibrary)
-ablate_default_target_compile_options_cxx(extrudeExample)
-
 # include system specific hacks
 include(config/systemHacks.cmake)
 

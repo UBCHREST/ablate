@@ -1,9 +1,9 @@
 #include "runEnvironment.hpp"
 #include <mpi.h>
 #include <chrono>
+#include <iostream>
 #include <regex>
 #include <string>
-#include <iostream>
 
 ablate::environment::RunEnvironment::RunEnvironment() : outputDirectory(), title("") {}
 

@@ -53,14 +53,14 @@ PetscErrorCode ablate::domain::modifiers::DistributeWithGhostCells::TagMpiGhostC
             PetscInt numCells;
 
             PetscCall(DMPlexGetSupportSize(dmNew, f, &numCells));
-            if(numCells == 1){
+            if (numCells == 1) {
                 const PetscInt *cells = NULL;
                 PetscInt vA;
                 PetscCall(DMPlexGetSupport(dmNew, f, &cells));
                 PetscCall(DMLabelGetValue(vtkLabel, cells[0], &vA));
-                if(vA!= 1) PetscCall(DMLabelSetValue(ghostLabel, f, 1));
+                if (vA != 1) PetscCall(DMLabelSetValue(ghostLabel, f, 1));
             }
-            if (numCells  > 1) {
+            if (numCells > 1) {
                 const PetscInt *cells = NULL;
                 PetscInt vA, vB;
 
