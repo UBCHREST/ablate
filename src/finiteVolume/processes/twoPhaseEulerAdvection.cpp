@@ -829,10 +829,10 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     ke *= 0.5;
     (*internalEnergy) = (totalEnergy)-ke;
 
-//    // mass fractions
-//    PetscReal Yg = densityVF / (*density);
-//    PetscReal Yl = ((*density) - densityVF) / (*density);
-//
+    // mass fractions
+    PetscReal Yg = densityVF / (*density);
+    PetscReal Yl = ((*density) - densityVF) / (*density);
+
     PetscReal R1 = eosGas->GetGasConstant();
     PetscReal cp2 = eosLiquid->GetSpecificHeatCp();
     PetscReal p02 = eosLiquid->GetReferencePressure();
@@ -841,145 +841,145 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     PetscReal cv1 = R1 / (gamma1 - 1);
 //    PetscReal cp1 = gamma1*cv1;
 
-//
-//    PetscReal etot = (*internalEnergy);
-//    PetscReal A = cp2 / cv1 / gamma2;
-//    PetscReal B = Yg + Yl * A;
-//    PetscReal D = p02 / (*density) - etot;
-//    PetscReal E = Yg * p02 / (*density) + Yl * A * etot;
-//    PetscReal eG, eL, a, b, c, root1, root2;
-//    if (Yg < 1E-3) {  // avoid divide by zero
-//        a = B * (Yg * (gamma2 - 1) - Yg * (gamma1 - 1) - gamma2 * B);
-//        b = etot * Yg * (gamma1 - 1) + etot * B + Yg * (gamma2 - 1) * D - gamma2 * D * B;
-//        c = etot * D;
-//        if (PetscAbs(a) < 1E-5) {
-//            eG = -c / b;
-//        } else {
-//            root1 = (-b + PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
-//            root2 = (-b - PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
-//            if (root1 > 1E-5 && root2 > 1E-5) {
-//                eG = PetscMin(root1, root2);
-//            } else {
-//                eG = PetscMax(root1, root2);  // take positive root
-//                if (eG < 0) {                 // negative internal energy not physical
-//                    throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eG");
-//                }
-//            }
-//        }
-//
-//        eL = ((*internalEnergy) - Yg * eG) / Yl;
-//        if (eL < 0) {
-//            throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eL");
-//        }
-//    } else {  // else if Yl<10e-5,
-//        a = B * Yl * (Yg * (gamma2 - 1) - gamma2 * B - Yg * (gamma1 - 1));
-//        b = Yg * (gamma1 - 1) * B * etot + Yg * (gamma1 - 1) * Yl * A * etot - Yg * (gamma2 - 1) * E + gamma2 * E * B + gamma2 * Yl * B * A * etot;
-//        c = (-A) * etot * (Yg * (gamma1 - 1) * etot + gamma2 * E);
-//        if (PetscAbs(a) < 1E-5) {
-//            eL = -c / b;
-//        } else {
-//            root1 = (-b + PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
-//            root2 = (-b - PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
-//            if (root1 > 1E-5 && root2 > 1E-5) {
-//                eL = PetscMin(root1, root2);
-//            } else {
-//                eL = PetscMax(root1, root2);  // take positive root
-//                if (eL < 0) {                 // negative internal energy not physical
-//                    throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eL");
-//                }
-//            }
-//        }
-//        eG = ((*internalEnergy) - Yl * eL) / Yg;
-//        if (eG < 0) {
-//            throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eG");
-//        }
-//    }
-//
-//    PetscReal etG = eG + ke;
-//    PetscReal etL = eL + ke;
-//    PetscReal ar = -(gamma2 - 1) * eL;
-//    PetscReal br = (gamma1 - 1) * Yg * (*density) * eG + (gamma2 - 1) * eL * (*density) * Yl + gamma2 * p02;
-//    PetscReal cr = -gamma2 * p02 * Yl * (*density);
-//    PetscReal root1r = (-br + PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
-//    PetscReal root2r = (-br - PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
-//    PetscReal rhoL;
-//    if (PetscAbs(ar) < 1E-5) {
-//        rhoL = -cr / br;
-//    } else {
-//        rhoL = PetscMax(root1r, root2r);
-//        if (rhoL < 1E-5) {  // negative density not physical
-//            throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative density rhoL");
-//        }
-//    }
-//    PetscReal rhoG = ((gamma2 - 1) * eL * rhoL - gamma2 * p02) / (gamma1 - 1) / eG;
-//    if (rhoG < 1E-5) {  // negative density not physical
-//        throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative density rhoG");
-//    }
-//    PetscReal pG = 0;
-//    PetscReal pL;
-//    PetscReal a1 = 0;
-//    PetscReal a2 = 0;
 
+    PetscReal etot = (*internalEnergy);
+    PetscReal A = cp2 / cv1 / gamma2;
+    PetscReal B = Yg + Yl * A;
+    PetscReal D = p02 / (*density) - etot;
+    PetscReal E = Yg * p02 / (*density) + Yl * A * etot;
+    PetscReal eG, eL, a, b, c, root1, root2;
+    if (Yg < 1E-3) {  // avoid divide by zero
+        a = B * (Yg * (gamma2 - 1) - Yg * (gamma1 - 1) - gamma2 * B);
+        b = etot * Yg * (gamma1 - 1) + etot * B + Yg * (gamma2 - 1) * D - gamma2 * D * B;
+        c = etot * D;
+        if (PetscAbs(a) < 1E-5) {
+            eG = -c / b;
+        } else {
+            root1 = (-b + PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
+            root2 = (-b - PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
+            if (root1 > 1E-5 && root2 > 1E-5) {
+                eG = PetscMax(root1, root2); // used to be Min
+            } else {
+                eG = PetscMax(root1, root2);  // take positive root
+                if (eG < 0) {                 // negative internal energy not physical
+                    throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eG");
+                }
+            }
+        }
 
-    SNES snes;
-    Vec x, r;
-    Mat J;
-    VecCreate(PETSC_COMM_SELF, &x);
-    VecSetSizes(x, PETSC_DECIDE, 4);
-    VecSetFromOptions(x);
-    VecSet(x, (*density)); // set initial guess to conserved density, [rho1, rho2, e1, e2] = [rho, rho, rho, rho]
-    VecSetValue(x, 0, 1.0, INSERT_VALUES);
-    VecSetValue(x, 1, 1000.0, INSERT_VALUES);
-    VecDuplicate(x, &r);
-
-    MatCreate(PETSC_COMM_SELF, &J);
-    MatSetSizes(J, PETSC_DECIDE, PETSC_DECIDE, 4, 4);
-    MatSetFromOptions(J);
-    MatSetUp(J);
-
-    SNESCreate(PETSC_COMM_SELF, &snes);
-    DecodeDataStructGas decodeDataStruct{.etot = (*internalEnergy),
-        .rhotot = (*density),
-        .Yg = densityVF / (*density),
-        .Yl = ((*density) - densityVF) / (*density),
-        .gam1 = gamma1,
-        .gam2 = gamma2,
-        .cvg = cv1,
-        .cpl = cp2,
-        .p0l = p02,
-    };
-    SNESSetFunction(snes, r, FormFunctionGas, &decodeDataStruct);
-    SNESSetJacobian(snes, J, J, FormJacobianGas, &decodeDataStruct);
-    // default Newton's method
-    //      SNESSetType(snes, "newtontr");
-    //      SNESSetTolerances(SNES snes, PetscReal atol, PetscReal rtol, PetscReal stol, PetscInt its, PetscInt fcts);
-    //          default rtol = 10e-8
-    // snes_fd: use FD Jacobian - SNESComputeJacobianDefault()
-    // snes_monitor : view residuals for each iteration
-//    PetscOptionsSetValue(NULL, "-snes_monitor", NULL);
-//    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
-    SNESSetFromOptions(snes);
-    SNESSolve(snes, NULL, x);
-//    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
-    const PetscScalar *ax;
-    VecGetArrayRead(x, &ax);
-    PetscReal rhoG = ax[0];
-    PetscReal rhoL = ax[1];
-    PetscReal eG = ax[2];
-    PetscReal eL = ax[3];
-
-    SNESDestroy(&snes);
-    VecDestroy(&x);
-    VecDestroy(&r);
-    MatDestroy(&J);
+        eL = ((*internalEnergy) - Yg * eG) / Yl;
+        if (eL < 0) {
+            throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eL");
+        }
+    } else {  // else if Yl<10e-5,
+        a = B * Yl * (Yg * (gamma2 - 1) - gamma2 * B - Yg * (gamma1 - 1));
+        b = Yg * (gamma1 - 1) * B * etot + Yg * (gamma1 - 1) * Yl * A * etot - Yg * (gamma2 - 1) * E + gamma2 * E * B + gamma2 * Yl * B * A * etot;
+        c = (-A) * etot * (Yg * (gamma1 - 1) * etot + gamma2 * E);
+        if (PetscAbs(a) < 1E-5) {
+            eL = -c / b;
+        } else {
+            root1 = (-b + PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
+            root2 = (-b - PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
+            if (root1 > 1E-5 && root2 > 1E-5) {
+                eL = PetscMin(root1, root2);
+            } else {
+                eL = PetscMax(root1, root2);  // take positive root
+                if (eL < 0) {                 // negative internal energy not physical
+                    throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eL");
+                }
+            }
+        }
+        eG = ((*internalEnergy) - Yl * eL) / Yg;
+        if (eG < 0) {
+            throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative internal energy eG");
+        }
+    }
 
     PetscReal etG = eG + ke;
     PetscReal etL = eL + ke;
-
+    PetscReal ar = -(gamma2 - 1) * eL;
+    PetscReal br = (gamma1 - 1) * Yg * (*density) * eG + (gamma2 - 1) * eL * (*density) * Yl + gamma2 * p02;
+    PetscReal cr = -gamma2 * p02 * Yl * (*density);
+    PetscReal root1r = (-br + PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
+    PetscReal root2r = (-br - PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
+    PetscReal rhoL;
+    if (PetscAbs(ar) < 1E-5) {
+        rhoL = -cr / br;
+    } else {
+        rhoL = PetscMax(root1r, root2r);
+        if (rhoL < 1E-5) {  // negative density not physical
+            throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative density rhoL");
+        }
+    }
+    PetscReal rhoG = ((gamma2 - 1) * eL * rhoL - gamma2 * p02) / (gamma1 - 1) / eG;
+    if (rhoG < 1E-5) {  // negative density not physical
+        throw std::invalid_argument("ablate::finiteVolume::twoPhaseEulerAdvection PerfectGas/StiffenedGas DecodeState cannot result in negative density rhoG");
+    }
     PetscReal pG = 0;
     PetscReal pL;
     PetscReal a1 = 0;
     PetscReal a2 = 0;
+
+
+//    SNES snes;
+//    Vec x, r;
+//    Mat J;
+//    VecCreate(PETSC_COMM_SELF, &x);
+//    VecSetSizes(x, PETSC_DECIDE, 4);
+//    VecSetFromOptions(x);
+//    VecSet(x, (*density)); // set initial guess to conserved density, [rho1, rho2, e1, e2] = [rho, rho, rho, rho]
+//    VecSetValue(x, 0, 1.0, INSERT_VALUES);
+//    VecSetValue(x, 1, 1000.0, INSERT_VALUES);
+//    VecDuplicate(x, &r);
+//
+//    MatCreate(PETSC_COMM_SELF, &J);
+//    MatSetSizes(J, PETSC_DECIDE, PETSC_DECIDE, 4, 4);
+//    MatSetFromOptions(J);
+//    MatSetUp(J);
+//
+//    SNESCreate(PETSC_COMM_SELF, &snes);
+//    DecodeDataStructGas decodeDataStruct{.etot = (*internalEnergy),
+//        .rhotot = (*density),
+//        .Yg = densityVF / (*density),
+//        .Yl = ((*density) - densityVF) / (*density),
+//        .gam1 = gamma1,
+//        .gam2 = gamma2,
+//        .cvg = cv1,
+//        .cpl = cp2,
+//        .p0l = p02,
+//    };
+//    SNESSetFunction(snes, r, FormFunctionGas, &decodeDataStruct);
+//    SNESSetJacobian(snes, J, J, FormJacobianGas, &decodeDataStruct);
+//    // default Newton's method
+//    //      SNESSetType(snes, "newtontr");
+//    //      SNESSetTolerances(SNES snes, PetscReal atol, PetscReal rtol, PetscReal stol, PetscInt its, PetscInt fcts);
+//    //          default rtol = 10e-8
+//    // snes_fd: use FD Jacobian - SNESComputeJacobianDefault()
+//    // snes_monitor : view residuals for each iteration
+////    PetscOptionsSetValue(NULL, "-snes_monitor", NULL);
+////    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
+//    SNESSetFromOptions(snes);
+//    SNESSolve(snes, NULL, x);
+////    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
+//    const PetscScalar *ax;
+//    VecGetArrayRead(x, &ax);
+//    PetscReal rhoG = ax[0];
+//    PetscReal rhoL = ax[1];
+//    PetscReal eG = ax[2];
+//    PetscReal eL = ax[3];
+//
+//    SNESDestroy(&snes);
+//    VecDestroy(&x);
+//    VecDestroy(&r);
+//    MatDestroy(&J);
+//
+//    PetscReal etG = eG + ke;
+//    PetscReal etL = eL + ke;
+//
+//    PetscReal pG = 0;
+//    PetscReal pL;
+//    PetscReal a1 = 0;
+//    PetscReal a2 = 0;
 
     // Fill the scratch array for gas
     liquidEulerFieldScratch[CompressibleFlowFields::RHO] = rhoL;
