@@ -18,6 +18,39 @@ void ablate::radiation::Radiation::Setup() { /** allows initialization after the
 }
 
 void ablate::radiation::Radiation::Initialize() {
+    /** Create a DM that is associated with the radiation particle field */
+    DMCreate(PETSC_COMM_WORLD, &radDM) >> checkError;
+    DMSetType(radDM, DMSWARM) >> checkError;
+    DMSetDimension(radDM, dim) >> checkError;
+    DMSwarmSetType(radDM, DMSWARM_PIC) >> checkError;
+
+    // TODO: For the solving step
+    // TODO: The swarm particles can be teleported directly from one rank to another without removing the points from the current rank
+    //     TODO: This means that the particles and their information can be sent during the solve without needing to send them back
+    /** I'm still not clear on how to transport a particle from one location to another, maybe this simply happens within a coordinate field during the initialization
+     * The initialization can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments
+     * This field could be essentially deleted during the solve portion
+     *
+     * Steps of the search:
+     *      Initialize a particle field with particles at the coordinates of their origin cell, one for each ray
+     *      Store the direction of the ray motion in the particle as a field
+     *      March the particle coordinates in the direction of the direction vector
+     *          Do existing ray filling routine
+     *          Run swarm migrate and check if the particle has left the domain
+     *          If yes: Finish that ray segment and store it with its ray ID / domain number
+     *          If no: Repeat march and filling routine
+     *      Should the rays be stored as
+     *
+     * During the solve portion, the only information that needs to be transported is: ray ID, K, Ij, and domain #.
+     *
+     * Steps of the solve:
+     *      Locally compute the source and absorption for each stored ray ID
+     *      Update the values to the fields of the particles (based on this ray ID)
+     *      Send the particles to their origin ranks
+     *      Compute energy for every cell by searching through all present particles
+     *      Delete the particles that are not from this rank
+     * */
+
     /** Begins radiation properties model
      * Runs the ray initialization, finding cell indices
      * Initialize the log if provided
@@ -264,7 +297,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     solver::Range cellRange;
     GetCellRange(cellRange);
 
-    /** TODO: For MPI purposes, should all of the domain computations be accomplished before the individual additions are considered for the cells?
+    /** For MPI purposes, should all of the domain computations be accomplished before the individual additions are considered for the cells?
      * In this case, two separate loops should be travelled through because the domains will need to change within this loop otherwise
      * If the loops are separated then the MPI splitting might be less complicated. I don't know whether this will effect speed significantly, but I would guess not.*/
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
@@ -286,13 +319,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 PetscReal Isource = 0;
                 PetscReal I0 = 0;
 
-                /** TODO: This is the point where MPI should split for domain computation
-                 * Each rank will loop through all of the domains and search for domains which match its rank
-                 * If the rank matches then the absorption and source should be computed for the domain in question
-                 * At the end of this process the properties will have been computed for each domain independently
-                 * Then the cells can locally add these values as needed to get the total radiation intensity transmitted
-                 * */
-
+                /** Local ray computation happens here */
                 for (int ndomain = (nDomain - 1); ndomain >= 0; ndomain--) {
                     /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
                     int numPoints = static_cast<int>(rays[ncells][ntheta][nphi][ndomain].size());
@@ -320,7 +347,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                         }
                     }
                 }
-                /** The rays end here, their intensity is added to the total intensity of the cell
+                /** Global ray computation happens here, grabbing values from the transported particles
+                 * The rays end here, their intensity is added to the total intensity of the cell
                  * Gives the partial impact of the ray on the total sphere.
                  * The sin(theta) is a result of the polar coordinate discretization
                  *

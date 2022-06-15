@@ -42,6 +42,9 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      */
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
+   protected:
+    DM radDM; //!< DM associated with the radiation particles
+
    private:
     /// Class Methods
     void RayInit();
