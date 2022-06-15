@@ -39,7 +39,7 @@ bool testingResources::ConvergenceTester::CompareConvergenceRate(const std::vect
             log->Printf("%s Convergence[%d]: %g\n", name.c_str(), b, slope);
         }
 
-        if (std::isnan(expectedConvergenceRate[b]) && !std::isnan(slope)) {
+        if (std::isnan(expectedConvergenceRate[b]) != std::isnan(slope)) {
             passed = false;
             message += "incorrect L2 convergence order for component[" + std::to_string(b) + "] ";
         } else if (PetscAbs(slope - expectedConvergenceRate[b]) > 0.2) {

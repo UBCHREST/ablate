@@ -5,10 +5,9 @@
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
-#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "monitors/logs/csvLog.hpp"
-#include "parameters/mapParameters.hpp"
+#include "testRunEnvironment.hpp"
 
 using namespace ablate;
 
@@ -61,8 +60,7 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFileInOutputDirectory) {
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
-            parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
-            environment::RunEnvironment::Setup(parameters);
+            testingResources::TestRunEnvironment testRunEnvironment(tempDir);
 
             // Create the fileLog
             std::shared_ptr<monitors::logs::Log> log = std::make_shared<monitors::logs::CsvLog>("logFile.csv");
@@ -104,8 +102,7 @@ TEST_P(CsvLogTestFixture, ShouldAppendToFileInOutputDirectory) {
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
-            parameters::MapParameters parameters({{"directory", tempDir}, {"title", ""}, {"tagDirectory", "false"}});
-            environment::RunEnvironment::Setup(parameters);
+            testingResources::TestRunEnvironment testRunEnvironment(tempDir, "");
 
             // Create the fileLog
             {

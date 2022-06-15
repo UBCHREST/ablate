@@ -1,10 +1,11 @@
 ---
 # This is the lodi validation for what should be uniform flow
 environment:
-  title: uniformFlow
+  title: _uniformFlow
   tagDirectory: false
 arguments:
   petsclimiter_type: none
+  dm_plex_periodic_cut: true
 timestepper:
   name: theMainTimeStepper
   arguments:
@@ -18,10 +19,6 @@ timestepper:
     lower: [ 0.0, -.5 ]
     upper: [ 1.0, .5 ]
     simplex: false
-    mainRegion:
-      name: mainSolver
-    boundaryFaceRegion:
-      name: boundaryFaces
     preModifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 0
@@ -41,6 +38,8 @@ timestepper:
           parameters:
             gamma: 1.4
             Rgas : 287.0
+        region:
+          name: domain
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
@@ -71,7 +70,7 @@ solvers:
   - !ablate::finiteVolume::CompressibleFlowSolver
     id: vortexFlowField
     region:
-      name: mainSolver
+      name: interiorCells
     fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
       mInf: .3
     parameters:

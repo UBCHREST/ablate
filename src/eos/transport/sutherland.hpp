@@ -9,7 +9,15 @@ namespace ablate::eos::transport {
 
 class Sutherland : public TransportModel {
    private:
+    /**
+     * Eos need to compute cp for sutherland model
+     */
     const std::shared_ptr<eos::EOS> eos;
+
+    /**
+     * Allow specification/disable of certain properties
+     */
+    const std::vector<TransportProperty> enabledProperties;
 
     // constant values
     inline const static PetscReal pr = 0.707;
@@ -33,10 +41,12 @@ class Sutherland : public TransportModel {
     static PetscErrorCode SutherlandViscosityTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
     static PetscErrorCode SutherlandDiffusivityFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
     static PetscErrorCode SutherlandDiffusivityTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
+    static PetscErrorCode SutherlandZeroFunction(const PetscReal conserved[], PetscReal* property, void* ctx);
+    static PetscErrorCode SutherlandZeroTemperatureFunction(const PetscReal conserved[], PetscReal temperature, PetscReal* property, void* ctx);
     /** @} */
 
    public:
-    explicit Sutherland(std::shared_ptr<eos::EOS> eos);
+    explicit Sutherland(std::shared_ptr<eos::EOS> eos, const std::vector<TransportProperty>& enabledProperties = {});
 
     /**
      * Single function to produce transport function for any property based upon the available fields

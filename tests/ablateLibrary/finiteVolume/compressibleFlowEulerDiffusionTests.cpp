@@ -14,7 +14,6 @@
 #include "finiteVolume/boundaryConditions/ghost.hpp"
 #include "finiteVolume/compressibleFlowSolver.hpp"
 #include "finiteVolume/fluxCalculator/offFlux.hpp"
-#include "finiteVolume/processes/eulerTransport.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/functionFactory.hpp"
 #include "parameters/mapParameters.hpp"
@@ -73,15 +72,13 @@ static PetscErrorCode EulerExact(PetscInt dim, PetscReal time, const PetscReal x
     PetscReal T = ComputeTExact(time, xyz, parameters);
 
     PetscReal u = 0.0;
-    PetscReal v = 0.0;
     PetscReal p = parameters->rho * parameters->Rgas * T;
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
-    PetscReal eT = e + 0.5 * (u * u + v * v);
+    PetscReal eT = e + 0.5 * (u * u);
 
     node[ablate::finiteVolume::CompressibleFlowFields::RHO] = parameters->rho;
     node[ablate::finiteVolume::CompressibleFlowFields::RHOE] = parameters->rho * eT;
-    node[ablate::finiteVolume::CompressibleFlowFields::RHOU + 0] = parameters->rho * u;
-    node[ablate::finiteVolume::CompressibleFlowFields::RHOU + 1] = parameters->rho * v;
+    node[ablate::finiteVolume::CompressibleFlowFields::RHOU] = parameters->rho * u;
 
     PetscFunctionReturn(0);
 }
@@ -92,27 +89,15 @@ static PetscErrorCode PhysicsBoundary_Euler(PetscReal time, const PetscReal *c, 
 
     PetscReal T = parameters->Tboundary;
     PetscReal u = 0.0;
-    PetscReal v = 0.0;
     PetscReal p = parameters->rho * parameters->Rgas * T;
     PetscReal e = p / ((parameters->gamma - 1.0) * parameters->rho);
-    PetscReal eT = e + 0.5 * (u * u + v * v);
+    PetscReal eT = e + 0.5 * (u * u);
 
-    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHO] = parameters->rho;
-    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHOE] = parameters->rho * eT;
-    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHOU + 0] = parameters->rho * u;
-    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHOU + 1] = parameters->rho * v;
+    // linearly interpolate boundary value such that tB in on boundary
+    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHO] = parameters->rho + parameters->rho - a_xI[ablate::finiteVolume::CompressibleFlowFields::RHO];
+    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHOE] = parameters->rho * eT + parameters->rho * eT - a_xI[ablate::finiteVolume::CompressibleFlowFields::RHOE];
+    a_xG[ablate::finiteVolume::CompressibleFlowFields::RHOU] = parameters->rho * u + parameters->rho * u - a_xI[ablate::finiteVolume::CompressibleFlowFields::RHOU];
 
-    PetscFunctionReturn(0);
-}
-
-static PetscErrorCode PhysicsBoundary_Mirror(PetscReal time, const PetscReal *c, const PetscReal *n, const PetscScalar *a_xI, PetscScalar *a_xG, void *ctx) {
-    PetscFunctionBeginUser;
-    InputParameters *constants = (InputParameters *)ctx;
-
-    // Offset the calc assuming the cells are square
-    for (PetscInt f = 0; f < ablate::finiteVolume::CompressibleFlowFields::RHOU + constants->dim; f++) {
-        a_xG[f] = a_xI[f];
-    }
     PetscFunctionReturn(0);
 }
 
@@ -173,7 +158,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
         PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
 
         InputParameters parameters = GetParam().parameters;
-        parameters.dim = 2;
+        parameters.dim = 1;
         PetscInt blockSize = 2 + parameters.dim;
         PetscInt initialNx = GetParam().initialNx;
 
@@ -183,7 +168,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
         // March over each level
         for (PetscInt l = 0; l < GetParam().levels; l++) {
-            PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %d\n", l);
+            PetscPrintf(PETSC_COMM_WORLD, "Running Calculation at Level %" PetscInt_FMT "\n", l);
 
             DM dmCreate; /* problem definition */
             TS ts;       /* timestepper */
@@ -197,11 +182,11 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
 
             // Create a mesh
             // hard code the problem setup
-            PetscReal start[] = {0.0, 0.0};
-            PetscReal end[] = {parameters.L, parameters.L};
+            PetscReal start[] = {0.0};
+            PetscReal end[] = {parameters.L};
             PetscInt nx1D = initialNx * PetscPowRealInt(2, l);
-            PetscInt nx[] = {nx1D, nx1D};
-            DMBoundaryType bcType[] = {DM_BOUNDARY_NONE, DM_BOUNDARY_NONE};
+            PetscInt nx[] = {nx1D};
+            DMBoundaryType bcType[] = {DM_BOUNDARY_NONE};
             DMPlexCreateBoxMesh(PETSC_COMM_WORLD, parameters.dim, PETSC_FALSE, nx, start, end, bcType, PETSC_TRUE, &dmCreate) >> testErrorChecker;
 
             // define the fields based upon a compressible flow
@@ -222,8 +207,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             auto exactSolution = std::make_shared<mathFunctions::FieldFunction>("euler", mathFunctions::Create(EulerExact, &parameters));
 
             auto boundaryConditions = std::vector<std::shared_ptr<finiteVolume::boundaryConditions::BoundaryCondition>>{
-                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "wall left/right", std::vector<int>{2, 4}, PhysicsBoundary_Euler, &parameters),
-                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "top/bottom", std::vector<int>{1, 3}, PhysicsBoundary_Mirror, &parameters),
+                std::make_shared<finiteVolume::boundaryConditions::Ghost>("euler", "wall left/right", std::vector<int>{1, 2}, PhysicsBoundary_Euler, &parameters),
             };
 
             auto flowObject = std::make_shared<ablate::finiteVolume::CompressibleFlowSolver>("testFlow",
@@ -273,7 +257,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
         }
 
         // Fit each component and output
-        for (auto b = 0; b < blockSize; b++) {
+        for (PetscInt b = 0; b < blockSize; b++) {
             PetscReal l2Slope;
             PetscReal l2Intercept;
             PetscLinearRegression(hHistory.size(), &hHistory[0], &l2History[b][0], &l2Slope, &l2Intercept) >> testErrorChecker;
@@ -282,7 +266,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
             PetscReal lInfIntercept;
             PetscLinearRegression(hHistory.size(), &hHistory[0], &lInfHistory[b][0], &lInfSlope, &lInfIntercept) >> testErrorChecker;
 
-            PetscPrintf(PETSC_COMM_WORLD, "Convergence[%d]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> testErrorChecker;
+            PetscPrintf(PETSC_COMM_WORLD, "Convergence[%" PetscInt_FMT "]: L2 %2.3g LInf %2.3g \n", b, l2Slope, lInfSlope) >> testErrorChecker;
 
             if (std::isnan(GetParam().expectedL2Convergence[b])) {
                 ASSERT_TRUE(std::isnan(l2Slope)) << "incorrect L2 convergence order for component[" << b << "]";
@@ -310,8 +294,8 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowDiffusionTestFixture,
                                                                                    .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                                                    .initialNx = 3,
                                                                                    .levels = 3,
-                                                                                   .expectedL2Convergence = {NAN, 1.5, NAN, NAN},
-                                                                                   .expectedLInfConvergence = {NAN, 1.3, NAN, NAN}},
+                                                                                   .expectedL2Convergence = {NAN, 2.25, NAN},
+                                                                                   .expectedLInfConvergence = {NAN, 2.25, NAN}},
                                          (CompressibleFlowDiffusionTestParameters){.mpiTestParameter = {.testName = "conduction multi mpi",
                                                                                                         .nproc = 2,
                                                                                                         .arguments = "-dm_plex_separate_marker -ts_adapt_type none "
@@ -319,6 +303,6 @@ INSTANTIATE_TEST_SUITE_P(CompressibleFlow, CompressibleFlowDiffusionTestFixture,
                                                                                    .parameters = {.dim = 2, .L = 0.1, .gamma = 1.4, .Rgas = 1.0, .k = 0.3, .rho = 1.0, .Tinit = 400, .Tboundary = 300},
                                                                                    .initialNx = 9,
                                                                                    .levels = 2,
-                                                                                   .expectedL2Convergence = {NAN, 2.2, NAN, NAN},
-                                                                                   .expectedLInfConvergence = {NAN, 2.5, NAN, NAN}}),
+                                                                                   .expectedL2Convergence = {NAN, 2.2, NAN},
+                                                                                   .expectedLInfConvergence = {NAN, 2.0, NAN}}),
                          [](const testing::TestParamInfo<CompressibleFlowDiffusionTestParameters> &info) { return info.param.mpiTestParameter.getTestName(); });

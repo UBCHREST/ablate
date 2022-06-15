@@ -3,9 +3,8 @@
 #include <memory>
 #include <parameters/mapParameters.hpp>
 #include <sstream>
-#include <utilities/fileUtility.hpp>
-#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
+#include "testRunEnvironment.hpp"
 #include "yamlParser.hpp"
 
 namespace ablateTesting::parser {
@@ -32,8 +31,7 @@ TEST(YamlParserTests, ShouldLocateLocalFile) {
         ofs.close();
     }
 
-    ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {tempYaml.parent_path()});
-    auto yamlParser = std::make_shared<cppParser::YamlParser>(tempYaml, fileLocator.GetLocateFileFunction());
+    std::shared_ptr<cppParser::Factory> yamlParser = std::make_shared<cppParser::YamlParser>(tempYaml);
 
     // act
     auto computedFilePath = yamlParser->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{"fileName"});
@@ -66,8 +64,7 @@ TEST(YamlParserTests, ShouldLocateFileNextToInputFile) {
         ofs.close();
     }
 
-    ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {tempYaml.parent_path()});
-    auto yamlParser = std::make_shared<cppParser::YamlParser>(tempYaml, fileLocator.GetLocateFileFunction());
+    std::shared_ptr<cppParser::Factory> yamlParser = std::make_shared<cppParser::YamlParser>(tempYaml);
     auto yamlMeshFactory = yamlParser->GetFactory("mesh");
 
     // act
@@ -85,31 +82,6 @@ TEST(YamlParserTests, ShouldLocateFileNextToInputFile) {
 
 class YamlParserTestsPetscTestFixture : public testingResources::PetscTestFixture {};
 
-TEST_F(YamlParserTestsPetscTestFixture, ShouldDownloadFile) {
-    // arrange
-    fs::path tempYaml = fs::temp_directory_path();
-    tempYaml /= "tempFile.yaml";
-    {
-        std::ofstream ofs(tempYaml);
-        ofs << "---" << std::endl;
-        ofs << " fileName: " << REMOTE_URL << std::endl;
-        ofs.close();
-    }
-
-    ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {tempYaml.parent_path()});
-    auto yamlParser = std::make_shared<cppParser::YamlParser>(tempYaml, fileLocator.GetLocateFileFunction());
-
-    // act
-    auto computedFilePath = yamlParser->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{"fileName"});
-
-    // assert
-    ASSERT_TRUE(std::filesystem::exists(computedFilePath));
-
-    // cleanup
-    fs::remove(computedFilePath);
-    fs::remove(tempYaml);
-}
-
 TEST_F(YamlParserTestsPetscTestFixture, ShouldDownloadAndRelocateFile) {
     // arrange
     fs::path outputDir = fs::temp_directory_path() / "outputDirTemp";
@@ -120,14 +92,13 @@ TEST_F(YamlParserTestsPetscTestFixture, ShouldDownloadAndRelocateFile) {
     yaml << "  directory: " << outputDir << std::endl;
     yaml << "  title: test " << std::endl;
     yaml << "  tagDirectory: false" << std::endl;
-    yaml << "fileName: " << REMOTE_URL << std::endl;
+    yaml << "fileName: !ablate::environment::Download " << REMOTE_URL << std::endl;
 
-    ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {}, outputDir);
-    auto yamlParser = std::make_shared<cppParser::YamlParser>(yaml.str(), fileLocator.GetLocateFileFunction());
+    std::shared_ptr<cppParser::Factory> yamlParser = std::make_shared<cppParser::YamlParser>(yaml.str());
 
     // Set the global environment
     auto params = yamlParser->GetByName<ablate::parameters::Parameters>("environment");
-    ablate::environment::RunEnvironment::Setup(*params);
+    testingResources::TestRunEnvironment testRunEnvironment(*params);
 
     // act
     auto computedFilePath = yamlParser->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{"fileName"});
@@ -135,37 +106,6 @@ TEST_F(YamlParserTestsPetscTestFixture, ShouldDownloadAndRelocateFile) {
     // assert
     ASSERT_TRUE(std::filesystem::exists(computedFilePath));
     ASSERT_EQ(outputDir, computedFilePath.parent_path());
-
-    // cleanup
-    fs::remove(computedFilePath);
-    fs::remove_all(outputDir);
-}
-
-TEST_F(YamlParserTestsPetscTestFixture, ShouldNotDownloadAndRelocateFile) {
-    // arrange
-    fs::path outputDir = fs::temp_directory_path() / "outputDirTemp";
-
-    std::stringstream yaml;
-    yaml << "---" << std::endl;
-    yaml << "environment:" << std::endl;
-    yaml << "  directory: " << outputDir << std::endl;
-    yaml << "  title: test " << std::endl;
-    yaml << "  tagDirectory: false" << std::endl;
-    yaml << "fileName: " << REMOTE_URL << std::endl;
-
-    ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF);
-    auto yamlParser = std::make_shared<cppParser::YamlParser>(yaml.str(), fileLocator.GetLocateFileFunction());
-
-    // Set the global environment
-    auto params = yamlParser->GetByName<ablate::parameters::Parameters>("environment");
-    ablate::environment::RunEnvironment::Setup(*params);
-
-    // act
-    auto computedFilePath = yamlParser->Get(cppParser::ArgumentIdentifier<std::filesystem::path>{"fileName"});
-
-    // assert
-    ASSERT_TRUE(std::filesystem::exists(computedFilePath));
-    ASSERT_NE(outputDir, computedFilePath.parent_path());
 
     // cleanup
     fs::remove(computedFilePath);

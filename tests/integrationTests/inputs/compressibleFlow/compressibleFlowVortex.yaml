@@ -1,16 +1,22 @@
+# single example of a periodic domain with an inviscid vortex.
 ---
+# metadata for the simulation
 environment:
-  title: compressibleFlowVortex
+  title: _compressibleFlowVortex
   tagDirectory: false
-arguments: {}
+arguments: { }
+# set up the time stepper responsible for marching in time
 timestepper:
   name: theMainTimeStepper
-  io:
+  # io controls how often the results are saved to a file for visualization and restart
+  io: # by default the ablate::io::Hdf5Serializer serializer is used
     interval: 0
+  # time stepper specific input arguments.  By default, the time stepper will use TSADAPTBASIC
   arguments:
     ts_type: rk
     ts_adapt_type: none
     ts_max_steps: 25
+  # sets a single box domain with periodic boundary conditions
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 6, 6 ]
@@ -19,22 +25,32 @@ timestepper:
     boundary: [ "PERIODIC", "PERIODIC" ]
     simplex: false
     modifiers:
+      # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 1
+
+      # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
+      # if using a FVM ghost boundary cells must be added
       - !ablate::domain::modifiers::GhostBoundaryCells
     fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::PerfectGas &eos
           parameters:
             gamma: 1.4
-            Rgas : 287.0
+            Rgas: 287.0
         conservedFieldOptions:
+          # use a leastsquares interpolant for cell based calculations with the default petsc limiter
           petscfv_type: leastsquares
+
+      # specify the extra pressure field for output
       - !ablate::domain::FieldDescription
         name: pressure
         type: FV
-        location: aux
+        location: aux # the pressure field is computed as part of decode and NOT integrated in time directly
+  # set the initial conditions of the flow field
   initialization:
     - fieldName: "euler" #for euler all components are in a single field
       field: >-
@@ -43,16 +59,28 @@ timestepper:
         1.*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004)*(103.80884355390921 - 102.88699047707759*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + y)),
         1.*(0. + 1028.869904770776*exp(0.5*(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2))))*(-0.5 + x))*Power(1 - 1.7681728880157166*exp(1 - 100.*(Power(-0.5 + x,2) + Power(-0.5 + y,2)))*(Power(-0.5 + x,2) + Power(-0.5 + y,2)),2.5000000000000004)
       timeDerivative: "0.0, 0.0, 0.0, 0.0"
+
+# this problem uses a single solver (!ablate::finiteVolume::CompressibleFlowSolver)
 solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: vortexFlowField
+
+  # overwrite and set the time step based upon the CFL constraint
   computePhysicsTimeStep: true
+
+  # a flux calculator must be specified to so solver for advection
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::Ausm
+
+  # the cfl is used to compute the physics time step
   parameters:
     cfl: 0.5
+
+  # there is no transport properties resulting in inviscid flow
   transport:
     k: 0.0
     mu: 0.0
   monitors:
+    # output time step information for each time step
     - !ablate::monitors::TimeStepMonitor
 
+  # share the existing eos with the compressible flow solver
   eos: *eos

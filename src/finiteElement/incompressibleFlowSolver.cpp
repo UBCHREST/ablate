@@ -116,7 +116,7 @@ static PetscErrorCode removeDiscretePressureNullspaceOnTs(TS ts, ablate::finiteE
     try {
         flow.CompleteFlowInitialization(dm, u);
     } catch (std::exception &exp) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
     }
 
     CHKERRQ(ierr);

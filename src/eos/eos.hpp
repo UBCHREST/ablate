@@ -135,6 +135,24 @@ constexpr std::string_view to_string(const ThermodynamicProperty& prop) {
 }
 
 /**
+ * support function to get thermodynamic string name
+ * @param prop
+ * @return
+ */
+constexpr ThermodynamicProperty from_string(const std::string_view& prop) {
+    if (prop == "pressure") return ThermodynamicProperty::Pressure;
+    if (prop == "temperature") return ThermodynamicProperty::Temperature;
+    if (prop == "internalSensibleEnergy") return ThermodynamicProperty::InternalSensibleEnergy;
+    if (prop == "sensibleEnthalpy") return ThermodynamicProperty::SensibleEnthalpy;
+    if (prop == "specificHeatConstantVolume") return ThermodynamicProperty::SpecificHeatConstantVolume;
+    if (prop == "specificHeatConstantPressure") return ThermodynamicProperty::SpecificHeatConstantPressure;
+    if (prop == "speedOfSound") return ThermodynamicProperty::SpeedOfSound;
+    if (prop == "speciesSensibleEnthalpy") return ThermodynamicProperty::SpeciesSensibleEnthalpy;
+    if (prop == "density") return ThermodynamicProperty::Density;
+    throw std::invalid_argument("No known ThermodynamicProperty for " + std::string(prop));
+}
+
+/**
  * Support function for printing a thermodynamic property
  * @param out
  * @param prop
@@ -144,6 +162,19 @@ inline std::ostream& operator<<(std::ostream& out, const ThermodynamicProperty& 
     auto string = to_string(prop);
     out << string;
     return out;
+}
+
+/**
+ * Support function for printing a thermodynamic property
+ * @param out
+ * @param prop
+ * @return
+ */
+inline std::istream& operator>>(std::istream& in, ThermodynamicProperty& prop) {
+    std::string propString;
+    in >> propString;
+    prop = from_string(propString);
+    return in;
 }
 
 }  // namespace ablate::eos

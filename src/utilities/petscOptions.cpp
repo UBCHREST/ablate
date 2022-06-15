@@ -31,7 +31,7 @@ void ablate::utilities::PetscOptionsDestroyAndCheck(const std::string& name, Pet
         if (nopt == 1) {
             PetscPrintf(PETSC_COMM_WORLD, "There is one unused database option. It is:\n") >> ablate::checkError;
         } else {
-            PetscPrintf(PETSC_COMM_WORLD, "There are %d unused database options. They are:\n", (int)nopt) >> ablate::checkError;
+            PetscPrintf(PETSC_COMM_WORLD, "There are %" PetscInt_FMT "unused database options. They are:\n", nopt) >> ablate::checkError;
         }
     }
     PetscOptionsLeft(*options) >> ablate::checkError;

@@ -14,6 +14,10 @@ class IsothermalWall : public LODIBoundary {
                                                  const PetscScalar* boundaryValues, const PetscScalar* stencilValues[], const PetscInt aOff[], const PetscScalar* auxValues,
                                                  const PetscScalar* stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[],
                                                  PetscScalar source[], void* ctx);
+
+   private:
+    static PetscErrorCode MirrorSpecies(PetscInt dim, const BoundarySolver::BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[], PetscScalar* boundaryValues,
+                                        const PetscScalar* stencilValues, const PetscInt aOff[], PetscScalar* auxValues, const PetscScalar* stencilAuxValues, void* ctx);
 };
 
 }  // namespace ablate::boundarySolver::lodi

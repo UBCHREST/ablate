@@ -42,7 +42,7 @@ void ablate::monitors::ExtractLineMonitor::Register(std::shared_ptr<solver::Solv
     PetscInt dim;
     DMGetDimension(flow->GetSubDomain().GetDM(), &dim) >> checkError;
 
-    // Now march over each sub segment int he line
+    // Now march over each subsegment in the line
     double ds = minCellRadius / 10.0;
     double s = 0.0;
     double L = 0.0;

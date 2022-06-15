@@ -1,15 +1,22 @@
+# Example setup for incompressible flow that uses a finite volume solver
 ---
-# Example setup for incompressible flow
+# metadata for the simulation
 environment:
   title: incompessibleFlow
   tagDirectory: false
 arguments:
   dm_plex_separate_marker: ""
+  # set the velocity petscspace degree, this is the element order
   velocity_petscspace_degree: 2
+  # set the pressure petscspace degree, this is the element order
   pressure_petscspace_degree: 1
+  # set the temperature petscspace degree, this is the element order
   temperature_petscspace_degree: 1
+
+# set up the time stepper responsible for marching in time
 timestepper:
   name: theMainTimeStepper
+  # set the arguments for the time stepper, this includes the time stepping solution technique for the finite element solver
   arguments:
     ts_dt: .1
     ts_max_steps: 30
@@ -26,6 +33,7 @@ timestepper:
     fieldsplit_0_pc_type: lu
     fieldsplit_pressure_ksp_rtol: 1E-10
     fieldsplit_pressure_pc_type: jacobi
+  # define a simple box mesh
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
     faces: [ 2, 2 ]
@@ -34,20 +42,27 @@ timestepper:
     modifiers:
       - !ablate::domain::modifiers::SetFromOptions
         dm_refine: 2
+
+    # all fields must be defined before solvers.
     fields:
+      # define the velocity field with two components using the FE solver
       - !ablate::domain::FieldDescription
         name: velocity
         prefix: velocity
         components: ["vel0", "vel1"]
         type: FE
+      # define the pressure field using the FE solver
       - !ablate::domain::FieldDescription
         name: pressure
         prefix: pressure
         type: FE
+      # define the temperature field using the FE solver
       - !ablate::domain::FieldDescription
         name: temperature
         prefix: temperature
         type: FE
+
+  # set the initial conditions of the flow field.  Tag each field function so that they can be reused for the exact solution
   initialization:
     - &velocityField
       fieldName: "velocity"
@@ -61,13 +76,19 @@ timestepper:
       fieldName: "temperature"
       field: "t + x + y"
       timeDerivative: "1.0"
+
+  # set the exact solutions based upon the initial conditions
   exactSolution:
     - *velocityField
     - *pressureField
     - *temperatureField
+
+# this problem uses a single solver (!ablate::finiteElement::IncompressibleFlowSolver)
 solver: !ablate::finiteElement::IncompressibleFlowSolver
   id: theFlowField
   options: {}
+
+  # the fe solver assumed constant flow values
   parameters:
     strouhal: 1.0
     reynolds: 1.0
@@ -75,17 +96,21 @@ solver: !ablate::finiteElement::IncompressibleFlowSolver
     mu: 1.0
     k: 1.0
     cp: 1.0
+
+  # set constant boundary conditions for velocity and temperature based uon the initial condition fields
   boundaryConditions:
     - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall velocity"
-      labelIds: [3, 1, 2, 4]
+      labelIds: [3, 1, 2, 4] # this is all walls
       boundaryValue: *velocityField
     - !ablate::finiteElement::boundaryConditions::Essential
       boundaryName: "wall temp"
       labelIds: [3, 1, 2, 4]
       boundaryValue: *temperatureField
   monitors:
+    # compute output the error to standard out
     - !ablate::monitors::FieldErrorMonitor
+    # compute output the error to a log file
     - !ablate::monitors::FieldErrorMonitor
       log: !ablate::monitors::logs::FileLog
         name: errorMonitor.log

@@ -825,30 +825,6 @@ INSTANTIATE_TEST_SUITE_P(
             .f0_w = f0_incompressible_cubic_trig_w,
             .f0_q = NULL},
         (FEFlowMMSParameters){
-            .mpiTestParameter = {.testName = "incompressible 2d cubic p2_p1_p1_sconv",
-                                 .nproc = 1,
-                                 .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p2_p1_p1_sconv",
-                                 .arguments = "-dm_plex_separate_marker -dm_refine 0 "
-                                              "-vel_petscspace_degree 2 -pres_petscspace_degree 1 -temp_petscspace_degree 1 "
-                                              "-ts_max_steps 1 -ts_dt 1e-4 -ts_convergence_estimate -ts_convergence_temporal 0 -convest_num_refine 1 "
-                                              "-snes_error_if_not_converged -snes_convergence_test correct_pressure "
-                                              "-ksp_type fgmres -ksp_gmres_restart 10 -ksp_rtol 1.0e-9 -ksp_atol 1e-16 -ksp_error_if_not_converged "
-                                              "-pc_type fieldsplit -pc_fieldsplit_0_fields 0,2 -pc_fieldsplit_1_fields 1 -pc_fieldsplit_type schur -pc_fieldsplit_schur_factorization_type full "
-                                              "-fieldsplit_0_pc_type lu "
-                                              "-fieldsplit_pressure_ksp_rtol 1e-10 -fieldsplit_pressure_pc_type jacobi"},
-            .createMethod =
-                [](auto name, auto parameters, auto options, auto boundaryConditions, auto auxiliaryFields) {
-                    return std::make_shared<ablate::finiteElement::IncompressibleFlowSolver>(name, domain::Region::ENTIREDOMAIN, parameters, options, boundaryConditions, auxiliaryFields);
-                },
-            .uExact = incompressible_cubic_u,
-            .pExact = incompressible_cubic_p,
-            .TExact = incompressible_cubic_T,
-            .u_tExact = incompressible_cubic_u_t,
-            .T_tExact = incompressible_cubic_T_t,
-            .f0_v = f0_incompressible_cubic_v,
-            .f0_w = f0_incompressible_cubic_w,
-            .f0_q = NULL},
-        (FEFlowMMSParameters){
             .mpiTestParameter = {.testName = "incompressible 2d cubic tri_p3_p2_p2",
                                  .nproc = 1,
                                  .expectedOutputFile = "outputs/finiteElement/incompressible_2d_tri_p3_p2_p2",
