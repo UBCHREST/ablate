@@ -14,7 +14,14 @@ ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& na
                                                            std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper, bool simplex,
                                                            std::shared_ptr<parameters::Parameters> options)
     : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, std::move(fieldDescriptors), AddBoundaryModifiers(lower, upper, std::move(preModifiers), std::move(postModifiers)),
-             std::move(options)) {}
+             std::move(options)) {
+    // make sure that dm_refine was not set
+    if (options) {
+        if (options->Get("dm_refine", 0) != 0) {
+            throw std::invalid_argument("dm_refine when used with ablate::domain::BoxMeshBoundaryCells must be 0.");
+        }
+    }
+}
 
 ablate::domain::BoxMeshBoundaryCells::~BoxMeshBoundaryCells() {
     if (dm) {
