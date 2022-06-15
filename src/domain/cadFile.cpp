@@ -5,7 +5,14 @@
 ablate::domain::CadFile::CadFile(const std::string& nameIn, const std::filesystem::path& pathIn, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string generator,
                                  std::vector<std::shared_ptr<modifiers::Modifier>> modifiers, const std::shared_ptr<parameters::Parameters>& options,
                                  const std::shared_ptr<parameters::Parameters>& surfaceOptions)
-    : Domain(ReadDMFromCadFile(nameIn, pathIn, surfaceOptions, generator, surfacePetscOptions, surfaceDm), nameIn, std::move(fieldDescriptors), std::move(modifiers), options) {}
+    : Domain(ReadDMFromCadFile(nameIn, pathIn, surfaceOptions, generator, surfacePetscOptions, surfaceDm), nameIn, std::move(fieldDescriptors), std::move(modifiers), options) {
+    // make sure that dm_refine was not set
+    if (surfaceOptions) {
+        if (surfaceOptions->Get("dm_refine", 0) != 0) {
+            throw std::invalid_argument("dm_refine in surfaceOptions when used with ablate::domain::CadFile must be 0.");
+        }
+    }
+}
 
 ablate::domain::CadFile::~CadFile() {
     if (dm) {
