@@ -12,22 +12,19 @@ timestepper:
   arguments:
     ts_type: rk
     ts_max_time: 100000
-    ts_max_steps: 1000
+    ts_max_steps: 10
     ts_dt: 1.0E-10
-#    ts_adapt: none
     ts_adapt_safety: 0.9
   # io controls how often the results are saved to a file for visualization and restart
-#  io:
-#    interval: 0 # results are saved at every step.  In real simulations this should be much larger.
+  io:
+    interval: 0 # results are saved at every step.  In real simulations this should be much larger.
 
+  # load in a cad file directly and then create a surface mesh then volumetric mesh from the cad geometry
   domain: !ablate::domain::CadFile
     name: exampleNozzle
     path: ../mesh/cylinder.stp
-#    surfaceOptions:
-#      dm_refine: 1
-#      dm_plex_check_all: true
+    # Options to be applied to the volumetric geometry
     options:
-      dm_label_view: wallBoundaryCells
       dm_refine: 3
       dm_plex_check_all: true
     modifiers:
@@ -37,16 +34,20 @@ timestepper:
           name: marker
       # extrude all boundaries to add needed ghost cells for the boundary solver
       - !ablate::domain::modifiers::ExtrudeLabel
+        # extrude the boundary cells marked
         regions:
           - name: marker
-            value: 1
+        # mark all the resulting boundary faces with boundaryFaces label
         boundaryRegion:
           name: boundaryFaces
+        # tag the original mesh as the flow region
         originalRegion:
           name: flowRegion
+        # tag the new boundary cells for easy boundary condition specifications
         extrudedRegion:
           name: boundaryCells
         thickness: 0.001
+
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
         ghostCellDepth: 2
@@ -63,29 +64,27 @@ timestepper:
           name: outletBoundaryCells
         function: "z > 0.1 ? 1.0 : 0"
 
-      # repeat for the outlet
-      - !ablate::domain::modifiers::CreateLabel
-        region:
-          name: wallBoundaryCells
-        function: !ablate::mathFunctions::geom::CylinderShell
-          start: [0.0, 0.0, 0.0]
-          end: [0.0, 0.0, .1]
-          radiusMin: 0.01
-          radiusMax: 10
+        # there are two example ways to apply the wall boundary conditions.  Only one should be selected but both are
+        # presented for example illustration
+        # example 1: define a geometry that tags only the boundary wall cells
+        #- !ablate::domain::modifiers::CreateLabel
+        #  region:
+        #    name: wallBoundaryCells
+        #  function: !ablate::mathFunctions::geom::CylinderShell
+        #    start: [0.0, 0.0, 0.0]
+        #    end: [0.0, 0.0, .1]
+        #    radiusMin: 0.01
+        #    radiusMax: 10
 
-     # create a wall boundary that is all boundary cells minus inlet/outlet
-#      - !ablate::domain::modifiers::SubtractLabel
-#        differenceRegion:
-#          name: wallBoundaryCells
-#        minuendRegion:
-#          name: boundaryCells
-#        subtrahendRegions:
-#          - name: outletBoundaryCells
-#          - name: inletBoundaryCells
-#      - !ablate::monitors::DmViewFromOptions
-#        options: "hdf5:$OutputDirectory/dm.h5"
-      - !ablate::monitors::DmViewFromOptions
-        options: ascii::ascii_info_detail
+      # example 2: create a wall boundary that is all boundary cells minus inlet/outlet
+      - !ablate::domain::modifiers::SubtractLabel
+        differenceRegion:
+          name: wallBoundaryCells
+        minuendRegion:
+          name: boundaryCells
+        subtrahendRegions:
+          - name: outletBoundaryCells
+          - name: inletBoundaryCells
 
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
@@ -103,12 +102,11 @@ timestepper:
         pressure: 101325.0
         temperature: 300
         velocity: !ablate::mathFunctions::geom::Cylinder
-          start: [0.0, 0.0, -1]
-          end: [0.0, 0.0, .05]
+          start: [ 0.0, 0.0, -1 ]
+          end: [ 0.0, 0.0, .05 ]
           radius: 0.005
-          insideValues: "0.0, 0.0, 10.0"
+          insideValues: "0.0, 0.0, 100.0"
           outsideValues: "0.0, 0.0, 0.0"
-
 
     # when extruding from a tet mesh, the boundary cells must be explicitly set as well
     - !ablate::finiteVolume::fieldFunctions::Euler
@@ -126,12 +124,12 @@ solvers:
       - !ablate::finiteVolume::processes::PressureGradientScaling
         &pgs
         eos: *eos
-        alphaInit: 1.0
+        alphaInit: 10.0
         maxAlphaAllowed: 100.0
         domainLength: 0.2
         log: !ablate::monitors::logs::StdOut
 
-    # overwrite and set the time step based upon the CFL constraint
+        # overwrite and set the time step based upon the CFL constraint
     computePhysicsTimeStep: false
 
     # a flux calculator must be specified to so solver for advection
@@ -149,11 +147,10 @@ solvers:
 
     monitors:
       # output time step information for each time step
-      - !ablate::monitors::TimeStepMonitor
       - !ablate::monitors::MaxMinAverage
         field: velocity
 
-  # use a boundary solver to update the cells in the boundaryCellsTop region to represent standard wall
+  # use a boundary solver to update the cells in the wallBoundaryCells region to represent standard wall
   - !ablate::boundarySolver::BoundarySolver
     id: wallBoundary
     region:
@@ -165,6 +162,7 @@ solvers:
       - !ablate::boundarySolver::lodi::IsothermalWall
         eos: *eos
         pgs: *pgs
+  # use a boundary solver enforce an inlet
   - !ablate::boundarySolver::BoundarySolver
     id: inlet
     region:
@@ -177,6 +175,7 @@ solvers:
         eos: *eos
         pgs: *pgs
 
+  # use a boundary solver allow outward flow
   - !ablate::boundarySolver::BoundarySolver
     id: outlet
     region:

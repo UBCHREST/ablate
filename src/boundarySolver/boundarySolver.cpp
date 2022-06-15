@@ -102,7 +102,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
 
     // compute the max depth
-    PetscInt maxCellDepth = PetscMin(2, dim);
+    PetscInt maxCellDepth = dim;
 
     // March over each cell in this region to create the stencil
     solver::Range cellRange;
@@ -624,19 +624,6 @@ void ablate::boundarySolver::BoundarySolver::ComputeGradientAlongNormal(PetscInt
             dPhiDNorm += stencilWeights[c * dim + d] * delta * fg->normal[d];
         }
     }
-}
-
-void ablate::boundarySolver::BoundarySolver::ComputeNormalizedGradientAlongNormal(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom* fg, PetscScalar boundaryValue,
-                                                                                  PetscInt stencilSize, const PetscScalar* stencilValues, const PetscScalar* stencilWeights, PetscScalar& dPhiDNorm) {
-    dPhiDNorm = 0.0;
-    for (PetscInt c = 0; c < stencilSize; ++c) {
-        PetscScalar delta = stencilValues[c] / (boundaryValue + 1E-30) - 1.0;
-
-        for (PetscInt d = 0; d < dim; ++d) {
-            dPhiDNorm += stencilWeights[c * dim + d] * delta * fg->normal[d];
-        }
-    }
-    dPhiDNorm *= boundaryValue;
 }
 
 std::vector<ablate::boundarySolver::BoundarySolver::GradientStencil> ablate::boundarySolver::BoundarySolver::GetBoundaryGeometry(PetscInt cell) const {

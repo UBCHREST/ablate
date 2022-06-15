@@ -18,7 +18,6 @@ ablate::domain::CadFile::~CadFile() {
     if (surfaceDm) {
         DMDestroy(&surfaceDm) >> checkError;
     }
-    std::cout << "~CadFile" << std::endl;
 }
 
 DM ablate::domain::CadFile::ReadDMFromCadFile(const std::string& name, const std::filesystem::path& path, const std::shared_ptr<parameters::Parameters>& surfaceOptions, const std::string& generator,
