@@ -16,7 +16,7 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
 endif ()
 
 # Set the project details
-project(ablateLibrary VERSION 0.8.25)
+project(ablateLibrary VERSION 0.8.26)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -38,9 +38,9 @@ endif ()
 
 # Add required warnings for projects
 function(ablate_default_target_compile_options_cxx target)
-#    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:C>:$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wno-unused-parameter>>)
-#    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wsuggest-override -Wno-unused-parameter >>)
-#    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<CXX_COMPILER_ID:GNU>: -Wno-missing-field-initializers -Wno-maybe-uninitialized>>)
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:C>:$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wno-unused-parameter>>)
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wsuggest-override -Wno-unused-parameter >>)
+    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<CXX_COMPILER_ID:GNU>: -Wno-missing-field-initializers -Wno-maybe-uninitialized>>)
 endfunction()
 
 # Load in the subdirectories
@@ -65,18 +65,6 @@ endif ()
 add_executable(ablate main.cpp)
 target_link_libraries(ablate PRIVATE ablateLibrary)
 ablate_default_target_compile_options_cxx(ablate)
-
-# keep a separate main statement
-add_executable(ex44 ex44.c)
-target_link_libraries(ex44 PRIVATE ablateLibrary)
-ablate_default_target_compile_options_cxx(ex44)
-add_executable(ex37 ex37.c)
-target_link_libraries(ex37 PRIVATE ablateLibrary)
-ablate_default_target_compile_options_cxx(ex37)
-
-add_executable(extrudeExample extrudeExample.c)
-target_link_libraries(extrudeExample PRIVATE ablateLibrary)
-ablate_default_target_compile_options_cxx(extrudeExample)
 
 # include system specific hacks
 include(systemHacks.cmake)

@@ -40,11 +40,8 @@ INSTANTIATE_TEST_SUITE_P(
                            .nproc = 2,
                            .expectedOutputFile = "outputs/compressibleFlow/compressibleSublimationPipeWithExtrude/compressibleSublimationPipeWithExtrude.txt",
                            .arguments = ""},
-        (MpiTestParameter){.testName = "inputs/compressibleFlow/compressibleFlowCadExample.yaml",
-                           .nproc = 1,
-                           .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowCadExample.txt",
-                           .arguments = ""}),
-
+        (MpiTestParameter){
+            .testName = "inputs/compressibleFlow/compressibleFlowCadExample.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowCadExample.txt", .arguments = ""}),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 

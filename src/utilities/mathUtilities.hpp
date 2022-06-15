@@ -23,13 +23,13 @@ class MathUtilities {
     template <class I, class T>
     static inline bool VectorEquals(I dim, const T* test, const T* equal, T tolerance = 1.0E-8) {
         for (I d = 0; d < dim; d++) {
-            if(test[d] < equal[d]-tolerance || test[d] > equal[d]+tolerance){
+            if (test[d] < equal[d] - tolerance || test[d] > equal[d] + tolerance) {
                 return false;
             }
         }
         return true;
     }
-    
+
     template <class I, class T>
     static inline void NormVector(I dim, const T* in, T* out) {
         T mag = 0.0;
