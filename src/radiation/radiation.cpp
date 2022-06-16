@@ -108,15 +108,18 @@ void ablate::radiation::Radiation::RayInit() {
      * */
     solver::Range cellRange;
     GetCellRange(cellRange);
+    PetscInt iCellMax = 0;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
+       PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
+       iCellMax = (iCell > iCellMax) ? iCell : iCellMax;
+    }
 
     /** Setup the particles and their associated fields including: ray identifier and # domains crossed, coordinates, and origin domain. Instantiate ray particles for each local cell only. */
 
-    DM radsearch;                                                          //!< DM which the search particles occupy
     PetscInt npoints = (cellRange.end - cellRange.start) * nTheta * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
 
     /* Create the DMSwarm */
     DMCreate(PETSC_COMM_WORLD, &radsearch);
-    PetscObjectSetName((PetscObject)radsearch, "Radiation Search Particles");
     DMSetType(radsearch, DMSWARM);
     DMSetDimension(radsearch, dim);
 
@@ -144,14 +147,14 @@ void ablate::radiation::Radiation::RayInit() {
     std::vector<std::vector<PetscInt>> rayPhis;
     std::vector<std::vector<std::vector<PetscInt>>> rayThetas(nPhi, rayPhis);
     std::vector<std::vector<std::vector<std::vector<PetscInt>>>> rayCells(nTheta, rayThetas);
-    std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>> rayRanks((cellRange.end - cellRange.start), rayCells);
+    std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>> rayRanks((iCellMax+1), rayCells);
     rays.resize(numRanks, rayRanks);
     h.resize(numRanks, rayRanks);  //!< Store a vector of space steps that the solver will use to compute absorption effects
 
     std::vector<PetscReal> Ij1Phis;
     std::vector<std::vector<PetscReal>> Ij1Thetas(nPhi, Ij1Phis);
     std::vector<std::vector<std::vector<PetscReal>>> Ij1Cells(nTheta, Ij1Thetas);
-    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij1Ranks((cellRange.end - cellRange.start), Ij1Cells);
+    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij1Ranks((iCellMax+1), Ij1Cells);
     Ij1.resize(numRanks, Ij1Ranks);  //!< This sets the previous iteration intensity so that each ray can store multiple intensities.
     Krad.resize(numRanks, Ij1Ranks);
 
@@ -173,7 +176,7 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
-    //    PetscInt ncells = 0;
+    PetscInt ncells = 0;
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);      //!< Reads the cell location from the current cell
@@ -184,7 +187,7 @@ void ablate::radiation::Radiation::RayInit() {
         for (int ntheta = 1; ntheta < nTheta; ntheta++) {
             for (int nphi = 0; nphi < nPhi; nphi++) {
                 /** Set the index of the field value so that it can be written to for every particle */
-                int i = iCell * ntheta * nphi;  //!< This represents the index of the particle field entry
+                int i = ncells * ntheta * nphi;  //!< This represents the index of the particle field entry
 
                 //                origin[i] = originrank;  //!< The origin rank of the particle, which is this domain (during the initialization)
 
@@ -208,19 +211,24 @@ void ablate::radiation::Radiation::RayInit() {
                 identifier[5 * i + 4] = 0;       //!< Initialize the number of domains crossed as zero
             }
         }
-        //        ncells++;  //!< Increase the number of cells that have been finished.
+        ncells++;  //!< Increase the number of cells that have been finished.
     }
 
     /** Restore the fields associated with the particles */
     DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
     DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
-    DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
+    DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
+
+    if (log) {
+        PetscPrintf(MPI_COMM_WORLD, "Particles Initialized\n");
+    }
 
     /** ***********************************************************************************************************************************************
      * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
      * ray segment storage can be easily accessed and appended. This forms a local collection of globally index ray segments.
      * */
     while (npoints != 0) {  //!< WHILE THERE ARE PARTICLES IN THE DOMAIN
+    PetscInt stepcount = 0;
 
         /** Iterate over the particles that are present in the domain
          * Add the cell index to the ray
@@ -257,24 +265,24 @@ void ablate::radiation::Radiation::RayInit() {
             /** Label the particle with the ray identifier. (Use an array of 5 ints, [origin][ncell][theta][phi][domains crossed])
              * Label the particle with domainscrossed = 0; so that this can be iterated after each domain cross.
              * */
-            PetscInt origin = identifier[5 * ipart];               //!< Get the origin rank of the ray from the particle identifier.
-            PetscInt ncells = identifier[5 * ipart + 1];           ///!< Get the cell index of the ray from the particle identifier.
-            PetscInt ntheta = identifier[5 * ipart + 2];  //!< Get the angle number from the particle field label for the rays vector.
-            PetscInt nphi = identifier[5 * ipart + 3];      //!< Input the ray identifier
-            PetscInt ndomain = identifier[5 * ipart + 4];      //!< How many domains has the particle passed through?
+            PetscInt origin = identifier[5 * ipart];       //!< Get the origin rank of the ray from the particle identifier.
+            PetscInt ncell = identifier[5 * ipart + 1];   ///!< Get the cell index of the ray from the particle identifier.
+            PetscInt ntheta = identifier[5 * ipart + 2];   //!< Get the angle number from the particle field label for the rays vector.
+            PetscInt nphi = identifier[5 * ipart + 3];     //!< Input the ray identifier
+            PetscInt ndomain = identifier[5 * ipart + 4];  //!< How many domains has the particle passed through?
 
-            /** Resize the rays vector */
-            while (static_cast<int>(rays[origin][ncells][ntheta][nphi].size()) < ndomain) {
-                Ij1[origin][ncells][ntheta][nphi].push_back(initialValue);          //!< The initial value to input for Ij1 should be 0 for the number of domains that the ray crosses
-                Krad[origin][ncells][ntheta][nphi].push_back(anotherInitialValue);  //!< This needs to be stored locally and not transported
-                rays[origin][ncells][ntheta][nphi].push_back(rayDomains);           //!< This needs to be stored locally and not transported
-                h[origin][ncells][ntheta][nphi].push_back(rayDomains);              //!< This needs to be stored locally and not transported
+            /** Resize the rays vectors */
+            while (static_cast<int>(rays[origin][ncell][ntheta][nphi].size()) <= ndomain) {
+                Ij1[origin][ncell][ntheta][nphi].push_back(initialValue);          //!< The initial value to input for Ij1 should be 0 for the number of domains that the ray crosses
+                Krad[origin][ncell][ntheta][nphi].push_back(anotherInitialValue);  //!< This needs to be stored locally and not transported
+                rays[origin][ncell][ntheta][nphi].push_back(rayDomains);           //!< This needs to be stored locally and not transported
+                h[origin][ncell][ntheta][nphi].push_back(rayDomains);              //!< This needs to be stored locally and not transported
             }
 
             // TODO: IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
             //  This does not account for if the particle has passed out of and then back into the domain. If there is a way to check which particles are here that were not here last time step, that
             //  would be more convenient.
-            if (rays[origin][ncells][ntheta][nphi][ndomain].size() == 0) {
+            if (static_cast<int>(rays[origin][ncell][ntheta][nphi][ndomain].size()) == 0) {
                 identifier[4 * ipart + 4]++;  //!< The particle has passed through another domain.
             }
 
@@ -322,8 +330,8 @@ void ablate::radiation::Radiation::RayInit() {
              * The boundary has been reached if any of these conditions don't hold
              * */
             if (nFound > -1 && cell[0].index >= 0 && subDomain->InRegion(cell[0].index)) {
-                rays[origin][ncells][ntheta][nphi][ndomain].push_back(cell[0].index);
-                h[origin][ncells][ntheta][nphi][ndomain].push_back(hhere);
+                rays[origin][ncell][ntheta][nphi][ndomain].push_back(cell[0].index);
+                h[origin][ncell][ntheta][nphi][ndomain].push_back(hhere);
             }
 
             /** Step the vector forward in space until it is no longer in the cell it was in
@@ -355,19 +363,23 @@ void ablate::radiation::Radiation::RayInit() {
             VecDestroy(&intersect);
 
             /** This protects the last domain from becoming empty, which would prevent the boundary initialization of the black body intensity */
-            if (static_cast<int>(rays[origin][ncells][ntheta][nphi][ndomain].size()) == 0) {  //!< If there are no points stored in this domain when the ray has hit the boundary
-                rays[origin][rank][ncells][ntheta][nphi].pop_back();                          //!< Remove the last domain entry in the rays vector
-                Ij1[origin][ncells][ntheta][nphi].pop_back();                                 //!< There will no longer be a ray segment here to keep track of
+            if (static_cast<int>(rays[origin][ncell][ntheta][nphi][ndomain].size()) == 0) {  //!< If there are no points stored in this domain when the ray has hit the boundary
+                rays[origin][rank][ncell][ntheta][nphi].pop_back();                          //!< Remove the last domain entry in the rays vector
+                Ij1[origin][ncell][ntheta][nphi].pop_back();                                 //!< There will no longer be a ray segment here to keep track of
             }
 
             /** Restore the fields associated with the particles */
             DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
             DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
-            DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
+            DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
             /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
             DMSwarmMigrate(radsearch, PETSC_TRUE);     //!< Migrate the search particles and remove the particles that have left the domain space
             DMSwarmGetLocalSize(radsearch, &npoints);  //!< Recalculate the number of particles that are in the domain
+        }
+        if (log) {
+            PetscPrintf(MPI_COMM_WORLD, "Global Step %3i\n", stepcount);
+            stepcount++;
         }
     }
     /** Cleanup*/

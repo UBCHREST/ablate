@@ -43,7 +43,8 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
    protected:
-    DM radDM; //!< DM associated with the radiation particles
+    DM radDM;      //!< DM associated with the radiation particles
+    DM radsearch;  //!< DM which the search particles occupy
 
    private:
     /// Class Methods
@@ -55,8 +56,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     /// Class Constants
     const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    PetscInt numRanks; //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
-
+    PetscInt numRanks;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
 
     /// Class inputs and Variables
     PetscInt dim = 0;  // Number of dimensions that the domain exists within
