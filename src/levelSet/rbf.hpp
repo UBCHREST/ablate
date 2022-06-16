@@ -7,6 +7,7 @@
 #include <petsc.h>
 #include <petscdmplex.h>
 #include <petscksp.h>
+#include "domain/domain.hpp"
 
 namespace ablate::levelSet {
 

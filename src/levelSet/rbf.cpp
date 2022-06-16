@@ -1,5 +1,6 @@
 #include "rbf.hpp"
 #include "utilities/petscError.hpp"
+#include "domain/subDomain.hpp"
 
 using namespace ablate::levelSet;
 
