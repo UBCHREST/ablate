@@ -11,5 +11,5 @@ target_sources(ablateLibrary
         )
 
 add_subdirectory(transport)
-add_subdirectory(tchem)
+add_subdirectory(tChem)
 add_subdirectory(radiationProperties)
