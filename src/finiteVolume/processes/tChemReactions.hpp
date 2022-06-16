@@ -1,0 +1,73 @@
+#ifndef ABLATELIBRARY_TCHEMREACTIONS_HPP
+#define ABLATELIBRARY_TCHEMREACTIONS_HPP
+
+#include <eos/tChem.hpp>
+#include "process.hpp"
+
+namespace tChemLib = TChem;
+
+namespace ablate::finiteVolume::processes {
+
+class TChemReactions : public Process {
+   private:
+    // eos of state variables
+    std::shared_ptr<eos::TChem> eos;
+    const size_t numberSpecies;
+
+    // tchem memory storage on host/device.  These will be sized for the number of active nodes in the domain
+    real_type_2d_view stateDevice;
+    real_type_2d_view_host stateHost;
+
+    // store the end state for the device/host
+    real_type_2d_view endStateDevice;
+    real_type_2d_view_host endStateHost;
+
+    // the time advance information
+    time_advance_type_1d_view timeAdvanceDevice;
+
+    // store host/device memory for computing state
+    real_type_1d_view internalEnergyRefDevice;
+    real_type_1d_view_host internalEnergyRefHost;
+    real_type_2d_view perSpeciesScratchDevice;
+
+    //! the kokkos team policy for temperature function
+    tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type temperatureFunctionPolicy;
+
+    //! the kokkos team policy for pressure function
+    tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type pressureFunctionPolicy;
+
+    //! the kokkos team policy for chemistry function
+    tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type chemistryFunctionPolicy;
+
+    // tolerance constraints
+    real_type_2d_view tolTimeDevice;
+    real_type_1d_view tolNewtonDevice;
+    real_type_2d_view facDevice;
+
+    // store device specific kineticModelGasConstants
+    tChemLib::KineticModelConstData<typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevice;
+    kmd_type_1d_view_host kineticModelDataClone;
+    Kokkos::View<KineticModelGasConstData< typename Tines::UseThisDevice<exec_space>::type> *,  typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevices;
+
+    /**
+     * private function to compute the energy and densityYi source terms over the next dt
+     * @param flowTs
+     * @param flow
+     * @return
+     */
+    PetscErrorCode ChemistryFlowPreStage(TS flowTs, ablate::solver::Solver &flow, PetscReal stagetime);
+
+    static PetscErrorCode AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
+
+   public:
+    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::string> inertSpecies = {},
+                              std::vector<double> massFractionBounds = {});
+    ~TChemReactions() override;
+    /**
+     * public function to link this process with the flow
+     * @param flow
+     */
+    void Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
+};
+}  // namespace ablate::finiteVolume::processes
+#endif  // ABLATELIBRARY_TCHEMV1REACTIONS_HPP

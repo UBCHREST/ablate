@@ -18,6 +18,7 @@ const char* replacementInputPrefix = "-yaml::";
 
 int main(int argc, char** args) {
     // initialize petsc and mpi
+    environment::RunEnvironment::Initialize(&argc, &args);
     ablate::utilities::PetscUtilities::Initialize();
 
     // check to see if we should print version

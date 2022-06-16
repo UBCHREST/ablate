@@ -70,6 +70,10 @@ target_link_libraries(ablateLibrary
         PRIVATE
         chrestCompilerFlags)
 
+#Json
+include(config/findJson.cmake)
+target_link_libraries(ablateLibrary PUBLIC nlohmann_json::nlohmann_json)
+
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
 set_property(TARGET ablateLibrary PROPERTY CMAKE_CXX_STANDARD_REQUIRED ON)

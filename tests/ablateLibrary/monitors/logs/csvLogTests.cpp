@@ -8,6 +8,7 @@
 #include "monitors/logs/csvLog.hpp"
 #include "utilities/petscUtilities.hpp"
 #include "testRunEnvironment.hpp"
+#include "environment/runEnvironment.hpp"
 
 using namespace ablate;
 

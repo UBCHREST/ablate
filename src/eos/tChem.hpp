@@ -90,6 +90,19 @@ class TChem : public EOS {
      */
     void View(std::ostream& stream) const override;
 
+    /**
+     * return reference to kinetic data for other users
+     */
+    tChemLib::KineticModelData& GetKineticModelData(){
+        return kineticsModel;
+    }
+
+    /**
+     * Get the  reference enthalpy per species
+     */
+    real_type_1d_view GetReferenceSpeciesEnthalpy(){
+        return enthalpyReference;
+    };
    private:
     struct FunctionContext {
         // memory access locations for fields
@@ -111,7 +124,7 @@ class TChem : public EOS {
         //! mass weighted mixture
         real_type_1d_view mixtureHost;
 
-        // store the enthalpyReferencePerSpecies
+        //! store the enthalpyReferencePerSpecies
         real_type_1d_view enthalpyReference;
 
         //! the kokkos team policy for this function
