@@ -152,7 +152,7 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
                 }
             }
         } catch (std::exception& exception) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
         }
     }
     PetscFunctionReturn(0);

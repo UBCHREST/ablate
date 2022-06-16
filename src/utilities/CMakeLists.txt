@@ -7,10 +7,9 @@ target_sources(ablateLibrary
         petscOptions.hpp
         demangler.cpp
         demangler.hpp
-        fileUtility.hpp
-        fileUtility.cpp
         loggable.hpp
         mathUtilities.hpp
         mathUtilities.cpp
         vectorUtilities.hpp
+        temporaryWorkingDirectory.hpp
         )

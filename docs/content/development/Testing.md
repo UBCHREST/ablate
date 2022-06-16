@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Testing
-parent: Development Guides
+parent: Code Development
 nav_order: 11
 ---
 
@@ -17,11 +17,11 @@ There are some useful command line flags that can be used when debugging tests:
 Automated testing is performed on a series of linux Docker images automatically before a pull request can be merged.  If the tests are passing locally but failing for a pull request you can debug using the same environment as the pull request using [Downloading and Building with CLion (with docker dependencies)]({{ site.baseurl }}{%link content/development/BuildingAblateLocally.md %}).  Tests can also be run directly in docker using the following commands.
 
 ```bash
-# Build the docker testing image
+# Build the default docker testing image
 docker build -t testing_image -f DockerTestFile .
 
-# or for 64 bit ints
-docker build -t testing_image --build-arg PETSC_BUILD_ARCH='arch-ablate-opt-64' -f DockerTestFile .
+# or select a specific base version from https://github.com/orgs/UBCHREST/packages?tab=packages&q=ablate-dependencies
+docker build -t testing_image --build-arg ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies-clang-index64:latest -f DockerTestFile .
 
 # Run the built tests and view results
 docker run --rm testing_image 
@@ -115,7 +115,7 @@ INSTANTIATE_TEST_SUITE_P(ExampleTests, ExampleTestFixture,
 Unit tests reside in the `tests/ablateLibrary` directory where the test location should match the folder hierarchy in  `ablateLibrary`.  File names should match the corresponding class name followed by `Tests`.  The unit tests should be designed to test single functions/classes where mocks can be used for any required dependency.  Because unit testing should be designed to test a large set of inputs and expected outputs parameterized tests are recommended.
 
 ## Integration Tests
-Integration tests use the standard yaml input files to test simulation level functions where the output and generated files are compared against expected outputs.  The integration test files also serve as examples for users and are therefor organized by general topic area inside the `inputs` directory.  All integration tests must be rested in the `tests/integrationTests/tests.cpp` file in an existing or new category.  The tests use an `IntegrationTestsSpecifier` struct to specify the required inputs.  The `MpiTestParameter` inside `IntegrationTestsSpecifier` is used to specify:
+Integration tests use the standard yaml input files to test simulation level functions where the output and generated files are compared against expected outputs.  The integration test files also serve as examples for users and are therefor organized by general topic area inside the `inputs` directory.  All integration tests must be rested in the `tests/integrationTests/tests.cpp` file in an existing or new category.  The tests use an `IntegrationTestsSpecifier` struct to specify the required inputs. Any comments before the first '---' will be treated ad markdown (with the # removed) when the documentation is generated and should be written as such.  Math and equations are rendered using [MathJax](https://www.mathjax.org) using Latex style equations where $$ is used to define math regions.  The `MpiTestParameter` inside `IntegrationTestsSpecifier` is used to specify:
 
 - .testName: the relative path to the input yaml file starting with `inputs/`
 - .nproc: the number of mpi processes to use for testing
@@ -150,3 +150,5 @@ and one value equal to 2.  When using the compare tool, you must escape all rege
 | =                    | the actual value muse equal the specified value according to ASSERT_DOUBLE_EQ. A nan can be specified to compare with expected nan output. |
 | ~                    | any number is accepted                                                                                                                     |
 | *                    | any string is accepted                                                                                                                     |
+| n                    | should be near value (percent difference <=1E-3)                                                                                           |
+| z                    | should be near zero (<1E-13)                                                                                                               |

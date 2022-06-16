@@ -9,7 +9,7 @@ target_link_libraries(ablateLibrary PUBLIC PkgConfig::PETSc)
 FetchContent_Declare(
         cppParser
         GIT_REPOSITORY https://github.com/UBCHREST/CppParser.git
-        GIT_TAG v0.1.7
+        GIT_TAG v0.2.0
 )
 FetchContent_MakeAvailable(cppParser)
 target_link_libraries(ablateLibrary PUBLIC cppParserLibrary)
@@ -28,6 +28,17 @@ FetchContent_MakeAvailable(mu-parser)
 FetchContent_GetProperties(mu-parser)
 target_include_directories(muparser SYSTEM PUBLIC ${mu-parser_SOURCE_DIR}/include)
 target_link_libraries(ablateLibrary PUBLIC muparser)
+
+### json ###
+# install json parser for reading json
+FetchContent_Declare(
+        json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.10.5
+)
+FetchContent_MakeAvailable(json)
+FetchContent_GetProperties(mu-parser)
+target_link_libraries(ablateLibrary PUBLIC nlohmann_json::nlohmann_json)
 
 ### XDMF Generation ###
 # install the library for generating xdmf files
@@ -171,6 +182,7 @@ add_subdirectory(environment)
 add_subdirectory(io)
 add_subdirectory(chemistry)
 add_subdirectory(levelSet)
+add_subdirectory(radiation)
 
 # Add required warnings for the ablate library
 ablate_default_target_compile_options_cxx(ablateLibrary)

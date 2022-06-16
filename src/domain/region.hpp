@@ -26,6 +26,17 @@ class Region {
     inline const PetscInt& GetValue() const { return value; }
 
     inline const std::string ToString() const { return name + ":" + std::to_string(value); };
+
+    static void GetLabel(const std::shared_ptr<Region>& region, DM dm, DMLabel& regionLabel, PetscInt& regionValue);
+
+    static bool InRegion(const std::shared_ptr<Region>& region, DM dm, PetscInt point);
+
+    /**
+     * throws exception if the label is not in the dm
+     * @param region
+     * @param dm
+     */
+    void CheckForLabel(DM dm) const;
 };
 
 std::ostream& operator<<(std::ostream& os, const Region& region);

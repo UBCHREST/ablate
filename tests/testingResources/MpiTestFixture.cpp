@@ -147,7 +147,7 @@ void testingResources::MpiTestFixture::CompareOutputFile(const std::string& expe
         auto expectedResultDelimiterPosition = expectedLine.find(expectedResultDelimiter);
         if (expectedResultDelimiterPosition == std::string::npos) {
             // do a direct match
-            ASSERT_EQ(expectedLine, actualLine) << " on line " << expectedLine << " of file " << expectedFileName;
+            ASSERT_EQ(expectedLine, actualLine) << " on line(" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
         } else {
             std::string regexLine = expectedLine.substr(0, expectedResultDelimiterPosition);
             std::string valuesLine = expectedLine.substr(expectedResultDelimiterPosition + expectedResultDelimiter.size());
@@ -186,29 +186,39 @@ void testingResources::MpiTestFixture::CompareOutputFile(const std::string& expe
 
                 switch (compareChar) {
                     case '<':
-                        ASSERT_LT(std::stod(actualValueString), expectedValue) << " on line " << expectedLine << " of file " << expectedFileName;
+                        ASSERT_LT(std::stod(actualValueString), expectedValue) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                         break;
                     case '>':
-                        ASSERT_GT(std::stod(actualValueString), expectedValue) << " on line " << expectedLine << " of file " << expectedFileName;
+                        ASSERT_GT(std::stod(actualValueString), expectedValue) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                         break;
                     case '=':
                         // check some special cases for double values
                         if (std::isnan(expectedValue)) {
-                            ASSERT_TRUE(std::isnan(std::stod(actualValueString))) << " on line " << expectedLine << " of file " << expectedFileName;
+                            ASSERT_TRUE(std::isnan(std::stod(actualValueString))) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                         } else {
-                            ASSERT_DOUBLE_EQ(std::stod(actualValueString), expectedValue) << " on line " << expectedLine << " of file " << expectedFileName;
+                            ASSERT_DOUBLE_EQ(std::stod(actualValueString), expectedValue) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                         }
                         break;
                     case '~':
                         // is any number once trimmed
-                        ASSERT_TRUE(actualValueString.find_first_not_of(" \t\n\v\f\r") != std::string::npos) << " on line " << expectedLine << " of file " << expectedFileName;
+                        ASSERT_TRUE(actualValueString.find_first_not_of(" \t\n\v\f\r") != std::string::npos) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                         break;
                     case '*':
                         // is anything of length
-                        ASSERT_TRUE(!actualValueString.empty()) << " on line " << expectedLine << " of file " << expectedFileName;
+                        ASSERT_TRUE(!actualValueString.empty()) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                         break;
+                    case 'z':
+                        // should be close to zer
+                        ASSERT_LT(std::abs(std::stod(actualValueString)), 1.0E-13) << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
+                        break;
+                    case 'n': {
+                        // the value is near percent difference < 1E-3
+                        auto percentDifference = PetscAbs((std::stod(actualValueString) - expectedValue) / expectedValue);
+                        ASSERT_LT(percentDifference, 1.1E-3) << " the percent difference of (" << expectedValue << ", " << std::stod(actualValueString) << ") should be less than 1E-3 on line "
+                                                             << expectedLine << " of file " << expectedFileName;
+                    } break;
                     default:
-                        FAIL() << "Unknown compare char " << compareChar << " on line " << expectedLine << " of file " << expectedFileName;
+                        FAIL() << "Unknown compare char " << compareChar << " on line (" << lineNumber << ") " << expectedLine << " of file " << expectedFileName;
                 }
             }
         }

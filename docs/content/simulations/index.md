@@ -1,34 +1,33 @@
 ---
 layout: default
 title: Running Simulations
-nav_order: 1
-parent: Input Files
+nav_order: 3
+has_children: true
 ---
-ABLATE includes a yaml parser for setting up and configuring simulations.  The yaml input files specifies all of the details of the simulation without the need to recompile the code.   These directions assume you have built ABLATE as outlined in [Building ABLATE Locally]({{ site.baseurl}}{%link content/development/BuildingAblateLocally.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover using ablate built with the command line and [CLion](https://www.jetbrains.com/clion/).
 
-## Obtaining Input Files
-Download an example file and move to a location on your computer (should be placed outside the ablate repository).  Example files used for [integration testing are available](https://github.com/UBCHREST/ablate/tree/main/tests/integrationTests/inputs). 
+ABLATE includes a yaml parser for setting up and configuring simulations.  The yaml input files specifies all the details of the simulation without the need to recompile the code.   These directions assume you have built ABLATE as outlined in [Building ABLATE Locally]({{ site.baseurl}}{%link content/development/BuildingAblateLocally.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover using ablate built with the command line and [CLion](https://www.jetbrains.com/clion/).
 
-## Yaml Input Files
-At this point in time there is only a single YAML based implementation of a parser/factory. In this implementation arguments are passed as dictionary objects and lists.  When a class must be specified in YAML (no default specified) this must be done with a YAML tag.  For instance, in the following example the first particle in the list specified as a tracer particle initialized using a BoxInitializer.
+## Input Files
+ABLATE uses an [YAML input file]({{ site.baseurl}}{%link content/simulations/Examples.md  %}) based implementation of a parser/factory.  In this implementation arguments are passed as dictionary objects and lists.  When a class must be specified in YAML (no default specified) this must be done with a YAML tag.  A full list of possible components and their required arguments is available under [Component List]({{ site.baseurl}}{%link content/simulations/Components.md  %}).  The minimum for an input file is outlined below where additional arguments must be provided for the time stepper and solver(s).
 
 ```yaml
-particles:
-  - !ablate::particles::Tracer
-    ndims: 3
-    arguments:
-      ts_max_steps: 2
-      ts_dt: 0.05
-      ts_convergence_estimate: ""
-      ts_monitor_cancel: ""
-    initializer: !ablate::particles::initializers::BoxInitializer
-      arguments:
-        particle_lower: 0.25,0.25,.25
-        particle_upper: 0.75,0.75,.75
-        Npb: 30
-        convest_num_refine: 1
-    exactSolutions:
-      formula: "t + x + y"
+# metadata for simulation
+environment:
+  # the simulation title and default output directory for results
+  title: _example_simulation
+  # if true, ablate will append the simulation start time to the output directory
+  tagDirectory: false
+  # optional directory argument, default is a new directory named for the title
+  directory: path/to/directory
+  
+# default arguments passed to all petsc objects unless otherwise specified   
+arguments: {}
+
+# timestepper used to march in time.  The domain, fields, and other arguments must be specified
+timestepper: {}
+
+# a list of solvers to be used for the simulation
+solvers: []
 
 ```
 

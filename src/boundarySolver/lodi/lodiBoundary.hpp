@@ -60,7 +60,7 @@ class LODIBoundary : public BoundaryProcess {
     void Initialize(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0, const std::vector<domain::Field>& fields = {});
 
    private:
-    ablate::finiteVolume::processes::EulerTransport::UpdateTemperatureData updateTemperatureData{};
+    eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
 };
 
 }  // namespace ablate::boundarySolver::lodi

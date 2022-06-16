@@ -159,7 +159,7 @@ PetscErrorCode ablate::mathFunctions::Formula::ParsedPetscNested(PetscInt dim, P
         }
 
     } catch (std::exception& exception) {
-        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exception.what());
+        SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exception.what());
     }
     PetscFunctionReturn(0);
 }

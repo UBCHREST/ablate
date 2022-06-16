@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Client Library
-parent: Development Guides
+parent: Code Development
 nav_order: 5
 ---
 

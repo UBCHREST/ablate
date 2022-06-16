@@ -2,7 +2,6 @@
 #define ABLATELIBRARY_RUNNERS_HPP
 
 #include <filesystem>
-#include <utilities/fileUtility.hpp>
 #include "MpiTestFixture.hpp"
 #include "MpiTestParamFixture.hpp"
 #include "builder.hpp"

@@ -31,7 +31,11 @@ INSTANTIATE_TEST_SUITE_P(
                            .expectedOutputFile = "outputs/compressibleFlow/steadyCompressibleFlowLodiTest.txt",
                            .arguments = ""},
         (MpiTestParameter){
-            .testName = "inputs/compressibleFlow/compressibleFlowVortexLodi.yaml", .nproc = 2, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowVortexLodi.txt", .arguments = ""}),
+            .testName = "inputs/compressibleFlow/compressibleFlowVortexLodi.yaml", .nproc = 2, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowVortexLodi.txt", .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/compressibleFlow/compressibleSublimationPipe.yaml",
+                           .nproc = 2,
+                           .expectedOutputFile = "outputs/compressibleFlow/compressibleSublimationPipe/compressibleSublimationPipe.txt",
+                           .arguments = ""}),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
@@ -143,3 +147,10 @@ INSTANTIATE_TEST_SUITE_P(
         .mpiTestParameter = {.testName = "inputs/particles/tracerParticles2DRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/particles/tracerParticles2DRestart.txt", .arguments = ""},
         .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
     [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
+
+INSTANTIATE_TEST_SUITE_P(Radiation, IntegrationTestsSpecifier,
+                         testing::Values(
+
+                             (MpiTestParameter){
+                                 .testName = "inputs/radiation/parallelPlatesRadiation.yaml", .nproc = 1, .expectedOutputFile = "outputs/radiation/parallelPlatesOutput.txt", .arguments = ""}),
+                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });

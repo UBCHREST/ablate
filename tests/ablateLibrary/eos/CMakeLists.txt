@@ -7,3 +7,4 @@ target_sources(libraryTests
         )
 
 add_subdirectory(transport)
+add_subdirectory(radiationProperties)

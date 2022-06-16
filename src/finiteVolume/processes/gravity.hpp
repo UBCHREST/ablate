@@ -13,8 +13,8 @@ class Gravity : public FlowProcess {
      * private function to compute gravity source
      * @return
      */
-    static PetscErrorCode ComputeGravitySource(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscScalar* const gradU[],
-                                               const PetscInt aOff[], const PetscScalar a[], const PetscScalar* const gradA[], PetscScalar f[], void* ctx);
+    static PetscErrorCode ComputeGravitySource(PetscInt dim, PetscReal time, const PetscFVCellGeom* cg, const PetscInt uOff[], const PetscScalar u[], const PetscInt aOff[], const PetscScalar a[],
+                                               PetscScalar f[], void* ctx);
 
    public:
     explicit Gravity(std::vector<double> gravityVector);

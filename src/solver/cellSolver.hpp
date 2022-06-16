@@ -26,9 +26,16 @@ class CellSolver : public solver::Solver {
 
     std::vector<AuxFieldUpdateFunctionDescription> auxFieldUpdateFunctionDescriptions;
 
+   protected:
+    //! Vector used to describe the entire cell geom of the dm.  This is constant and does not depend upon region.
+    Vec cellGeomVec = nullptr;
+
+    //! Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    Vec faceGeomVec = nullptr;
+
    public:
     explicit CellSolver(std::string solverId, std::shared_ptr<domain::Region> = {}, std::shared_ptr<parameters::Parameters> options = nullptr);
-
+    ~CellSolver() override;
     /**
      * Register a auxFieldUpdate
      * @param function
@@ -47,6 +54,11 @@ class CellSolver : public solver::Solver {
      * @param updateFunction
      */
     void UpdateAuxFields(PetscReal time, Vec locXVec, Vec locAuxField);
+
+    /**
+     * Setup the subdomain cell solver vectors
+     */
+    void Setup() override;
 };
 }  // namespace ablate::solver
 

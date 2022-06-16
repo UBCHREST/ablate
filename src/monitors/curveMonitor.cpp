@@ -47,12 +47,11 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
         // build the list of local coordinates
         auto subDM = monitor->GetSolver()->GetSubDomain().GetSubDM();
         Vec cellGeomVec;
-        PetscErrorCode ierr = DMPlexGetDataFVM(subDM, nullptr, &cellGeomVec, nullptr, nullptr);
+        PetscCall(DMPlexGetDataFVM(subDM, nullptr, &cellGeomVec, nullptr, nullptr));
 
         // March over each cell
         PetscInt cStart, cEnd;
-        ierr = DMPlexGetHeightStratum(subDM, 0, &cStart, &cEnd);
-        CHKERRQ(ierr);
+        PetscCall(DMPlexGetHeightStratum(subDM, 0, &cStart, &cEnd));
 
         try {
             // Output the solution vars
@@ -64,7 +63,7 @@ PetscErrorCode ablate::monitors::CurveMonitor::OutputCurve(TS ts, PetscInt steps
                     curveFile, cStart, cEnd, cellGeomVec, monitor->GetSolver()->GetSubDomain().GetFields(domain::FieldLocation::AUX), auxSubDM, monitor->GetSolver()->GetSubDomain().GetSubAuxVector());
             }
         } catch (std::exception& exp) {
-            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, exp.what());
+            SETERRQ(PETSC_COMM_SELF, PETSC_ERR_LIB, "%s", exp.what());
         }
 
         curveFile.close();

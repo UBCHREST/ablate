@@ -6,7 +6,6 @@ if("${APPLE}" AND (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") AND (${CMAKE
     # convert to an absolute path and get the directory
     get_filename_component(LIBSTDCPP_PATH ${LIBSTDCPP_PATH} ABSOLUTE)
     get_filename_component(LIBSTDCPP_PATH ${LIBSTDCPP_PATH} DIRECTORY)
-    message(LIBSTDCPP_PATH: ${LIBSTDCPP_PATH})
 
     target_link_directories(ablateLibrary PUBLIC ${LIBSTDCPP_PATH})
 endif()

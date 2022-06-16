@@ -12,6 +12,10 @@ ablate::domain::FileMesh::~FileMesh() {
     }
 }
 DM ablate::domain::FileMesh::ReadDMFromFile(const std::string& name, const std::filesystem::path& path) {
+    if (!std::filesystem::exists(path)) {
+        throw std::invalid_argument("Unable to locate file " + path.string());
+    }
+
     DM dm;
     DMPlexCreateFromFile(PETSC_COMM_WORLD, path.c_str(), name.c_str(), PETSC_TRUE, &dm) >> checkError;
     PetscObjectSetName((PetscObject)dm, name.c_str()) >> checkError;

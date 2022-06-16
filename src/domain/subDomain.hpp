@@ -73,6 +73,18 @@ class SubDomain : public io::Serializable {
      */
     void CopyGlobalToSubVector(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
 
+    /**
+     * support call to copy from sub vec to global
+     * @param subDM
+     * @param gDM
+     * @param subVec
+     * @param globVec
+     * @param subFields
+     * @param gFields
+     * @param localVector
+     */
+    void CopySubVectorToGlobal(DM subDM, DM gDM, Vec subVec, Vec globVec, const std::vector<Field>& subFields, const std::vector<Field>& gFields = {}, bool localVector = false) const;
+
    public:
     SubDomain(Domain& domain, PetscInt dsNumber, const std::vector<std::shared_ptr<FieldDescription>>& allAuxFields);
     ~SubDomain() override;
@@ -180,7 +192,7 @@ class SubDomain : public io::Serializable {
      * @param point
      * @return
      */
-    inline bool InRegion(PetscInt point) {
+    inline bool InRegion(PetscInt point) const {
         if (!label) {
             return true;
         }
@@ -193,7 +205,7 @@ class SubDomain : public io::Serializable {
      * The comm used to define this subDomain and resulting solvers
      * @return
      */
-    inline MPI_Comm GetComm() { return PetscObjectComm((PetscObject)GetDM()); }
+    inline MPI_Comm GetComm() const { return PetscObjectComm((PetscObject)domain.GetDM()); }
 
     /**
      * The label (if any) used to define this subDomain
@@ -224,7 +236,8 @@ class SubDomain : public io::Serializable {
      * Returns raw access to the global dm
      * @return
      */
-    inline DM& GetDM() noexcept { return domain.GetDM(); }
+    inline DM& GetDM() const noexcept { return domain.GetDM(); }
+
     /**
      * Returns the dm describing the aux fields living in this subdomain.  The dm is defined across
      * the entire mesh, but the fields are only define under this subdomain
@@ -237,12 +250,6 @@ class SubDomain : public io::Serializable {
      * @return
      */
     inline Vec GetSolutionVector() noexcept { return domain.GetSolutionVector(); }
-
-    /**
-     * Return the local solution vector with information updated from the global solution vector
-     * @return
-     */
-    Vec GetSolutionLocalVector();
 
     /**
      * Returns the local aux vector

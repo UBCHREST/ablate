@@ -15,8 +15,7 @@ void ablate::finiteVolume::processes::ArbitrarySource::Initialize(ablate::finite
 }
 
 PetscErrorCode ablate::finiteVolume::processes::ArbitrarySource::ComputeArbitrarySource(PetscInt dim, PetscReal time, const PetscFVCellGeom *cg, const PetscInt *uOff, const PetscScalar *u,
-                                                                                        const PetscScalar *const *gradU, const PetscInt *aOff, const PetscScalar *a, const PetscScalar *const *gradA,
-                                                                                        PetscScalar *f, void *ctx) {
+                                                                                        const PetscInt *aOff, const PetscScalar *a, PetscScalar *f, void *ctx) {
     PetscFunctionBegin;
     auto function = (PetscFunctionStruct *)ctx;
     PetscErrorCode ierr = function->petscFunction(dim, time, cg->centroid, function->fieldSize, f, function->petscContext);

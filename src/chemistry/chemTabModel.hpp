@@ -24,6 +24,7 @@ class ChemTabModel : public ChemistryModel {
 
     PetscReal** Wmat = nullptr;
     PetscReal** iWmat = nullptr;
+    PetscReal* sourceEnergyScaler = nullptr;
     /**
      * private implementations of support functions
      */
