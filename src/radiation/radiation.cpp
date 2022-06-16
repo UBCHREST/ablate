@@ -85,7 +85,7 @@ void ablate::radiation::Radiation::RayInit() {
      * (sorted by distance and starting at the boundary working in)
      * */
 
-    // TODO: Setup the particles and their associated fields including: ray identifier, domains crossed, coordinates, ray direction, origin domain. Instantiate ray particles for each local cell only
+    // TODO: Setup the particles and their associated fields including: ray identifier, # domains crossed, coordinates, and origin domain. Instantiate ray particles for each local cell only.
 
     /** Instantiate a vector of fields which can store the information required in the search particles? */
     std::vector<ParticleField> fields;
@@ -117,7 +117,7 @@ void ablate::radiation::Radiation::RayInit() {
     solver::Range cellRange;
     GetCellRange(cellRange);
 
-    // TODO: This is still relevant, as there will be global indexing of these values but with local information only
+    // TODO: This is still relevant, as there will be global indexing of these values but with local information only.
 
     /** Create a nested vector which can store cell locations based on origin cell, theta, phi, and space step
      * Preallocate the sub-vectors in order to avoid dynamic sizing as much as possible
@@ -138,8 +138,6 @@ void ablate::radiation::Radiation::RayInit() {
 
     Krad.resize((cellRange.end - cellRange.start), Ij1Cells);
 
-    // TODO: The direction vector of the ray will become the coordinates of the particle
-
     /** Get setup things for the position vector of the current cell index
      * Declare the variables that will contain the geometry of the cells
      * Obtain the geometric information about the cells in the DM
@@ -155,144 +153,169 @@ void ablate::radiation::Radiation::RayInit() {
     PetscFVCellGeom* cellGeom;
     //    PetscFVFaceGeom* faceGeom;
 
+    /** Set the spatial step size to the minimum cell radius */
+    PetscReal hstep = minCellRadius;
+
+    PetscInt originrank = 0;
+    MPI_Comm_rank(MPI_COMM_WORLD, &originrank);  //!< Get the origin rank of the current process. The particle belongs to this rank.
+
     PetscInt ncells = 0;
-    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {  // TODO: Only for cells within my rank domain
-        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
-        /** Provide progress updates if the log is enabled.
-         * Initializer described how many of the cell ray locations have been stored.
-         */
-        if (log) {
-            double percentComplete = 100.0 * double(ncells) / double((cellRange.end - cellRange.start));
-            log->Printf("Radiation Initializer Percent Complete: %3.1f\n", percentComplete);
-        }
-
-        DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);  //!< Reads the cell location from the current cell
-                                                                        //        DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom);  //!< Reads the cell location from the current cell
-
-        /** Set the spatial step size to the minimum cell radius */
-        PetscReal hstep = minCellRadius;
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {  // TODO: Only for cells within my rank domain. How to only iterate over local cells? Do we need to only iterate over local cells?
+        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
+        DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);      //!< Reads the cell location from the current cell
 
         /** for every angle theta
          * for every angle phi
          */
         for (int ntheta = 1; ntheta < nTheta; ntheta++) {
             for (int nphi = 0; nphi < nPhi; nphi++) {
-                /** Should represent the distance from the origin cell to the boundary. How to get this? By marching out of the domain! (and checking whether we are still inside)
-                 * Number of spatial steps that  the ray has taken towards the origin
-                 * Keeps track of whether the ray has intersected the boundary at this point or not
-                 */
-                PetscReal magnitude = hstep;
-                int nsteps = 0;
-                int ndomain = 0;
-                bool boundary = false;
+                // TODO: Create a particle for every new ray at this coordinate with this direction, putting in the origin rank, ray id, domains crossed, etc.
+                // Get the particle coordinate field and write the cellGeom->centroid[xyz] into it
 
-                while (!boundary) {
-                    // TODO: Create a particle for every new ray at this coordinate with this direction, putting in the origin rank, ray id, domains crossed, etc.
-                        //TODO: Maybe because of this, the particles need to be created individually and this will change the field initialization?
-                    // TODO: All of the actual marching should be seperated into a second step which loops over present particles. The seperation will not be completely clean.
+                // TODO: Label the particle with the originrank so it knows where to get sent to
 
-                    /** Insert zeros into the Ij1 initialization so that the solver has an initial assumption of 0 to work with.
-                     * Put as many zeros as there are domains so that there are matching indices
-                     * Domain split every x points
-                     * */
-                    PetscReal initialValue = 0.0;  //!< This is the intensity being given to the initial values of the rays
-                    PetscReal anotherInitialValue = 1;
-                    //                    std::vector<PetscInt> rayDomain;
+                // TODO: Label the particle with domainscrossed = 0; so that this can be iterated. How to detect when a particle has crossed a domain?
 
-                    // TODO: All of this still applies. They will be local variables that are indexed globally.
-
-                    Ij1[ncells][ntheta][nphi].push_back(initialValue);  //!< The initial value to input for Ij1 should be 0 for the number of domains that the ray crosses
-                    Krad[ncells][ntheta][nphi].push_back(anotherInitialValue);
-                    rays[ncells][ntheta][nphi].push_back(rayDomains);
-                    h[ncells][ntheta][nphi].push_back(rayDomains);
-
-                    PetscReal hhere = 0;       //!< Represents the space step of the current cell
-                    PetscInt currentCell = 0;  //!< Represents the cell that the ray is currently in. If the cell that the ray is in changes, then this cell should be added to the ray. Also, the space
-                                               //!< step that was taken between cells should be saved.
-
-                    nsteps = 0;                      //!< Reset the number of steps that the domain contains, moving on to a new domain
-                    while (nsteps < domainPoints) {  //!< While there are fewer points in this domain than there should be
-                        /** Draw a point on which to grab the cells of the DM
-                         * Intersect should point to the boundary, and then be pushed back to the origin, getting each cell
-                         * converts the present angle number into a real angle
-                         * */
-                        Vec intersect;
-                        theta = ((double)ntheta / (double)nTheta) * pi;
-                        phi = ((double)nphi / (double)nPhi) * 2.0 * pi;
-                        PetscInt i[3] = {0, 1, 2};
-
-                        /** x component conversion from spherical coordinates, adding the position of the current cell
-                         * y component conversion from spherical coordinates, adding the position of the current cell
-                         * z component conversion from spherical coordinates, adding the position of the current cell
-                         * (Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
-                         * */
-                        PetscReal direction[3] = {
-                            (magnitude * sin(theta) * cos(phi)) + cellGeom->centroid[0],  // x component conversion from spherical coordinates, adding the position of the current cell
-                            (magnitude * sin(theta) * sin(phi)) + cellGeom->centroid[1],  // y component conversion from spherical coordinates, adding the position of the current cell
-                            (magnitude * cos(theta)) + cellGeom->centroid[2]};            // z component conversion from spherical coordinates, adding the position of the current cell
-                        //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
-
-                        /** This block creates the vector pointing to the cell whose index will be stored during the current loop*/
-                        VecCreate(PETSC_COMM_WORLD, &intersect);  //!< Instantiates the vector
-                        VecSetBlockSize(intersect, dim) >> checkError;
-                        VecSetSizes(intersect, PETSC_DECIDE, dim);  //!< Set size
-                        VecSetFromOptions(intersect);
-                        VecSetValues(intersect, dim, i, direction, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
-
-                        /** Loop through points to try to get a list (vector) of cells that are sitting on that line*/
-                        PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
-                        DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NONE, &cellSF) >> checkError;  //!< Locate the points in v in the mesh and return a PetscSF of the containing cells
-
-                        /** An array that maps each point to its containing cell can be obtained with the below
-                         * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
-                         * */
-
-                        PetscInt nFound;
-                        const PetscInt* point = nullptr;
-                        const PetscSFNode* cell = nullptr;
-                        PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
-
-                        /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
-                         * This function returns multiple values if multiple points are input to it
-                         * Make sure that whatever cell is returned is in the stencil set (and not outside of the radiation domain)
-                         * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
-                         * The boundary has been reached if any of these conditions don't hold
-                         * */
-                        if (nFound > -1 && cell[0].index >= 0 && subDomain->InRegion(cell[0].index)) {
-                            if (currentCell != cell[0].index) {
-                                rays[ncells][ntheta][nphi][ndomain].push_back(cell[0].index);
-                                h[ncells][ntheta][nphi][ndomain].push_back(hhere);
-                                hhere = 0;
-                                // TODO: DMSwarm Migrate to move the ray into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment
-                            } else {
-                                hhere += hstep;
-                            }
-                        } else {
-                            boundary = true;  //!< The boundary has been reached if any of these conditions don't hold
-                        }
-
-                        /** Increase the step size of the ray toward the boundary by one more minimum cell radius
-                         * Increase the magnitude of the ray tracing vector by one space step
-                         * Increase the number of steps taken, informs how many indices the vector has
-                         * */
-                        magnitude += hstep;
-                        nsteps++;
-
-                        /** Cleanup*/
-                        PetscSFDestroy(&cellSF);
-                        VecDestroy(&intersect);
-                    }
-                    /** This protects the last domain from becoming empty, which would prevent the boundary initialization of the black body intensity */
-                    if (static_cast<int>(rays[ncells][ntheta][nphi][ndomain].size()) == 0) {  //!< If there are no points stored in this domain when the ray has hit the boundary
-                        rays[ncells][ntheta][nphi].pop_back();                                //!< Remove the last domain entry in the rays vector
-                        Ij1[ncells][ntheta][nphi].pop_back();                                 //!< There will no longer be a ray segment here to keep track of
-                    }
-                    ndomain++;
-                }
+                // TODO: Label the particle with the ray identifier. (Use an array of 3 ints, [ncell][theta][phi])
             }
         }
         ncells++;  //!< Increase the number of cells that have been finished.
     }
+
+    /** ***********************************************************************************************************************************************
+     * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
+     * ray segment storage can be easily accessed and appended.
+     * */
+
+    /** Iterate over the particles that are present in the domain
+     * Add the cell index to the ray
+     * Step every particle in the domain one step and then perform a migration
+     * */
+    // TODO: Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no particles then pass out of initialization.
+
+    /** Should represent the distance from the origin cell to the boundary. How to get this? By marching out of the domain! (and checking whether we are still inside)
+     * Number of spatial steps that  the ray has taken towards the origin
+     * Keeps track of whether the ray has intersected the boundary at this point or not
+     */
+//    PetscReal magnitude = hstep; This will no loger apply if we simply += the particle coordinate on every pass
+    int nsteps = 0;
+    int ndomain = 0;        //!< Number of domains that have been crossed by the particle.
+    bool boundary = false;  //!< I don't even think we need to check for the boundary anymore.
+
+    /** Insert zeros into the Ij1 initialization so that the solver has an initial assumption of 0 to work with.
+     * Put as many zeros as there are domains so that there are matching indices
+     * Domain split every x points
+     * */
+    PetscReal initialValue = 0.0;  //!< This is the intensity being given to the initial values of the rays
+    PetscReal anotherInitialValue = 1;
+    //                    std::vector<PetscInt> rayDomain;
+
+    // TODO: Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction.
+    PetscInt ntheta = 1;  //!< Get the angle number from the particle field label for the rays vector. Resize the rays vector if necessary for the global indexing scheme.
+    PetscInt nphi = 1;    //!< Get the angle number from the particle field label for the rays vector
+
+    if (rays[ncells][ntheta][nphi].size() < ndomain) {
+        Ij1[ncells][ntheta][nphi].push_back(initialValue);          //!< The initial value to input for Ij1 should be 0 for the number of domains that the ray crosses
+        Krad[ncells][ntheta][nphi].push_back(anotherInitialValue);  //!< This needs to be stored locally and not transported
+        rays[ncells][ntheta][nphi].push_back(rayDomains);           //!< This needs to be stored locally and not transported
+        h[ncells][ntheta][nphi].push_back(rayDomains);              //!< This needs to be stored locally and not transported
+    }
+
+    // TODO: IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
+    //  This does not account for if the particle has passed out of and then back into the domain. If there is a way to check which particles are here that were not here last time step, that would be
+    //  more convenient.
+
+    PetscReal hhere = 0;       //!< Represents the space step of the current cell
+    PetscInt currentCell = 0;  //!< Represents the cell that the ray is currently in. If the cell that the ray is in changes, then this cell should be added to the ray. Also, the space
+                               //!< step that was taken between cells should be saved.
+
+    nsteps = 0;  //!< Reset the number of steps that the domain contains, moving on to a new domain
+
+    // TODO: FIRST TAKE THIS LOCATION INTO THE RAYS VECTOR
+
+    /** "I found a particle in my domain. Maybe it was just moved here and I've never seen it before.
+     * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
+    // TODO: The vector previously calculated as intersect should be replaced by the particle coordinates.
+    // TODO: Get the particle coordinates here and put them into the intersect
+
+    /** Loop through points to try to get the cell that is sitting on that point*/
+    PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
+    DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NONE, &cellSF) >> checkError;  //!< Locate the points in v in the mesh and return a PetscSF of the containing cells
+
+    /** An array that maps each point to its containing cell can be obtained with the below
+     * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
+     * */
+    PetscInt nFound;
+    const PetscInt* point = nullptr;
+    const PetscSFNode* cell = nullptr;
+    PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
+
+    /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
+     * This function returns multiple values if multiple points are input to it
+     * Make sure that whatever cell is returned is in the stencil set (and not outside of the radiation domain)
+     * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
+     * The boundary has been reached if any of these conditions don't hold
+     * */
+    if (nFound > -1 && cell[0].index >= 0 && subDomain->InRegion(cell[0].index)) {
+        if (currentCell != cell[0].index) {
+            rays[ncells][ntheta][nphi][ndomain].push_back(cell[0].index);
+            h[ncells][ntheta][nphi][ndomain].push_back(hhere);
+            hhere = 0; //!< Reset the adaptive step checker
+            currentCell = cell[0].index; //!< Reset the adaptive step checker
+        } else {
+            hhere += hstep;
+        }
+    } else {
+        boundary = true;  //!< The boundary has been reached if any of these conditions don't hold
+    }
+
+    // TODO: Step the particle in space: Set the coordinates of the particle += to the step direction
+
+    /** Draw a point on which to grab the cells of the DM
+     * Intersect should point to the boundary, and then be pushed back to the origin, getting each cell
+     * converts the present angle number into a real angle
+     * */
+    Vec intersect;
+    theta = ((double)ntheta / (double)nTheta) * pi;
+    phi = ((double)nphi / (double)nPhi) * 2.0 * pi;
+    PetscInt i[3] = {0, 1, 2};
+
+    /** x component conversion from spherical coordinates, adding the position of the current cell
+     * y component conversion from spherical coordinates, adding the position of the current cell
+     * z component conversion from spherical coordinates, adding the position of the current cell
+     * (Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
+     * */
+    PetscReal direction[3] = {(hstep * sin(theta) * cos(phi)) + cellGeom->centroid[0],  // x component conversion from spherical coordinates, adding the position of the current cell
+                              (hstep * sin(theta) * sin(phi)) + cellGeom->centroid[1],  // y component conversion from spherical coordinates, adding the position of the current cell
+                              (hstep * cos(theta)) + cellGeom->centroid[2]};            // z component conversion from spherical coordinates, adding the position of the current cell
+    //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
+
+    /** This block creates the vector pointing to the cell whose index will be stored during the current loop*/
+    VecCreate(PETSC_COMM_WORLD, &intersect);  //!< Instantiates the vector
+    VecSetBlockSize(intersect, dim) >> checkError;
+    VecSetSizes(intersect, PETSC_DECIDE, dim);  //!< Set size
+    VecSetFromOptions(intersect);
+    VecSetValues(intersect, dim, i, direction, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
+
+    /** Increase the step size of the ray toward the boundary by one more minimum cell radius
+     * Increase the magnitude of the ray tracing vector by one space step
+     * Increase the number of steps taken, informs how many indices the vector has
+     * */
+//    magnitude += hstep; This won't matter if we += the coordinate on every pass
+    nsteps++;
+
+    // TODO: DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment
+
+    /** Cleanup*/
+    PetscSFDestroy(&cellSF);
+    VecDestroy(&intersect);
+
+    /** This protects the last domain from becoming empty, which would prevent the boundary initialization of the black body intensity */
+    if (static_cast<int>(rays[ncells][ntheta][nphi][ndomain].size()) == 0) {  //!< If there are no points stored in this domain when the ray has hit the boundary
+        rays[ncells][ntheta][nphi].pop_back();                                //!< Remove the last domain entry in the rays vector
+        Ij1[ncells][ntheta][nphi].pop_back();                                 //!< There will no longer be a ray segment here to keep track of
+    }
+    ndomain++;
     /** Cleanup*/
     Ij = Ij1;
     Izeros = Ij1;
@@ -349,9 +372,10 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     solver::Range cellRange;
     GetCellRange(cellRange);
 
-    /** For MPI purposes, should all of the domain computations be accomplished before the individual additions are considered for the cells?
-     * In this case, two separate loops should be travelled through because the domains will need to change within this loop otherwise
-     * If the loops are separated then the MPI splitting might be less complicated. I don't know whether this will effect speed significantly, but I would guess not.*/
+    //TODO: Loop over all particles instead of all ray identifiers. Grab ray information from the identifier.
+    // The solving particle field will need to include
+
+/** Loop over all of the cells in the domain */
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;
         PetscReal intensity = 0;
@@ -365,10 +389,6 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 int nDomain = static_cast<int>(rays[ncells][ntheta][nphi].size());
                 PetscReal rayIntensity = 0.0;
 
-                /** Parallel things are here
-                 * Meaning that the variables required for the parallelizable analytical solution will be declared here */
-                PetscReal Kradd = 1;
-                PetscReal Isource = 0;
                 PetscReal I0 = 0;
 
                 /** Local ray computation happens here */
@@ -399,6 +419,11 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                         }
                     }
                 }
+
+                // TODO: After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
+
+                //TODO: Now iterate through all of the particles again
+
                 /** Global ray computation happens here, grabbing values from the transported particles
                  * The rays end here, their intensity is added to the total intensity of the cell
                  * Gives the partial impact of the ray on the total sphere.
@@ -409,12 +434,17 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                  *
                  * In the parallel form at the end of each ray, the absorption of the initial ray and the absorption of the black body source are computed individually at the end.
                  * */
+                /** Parallel things are here
+                 * Meaning that the variables required for the parallelizable analytical solution will be declared here */
+                PetscReal Kradd = 1;
+                PetscReal Isource = 0;
                 for (int ndomain = 0; ndomain < nDomain; ndomain++) {
+                    // TODO: Add ray identifier index to these variables so that they can be stored while the particles get looped through
                     Isource += Ij[ncells][ntheta][nphi][ndomain] * Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
                     Kradd *= Krad[ncells][ntheta][nphi][ndomain];          //!< Add the absorption for this domain to the total absorption of the ray
                 }
-                rayIntensity = (I0 * Kradd) + Isource;
-                intensity += rayIntensity * sin(theta) * dTheta * dPhi;
+                rayIntensity = (I0 * Kradd) + Isource; //!< This variable doesn't have any reason for existing.
+                intensity += rayIntensity * sin(theta) * dTheta * dPhi; //TODO: Add ncells index to intensity so that each cell intensity can be stored.
             }
         }
 
