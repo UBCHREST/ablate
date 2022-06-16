@@ -8,7 +8,6 @@
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
-#include "particles/particles.hpp"
 
 namespace ablate::radiation {
 
@@ -45,7 +44,6 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
 
    protected:
     DM radDM; //!< DM associated with the radiation particles
-    std::vector<ParticleField> particleFieldDescriptors; //
 
    private:
     /// Class Methods
@@ -57,6 +55,8 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     /// Class Constants
     const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
+    PetscInt numRanks; //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
+
 
     /// Class inputs and Variables
     PetscInt dim = 0;  // Number of dimensions that the domain exists within
@@ -69,16 +69,14 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      */
     const std::shared_ptr<ablate::monitors::logs::Log> log;
 
-    std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
-    std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>> h;     //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
-    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij1;               //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
-    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Ij;                //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
-    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Izeros;            //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+    std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
+    std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>>> h;     //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
+    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Ij1;               //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Ij;                //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Izeros;            //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
 
-    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Krad;
-    std::vector<std::vector<std::vector<std::vector<PetscReal>>>> Kones;
-
-    PetscInt domainPoints = 10;  //!< The number of points in each domain.
+    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Krad;
+    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Kones;
 };
 
 }  // namespace ablate::radiation
