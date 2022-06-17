@@ -114,7 +114,7 @@ void ablate::radiation::Radiation::RayInit() {
         iCellMax = (iCell > iCellMax) ? iCell : iCellMax;
     }
 
-    /** Setup the particles and their associated fields including: ray identifier and # domains crossed, coordinates, and origin domain. Instantiate ray particles for each local cell only. */
+    /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
 
     PetscInt npoints = (cellRange.end - cellRange.start) * nTheta * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
 
