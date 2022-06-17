@@ -47,8 +47,38 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     DM radsearch;  //!< DM which the search particles occupy
 
    private:
+    ///Structs to hold information
+    struct Segment {
+        std::vector<PetscInt> cells;
+        std::vector<PetscInt> h;
+        PetscReal Ij;
+        PetscReal Krad;
+    };
+
+    struct Identifier {
+        PetscInt origin;
+        PetscInt iCell;
+        PetscInt ntheta;
+        PetscInt nphi;
+        PetscInt nsegment;
+    };
+
+    struct Virtualcoord {
+        PetscReal x;
+        PetscReal y;
+        PetscReal z;
+    };
+
     /// Class Methods
     void RayInit();
+
+    /** Create a unique identifier from an array of integers.
+     * This is done using the Cantor pairing function
+     * If pairing is true then the array will be encoded to a value.
+     * If pairing is false then the value will be decoded into an array.
+     * The number of values coded to depends on the size of the pointer.
+     * */
+    void PairingFunction(PetscInt* array[], PetscInt& value, bool pairing);
 
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
@@ -69,14 +99,20 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      */
     const std::shared_ptr<ablate::monitors::logs::Log> log;
 
-    std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
-    std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>>> h;     //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
-    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Ij1;               //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
-    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Ij;                //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
-    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Izeros;            //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+//    std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
+//    std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>>> h;     //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
+//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Ij1;               //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Ij;                //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Izeros;            //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
+//
+//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Krad;
+//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Kones;
 
-    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Krad;
-    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Kones;
+    std::map <PetscInt, Segment> rays;
+//    std::map <PetscInt, PetscInt> rays;
+//
+//    std::map <PetscInt, PetscReal> Ij1;
+//    std::map <PetscInt, PetscReal> Krad;
 };
 
 }  // namespace ablate::radiation
