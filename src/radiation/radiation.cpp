@@ -201,7 +201,6 @@ void ablate::radiation::Radiation::RayInit() {
                 identifier[ip].nsegment = 0;     //!< Initialize the number of domains crossed as zero
             }
         }
-        //        ncells++;  //!< Increase the number of cells that have been finished.
     }
 
     /** Restore the fields associated with the particles */
@@ -233,6 +232,9 @@ void ablate::radiation::Radiation::RayInit() {
         DMSwarmGetField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
         DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
         DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
+
+        PetscReal hhere = 0; //!< Setup variable to hold information about the adaptive stepping.
+
         /** Iterate over the particles that are present in the domain
          * Add the cell index to the ray
          * Step every particle in the domain one step and then perform a migration
@@ -243,16 +245,7 @@ void ablate::radiation::Radiation::RayInit() {
              * Number of spatial steps that  the ray has taken towards the origin
              * Keeps track of whether the ray has intersected the boundary at this point or not
              */
-            //    PetscReal magnitude = hstep; This will no loger apply if we simply += the particle coordinate on every pass
             int nsteps = 0;  //        bool boundary = false;  //!< I don't even think we need to check for the boundary anymore.
-
-            /** Insert zeros into the Ij1 initialization so that the solver has an initial assumption of 0 to work with.
-             * Put as many zeros as there are domains so that there are matching indices
-             * Domain split every x points
-             * */
-            PetscReal initialValue = 0.0;  //!< This is the intensity being given to the initial values of the rays
-            PetscReal anotherInitialValue = 1;
-            //                    std::vector<PetscInt> rayDomain;
 
             /** Update the physical coordinate field so that the real particle location can be updated. */
             //            for (int d = 0; d < dim; d++) {                            //!< For the number of dimensions that actually exist physically.
@@ -263,28 +256,24 @@ void ablate::radiation::Radiation::RayInit() {
             if (rays.count(Key(identifier[ip])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
                 identifier[ip].nsegment++;               //!< The particle has passed through another domain!
             }
-            PetscReal hhere = hstep;  //!< Represents the space step of the current cell
 
-            nsteps = 0;  //!< Reset the number of steps that the domain contains, moving on to a new domain
-
-            /** FIRST TAKE THIS LOCATION INTO THE RAYS VECTOR */
-
-            /** "I found a particle in my domain. Maybe it was just moved here and I've never seen it before.
+            /** FIRST TAKE THIS LOCATION INTO THE RAYS VECTOR
+             * "I found a particle in my domain. Maybe it was just moved here and I've never seen it before.
              * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
             Vec intersect;
             PetscInt i[3] = {0, 1, 2};
             /** Get the particle coordinates here and put them into the intersect */
-            PetscReal direction[3] = {(virtualcoord[ipart].x),   // x component conversion from spherical coordinates, adding the position of the current cell
+            PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from spherical coordinates, adding the position of the current cell
                                       (virtualcoord[ipart].y),   // y component conversion from spherical coordinates, adding the position of the current cell
                                       (virtualcoord[ipart].z)};  // z component conversion from spherical coordinates, adding the position of the current cell
-            //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
+            //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a position vector in the current angle position
 
             /** This block creates the vector pointing to the cell whose index will be stored during the current loop*/
             VecCreate(PETSC_COMM_WORLD, &intersect);  //!< Instantiates the vector
             VecSetBlockSize(intersect, dim);
             VecSetSizes(intersect, PETSC_DECIDE, dim);  //!< Set size
             VecSetFromOptions(intersect);
-            VecSetValues(intersect, dim, i, direction, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
+            VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
             /** Loop through points to try to get the cell that is sitting on that point*/
             PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
             DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NONE, &cellSF);  //!< Locate the points in v in the mesh and return a PetscSF of the containing cells
@@ -308,8 +297,12 @@ void ablate::radiation::Radiation::RayInit() {
                 rays[Key(identifier[ip])].h.push_back(hhere);
             }
 
+            /** Adaptive stepping stuff should probably live here and will need to be added to after each time the position is updated */
+            hhere = hstep;  //!< Represents the space step of the current cell
+            nsteps = 0;  //!< Reset the number of steps that the domain contains, moving on to a new domain
+
             /** Step the vector forward in space until it is no longer in the cell it was ins
-             * After the coordinates have left the cell it was it, the coordinates of the particle should be updated
+             * After the coordinates have left the cell it was it, the coordinates of the particle should be updated //TODO: Add adaptive space stepping back in by taking multiple steps here
              * Update the coordinates of the particle (virtual and physical)
              * */
             virtualcoord[ipart].x += virtualcoord[ip].xdir;  //!< x component conversion from spherical coordinates, adding the position of the current cell
@@ -318,7 +311,7 @@ void ablate::radiation::Radiation::RayInit() {
             //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
             for (int d = 0; d < dim; d++) {  //!< For the number of dimensions that actually exist physically.
                                              //                coord[dim * ipart + d] = virtualcoord[3 * ipart + d];  //!< Insert the virtual coordinates into the physical coordinate field.
-            }                                // TODO: Fix this. It could be worth replacing with a function
+            }                                // TODO: Fix this. (Physical coordinate updater) It could be worth replacing with a function
             nsteps++;
             /** Cleanup*/
             PetscSFDestroy(&cellSF);
