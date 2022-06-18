@@ -43,18 +43,34 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
    protected:
-    DM radDM;      //!< DM associated with the radiation particles
+    DM radsolve;   //!< DM associated with the radiation particles
     DM radsearch;  //!< DM which the search particles occupy
 
    private:
-    ///Structs to hold information
-    struct Segment {
-        std::vector<PetscInt> cells;
-        std::vector<PetscInt> h;
-        PetscReal Ij;
-        PetscReal Krad;
+    /// Structs to hold information
+
+    /** Each origin cell will need to retain local information given to it by the ray segments in order to compute the final intenisty.
+     * This information will be owned by cell index and stored in a map of local cell indices.
+     * */
+    struct Origin {
+        PetscReal I0 = 0;         //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
+        PetscReal Isource = 0;    //!< Value that will be contributed to by every ray segment.
+        PetscReal Kradd = 0;       //!< Value that will be contributed to by every ray segment.
+        PetscReal intensity = 0;  //!<  Value that will be contributed to by every ray.
     };
 
+    /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
+    struct Segment {
+        std::vector<PetscInt> cells;  //!< Stores the cell indices of the segment locally.
+        std::vector<PetscInt> h;      //!< Stores the space steps of the segment locally.
+        PetscReal Ij = 0;             //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal Krad = 1;           //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal I0 = 0;
+    };
+
+    /** Identifiers are carrying by both the search and solve particles in order to associate them with their origins and ray segments
+     * In the search particles, nsegment iterates based on how many domains the search particle has crossed.
+     * In the solve particle, nsegment remains constant as it ties the particle to its specific order in the ray */
     struct Identifier {
         PetscInt origin;
         PetscInt iCell;
@@ -63,22 +79,33 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
         PetscInt nsegment;
     };
 
+    /** Virtual coordinates are used during the search to compute path length properties in case the simulation is not 3 dimensional */
     struct Virtualcoord {
         PetscReal x;
         PetscReal y;
         PetscReal z;
+        PetscReal xdir;
+        PetscReal ydir;
+        PetscReal zdir;
+    };
+
+    /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
+     * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
+    struct Carrier {
+        PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal I0 = 0;
     };
 
     /// Class Methods
     void RayInit();
 
     /** Create a unique identifier from an array of integers.
-     * This is done using the Cantor pairing function
-     * If pairing is true then the array will be encoded to a value.
-     * If pairing is false then the value will be decoded into an array.
-     * The number of values coded to depends on the size of the pointer.
+     * This is done using the nested Cantor pairing function
+     * The ray segment will always be accessed by a particle carrying an identifier so it does not need to be inverted.
+     * (Unless the particles created for the solve need to find their ray segments efficiently? Maybe dont destroy the particles of the search?)
      * */
-    void PairingFunction(PetscInt* array[], PetscInt& value, bool pairing);
+    PetscInt Key(Identifier id);
 
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
@@ -99,20 +126,8 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      */
     const std::shared_ptr<ablate::monitors::logs::Log> log;
 
-//    std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>>> rays;  //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
-//    std::vector<std::vector<std::vector<std::vector<std::vector<std::vector<PetscInt>>>>>> h;     //!< Indices: Cell, angle (theta), angle(phi), space steps (Storing indices at locations)
-//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Ij1;               //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
-//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Ij;                //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
-//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Izeros;            //!< Indices: Cell, angle (theta), angle(phi), domains (Storing final ray intensity of last time step)
-//
-//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Krad;
-//    std::vector<std::vector<std::vector<std::vector<std::vector<PetscReal>>>>> Kones;
-
-    std::map <PetscInt, Segment> rays;
-//    std::map <PetscInt, PetscInt> rays;
-//
-//    std::map <PetscInt, PetscReal> Ij1;
-//    std::map <PetscInt, PetscReal> Krad;
+    std::map<PetscInt, Segment> rays;
+    std::map<PetscInt, Origin> origin;
 };
 
 }  // namespace ablate::radiation
