@@ -56,3 +56,7 @@ print(macro_header)
 
 with open('test_targets.h', 'w') as f:
     f.write(macro_header)
+
+import os
+os.system('clang-format test_targets.h > test_targets.h.formatted')
+os.system('mv test_targets.h.formatted test_targets.h')

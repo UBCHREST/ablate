@@ -69,8 +69,7 @@ TEST_P(ChemTabModelGetSpeciesAndProgressVariableTestFixture, ShouldReturnCorrect
 
 INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelGetSpeciesAndProgressVariableTestFixture,
                          testing::Values((ChemTabModelGetSpeciesAndProgressVariableTestParameters){
-    .modelPath = "inputs/chemistry/chemTabTestModel_1", .expectedSpecies = {SPECIES_NAMES}, .expectedProgressVariables = { CPV_NAMES }}
-}));
+                             .modelPath = "inputs/chemistry/chemTabTestModel_1", .expectedSpecies = {SPECIES_NAMES}, .expectedProgressVariables = {CPV_NAMES}}));
 
 /*******************************************************************************************************
  * Tests for getting the Compute Mass Fractions Functions
