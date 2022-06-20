@@ -8,18 +8,6 @@
 #include <petscdmplex.h>
 #include <petscksp.h>
 
-namespace ablate::levelSet {
-  class plex {
-    private:
-      PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal x0[3], PetscReal maxDist, PetscInt *nCells, PetscInt *cells[]);
-
-    public:
-      PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscReal h, PetscReal maxDist, PetscInt *nCells, PetscInt *cells[]);
-      PetscErrorCode DMGetFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv);
-      PetscErrorCode DMRestoreFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv);
-
-
-
-  };
-
-}
+PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscReal maxDist, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]);
+PetscErrorCode DMGetFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv);
+PetscErrorCode DMRestoreFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv);

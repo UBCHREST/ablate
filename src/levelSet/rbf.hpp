@@ -33,6 +33,10 @@ class RBF {
     // Print all of the parameters.
     void ShowParameters();
 
+    // Return the mesh associated with the RBF
+    inline DM& GetDM() noexcept { return dm; }
+
+
     // The finite difference weights for derivatives
     void Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscReal *weights[]);
 

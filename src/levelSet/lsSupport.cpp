@@ -1,42 +1,50 @@
 #include "lsSupport.hpp"
 #include <petsc/private/vecimpl.h>
 
-
-using namespace ablate::levelSet;
-
-PetscErrorCode plex::DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal x0[3], PetscReal maxDist, PetscInt *nCells, PetscInt *cells[]) {
+// Return all cells which share an vertex or edge/face with a center cell
+// dm - The mesh
+// p - The cell to use
+// maxDist - Maximum distance from p to consider adding
+// useVertices - Should we include cells which share a vertex (TRUE) or an edge/face (FALSE)
+// nCells - Number of cells found
+// cells - The IDs of the cells found.
+PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxDist, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
 
   PetscInt        cStart, cEnd, vStart, vEnd;
   PetscInt        cl, nClosure, *closure = NULL;
   PetscInt        st, nStar, *star = NULL;
   PetscInt        n, list[100];  // As of right now just make it a list big enough to hold everything. There must be a better way of doing this.
   PetscInt        i, dim;
-  PetscReal       x[3], dist;
+  PetscReal       x0[3], x[3], dist;
   PetscErrorCode  ierr;
 
   PetscFunctionBegin;
 
+  ierr = DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL);CHKERRQ(ierr); // Center of the cell-of-interest
+
   ierr = DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd);CHKERRQ(ierr);       // Range of cells
-//  ierr = DMPlexGetHeightStratum(dm, 1, &vStart, &vEnd);CHKERRQ(ierr);       // Range of cells
-  ierr = DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd);CHKERRQ(ierr);        // Range of vertices
+  if (useVertices) {
+    ierr = DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd);CHKERRQ(ierr);      // Range of vertices
+  }
+  else {
+    ierr = DMPlexGetHeightStratum(dm, 1, &vStart, &vEnd);CHKERRQ(ierr);     // Range of edges (2D) or faces (3D)
+  }
 
   ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
 
-
-
   n = 0;
-  ierr = DMPlexGetTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure);CHKERRQ(ierr);
+  ierr = DMPlexGetTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure);CHKERRQ(ierr); // All points associated with the cell
   for (cl = 0; cl < nClosure*2; cl += 2) {
-    if (closure[cl] >= vStart && closure[cl] < vEnd){
-      ierr = DMPlexGetTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star);CHKERRQ(ierr);
+    if (closure[cl] >= vStart && closure[cl] < vEnd){ // Only use the points corresponding to either a vertex or edge/face.
+      ierr = DMPlexGetTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star);CHKERRQ(ierr); // Get all points using this vertex or edge/face.
       for (st = 0; st< nStar*2; st += 2) {
-        if( star[st] >= cStart && star[st] < cEnd){
-          ierr = DMPlexComputeCellGeometryFVM(dm, star[st], NULL, x, NULL);CHKERRQ(ierr);
+        if( star[st] >= cStart && star[st] < cEnd){   // If the point is a cell add it.
+          ierr = DMPlexComputeCellGeometryFVM(dm, star[st], NULL, x, NULL);CHKERRQ(ierr); // Center of the candidate cell.
           dist = 0;
           for (i = 0; i < dim; ++i) {
             dist += PetscSqr(x0[i] - x[i]);
           }
-          if (PetscSqrtReal(dist) <= maxDist) {
+          if (PetscSqrtReal(dist) <= maxDist) {   // Only add if the distance is within maxDist
             list[n++] = star[st];
           }
         }
@@ -50,35 +58,45 @@ PetscErrorCode plex::DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscRea
   ierr = PetscArraycpy(*cells, list, n);CHKERRQ(ierr);
   *nCells = n;
 
-
-
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode plex::DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscReal h, PetscReal maxDist, PetscInt *nCells, PetscInt *cells[]) {
+
+// Return the list of neighboring cells to cell p using a combination of number of levels and maximum distance
+// dm - The mesh
+// levels - Number of neighboring cells to check
+// maxDist - Maximum distance to include
+// nCells - Number of neighboring cells
+// cells - The list of neighboring cell IDs
+PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscReal maxDist, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
   PetscInt        numAdd, *addList;
   PetscInt        n = 0, n0, list[10000];
   PetscInt        l, i;
-  PetscReal       x0[3];
+  PetscReal       h;
   PetscErrorCode  ierr;
 
   PetscFunctionBegin;
 
   if (levels > 0) {
 
+    DMPlexGetMinRadius(dm, &h); // This returns the minimum distance from any cell centroid to a face.
+    h *= 2.0;                   // Double it to get the grid spacing.
+
+    // If the maximum distance isn't provided estimate it based on the number of levels
     if (maxDist < -0.5) {
       maxDist = ((PetscReal)levels+1.0)*h;
     }
 
-    ierr = DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL);CHKERRQ(ierr);
 
-    ierr = DMPlexGetNeighborCells_Internal(dm, p, x0, maxDist, &n, &addList);CHKERRQ(ierr);
+
+    // Get one level of neighboring cells
+    ierr = DMPlexGetNeighborCells_Internal(dm, p, maxDist, useVertices, &n, &addList);CHKERRQ(ierr);
     ierr = PetscArraycpy(&list[0], addList, n);
 
     for (l = 1; l < levels; ++l) {
       n0 = n;
       for (i = 0; i < n0; ++i) {
-        ierr = DMPlexGetNeighborCells_Internal(dm, list[i], x0, maxDist, &numAdd, &addList);CHKERRQ(ierr);
+        ierr = DMPlexGetNeighborCells_Internal(dm, list[i], maxDist, useVertices, &numAdd, &addList);CHKERRQ(ierr);
         ierr = PetscArraycpy(&list[n], addList, numAdd);
         n += numAdd;
         ierr = PetscFree(addList);
@@ -97,7 +115,7 @@ PetscErrorCode plex::DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, 
 
 
 
-PetscErrorCode plex::DMGetFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv) {
+PetscErrorCode DMGetFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv) {
   PetscSection    sectionLocal, sectionGlobal;
   PetscInt        cStart, cEnd;
   PetscErrorCode  ierr;
@@ -113,7 +131,7 @@ PetscErrorCode plex::DMGetFieldVec(DM dm, Vec v, PetscInt field, PetscInt height
   PetscFunctionReturn(0);
 }
 
-PetscErrorCode plex::DMRestoreFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv) {
+PetscErrorCode DMRestoreFieldVec(DM dm, Vec v, PetscInt field, PetscInt height, IS *is, Vec *subv) {
   PetscErrorCode  ierr;
 
   PetscFunctionBegin;
