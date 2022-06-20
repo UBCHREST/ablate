@@ -69,9 +69,8 @@ TEST_P(ChemTabModelGetSpeciesAndProgressVariableTestFixture, ShouldReturnCorrect
 
 INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelGetSpeciesAndProgressVariableTestFixture,
                          testing::Values((ChemTabModelGetSpeciesAndProgressVariableTestParameters){
-                             .modelPath = "inputs/chemistry/chemTabTestModel_1",
-                             .expectedSpecies = { SPECIES_NAMES },
-                             .expectedProgressVariables = { CPV_NAMES }}}));
+    .modelPath = "inputs/chemistry/chemTabTestModel_1", .expectedSpecies = {SPECIES_NAMES}, .expectedProgressVariables = { CPV_NAMES }}
+}));
 
 /*******************************************************************************************************
  * Tests for getting the Compute Mass Fractions Functions
@@ -103,9 +102,7 @@ TEST_P(ChemTabModelComputeMassFractionsFunctionFixture, ShouldComputeCorrectMass
 
 INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeMassFractionsFunctionFixture,
                          testing::Values((ChemTabModelComputeMassFractionsFunctionParameters){
-                             .modelPath = "inputs/chemistry/chemTabTestModel_1",
-			     .inputProgressVariables = { INPUT_CPVS },
-			     .expectedMassFractions = { OUTPUT_MASS_FRACTIONS }}));
+                             .modelPath = "inputs/chemistry/chemTabTestModel_1", .inputProgressVariables = {INPUT_CPVS}, .expectedMassFractions = {OUTPUT_MASS_FRACTIONS}}));
 
 /*******************************************************************************************************
  * Tests for getting the Source and Source Energy Predictions
@@ -141,10 +138,10 @@ TEST_P(ChemTabModelComputeSourceFunctionFixture, ShouldComputeCorrectSource) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeSourceFunctionFixture,
-		testing::Values((ChemTabModelComputeSourceFunctionParameters){
-			.modelPath = "inputs/chemistry/chemTabTestModel_1", .inputProgressVariables = { INPUT_CPVS }, 
-            .expectedSource = { OUTPUT_SOURCE_TERMS }, .expectedSourceEnergy = OUTPUT_SOURCE_ENERGY}));
+INSTANTIATE_TEST_SUITE_P(
+    ChemTabModelTests, ChemTabModelComputeSourceFunctionFixture,
+    testing::Values((ChemTabModelComputeSourceFunctionParameters){
+        .modelPath = "inputs/chemistry/chemTabTestModel_1", .inputProgressVariables = {INPUT_CPVS}, .expectedSource = {OUTPUT_SOURCE_TERMS}, .expectedSourceEnergy = OUTPUT_SOURCE_ENERGY}));
 
 /*******************************************************************************************************
  * Tests for getting the Progress Variables
@@ -174,15 +171,13 @@ TEST_P(ChemTabModelComputeProgressVariablesFixture, ShouldComputeCorrectProgress
 }
 
 INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeProgressVariablesFixture,
-		testing::Values((ChemTabModelComputeProgressVariablesParameters){
-			.modelPath = "inputs/chemistry/chemTabTestModel_1",
-			.inputMassFractions = { INPUT_MASS_FRACTIONS },
-			.expectedProgressVariables = { OUTPUT_CPVS }}));
+                         testing::Values((ChemTabModelComputeProgressVariablesParameters){
+                             .modelPath = "inputs/chemistry/chemTabTestModel_1", .inputMassFractions = {INPUT_MASS_FRACTIONS}, .expectedProgressVariables = {OUTPUT_CPVS}}));
 
-			/*********************************************************************************************************
-			 * Test for when tensorflow is not available
-			 */
-			TEST(ChemTabModelTests, ShouldReportTensorFlowLibraryMissing) {
-				ONLY_WITHOUT_TENSORFLOW_CHECK;
-				ASSERT_ANY_THROW(ablate::chemistry::ChemTabModel("inputs/chemistry/chemTabTestModel_1"));
-			}
+/*********************************************************************************************************
+ * Test for when tensorflow is not available
+ */
+TEST(ChemTabModelTests, ShouldReportTensorFlowLibraryMissing) {
+    ONLY_WITHOUT_TENSORFLOW_CHECK;
+    ASSERT_ANY_THROW(ablate::chemistry::ChemTabModel("inputs/chemistry/chemTabTestModel_1"));
+}
