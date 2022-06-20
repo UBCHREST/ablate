@@ -100,6 +100,18 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     /// Class Methods
     void RayInit();
 
+    /** Update the coordinates of the particle using the virtual coordinates
+     * Moves the particle in physical space instead of only updating the virtual coordinates
+     * This function must be run on every updated particle before swarm migrate is used */
+    void UpdateCoordinates (PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, DM cellDM);
+
+    /** More condensed version of the Petsc DMLocate points function
+     * Give struct containing coordinates coordinates
+     * The function will return the cell index if it exists
+     * If it does not exist, it will return -1.*/
+    PetscInt GetCell(PetscInt ipart, Virtualcoord* virtualcoord, DM cellDM);
+
+
     /** Create a unique identifier from an array of integers.
      * This is done using the nested Cantor pairing function
      * The ray segment will always be accessed by a particle carrying an identifier so it does not need to be inverted.

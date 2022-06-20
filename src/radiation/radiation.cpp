@@ -123,8 +123,8 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmSetType(radsearch, DMSWARM_PIC);
     DMSwarmSetCellDM(radsearch, subDomain->GetDM());
 
-    DMSwarmSetType(radsearch, DMSWARM_PIC);
-    DMSwarmSetCellDM(radsearch, subDomain->GetDM());  // TODO: Change the type of the swarm so that it doesn't have coordinates
+    DMSwarmSetType(radsearch, DMSWARM_BASIC);
+    DMSwarmSetCellDM(radsearch, subDomain->GetDM());
 
     /** Register fields within the DMSwarm */
     DMSwarmRegisterUserStructField(radsearch, "identifier", sizeof(Identifier));       //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
@@ -132,8 +132,8 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmFinalizeFieldRegister(radsearch);                                           //!< Initialize the fields that have been defined
 
     DMSwarmRegisterUserStructField(radsolve, "identifier", sizeof(Identifier));  //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
-    DMSwarmRegisterUserStructField(radsolve, "carrier", sizeof(Carrier));  //!< A struct to carry information about the ray segment that the particle is communicating from TODO: (Maybe include I0)
-    DMSwarmFinalizeFieldRegister(radsolve);                                //!< Initialize the fields that have been defined
+    DMSwarmRegisterUserStructField(radsolve, "carrier", sizeof(Carrier));        //!< A struct to carry information about the ray segment that the particle is communicating from
+    DMSwarmFinalizeFieldRegister(radsolve);                                      //!< Initialize the fields that have been defined
 
     /** Set initial local sizes of the DMSwarm with a buffer length of zero */
     DMSwarmSetLocalSizes(radsearch, npoints, 0);  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
@@ -150,7 +150,9 @@ void ablate::radiation::Radiation::RayInit() {
     PetscReal* coord;                   //!< Pointer to the coordinate field information
     struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;      //!< Pointer to the ray identifier information
-    // TODO: Need to define the additional field information pointers also
+    struct Carrier* carrier;        //!< Pointer to the ray carrier information
+    struct Identifier* solveidentifier;      //!< Pointer to the ray identifier information
+
 
     /** Get the fields associated with the particle swarm so that they can be modified */
     //                DMSwarmGetLocalSize(radsearch, &npoints); //We already know the size of the particle field since it was just created. This is probably unnecessary.
@@ -174,22 +176,20 @@ void ablate::radiation::Radiation::RayInit() {
                 ip++;
                 //                origin[i] = originrank;  //!< The origin rank of the particle, which is this domain (during the initialization)
 
-                /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */  // TODO: Set to zero and then loop through dim
+                /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
                 virtualcoord[ip].x = cellGeom->centroid[0];
                 virtualcoord[ip].y = cellGeom->centroid[1];
                 virtualcoord[ip].z = cellGeom->centroid[2];
 
                 /** Update the direction vector of the search particle */
-                theta = ((double)ntheta / (double)nTheta) * pi; //!< Theta angle of the ray
-                phi = ((double)nphi / (double)nPhi) * 2.0 * pi; //!<  Phi angle of the ray
-                virtualcoord[ip].xdir = (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ip].ydir = (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ip].zdir = (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
+                theta = ((double)ntheta / (double)nTheta) * pi;           //!< Theta angle of the ray
+                phi = ((double)nphi / (double)nPhi) * 2.0 * pi;           //!<  Phi angle of the ray
+                virtualcoord[ip].xdir = hstep * (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ip].ydir = hstep * (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ip].zdir = hstep * (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
 
-                    /** Update the physical coordinate field so that the real particle location can be updated. */
-                for (int d = 0; d < dim; d++) {  //!< For the number of dimensions that actually exist physically.
-                                                 //                    coord[3 * ip + d] = virtualcoord[3 * ip + d];  //!< Insert the virtual coordinates into the physical coordinate field. TODO: Fix
-                }
+                /** Update the physical coordinate field so that the real particle location can be updated. */
+                UpdateCoordinates(ip, virtualcoord, coord, cellDM);
 
                 /** Label the particle with the ray identifier. (Use an array of 4 ints, [ncell][theta][phi][domains crossed])
                  * Label the particle with domainscrossed = 0; so that this can be iterated after each domain cross.
@@ -207,7 +207,6 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
     DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
-    // TODO: Add a direction field: Makes things much more future proof
 
     if (log) {
         PetscPrintf(MPI_COMM_WORLD, "Particles Initialized\n");
@@ -217,8 +216,6 @@ void ablate::radiation::Radiation::RayInit() {
      * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
      * ray segment storage can be easily accessed and appended. This forms a local collection of globally index ray segments.
      * */
-
-    // TODO: Really need to clean up some of the dead code
 
     // TODO: Make sure that the solve particles are being created during the process of the cell search. There is no reason to wait and every reason to create them during the stepping.
     //  This could be accomplished by creating a particle with a constant identifier (equal to the current search particle) every time a domain is crossed.
@@ -233,58 +230,33 @@ void ablate::radiation::Radiation::RayInit() {
         DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
         DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
-        PetscReal hhere = 0; //!< Setup variable to hold information about the adaptive stepping.
-
         /** Iterate over the particles that are present in the domain
          * Add the cell index to the ray
          * Step every particle in the domain one step and then perform a migration
          * */
         for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                          //!< particles then pass out of initialization.
-            /** Should represent the distance from the origin cell to the boundary. How to get this? By marching out of the domain! (and checking whether we are still inside)
-             * Number of spatial steps that  the ray has taken towards the origin
-             * Keeps track of whether the ray has intersected the boundary at this point or not
-             */
-            int nsteps = 0;  //        bool boundary = false;  //!< I don't even think we need to check for the boundary anymore.
 
             /** Update the physical coordinate field so that the real particle location can be updated. */
-            //            for (int d = 0; d < dim; d++) {                            //!< For the number of dimensions that actually exist physically.
-            //                coord[dim * ipart + d] = virtualcoord[3 * ipart + d];  //!< Insert the virtual coordinates into the physical coordinate field.
-            //            }                                                          // TODO: Fix this
+            UpdateCoordinates(ipart, virtualcoord, coord, cellDM);  //!< Update the particle coordinates into the physical coordinate system
 
             //!< Hash the identifier into a key value that can be used in the map
             if (rays.count(Key(identifier[ip])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
                 identifier[ip].nsegment++;               //!< The particle has passed through another domain!
+                DMSwarmAddPoint(radsolve);               // TODO: Add another solve segment particle here. It will have the same identifier as the search particle but static. Give it an empty Origin.
+                DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);
+                DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+
+                //TODO: Add the field information
+
+                DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);
+                DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
             }
 
             /** FIRST TAKE THIS LOCATION INTO THE RAYS VECTOR
              * "I found a particle in my domain. Maybe it was just moved here and I've never seen it before.
              * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
-            Vec intersect;
-            PetscInt i[3] = {0, 1, 2};
-            /** Get the particle coordinates here and put them into the intersect */
-            PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from spherical coordinates, adding the position of the current cell
-                                      (virtualcoord[ipart].y),   // y component conversion from spherical coordinates, adding the position of the current cell
-                                      (virtualcoord[ipart].z)};  // z component conversion from spherical coordinates, adding the position of the current cell
-            //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a position vector in the current angle position
-
-            /** This block creates the vector pointing to the cell whose index will be stored during the current loop*/
-            VecCreate(PETSC_COMM_WORLD, &intersect);  //!< Instantiates the vector
-            VecSetBlockSize(intersect, dim);
-            VecSetSizes(intersect, PETSC_DECIDE, dim);  //!< Set size
-            VecSetFromOptions(intersect);
-            VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
-            /** Loop through points to try to get the cell that is sitting on that point*/
-            PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
-            DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NONE, &cellSF);  //!< Locate the points in v in the mesh and return a PetscSF of the containing cells
-
-            /** An array that maps each point to its containing cell can be obtained with the below
-             * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
-             * */
-            PetscInt nFound;
-            const PetscInt* point = nullptr;
-            const PetscSFNode* cell = nullptr;
-            PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell);  //!< Using this to get the petsc int cell number from the struct (SF)
+            PetscInt index = GetCell(ipart, virtualcoord, cellDM);
 
             /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
              * This function returns multiple values if multiple points are input to it
@@ -292,30 +264,27 @@ void ablate::radiation::Radiation::RayInit() {
              * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
              * The boundary has been reached if any of these conditions don't hold
              * */
-            if (nFound > -1 && cell[0].index >= 0 && subDomain->InRegion(cell[0].index)) {
-                rays[Key(identifier[ip])].cells.push_back(cell[0].index);  // TODO: The map for these ones will need an additional index compared to the rest
-                rays[Key(identifier[ip])].h.push_back(hhere);
+            if (index < -1) {
+                rays[Key(identifier[ip])].cells.push_back(index);
+                rays[Key(identifier[ip])].h.push_back(index);
             }
 
-            /** Adaptive stepping stuff should probably live here and will need to be added to after each time the position is updated */
-            hhere = hstep;  //!< Represents the space step of the current cell
-            nsteps = 0;  //!< Reset the number of steps that the domain contains, moving on to a new domain
+            /** Adaptive stepping stuff should probably live here and will need to be added to after each time the position is updated
+             * The current cell should be added before the loop begins*/
+            PetscInt currentCell = index;  //!< Sets the current cell for the adaptive space stepping to compare against
+            while (currentCell == index) {
+                /** Step the vector forward in space until it is no longer in the cell it was ins
+                 * After the coordinates have left the cell it was it, the coordinates of the particle should be updated
+                 * Update the coordinates of the particle (virtual and physical)
+                 * */
+                virtualcoord[ipart].x += virtualcoord[ip].xdir;  //!< x component: add one step to the coordinate postion
+                virtualcoord[ipart].y += virtualcoord[ip].ydir;  //!< y component: add one step to the coordinate postion
+                virtualcoord[ipart].z += virtualcoord[ip].zdir;  //!< z component: add one step to the coordinate postion
+                                                                 //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
+                index = GetCell(ipart, virtualcoord, cellDM);    //!< Check whether the virtual coordinates have left the cell or not
+            }
 
-            /** Step the vector forward in space until it is no longer in the cell it was ins
-             * After the coordinates have left the cell it was it, the coordinates of the particle should be updated //TODO: Add adaptive space stepping back in by taking multiple steps here
-             * Update the coordinates of the particle (virtual and physical)
-             * */
-            virtualcoord[ipart].x += virtualcoord[ip].xdir;  //!< x component conversion from spherical coordinates, adding the position of the current cell
-            virtualcoord[ipart].y += virtualcoord[ip].ydir;  //!< y component conversion from spherical coordinates, adding the position of the current cell
-            virtualcoord[ipart].z += virtualcoord[ip].zdir;             //!< z component conversion from spherical coordinates, adding the position of the current cell
-            //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
-            for (int d = 0; d < dim; d++) {  //!< For the number of dimensions that actually exist physically.
-                                             //                coord[dim * ipart + d] = virtualcoord[3 * ipart + d];  //!< Insert the virtual coordinates into the physical coordinate field.
-            }                                // TODO: Fix this. (Physical coordinate updater) It could be worth replacing with a function
-            nsteps++;
-            /** Cleanup*/
-            PetscSFDestroy(&cellSF);
-            VecDestroy(&intersect);
+            UpdateCoordinates(ipart, virtualcoord, coord, cellDM);  //!< Update the particle coordinates into the physical coordinate system
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped s*/
         DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
@@ -376,21 +345,18 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     double theta;
 
     std::vector<std::vector<PetscReal>> locations;  //!< 2 Dimensional vector which stores the locations of the cell centers
-    PetscInt ncells = 0;
 
     auto absorptivityFunctionContext = absorptivityFunction.context.get();
 
     /** Declare some information associated with the field declarations */
-    PetscReal* coord;               //!< Pointer to the coordinate field information
     struct Carrier* carrier;        //!< Pointer to the ray carrier information
     struct Identifier* identifier;  //!< Pointer to the ray identifier information
 
     PetscInt npoints;
     DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
-    PetscInt stepcount = 0;                   //!< Count the number of steps that the particles have taken
+
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
-    DMSwarmGetField(radsolve, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
 
@@ -431,16 +397,18 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         }
     }
 
-    //TODO: Restore the fields
+    /** Restore the fields associated with the particles after all of the particles have been stepped */
+    DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
+    DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
 
     /** Now the carrier has all of the information from the rays that are needed too compute the final ray intensity.
      * Therefore, we will perform the migration.
      * Then, all of the carrier particles will be looped through and the Origins associated with each cell will be updated
      * */
 
-    // TODO: After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
+    DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
 
-    // TODO: Now iterate through all of the particles again
+    /** Now iterate through all of the particles again */
     DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
@@ -469,7 +437,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         origin[identifier[ipart].iCell].intensity += ((I0 * origin[identifier[ipart].iCell].Kradd) + origin[identifier[ipart].iCell].Isource) * sin(theta) * dTheta * dPhi;
     }
 
-    //TODO: Loop through the cell range and compute the origin contributions. This is probably where the previous for loop should actually live.
+    /**Loop through the cell range and compute the origin contributions. This is probably where the previous for loop should actually live. */
 
     solver::Range cellRange;
     GetCellRange(cellRange);
@@ -487,7 +455,9 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
     }
 
-    //TODO: Restore the fields
+    /** Restore the fields associated with the particles after all of the particles have been stepped*/
+    DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
+    DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
 
     /** Cleanup*/
     VecRestoreArrayRead(rhs, &rhsArray);
@@ -511,6 +481,64 @@ PetscInt ablate::radiation::Radiation::Key(Identifier id) {  //!< Nested Cantor 
     key = 0.5 * (key + id.nphi) * (key + id.nphi + 1);
     key = 0.5 * (key + id.nsegment) * (key + id.nsegment + 1);
     return key;
+}
+
+void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, DM cellDM) {
+    switch (dim) {
+        case 2:                                        //!< If there are only two dimensions in this simulation
+            coord[2 * ipart] = virtualcoord[ipart].x;  //!< Update the two physical coordinates
+            coord[(2 * ipart) + 1] = virtualcoord[ipart].y;
+            break;
+        case 3:                                        //!< If there are three dimensions in this simulation
+            coord[3 * ipart] = virtualcoord[ipart].x;  //!< Update the three physical coordinates
+            coord[(3 * ipart) + 1] = virtualcoord[ipart].y;
+            coord[(3 * ipart) + 2] = virtualcoord[ipart].z;
+            break;
+    }
+}
+
+PetscInt ablate::radiation::Radiation::GetCell(PetscInt ipart, Virtualcoord* virtualcoord, DM cellDM) {
+    Vec intersect;
+    PetscInt i[3] = {0, 1, 2};
+    /** Get the particle coordinates here and put them into the intersect */
+    PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from spherical coordinates, adding the position of the current cell
+                             (virtualcoord[ipart].y),   // y component conversion from spherical coordinates, adding the position of the current cell
+                             (virtualcoord[ipart].z)};  // z component conversion from spherical coordinates, adding the position of the current cell
+    //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a position vector in the current angle position
+
+    /** This block creates the vector pointing to the cell whose index will be stored during the current loop*/
+    VecCreate(PETSC_COMM_WORLD, &intersect);  //!< Instantiates the vector
+    VecSetBlockSize(intersect, dim);
+    VecSetSizes(intersect, PETSC_DECIDE, dim);  //!< Set size
+    VecSetFromOptions(intersect);
+    VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
+    /** Loop through points to try to get the cell that is sitting on that point*/
+    PetscSF cellSF = nullptr;                                           //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
+    DMLocatePoints(cellDM, intersect, DM_POINTLOCATION_NONE, &cellSF);  //!< Locate the points in v in the mesh and return a PetscSF of the containing cells
+
+    /** An array that maps each point to its containing cell can be obtained with the below
+     * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
+     * */
+    PetscInt nFound;
+    const PetscInt* point = nullptr;
+    const PetscSFNode* cell = nullptr;
+    PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell);  //!< Using this to get the petsc int cell number from the struct (SF)
+
+    /** Cleanup*/
+    VecDestroy(&intersect);   //!< Return the vector to PETSc
+    PetscSFDestroy(&cellSF);  //< Return the stuff to PETSc
+
+    /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
+     * This function returns multiple values if multiple points are input to it
+     * Make sure that whatever cell is returned is in the stencil set (and not outside of the radiation domain)
+     * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
+     * The boundary has been reached if any of these conditions don't hold
+     * */
+    if (nFound > -1 && cell[0].index >= 0 && subDomain->InRegion(cell[0].index)) {
+        return cell[0].index;
+    } else {
+        return -1;
+    }
 }
 
 #include "registrar.hpp"
