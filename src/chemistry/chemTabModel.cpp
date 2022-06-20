@@ -225,7 +225,7 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     outputArray = (float *)TF_TensorData(outputValues[1]);
     PetscReal p = (PetscReal)outputArray[0];
     // rescale the predicted energy
-    *predictedSourceEnergy = p  //(p * ctModel->sourceEnergyScaler[0]) + ctModel->sourceEnergyScaler[1];
+    *predictedSourceEnergy = p;  //(p * ctModel->sourceEnergyScaler[0]) + ctModel->sourceEnergyScaler[1];
 
     outputArray = (float *)TF_TensorData(outputValues[0]);
     for (size_t i = 0; i < progressVariableSourceSize; i++) {
