@@ -1,5 +1,6 @@
 #include "chemistry/chemTabModel.hpp"
 #include "gtest/gtest.h"
+#include "localPath.hpp"
 #include "mockFactory.hpp"
 #include "parameters/mapParameters.hpp"
 
@@ -30,9 +31,12 @@ TEST(ChemTabModelTests, ShouldCreateFromRegistar) {
     std::shared_ptr<cppParserTesting::MockFactory> mockFactory = std::make_shared<cppParserTesting::MockFactory>();
     const std::string expectedClassType = "ablate::chemistry::ChemTabModel";
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
-    EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::filesystem::path>{.inputName = "path"}))
-        .Times(::testing::Exactly(1))
-        .WillOnce(::testing::Return("inputs/chemistry/chemTabTestModel_1"));
+
+    auto mockSubFactory = std::make_shared<cppParserTesting::MockFactory>();
+    const std::string expectedSubClassType = "";
+    EXPECT_CALL(*mockSubFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedSubClassType));
+    EXPECT_CALL(*mockSubFactory, Get(cppParser::ArgumentIdentifier<std::string>{})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("inputs/chemistry/chemTabTestModel_1"));
+    EXPECT_CALL(*mockFactory, GetFactory("path")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(mockSubFactory));
 
     // act
     auto instance = ResolveAndCreate<ablate::chemistry::ChemistryModel>(mockFactory);

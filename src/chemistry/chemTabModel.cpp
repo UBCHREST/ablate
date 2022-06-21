@@ -96,6 +96,7 @@ ablate::chemistry::ChemTabModel::~ChemTabModel() {
     free(sourceEnergyScaler);
     for (std::size_t i = 0; i < speciesNames.size(); i++) free(Wmat[i]);
     for (std::size_t i = 0; i < progressVariablesNames.size(); i++) free(iWmat[i]);
+
     free(Wmat);
     free(iWmat);
 }

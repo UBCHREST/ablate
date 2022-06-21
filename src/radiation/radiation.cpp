@@ -7,12 +7,10 @@
 
 ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)), raynumber(raynumber), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
+    : CellSolver(std::move(solverId), std::move(region), std::move(options)), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
-
-ablate::radiation::Radiation::~Radiation() {}
 
 void ablate::radiation::Radiation::Setup() { /** allows initialization after the subdomain and dm is established*/
     ablate::solver::CellSolver::Setup();
@@ -134,7 +132,7 @@ void ablate::radiation::Radiation::RayInit() {
 
                     PetscInt nFound;
                     const PetscInt* point = nullptr;
-                    const PetscSFNode* cell = NULL;
+                    const PetscSFNode* cell = nullptr;
                     PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
 
                     /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop

@@ -2,11 +2,12 @@
 #include <iostream>
 #include <memory>
 #include <parameters/petscPrefixOptions.hpp>
-#include <utilities/fileUtility.hpp>
 #include <utilities/mpiError.hpp>
 #include "builder.hpp"
+#include "environment/download.hpp"
 #include "environment/runEnvironment.hpp"
 #include "listing.hpp"
+#include "localPath.hpp"
 #include "utilities/petscError.hpp"
 #include "yamlParser.hpp"
 
@@ -51,7 +52,6 @@ int main(int argc, char** args) {
         return 0;
     }
 
-    std::filesystem::path filePath;
     // check to see if we should print options
     char filename[PETSC_MAX_PATH_LEN] = "";
     PetscBool fileSpecified = PETSC_FALSE;
@@ -61,7 +61,14 @@ int main(int argc, char** args) {
     }
 
     // locate or download the file
-    filePath = ablate::utilities::FileUtility::LocateFile(filename, PETSC_COMM_WORLD);
+    std::filesystem::path filePath;
+    if (ablate::environment::Download::IsUrl(filename)) {
+        ablate::environment::Download downloader(filename);
+        filePath = downloader.Locate();
+    } else {
+        cppParser::LocalPath locator(filename);
+        filePath = locator.Locate();
+    }
 
     if (!std::filesystem::exists(filePath)) {
         throw std::invalid_argument("unable to locate input file: " + filePath.string());
@@ -70,11 +77,8 @@ int main(int argc, char** args) {
         // build options from the command line
         auto yamlOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>(replacementInputPrefix);
 
-        // create the class to search for files and to relocate files
-        ablate::utilities::FileUtility fileLocator(MPI_COMM_SELF, {filePath.parent_path()}, environment::RunEnvironment::Get().GetOutputDirectory());
-
         // create the yaml parser
-        std::shared_ptr<cppParser::YamlParser> parser = std::make_shared<cppParser::YamlParser>(filePath, fileLocator.GetLocateFileFunction(), yamlOptions->GetMap());
+        std::shared_ptr<cppParser::YamlParser> parser = std::make_shared<cppParser::YamlParser>(filePath, yamlOptions->GetMap());
 
         // setup the monitor
         auto setupEnvironmentParameters = parser->GetByName<ablate::parameters::Parameters>("environment");
