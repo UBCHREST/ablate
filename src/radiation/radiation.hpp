@@ -55,7 +55,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     struct Origin {
         PetscReal I0 = 0;         //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
         PetscReal Isource = 0;    //!< Value that will be contributed to by every ray segment.
-        PetscReal Kradd = 0;       //!< Value that will be contributed to by every ray segment.
+        PetscReal Kradd = 0;      //!< Value that will be contributed to by every ray segment.
         PetscReal intensity = 0;  //!<  Value that will be contributed to by every ray.
     };
 
@@ -103,14 +103,13 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
      * This function must be run on every updated particle before swarm migrate is used */
-    void UpdateCoordinates (PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord, DM cellDM);
+    void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord);
 
     /** More condensed version of the Petsc DMLocate points function
      * Give struct containing coordinates coordinates
      * The function will return the cell index if it exists
      * If it does not exist, it will return -1.*/
     PetscInt GetCell(PetscInt ipart, Virtualcoord* virtualcoord, DM cellDM);
-
 
     /** Create a unique identifier from an array of integers.
      * This is done using the nested Cantor pairing function
