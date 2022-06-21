@@ -18,7 +18,6 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     const std::string rpath = path / "regressor";
     const std::string wpath = path / "weights.csv";
     const std::string ipath = path / "weights_inv.csv";
-    // const std::string spath = path / "scaling_params.txt";
 
     // Check for missing files
     if (!std::filesystem::exists(rpath)) {
@@ -68,24 +67,6 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     inputFileStream.open(ipath.c_str(), std::ios::in);
     LoadBasisVectors(inputFileStream, speciesNames.size(), iWmat);
     inputFileStream.close();
-    /*
-    //load source energy scaler
-    sourceEnergyScaler = (PetscReal *) malloc(2*sizeof(PetscReal));
-    inputFileStream.open(spath.c_str(), std::ios::in);
-    std::string line, value;
-
-    std::getline(inputFileStream, line);
-    std::stringstream lineStream1(line);
-    getline(lineStream1, value, ' ');
-    sourceEnergyScaler[0] = std::stod(value);
-
-    std::getline(inputFileStream, line);
-    std::stringstream lineStream2(line);
-    getline(lineStream2, value, ' ');
-    sourceEnergyScaler[1] = std::stod(value);
-
-    inputFileStream.close();
-    */
 }
 
 ablate::chemistry::ChemTabModel::~ChemTabModel() {
@@ -243,8 +224,7 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     float *outputArray;
     outputArray = (float *)TF_TensorData(outputValues[1]);
     PetscReal p = (PetscReal)outputArray[0];
-    // rescale the predicted energy
-    *predictedSourceEnergy = p;  //(p * ctModel->sourceEnergyScaler[0]) + ctModel->sourceEnergyScaler[1];
+    *predictedSourceEnergy = p;
 
     outputArray = (float *)TF_TensorData(outputValues[0]);
     for (size_t i = 0; i < progressVariableSourceSize; i++) {
