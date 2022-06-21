@@ -108,7 +108,7 @@ void ablate::radiation::Radiation::RayInit() {
 
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
 
-    PetscInt npoints = (cellRange.end - cellRange.start) * nTheta * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
+    PetscInt npoints = (cellRange.end - cellRange.start) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
     PetscInt nsolvepoints = 0;                                             //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
@@ -159,7 +159,7 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
-    int ip = 0;  //!< Initialize a counter to represent the particle index. This will be iterated every time that the inner loop is passed through.
+    int ipart = 0;  //!< Initialize a counter to represent the particle index. This will be iterated every time that the inner loop is passed through.
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
@@ -171,33 +171,33 @@ void ablate::radiation::Radiation::RayInit() {
         for (int ntheta = 1; ntheta < nTheta; ntheta++) {
             for (int nphi = 0; nphi < nPhi; nphi++) {
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
-                virtualcoord[ip].x = cellGeom->centroid[0];
-                virtualcoord[ip].y = cellGeom->centroid[1];
-                virtualcoord[ip].z = cellGeom->centroid[2];
+                virtualcoord[ipart].x = cellGeom->centroid[0];
+                virtualcoord[ipart].y = cellGeom->centroid[1];
+                virtualcoord[ipart].z = cellGeom->centroid[2];
 
                 /** Get the initial direction of the search particle from the angle number that it was initialized with */
                 theta = ((double)ntheta / (double)nTheta) * pi;  //!< Theta angle of the ray
                 phi = ((double)nphi / (double)nPhi) * 2.0 * pi;  //!<  Phi angle of the ray
 
                 /** Update the direction vector of the search particle */
-                virtualcoord[ip].xdir = hstep * (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ip].ydir = hstep * (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ip].zdir = hstep * (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].xdir = hstep * (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].ydir = hstep * (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].zdir = hstep * (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
-                UpdateCoordinates(ip, virtualcoord, coord);
+                UpdateCoordinates(ipart, virtualcoord, coord);
 
                 /** Label the particle with the ray identifier. (Use an array of 4 ints, [ncell][theta][phi][domains crossed])
                  * Label the particle with domainscrossed = 0; so that this can be iterated after each domain cross.
                  * */
-                identifier[ip].origin = rank;    //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
-                identifier[ip].iCell = iCell;    //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
-                identifier[ip].ntheta = ntheta;  //!< Input the ray identifier
-                identifier[ip].nphi = nphi;      //!< Input the ray identifie
-                identifier[ip].nsegment = 0;     //!< Initialize the number of domains crossed as zero
+                identifier[ipart].origin = rank;    //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
+                identifier[ipart].iCell = iCell;    //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
+                identifier[ipart].ntheta = ntheta;  //!< Input the ray identifier
+                identifier[ipart].nphi = nphi;      //!< Input the ray identifie
+                identifier[ipart].nsegment = 0;     //!< Initialize the number of domains crossed as zero
 
                 /** Set the index of the field value so that it can be written to for every particle */
-                ip++;  //!< Must be iterated at the end since the value is initialized at zero.
+                ipart++;  //!< Must be iterated at the end since the value is initialized at zero.
             }
         }
     }
@@ -229,23 +229,24 @@ void ablate::radiation::Radiation::RayInit() {
          * Add the cell index to the ray
          * Step every particle in the domain one step and then perform a migration
          * */
-        for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
-                                                         //!< particles then pass out of initialization.
+        for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
+                                                //!< particles then pass out of initialization.
+            ipart = ip;                         //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy
 
             /** Update the physical coordinate field so that the real particle location can be updated. */
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
 
             //!< Hash the identifier into a key value that can be used in the map
-            if (rays.count(Key(identifier[ip])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
-                identifier[ip].nsegment++;               //!< The particle has passed through another domain!
-                DMSwarmAddPoint(radsolve);               //!< Another solve particle is added here because the search particle has entered a new domain
+            if (rays.count(Key(identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
+                identifier[ipart].nsegment++;               //!< The particle has passed through another domain!
+                DMSwarmAddPoint(radsolve);                  //!< Another solve particle is added here because the search particle has entered a new domain
 
-                DMSwarmGetLocalSize(radsearch, &nsolvepoints);  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last one is newest)
+                DMSwarmGetLocalSize(radsolve, &nsolvepoints);  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last one is newest)
 
                 DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);  //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
 
-                PetscInt newpoint = nsolvepoints;               //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
+                PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
                 solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
                 //!< The new particle gets an empty carrier because it is holding no information yet
 
@@ -265,11 +266,12 @@ void ablate::radiation::Radiation::RayInit() {
              * The boundary has been reached if any of these conditions don't hold
              * */
             if (index < -1) {
-                rays[Key(identifier[ip])].cells.push_back(index);
-                rays[Key(identifier[ip])].h.push_back(index);
+                rays[Key(identifier[ipart])].cells.push_back(index);
+                rays[Key(identifier[ipart])].h.push_back(index);
             }
 
-            /** Adaptive stepping stuff should probably live here and will need to be added to after each time the position is updated
+            /** ********************************************
+             * Adaptive stepping stuff should probably live here and will need to be added to after each time the position is updated
              * The current cell should be added before the loop begins*/
             PetscInt currentCell = index;  //!< Sets the current cell for the adaptive space stepping to compare against
             while (currentCell == index) {
@@ -277,11 +279,12 @@ void ablate::radiation::Radiation::RayInit() {
                  * After the coordinates have left the cell it was it, the coordinates of the particle should be updated
                  * Update the coordinates of the particle (virtual and physical)
                  * */
-                virtualcoord[ipart].x += virtualcoord[ip].xdir;  //!< x component: add one step to the coordinate position
-                virtualcoord[ipart].y += virtualcoord[ip].ydir;  //!< y component: add one step to the coordinate position
-                virtualcoord[ipart].z += virtualcoord[ip].zdir;  //!< z component: add one step to the coordinate position
-                                                                 //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
-                index = GetCell(ipart, virtualcoord, cellDM);    //!< Check whether the virtual coordinates have left the cell or not
+                virtualcoord[ipart].x += virtualcoord[ipart].xdir;  //!< x component: add one step to the coordinate position
+                virtualcoord[ipart].y += virtualcoord[ipart].ydir;  //!< y component: add one step to the coordinate position
+                virtualcoord[ipart].z +=
+                    virtualcoord[ipart].zdir;                  //!< z component: add one step to the coordinate position
+                                                               //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
+                index = GetCell(ipart, virtualcoord, cellDM);  //!< Check whether the virtual coordinates have left the cell or not
             }
 
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
