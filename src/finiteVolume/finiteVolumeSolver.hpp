@@ -61,9 +61,13 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     //! hold the class responsible for compute cell based values;
     std::unique_ptr<CellInterpolant> cellInterpolant = nullptr;
 
+    //!! Store an IS of all cells not in the ghost for faster iteration
+    IS solverRegionMinusGhost = nullptr;
+
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep = false);
+    ~FiniteVolumeSolver() override;
 
     /** SubDomain Register and Setup **/
     void Setup() override;
@@ -162,6 +166,15 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param time
      */
     void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * Get the cellIS and range over valid cells in this region without ghost cells (boundary or mpi)
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetCellRangeWithoutGhost(solver::Range& faceRange) const;
 };
 }  // namespace ablate::finiteVolume
 

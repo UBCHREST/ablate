@@ -12,9 +12,6 @@ ablate::solver::CellSolver::~CellSolver() {
     if (faceGeomVec) {
         VecDestroy(&faceGeomVec) >> checkError;
     }
-    if (solverRegionMinusGhost) {
-        ISDestroy(&solverRegionMinusGhost) >> checkError;
-    }
 }
 
 void ablate::solver::CellSolver::RegisterAuxFieldUpdate(ablate::solver::CellSolver::AuxFieldUpdateFunction function, void* context, const std::vector<std::string>& auxFields,
@@ -122,66 +119,4 @@ void ablate::solver::CellSolver::UpdateAuxFields(PetscReal time, Vec locXVec, Ve
 void ablate::solver::CellSolver::Setup() {
     // Compute the dm geometry
     DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;
-
-    // get the cell is for the solver minus ghost cell
-    // Get the original range
-    Range cellRange;
-    GetCellRange(cellRange);
-
-    // There may be no cells is this solver, so check and return solverRegionMinusGhost
-    if (cellRange.start == cellRange.end) {
-        solverRegionMinusGhost = nullptr;
-        RestoreRange(cellRange);
-        return;
-    }
-
-    // Get the cell depth
-    PetscInt cellDepth;
-    DMPlexGetDepth(subDomain->GetDM(), &cellDepth) >> checkError;
-
-    // Get the ghost cell label
-    DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
-    IS ghostIS;
-    DMLabelGetStratumIS(ghostLabel, 1, &ghostIS) >> checkError;
-
-    // remove the mpi ghost cells
-    IS solverMinusMpiGhost;
-    ISDifference(cellRange.is, ghostIS, &solverMinusMpiGhost) >> checkError;
-    if (solverMinusMpiGhost) {
-        // Now march over each cell and remove it if it is an exterior boundary cell
-
-        PetscInt ghostStart, ghostEnd;
-        DMPlexGetGhostCellStratum(subDomain->GetDM(), &ghostStart, &ghostEnd) >> checkError;
-        IS bcGhostIS;
-        ISCreateStride(PETSC_COMM_SELF, ghostEnd - ghostStart, ghostStart, 1, &bcGhostIS) >> checkError;
-        if (bcGhostIS) {
-            // remove the bc ghost
-            ISDifference(solverMinusMpiGhost, bcGhostIS, &solverRegionMinusGhost) >> checkError;
-            ISDestroy(&solverMinusMpiGhost) >> checkError;
-            ISDestroy(&bcGhostIS) >> checkError;
-        } else {
-            // just set the value
-            solverRegionMinusGhost = solverMinusMpiGhost;
-        }
-    }
-
-    // restore the cell range
-    RestoreRange(cellRange);
-    ISDestroy(&ghostIS) >> checkError;
-}
-
-void ablate::solver::CellSolver::GetCellRangeWithoutGhost(Range& faceRange) const {
-    // Get the point range
-    faceRange.is = solverRegionMinusGhost;
-    if (solverRegionMinusGhost == nullptr) {
-        // There are no points in this region, so skip
-        faceRange.start = 0;
-        faceRange.end = 0;
-        faceRange.points = nullptr;
-    } else {
-        // Get the range
-        ISGetPointRange(faceRange.is, &faceRange.start, &faceRange.end, &faceRange.points) >> checkError;
-        PetscObjectReference((PetscObject)solverRegionMinusGhost) >> checkError;
-    }
 }
