@@ -109,7 +109,7 @@ void ablate::radiation::Radiation::RayInit() {
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
 
     PetscInt npoints = (cellRange.end - cellRange.start) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
-    PetscInt nsolvepoints = 0;                                             //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
+    PetscInt nsolvepoints = 0;                                                   //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
     DMCreate(PETSC_COMM_WORLD, &radsearch);
@@ -138,6 +138,7 @@ void ablate::radiation::Radiation::RayInit() {
 
     /** Set initial local sizes of the DMSwarm with a buffer length of zero */
     DMSwarmSetLocalSizes(radsearch, npoints, 0);  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
+    DMSwarmSetLocalSizes(radsolve, 0, 0);         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     MPI_Comm_size(MPI_COMM_WORLD, &numRanks);  //!< Get the number of ranks in the simulation.
 
@@ -236,7 +237,8 @@ void ablate::radiation::Radiation::RayInit() {
             /** Update the physical coordinate field so that the real particle location can be updated. */
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
 
-            //!< Hash the identifier into a key value that can be used in the map
+            /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
+             * Hash the identifier into a key value that can be used in the map */
             if (rays.count(Key(identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
                 identifier[ipart].nsegment++;               //!< The particle has passed through another domain!
                 DMSwarmAddPoint(radsolve);                  //!< Another solve particle is added here because the search particle has entered a new domain
