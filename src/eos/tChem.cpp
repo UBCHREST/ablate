@@ -686,6 +686,5 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::eos::EOS, ablate::eos::TChem, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos",
-         ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format or Cantera Yaml)"),
+REGISTER(ablate::eos::EOS, ablate::eos::TChem, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format or Cantera Yaml)"),
          OPT(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format if mech file is CHEMKIN)"));

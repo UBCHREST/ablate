@@ -128,6 +128,13 @@ void ablate::solver::CellSolver::Setup() {
     Range cellRange;
     GetCellRange(cellRange);
 
+    // There may be no cells is this solver, so check and return solverRegionMinusGhost
+    if (cellRange.start == cellRange.end) {
+        solverRegionMinusGhost = nullptr;
+        RestoreRange(cellRange);
+        return;
+    }
+
     // Get the cell depth
     PetscInt cellDepth;
     DMPlexGetDepth(subDomain->GetDM(), &cellDepth) >> checkError;
@@ -147,13 +154,13 @@ void ablate::solver::CellSolver::Setup() {
         PetscInt ghostStart, ghostEnd;
         DMPlexGetGhostCellStratum(subDomain->GetDM(), &ghostStart, &ghostEnd) >> checkError;
         IS bcGhostIS;
-        ISCreateStride(PETSC_COMM_SELF,  ghostEnd - ghostStart, ghostStart, 1, &bcGhostIS) >> checkError;
-        if(bcGhostIS){
+        ISCreateStride(PETSC_COMM_SELF, ghostEnd - ghostStart, ghostStart, 1, &bcGhostIS) >> checkError;
+        if (bcGhostIS) {
             // remove the bc ghost
             ISDifference(solverMinusMpiGhost, bcGhostIS, &solverRegionMinusGhost) >> checkError;
             ISDestroy(&solverMinusMpiGhost) >> checkError;
             ISDestroy(&bcGhostIS) >> checkError;
-        }else{
+        } else {
             // just set the value
             solverRegionMinusGhost = solverMinusMpiGhost;
         }

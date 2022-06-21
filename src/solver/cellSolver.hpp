@@ -71,7 +71,6 @@ class CellSolver : public solver::Solver {
      * @param points
      */
     void GetCellRangeWithoutGhost(Range& faceRange) const;
-
 };
 }  // namespace ablate::solver
 

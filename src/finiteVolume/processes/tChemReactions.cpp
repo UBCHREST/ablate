@@ -214,8 +214,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     tChemLib::IgnitionZeroD::runDeviceBatch(
         chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeView, dtView, endStateDevice, kineticModelGasConstDataDevices);
 
-
-
     // copy the updated state back to host
     Kokkos::deep_copy(endStateHost, endStateDevice);
 

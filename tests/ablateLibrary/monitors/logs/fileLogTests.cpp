@@ -5,12 +5,10 @@
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "environment/runEnvironment.hpp"
-#include "PetscTestErrorChecker.hpp"
 #include "gtest/gtest.h"
 #include "monitors/logs/fileLog.hpp"
-#include "parameters/mapParameters.hpp"
-#include "utilities/petscUtilities.hpp"
 #include "testRunEnvironment.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 

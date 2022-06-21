@@ -28,7 +28,7 @@ timestepper:
       - !ablate::domain::modifiers::DistributeWithGhostCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: &eos !ablate::eos::TChemV1
+        eos: &eos !ablate::eos::TChem
           mechFile: ../mechanisms/grimech30.mech.dat
           thermoFile: ../mechanisms/grimech30.thermo.dat
   initialization:

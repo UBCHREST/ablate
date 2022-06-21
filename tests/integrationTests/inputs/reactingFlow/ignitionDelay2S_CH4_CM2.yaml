@@ -28,7 +28,7 @@ timestepper:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...) and species mass fractions
       - !ablate::finiteVolume::CompressibleFlowFields
-        eos: &eos !ablate::eos::TChemV1 # the tchem eos uses tChemV1 to parse the mechanisms and determine what species are needed to be tracked
+        eos: &eos !ablate::eos::TChem # the tchem eos uses tChem to parse the mechanisms and determine what species are needed to be tracked
           mechFile: ../mechanisms/2S_CH4_CM2.mech.dat
           thermoFile: ../mechanisms/2S_CH4_CM2.thermo.dat
 
@@ -63,7 +63,7 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
   options: {}
   processes:
     # without advection/diffusion the tChemReactions process is the only one needed
-    - !ablate::finiteVolume::processes::TChemV1Reactions
+    - !ablate::finiteVolume::processes::TChemReactions
       eos: *eos # must be a tChem eos
       inertSpecies: [ N2 ] #N2 does not interact with the others and should be set to inert
       minimumMassFraction: 1E-10 # limit the smallest mass fraction value

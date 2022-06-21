@@ -93,16 +93,13 @@ class TChem : public EOS {
     /**
      * return reference to kinetic data for other users
      */
-    tChemLib::KineticModelData& GetKineticModelData(){
-        return kineticsModel;
-    }
+    tChemLib::KineticModelData& GetKineticModelData() { return kineticsModel; }
 
     /**
      * Get the  reference enthalpy per species
      */
-    real_type_1d_view GetEnthalpyOfFormation(){
-        return enthalpyReference;
-    };
+    real_type_1d_view GetEnthalpyOfFormation() { return enthalpyReference; };
+
    private:
     struct FunctionContext {
         // memory access locations for fields

@@ -42,7 +42,7 @@ class TChemReactions : public Process {
     // store device specific kineticModelGasConstants
     tChemLib::KineticModelConstData<typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevice;
     kmd_type_1d_view_host kineticModelDataClone;
-    Kokkos::View<KineticModelGasConstData< typename Tines::UseThisDevice<exec_space>::type> *,  typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevices;
+    Kokkos::View<KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type> *, typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevices;
 
     /**
      * private function to compute the energy and densityYi source terms over the next dt
@@ -56,7 +56,7 @@ class TChemReactions : public Process {
 
    public:
     explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::string> inertSpecies = {},
-                              std::vector<double> massFractionBounds = {});
+                            std::vector<double> massFractionBounds = {});
     ~TChemReactions() override;
     /**
      * public function to link this process with the flow

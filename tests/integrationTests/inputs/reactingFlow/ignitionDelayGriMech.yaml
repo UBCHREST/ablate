@@ -66,12 +66,11 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       eos: *eos
   boundaryConditions: []
   monitors:
-    - !ablate::monitors::TimeStepMonitor
     # the IgnitionDelayPeakYi monitor computes and store the amount of time it took to reach peak OH
     - !ablate::monitors::IgnitionDelayPeakYi
       species: OH
       location: [0.5]
-      log: !ablate::monitors::logs::StdOut
+      log: !ablate::monitors::logs::FileLog
         name: ignitionDelayPeakYi.txt
       historyLog: !ablate::monitors::logs::CsvLog
         name: ignitionDelayPeakYi.csv
@@ -80,7 +79,6 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
       eos: *eos
       location: [0.5]
       thresholdTemperature: 1500
-      historyLog: !ablate::monitors::logs::StdOut
-      log: !ablate::monitors::logs::StdOut
+      log: !ablate::monitors::logs::CsvLog
         name: ignitionDelayTemperature.csv
 

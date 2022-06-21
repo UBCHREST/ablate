@@ -4,11 +4,11 @@
 #include <fstream>
 #include <memory>
 #include "MpiTestFixture.hpp"
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "monitors/logs/csvLog.hpp"
-#include "utilities/petscUtilities.hpp"
 #include "testRunEnvironment.hpp"
-#include "environment/runEnvironment.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 
