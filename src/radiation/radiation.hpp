@@ -62,7 +62,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
     struct Segment {
         std::vector<PetscInt> cells;  //!< Stores the cell indices of the segment locally.
-        std::vector<PetscInt> h;      //!< Stores the space steps of the segment locally.
+        std::vector<PetscReal> h;      //!< Stores the space steps of the segment locally.
         PetscReal Ij = 0;             //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
         PetscReal Krad = 1;           //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
         PetscReal I0 = 0;
@@ -109,7 +109,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      * Give struct containing coordinates coordinates
      * The function will return the cell index if it exists
      * If it does not exist, it will return -1.*/
-    PetscInt GetCell(PetscInt ipart, Virtualcoord* virtualcoord, DM cellDM);
+    PetscInt GetCell(PetscInt ipart, Virtualcoord* virtualcoord);
 
     /** Create a unique identifier from an array of integers.
      * This is done using the nested Cantor pairing function
