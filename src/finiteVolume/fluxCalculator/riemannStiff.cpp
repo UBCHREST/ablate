@@ -47,6 +47,12 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
     PetscReal A, B, sqterm;
     PetscReal astar, STLR, SHLR, uX;
 
+//    // low Mach correction
+//    PetscReal ML = uL/aL; PetscReal MR = uR/aR;
+//    PetscReal z = PetscMin(PetscMax(ML,MR),1);
+//    uL = 0.5*(uL+uR) + z*0.5*(uL-uR);
+//    uR = 0.5*(uL+uR) + z*0.5*(uR-uL);
+
     // Here is the initial guess for pstar - average of left and right pressures
     pstar = 0.5 * (pR + pL);
 
@@ -87,8 +93,15 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         f_R_1 = sqterm * (1.0 - (0.5 * (pstar - pR) / (B + pstar + p0R)));
     }
 
+//    pold = pstar;
+//    pstar = pold - (f_L_0 + f_R_0 + del_u)/(f_L_1+f_R_1);
+//    if (pstar < 0){
+//        pstar = err;
+//    }
+
     // iteration starts
     while (PetscAbsReal(f_L_0 + f_R_0 + del_u) > err && i <= MAXIT)  // Newton's method
+//    while (2* PetscAbs((pstar - pold)/(pstar + pold))> err && i <=MAXIT)
     {
         pold = pstar;
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
