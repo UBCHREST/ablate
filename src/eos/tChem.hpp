@@ -100,7 +100,7 @@ class TChem : public EOS {
     /**
      * Get the  reference enthalpy per species
      */
-    real_type_1d_view GetReferenceSpeciesEnthalpy(){
+    real_type_1d_view GetEnthalpyOfFormation(){
         return enthalpyReference;
     };
    private:

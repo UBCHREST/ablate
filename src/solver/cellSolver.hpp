@@ -33,6 +33,9 @@ class CellSolver : public solver::Solver {
     //! Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
     Vec faceGeomVec = nullptr;
 
+    //!! Store an is of all cells not in the ghost
+    IS solverRegionMinusGhost = nullptr;
+
    public:
     explicit CellSolver(std::string solverId, std::shared_ptr<domain::Region> = {}, std::shared_ptr<parameters::Parameters> options = nullptr);
     ~CellSolver() override;
@@ -59,6 +62,16 @@ class CellSolver : public solver::Solver {
      * Setup the subdomain cell solver vectors
      */
     void Setup() override;
+
+    /**
+     * Get the cellIS and range over valid cells in this region without ghost cells (boundary or mpi)
+     * @param cellIS
+     * @param pStart
+     * @param pEnd
+     * @param points
+     */
+    void GetCellRangeWithoutGhost(Range& faceRange) const;
+
 };
 }  // namespace ablate::solver
 

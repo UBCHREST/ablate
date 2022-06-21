@@ -24,20 +24,15 @@ class TChemReactions : public Process {
 
     // the time advance information
     time_advance_type_1d_view timeAdvanceDevice;
+    time_advance_type timeAdvanceDefault;
 
     // store host/device memory for computing state
     real_type_1d_view internalEnergyRefDevice;
     real_type_1d_view_host internalEnergyRefHost;
     real_type_2d_view perSpeciesScratchDevice;
 
-    //! the kokkos team policy for temperature function
-    tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type temperatureFunctionPolicy;
-
-    //! the kokkos team policy for pressure function
-    tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type pressureFunctionPolicy;
-
-    //! the kokkos team policy for chemistry function
-    tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type chemistryFunctionPolicy;
+    // store the source terms (density* energy + density*species)
+    real_type_2d_view_host sourceTermsHost;
 
     // tolerance constraints
     real_type_2d_view tolTimeDevice;
