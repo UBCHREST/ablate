@@ -20,9 +20,12 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxD
 
   PetscFunctionBegin;
 
+  ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+
   ierr = DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL);CHKERRQ(ierr); // Center of the cell-of-interest
 
   ierr = DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd);CHKERRQ(ierr);       // Range of cells
+
   if (useVertices) {
     ierr = DMPlexGetDepthStratum(dm, 0, &vStart, &vEnd);CHKERRQ(ierr);      // Range of vertices
   }
@@ -30,13 +33,15 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxD
     ierr = DMPlexGetHeightStratum(dm, 1, &vStart, &vEnd);CHKERRQ(ierr);     // Range of edges (2D) or faces (3D)
   }
 
-  ierr = DMGetDimension(dm, &dim);CHKERRQ(ierr);
+
 
   n = 0;
   ierr = DMPlexGetTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure);CHKERRQ(ierr); // All points associated with the cell
+
   for (cl = 0; cl < nClosure*2; cl += 2) {
     if (closure[cl] >= vStart && closure[cl] < vEnd){ // Only use the points corresponding to either a vertex or edge/face.
       ierr = DMPlexGetTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star);CHKERRQ(ierr); // Get all points using this vertex or edge/face.
+
       for (st = 0; st< nStar*2; st += 2) {
         if( star[st] >= cStart && star[st] < cEnd){   // If the point is a cell add it.
           ierr = DMPlexComputeCellGeometryFVM(dm, star[st], NULL, x, NULL);CHKERRQ(ierr); // Center of the candidate cell.
@@ -44,14 +49,17 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxD
           for (i = 0; i < dim; ++i) {
             dist += PetscSqr(x0[i] - x[i]);
           }
+
           if (PetscSqrtReal(dist) <= maxDist) {   // Only add if the distance is within maxDist
             list[n++] = star[st];
           }
         }
       }
+
       ierr = DMPlexRestoreTransitiveClosure(dm, closure[cl], PETSC_FALSE, &nStar, &star);CHKERRQ(ierr);
     }
   }
+
   ierr = DMPlexRestoreTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure);CHKERRQ(ierr);
   ierr = PetscSortRemoveDupsInt(&n, list);CHKERRQ(ierr);
   ierr = PetscMalloc1(n, cells);CHKERRQ(ierr);
@@ -87,10 +95,9 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscR
       maxDist = ((PetscReal)levels+1.0)*h;
     }
 
-
-
     // Get one level of neighboring cells
     ierr = DMPlexGetNeighborCells_Internal(dm, p, maxDist, useVertices, &n, &addList);CHKERRQ(ierr);
+
     ierr = PetscArraycpy(&list[0], addList, n);
 
     for (l = 1; l < levels; ++l) {
