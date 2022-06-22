@@ -19,6 +19,8 @@ class RBF {
     PetscInt  nPoly = -1;       // The number of polynomial components to include
     DM        dm = nullptr;     // For now just use the entire DM. When this is moved over to the Domain/Subdomain class this will be modified.
 
+    void Matrix(PetscInt c, PetscInt nCells, PetscInt list[], Mat *LUA);
+
   protected:
     PetscReal DistanceSquared(PetscReal x[], PetscReal y[]);
     PetscReal DistanceSquared(PetscReal x[]);
