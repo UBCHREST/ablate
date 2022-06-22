@@ -15,16 +15,9 @@ void DerCalculator::SetupDerivativeStencils(std::shared_ptr<RBF> rbf, PetscInt n
   PetscInt        c, cStart, cEnd, n, i;
   PetscInt        *nStencil, **stencilList;
   PetscReal       **stencilWeights;
-  PetscReal       h;
   DM              dm = rbf->GetDM();
   PetscBool       useVertices = PETSC_TRUE;
-  PetscInt        nLevels = 4;
-  PetscReal       maxDist;
-
-  DMPlexGetMinRadius(dm, &h) >> ablate::checkError; // This returns the minimum distance from any cell centroid to a face.
-  h *= 2.0;                                        // Double it to get the grid spacing.
-
-  maxDist = (nLevels+1)*h;
+  PetscInt        minNumberCells = rbf->GetNPoly() + 1;
 
   DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;      // Range of cells
   n = cEnd - cStart;
@@ -39,7 +32,7 @@ void DerCalculator::SetupDerivativeStencils(std::shared_ptr<RBF> rbf, PetscInt n
 
   for (c = cStart; c < cEnd; ++c) {
     i = c - cStart;
-    DMPlexGetNeighborCells(dm, c, nLevels, maxDist, useVertices, &nStencil[i], &stencilList[i]);
+    DMPlexGetNeighborCells(dm, c, -1, -1.0, minNumberCells, useVertices, &nStencil[i], &stencilList[i]);
     rbf->Weights(c, nStencil[i], stencilList[i], nDer, dx, dy, dz, &stencilWeights[i]);
   }
   *nStencilOut = nStencil;

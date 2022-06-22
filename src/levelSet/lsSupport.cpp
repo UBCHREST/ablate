@@ -74,9 +74,12 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxD
 // dm - The mesh
 // levels - Number of neighboring cells to check
 // maxDist - Maximum distance to include
+// minNumberCells - The minimum number of cells to return.
 // nCells - Number of neighboring cells
 // cells - The list of neighboring cell IDs
-PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscReal maxDist, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
+//
+// Note: The intended use is to use either levels/maxDist OR minNumberCells. Right now a check isn't done on only selecting one, but that might be added in the future.
+PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscReal maxDist, PetscInt minNumberCells, PetscBool useVertices, PetscInt *nCells, PetscInt *cells[]) {
   PetscInt        numAdd, *addList;
   PetscInt        n = 0, n0, list[10000];
   PetscInt        l, i;
@@ -85,14 +88,23 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscR
 
   PetscFunctionBegin;
 
-  if (levels > 0) {
+  if (levels > 0 || minNumberCells > 0) {
 
-    DMPlexGetMinRadius(dm, &h); // This returns the minimum distance from any cell centroid to a face.
-    h *= 2.0;                   // Double it to get the grid spacing.
+    // Use minNumberCells if provided
+    if (minNumberCells > 0) {
+      levels = PETSC_MAX_INT;
+      maxDist = PETSC_MAX_REAL;
+    }
+    else {
 
-    // If the maximum distance isn't provided estimate it based on the number of levels
-    if (maxDist < -0.5) {
-      maxDist = ((PetscReal)levels+1.0)*h;
+      minNumberCells = PETSC_MAX_INT;
+
+      // If the maximum distance isn't provided estimate it based on the number of levels
+      if (maxDist < -0.5) {
+        DMPlexGetMinRadius(dm, &h); // This returns the minimum distance from any cell centroid to a face.
+        h *= 2.0;                   // Double it to get the grid spacing.
+        maxDist = ((PetscReal)levels+1.0)*h;
+      }
     }
 
     // Get one level of neighboring cells
@@ -100,7 +112,10 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscR
 
     ierr = PetscArraycpy(&list[0], addList, n);
 
-    for (l = 1; l < levels; ++l) {
+    l = 0;
+
+    while (l < levels && n<minNumberCells) {
+      ++l;
       n0 = n;
       for (i = 0; i < n0; ++i) {
         ierr = DMPlexGetNeighborCells_Internal(dm, list[i], maxDist, useVertices, &numAdd, &addList);CHKERRQ(ierr);
