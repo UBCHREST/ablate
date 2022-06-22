@@ -208,9 +208,9 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
-    if (log) {
-        PetscPrintf(MPI_COMM_WORLD, "Particles Initialized\n");
-    }
+    //    if (log) {
+    PetscPrintf(MPI_COMM_WORLD, "Particles Initialized\n");
+    //    }
 
     /** ***********************************************************************************************************************************************
      * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
@@ -248,7 +248,7 @@ void ablate::radiation::Radiation::RayInit() {
 
                 DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);  //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
-
+                // TODO: Only 132 points?
                 PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
                 solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
                 carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
@@ -298,6 +298,7 @@ void ablate::radiation::Radiation::RayInit() {
             }
 
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
+                                                            //            PetscPrintf(MPI_COMM_WORLD, "Point Step\n");
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped s*/
         DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
@@ -308,10 +309,10 @@ void ablate::radiation::Radiation::RayInit() {
         DMSwarmMigrate(radsearch, PETSC_TRUE);     //!< Migrate the search particles and remove the particles that have left the domain space.
         DMSwarmGetLocalSize(radsearch, &npoints);  //!< Update the loop condition. Recalculate the number of particles that are in the domain.
 
-        if (log) {
-            PetscPrintf(MPI_COMM_WORLD, "Global Step %3i\n", stepcount);
-            stepcount++;
-        }
+        //        if (log) {
+        PetscPrintf(MPI_COMM_WORLD, "Global Step %3i\n", stepcount);
+        stepcount++;
+        //        }
     }
     /** Cleanup*/
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray);
@@ -460,10 +461,10 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 /** Iterate over the particles that are present in the domain
                  * The particles present at this point should represent the migrated particles carrying ray information in order to perform the final solve.
                  * */
-                loopid.nsegment--;                                   //!< Revert to the nearest segment, since the last segment in the loop was not found
-                oldsegment = loopid.nsegment;                   //!< Set the old segment
+                //                loopid.nsegment--;                                   //!< Revert to the nearest segment, since the last segment in the loop was not found
+                oldsegment = loopid.nsegment;                        //!< Set the old segment
                 PetscReal I0 = 0;                                    //!< For the last segment in the domain, take that as the black body intensity.
-                while (loopid.nsegment > -1) {                       //!< Need to go through all of the ray segments until the origin of the ray is reached
+                while (loopid.nsegment > 0) {                        //!< Need to go through all of the ray segments until the origin of the ray is reached
                     for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain.
                         if (identifier[ipart].origin == loopid.origin && identifier[ipart].iCell == loopid.iCell && identifier[ipart].ntheta == loopid.ntheta &&
                             identifier[ipart].nphi == loopid.nphi && identifier[ipart].nsegment == loopid.nsegment) {  //!< If the segment of the particle matches
@@ -478,10 +479,9 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                              * */
                             /** Parallel things are here
                              * Meaning that the variables required for the parallelizable analytical solution will be declared here */
-                            origin[iCell].Isource +=
-                                carrier[ipart].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
-                            origin[iCell].Kradd *= carrier[ipart].Krad;   //!< Add the absorption for this domain to the total absorption of the ray
-                            theta = (double)identifier[ipart].ntheta / (double)nTheta; //!< This is a fine method of determining theta because it is in the original domain
+                            origin[iCell].Isource += carrier[ipart].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
+                            origin[iCell].Kradd *= carrier[ipart].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
+                            theta = (double)identifier[ipart].ntheta / (double)nTheta;         //!< This is a fine method of determining theta because it is in the original domain
                             origin[iCell].intensity += ((I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;
                         }
                     }
@@ -489,6 +489,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 }
             }
         }
+        PetscPrintf(PETSC_COMM_WORLD, "Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
     }
 
     /** ********************************************************************************************************************************
@@ -514,6 +515,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         PetscReal losses = 4 * sbc * *temperature * *temperature * *temperature * *temperature;
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
+        //        PetscPrintf(PETSC_COMM_WORLD, "Intensity: %f\n", origin[iCell].intensity);
     }
 
     /** Cleanup*/
@@ -531,12 +533,15 @@ PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double te
     return epsilon * sbc * temperature * temperature * temperature * temperature / pi;
 }
 
-PetscInt ablate::radiation::Radiation::Key(Identifier id) {  //!< Nested Cantor pairing function in order to identify ray segment
-    PetscInt key = id.origin;
-    key = 0.5 * (key + id.iCell) * (key + id.iCell + 1);
-    key = 0.5 * (key + id.ntheta) * (key + id.ntheta + 1);
-    key = 0.5 * (key + id.nphi) * (key + id.nphi + 1);
-    key = 0.5 * (key + id.nsegment) * (key + id.nsegment + 1);
+std::string ablate::radiation::Radiation::Key(Identifier id) {  //!< Nested Cantor pairing function in order to identify ray segment
+
+    std::string key = std::to_string(id.origin) + "." + std::to_string(id.iCell) + "." + std::to_string(id.ntheta) + "." + std::to_string(id.nphi) + "." + std::to_string(id.nsegment);
+
+    //    unsigned long key = id.origin;
+    //    key = (0.5 * (key + id.iCell) * (key + id.iCell + 1)) + id.iCell;
+    //    key = (0.5 * (key + id.ntheta) * (key + id.ntheta + 1)) + id.ntheta;
+    //    key = (0.5 * (key + id.nphi) * (key + id.nphi + 1)) + id.nphi;
+    //    key = (0.5 * (key + id.nsegment) * (key + id.nsegment + 1)) + id.nsegment;
     return key;
 }
 

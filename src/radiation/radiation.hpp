@@ -55,7 +55,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     struct Origin {
         PetscReal I0 = 0;         //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
         PetscReal Isource = 0;    //!< Value that will be contributed to by every ray segment.
-        PetscReal Kradd = 0;      //!< Value that will be contributed to by every ray segment.
+        PetscReal Kradd = 1;      //!< Value that will be contributed to by every ray segment.
         PetscReal intensity = 0;  //!<  Value that will be contributed to by every ray.
     };
 
@@ -116,7 +116,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      * The ray segment will always be accessed by a particle carrying an identifier so it does not need to be inverted.
      * (Unless the particles created for the solve need to find their ray segments efficiently? Maybe dont destroy the particles of the search?)
      * */
-    PetscInt Key(Identifier id);
+    std::string Key(Identifier id);
 
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
@@ -137,7 +137,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
      */
     const std::shared_ptr<ablate::monitors::logs::Log> log;
 
-    std::map<PetscInt, Segment> rays;
+    std::map<std::string, Segment> rays;
     std::map<PetscInt, Origin> origin;
 };
 
