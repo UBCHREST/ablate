@@ -11,9 +11,13 @@ RBF::RBF(DM dm, PetscInt p){
 
   RBF::dm = dm;   // Set the DM
   RBF::p = p;     // The augmented polynomial order
+  DMGetDimension(dm, &(RBF::dim)) >> ablate::checkError; // Get the dimension of the problem
 
-  if(dm){
-    DMGetDimension(dm, &(RBF::dim)) >> ablate::checkError; // Get the dimension of the problem
+  // The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
+  if (dim == 2) {
+    RBF::nPoly = (p+2)*(p+1)/2;
+  } else {
+    RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
   }
 
 }
@@ -65,7 +69,7 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
   PetscInt        dim = RBF::dim;
   PetscInt        i, j, d;
   PetscInt        px, py, pz, p1 = p+1;
-  PetscInt        nPoly, matSize;
+  PetscInt        nPoly = RBF::nPoly, matSize;
   Mat             A, B;
   PetscScalar     *vals;
 
@@ -76,26 +80,21 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
   PetscReal       x[nCells*dim];  // Centers of all cells
   PetscReal       xp[nCells*dim*p1]; // Powers of the
 
-  // Size of the matrix and number of polynomial elements. The number of polynomial values is (p+2)(p+1)/2 in 2D and (p+3)(p+2)(p+1)/6 in 3D
-  if (dim == 2) {
-    nPoly = (p+2)*(p+1)/2;
-  } else {
-    nPoly = (p+3)*(p+2)*(p+1)/6;
-  }
 
-  // If the number of cells does not support the requested augmented polynomial order decrease the order. Maybe better to just throw an error?
-  while (nPoly > nCells && p > 0) {
-    --p;
-    if (dim == 2) {
-      nPoly = (p+2)*(p+1)/2;
-    } else {
-      nPoly = (p+3)*(p+2)*(p+1)/6;
-    }
-  }
-  p1 = p+1;
+
+//  // If the number of cells does not support the requested augmented polynomial order decrease the order. Maybe better to just throw an error?
+//  while (nPoly > nCells && p > 0) {
+//    --p;
+//    if (dim == 2) {
+//      nPoly = (p+2)*(p+1)/2;
+//    } else {
+//      nPoly = (p+3)*(p+2)*(p+1)/6;
+//    }
+//  }
+//  p1 = p+1;
 
   if(nPoly>=nCells){
-    throw std::invalid_argument("Number of surrounding cells" + std::to_string(nCells) + " can not support a requested polynomial order of " + std::to_string(p) + ".");
+    throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " + std::to_string(nPoly) + " number of cells.");
   }
 
   // Get the cell center
@@ -161,6 +160,7 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
   MatDenseRestoreArrayWrite(A, &vals) >> ablate::checkError;
   MatViewFromOptions(A,NULL,"-ablate::levelSet::RBF::A_view") >> ablate::checkError;
 
+exit(0);
   //Create the RHS
   MatCreateSeqDense(PETSC_COMM_SELF, matSize, nDer, NULL, &B) >> ablate::checkError;
   PetscObjectSetName((PetscObject)B,"ablate::levelSet::RBF::rhs") >> ablate::checkError;

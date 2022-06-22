@@ -16,6 +16,7 @@ class RBF {
   private:
     PetscInt  dim = -1;         // Dimension of the DM
     PetscInt  p = -1;           // The supplementary polynomial order
+    PetscInt  nPoly = -1;       // The number of polynomial components to include
     DM        dm = nullptr;     // For now just use the entire DM. When this is moved over to the Domain/Subdomain class this will be modified.
 
   protected:
@@ -36,6 +37,8 @@ class RBF {
 
     // Return the mesh associated with the RBF
     inline DM& GetDM() noexcept { return dm; }
+
+    inline PetscInt GetNPoly() { return nPoly; }
 
 
     // The finite difference weights for derivatives
