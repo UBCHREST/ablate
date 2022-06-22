@@ -208,7 +208,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // Create an instance of radiation
         auto radiationModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
-        auto radiation = std::make_shared<ablate::radiation::Radiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, 10, nullptr, radiationModel);
+        auto radiation = std::make_shared<ablate::radiation::Radiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, 20, nullptr, radiationModel);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});

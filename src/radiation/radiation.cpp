@@ -402,7 +402,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 
-                carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(identifier[ipart])].h[n]), *temperature) * rays[Key(identifier[ipart])].Krad;
+                carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(identifier[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
                 carrier[ipart].Krad *= exp(-kappa * rays[Key(identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
 
                 if (n == (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
@@ -420,7 +420,10 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * Now the carrier has all of the information from the rays that are needed to compute the final ray intensity. Therefore, we will perform the migration.
      * Then, all of the carrier particles will be looped through and the local Origins associated with each cell will be updated
      * */
-    // TODO: All of the particles must be iterated through and sent to the rank of their identifier[ipart].origin
+    for (int ipart = 0; ipart < npoints; ipart++) {
+         //!< Send the particles to the rank associated with their origin!
+    }
+
     DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
 
     /** ********************************************************************************************************************************
@@ -460,10 +463,14 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 /** Now that we have found the maximum segment in the domain, we can iterate from the last segment to the beginning segment of this ray identifier */
                 /** Iterate over the particles that are present in the domain
                  * The particles present at this point should represent the migrated particles carrying ray information in order to perform the final solve.
+                 * The I0 (beginning ray intensity) will also need to be found before the ray is added.
+                 * The source and absorption must be set to zero at the beginning of each new ray.
                  * */
-                //                loopid.nsegment--;                                   //!< Revert to the nearest segment, since the last segment in the loop was not found
-                oldsegment = loopid.nsegment;                        //!< Set the old segment
-                PetscReal I0 = 0;                                    //!< For the last segment in the domain, take that as the black body intensity.
+                origin[iCell].Kradd = 1;       //!< This must be reset at the beginning of each new ray.
+                origin[iCell].Isource = 0;     //!< This must be reset at the beginning of each new ray.
+                oldsegment = loopid.nsegment;  //!< Set the old segment
+                PetscReal I0 = 0;              //!< For the last segment in the domain, take that as the black body intensity of the far field.
+
                 while (loopid.nsegment > 0) {                        //!< Need to go through all of the ray segments until the origin of the ray is reached
                     for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain.
                         if (identifier[ipart].origin == loopid.origin && identifier[ipart].iCell == loopid.iCell && identifier[ipart].ntheta == loopid.ntheta &&
@@ -481,12 +488,12 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                              * Meaning that the variables required for the parallelizable analytical solution will be declared here */
                             origin[iCell].Isource += carrier[ipart].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
                             origin[iCell].Kradd *= carrier[ipart].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
-                            theta = (double)identifier[ipart].ntheta / (double)nTheta;         //!< This is a fine method of determining theta because it is in the original domain
-                            origin[iCell].intensity += ((I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;
                         }
                     }
                     loopid.nsegment--;  //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
+                theta = (double)ntheta / (double)nTheta;  //!< This is a fine method of determining theta because it is in the original domain
+                origin[iCell].intensity += ((I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
             }
         }
         PetscPrintf(PETSC_COMM_WORLD, "Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
@@ -495,7 +502,10 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     /** ********************************************************************************************************************************
      * Need to delete all of the particles that were transported to different domains so that the process can be repeated in the next step. */
 
-    // TODO: Delete all of the particles that were transported to their origin domains -> Delete if (identifier.origin == MPI_Rank() && identifier.nsegment != 0)
+    /** Delete all of the particles that were transported to their origin domains -> Delete if (identifier.origin == MPI_Rank() && identifier.nsegment != 0) */
+    for (int ipart = 0; ipart < npoints; ipart++) {
+        if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) DMSwarmRemovePointAtIndex(radsolve, ipart); //!<Delete the particle!
+    }
 
     /** Restore the fields associated with the particles after all of the particles have been stepped*/
     DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
@@ -536,12 +546,6 @@ PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double te
 std::string ablate::radiation::Radiation::Key(Identifier id) {  //!< Nested Cantor pairing function in order to identify ray segment
 
     std::string key = std::to_string(id.origin) + "." + std::to_string(id.iCell) + "." + std::to_string(id.ntheta) + "." + std::to_string(id.nphi) + "." + std::to_string(id.nsegment);
-
-    //    unsigned long key = id.origin;
-    //    key = (0.5 * (key + id.iCell) * (key + id.iCell + 1)) + id.iCell;
-    //    key = (0.5 * (key + id.ntheta) * (key + id.ntheta + 1)) + id.ntheta;
-    //    key = (0.5 * (key + id.nphi) * (key + id.nphi + 1)) + id.nphi;
-    //    key = (0.5 * (key + id.nsegment) * (key + id.nsegment + 1)) + id.nsegment;
     return key;
 }
 

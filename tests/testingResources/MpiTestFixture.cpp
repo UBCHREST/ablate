@@ -15,7 +15,7 @@ const std::string expectedResultDelimiter = std::string("<expects>");
 bool testingResources::MpiTestFixture::inMpiTestRun;
 bool testingResources::MpiTestFixture::keepOutputFile;
 
-std::string testingResources::MpiTestFixture::mpiCommand = "mpirun";
+std::string testingResources::MpiTestFixture::mpiCommand = "/home/owen/petsc/arch-ablate-debug/bin/mpirun";
 
 std::string testingResources::MpiTestFixture::ParseCommandLineArgument(int* argc, char*** argv, const std::string flag) {
     int commandLineArgumentLocation = -1;
