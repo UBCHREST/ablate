@@ -4,8 +4,7 @@
 #include <utilities/petscError.hpp>
 #include "finiteVolume/compressibleFlowFields.hpp"
 
-ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<parameters::Parameters> options, std::vector<std::string> inertSpecies,
-                                                                std::vector<double> massFractionBounds)
+ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<ablate::parameters::Parameters> options)
     : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), numberSpecies(eosIn->GetSpecies().size()) {
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
@@ -13,8 +12,10 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
     }
 
     // Make sure the massFractionBounds are valid
-    if (!(massFractionBounds.empty() || massFractionBounds.size() == 2)) {
-        throw std::invalid_argument("If specified, the massFractionBounds must be of length 2.");
+    if (options) {
+        dtMin = options->Get<double>("dtMin", dtMin);
+        dtMax = options->Get<double>("dtMax", dtMax);
+        dtDefault = options->Get<double>("dtDefault", dtDefault);
     }
 }
 ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {}
@@ -35,26 +36,30 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     // allocate the tChem memory
     stateHost = real_type_2d_view_host("stateVectorDevices", numberCells, stateVecDim);
     stateDevice = Kokkos::create_mirror(stateHost);
-    endStateHost = real_type_2d_view_host("stateVectorDevicesEnd", numberCells, stateVecDim);
-    endStateDevice = Kokkos::create_mirror(endStateHost);
+    endStateDevice = real_type_2d_view("stateVectorDevicesEnd", numberCells, stateVecDim);
     internalEnergyRefHost = real_type_1d_view_host("internalEnergyRefHost", numberCells);
     internalEnergyRefDevice = Kokkos::create_mirror(internalEnergyRefHost);
-    sourceTermsHost = real_type_2d_view_host("sourceTermsHost", numberCells, kineticModelGasConstData.nSpec);
+    sourceTermsHost = real_type_2d_view_host("sourceTermsHost", numberCells, kineticModelGasConstData.nSpec + 1);
+    sourceTermsDevice = Kokkos::create_mirror(sourceTermsHost);
     perSpeciesScratchDevice = real_type_2d_view("perSpeciesScratchDevice", numberCells, kineticModelGasConstData.nSpec);
+    timeViewDevice = real_type_1d_view("time", numberCells);
+    dtViewDevice = real_type_1d_view("delta time", numberCells);
 
     // Create the default timeAdvanceObject
     timeAdvanceDefault._tbeg = 0.0;
     timeAdvanceDefault._tend = 1.0;
-    timeAdvanceDefault._dt = 1.0E-8;
-    timeAdvanceDefault._dtmin = 1.0E-12;
-    timeAdvanceDefault._dtmax = 1.0E-1;
-    timeAdvanceDefault._max_num_newton_iterations = 10000;
+    timeAdvanceDefault._dt = dtDefault;
+    timeAdvanceDefault._dtmin = dtMin;
+    timeAdvanceDefault._dtmax = dtMax;
+    timeAdvanceDefault._max_num_newton_iterations = 100;
     timeAdvanceDefault._num_time_iterations_per_interval = 100000;
     timeAdvanceDefault._num_outer_time_iterations_per_interval = 1;
     timeAdvanceDefault._jacobian_interval = 1;
 
     // Copy the default values to device
     timeAdvanceDevice = time_advance_type_1d_view("timeAdvanceDevice", numberCells);
+    Kokkos::deep_copy(timeAdvanceDevice, timeAdvanceDefault);
+    Kokkos::deep_copy(dtViewDevice, timeAdvanceDefault._dtmin);
 
     // determine the number of equations
     auto numberOfEquations = TChem::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
@@ -147,7 +152,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
 
             // cast the state at i to a state vector
             const auto state_at_i = Kokkos::subview(stateHost, chemIndex, Kokkos::ALL());
-            Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, state_at_i);
+            Impl::StateVector<real_type_1d_view_host> stateVector(kineticModelGasConstDataDevice.nSpec, state_at_i);
 
             // get the current state at I
             auto density = eulerField[ablate::finiteVolume::CompressibleFlowFields::RHO];
@@ -184,10 +189,16 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
     Kokkos::deep_copy(stateDevice, stateHost);
 
-    // update the default with the current dt and end time
-    timeAdvanceDefault._tbeg = time;
-    timeAdvanceDefault._tend = time + dt;
-    Kokkos::deep_copy(timeAdvanceDevice, timeAdvanceDefault);
+    // Use a parallel for updating timeAdvanceDevice dt
+    Kokkos::parallel_for(
+        "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
+            auto& tAdvAtI = timeAdvanceDevice(i);
+            tAdvAtI._tbeg = time;
+            tAdvAtI._tend = time + dt;
+            tAdvAtI._dt = PetscMin(tAdvAtI._dtmax, PetscMin(dtDefault, dt));
+            // set the default time information
+            timeViewDevice(i) = time;
+        });
 
     // setup the enthalpy, temperature, pressure, chemistry function policies
     auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(numberCells, Kokkos::AUTO());
@@ -205,33 +216,24 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     // Compute the pressure into the state field in the device
     ablate::eos::tChem::Pressure::runDeviceBatch(pressureFunctionPolicy, stateDevice, kineticModelGasConstDataDevice);
 
-    real_type_1d_view timeView("time", stateDevice.size());
-    Kokkos::deep_copy(timeView, time);
-    real_type_1d_view dtView("delta time", stateDevice.size());
-    Kokkos::deep_copy(dtView, 1E-10);
-
     // assume a constant pressure zero D reaction for each cell
     tChemLib::IgnitionZeroD::runDeviceBatch(
-        chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeView, dtView, endStateDevice, kineticModelGasConstDataDevices);
+        chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
 
-    // copy the updated state back to host
-    Kokkos::deep_copy(endStateHost, endStateDevice);
-
-    // Use a parallel for loop to load up the tChem state
-    // TODO: move to device because eos->GetEnthalpyOfFormation() is in device
+    // Use a parallel for computing the source term
     auto enthalpyOfFormation = eos->GetEnthalpyOfFormation();
     Kokkos::parallel_for(
-        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::host_exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto chemIndex) {
+        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto chemIndex) {
             // cast the state at i to a state vector
-            const auto stateAtI = Kokkos::subview(stateHost, chemIndex, Kokkos::ALL());
+            const auto stateAtI = Kokkos::subview(stateDevice, chemIndex, Kokkos::ALL());
             Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
             const auto ys = stateVector.MassFractions();
 
-            const auto endStateAtI = Kokkos::subview(endStateHost, chemIndex, Kokkos::ALL());
+            const auto endStateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
             Impl::StateVector<real_type_1d_view> endStateVector(kineticModelGasConstDataDevice.nSpec, endStateAtI);
             const auto ye = endStateVector.MassFractions();
 
-            const auto sourceTermAtI = Kokkos::subview(sourceTermsHost, chemIndex, Kokkos::ALL());
+            const auto sourceTermAtI = Kokkos::subview(sourceTermsDevice, chemIndex, Kokkos::ALL());
 
             // compute the source term from the change in the heat of formation
             sourceTermAtI(0) = 0.0;
@@ -251,6 +253,11 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
             }
         });
 
+    // copy the updated state back to host
+    Kokkos::deep_copy(sourceTermsHost, sourceTermsDevice);
+
+    // clean up
+    solver.RestoreRange(cellRange);
     PetscFunctionReturn(0);
 }
 
@@ -269,7 +276,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
     // get access to the underlying data for the flow
     const auto& flowEulerId = solver.GetSubDomain().GetField("euler").id;
     const auto& flowDensityYiId = solver.GetSubDomain().GetField("densityYi").id;
-    const auto dim = solver.GetSubDomain().GetDimensions();
 
     // Use a parallel for loop to load up the tChem state
     Kokkos::parallel_for(
@@ -287,17 +293,14 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
             // cast the state at i to a state vector
             const auto sourceAtI = Kokkos::subview(process->sourceTermsHost, chemIndex, Kokkos::ALL());
 
-            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHO] = 0.0;
-            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] = sourceAtI[0];
-            for (PetscInt d = 0; d < dim; d++) {
-                eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOU + d] = 0.0;
-            }
+            eulerSource[ablate::finiteVolume::CompressibleFlowFields::RHOE] += sourceAtI[0];
             for (std::size_t sp = 0; sp < process->numberSpecies; sp++) {
-                densityYiSource[sp] = sourceAtI(sp + 1);
+                densityYiSource[sp] += sourceAtI(sp + 1);
             }
         });
 
     // cleanup
+    solver.RestoreRange(cellRange);
     PetscCall(VecRestoreArray(locFVec, &fArray));
 
     PetscFunctionReturn(0);
@@ -305,5 +308,4 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem library", ARG(ablate::eos::EOS, "eos", "the tChem v1 eos"),
-         OPT(ablate::parameters::Parameters, "options", "any PETSc options for the chemistry ts"), OPT(std::vector<std::string>, "inertSpecies", "fix the Jacobian for any undetermined inertSpecies"),
-         OPT(std::vector<double>, "massFractionBounds", "sets the minimum/maximum mass fraction passed to TChem Library. Must be a vector of size two [min,max] (default is no bounds)"));
+         OPT(ablate::parameters::Parameters, "options", "time stepping options (dtMin, dtMax, dtDefault)"));

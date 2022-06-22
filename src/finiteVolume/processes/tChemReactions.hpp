@@ -10,6 +10,11 @@ namespace ablate::finiteVolume::processes {
 
 class TChemReactions : public Process {
    private:
+    // store some default values
+    double dtMin = 1.0E-12;
+    double dtMax = 1.0E-1;
+    double dtDefault = 1E-4;
+
     // eos of state variables
     std::shared_ptr<eos::TChem> eos;
     const size_t numberSpecies;
@@ -20,7 +25,6 @@ class TChemReactions : public Process {
 
     // store the end state for the device/host
     real_type_2d_view endStateDevice;
-    real_type_2d_view_host endStateHost;
 
     // the time advance information
     time_advance_type_1d_view timeAdvanceDevice;
@@ -33,11 +37,16 @@ class TChemReactions : public Process {
 
     // store the source terms (density* energy + density*species)
     real_type_2d_view_host sourceTermsHost;
+    real_type_2d_view sourceTermsDevice;
 
     // tolerance constraints
     real_type_2d_view tolTimeDevice;
     real_type_1d_view tolNewtonDevice;
     real_type_2d_view facDevice;
+
+    // store the time and delta for the ode solver
+    real_type_1d_view timeViewDevice;
+    real_type_1d_view dtViewDevice;
 
     // store device specific kineticModelGasConstants
     tChemLib::KineticModelConstData<typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevice;
@@ -55,8 +64,7 @@ class TChemReactions : public Process {
     static PetscErrorCode AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
-    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::string> inertSpecies = {},
-                            std::vector<double> massFractionBounds = {});
+    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<ablate::parameters::Parameters> options = {});
     ~TChemReactions() override;
     /**
      * public function to link this process with the flow

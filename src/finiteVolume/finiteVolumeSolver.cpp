@@ -23,7 +23,6 @@ ablate::finiteVolume::FiniteVolumeSolver::~FiniteVolumeSolver() {
 void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     ablate::solver::CellSolver::Setup();
 
-
     {  // get the cell is for the solver minus ghost cell
         // Get the original range
         solver::Range cellRange;

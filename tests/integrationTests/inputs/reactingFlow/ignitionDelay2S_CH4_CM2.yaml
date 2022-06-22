@@ -65,8 +65,8 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
     # without advection/diffusion the tChemReactions process is the only one needed
     - !ablate::finiteVolume::processes::TChemReactions
       eos: *eos # must be a tChem eos
-      inertSpecies: [ N2 ] #N2 does not interact with the others and should be set to inert
-      minimumMassFraction: 1E-10 # limit the smallest mass fraction value
+      options:
+        dtDefault: 1E-8;
   boundaryConditions: []
   monitors:
     # the IgnitionDelayTemperature monitor computes and store the amount of time it took to reach the specified temperature
