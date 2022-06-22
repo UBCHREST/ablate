@@ -160,7 +160,6 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
   MatDenseRestoreArrayWrite(A, &vals) >> ablate::checkError;
   MatViewFromOptions(A,NULL,"-ablate::levelSet::RBF::A_view") >> ablate::checkError;
 
-exit(0);
   //Create the RHS
   MatCreateSeqDense(PETSC_COMM_SELF, matSize, nDer, NULL, &B) >> ablate::checkError;
   PetscObjectSetName((PetscObject)B,"ablate::levelSet::RBF::rhs") >> ablate::checkError;

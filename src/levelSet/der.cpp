@@ -17,7 +17,7 @@ void DerCalculator::SetupDerivativeStencils(std::shared_ptr<RBF> rbf, PetscInt n
   PetscReal       **stencilWeights;
   DM              dm = rbf->GetDM();
   PetscBool       useVertices = PETSC_TRUE;
-  PetscInt        minNumberCells = rbf->GetNPoly() + 1;
+  PetscInt        minNumberCells = (PetscInt)(1.75*rbf->GetNPoly());
 
   DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;      // Range of cells
   n = cEnd - cStart;
