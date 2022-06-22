@@ -33,13 +33,16 @@ class LevelSetField : public domain::FieldDescriptor {
     // Copied from current ABLATE code. Need to talk to Matt M. about how to integrate
     std::vector<std::shared_ptr<domain::FieldDescription>> GetFields() override;
 
-    // Return the vector containing the level set vector
-    inline Vec& GetVec() noexcept { return phi; }
+    // Return the vectors
+    inline Vec& GetPhi() noexcept { return phi; }
+    inline Vec& GetCurv() noexcept { return curv; }
+    inline Vec& GetNormal() noexcept { return normal; }
 
     // Return the mesh associated with the level set
     inline DM& GetDM() noexcept { return dm; }
 
     PetscReal Curvature(PetscInt c);
+    void Normal(PetscInt c, PetscReal *n);
 
    private:
     // Copied from current ABLATE code. Need to talk to Matt M. about how to integrate
@@ -48,6 +51,8 @@ class LevelSetField : public domain::FieldDescriptor {
     // Internal curvature and normal calculations
     PetscReal Curvature2D(PetscInt c);
     PetscReal Curvature3D(PetscInt c);
+    void Normal2D(PetscInt c, PetscReal *n);
+    void Normal3D(PetscInt c, PetscReal *n);
 
     // The RBF to be used for derivatives
     std::shared_ptr<RBF> rbf = nullptr;
@@ -63,8 +68,16 @@ class LevelSetField : public domain::FieldDescriptor {
     // The level set data
     Vec phi = nullptr;
 
+    // The curvature
+    Vec curv = nullptr;
+
+    // The unit normal
+    Vec normal = nullptr;
+
     // Underlying mesh
     DM dm = nullptr;
+
+    PetscInt dim;
 };
 
 }  // namespace ablate::levelSet

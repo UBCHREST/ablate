@@ -3,8 +3,37 @@
 
 using namespace ablate::levelSet;
 
+void LevelSetField::Normal2D(PetscInt c, PetscReal *n) {
 
-PetscReal LevelSetField::Curvature2D(PetscInt c){
+  PetscReal                       cx, cy, g;
+  Vec                             phi = LevelSetField::phi;
+  std::shared_ptr<DerCalculator>  der = LevelSetField::der;
+
+  cx = der->EvalDer(phi, c, 1, 0, 0);
+  cy = der->EvalDer(phi, c, 0, 1, 0);
+  g = sqrt(cx*cx + cy*cy);
+
+  n[0] = cx/g;
+  n[1] = cy/g;
+}
+
+void LevelSetField::Normal3D(PetscInt c, PetscReal *n) {
+
+  PetscReal                       cx, cy, cz, g;
+  Vec                             phi = LevelSetField::phi;
+  std::shared_ptr<DerCalculator>  der = LevelSetField::der;
+
+  cx = der->EvalDer(phi, c, 1, 0, 0);
+  cy = der->EvalDer(phi, c, 0, 1, 0);
+  cz = der->EvalDer(phi, c, 0, 0, 1);
+  g = sqrt(cx*cx + cy*cy + cz*cz);
+
+  n[0] = cx/g;
+  n[1] = cy/g;
+  n[2] = cz/g;
+}
+
+PetscReal LevelSetField::Curvature2D(PetscInt c) {
 
   PetscReal                       k = 0.0;
   PetscReal                       cx, cy, cxx, cyy, cxy;
@@ -22,7 +51,7 @@ PetscReal LevelSetField::Curvature2D(PetscInt c){
   return k;
 }
 
-PetscReal LevelSetField::Curvature3D(PetscInt c){
+PetscReal LevelSetField::Curvature3D(PetscInt c) {
 
   PetscReal                       k = 0.0;
   PetscReal                       cx, cy, cz;
@@ -46,26 +75,61 @@ PetscReal LevelSetField::Curvature3D(PetscInt c){
   return k;
 }
 
+// There has to be a better way of doing this so that the curvature/normal function points directly to either 2D or 3D during setup.
+PetscReal LevelSetField::Curvature(PetscInt c) {
+  if (LevelSetField::dim==2) {
+    return LevelSetField::Curvature2D(c);
+  }
+  else {
+    return LevelSetField::Curvature3D(c);
+  }
+}
+
+void LevelSetField::Normal(PetscInt c, PetscReal *n) {
+  if (LevelSetField::dim==2) {
+    return LevelSetField::Normal2D(c, n);
+  }
+  else {
+    return LevelSetField::Normal3D(c, n);
+  }
+}
+
+
 LevelSetField::LevelSetField(std::shared_ptr<domain::Region> region) : region(region) {}
+
+
+
 
 LevelSetField::LevelSetField(std::shared_ptr<RBF> rbf, LevelSetField::levelSetShape shape) {
 
   LevelSetField::rbf = rbf;
   LevelSetField::dm = rbf->GetDM();
 
-  DMCreateGlobalVector(dm, &(LevelSetField::phi)) >> ablate::checkError;
-
   PetscInt            d, dim;
-  PetscInt            cStart, cEnd, c;
-  PetscInt            cnt;
+  PetscInt            i, cStart, cEnd, c;
   PetscInt            nSet = 3;
   PetscScalar         *val;
   PetscReal           lo[] = {0.0, 0.0, 0.0}, hi[] = {0.0, 0.0, 0.0}, centroid[] = {0.0, 0.0, 0.0}, pos[] = {0.0, 0.0, 0.0};
   PetscReal           radius = 1.0;
-  Vec                 phi = LevelSetField::phi;
+
 
 
   DMGetDimension(dm, &dim) >> ablate::checkError;
+  LevelSetField::dim = dim;
+
+
+
+
+  // Create the vectors
+  DMCreateGlobalVector(dm, &(LevelSetField::phi)) >> ablate::checkError;
+  DMCreateGlobalVector(dm, &(LevelSetField::curv)) >> ablate::checkError;
+
+  PetscInt lsz, gsz;
+  VecGetLocalSize(phi, &lsz);
+  VecGetSize(phi, &gsz);
+  VecCreateMPI(PETSC_COMM_WORLD, dim*lsz, dim*gsz, &(LevelSetField::normal));
+  VecSetBlockSize(LevelSetField::normal, dim) >> ablate::checkError;
+
   DMGetBoundingBox(dm, lo, hi) >> ablate::checkError;
   for (d = 0; d < dim; ++d) {
     centroid[d] = 0.5*(lo[d] + hi[d]);
@@ -76,44 +140,30 @@ LevelSetField::LevelSetField(std::shared_ptr<RBF> rbf, LevelSetField::levelSetSh
 
 
   DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
-  VecGetArray(phi, &val) >> ablate::checkError;
-
-
+  VecGetArray(LevelSetField::phi, &val) >> ablate::checkError;
   // Set the initial shape.
-// I don't know if the global section is the best way to do it. It works, but need to ask Matt K. about it.
-  PetscSection  section;
-  PetscInt      gdof;
-  DMGetGlobalSection(dm, &section) >> ablate::checkError;
-  cnt = 0;
-
   switch (shape) {
     case LevelSetField::levelSetShape::SPHERE:
      for (c = cStart; c < cEnd; ++c) {
-        PetscSectionGetDof(section, c, &gdof) >> ablate::checkError;
-        if (gdof > 0) {
-          DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
-          val[cnt++] = LevelSetField::Sphere(pos, centroid, radius);
-        }
+       i = c - cStart;
+       DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
+       val[i] = LevelSetField::Sphere(pos, centroid, radius);
       }
 
       break;
     case LevelSetField::levelSetShape::ELLIPSE:
       for (c = cStart; c < cEnd; ++c) {
-        PetscSectionGetDof(section, c, &gdof) >> ablate::checkError;
-        if (gdof > 0) {
-          DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
-          val[cnt++] = LevelSetField::Ellipse(pos, centroid, radius);
-        }
+        i = c - cStart;
+        DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
+        val[i] = LevelSetField::Ellipse(pos, centroid, radius);
       }
 
       break;
     case LevelSetField::levelSetShape::STAR:
       for (c = cStart; c < cEnd; ++c) {
-        PetscSectionGetDof(section, c, &gdof) >> ablate::checkError;
-        if (gdof > 0) {
-          DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
-          val[cnt++] = LevelSetField::Star(pos, centroid);
-        }
+        i = c - cStart;
+        DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
+        val[i] = LevelSetField::Star(pos, centroid);
       }
 
       break;
@@ -121,32 +171,29 @@ LevelSetField::LevelSetField(std::shared_ptr<RBF> rbf, LevelSetField::levelSetSh
       throw std::invalid_argument("Unknown level set shape shape");
   }
 
-  VecRestoreArray(phi, &val) >> ablate::checkError;
+  VecRestoreArray(LevelSetField::phi, &val) >> ablate::checkError;
 
-  VecGhostUpdateBegin(phi, INSERT_VALUES, SCATTER_FORWARD);
-  VecGhostUpdateEnd(phi, INSERT_VALUES, SCATTER_FORWARD);
+  VecGhostUpdateBegin(LevelSetField::phi, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
+  VecGhostUpdateEnd(LevelSetField::phi, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
 
   // Now setup the derivatives and set the curvature/normal calculations
   PetscInt nDer = 0;
   PetscInt *dx, *dy, *dz;
 
-  int i = 0;
+  i = 0;
   if (dim == 2) {
     nDer = 5;
-    PetscMalloc3(nDer, &dx, nDer, &dy, nDer, &dz);
+    PetscMalloc3(nDer, &dx, nDer, &dy, nDer, &dz) >> ablate::checkError;
 
     dx[i] = 1; dy[i] = 0; dz[i++] = 0;
     dx[i] = 0; dy[i] = 1; dz[i++] = 0;
     dx[i] = 2; dy[i] = 0; dz[i++] = 0;
     dx[i] = 0; dy[i] = 2; dz[i++] = 0;
     dx[i] = 1; dy[i] = 1; dz[i++] = 0;
-
-//    LevelSetField::Curvature = LevelSetField::Curvature2D;
-
   }
   else {
     nDer = 10;
-    PetscMalloc3(nDer, &dx, nDer, &dy, nDer, &dz);
+    PetscMalloc3(nDer, &dx, nDer, &dy, nDer, &dz) >> ablate::checkError;
 
     dx[i] = 1; dy[i] = 0; dz[i++] = 0;
     dx[i] = 0; dy[i] = 1; dz[i++] = 0;
@@ -163,14 +210,31 @@ LevelSetField::LevelSetField(std::shared_ptr<RBF> rbf, LevelSetField::levelSetSh
     dx[i] = 1; dy[i] = 1; dz[i++] = 1;
   }
 
-  auto der = std::make_shared<ablate::levelSet::DerCalculator>(rbf, nDer, dx, dy, dz);
+  LevelSetField::der = std::make_shared<ablate::levelSet::DerCalculator>(rbf, nDer, dx, dy, dz);
+
+  PetscFree3(dx, dy, dz);
 
 
+  // Curvature
+  VecGetArray(LevelSetField::normal, &val) >> ablate::checkError;
+  for (c = cStart; c < cEnd; ++c) {
+    i = c - cStart;
+    LevelSetField::Normal(i, &val[i*dim]);
+  }
+  VecRestoreArray(LevelSetField::normal, &val) >> ablate::checkError;
+//  VecGhostUpdateBegin(LevelSetField::normal, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
+//  VecGhostUpdateEnd(LevelSetField::normal, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
 
-  PetscFree(dx);
-  PetscFree(dy);
-  PetscFree(dz);
 
+  // Curvature
+  VecGetArray(LevelSetField::curv, &val) >> ablate::checkError;
+  for (c = cStart; c < cEnd; ++c) {
+    i = c - cStart;
+    val[i] = LevelSetField::Curvature(i);
+  }
+  VecRestoreArray(LevelSetField::curv, &val) >> ablate::checkError;
+  VecGhostUpdateBegin(LevelSetField::curv, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
+  VecGhostUpdateEnd(LevelSetField::curv, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
 
 }
 
