@@ -420,9 +420,14 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * Now the carrier has all of the information from the rays that are needed to compute the final ray intensity. Therefore, we will perform the migration.
      * Then, all of the carrier particles will be looped through and the local Origins associated with each cell will be updated
      * */
+    PetscInt* rankid;
+    DMSwarmGetField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
+    DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
     for (int ipart = 0; ipart < npoints; ipart++) {
-         //!< Send the particles to the rank associated with their origin!
+        rankid[ipart] = identifier[ipart].origin;
     }
+    DMSwarmRestoreField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
+    DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
 
     DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
 
@@ -468,20 +473,21 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                  * */
                 origin[iCell].Kradd = 1;       //!< This must be reset at the beginning of each new ray.
                 origin[iCell].Isource = 0;     //!< This must be reset at the beginning of each new ray.
-                oldsegment = loopid.nsegment;  //!< Set the old segment
-                PetscReal I0 = 0;              //!< For the last segment in the domain, take that as the black body intensity of the far field.
+                loopid.nsegment--;             //!< Decrement the segment identifier to the last known segment that was found.
+                oldsegment = loopid.nsegment;  //!< Set the old segment to be the head of the ray
+                origin[iCell].I0 = 0;          //!< For the last segment in the domain, take that as the black body intensity of the far field.
 
                 while (loopid.nsegment > 0) {                        //!< Need to go through all of the ray segments until the origin of the ray is reached
                     for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain.
                         if (identifier[ipart].origin == loopid.origin && identifier[ipart].iCell == loopid.iCell && identifier[ipart].ntheta == loopid.ntheta &&
                             identifier[ipart].nphi == loopid.nphi && identifier[ipart].nsegment == loopid.nsegment) {  //!< If the segment of the particle matches
 
-                            I0 = (oldsegment == loopid.nsegment) ? carrier[ipart].I0 : I0;  //!< Set I0 to the carrier I0 if it is the last segment in the ray
+                            origin[iCell].I0 = (oldsegment == loopid.nsegment) ? carrier[ipart].I0 : origin[iCell].I0;  //!< Set I0 to the carrier I0 if it is the last segment in the ray
 
-                            /** Global ray computation happens here, grabbing values from the transported particles
-                             * The rays end here, their intensity is added to the total intensity of the cell
+                            /** Global ray computation happens here, grabbing values from the transported particles.
+                             * The rays end here, their intensity is added to the total intensity of the cell.
                              * Gives the partial impact of the ray on the total sphere.
-                             * The sin(theta) is a result of the polar coordinate discretization
+                             * The sin(theta) is a result of the polar coordinate discretization.
                              * In the parallel form at the end of each ray, the absorption of the initial ray and the absorption of the black body source are computed individually at the end.
                              * */
                             /** Parallel things are here
@@ -493,7 +499,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                     loopid.nsegment--;  //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
                 theta = (double)ntheta / (double)nTheta;  //!< This is a fine method of determining theta because it is in the original domain
-                origin[iCell].intensity += ((I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
+                origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
             }
         }
         PetscPrintf(PETSC_COMM_WORLD, "Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
@@ -504,7 +510,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 
     /** Delete all of the particles that were transported to their origin domains -> Delete if (identifier.origin == MPI_Rank() && identifier.nsegment != 0) */
     for (int ipart = 0; ipart < npoints; ipart++) {
-        if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) DMSwarmRemovePointAtIndex(radsolve, ipart); //!<Delete the particle!
+        if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
     }
 
     /** Restore the fields associated with the particles after all of the particles have been stepped*/
