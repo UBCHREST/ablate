@@ -95,7 +95,7 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
   p1 = p+1;
 
   if(nPoly>=nCells){
-    throw std::invalid_argument("Number of surrounding cells can not support the requested polynomial order.");
+    throw std::invalid_argument("Number of surrounding cells" + std::to_string(nCells) + " can not support a requested polynomial order of " + std::to_string(p) + ".");
   }
 
   // Get the cell center
@@ -238,7 +238,6 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
 
 
 /************ Begin Polyharmonic Spline Derived Class **********************/
-
 PHS::PHS(DM dm, PetscInt p, PetscInt m) : RBF(std::move(dm), std::move(p)) {
   PHS::phsOrder = m;
 }
@@ -254,7 +253,7 @@ PetscReal PHS::InternalVal(PetscReal x[], PetscReal y[]) {
 // Derivatives of Polyharmonic spline at a location.
 PetscReal PHS::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) {
   PetscInt  m = PHS::phsOrder;   // The PHS order
-  PetscInt  r = DistanceSquared(x);
+  PetscReal r = DistanceSquared(x);
 
   r = PetscSqrtReal(r);
 
@@ -295,14 +294,10 @@ PetscReal PHS::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz)
 
   return r;
 }
-
-
 /************ End Polyharmonic Spline Derived Class **********************/
 
 
 /************ Begin Multiquadric Derived Class **********************/
-
-
 MQ::MQ(DM dm, PetscInt p, PetscReal scale) : RBF(std::move(dm), std::move(p)) {
   MQ::scale = scale;
 }
@@ -314,7 +309,6 @@ PetscReal MQ::InternalVal(PetscReal x[], PetscReal y[]) {
   PetscReal e = 1.0/h;
   PetscReal r = DistanceSquared(x, y);
 
-
   return PetscSqrtReal(1.0 + e*e*r);
 }
 
@@ -323,7 +317,7 @@ PetscReal MQ::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) 
 
   PetscReal h = MQ::scale;
   PetscReal e = 1.0/h;
-  PetscInt  r = DistanceSquared(x);
+  PetscReal r = DistanceSquared(x);
 
   r = PetscSqrtReal(1.0 + e*e*r);
 
@@ -367,8 +361,70 @@ PetscReal MQ::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) 
 
 /************ End Multiquadric Derived Class **********************/
 
-/************ Begin Gaussian Derived Class **********************/
+/************ Begin Inverse Multiquadric Derived Class **********************/
+IMQ::IMQ(DM dm, PetscInt p, PetscReal scale) : RBF(std::move(dm), std::move(p)) {
+  IMQ::scale = scale;
+}
 
+// Multiquadric: sqrt(1+(er)^2)
+PetscReal IMQ::InternalVal(PetscReal x[], PetscReal y[]) {
+
+  PetscReal h = IMQ::scale;
+  PetscReal e = 1.0/h;
+  PetscReal r = DistanceSquared(x, y);
+
+  return 1.0/PetscSqrtReal(1.0 + e*e*r);
+}
+
+// Derivatives of Multiquadric spline at a location.
+PetscReal IMQ::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) {
+
+  PetscReal h = IMQ::scale;
+  PetscReal e = 1.0/h;
+  PetscReal r = DistanceSquared(x);
+
+  r = PetscSqrtReal(1.0 + e*e*r);
+
+  switch (dx + 10*dy + 100*dz) {
+    case 0:
+      r = 1.0/r;
+      break;
+    case 1: // x
+      r = -e*e*x[0]/PetscPowReal(r, 3.0);
+      break;
+    case 2: // xx
+      r = -e*e*(1.0 + e*e*(-2.0*x[0]*x[0] + x[1]*x[1] + x[2]*x[2]))/PetscPowReal(r, 5.0);
+      break;
+    case 10: // y
+      r = -e*e*x[1]/PetscPowReal(r, 3.0);
+      break;
+    case 20: // yy
+      r = -e*e*(1.0 + e*e*(x[0]*x[0] - 2.0*x[1]*x[1] + x[2]*x[2]))/PetscPowReal(r, 5.0);
+      break;
+    case 100: // z
+      r = -e*e*x[2]/PetscPowReal(r, 3.0);
+      break;
+    case 200: // zz
+      r = -e*e*(1.0 + e*e*(x[0]*x[0] + x[1]*x[1] - 2.0*x[2]*x[2]))/PetscPowReal(r, 5.0);
+      break;
+    case 11: // xy
+      r = 3.0*PetscSqr(e*e)*x[0]*x[1]/PetscPowReal(r, 5.0);
+      break;
+    case 101: // xz
+      r = 3.0*PetscSqr(e*e)*x[0]*x[2]/PetscPowReal(r, 5.0);
+      break;
+    case 110: // yz
+      r = 3.0*PetscSqr(e*e)*x[1]*x[2]/PetscPowReal(r, 5.0);
+      break;
+    default:
+      SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Unknown derivative!\n");
+  }
+
+  return r;
+}
+/************ End Inverse Multiquadric Derived Class **********************/
+
+/************ Begin Gaussian Derived Class **********************/
 GA::GA(DM dm, PetscInt p, PetscReal scale) : RBF(std::move(dm), std::move(p)) {
   GA::scale = scale;
 }
@@ -388,7 +444,7 @@ PetscReal GA::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) 
 
   PetscReal h = GA::scale;
   PetscReal e2 = 1.0/(h*h);
-  PetscInt  r = DistanceSquared(x);
+  PetscReal r = DistanceSquared(x);
 
   r = PetscExpReal(-r*e2);
 
@@ -432,7 +488,6 @@ PetscReal GA::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) 
 
   return r;
 }
-
 /************ End Gaussian Derived Class **********************/
 
 

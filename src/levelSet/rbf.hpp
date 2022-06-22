@@ -21,6 +21,7 @@ class RBF {
   protected:
     PetscReal DistanceSquared(PetscReal x[], PetscReal y[]);
     PetscReal DistanceSquared(PetscReal x[]);
+
   public:
 
     // These will be overwritten in the derived classes
@@ -63,6 +64,18 @@ class MQ: public RBF {
     PetscReal InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz);
   public:
     MQ(DM dm = nullptr, PetscInt p = -1, PetscReal scale = -1);
+    PetscReal Val(PetscReal x[], PetscReal y[]) override {return InternalVal(std::move(x), std::move(y)); }
+    PetscReal Der(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override {return InternalDer(std::move(x), std::move(dx), std::move(dy), std::move(dz)); }
+};
+
+class IMQ: public RBF {
+  private:
+    PetscReal scale = -1;
+
+    PetscReal InternalVal(PetscReal x[], PetscReal y[]);
+    PetscReal InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz);
+  public:
+    IMQ(DM dm = nullptr, PetscInt p = -1, PetscReal scale = -1);
     PetscReal Val(PetscReal x[], PetscReal y[]) override {return InternalVal(std::move(x), std::move(y)); }
     PetscReal Der(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) override {return InternalDer(std::move(x), std::move(dx), std::move(dy), std::move(dz)); }
 };
