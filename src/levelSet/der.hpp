@@ -23,6 +23,7 @@ class DerCalculator {
 
     PetscReal EvalDer_Internal(Vec f, PetscInt der, PetscInt nDer, PetscInt nStencil, PetscInt lst[], PetscReal wt[]);
     void SetupDerivativeStencils(std::shared_ptr<RBF> rbf, PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscInt **nStencil, PetscInt ***stencilList, PetscReal ***stencilWeights);
+    DM dm = nullptr;
 
   public:
 

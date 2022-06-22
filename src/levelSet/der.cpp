@@ -2,32 +2,6 @@
 
 using namespace ablate::levelSet;
 
-
-// Evaluate a derivative from a stencil list
-// f - Vector cotaining the data
-// der - The particular derivative to evaluate
-// nDer - The total number of derivatives computed
-// nStencil - The length of the stencil
-// lst - List of cell IDs
-// wt - The weights, arranged in row-major ordering.
-PetscReal DerCalculator::EvalDer_Internal(Vec f, PetscInt der, PetscInt nDer, PetscInt nStencil, PetscInt lst[], PetscReal wt[]) {
-
-  PetscReal       val = 0.0, *array;
-  PetscInt        i;
-
-  VecGetArray(f, &array) >> ablate::checkError;
-
-  for (i = 0; i < nStencil; ++i) {
-    val += wt[i*nDer + der]*array[lst[i]];
-  }
-
-  VecRestoreArray(f, &array) >> ablate::checkError;
-
-  return val;
-
-}
-
-
 // Returns the requested derivative stencils
 // rbf - The Radial Basis Function to use.
 // nDer - Number of derivatives to compute
@@ -44,11 +18,11 @@ void DerCalculator::SetupDerivativeStencils(std::shared_ptr<RBF> rbf, PetscInt n
   PetscReal       h;
   DM              dm = rbf->GetDM();
   PetscBool       useVertices = PETSC_TRUE;
-  PetscInt        nLevels = 3;
+  PetscInt        nLevels = 4;
   PetscReal       maxDist;
 
   DMPlexGetMinRadius(dm, &h) >> ablate::checkError; // This returns the minimum distance from any cell centroid to a face.
-  h *= 2.0;                                         // Double it to get the grid spacing.
+  h *= 2.0;                                        // Double it to get the grid spacing.
 
   maxDist = (nLevels+1)*h;
 
@@ -68,7 +42,6 @@ void DerCalculator::SetupDerivativeStencils(std::shared_ptr<RBF> rbf, PetscInt n
     DMPlexGetNeighborCells(dm, c, nLevels, maxDist, useVertices, &nStencil[i], &stencilList[i]);
     rbf->Weights(c, nStencil[i], stencilList[i], nDer, dx, dy, dz, &stencilWeights[i]);
   }
-
   *nStencilOut = nStencil;
   *stencilListOut = stencilList;
   *stencilWeightsOut = stencilWeights;
@@ -86,6 +59,7 @@ DerCalculator::DerCalculator(std::shared_ptr<RBF> rbf, PetscInt nDer, PetscInt d
     DerCalculator::dxyz[i] = dx[i]*100 + dy[i]*10 + dz[i];
   }
 
+  DerCalculator::dm = rbf->GetDM();
 
 
   // Now determine the actual stencils
@@ -94,19 +68,53 @@ DerCalculator::DerCalculator(std::shared_ptr<RBF> rbf, PetscInt nDer, PetscInt d
 }
 
 DerCalculator::~DerCalculator() {
-  PetscFree(DerCalculator::dxyz) >> ablate::checkError;
 
-  PetscFree(DerCalculator::nStencil) >> ablate::checkError;
-  for (int i=0; i<DerCalculator::nDer; ++i) {
-    PetscFree(DerCalculator::stencilList[i]) >> ablate::checkError;
-    PetscFree(DerCalculator::stencilWeights[i]) >> ablate::checkError;
-  }
-  PetscFree(DerCalculator::stencilList) >> ablate::checkError;
-  PetscFree(DerCalculator::stencilWeights) >> ablate::checkError;
+
+
+//  PetscInt c, cStart, cEnd, i;
+
+//  DMPlexGetHeightStratum(DerCalculator::dm, 0, &cStart, &cEnd) >> ablate::checkError;      // Range of cells
+
+
+//  for (c = cStart; c < cEnd; ++c) {
+//    i = c - cStart;
+//    PetscFree(DerCalculator::stencilList[i]) >> ablate::checkError;
+//    PetscFree(DerCalculator::stencilWeights[i]) >> ablate::checkError;
+//  }
+
+//  PetscFree3(DerCalculator::nStencil, DerCalculator::stencilList, DerCalculator::stencilWeights) >> ablate::checkError;
+//  PetscFree(DerCalculator::dxyz) >> ablate::checkError;
 
 
 }
 
+
+
+
+// Evaluate a derivative from a stencil list
+// f - Vector cotaining the data
+// der - The particular derivative to evaluate
+// nDer - The total number of derivatives computed
+// nStencil - The length of the stencil
+// lst - List of cell IDs
+// wt - The weights, arranged in row-major ordering.
+PetscReal DerCalculator::EvalDer_Internal(Vec f, PetscInt der, PetscInt nDer, PetscInt nStencil, PetscInt lst[], PetscReal wt[]) {
+
+  PetscReal       val = 0.0, *array;
+  PetscInt        i;
+
+  VecGetArray(f, &array) >> ablate::checkError;
+
+  for (i = 0; i < nStencil; ++i) {
+    val += wt[i*nDer + der]*array[lst[i]];
+//    printf("%d\t%f\n", lst[i], wt[i*nDer+der]);
+  }
+
+  VecRestoreArray(f, &array) >> ablate::checkError;
+
+  return val;
+
+}
 
 // Return the requested derivative
 // f - Vector containing the data
@@ -126,7 +134,10 @@ PetscReal DerCalculator::EvalDer(Vec f, PetscInt c, PetscInt dx, PetscInt dy, Pe
     throw std::invalid_argument("Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + " is not setup.");
   }
 
-  val = DerCalculator::EvalDer_Internal(f, id, nDer, DerCalculator::nStencil[id], DerCalculator::stencilList[id], DerCalculator::stencilWeights[id]);
+
+
+
+  val = DerCalculator::EvalDer_Internal(f, id, nDer, DerCalculator::nStencil[c], DerCalculator::stencilList[c], DerCalculator::stencilWeights[c]);
 
   return val;
 
