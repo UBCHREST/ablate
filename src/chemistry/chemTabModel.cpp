@@ -204,12 +204,22 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     TF_Tensor **outputValues = (TF_Tensor **)malloc(sizeof(TF_Tensor *) * numOutputs);
 
     int ndims = 2;
-    int ninputs = (int)ctModel->progressVariablesNames.size() - 1;
+
+    /*int ninputs = (int)ctModel->progressVariablesNames.size() - 1;
     int64_t dims[] = {1, ninputs};
     float data[ninputs];
     // Ignoring the zmix variable for predicting the source terms
     for (int i = 0; i < ninputs; i++) {
         data[i] = progressVariables[i + 1];
+    }*/
+
+    // according to Varun this should work for including Zmix
+    int ninputs = (int)ctModel->progressVariablesNames.size();
+    int64_t dims[] = {1, ninputs};
+    float data[ninputs];
+    // Ignoring the zmix variable for predicting the source terms
+    for (int i = 0; i < ninputs; i++) {
+        data[i] = progressVariables[i];
     }
 
     int ndata = ninputs * sizeof(float);
