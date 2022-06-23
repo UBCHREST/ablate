@@ -64,8 +64,9 @@ static PetscInt fac[11] =  {1,1,2,6,24,120,720,5040,40320,362880,3628800}; // Pr
 // c - The center cell
 // nCells - The number of cells in the neighbor list
 // list - The list of neighbor cells
-// A - The LU-factorization of the augmented RBF matrix
-void RBF::Matrix(PetscInt c, PetscInt nCells, PetscInt list[], Mat *LUA) {
+// x - Shifted centers of all the cells (output)
+// A - The LU-factorization of the augmented RBF matrix (output)
+void RBF::Matrix(PetscInt c, PetscInt nCells, PetscInt list[], PetscReal x[], Mat *LUA) {
 
   PetscInt        dim = RBF::dim;
   PetscInt        i, j, d;
@@ -78,8 +79,7 @@ void RBF::Matrix(PetscInt c, PetscInt nCells, PetscInt list[], Mat *LUA) {
   DM              dm = RBF::dm; // The underlying mesh
 
   PetscReal       x0[dim];        // Center of the cell of interest
-  PetscReal       x[nCells*dim];  // Centers of all cells
-  PetscReal       xp[nCells*dim*p1]; // Powers of the
+  PetscReal       xp[nCells*dim*p1]; // Powers of the cell centers
 
   if(nPoly>=nCells){
     throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " + std::to_string(nPoly) + " number of cells.");
@@ -168,98 +168,15 @@ void RBF::Matrix(PetscInt c, PetscInt nCells, PetscInt list[], Mat *LUA) {
 void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscReal *weights[]) {
 
   PetscInt        dim = RBF::dim;
-  PetscInt        i, j, d;
+  PetscInt        i, j;
   PetscInt        px, py, pz, p1 = p+1;
-  PetscInt        nPoly = RBF::nPoly, matSize;
+  PetscInt        matSize;
   Mat             A, B;
   PetscScalar     *vals;
-
-  PetscInt        p = RBF::p;   // The supplementary polynomial order
-  DM              dm = RBF::dm; // The underlying mesh
-
-  PetscReal       x0[dim];        // Center of the cell of interest
   PetscReal       x[nCells*dim];  // Centers of all cells
-  PetscReal       xp[nCells*dim*p1]; // Powers of the
 
-
-
-//  // If the number of cells does not support the requested augmented polynomial order decrease the order. Maybe better to just throw an error?
-//  while (nPoly > nCells && p > 0) {
-//    --p;
-//    if (dim == 2) {
-//      nPoly = (p+2)*(p+1)/2;
-//    } else {
-//      nPoly = (p+3)*(p+2)*(p+1)/6;
-//    }
-//  }
-//  p1 = p+1;
-
-  if(nPoly>=nCells){
-    throw std::invalid_argument("Number of surrounding cells, " + std::to_string(nCells) + ", can not support a requested polynomial order of " + std::to_string(p) + " which requires " + std::to_string(nPoly) + " number of cells.");
-  }
-
-  // Get the cell center
-  DMPlexComputeCellGeometryFVM(dm, c, NULL, x0, NULL) >> ablate::checkError;
-
-  // Shifted cell-centers of neighbor cells
-  for (i = 0; i < nCells; ++i) {
-    DMPlexComputeCellGeometryFVM(dm, list[i], NULL, &x[i*dim], NULL) >> ablate::checkError;
-    for (d = 0; d < dim; ++d) {
-      x[i*dim+d] -= x0[d];
-      // Precompute the powers for later use
-      xp[(i*dim+d)*p1 + 0] = 1.0;
-      for (px = 1; px < p+1; ++px) {
-        xp[(i*dim+d)*p1 + px] = xp[(i*dim+d)*p1 + (px-1)]*x[i*dim+d];
-      }
-    }
-  }
-
-
-  matSize = nCells + nPoly;
-
-
-  // Create the matrix
-  MatCreateSeqDense(PETSC_COMM_SELF, matSize, matSize, NULL, &A) >> ablate::checkError;
-  PetscObjectSetName((PetscObject)A,"ablate::levelSet::RBF::A") >> ablate::checkError;
-  MatZeroEntries(A) >> ablate::checkError;
-  MatSetOption(A, MAT_SYMMETRIC, PETSC_TRUE) >> ablate::checkError;
-
-
-  MatDenseGetArrayWrite(A, &vals) >> ablate::checkError;
-
-  // RBF contributions to the matrix
-  for (i = 0; i < nCells; ++i) {
-    for (j = i; j < nCells; ++j) {
-      vals[i*matSize + j] = vals[j*matSize + i] = Val(&x[i*dim], &x[j*dim]);
-    }
-  }
-
-  // Augmented polynomial contributions
-  if (dim == 2) {
-    for (i = 0; i < nCells; ++i) {
-      j = nCells;
-      for (py = 0; py < p1; ++py) {
-        for (px = 0; px < p1-py; ++px) {
-          vals[i*matSize + j] = vals[j*matSize + i] = xp[(i*dim+0)*p1 + px] * xp[(i*dim+1)*p1 + py];
-          j++;
-        }
-      }
-    }
-  } else {
-    for (i = 0; i < nCells; ++i) {
-      j = nCells;
-      for (pz = 0; pz < p1; ++pz) {
-        for (py = 0; py < p1-pz; ++py) {
-          for (px = 0; px < p1-py-pz; ++px ){
-            vals[i*matSize + j] = vals[j*matSize + i] = xp[(i*dim+0)*p1 + px] * xp[(i*dim+1)*p1 + py] * xp[(i*dim+2)*p1 + pz];
-            ++j;
-          }
-        }
-      }
-    }
-  }
-  MatDenseRestoreArrayWrite(A, &vals) >> ablate::checkError;
-  MatViewFromOptions(A,NULL,"-ablate::levelSet::RBF::A_view") >> ablate::checkError;
+  RBF::Matrix(c, nCells, list, x, &A);
+  MatGetSize(A, &matSize, NULL);
 
   //Create the RHS
   MatCreateSeqDense(PETSC_COMM_SELF, matSize, nDer, NULL, &B) >> ablate::checkError;
@@ -308,9 +225,12 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
 
   MatViewFromOptions(B,NULL,"-ablate::levelSet::RBF::rhs_view") >> ablate::checkError;
 
-  // Factor and solve the matrix
-  MatLUFactor(A, NULL, NULL, NULL) >> ablate::checkError;
+
+
+
   MatMatSolve(A, B, B) >> ablate::checkError;
+
+
 
   MatViewFromOptions(B,NULL,"-ablate::levelSet::RBF::sol_view") >> ablate::checkError;
 
