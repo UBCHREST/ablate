@@ -218,9 +218,11 @@ void ablate::radiation::Radiation::RayInit() {
      * */
 
     PetscReal hhere = 0;
+    PetscInt nglobalpoints = 0;
     DMSwarmGetLocalSize(radsearch, &npoints);  //!< Recalculate the number of particles that are in the domain
-    PetscInt stepcount = 0;                    //!< Count the number of steps that the particles have taken
-    while (npoints != 0) {                     //!< WHILE THERE ARE PARTICLES IN THE DOMAIN
+    DMSwarmGetSize(radsearch, &nglobalpoints);
+    PetscInt stepcount = 0;       //!< Count the number of steps that the particles have taken
+    while (nglobalpoints != 0) {  //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
         /** Get all of the ray information from the particle
          * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
         DMSwarmGetField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
@@ -231,6 +233,9 @@ void ablate::radiation::Radiation::RayInit() {
          * Add the cell index to the ray
          * Step every particle in the domain one step and then perform a migration
          * */
+        PetscInt index;
+        Vec intersect;
+        PetscInt i[3] = {0, 1, 2}; //!< Establish the vector here so that it can be iterated.
         for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                 //!< particles then pass out of initialization.
             ipart = ip;                         //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy
@@ -248,7 +253,7 @@ void ablate::radiation::Radiation::RayInit() {
 
                 DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);  //!< Get the fields from the radsolve swarm so the new point can be written to them
                 DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
-                // TODO: Only 132 points?
+
                 PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
                 solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
                 carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
@@ -260,7 +265,37 @@ void ablate::radiation::Radiation::RayInit() {
             /** FIRST TAKE THIS LOCATION INTO THE RAYS VECTOR
              * "I found a particle in my domain. Maybe it was just moved here and I've never seen it before.
              * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
-            PetscInt index = GetCell(ipart, virtualcoord);
+
+            /** Get the particle coordinates here and put them into the intersect */
+            PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from sphserical coordinates, adding the position of the current cell
+                                     (virtualcoord[ipart].y),   // y component conversion from spherical coordinates, adding the position of the current cell
+                                     (virtualcoord[ipart].z)};  // z component conversion from spherical coordinates, adding the position of the current cell
+            //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a position vector in the current angle position
+
+            /** This block creates the vector pointing to the cell whose index will be stored during the current loop*/
+            VecCreate(PETSC_COMM_SELF, &intersect);  //!< Instantiates the vector
+            VecSetBlockSize(intersect, dim);
+            VecSetSizes(intersect, PETSC_DECIDE, dim);  //!< Set size
+            VecSetFromOptions(intersect);
+            VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
+            i[0]++;
+            i[1]++;
+            i[2]++;
+        }
+
+        /** Loop through points to try to get the cell that is sitting on that point*/
+        PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
+        DMLocatePoints(subDomain->GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF); //!< Call DMLocatePoints here, all of the processes have to call it at once.
+
+        /** An array that maps each point to its containing cell can be obtained with the below
+             * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
+             * */
+        PetscInt nFound;
+        const PetscInt* point = nullptr;
+        const PetscSFNode* cell = nullptr;
+        PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell);  //!< Using this to get the petsc int cell number from the struct (SF)
+
+        for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
 
             /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
              * This function returns multiple values if multiple points are input to it
@@ -268,6 +303,12 @@ void ablate::radiation::Radiation::RayInit() {
              * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
              * The boundary has been reached if any of these conditions don't hold
              * */
+            if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) {
+                index = cell[ip].index;
+            } else {
+                index = -1;
+            }
+
             bool add = false;
             if (index > -1) {
                 rays[Key(identifier[ipart])].cells.push_back(index);
@@ -305,9 +346,13 @@ void ablate::radiation::Radiation::RayInit() {
         DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
         DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
+        /** Cleanup */
+        VecDestroy(&intersect);   //!< Return the vector to PETSc
+        PetscSFDestroy(&cellSF);  //< Return the stuff to PETSc
+
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
-        DMSwarmMigrate(radsearch, PETSC_TRUE);     //!< Migrate the search particles and remove the particles that have left the domain space.
-        DMSwarmGetLocalSize(radsearch, &npoints);  //!< Update the loop condition. Recalculate the number of particles that are in the domain.
+        DMSwarmMigrate(radsearch, PETSC_TRUE);      //!< Migrate the search particles and remove the particles that have left the domain space.
+        DMSwarmGetSize(radsearch, &nglobalpoints);  //!< Update the loop condition. Recalculate the number of particles that are in the domain.
 
         //        if (log) {
         PetscPrintf(MPI_COMM_WORLD, "Global Step %3i\n", stepcount);
@@ -566,50 +611,6 @@ void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoor
             coord[(3 * ipart) + 1] = virtualcoord[ipart].y;
             coord[(3 * ipart) + 2] = virtualcoord[ipart].z;
             break;
-    }
-}
-
-PetscInt ablate::radiation::Radiation::GetCell(PetscInt ipart, Virtualcoord* virtualcoord) {
-    Vec intersect;
-    PetscInt i[3] = {0, 1, 2};
-    /** Get the particle coordinates here and put them into the intersect */
-    PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from sphserical coordinates, adding the position of the current cell
-                             (virtualcoord[ipart].y),   // y component conversion from spherical coordinates, adding the position of the current cell
-                             (virtualcoord[ipart].z)};  // z component conversion from spherical coordinates, adding the position of the current cell
-    //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a position vector in the current angle position
-
-    /** This block creates the vector pointing to the cell whose index will be stored during the current loop*/
-    VecCreate(PETSC_COMM_SELF, &intersect);  //!< Instantiates the vector
-    VecSetBlockSize(intersect, dim);
-    VecSetSizes(intersect, PETSC_DECIDE, dim);  //!< Set size
-    VecSetFromOptions(intersect);
-    VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
-    /** Loop through points to try to get the cell that is sitting on that point*/
-    PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
-    DMLocatePoints(subDomain->GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF);  //!< Locate the points in v in the mesh and return a PetscSF of the containing cells
-
-    /** An array that maps each point to its containing cell can be obtained with the below
-     * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
-     * */
-    PetscInt nFound;
-    const PetscInt* point = nullptr;
-    const PetscSFNode* cell = nullptr;
-    PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell);  //!< Using this to get the petsc int cell number from the struct (SF)
-
-    /** Cleanup*/
-    VecDestroy(&intersect);   //!< Return the vector to PETSc
-    PetscSFDestroy(&cellSF);  //< Return the stuff to PETSc
-
-    /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
-     * This function returns multiple values if multiple points are input to it
-     * Make sure that whatever cell is returned is in the stencil set (and not outside of the radiation domain)
-     * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
-     * The boundary has been reached if any of these conditions don't hold
-     * */
-    if (nFound > -1 && cell[0].index >= 0 && subDomain->InRegion(cell[0].index)) {
-        return cell[0].index;
-    } else {
-        return -1;
     }
 }
 
