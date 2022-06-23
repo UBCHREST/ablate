@@ -20,7 +20,142 @@ RBF::RBF(DM dm, PetscInt p){
     RBF::nPoly = (p+3)*(p+2)*(p+1)/6;
   }
 
+  // Set the minimum number of cells to get compute the RBF matrix
+  RBF::minNumberCells = (PetscInt)(1.75*(RBF::nPoly));
+
 }
+
+RBF::~RBF(){
+  if (RBF::hasDerivativeInformation) {
+    PetscFree4(RBF::nStencil, RBF::stencilList, RBF::stencilWeights, RBF::dxyz) >> ablate::checkError;
+  }
+}
+
+// Set the derivatives to use
+// nDer - Number of derivatives to set
+// dx, dy, dz - Lists of length nDer indicating the derivatives
+void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices){
+  PetscInt c, cStart, cEnd, n;
+
+  RBF::hasDerivativeInformation = PETSC_TRUE;
+  RBF::useVertices = useVertices;
+  RBF::nDer = nDer;
+
+  DMPlexGetHeightStratum(RBF::dm, 0, &cStart, &cEnd) >> ablate::checkError;      // Range of cells
+  n = cEnd - cStart;
+
+  PetscMalloc4(n, &(RBF::nStencil), n, &(RBF::stencilList), n, &(RBF::stencilWeights), 3*nDer, &(RBF::dxyz)) >> ablate::checkError;
+
+  // Offset the indices so that we can use stratum ordering
+  RBF::nStencil -= cStart;
+  RBF::stencilList -= cStart;
+  RBF::stencilWeights -= cStart;
+
+  for (c = cStart; c < cEnd; ++c) {
+    RBF::nStencil[c] = -1;
+    RBF::stencilList[c] = nullptr;
+    RBF::stencilWeights[c] = nullptr;
+  }
+
+  // Store the derivatives
+  for (c = 0; c < nDer; ++c) {
+    RBF::dxyz[c*3 + 0] = dx[c];
+    RBF::dxyz[c*3 + 1] = dy[c];
+    RBF::dxyz[c*3 + 2] = dz[c];
+  }
+
+
+}
+
+// Set derivatives, defaulting to using vertices
+void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]){
+  RBF::SetDerivatives(nDer, dx, dy, dz, PETSC_TRUE);
+}
+
+
+
+
+
+void RBF::SetupDerivativeStencils(PetscInt c) {
+  DMPlexGetNeighborCells(RBF::dm, c, -1, -1.0, RBF::minNumberCells, RBF::useVertices, &(RBF::nStencil[c]), &(RBF::stencilList[c]));
+  RBF::Weights(c, RBF::nStencil[c], RBF::stencilList[c], nDer, dxyz, &(RBF::stencilWeights[c]));
+}
+
+void RBF::SetupDerivativeStencils() {
+  PetscInt c, cStart, cEnd;
+
+  DMPlexGetHeightStratum(RBF::dm, 0, &cStart, &cEnd) >> ablate::checkError;      // Range of cells
+
+  for (c = cStart; c < cEnd; ++c) {
+    RBF::SetupDerivativeStencils(c);
+  }
+
+
+}
+
+
+
+
+// Evaluate a derivative from a stencil list
+// f - Vector cotaining the data
+// der - The particular derivative to evaluate
+// nDer - The total number of derivatives computed
+// nStencil - The length of the stencil
+// lst - List of cell IDs
+// wt - The weights, arranged in row-major ordering.
+PetscReal RBF::EvalDer_Internal(Vec f, PetscInt der, PetscInt nDer, PetscInt nStencil, PetscInt lst[], PetscReal wt[]) {
+
+  PetscReal       val = 0.0, *array;
+  PetscInt        i;
+
+  VecGetArray(f, &array) >> ablate::checkError;
+
+  for (i = 0; i < nStencil; ++i) {
+    val += wt[i*nDer + der]*array[lst[i]];
+  }
+
+  VecRestoreArray(f, &array) >> ablate::checkError;
+
+  return val;
+
+}
+
+// Return the requested derivative
+// f - Vector containing the data
+// c - Location to evaluate at
+// dx, dy, dz - The derivatives
+PetscReal RBF::EvalDer(Vec f, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz){
+
+  PetscInt  id = -1;
+  PetscInt  nDer = RBF::nDer;
+  PetscInt  *dxyz = RBF::dxyz;
+  PetscReal val = 0.0;
+
+  // Search for the particular index. Probably need to do something different in the future to avoid re-doing the same calculation many times
+  while (dxyz[++id*3 + 0] != dx && dxyz[id*3 + 1] != dy && dxyz[id*3 + 2] != dz && id<nDer){ }
+
+  if (id==nDer) {
+    throw std::invalid_argument("Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
+  }
+
+  // If the stencil hasn't been setup yet do so
+  if (RBF::nStencil[c] < 1) {
+    RBF::SetupDerivativeStencils(c);
+  }
+
+  val = RBF::EvalDer_Internal(f, id, nDer, RBF::nStencil[c], RBF::stencilList[c], RBF::stencilWeights[c]);
+
+  return val;
+
+}
+
+
+
+
+
+
+
+
 
 
 void RBF::ShowParameters(){
@@ -28,7 +163,14 @@ void RBF::ShowParameters(){
   PetscPrintf(PETSC_COMM_WORLD, "%12s: %d\n", "dim", RBF::dim);
   PetscPrintf(PETSC_COMM_WORLD, "%12s: %d\n", "Poly Order", RBF::p);
   PetscPrintf(PETSC_COMM_WORLD, "%12s: %d\n", "Has DM", RBF::dm!=nullptr);
-
+  PetscPrintf(PETSC_COMM_WORLD, "%12s: %d\n", "Min # Cells", RBF::minNumberCells);
+  PetscPrintf(PETSC_COMM_WORLD, "%12s: %d\n", "Use Vertices", RBF::useVertices);
+  if ( RBF::hasDerivativeInformation ){
+      PetscPrintf(PETSC_COMM_WORLD, "%12s: %d\n", "nDer", RBF::nDer);
+      for (PetscInt i = 0; i < RBF::nDer; ++i) {
+          PetscPrintf(PETSC_COMM_WORLD, "%12s: %d, %d, %d\n", "dx,dy,dz", RBF::dxyz[i*3+0],RBF::dxyz[i*3+1],RBF::dxyz[i*3+2]);
+      }
+  }
 }
 
 // Distance between two points
@@ -52,12 +194,7 @@ PetscReal RBF::DistanceSquared(PetscReal x[]){
   return r;
 }
 
-
-
-
 static PetscInt fac[11] =  {1,1,2,6,24,120,720,5040,40320,362880,3628800}; // Pre-computed factorials
-
-
 
 
 // Compute the LU-factorization of the augmented RBF matrix
@@ -116,7 +253,7 @@ void RBF::Matrix(PetscInt c, PetscInt nCells, PetscInt list[], PetscReal x[], Ma
   // RBF contributions to the matrix
   for (i = 0; i < nCells; ++i) {
     for (j = i; j < nCells; ++j) {
-      vals[i*matSize + j] = vals[j*matSize + i] = Val(&x[i*dim], &x[j*dim]);
+      vals[i*matSize + j] = vals[j*matSize + i] = RBFVal(&x[i*dim], &x[j*dim]);
     }
   }
 
@@ -165,7 +302,7 @@ void RBF::Matrix(PetscInt c, PetscInt nCells, PetscInt list[], PetscReal x[], Ma
 // nDer - The number of derviatives to compute
 // dx, dy, dz - Arrays of length nDer. The derivative is (dx(i), dy(i), dz(i))
 // weights - The resulting weights. Array of length nCells.
-void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscReal *weights[]) {
+void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, PetscInt dxyz[], PetscReal *weights[]) {
 
   PetscInt        dim = RBF::dim;
   PetscInt        i, j;
@@ -187,7 +324,7 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
   // Derivatives of the RBF
   for (i = 0; i < nCells; ++i) {
     for (j = 0; j < nDer; ++j) {
-      vals[i + j*matSize] = Der(&x[i*dim], dx[j], dy[j], dz[j]);
+      vals[i + j*matSize] = RBFDer(&x[i*dim], dxyz[j*3 + 0], dxyz[j*3 + 1], dxyz[j*3 + 2]);
     }
   }
 
@@ -197,7 +334,7 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
       i = nCells;
       for (py = 0; py < p1; ++py) {
         for (px = 0; px < p1-py; ++px ){
-          if(dx[j] == px && dy[j] == py) {
+          if(dxyz[j*3 + 0] == px && dxyz[j*3 + 1] == py) {
             vals[i + j*matSize] = fac[px]*fac[py];
           }
           ++i;
@@ -211,7 +348,7 @@ void RBF::Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, P
       for (pz = 0; pz < p1; ++pz) {
         for (py = 0; py < p1-pz; ++py) {
           for (px = 0; px < p1-py-pz; ++px ){
-            if(dx[j] == px && dy[j] == py && dz[j] == pz) {
+            if(dxyz[j*3 + 0] == px && dxyz[j*3 + 1] == py && dxyz[j*3 + 2] == pz) {
               vals[i + j*matSize] = fac[px]*fac[py]*fac[pz];
             }
             ++i;
@@ -373,7 +510,7 @@ PetscReal MQ::InternalDer(PetscReal x[], PetscInt dx, PetscInt dy, PetscInt dz) 
       r = -PetscSqr(e*e)*x[1]*x[2]/PetscPowReal(r, 3.0);
       break;
     default:
-      SETERRQ(PETSC_COMM_SELF, PETSC_ERR_ARG_WRONG, "Unknown derivative!\n");
+      throw std::invalid_argument("Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
   }
 
   return r;

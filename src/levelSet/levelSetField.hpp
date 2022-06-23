@@ -57,9 +57,6 @@ class LevelSetField : public domain::FieldDescriptor {
     // The RBF to be used for derivatives
     std::shared_ptr<RBF> rbf = nullptr;
 
-    // The derivative class
-    std::shared_ptr<DerCalculator> der = nullptr;
-
     // Possible initial shapes
     PetscReal Sphere(PetscReal pos[], PetscReal center[], PetscReal radius);
     PetscReal Ellipse(PetscReal pos[], PetscReal center[], PetscReal radius);

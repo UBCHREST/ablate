@@ -12,51 +12,51 @@ using namespace ablate::levelSet;
 //
 // Example of use: nDer = 5, dx[] = {1, 0, 2, 0, 1}, dy[] = {0, 1, 0, 2, 1}, dz[] = {0, 0, 0, 0, 0} will return the dx, dy, dxx, dyy, dxy stencils lists
 void DerCalculator::SetupDerivativeStencils(std::shared_ptr<RBF> rbf, PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscInt **nStencilOut, PetscInt ***stencilListOut, PetscReal ***stencilWeightsOut) {
-  PetscInt        c, cStart, cEnd, n, i;
-  PetscInt        *nStencil, **stencilList;
-  PetscReal       **stencilWeights;
-  DM              dm = rbf->GetDM();
-  PetscBool       useVertices = PETSC_TRUE;
-  PetscInt        minNumberCells = (PetscInt)(1.75*rbf->GetNPoly());
+//  PetscInt        c, cStart, cEnd, n, i;
+//  PetscInt        *nStencil, **stencilList;
+//  PetscReal       **stencilWeights;
+//  DM              dm = rbf->GetDM();
+//  PetscBool       useVertices = PETSC_TRUE;
+//  PetscInt        minNumberCells = (PetscInt)(1.75*rbf->GetNPoly());
 
-  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;      // Range of cells
-  n = cEnd - cStart;
+//  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;      // Range of cells
+//  n = cEnd - cStart;
 
-  PetscMalloc3(n, &nStencil, n, &stencilList, n, &stencilWeights) >> ablate::checkError;
+//  PetscMalloc3(n, &nStencil, n, &stencilList, n, &stencilWeights) >> ablate::checkError;
 
-  for (i = 0; i < cEnd-cStart; ++i) {
-    nStencil[i] = 0;
-    stencilList[i] = NULL;
-    stencilWeights[i] = NULL;
-  }
+//  for (i = 0; i < cEnd-cStart; ++i) {
+//    nStencil[i] = 0;
+//    stencilList[i] = NULL;
+//    stencilWeights[i] = NULL;
+//  }
 
-  for (c = cStart; c < cEnd; ++c) {
-    i = c - cStart;
-    DMPlexGetNeighborCells(dm, c, -1, -1.0, minNumberCells, useVertices, &nStencil[i], &stencilList[i]);
-    rbf->Weights(c, nStencil[i], stencilList[i], nDer, dx, dy, dz, &stencilWeights[i]);
-  }
-  *nStencilOut = nStencil;
-  *stencilListOut = stencilList;
-  *stencilWeightsOut = stencilWeights;
+//  for (c = cStart; c < cEnd; ++c) {
+//    i = c - cStart;
+//    DMPlexGetNeighborCells(dm, c, -1, -1.0, minNumberCells, useVertices, &nStencil[i], &stencilList[i]);
+//    rbf->Weights(c, nStencil[i], stencilList[i], nDer, dx, dy, dz, &stencilWeights[i]);
+//  }
+//  *nStencilOut = nStencil;
+//  *stencilListOut = stencilList;
+//  *stencilWeightsOut = stencilWeights;
 
 }
 
 
 DerCalculator::DerCalculator(std::shared_ptr<RBF> rbf, PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]) {
 
-  // Set which derivatives are being computed
-  DerCalculator::nDer = nDer;
-  PetscMalloc1(nDer, &(DerCalculator::dxyz));
+//  // Set which derivatives are being computed
+//  DerCalculator::nDer = nDer;
+//  PetscMalloc1(nDer, &(DerCalculator::dxyz));
 
-  for (int i = 0; i < nDer; ++i) {
-    DerCalculator::dxyz[i] = dx[i]*100 + dy[i]*10 + dz[i];
-  }
+//  for (int i = 0; i < nDer; ++i) {
+//    DerCalculator::dxyz[i] = dx[i]*100 + dy[i]*10 + dz[i];
+//  }
 
-  DerCalculator::dm = rbf->GetDM();
+//  DerCalculator::dm = rbf->GetDM();
 
 
-  // Now determine the actual stencils
-  DerCalculator::SetupDerivativeStencils(rbf, nDer, dx, dy, dz, &(DerCalculator::nStencil), &(DerCalculator::stencilList), &(DerCalculator::stencilWeights));
+//  // Now determine the actual stencils
+//  DerCalculator::SetupDerivativeStencils(rbf, nDer, dx, dy, dz, &(DerCalculator::nStencil), &(DerCalculator::stencilList), &(DerCalculator::stencilWeights));
 
 }
 
