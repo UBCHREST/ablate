@@ -3,7 +3,7 @@
 
 using namespace ablate::levelSet;
 
-void LevelSetField::Normal2D(PetscInt c, PetscReal *n) {
+void LevelSetField::Normal2D(PetscInt c, PetscScalar *n) {
 
   PetscReal             cx, cy, g;
   Vec                   phi = LevelSetField::phi;
@@ -11,10 +11,12 @@ void LevelSetField::Normal2D(PetscInt c, PetscReal *n) {
 
   cx = rbf->EvalDer(phi, c, 1, 0, 0);
   cy = rbf->EvalDer(phi, c, 0, 1, 0);
-  g = sqrt(cx*cx + cy*cy);
+  g = PetscSqrtReal(cx*cx + cy*cy);
 
   n[0] = cx/g;
   n[1] = cy/g;
+
+
 }
 
 void LevelSetField::Normal3D(PetscInt c, PetscReal *n) {
@@ -209,15 +211,15 @@ LevelSetField::LevelSetField(std::shared_ptr<RBF> rbf, LevelSetField::levelSetSh
 //  VecGhostUpdateEnd(LevelSetField::normal, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
 
 
-//  // Curvature
-//  VecGetArray(LevelSetField::curv, &val) >> ablate::checkError;
-//  for (c = cStart; c < cEnd; ++c) {
-//    i = c - cStart;
-//    val[i] = LevelSetField::Curvature(i);
-//  }
-//  VecRestoreArray(LevelSetField::curv, &val) >> ablate::checkError;
-//  VecGhostUpdateBegin(LevelSetField::curv, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
-//  VecGhostUpdateEnd(LevelSetField::curv, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
+  // Curvature
+  VecGetArray(LevelSetField::curv, &val) >> ablate::checkError;
+  for (c = cStart; c < cEnd; ++c) {
+    i = c - cStart;
+    val[i] = LevelSetField::Curvature(i);
+  }
+  VecRestoreArray(LevelSetField::curv, &val) >> ablate::checkError;
+  VecGhostUpdateBegin(LevelSetField::curv, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
+  VecGhostUpdateEnd(LevelSetField::curv, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
 
 }
 

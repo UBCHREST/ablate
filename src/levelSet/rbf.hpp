@@ -44,10 +44,6 @@ class RBF {
     // Setup the derivative stencil at a point. There is no need for anyone outside of RBF to call this
     void SetupDerivativeStencils(PetscInt c);
 
-    PetscReal EvalDer_Internal(Vec f, PetscInt der, PetscInt nDer, PetscInt nStencil, PetscInt lst[], PetscReal wt[]);
-
-
-
     PetscBool forInterpolation = PETSC_FALSE;
 
 

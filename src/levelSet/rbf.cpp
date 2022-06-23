@@ -46,7 +46,7 @@ void RBF::SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt d
 
   PetscMalloc4(n, &(RBF::nStencil), n, &(RBF::stencilList), n, &(RBF::stencilWeights), 3*nDer, &(RBF::dxyz)) >> ablate::checkError;
 
-  // Offset the indices so that we can use stratum ordering
+  // Offset the indices so that we can use stratum numbering
   RBF::nStencil -= cStart;
   RBF::stencilList -= cStart;
   RBF::stencilWeights -= cStart;
@@ -83,7 +83,8 @@ void RBF::SetupDerivativeStencils(PetscInt c) {
 
 void RBF::SetupDerivativeStencils() {
   PetscInt c, cStart, cEnd;
-
+printf("Shouldn't be here\n");
+exit(0);
   DMPlexGetHeightStratum(RBF::dm, 0, &cStart, &cEnd) >> ablate::checkError;      // Range of cells
 
   for (c = cStart; c < cEnd; ++c) {
@@ -95,46 +96,19 @@ void RBF::SetupDerivativeStencils() {
 
 
 
-
-// Evaluate a derivative from a stencil list
-// f - Vector cotaining the data
-// der - The particular derivative to evaluate
-// nDer - The total number of derivatives computed
-// nStencil - The length of the stencil
-// lst - List of cell IDs
-// wt - The weights, arranged in row-major ordering.
-PetscReal RBF::EvalDer_Internal(Vec f, PetscInt der, PetscInt nDer, PetscInt nStencil, PetscInt lst[], PetscReal wt[]) {
-
-  PetscReal       val = 0.0, *array;
-  PetscInt        i;
-
-  VecGetArray(f, &array) >> ablate::checkError;
-
-  for (i = 0; i < nStencil; ++i) {
-    val += wt[i*nDer + der]*array[lst[i]];
-  }
-
-  VecRestoreArray(f, &array) >> ablate::checkError;
-
-  return val;
-
-}
-
 // Return the requested derivative
 // f - Vector containing the data
 // c - Location to evaluate at
 // dx, dy, dz - The derivatives
 PetscReal RBF::EvalDer(Vec f, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz){
 
-  PetscInt  id = -1;
-  PetscInt  nDer = RBF::nDer;
-  PetscInt  *dxyz = RBF::dxyz;
-  PetscReal val = 0.0;
+  PetscInt  derID = -1, nDer = RBF::nDer, *dxyz = RBF::dxyz;
+  PetscReal val = 0.0, *array;
 
   // Search for the particular index. Probably need to do something different in the future to avoid re-doing the same calculation many times
-  while (dxyz[++id*3 + 0] != dx && dxyz[id*3 + 1] != dy && dxyz[id*3 + 2] != dz && id<nDer){ }
+  while ((dxyz[++derID*3 + 0] != dx || dxyz[derID*3 + 1] != dy || dxyz[derID*3 + 2] != dz) && derID<nDer){ }
 
-  if (id==nDer) {
+  if (derID==nDer) {
     throw std::invalid_argument("Derivative of (" + std::to_string(dx) + ", " + std::to_string(dy) + ", " + std::to_string(dz) + ") is not setup.");
   }
 
@@ -143,20 +117,23 @@ PetscReal RBF::EvalDer(Vec f, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz)
     RBF::SetupDerivativeStencils(c);
   }
 
-  val = RBF::EvalDer_Internal(f, id, nDer, RBF::nStencil[c], RBF::stencilList[c], RBF::stencilWeights[c]);
+  PetscReal *wt = RBF::stencilWeights[c];
+  PetscInt  cStart, nStencil = RBF::nStencil[c], *lst = RBF::stencilList[c];
+
+  DMPlexGetHeightStratum(RBF::dm, 0, &cStart, NULL) >> ablate::checkError;      // Range of cells
+
+  VecGetArray(f, &array) >> ablate::checkError;
+
+
+  for (PetscInt i = 0; i < nStencil; ++i) {
+    val += wt[i*nDer + derID]*array[lst[i] - cStart];
+  }
+
+  VecRestoreArray(f, &array) >> ablate::checkError;
 
   return val;
 
 }
-
-
-
-
-
-
-
-
-
 
 void RBF::ShowParameters(){
   PetscPrintf(PETSC_COMM_WORLD, "RBF Parameters\n");
