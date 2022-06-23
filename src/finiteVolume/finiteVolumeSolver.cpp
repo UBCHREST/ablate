@@ -12,68 +12,15 @@ ablate::finiteVolume::FiniteVolumeSolver::FiniteVolumeSolver(std::string solverI
     : CellSolver(std::move(solverId), std::move(region), std::move(options)),
       computePhysicsTimeStep(computePhysicsTimeStep),
       processes(std::move(processes)),
-      boundaryConditions(std::move(boundaryConditions)) {}
-
-ablate::finiteVolume::FiniteVolumeSolver::~FiniteVolumeSolver() {
-    if (solverRegionMinusGhost) {
-        ISDestroy(&solverRegionMinusGhost) >> checkError;
-    }
-}
+      boundaryConditions(std::move(boundaryConditions)),
+      solverRegionMinusGhost(std::make_shared<domain::Region>(solverId + "_minusGhost")) {}
 
 void ablate::finiteVolume::FiniteVolumeSolver::Setup() {
     ablate::solver::CellSolver::Setup();
 
-    {  // get the cell is for the solver minus ghost cell
-        // Get the original range
-        solver::Range cellRange;
-        GetCellRange(cellRange);
-
-        // There may be no cells is this solver, so check and return solverRegionMinusGhost
-        if (cellRange.start == cellRange.end) {
-            solverRegionMinusGhost = nullptr;
-            RestoreRange(cellRange);
-            return;
-        }
-
-        // Get the cell depth
-        PetscInt cellDepth;
-        DMPlexGetDepth(subDomain->GetDM(), &cellDepth) >> checkError;
-
-        // Get the ghost cell label
-        DMLabel ghostLabel;
-        DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
-        IS ghostIS;
-        DMLabelGetStratumIS(ghostLabel, 1, &ghostIS) >> checkError;
-
-        // remove the mpi ghost cells
-        IS solverMinusMpiGhost;
-        ISDifference(cellRange.is, ghostIS, &solverMinusMpiGhost) >> checkError;
-        if (solverMinusMpiGhost) {
-            // Now march over each cell and remove it if it is an exterior boundary cell
-
-            PetscInt ghostStart, ghostEnd;
-            DMPlexGetGhostCellStratum(subDomain->GetDM(), &ghostStart, &ghostEnd) >> checkError;
-            IS bcGhostIS;
-            ISCreateStride(PETSC_COMM_SELF, ghostEnd - ghostStart, ghostStart, 1, &bcGhostIS) >> checkError;
-            if (bcGhostIS) {
-                // remove the bc ghost
-                ISDifference(solverMinusMpiGhost, bcGhostIS, &solverRegionMinusGhost) >> checkError;
-                ISDestroy(&solverMinusMpiGhost) >> checkError;
-                ISDestroy(&bcGhostIS) >> checkError;
-            } else {
-                // just set the value
-                solverRegionMinusGhost = solverMinusMpiGhost;
-            }
-        }
-
-        // restore the cell range
-        RestoreRange(cellRange);
-        ISDestroy(&ghostIS) >> checkError;
-    }
-
     // march over process and link to the flow
     for (const auto& process : processes) {
-        process->Initialize(*this);
+        process->Setup(*this);
     }
 
     // Set the flux calculator solver for each component
@@ -128,6 +75,50 @@ void ablate::finiteVolume::FiniteVolumeSolver::Initialize() {
     }
     if (!timeStepFunctions.empty() && computePhysicsTimeStep) {
         RegisterPreStep(EnforceTimeStep);
+    }
+
+    {  // get the cell is for the solver minus ghost cell
+        // Get the original range
+        solver::Range cellRange;
+        GetCellRange(cellRange);
+
+        // create a new label
+        auto dm = GetSubDomain().GetDM();
+        DMCreateLabel(dm, solverRegionMinusGhost->GetName().c_str()) >> checkError;
+        DMLabel solverRegionMinusGhostLabel;
+        PetscInt solverRegionMinusGhostValue;
+        domain::Region::GetLabel(solverRegionMinusGhost, dm, solverRegionMinusGhostLabel, solverRegionMinusGhostValue);
+
+        // Get the ghost cell label
+        DMLabel ghostLabel;
+        DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+
+        // check if it is an exterior boundary cell ghost
+        PetscInt boundaryCellStart;
+        DMPlexGetGhostCellStratum(dm, &boundaryCellStart, nullptr) >> checkError;
+
+        // march over every cell
+        for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+            PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+
+            // check if it is boundary ghost
+            PetscInt isGhost = -1;
+            if (ghostLabel) {
+                DMLabelGetValue(ghostLabel, cell, &isGhost) >> checkError;
+            }
+
+            PetscInt owned;
+            DMPlexGetPointGlobal(dm, cell, &owned, nullptr) >> checkError;
+            if (owned >= 0 && isGhost < 0 && (boundaryCellStart < 0 || cell < boundaryCellStart)) {
+                DMLabelSetValue(solverRegionMinusGhostLabel, cell, solverRegionMinusGhostValue);
+            }
+        }
+        RestoreRange(cellRange);
+    }
+
+    // march over process and link to the new mesh
+    for (const auto& process : processes) {
+        process->Initialize(*this);
     }
 }
 
@@ -345,8 +336,12 @@ void ablate::finiteVolume::FiniteVolumeSolver::Restore(PetscViewer viewer, Petsc
 
 void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(solver::Range& faceRange) const {
     // Get the point range
-    faceRange.is = solverRegionMinusGhost;
-    if (solverRegionMinusGhost == nullptr) {
+    DMLabel solverRegionMinusGhostLabel;
+    PetscInt solverRegionMinusGhostValue;
+    domain::Region::GetLabel(solverRegionMinusGhost, GetSubDomain().GetDM(), solverRegionMinusGhostLabel, solverRegionMinusGhostValue);
+
+    DMLabelGetStratumIS(solverRegionMinusGhostLabel, solverRegionMinusGhostValue, &faceRange.is) >> checkError;
+    if (faceRange.is == nullptr) {
         // There are no points in this region, so skip
         faceRange.start = 0;
         faceRange.end = 0;
@@ -354,7 +349,6 @@ void ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(solver::
     } else {
         // Get the range
         ISGetPointRange(faceRange.is, &faceRange.start, &faceRange.end, &faceRange.points) >> checkError;
-        PetscObjectReference((PetscObject)solverRegionMinusGhost) >> checkError;
     }
 }
 

@@ -20,6 +20,16 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
 }
 ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {}
 
+void ablate::finiteVolume::processes::TChemReactions::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
+    // Before each step, compute the source term over the entire dt
+    auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+    flow.RegisterPreStage(chemistryPreStage);
+
+    // Add the rhs point function for the source
+    flow.RegisterRHSFunction(AddChemistrySourceToFlow, this);
+}
+
+
 void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // determine the number of nodes we need to compute based upon the local solver
     solver::Range cellRange;
@@ -53,7 +63,7 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     timeAdvanceDefault._dtmax = dtMax;
     timeAdvanceDefault._max_num_newton_iterations = 100;
     timeAdvanceDefault._num_time_iterations_per_interval = 100000;
-    timeAdvanceDefault._num_outer_time_iterations_per_interval = 1;
+    timeAdvanceDefault._num_outer_time_iterations_per_interval = 10;
     timeAdvanceDefault._jacobian_interval = 1;
 
     // Copy the default values to device
@@ -89,18 +99,10 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     kineticModelGasConstDataDevice = TChem::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(eos->GetKineticModelData());
     kineticModelDataClone = eos->GetKineticModelData().clone(numberCells);
     kineticModelGasConstDataDevices = TChem::createGasKineticModelConstData<typename Tines::UseThisDevice<exec_space>::type>(kineticModelDataClone);
-
-    // Before each step, compute the source term over the entire dt
-    auto chemistryPreStage = std::bind(&ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-    flow.RegisterPreStage(chemistryPreStage);
-
-    // Add the rhs point function for the source
-    flow.RegisterRHSFunction(AddChemistrySourceToFlow, this);
 }
 
 PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPreStage(TS flowTs, ablate::solver::Solver& solver, PetscReal stagetime) {
     PetscFunctionBegin;
-
     // get time step information from the ts
     PetscInt stepNumber;
     PetscCall(TSGetStepNumber(flowTs, &stepNumber));

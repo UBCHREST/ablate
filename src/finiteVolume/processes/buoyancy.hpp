@@ -30,7 +30,7 @@ class Buoyancy : public FlowProcess {
 
    public:
     explicit Buoyancy(std::vector<double> buoyancyVector);
-    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
 };
 
 }  // namespace ablate::finiteVolume::processes

@@ -61,13 +61,12 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
     //! hold the class responsible for compute cell based values;
     std::unique_ptr<CellInterpolant> cellInterpolant = nullptr;
 
-    //!! Store an IS of all cells not in the ghost for faster iteration
-    IS solverRegionMinusGhost = nullptr;
+    //!! Store an region of all cells not in the ghost for faster iteration
+    std::shared_ptr<domain::Region> solverRegionMinusGhost;
 
    public:
     FiniteVolumeSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<std::shared_ptr<processes::Process>> flowProcesses,
                        std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep = false);
-    ~FiniteVolumeSolver() override;
 
     /** SubDomain Register and Setup **/
     void Setup() override;

@@ -39,7 +39,7 @@ class ConstantPressureFix : public FlowProcess {
      * Function to setup UpdateDensityForConstantPressure
      * @return
      */
-    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
 };
 
 }  // namespace ablate::finiteVolume::processes

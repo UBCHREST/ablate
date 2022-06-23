@@ -34,7 +34,7 @@ class ArbitrarySource : public Process {
      * public function to link this process with the fvm solver
      * @param flow
      */
-    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fvmSolver) override;
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver& fvmSolver) override;
 };
 
 }  // namespace ablate::finiteVolume::processes

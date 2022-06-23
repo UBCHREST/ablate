@@ -56,7 +56,7 @@ class SpeciesTransport : public FlowProcess {
      * public function to link this process with the flow
      * @param flow
      */
-    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) override;
 
     /**
      * Function to compute the mass fraction. This function assumes that the input values will be {"euler", "densityYi"}
