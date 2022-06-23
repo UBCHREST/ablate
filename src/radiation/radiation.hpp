@@ -87,6 +87,8 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
         PetscReal xdir;
         PetscReal ydir;
         PetscReal zdir;
+        PetscInt current;
+        PetscReal hhere;
     };
 
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells

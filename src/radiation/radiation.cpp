@@ -175,6 +175,7 @@ void ablate::radiation::Radiation::RayInit() {
                 virtualcoord[ipart].x = cellGeom->centroid[0];
                 virtualcoord[ipart].y = cellGeom->centroid[1];
                 virtualcoord[ipart].z = cellGeom->centroid[2];
+                virtualcoord[ipart].current = -1;  //!< Set this to a null value so that it can't get confused about where it starts.
 
                 /** Get the initial direction of the search particle from the angle number that it was initialized with */
                 theta = ((double)ntheta / (double)nTheta) * pi;  //!< Theta angle of the ray
@@ -234,11 +235,19 @@ void ablate::radiation::Radiation::RayInit() {
          * Step every particle in the domain one step and then perform a migration
          * */
         PetscInt index;
+        PetscInt size;
         Vec intersect;
-        PetscInt i[3] = {0, 1, 2}; //!< Establish the vector here so that it can be iterated.
+        VecCreate(PETSC_COMM_SELF, &intersect);  //!< Instantiates the vector
+        VecSetBlockSize(intersect, dim);
+        PetscInt i[3] = {0, 1, 2};              //!< Establish the vector here so that it can be iterated.
         for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                 //!< particles then pass out of initialization.
             ipart = ip;                         //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy
+
+            /** Increase the size of the vector so that it can hold more values in the next step of checking this point. */
+            VecGetLocalSize(intersect, &size);                 //!< Get the size so that it can be iterated on
+            VecSetSizes(intersect, PETSC_DECIDE, size + dim);  //!< Add another block size to the vector
+            VecSetFromOptions(intersect);                      //!< Finalize the setting
 
             /** Update the physical coordinate field so that the real particle location can be updated. */
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
@@ -273,23 +282,19 @@ void ablate::radiation::Radiation::RayInit() {
             //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a position vector in the current angle position
 
             /** This block creates the vector pointing to the cell whose index will be stored during the current loop*/
-            VecCreate(PETSC_COMM_SELF, &intersect);  //!< Instantiates the vector
-            VecSetBlockSize(intersect, dim);
-            VecSetSizes(intersect, PETSC_DECIDE, dim);  //!< Set size
-            VecSetFromOptions(intersect);
             VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
-            i[0]++;
-            i[1]++;
-            i[2]++;
+            i[0] += dim;                                               //!< Iterate the index by the number of dimensions so that the DMLocatePoints function can be called collectively.
+            i[1] += dim;
+            i[2] += dim;
         }
 
         /** Loop through points to try to get the cell that is sitting on that point*/
         PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
-        DMLocatePoints(subDomain->GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF); //!< Call DMLocatePoints here, all of the processes have to call it at once.
+        DMLocatePoints(subDomain->GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF);  //!< Call DMLocatePoints here, all of the processes have to call it at once.
 
         /** An array that maps each point to its containing cell can be obtained with the below
-             * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
-             * */
+         * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
+         * */
         PetscInt nFound;
         const PetscInt* point = nullptr;
         const PetscSFNode* cell = nullptr;
@@ -309,34 +314,28 @@ void ablate::radiation::Radiation::RayInit() {
                 index = -1;
             }
 
-            bool add = false;
             if (index > -1) {
-                rays[Key(identifier[ipart])].cells.push_back(index);
-                add = true;
+                if (virtualcoord[ipart].current != index) {
+                    /** ********************************************
+                     * Adaptive stepping stuff should probably live here and will need to be added to after each time the position is updated
+                     * The current cell should be added before the loop begins*/
+                    rays[Key(identifier[ipart])].cells.push_back(index);
+                    rays[Key(identifier[ipart])].h.push_back(hhere);  //!< Add this space step if the current index is being added.
+                    virtualcoord[ipart].hhere = 0;
+                    virtualcoord[ipart].current = index;  //!< Sets the current cell for the adaptive space stepping to compare against
+                } else {
+                    virtualcoord[ipart].hhere += hstep;  //!< If the cell is not different then we simply increase the stored path length by one step.
+                }
             }
 
-            /** ********************************************
-             * Adaptive stepping stuff should probably live here and will need to be added to after each time the position is updated
-             * The current cell should be added before the loop begins*/
-            hhere = 0;
-            PetscInt currentCell = index;  //!< Sets the current cell for the adaptive space stepping to compare against
-            while (currentCell == index && index != -1) {
-                /** Step the vector forward in space until it is no longer in the cell it was ins
-                 * After the coordinates have left the cell it was it, the coordinates of the particle should be updated
-                 * Update the coordinates of the particle (virtual and physical)
-                 * */
-                virtualcoord[ipart].x += virtualcoord[ipart].xdir;  //!< x component: add one step to the coordinate position
-                virtualcoord[ipart].y += virtualcoord[ipart].ydir;  //!< y component: add one step to the coordinate position
-                virtualcoord[ipart].z +=
-                    virtualcoord[ipart].zdir;  //!< z component: add one step to the coordinate position
-                                               //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
-                hhere += hstep;
-                index = GetCell(ipart, virtualcoord);  //!< Check whether the virtual coordinates have left the cell or not
-            }
-
-            if (add) {
-                rays[Key(identifier[ipart])].h.push_back(hhere);  //!< Add this space step if the current index is being added.
-            }
+            /** Step the vector forward in space until it is no longer in the cell it was ins
+             * After the coordinates have left the cell it was it, the coordinates of the particle should be updated
+             * Update the coordinates of the particle (virtual and physical)
+             * */
+            virtualcoord[ipart].x += virtualcoord[ipart].xdir;  //!< x component: add one step to the coordinate position
+            virtualcoord[ipart].y += virtualcoord[ipart].ydir;  //!< y component: add one step to the coordinate position
+            virtualcoord[ipart].z += virtualcoord[ipart].zdir;  //!< z component: add one step to the coordinate position
+                                                                //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
 
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
                                                             //            PetscPrintf(MPI_COMM_WORLD, "Point Step\n");
