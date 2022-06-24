@@ -1,3 +1,4 @@
+#include <yaml-cpp/yaml.h>
 #include "chemistry/chemTabModel.hpp"
 #include "gtest/gtest.h"
 #include "localPath.hpp"
@@ -17,9 +18,6 @@
     SUCCEED() << "Test is only applicable when built without TensorFlow"; \
     return;
 #endif
-
-// verified working template (now for auto-generation)
-#include "test_targets.h"
 
 /*******************************************************************************************************
  * This test ensure that the chemTabModel can be created using the input file
@@ -47,135 +45,128 @@ TEST(ChemTabModelTests, ShouldCreateFromRegistar) {
 }
 
 /*******************************************************************************************************
- * Tests for getting the species and progress variables
+ * Tests for expected input/outputs
  */
-struct ChemTabModelGetSpeciesAndProgressVariableTestParameters {
+struct ChemTabModelTestParameters {
     std::string modelPath;
-    std::vector<std::string> expectedSpecies;
-    std::vector<std::string> expectedProgressVariables;
+    std::string testTargetFile;
 };
-class ChemTabModelGetSpeciesAndProgressVariableTestFixture : public testing::TestWithParam<ChemTabModelGetSpeciesAndProgressVariableTestParameters> {};
+class ChemTabModelTestFixture : public testing::TestWithParam<ChemTabModelTestParameters> {
+   protected:
+    YAML::Node testTargets;
 
-TEST_P(ChemTabModelGetSpeciesAndProgressVariableTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
+    void SetUp() override {
+        testTargets = YAML::LoadFile(GetParam().testTargetFile);
+
+        // this should be an array
+        if (!testTargets.IsSequence()) {
+            FAIL() << "The provided test targets " + GetParam().testTargetFile + " must be an sequence.";
+        }
+    }
+};
+
+TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
-    // arrange
-    ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
+    // iterate over each test
+    for (const auto& testTarget : testTargets) {
+        // arrange
+        ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
 
-    // act
-    auto actualSpecies = chemTabModel.GetSpecies();
-    auto actualProgressVariables = chemTabModel.GetProgressVariables();
+        // act
+        auto actualSpecies = chemTabModel.GetSpecies();
+        auto actualProgressVariables = chemTabModel.GetProgressVariables();
 
-    // assert
-    EXPECT_EQ(GetParam().expectedSpecies, actualSpecies);
-    EXPECT_EQ(GetParam().expectedProgressVariables, actualProgressVariables);
+        // assert
+        EXPECT_EQ(testTarget["species_names"].as<std::vector<std::string>>(), actualSpecies) << "should compute correct species name for model " << testTarget["testName"].as<std::string>();
+        EXPECT_EQ(testTarget["cpv_names"].as<std::vector<std::string>>(), actualProgressVariables) << "should compute correct cpv names for model " << testTarget["testName"].as<std::string>();
+    }
 }
-
-INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelGetSpeciesAndProgressVariableTestFixture,
-                         testing::Values((ChemTabModelGetSpeciesAndProgressVariableTestParameters){
-                             .modelPath = "inputs/chemistry/chemTabTestModel_1", .expectedSpecies = {SPECIES_NAMES}, .expectedProgressVariables = {CPV_NAMES}}));
 
 /*******************************************************************************************************
  * Tests for getting the Compute Mass Fractions Functions
  */
-struct ChemTabModelComputeMassFractionsFunctionParameters {
-    std::string modelPath;
-    std::vector<PetscReal> inputProgressVariables;
-    std::vector<PetscReal> expectedMassFractions;
-};
-class ChemTabModelComputeMassFractionsFunctionFixture : public testing::TestWithParam<ChemTabModelComputeMassFractionsFunctionParameters> {};
-
-TEST_P(ChemTabModelComputeMassFractionsFunctionFixture, ShouldComputeCorrectMassFractions) {
+TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
-    // arrange
-    ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
-    auto chemTabModelComputeMassFractionsFunction = chemTabModel.GetComputeMassFractionsFunction();
-    auto ctx = chemTabModel.GetContext();
+    // iterate over each test
+    for (const auto& testTarget : testTargets) {
+        // arrange
+        ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
+        auto chemTabModelComputeMassFractionsFunction = chemTabModel.GetComputeMassFractionsFunction();
+        auto ctx = chemTabModel.GetContext();
+        auto expectedMassFractions = testTarget["output_mass_fractions"].as<std::vector<double>>();
+        auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
 
-    // act
-    std::vector<PetscReal> actual(GetParam().expectedMassFractions.size());
-    chemTabModelComputeMassFractionsFunction(GetParam().inputProgressVariables.data(), GetParam().inputProgressVariables.size(), actual.data(), actual.size(), ctx);
+        // act
+        std::vector<PetscReal> actual(expectedMassFractions.size());
+        chemTabModelComputeMassFractionsFunction(inputProgressVariables.data(), inputProgressVariables.size(), actual.data(), actual.size(), ctx);
 
-    // assert
-    for (std::size_t r = 0; r < actual.size(); r++) {
-        EXPECT_FLOAT_EQ(GetParam().expectedMassFractions[r], actual[r]) << "The value for [" << r << "] is incorrect";
+        // assert
+        for (std::size_t r = 0; r < actual.size(); r++) {
+            EXPECT_FLOAT_EQ(expectedMassFractions[r], actual[r]) << "The value for [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
+        }
     }
 }
-
-INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeMassFractionsFunctionFixture,
-                         testing::Values((ChemTabModelComputeMassFractionsFunctionParameters){
-                             .modelPath = "inputs/chemistry/chemTabTestModel_1", .inputProgressVariables = {INPUT_CPVS}, .expectedMassFractions = {OUTPUT_MASS_FRACTIONS}}));
 
 /*******************************************************************************************************
  * Tests for getting the Source and Source Energy Predictions
  */
-struct ChemTabModelComputeSourceFunctionParameters {
-    std::string modelPath;
-    std::vector<PetscReal> inputProgressVariables;
-    std::vector<PetscReal> expectedSource;
-    PetscReal expectedSourceEnergy;
-};
-class ChemTabModelComputeSourceFunctionFixture : public testing::TestWithParam<ChemTabModelComputeSourceFunctionParameters> {};
-
-TEST_P(ChemTabModelComputeSourceFunctionFixture, ShouldComputeCorrectSource) {
+TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
-    // arrange
-    ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
-    auto chemTabModelComputeSourceFunction = chemTabModel.GetComputeSourceFunction();
-    auto ctx = chemTabModel.GetContext();
+    // iterate over each test
+    for (const auto& testTarget : testTargets) {
+        // arrange
+        ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
+        auto chemTabModelComputeSourceFunction = chemTabModel.GetComputeSourceFunction();
+        auto ctx = chemTabModel.GetContext();
+        auto inputProgressVariables = testTarget["input_cpvs"].as<std::vector<double>>();
+        auto expectedSourceEnergy = testTarget["output_source_energy"].as<double>();
+        auto expectedSource = testTarget["output_source_terms"].as<std::vector<double>>();
 
-    // act
-    // Size up the results based upon expected
-    std::vector<PetscReal> actual(GetParam().expectedSource.size());
-    PetscReal actualSourceEnergy;
-    chemTabModelComputeSourceFunction(GetParam().inputProgressVariables.data(), GetParam().inputProgressVariables.size(), &actualSourceEnergy, actual.data(), actual.size(), ctx);
+        // act
+        // Size up the results based upon expected
+        std::vector<PetscReal> actual(expectedSource.size());
+        PetscReal actualSourceEnergy;
+        chemTabModelComputeSourceFunction(inputProgressVariables.data(), inputProgressVariables.size(), &actualSourceEnergy, actual.data(), actual.size(), ctx);
 
-    // assert
-    EXPECT_FLOAT_EQ(GetParam().expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect";
-    for (std::size_t r = 0; r < actual.size(); r++) {
-        auto percentDifference = PetscAbs((GetParam().expectedSource[r] - actual[r]) / (0.5 * (GetParam().expectedSource[r] + actual[r])));
-        ASSERT_LT(percentDifference, 5.0E-6) << " the percent difference of (" << GetParam().expectedSource[r] << ", " << actual[r] << ") should be less than 5.0E-6 for index [" << r << "] ";
-        // EXPECT_FLOAT_EQ(GetParam().expectedSource[r], actual[r]) << "The value for index [" << r << "] is incorrect";
+        // assert
+        EXPECT_FLOAT_EQ(expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
+        for (std::size_t r = 0; r < actual.size(); r++) {
+            auto percentDifference = PetscAbs(expectedSource[r] - actual[r]) / (0.5 * (expectedSource[r] + actual[r]));
+            ASSERT_LT(percentDifference, 5.0E-6) << " the percent difference of (" << expectedSource[r] << ", " << actual[r] << ") should be less than 5.0E-6 for index [" << r << "] for model "
+                                                 << testTarget["testName"].as<std::string>();
+        }
     }
 }
-
-INSTANTIATE_TEST_SUITE_P(
-    ChemTabModelTests, ChemTabModelComputeSourceFunctionFixture,
-    testing::Values((ChemTabModelComputeSourceFunctionParameters){
-        .modelPath = "inputs/chemistry/chemTabTestModel_1", .inputProgressVariables = {INPUT_CPVS}, .expectedSource = {OUTPUT_SOURCE_TERMS}, .expectedSourceEnergy = OUTPUT_SOURCE_ENERGY}));
 
 /*******************************************************************************************************
  * Tests for getting the Progress Variables
  */
-struct ChemTabModelComputeProgressVariablesParameters {
-    std::string modelPath;
-    std::vector<PetscReal> inputMassFractions;
-    std::vector<PetscReal> expectedProgressVariables;
-};
-class ChemTabModelComputeProgressVariablesFixture : public testing::TestWithParam<ChemTabModelComputeProgressVariablesParameters> {};
-
-TEST_P(ChemTabModelComputeProgressVariablesFixture, ShouldComputeCorrectProgressVariables) {
+TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
     ONLY_WITH_TENSORFLOW_CHECK;
 
-    // arrange
-    ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
+    for (const auto& testTarget : testTargets) {
+        // arrange
+        ablate::chemistry::ChemTabModel chemTabModel(GetParam().modelPath);
+        auto expectedProgressVariables = testTarget["output_cpvs"].as<std::vector<double>>();
+        auto inputMassFractions = testTarget["input_mass_fractions"].as<std::vector<double>>();
 
-    // act
-    // Size up the results based upon expected
-    std::vector<PetscReal> actual(GetParam().expectedProgressVariables.size());
-    chemTabModel.ComputeProgressVariables(GetParam().inputMassFractions.data(), GetParam().inputMassFractions.size(), actual.data(), actual.size());
+        // act
+        // Size up the results based upon expected
+        std::vector<PetscReal> actual(expectedProgressVariables.size());
+        chemTabModel.ComputeProgressVariables(inputMassFractions.data(), inputMassFractions.size(), actual.data(), actual.size());
 
-    // assert
-    for (std::size_t r = 0; r < actual.size(); r++) {
-        EXPECT_FLOAT_EQ(GetParam().expectedProgressVariables[r], actual[r]) << "The value for input set [" << r << "] is incorrect";
+        // assert
+        for (std::size_t r = 0; r < actual.size(); r++) {
+            EXPECT_FLOAT_EQ(expectedProgressVariables[r], actual[r]) << "The value for input set [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
+        }
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelComputeProgressVariablesFixture,
-                         testing::Values((ChemTabModelComputeProgressVariablesParameters){
-                             .modelPath = "inputs/chemistry/chemTabTestModel_1", .inputMassFractions = {INPUT_MASS_FRACTIONS}, .expectedProgressVariables = {OUTPUT_CPVS}}));
+INSTANTIATE_TEST_SUITE_P(ChemTabModelTests, ChemTabModelTestFixture,
+                         testing::Values((ChemTabModelTestParameters){.modelPath = "inputs/chemistry/chemTabTestModel_1", .testTargetFile = "inputs/chemistry/chemTabTestModel_1/testTargets.yaml"}));
 
 /*********************************************************************************************************
  * Test for when tensorflow is not available
