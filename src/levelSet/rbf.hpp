@@ -22,29 +22,30 @@ class RBF {
     DM        dm = nullptr;             // For now just use the entire DM. When this is moved over to the Domain/Subdomain class this will be modified.
     PetscInt  minNumberCells = -1;      // Minimum number of cells needed to compute the RBF
     PetscBool useVertices = PETSC_TRUE; // Use vertices or edges/faces when computing neighbor cells
+    PetscInt  cStart = -1, cEnd = -1;
 
     // Compute the LU-decomposition of the augmented RBF matrix given a cell list.
-    void Matrix(PetscInt c, PetscInt nCells, PetscInt list[], PetscReal x[], Mat *LUA);
+    void Matrix(PetscInt c, PetscReal **x, Mat *LUA);
 
-
-
-    // The finite difference weights for derivatives
-    void Weights(PetscInt c, PetscInt nCells, PetscInt list[], PetscInt nDer, PetscInt dxyz[], PetscReal *weights[]);
 
 
 
     // Derivative data
     PetscBool hasDerivativeInformation = PETSC_FALSE;
     PetscInt nDer = 0;                      // Number of derivative stencils which are pre-computed
-    PetscInt *dxyz = nullptr;
-    PetscInt *nStencil = nullptr;           // Length of each stencil
-    PetscInt **stencilList = nullptr;       // IDs of the points in the stencil
-    PetscReal **stencilWeights = nullptr;   // Weights of the points in the stencil
+    PetscInt *dxyz = nullptr;               // The derivatives which have been setup
+    PetscInt *nStencil = nullptr;           // Length of each stencil. Needed for both derivatives and interpolation.
+    PetscInt **stencilList = nullptr;       // IDs of the points in the stencil. Needed for both derivatives and interpolation.
+    PetscReal **stencilWeights = nullptr;   // Weights of the points in the stencil. Needed only for derivatives.
+    PetscReal **stencilXLocs = nullptr;     // Locations wrt a cell center. Needed only for interpolation.
 
     // Setup the derivative stencil at a point. There is no need for anyone outside of RBF to call this
     void SetupDerivativeStencils(PetscInt c);
 
-    PetscBool forInterpolation = PETSC_FALSE;
+    PetscBool hasInterpolation = PETSC_FALSE;
+    Mat *RBFMatrix = nullptr;
+
+
 
 
 
@@ -71,16 +72,20 @@ class RBF {
     // Return the mesh associated with the RBF
     inline DM& GetDM() noexcept { return dm; }
 
-    inline PetscInt GetNPoly() { return nPoly; }
 
-    // Setup all derivative stencils. Useful if someone wants to remove setup cost when testing
-    void SetupDerivativeStencils();
+
 
     // Derivative stuff
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[], PetscBool useVertices);
     void SetDerivatives(PetscInt nDer, PetscInt dx[], PetscInt dy[], PetscInt dz[]);
+    PetscReal EvalDer(Vec f, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);    // Evaluate a derivative
+    void SetupDerivativeStencils();   // Setup all derivative stencils. Useful if someone wants to remove setup cost when testing
 
-    PetscReal EvalDer(Vec f, PetscInt c, PetscInt dx, PetscInt dy, PetscInt dz);
+    // Interpolation stuff
+    void SetInterpolation(PetscBool hasInterpolation);
+    PetscReal Interpolate(Vec f, PetscInt c, PetscReal x[3]);
+
+
 
 
 

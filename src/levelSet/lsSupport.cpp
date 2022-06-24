@@ -13,7 +13,7 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxD
   PetscInt        cStart, cEnd, vStart, vEnd;
   PetscInt        cl, nClosure, *closure = NULL;
   PetscInt        st, nStar, *star = NULL;
-  PetscInt        n, list[100];  // As of right now just make it a list big enough to hold everything. There must be a better way of doing this.
+  PetscInt        n, list[10000];  // As of right now just make it a list big enough to hold everything. There must be a better way of doing this.
   PetscInt        i, dim;
   PetscReal       x0[3], x[3], dist;
   PetscErrorCode  ierr;
@@ -32,8 +32,6 @@ PetscErrorCode DMPlexGetNeighborCells_Internal(DM dm, PetscInt p, PetscReal maxD
   else {
     ierr = DMPlexGetHeightStratum(dm, 1, &vStart, &vEnd);CHKERRQ(ierr);     // Range of edges (2D) or faces (3D)
   }
-
-
 
   n = 0;
   ierr = DMPlexGetTransitiveClosure(dm, p, PETSC_TRUE, &nClosure, &closure);CHKERRQ(ierr); // All points associated with the cell
