@@ -44,6 +44,9 @@ class LevelSetField : public domain::FieldDescriptor {
     PetscReal Curvature(PetscInt c);
     void Normal(PetscInt c, PetscReal *n);
 
+    void ComputeAllCurvature();
+    void ComputeAllNormal();
+
    private:
     // Copied from current ABLATE code. Need to talk to Matt M. about how to integrate
     const std::shared_ptr<domain::Region> region = nullptr;
