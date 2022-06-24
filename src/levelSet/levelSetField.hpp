@@ -11,7 +11,6 @@
 #include "domain/fieldDescription.hpp"
 #include "utilities/petscError.hpp"
 #include "rbf.hpp"
-#include "der.hpp"
 
 
 
