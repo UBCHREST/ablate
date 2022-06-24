@@ -112,11 +112,11 @@ void ablate::radiation::Radiation::RayInit() {
     PetscInt nsolvepoints = 0;                                                   //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
-    DMCreate(PETSC_COMM_SELF, &radsearch);
+    DMCreate(subDomain->GetComm(), &radsearch);
     DMSetType(radsearch, DMSWARM);
     DMSetDimension(radsearch, dim);
 
-    DMCreate(PETSC_COMM_SELF, &radsolve);
+    DMCreate(subDomain->GetComm(), &radsolve);
     DMSetType(radsolve, DMSWARM);
     DMSetDimension(radsolve, dim);
 
@@ -140,13 +140,13 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmSetLocalSizes(radsearch, npoints, 0);  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
     DMSwarmSetLocalSizes(radsolve, 0, 0);         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
-    MPI_Comm_size(MPI_COMM_WORLD, &numRanks);  //!< Get the number of ranks in the simulation.
+    MPI_Comm_size(subDomain->GetComm(), &numRanks);  //!< Get the number of ranks in the simulation.
 
     /** Set the spatial step size to the minimum cell radius */
     PetscReal hstep = minCellRadius;
 
     PetscInt rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);  //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
+    MPI_Comm_rank(subDomain->GetComm(), &rank);  //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
 
     /** Declare some information associated with the field declarations */
     PetscReal* coord;                    //!< Pointer to the coordinate field information
@@ -210,7 +210,7 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
     //    if (log) {
-    PetscPrintf(MPI_COMM_WORLD, "Particles Initialized\n");
+    PetscPrintf(subDomain->GetComm(), "Particles Initialized\n");
     //    }
 
     /** ***********************************************************************************************************************************************
@@ -218,7 +218,6 @@ void ablate::radiation::Radiation::RayInit() {
      * ray segment storage can be easily accessed and appended. This forms a local collection of globally index ray segments.
      * */
 
-    PetscReal hhere = 0;
     PetscInt nglobalpoints = 0;
     DMSwarmGetLocalSize(radsearch, &npoints);  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetSize(radsearch, &nglobalpoints);
@@ -235,19 +234,15 @@ void ablate::radiation::Radiation::RayInit() {
          * Step every particle in the domain one step and then perform a migration
          * */
         PetscInt index;
-        PetscInt size;
         Vec intersect;
         VecCreate(PETSC_COMM_SELF, &intersect);  //!< Instantiates the vector
         VecSetBlockSize(intersect, dim);
+        VecSetSizes(intersect, PETSC_DECIDE, npoints * dim);  //!< Set size
+        VecSetFromOptions(intersect);
         PetscInt i[3] = {0, 1, 2};              //!< Establish the vector here so that it can be iterated.
         for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                 //!< particles then pass out of initialization.
-            ipart = ip;                         //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy
-
-            /** Increase the size of the vector so that it can hold more values in the next step of checking this point. */
-            VecGetLocalSize(intersect, &size);                 //!< Get the size so that it can be iterated on
-            VecSetSizes(intersect, PETSC_DECIDE, size + dim);  //!< Add another block size to the vector
-            VecSetFromOptions(intersect);                      //!< Finalize the setting
+            ipart = ip;                         //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy.
 
             /** Update the physical coordinate field so that the real particle location can be updated. */
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
@@ -276,12 +271,12 @@ void ablate::radiation::Radiation::RayInit() {
              * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
 
             /** Get the particle coordinates here and put them into the intersect */
-            PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from sphserical coordinates, adding the position of the current cell
+            PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from spherical coordinates, adding the position of the current cell
                                      (virtualcoord[ipart].y),   // y component conversion from spherical coordinates, adding the position of the current cell
                                      (virtualcoord[ipart].z)};  // z component conversion from spherical coordinates, adding the position of the current cell
             //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a position vector in the current angle position
 
-            /** This block creates the vector pointing to the cell whose index will be stored during the current loop*/
+            /** This block creates the vector pointing to the cell whose index will be stored during the current loop */
             VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
             i[0] += dim;                                               //!< Iterate the index by the number of dimensions so that the DMLocatePoints function can be called collectively.
             i[1] += dim;
@@ -320,7 +315,7 @@ void ablate::radiation::Radiation::RayInit() {
                      * Adaptive stepping stuff should probably live here and will need to be added to after each time the position is updated
                      * The current cell should be added before the loop begins*/
                     rays[Key(identifier[ipart])].cells.push_back(index);
-                    rays[Key(identifier[ipart])].h.push_back(hhere);  //!< Add this space step if the current index is being added.
+                    rays[Key(identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
                     virtualcoord[ipart].hhere = 0;
                     virtualcoord[ipart].current = index;  //!< Sets the current cell for the adaptive space stepping to compare against
                 } else {
@@ -340,21 +335,24 @@ void ablate::radiation::Radiation::RayInit() {
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
                                                             //            PetscPrintf(MPI_COMM_WORLD, "Point Step\n");
         }
-        /** Restore the fields associated with the particles after all of the particles have been stepped s*/
+        /** Restore the fields associated with the particles after all of the particles have been stepped */
         DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
         DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
         DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
         /** Cleanup */
         VecDestroy(&intersect);   //!< Return the vector to PETSc
-        PetscSFDestroy(&cellSF);  //< Return the stuff to PETSc
+        PetscSFDestroy(&cellSF);  //!< Return the stuff to PETSc
 
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
-        DMSwarmMigrate(radsearch, PETSC_TRUE);      //!< Migrate the search particles and remove the particles that have left the domain space.
+        //        MPI_Barrier(subDomain->GetComm());
+        DMSwarmMigrate(radsearch, PETSC_TRUE);  //!< Migrate the search particles and remove the particles that have left the domain space.
+
         DMSwarmGetSize(radsearch, &nglobalpoints);  //!< Update the loop condition. Recalculate the number of particles that are in the domain.
+        DMSwarmGetLocalSize(radsearch, &npoints);   //!< Update the loop condition. Recalculate the number of particles that are in the domain.
 
         //        if (log) {
-        PetscPrintf(MPI_COMM_WORLD, "Global Step %3i\n", stepcount);
+        printf("Global Step: %3i    Global Points: %3i\n", stepcount, nglobalpoints);
         stepcount++;
         //        }
     }
