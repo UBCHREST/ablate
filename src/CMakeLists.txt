@@ -42,6 +42,10 @@ target_link_libraries(ablateLibrary PUBLIC nlohmann_json::nlohmann_json)
 
 ### XDMF Generation ###
 # install the library for generating xdmf files
+if(NOT(DEFINED HDF5_ROOT|CACHE{HDF5_ROOT}|ENV{HDF5_ROOT}))
+    message(VERBOSE "HDF5_ROOT not set.  Assuming HDF5_ROOT is in $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/")
+    set(HDF5_ROOT "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/" STRING)
+endif()
 set(DISABLE_PETSCXDMFGENERATOR_TESTS ON CACHE BOOL "" FORCE)
 FetchContent_Declare(
         petscXdmfGenerator
