@@ -16,6 +16,11 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
         dtMin = options->Get<double>("dtMin", dtMin);
         dtMax = options->Get<double>("dtMax", dtMax);
         dtDefault = options->Get<double>("dtDefault", dtDefault);
+        dtEstimateFactor = options->Get<double>("dtEstimateFactor", dtEstimateFactor);
+        relToleranceTime = options->Get<double>("relToleranceTime", relToleranceTime);
+        absToleranceTime = options->Get<double>("absToleranceTime", absToleranceTime);
+        relToleranceNewton = options->Get<double>("relToleranceNewton", relToleranceNewton);
+        absToleranceNewton = options->Get<double>("absToleranceNewton", absToleranceNewton);
     }
 }
 ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {}
@@ -28,7 +33,6 @@ void ablate::finiteVolume::processes::TChemReactions::Setup(ablate::finiteVolume
     // Add the rhs point function for the source
     flow.RegisterRHSFunction(AddChemistrySourceToFlow, this);
 }
-
 
 void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // determine the number of nodes we need to compute based upon the local solver
@@ -85,11 +89,11 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
         auto tolNewtonHost = Kokkos::create_mirror_view(tolNewtonDevice);
 
         for (ordinal_type i = 0, iend = tolTimeDevice.extent(0); i < iend; ++i) {
-            tolTimeHost(i, 0) = absToleranceTime;   // atol
+            tolTimeHost(i, 0) = absToleranceTime;  // atol
             tolTimeHost(i, 1) = relToleranceTime;  // rtol
         }
         tolNewtonHost(0) = absToleranceNewton;  // atol
-        tolNewtonHost(1) = relToleranceNewton;   // rtol
+        tolNewtonHost(1) = relToleranceNewton;  // rtol
 
         Kokkos::deep_copy(tolTimeDevice, tolTimeHost);
         Kokkos::deep_copy(tolNewtonDevice, tolNewtonHost);
@@ -197,7 +201,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
             auto& tAdvAtI = timeAdvanceDevice(i);
             tAdvAtI._tbeg = time;
             tAdvAtI._tend = time + dt;
-            tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i)*dtEstimateFactor, dt), tAdvAtI._dtmax), tAdvAtI._dtmin);
+            tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i) * dtEstimateFactor, dt), tAdvAtI._dtmax), tAdvAtI._dtmin);
             // set the default time information
             timeViewDevice(i) = time;
         });
@@ -310,4 +314,5 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem library", ARG(ablate::eos::EOS, "eos", "the tChem v1 eos"),
-         OPT(ablate::parameters::Parameters, "options", "time stepping options (dtMin, dtMax, dtDefault)"));
+         OPT(ablate::parameters::Parameters, "options",
+             "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton)"));

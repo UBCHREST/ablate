@@ -16,7 +16,7 @@ class Process {
      * Set up mesh dependent initialization
      * @param fv
      */
-    virtual void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) {};
+    virtual void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv){};
 };
 
 }  // namespace ablate::finiteVolume::processes
