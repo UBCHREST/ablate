@@ -14,6 +14,11 @@ class TChemReactions : public Process {
     double dtMin = 1.0E-12;
     double dtMax = 1.0E-1;
     double dtDefault = 1E-4;
+    double dtEstimateFactor = 1.5;
+    double relToleranceTime = 1.0E-4;
+    double absToleranceTime = 1.0E-8;
+    double relToleranceNewton = 1.0E-6;
+    double absToleranceNewton = 1.0E-10;
 
     // eos of state variables
     std::shared_ptr<eos::TChem> eos;

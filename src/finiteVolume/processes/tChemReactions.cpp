@@ -69,7 +69,7 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     // Copy the default values to device
     timeAdvanceDevice = time_advance_type_1d_view("timeAdvanceDevice", numberCells);
     Kokkos::deep_copy(timeAdvanceDevice, timeAdvanceDefault);
-    Kokkos::deep_copy(dtViewDevice, timeAdvanceDefault._dtmin);
+    Kokkos::deep_copy(dtViewDevice, 1E-4);
 
     // determine the number of equations
     auto numberOfEquations = TChem::Impl::IgnitionZeroD_Problem<real_type, Tines::UseThisDevice<exec_space>::type>::getNumberOfTimeODEs(kineticModelGasConstData);
@@ -85,11 +85,11 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
         auto tolNewtonHost = Kokkos::create_mirror_view(tolNewtonDevice);
 
         for (ordinal_type i = 0, iend = tolTimeDevice.extent(0); i < iend; ++i) {
-            tolTimeHost(i, 0) = 1e-12;   // atol
-            tolTimeHost(i, 1) = 1.0E-4;  // rtol
+            tolTimeHost(i, 0) = absToleranceTime;   // atol
+            tolTimeHost(i, 1) = relToleranceTime;  // rtol
         }
-        tolNewtonHost(0) = 1e-10;  // atol
-        tolNewtonHost(1) = 1e-6;   // rtol
+        tolNewtonHost(0) = absToleranceNewton;  // atol
+        tolNewtonHost(1) = relToleranceNewton;   // rtol
 
         Kokkos::deep_copy(tolTimeDevice, tolTimeHost);
         Kokkos::deep_copy(tolNewtonDevice, tolNewtonHost);
@@ -197,7 +197,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
             auto& tAdvAtI = timeAdvanceDevice(i);
             tAdvAtI._tbeg = time;
             tAdvAtI._tend = time + dt;
-            tAdvAtI._dt = PetscMin(tAdvAtI._dtmax, PetscMin(dtDefault, dt));
+            tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i)*dtEstimateFactor, dt), tAdvAtI._dtmax), tAdvAtI._dtmin);
             // set the default time information
             timeViewDevice(i) = time;
         });
