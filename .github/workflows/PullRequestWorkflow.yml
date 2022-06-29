@@ -73,8 +73,7 @@ jobs:
     needs: test-matrix
     if: ${{ always() }}
     steps:
-      - run: echo ${{toJSON(needs.test-matrix)}}
       - name: Check on failures
-        if: steps.hello.outputs.status == 'failure' || steps.world.outputs.status == 'failure'
+        if: needs.test-matrix.result != 'success'
         run: exit 1
       - run: echo All tests Successful!
