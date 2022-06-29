@@ -50,8 +50,6 @@ TEST_P(BoundarySolverFluxTestFixture, ShouldComputeCorrectGradientsOnBoundary) {
         // initialize petsc and mpi
         PetscInitialize(argc, argv, nullptr, "HELP") >> testErrorChecker;
 
-        FAIL() << "This is a debug fail message";
-
         // Define regions for this test
         auto insideRegion = std::make_shared<ablate::domain::Region>("insideRegion");
         auto boundaryFaceRegion = std::make_shared<ablate::domain::Region>("boundaryFaces");
