@@ -20,5 +20,6 @@ run cmake -DCMAKE_BUILD_TYPE=Release -S /source/ -B .
 run make -j $(nproc)
 
 # Specify Entry Point for tests
+ENV CTEST_OUTPUT_ON_FAILURE=ON
 CMD ["ctest"]
 CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest"
