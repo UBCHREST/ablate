@@ -27,7 +27,7 @@ jobs:
           fetch-depth: 0
 
       - run: run exit 9
-        if: ${{matrix.tensorFlowConfig == "enabled_tf"}}
+        if: ${{matrix.tensorFlowConfig == 'enabled_tf'}}
 
 #      - name: Cache Docker layers
 #        uses: actions/cache@v2
