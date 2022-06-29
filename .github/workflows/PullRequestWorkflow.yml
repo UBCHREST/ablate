@@ -76,5 +76,7 @@ jobs:
     steps:
       - name: Check on failures
         if: needs.test-matrix.result != 'success'
-        run: exit 1
+        run: |
+          echo Tests unsuccessful!
+          exit 1
       - run: echo All tests Successful!
