@@ -73,4 +73,4 @@ jobs:
     if: ${{ always() }}
     steps:
       - run: echo All tests Successful!
-      - run: echo ${{needs.test-matrix.result}}
+      - run: echo ${{toJSON(needs.test-matrix)}}
