@@ -83,6 +83,8 @@ TEST_P(ChemTabModelTestFixture, ShouldReturnCorrectSpeciesAndVariables) {
     }
 }
 
+#define assert_float_close(expected, actual) EXPECT_NEAR(expected, actual, PetscAbs(5.0E-6 * actual))  // gives you relative error check
+
 /*******************************************************************************************************
  * Tests for getting the Compute Mass Fractions Functions
  */
@@ -104,7 +106,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectMassFractions) {
 
         // assert
         for (std::size_t r = 0; r < actual.size(); r++) {
-            EXPECT_FLOAT_EQ(expectedMassFractions[r], actual[r]) << "The value for [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
+            assert_float_close(expectedMassFractions[r], actual[r]) << "The value for [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
         }
     }
 }
@@ -131,12 +133,11 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectSource) {
         PetscReal actualSourceEnergy;
         chemTabModelComputeSourceFunction(inputProgressVariables.data(), inputProgressVariables.size(), &actualSourceEnergy, actual.data(), actual.size(), ctx);
 
-        // assert
-        EXPECT_FLOAT_EQ(expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
+        assert_float_close(expectedSourceEnergy, actualSourceEnergy) << "The sourceEnergy is incorrect for model " << testTarget["testName"].as<std::string>();
+
         for (std::size_t r = 0; r < actual.size(); r++) {
-            auto percentDifference = PetscAbs(expectedSource[r] - actual[r]) / (0.5 * (expectedSource[r] + actual[r]));
-            ASSERT_LT(percentDifference, 5.0E-6) << " the percent difference of (" << expectedSource[r] << ", " << actual[r] << ") should be less than 5.0E-6 for index [" << r << "] for model "
-                                                 << testTarget["testName"].as<std::string>();
+            assert_float_close(expectedSource[r], actual[r]) << " the percent difference of (" << expectedSource[r] << ", " << actual[r] << ") should be less than 5.0E-6 for index [" << r
+                                                             << "] for model " << testTarget["testName"].as<std::string>();
         }
     }
 }
@@ -160,7 +161,7 @@ TEST_P(ChemTabModelTestFixture, ShouldComputeCorrectProgressVariables) {
 
         // assert
         for (std::size_t r = 0; r < actual.size(); r++) {
-            EXPECT_FLOAT_EQ(expectedProgressVariables[r], actual[r]) << "The value for input set [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
+            assert_float_close(expectedProgressVariables[r], actual[r]) << "The value for input set [" << r << "] is incorrect for model " << testTarget["testName"].as<std::string>();
         }
     }
 }
