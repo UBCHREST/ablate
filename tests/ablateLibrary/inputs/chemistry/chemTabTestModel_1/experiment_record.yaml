@@ -1,0 +1,74 @@
+ZmixPresent: Y
+activity_regularizer: N
+concatenateZmix: Y
+dataSetMethod: AllSpecies_randomequaltraintestsplit_AllDependants
+input_data_cols:
+- YiCH4
+- YiH
+- YiO
+- YiO2
+- YiOH
+- YiH2O
+- YiHO2
+- YiH2O2
+- YiC
+- YiCH
+- YiCH2
+- YiCH2(S)
+- YiCH3
+- YiH2
+- YiCO
+- YiCO2
+- YiHCO
+- YiCH2O
+- YiCH2OH
+- YiCH3O
+- YiCH3OH
+- YiC2H
+- YiC2H2
+- YiC2H3
+- YiC2H4
+- YiC2H5
+- YiC2H6
+- YiHCCO
+- YiCH2CO
+- YiHCCOH
+- YiN
+- YiNH
+- YiNH2
+- YiNH3
+- YiNNH
+- YiNO
+- YiNO2
+- YiN2O
+- YiHNO
+- YiCN
+- YiHCN
+- YiH2CN
+- YiHCNN
+- YiHCNO
+- YiHOCN
+- YiHNCO
+- YiNCO
+- YiC3H7
+- YiC3H8
+- YiCH2CHO
+- YiCH3CHO
+- YiN2
+- YiAR
+ipscaler: null
+kernel_constraint: N
+kernel_regularizer: Y
+model_R2: 0.9905698718339888
+noOfCpv: 8
+opscaler: RobustScaler
+val_losses:
+  dynamic_source_prediction_R2_split: 0.959162175655365
+  dynamic_source_prediction_loss: -0.9590349793434143
+  dynamic_source_prediction_source_pred_mean: -8.681800842285156
+  dynamic_source_prediction_source_true_mean: -8.489093780517578
+  emb_and_regression_model_R2: 0.9746235609054565
+  emb_and_regression_model_loss: -0.9745512008666992
+  emb_and_regression_model_mae: 4.475362300872803
+  emb_and_regression_model_mse: 332.89642333984375
+  loss: -1.9208297729492188
