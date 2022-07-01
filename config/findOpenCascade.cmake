@@ -1,0 +1,76 @@
+
+### EGADS ###
+FIND_LIBRARY(EGADS_LIBRARY
+        NAMES
+        egads
+        HINTS
+        ${CMAKE_FIND_ROOT_PATH}
+        ${PETSc_LIBRARY_DIRS}
+        PATHS
+        ${CMAKE_FIND_ROOT_PATH}
+        ${PETSc_LIBRARY_DIRS}
+        )
+if(NOT EGADS_LIBRARY)
+    message(FATAL_ERROR "Cannot find EGADS library.  Please reconfigure PETSc with --download-egads flag." )
+else()
+    add_library(EGADS::EGADS UNKNOWN IMPORTED)
+    set_target_properties(
+            EGADS::EGADS
+            PROPERTIES
+            IMPORTED_LOCATION ${EGADS_LIBRARY})
+endif()
+target_link_libraries(ablateLibrary PUBLIC EGADS::EGADS)
+
+###  OpenCASCADE ###
+# OpenCASCADE should be built with petsc
+FIND_PACKAGE(OpenCASCADE CONFIG REQUIRED HINTS "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/cmake/opencascade/")
+target_link_libraries(ablateLibrary PUBLIC ${OpenCASCADE_LIBRARIES})
+target_link_directories(ablateLibrary PUBLIC ${OpenCASCADE_LIBRARY_DIR})
+
+### Load in threads ###
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+target_link_libraries(ablateLibrary PUBLIC Threads::Threads)
+
+### Tensorflow ###
+pkg_check_modules(TensorFlow QUIET tensorflow)
+if(TensorFlow_FOUND)
+    target_link_directories(${TensorFlow_LIBRARY_DIRS})
+    include_directories(${TensorFlow_INCLUDE_DIRS})
+    add_compile_definitions(${TensorFlow_CFLAGS_OTHER})
+    message(STATUS "Tensorflow library has been found using package modules")
+    target_link_libraries(ablateLibrary PUBLIC TensorFlow)
+    target_compile_definitions(ablateLibrary PUBLIC WITH_TENSORFLOW)
+elseif(DEFINED ENV{TENSORFLOW_DIR} AND (NOT $ENV{TENSORFLOW_DIR} STREQUAL ""))
+    if(NOT DEFINED TENSORFLOW_DIR)
+        set(TENSORFLOW_DIR $ENV{TENSORFLOW_DIR})
+    endif()
+
+    # manually specify the tensor flow directory with TENSORFLOW_DIR
+    FIND_LIBRARY(TensorFlowLibrary
+            NAMES
+            tensorflow
+            HINTS
+            ${TENSORFLOW_DIR}
+            ${TENSORFLOW_DIR}/lib
+            )
+    if(NOT TensorFlowLibrary)
+        message(FATAL_ERROR "Cannot find TensorFlow library at " ${TENSORFLOW_DIR} )
+    else()
+        add_library(TensorFlow UNKNOWN IMPORTED)
+        set_target_properties(
+                TensorFlow
+                PROPERTIES
+                IMPORTED_LOCATION ${TensorFlowLibrary})
+        set_target_properties(
+                TensorFlow
+                PROPERTIES
+                INTERFACE_INCLUDE_DIRECTORIES ${TENSORFLOW_DIR}/include)
+        message(STATUS "Tensorflow library has been found at the specified TENSORFLOW_DIR location " ${TENSORFLOW_DIR})
+        target_compile_definitions(ablateLibrary PUBLIC WITH_TENSORFLOW)
+        target_link_libraries(ablateLibrary PUBLIC TensorFlow)
+    endif()
+else()
+    message(STATUS "Tensorflow could not be located and will be skipped. It can be specified with TENSORFLOW_DIR CMAKE variable or env variable ")
+endif()
+

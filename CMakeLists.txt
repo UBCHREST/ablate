@@ -36,15 +36,25 @@ if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CTest)
 endif ()
 
-# Add required warnings for projects
-function(ablate_default_target_compile_options_cxx target)
-    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:C>:$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wno-unused-parameter>>)
-    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wsuggest-override -Wno-unused-parameter >>)
-    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<CXX_COMPILER_ID:GNU>: -Wno-missing-field-initializers -Wno-maybe-uninitialized>>)
-endfunction()
+# Create the library for ablate
+add_library(ablateLibrary SHARED "")
 
-# Load in the subdirectories
+# Load in the subdirectories for the ablate library
 add_subdirectory(src)
+
+# find and load required libraries
+include(config/findYamlCpp.cmake)
+include(config/findCppParser.cmake)
+include(config/findMuParser.cmake)
+include(config/findXdmfGenerator.cmake)
+include(config/findTChem.cmake)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+include(config/findOpenCascade.cmake)
+include(config/findJson.cmake)
+
+# specify in the required libaries
+target_link_libraries(ablateLibrary PUBLIC PkgConfig::PETSc CHREST::cppParserLibrary yaml-cpp muparser petscXdmfGeneratorLibrary TChem::TChem Threads::Threads nlohmann_json::nlohmann_json)
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
@@ -64,7 +74,6 @@ endif ()
 # keep a separate main statement
 add_executable(ablate main.cpp)
 target_link_libraries(ablate PRIVATE ablateLibrary)
-ablate_default_target_compile_options_cxx(ablate)
 
 # include system specific hacks
 include(systemHacks.cmake)
