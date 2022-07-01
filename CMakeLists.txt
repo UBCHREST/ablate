@@ -54,7 +54,18 @@ include(config/findOpenCascade.cmake)
 include(config/findJson.cmake)
 
 # specify in the required libaries
-target_link_libraries(ablateLibrary PUBLIC PkgConfig::PETSc CHREST::cppParserLibrary yaml-cpp muparser petscXdmfGeneratorLibrary TChem::TChem Threads::Threads nlohmann_json::nlohmann_json)
+target_link_libraries(ablateLibrary
+        PUBLIC
+        PkgConfig::PETSc
+        CHREST::cppParserLibrary
+        yaml-cpp
+        muparser
+        CHREST::xdmfGeneratorLibrary
+        TChem::TChem
+        Threads::Threads
+        nlohmann_json::nlohmann_json
+        PRIVATE
+        chrestCompilerFlags)
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
