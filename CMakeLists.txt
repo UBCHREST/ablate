@@ -52,6 +52,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 include(config/findOpenCascade.cmake)
 include(config/findJson.cmake)
+include(config/findTensorFlow.cmake)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary
