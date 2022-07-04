@@ -106,10 +106,39 @@ void ablate::radiation::Radiation::RayInit() {
     solver::Range cellRange;
     GetCellRange(cellRange);
 
+    // check to see if there is a ghost label
+    DMLabel ghostLabel;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+    PetscInt cellCount = 0;
+
+    /** Make sure that the cells being iterated over are within the region of the subdomain
+     *
+     * */
+    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
+        // if there is a cell array, use it, otherwise it is just c
+        const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
+
+        // make sure we are not working on a ghost cell
+        PetscInt ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, cell, &ghost);
+        }
+        if (ghost == -1) {
+            cellCount++;
+        }
+    }
+
+    //    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
+    //        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
+    //        DMPlexPointLocalRead(subDomain->GetDM(), iCell, cellGeomArray, &cellGeom);      //!< Reads the cell location from the current cell
+    //
+    //        printf("%i %1.3f\n", iCell, cellGeom->centroid[0]);
+    //    }
+
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
 
-    PetscInt npoints = (cellRange.end - cellRange.start) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
-    PetscInt nsolvepoints = 0;                                                   //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
+    PetscInt npoints = (cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
+    PetscInt nsolvepoints = 0;                             //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
     DMCreate(subDomain->GetComm(), &radsearch);
@@ -162,9 +191,20 @@ void ablate::radiation::Radiation::RayInit() {
 
     int ipart = 0;  //!< Initialize a counter to represent the particle index. This will be iterated every time that the inner loop is passed through.
 
+    //    if (rank == 0) {
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-        DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);      //!< Reads the cell location from the current cell
+
+        // make sure we are not working on a ghost cell
+        PetscInt ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, iCell, &ghost);
+        }
+        if (ghost >= 0) {
+            continue;
+        }
+
+        DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom);  //!< Reads the cell location from the current cell
 
         /** for every angle theta
          * for every angle phi
@@ -190,12 +230,12 @@ void ablate::radiation::Radiation::RayInit() {
                 UpdateCoordinates(ipart, virtualcoord, coord);
 
                 /** Label the particle with the ray identifier. (Use an array of 4 ints, [ncell][theta][phi][domains crossed])
-                 * Label the particle with domainscrossed = 0; so that this can be iterated after each domain cross.
+                 * Label the particle with nsegment = 0; so that this can be iterated after each domain cross.
                  * */
                 identifier[ipart].origin = rank;    //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
                 identifier[ipart].iCell = iCell;    //!< Input the ray identifier. This location scheme represents stepping four entries for every particle index increase
-                identifier[ipart].ntheta = ntheta;  //!< Input the ray identifier
-                identifier[ipart].nphi = nphi;      //!< Input the ray identifie
+                identifier[ipart].ntheta = ntheta;  //!< Input the ray identifier.
+                identifier[ipart].nphi = nphi;      //!< Input the ray identifier.
                 identifier[ipart].nsegment = 0;     //!< Initialize the number of domains crossed as zero
 
                 /** Set the index of the field value so that it can be written to for every particle */
@@ -203,6 +243,7 @@ void ablate::radiation::Radiation::RayInit() {
             }
         }
     }
+    //    }
 
     /** Restore the fields associated with the particles */
     DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
@@ -299,6 +340,8 @@ void ablate::radiation::Radiation::RayInit() {
         PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell);  //!< Using this to get the petsc int cell number from the struct (SF)
 
         for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
+
+            ipart = ip;  //!< Iterate the loop variable
 
             /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
              * This function returns multiple values if multiple points are input to it
@@ -491,13 +534,13 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     PetscInt* rankid;
     DMSwarmGetField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
-    DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+    //    DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
     for (int ipart = 0; ipart < npoints; ipart++) {
         rankid[ipart] = identifier[ipart].origin;
     }
     DMSwarmRestoreField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
     DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
-    DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+    //    DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
 
     //    MPI_Barrier(subDomain->GetComm());
     DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
@@ -511,8 +554,22 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     solver::Range cellRange;  //!< Access to the cell index information is important here to get all of the ray identifier information.
     GetCellRange(cellRange);
 
+    // check to see if there is a ghost label
+    DMLabel ghostLabel;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
+
+        // make sure we are not working on a ghost cell
+        PetscInt ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, iCell, &ghost);
+        }
+        if (ghost >= 0) {
+            continue;
+        }
+
         /** for every angle theta
          * for every angle phi
          */
@@ -603,6 +660,15 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
+
+        // make sure we are not working on a ghost cell
+        PetscInt ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, iCell, &ghost);
+        }
+        if (ghost >= 0) {
+            continue;
+        }
 
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);
