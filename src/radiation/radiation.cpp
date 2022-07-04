@@ -247,24 +247,27 @@ void ablate::radiation::Radiation::RayInit() {
             /** Update the physical coordinate field so that the real particle location can be updated. */
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
 
-            /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
-             * Hash the identifier into a key value that can be used in the map */
-            if (rays.count(Key(identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
-                identifier[ipart].nsegment++;               //!< The particle has passed through another domain!
-                DMSwarmAddPoint(radsolve);                  //!< Another solve particle is added here because the search particle has entered a new domain
-
-                DMSwarmGetLocalSize(radsolve, &nsolvepoints);  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last one is newest)
-
-                DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);  //!< Get the fields from the radsolve swarm so the new point can be written to them
-                DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
-
-                PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
-                solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
-                carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
-
-                DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);  //!< The fields must be returned so that the swarm can be updated correctly?
-                DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
-            }
+            //            /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
+            //             * Hash the identifier into a key value that can be used in the map */
+            //            if (rays.count(Key(identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE
+            //            NDOMAINS BY 1.
+            //                identifier[ipart].nsegment++;               //!< The particle has passed through another domain!
+            //                DMSwarmAddPoint(radsolve);                  //!< Another solve particle is added here because the search particle has entered a new domain
+            //
+            //                DMSwarmGetLocalSize(radsolve, &nsolvepoints);  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last
+            //                one is newest)
+            //
+            //                DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);  //!< Get the fields from the radsolve swarm so the new point can be written to them
+            //                DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+            //
+            //                PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
+            //                solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
+            //                carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init
+            //                0)
+            //
+            //                DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);  //!< The fields must be returned so that the swarm can be updated correctly?
+            //                DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+            //            }
 
             /** FIRST TAKE THIS LOCATION INTO THE RAYS VECTOR
              * "I found a particle in my domain. Maybe it was just moved here and I've never seen it before.
@@ -311,13 +314,37 @@ void ablate::radiation::Radiation::RayInit() {
 
             if (index > -1) {
                 if (virtualcoord[ipart].current != index) {
+                    /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
+                     * Hash the identifier into a key value that can be used in the map
+                     * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
+                     * */
+                    if (rays.count(Key(identifier[ipart])) ==
+                        0) {                           //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
+                        identifier[ipart].nsegment++;  //!< The particle has passed through another domain!
+                        DMSwarmAddPoint(radsolve);     //!< Another solve particle is added here because the search particle has entered a new domain
+
+                        DMSwarmGetLocalSize(radsolve,
+                                            &nsolvepoints);  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last one is newest)
+
+                        DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);  //!< Get the fields from the radsolve swarm so the new point can be written to them
+                        DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+
+                        PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
+                        solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
+                        carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
+
+                        DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier);  //!< The fields must be returned so that the swarm can be updated correctly?
+                        DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+                    }
+
                     /** ********************************************
-                     * Adaptive stepping stuff should probably live here and will need to be added to after each time the position is updated
+                     * Adaptive stepping stuff lives here: to be added after each time the position is updated
                      * The current cell should be added before the loop begins*/
                     rays[Key(identifier[ipart])].cells.push_back(index);
                     rays[Key(identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
                     virtualcoord[ipart].hhere = 0;
                     virtualcoord[ipart].current = index;  //!< Sets the current cell for the adaptive space stepping to compare against
+
                 } else {
                     virtualcoord[ipart].hhere += hstep;  //!< If the cell is not different then we simply increase the stored path length by one step.
                 }
@@ -405,15 +432,14 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     struct Carrier* carrier;        //!< Pointer to the ray carrier information
     struct Identifier* identifier;  //!< Pointer to the ray identifier information
 
-    PetscInt npoints;
-    DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
-
     /** Get the current rank associated with this process */
     PetscInt rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);  //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
 
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
+    PetscInt npoints;
+    DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
 
@@ -465,12 +491,15 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     PetscInt* rankid;
     DMSwarmGetField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
+    DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
     for (int ipart = 0; ipart < npoints; ipart++) {
         rankid[ipart] = identifier[ipart].origin;
     }
     DMSwarmRestoreField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
     DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
+    DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
 
+    //    MPI_Barrier(subDomain->GetComm());
     DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
 
     /** ********************************************************************************************************************************
@@ -552,7 +581,17 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 
     /** Delete all of the particles that were transported to their origin domains -> Delete if (identifier.origin == MPI_Rank() && identifier.nsegment != 0) */
     for (int ipart = 0; ipart < npoints; ipart++) {
-        if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
+        if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) {
+            DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);  //!< Need to restore the field access before deleting a point
+            DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+
+            DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
+
+            DMSwarmGetLocalSize(radsolve, &npoints);                                   //!< Need to recalculate the number of particles that are in the domain again
+            DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);  //!< Get the field back
+            DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+            ipart--;  //!< Check the point replacing the one that was deleted
+        }
     }
 
     /** Restore the fields associated with the particles after all of the particles have been stepped*/
