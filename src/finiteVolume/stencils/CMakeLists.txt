@@ -7,5 +7,4 @@ target_sources(ablateLibrary
         faceStencilGenerator.hpp
         leastSquares.hpp
         leastSquaresAverage.hpp
-        leastSquaresAverage.cpp
         )
