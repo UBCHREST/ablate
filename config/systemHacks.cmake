@@ -17,5 +17,5 @@ if (APPLE)
             INSTALL_RPATH "@loader_path;@loader_path/...;@executable_path;@executable_path/../lib;@rpath")
 elseif (UNIX)
     set_target_properties(ablate PROPERTIES
-            INSTALL_RPATH "$ORIGIN:$ORIGIN/...")
+            INSTALL_RPATH "$ORIGIN:$ORIGIN/../lib:$ORIGIN/...")
 endif ()
