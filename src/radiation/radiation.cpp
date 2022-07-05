@@ -610,8 +610,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                             loopid.nsegment++;                                                                    //!< Look for the next segment in the ray
                         }
                     }
-                    oldsegment = loopid.nsegment;                   //!< Set the old segment
                     pointfound = !(oldsegment == loopid.nsegment);  //!< If no point was found during the whole for loop, then we must have stumbled on the last segment in this ray.
+                    oldsegment = loopid.nsegment;                   //!< Set the old segment
                 }
 
                 /** Now that we have found the maximum segment in the domain, we can iterate from the last segment to the beginning segment of this ray identifier */
