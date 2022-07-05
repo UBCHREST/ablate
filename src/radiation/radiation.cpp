@@ -18,10 +18,6 @@ void ablate::radiation::Radiation::Setup() { /** allows initialization after the
 }
 
 void ablate::radiation::Radiation::Initialize() {
-    // TODO: For the solving step
-    // TODO: The swarm particles can be teleported directly from one rank to another without removing the points from the current rank
-    //     TODO: This means that the particles and their information can be sent during the solve without needing to send them back
-
     /** To transport a particle from one location to another, this simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
      * is called. The initialization particle field can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field could be
      * essentially deleted during the solve portion. It must be replaced with a set of particles associated with every ray segment. The field initialized for the solve portion will have more particles
@@ -437,10 +433,10 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * These DM objects belong to the temperature field which is used to calculate radiation transport.
      * The objects used to interface with the temperature field must be given the same communicator as the subDomain.
      */
-    DM vdm;
-    Vec loctemp;
-    //    VecCreate(subDomain->GetComm(), &loctemp); //TODO: Will this help to give the temperature vector the same communicator?
-    IS vis;
+    //    DM vdm;
+//    Vec loctemp;
+    //    IS vis;
+//    PetscScalar* rhsValues;
 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;
@@ -450,16 +446,23 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     const PetscScalar* solArray;
     VecGetArrayRead(solVec, &solArray);
 
+    /** Get the array of the aux vector */
+    const auto auxVec = subDomain->GetAuxVector();
+    const PetscScalar* auxArray;
+    VecGetArrayRead(auxVec, &auxArray);
+
     const auto& eulerFieldInfo = subDomain->GetField("euler");
-    auto dm = subDomain->GetDM();  //!< Get the main DM for the solution vector
+//    auto dm = subDomain->GetDM();  //!< Get the main DM for the solution vector
 
     /** Get the temperature field.
      * For ABLATE implementation, get temperature based on this function.
-     */
+     */ //TODO: Try getting temperature the other way instead
     const auto& temperatureField = subDomain->GetField("temperature");
-    PetscScalar* temperatureArray = nullptr;  // TODO: "Different communicators in the two objects: Argument # 1 and 2 flag 3"
-    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm); //TODO: AUX vector and IS (index set) do not have the same communicator
-    VecGetArray(loctemp, &temperatureArray);
+//    auto vdm = subDomain->GetDM();  //!< Get the main DM for the temperature field
+
+    //    PetscScalar* temperatureArray = nullptr;
+    //    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
+    //    VecGetArray(loctemp, &temperatureArray);
 
     /** Declare the basic information*/
     PetscReal* sol;          //!< The solution value at any given location
@@ -510,8 +513,9 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                     Get the array that lives inside the vector
                     Gets the temperature from the cell index specified
                 */
-                DMPlexPointLocalRead(vdm, rays[Key(identifier[ipart])].cells[n], temperatureArray, &temperature);
-                DMPlexPointLocalRead(dm, rays[Key(identifier[ipart])].cells[n], solArray, &sol);
+                DMPlexPointLocalFieldRead(subDomain->GetDM(), rays[Key(identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
+                //                DMPlexPointLocalRead(vdm, rays[Key(identifier[ipart])].cells[n], temperatureArray, &temperature);
+                DMPlexPointLocalRead(subDomain->GetDM(), rays[Key(identifier[ipart])].cells[n], solArray, &sol);
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 
@@ -673,7 +677,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         }
 
         /** Gets the temperature from the cell index specified */
-        DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);
+        //        DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);
+        DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, temperatureField.id, auxArray, &temperature);
 
         /** Put the irradiation into the right hand side function */
         PetscScalar* rhsValues;
@@ -685,8 +690,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 
     /** Cleanup*/
     VecRestoreArrayRead(rhs, &rhsArray);
-    VecRestoreArray(loctemp, &temperatureArray);
-    subDomain->RestoreFieldLocalVector(temperatureField, &vis, &loctemp, &vdm);
+    //    VecRestoreArray(loctemp, &temperatureArray);
+    //    subDomain->RestoreFieldLocalVector(temperatureField, &vis, &loctemp, &vdm);
     RestoreRange(cellRange);
 
     PetscFunctionReturn(0);
