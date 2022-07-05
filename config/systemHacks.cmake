@@ -14,8 +14,8 @@ endif ()
 if (APPLE)
     set(CMAKE_MACOSX_RPATH 1)
     set_target_properties(ablate PROPERTIES
-            INSTALL_RPATH "@loader_path;@loader_path/...;@executable_path;@executable_path/../lib;@rpath")
+            INSTALL_RPATH "@loader_path;@loader_path/...;@executable_path;@executable_path/../${CMAKE_INSTALL_LIBDIR};@rpath")
 elseif (UNIX)
     set_target_properties(ablate PROPERTIES
-            INSTALL_RPATH "$ORIGIN:$ORIGIN/../lib:$ORIGIN/...")
+            INSTALL_RPATH "$ORIGIN:$ORIGIN/../${CMAKE_INSTALL_LIBDIR}:$ORIGIN/...")
 endif ()
