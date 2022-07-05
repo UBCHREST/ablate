@@ -37,7 +37,7 @@ if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif ()
 
 # Create the library for ablate
-add_library(ablateLibrary SHARED "")
+add_library(ablateLibrary SHARED)
 
 # Load in the subdirectories for the ablate library
 add_subdirectory(src)
@@ -85,7 +85,7 @@ endif ()
 
 # keep a separate main statement
 add_executable(ablate main.cpp)
-target_link_libraries(ablate PRIVATE ablateLibrary)
+target_link_libraries(ablate PUBLIC ablateLibrary chrestCompilerFlags)
 
 # include system specific hacks
 include(systemHacks.cmake)

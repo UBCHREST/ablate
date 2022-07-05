@@ -1,18 +1,19 @@
 target_sources(ablateLibrary
+        PRIVATE
+        ausm.cpp
+        averageFlux.cpp
+        offFlux.cpp
+        ausmpUp.cpp
+        rieman.cpp
+        riemann2Gas.cpp
+        riemannStiff.cpp
         PUBLIC
         fluxCalculator.hpp
         ausm.hpp
-        ausm.cpp
         averageFlux.hpp
-        averageFlux.cpp
         offFlux.hpp
-        offFlux.cpp
         ausmpUp.hpp
-        ausmpUp.cpp
-        rieman.cpp
         rieman.hpp
-        riemann2Gas.cpp
         riemann2Gas.hpp
-        riemannStiff.cpp
         riemannStiff.hpp
         )

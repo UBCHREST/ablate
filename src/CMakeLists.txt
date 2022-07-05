@@ -9,8 +9,9 @@ configure_file (
 target_include_directories(ablateLibrary PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 target_sources(ablateLibrary
-        PUBLIC
+        PRIVATE
         builder.cpp
+        PUBLIC
         builder.hpp
         )
 

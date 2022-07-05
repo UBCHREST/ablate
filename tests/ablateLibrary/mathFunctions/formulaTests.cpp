@@ -24,7 +24,8 @@ TEST(FormulaTests, ShouldBeCreatedFromRegistar) {
     EXPECT_CALL(*mockFactory, Contains("constants")).Times(::testing::Exactly(1)).WillOnce(::testing::Return(false));
 
     // act
-    auto instance = ResolveAndCreate<ablate::mathFunctions::MathFunction>(mockFactory);
+    auto createMethod = Creator<ablate::mathFunctions::MathFunction>::GetCreateMethod(mockFactory->GetClassType());
+    auto instance = createMethod(mockFactory);
 
     // assert
     ASSERT_TRUE(instance != nullptr) << " should create an instance of the ParsedNested";

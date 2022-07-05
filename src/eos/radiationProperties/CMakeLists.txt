@@ -1,8 +1,9 @@
 target_sources(ablateLibrary
+        PRIVATE
+        constant.cpp
+        zimmer.cpp
         PUBLIC
         radiationProperties.hpp
         constant.hpp
-        constant.cpp
-        zimmer.cpp
         zimmer.hpp
         )

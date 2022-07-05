@@ -14,7 +14,8 @@ TEST(SimpleFormulaTests, ShouldBeCreatedFromRegistar) {
     EXPECT_CALL(*mockFactory, Get(cppParser::ArgumentIdentifier<std::string>{})).Times(::testing::Exactly(1)).WillOnce(::testing::Return("x+y+z+t"));
 
     // act
-    auto instance = ResolveAndCreate<ablate::mathFunctions::MathFunction>(mockFactory);
+    auto createMethod = Creator<ablate::mathFunctions::MathFunction>::GetCreateMethod(mockFactory->GetClassType());
+    auto instance = createMethod(mockFactory);
 
     // assert
     ASSERT_TRUE(instance != nullptr) << " should create an instance of the Parameters";

@@ -1,12 +1,13 @@
 target_sources(ablateLibrary
+        PRIVATE
+        lodiBoundary.cpp
+        isothermalWall.cpp
+        openBoundary.cpp
+        inlet.cpp
         PUBLIC
         lodiBoundary.hpp
-        lodiBoundary.cpp
         isothermalWall.hpp
-        isothermalWall.cpp
         openBoundary.hpp
-        openBoundary.cpp
         inlet.hpp
-        inlet.cpp
         )
 

@@ -12,8 +12,8 @@ IF(TARGET CHREST::xdmfGeneratorLibrary)
 ELSE()
     FetchContent_Declare(
             xdmfGeneratorLibrary
-            GIT_REPOSITORY https://github.com/mmcgurn/petscXdmfGenerator.git
-            GIT_TAG mcgurn/cmake-cleanup
+            GIT_REPOSITORY https://github.com/UBCHREST/petscXdmfGenerator.git
+            GIT_TAG v0.1.3
     )
     FetchContent_MakeAvailable(xdmfGeneratorLibrary)
     # Put the library into CHREST namespace

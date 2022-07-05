@@ -1,17 +1,18 @@
 target_sources(ablateLibrary
+        PRIVATE
+        finiteElementSolver.cpp
+        lowMachFlowSolver.cpp
+        incompressibleFlowSolver.cpp
+        lowMachFlowFields.cpp
+        incompressibleFlow.c
+        lowMachFlow.c
         PUBLIC
         finiteElementSolver.hpp
-        finiteElementSolver.cpp
         lowMachFlowSolver.hpp
-        lowMachFlowSolver.cpp
         incompressibleFlowSolver.hpp
-        incompressibleFlowSolver.cpp
         lowMachFlowFields.hpp
-        lowMachFlowFields.cpp
         incompressibleFlow.h
-        incompressibleFlow.c
         lowMachFlow.h
-        lowMachFlow.c
         )
 
 add_subdirectory(boundaryConditions)

@@ -1,8 +1,10 @@
 target_sources(ablateLibrary
+        PRIVATE
+        linear.cpp
+        quadratic.cpp
+
         PUBLIC
         dragModel.hpp
-        linear.cpp
         linear.hpp
-        quadratic.cpp
         quadratic.hpp
         )
