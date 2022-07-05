@@ -8,8 +8,8 @@
 ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : CellSolver(std::move(solverId), std::move(region), std::move(options)), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
-    nTheta = raynumber;    //!< The number of angles to solve with, given by user input
-    nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
+    nTheta = 2;  // raynumber;    //!< The number of angles to solve with, given by user input
+    nPhi = 1;    // 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
 
 void ablate::radiation::Radiation::Setup() { /** allows initialization after the subdomain and dm is established */
@@ -93,9 +93,13 @@ void ablate::radiation::Radiation::RayInit() {
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
     PetscFVCellGeom* cellGeom;
 
+    PetscInt rank;
+    MPI_Comm_rank(subDomain->GetComm(), &rank);      //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
+    MPI_Comm_size(subDomain->GetComm(), &numRanks);  //!< Get the number of ranks in the simulation.
+
     /** Declare some local variables */
-    double theta;  //!< represents the actual current angle (inclination)
-    double phi;    //!< represents the actual current angle (rotation)
+    //    double theta;  //!< represents the actual current angle (inclination)
+    //    double phi;    //!< represents the actual current angle (rotation)
 
     /**Locally get a range of cells that are included in this subdomain at this time step for the ray initialization
      * */
@@ -133,8 +137,8 @@ void ablate::radiation::Radiation::RayInit() {
 
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
 
-    PetscInt npoints = (cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
-    PetscInt nsolvepoints = 0;                             //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
+    PetscInt npoints = (rank == (numRanks - 1)) ? (nTheta - 1) * nPhi : 0;  //(cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
+    PetscInt nsolvepoints = 0;                                              //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
     DMCreate(subDomain->GetComm(), &radsearch);
@@ -165,13 +169,8 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmSetLocalSizes(radsearch, npoints, 0);  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
     DMSwarmSetLocalSizes(radsolve, 0, 0);         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
-    MPI_Comm_size(subDomain->GetComm(), &numRanks);  //!< Get the number of ranks in the simulation.
-
     /** Set the spatial step size to the minimum cell radius */
     PetscReal hstep = minCellRadius;
-
-    PetscInt rank;
-    MPI_Comm_rank(subDomain->GetComm(), &rank);  //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
 
     /** Declare some information associated with the field declarations */
     PetscReal* coord;                    //!< Pointer to the coordinate field information
@@ -207,6 +206,10 @@ void ablate::radiation::Radiation::RayInit() {
          */
         for (int ntheta = 1; ntheta < nTheta; ntheta++) {
             for (int nphi = 0; nphi < nPhi; nphi++) {
+                if (!(cellGeom->centroid[0] < 0.3 && cellGeom->centroid[0] > 0.2 && cellGeom->centroid[1] < 0.001 && cellGeom->centroid[1] > -0.001)) {  // TODO: One ray
+                    continue;
+                }
+
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
                 virtualcoord[ipart].x = cellGeom->centroid[0];
                 virtualcoord[ipart].y = cellGeom->centroid[1];
@@ -214,13 +217,15 @@ void ablate::radiation::Radiation::RayInit() {
                 virtualcoord[ipart].current = -1;  //!< Set this to a null value so that it can't get confused about where it starts.
 
                 /** Get the initial direction of the search particle from the angle number that it was initialized with */
-                theta = ((double)ntheta / (double)nTheta) * pi;  //!< Theta angle of the ray
-                phi = ((double)nphi / (double)nPhi) * 2.0 * pi;  //!<  Phi angle of the ray
+                //                theta = ((double)ntheta / (double)nTheta) * pi;  //!< Theta angle of the ray
+                //                phi = ((double)nphi / (double)nPhi) * 2.0 * pi;  //!<  Phi angle of the ray
 
                 /** Update the direction vector of the search particle */
-                virtualcoord[ipart].xdir = hstep * (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ipart].ydir = hstep * (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ipart].zdir = hstep * (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].xdir =
+                    hstep * cos(-3.14159 / 4.0);  // hstep * (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].ydir =
+                    hstep * sin(-3.14159 / 4.0);  // hstep * (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].zdir = 0;     // hstep * (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord);
@@ -434,9 +439,9 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * The objects used to interface with the temperature field must be given the same communicator as the subDomain.
      */
     //    DM vdm;
-//    Vec loctemp;
+    //    Vec loctemp;
     //    IS vis;
-//    PetscScalar* rhsValues;
+    //    PetscScalar* rhsValues;
 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;
@@ -452,13 +457,13 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     VecGetArrayRead(auxVec, &auxArray);
 
     const auto& eulerFieldInfo = subDomain->GetField("euler");
-//    auto dm = subDomain->GetDM();  //!< Get the main DM for the solution vector
+    //    auto dm = subDomain->GetDM();  //!< Get the main DM for the solution vector
 
     /** Get the temperature field.
      * For ABLATE implementation, get temperature based on this function.
-     */ //TODO: Try getting temperature the other way instead
+     */
     const auto& temperatureField = subDomain->GetField("temperature");
-//    auto vdm = subDomain->GetDM();  //!< Get the main DM for the temperature field
+    //    auto vdm = subDomain->GetDM();  //!< Get the main DM for the temperature field
 
     //    PetscScalar* temperatureArray = nullptr;
     //    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
@@ -495,7 +500,15 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * Iterate over the particles that are present in the domain
      * The cells that are in the domain at this point should represent the solve cells attached to the ray segments. They will be transported after local calculation and the non-native ones will
      * be destroyed.
+     * First the particles should be zeroed in case they are carrying information from the last time step.
+     * Then the entire solve sequence can be run through. This will require that the particles are iterated through twice.
      * */
+    for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate through the particles in the space to zero their information.
+        carrier[ipart].Ij = 0;                       //!< Zero the intensity of the segment
+        carrier[ipart].Krad = 1;                     //!< Zero the total absorption for this domain
+        carrier[ipart].I0 = 0;                       //!< Zero the initial intensity of the ray segment
+    }
+    /** Now that the particle information has been zeroed, the solve can begin. */
     for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                      //!< particles then pass out of initialization.
         /** Each ray is born here. They begin at the far field temperature.
@@ -523,7 +536,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 carrier[ipart].Krad *= exp(-kappa * rays[Key(identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
 
                 if (n == (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
-                    carrier[ipart].I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray for the linearized assumption
+                    carrier[ipart].I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
                 }
             }
         }
@@ -575,6 +588,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         if (ghost >= 0) {
             continue;
         }
+
+        origin[iCell].intensity = 0;  //!< Make sure to zero the intensity of every cell before beginning to calculate the intensity for this time step.
 
         /** for every angle theta
          * for every angle phi
@@ -632,11 +647,12 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                     }
                     loopid.nsegment--;  //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
-                theta = (double)ntheta / (double)nTheta;  //!< This is a fine method of determining theta because it is in the original domain
+                theta = ((double)ntheta / (double)nTheta) * pi;  //!< This is a fine method of determining theta because it is in the original domain
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
+                printf(".\n");
             }
         }
-        PetscPrintf(PETSC_COMM_WORLD, "Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
+        //        PetscPrintf(PETSC_COMM_WORLD, "Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
     }
 
     /** ********************************************************************************************************************************
@@ -685,7 +701,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         PetscReal losses = 4 * sbc * *temperature * *temperature * *temperature * *temperature;
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
-        //        PetscPrintf(PETSC_COMM_WORLD, "Intensity: %f\n", origin[iCell].intensity);
+        printf("Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
     }
 
     /** Cleanup*/
