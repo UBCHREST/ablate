@@ -433,30 +433,32 @@ void ablate::radiation::Radiation::RayInit() {
 
 PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
     PetscFunctionBeginUser;
-    /** Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers
-     * These DM objects belong to the temperature field which is used to calculate radiation transport
+    /** Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers.
+     * These DM objects belong to the temperature field which is used to calculate radiation transport.
+     * The objects used to interface with the temperature field must be given the same communicator as the subDomain.
      */
     DM vdm;
     Vec loctemp;
+    //    VecCreate(subDomain->GetComm(), &loctemp); //TODO: Will this help to give the temperature vector the same communicator?
     IS vis;
 
-    /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable*/
+    /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;
     VecGetArrayRead(rhs, &rhsArray);
 
-    /** Get the array of the solution vector*/
+    /** Get the array of the solution vector. */
     const PetscScalar* solArray;
     VecGetArrayRead(solVec, &solArray);
 
     const auto& eulerFieldInfo = subDomain->GetField("euler");
     auto dm = subDomain->GetDM();  //!< Get the main DM for the solution vector
 
-    /** Get the temperature field
-     * For ABLATE implementation, get temperature based on this function
+    /** Get the temperature field.
+     * For ABLATE implementation, get temperature based on this function.
      */
     const auto& temperatureField = subDomain->GetField("temperature");
-    PetscScalar* temperatureArray = nullptr;
-    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
+    PetscScalar* temperatureArray = nullptr;  // TODO: "Different communicators in the two objects: Argument # 1 and 2 flag 3"
+    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm); //TODO: AUX vector and IS (index set) do not have the same communicator
     VecGetArray(loctemp, &temperatureArray);
 
     /** Declare the basic information*/
