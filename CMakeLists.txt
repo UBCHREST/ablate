@@ -27,8 +27,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# FetContent will allow downloading of other libraries
-include(FetchContent)
+# Load the cmake required libraries
+include(FetchContent) # FetContent will allow downloading of other libraries
+include(GNUInstallDirs) # make cache variables for install destinations
 
 # Check if we should enable testing options
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -43,6 +44,7 @@ add_library(ablateLibrary SHARED)
 add_subdirectory(src)
 
 # find and load required libraries
+include(config/cmakeFunctions.cmake)
 include(config/findYamlCpp.cmake)
 include(config/findCppParser.cmake)
 include(config/findMuParser.cmake)
@@ -77,6 +79,7 @@ set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
 if (BUILD_TESTING)
     enable_testing()
     include(GoogleTest)
+    include(config/findGoogleTest.cmake)
     add_subdirectory(tests)
 
     # Include the format command only if we are building tests
@@ -89,3 +92,50 @@ target_link_libraries(ablate PUBLIC ablateLibrary chrestCompilerFlags)
 
 # include system specific hacks
 include(config/systemHacks.cmake)
+
+# install the cppParserLibrary (and others) target and create export-set
+install(TARGETS ablate ablateLibrary muparser nlohmann_json
+        EXPORT ablateTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+set_target_properties(ablate PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# install header file(s)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.hpp|*.h")
+update_header_paths_for_install(ablateLibrary ${PROJECT_SOURCE_DIR}/src ${CMAKE_INSTALL_INCLUDEDIR})
+
+# generate and install export file
+install(EXPORT ablateTargets
+        FILE ablateTargets.cmake
+        NAMESPACE CHREST::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
+        )
+
+# generate the version file for the config file
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/ablateConfigVersion.cmake"
+        VERSION "${CMAKE_PROJECT_VERSION}"
+        COMPATIBILITY AnyNewerVersion
+)
+
+# create config file
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/ablateConfig.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
+        )
+
+# install config files
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/ablateConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/ablateConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
+        )
+
+# generate the export targets for the build tree
+export(EXPORT ablateTargets
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/ablateTargets.cmake"
+        NAMESPACE CHREST::
+        )

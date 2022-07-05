@@ -1,7 +1,7 @@
 
 # Setup the framework library
 add_library(testingResources "")
-target_link_libraries(testingResources PUBLIC gtest gmock ablateLibrary)
+target_link_libraries(testingResources PUBLIC GTest::gtest GTest::gmock ablateLibrary)
 
 target_sources(testingResources
         PRIVATE

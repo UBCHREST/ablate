@@ -6,8 +6,6 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 FetchContent_Declare(
         mu-parser
         GIT_REPOSITORY https://github.com/beltoforion/muparser.git
-        GIT_TAG v2.3.2
+        GIT_TAG v2.3.3-1
 )
 FetchContent_MakeAvailable(mu-parser)
-FetchContent_GetProperties(mu-parser)
-target_include_directories(muparser SYSTEM PUBLIC ${mu-parser_SOURCE_DIR}/include)
