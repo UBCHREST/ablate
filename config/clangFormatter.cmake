@@ -7,8 +7,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(run-clang-format)
 
-message(clang ${run-clang-format_SOURCE_DIR})
-
 # Add a target to allow linting check
 find_program(CLANG_FORMAT "clang-format")
 find_package (Python)

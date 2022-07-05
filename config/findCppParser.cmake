@@ -5,8 +5,8 @@ IF(TARGET CHREST::cppParserLibrary)
 ELSE()
     FetchContent_Declare(
             cppParserLibrary
-            GIT_REPOSITORY https://github.com/mmcgurn/CppParser.git
-            GIT_TAG  mcgurn/fix
+            GIT_REPOSITORY https://github.com/UBCHREST/CppParser.git
+            GIT_TAG  v0.2.2
     )
     FetchContent_MakeAvailable(cppParserLibrary)
     # Put the libraries into CHREST namespace

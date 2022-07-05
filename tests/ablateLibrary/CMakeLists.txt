@@ -31,19 +31,6 @@ gtest_discover_tests(libraryTests
 # Allow public access to the header files in the directory
 target_include_directories(libraryTests PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 
-# Copy all input/output files needed for testing
-add_custom_command(
-        TARGET libraryTests
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/outputs/
-        $<TARGET_FILE_DIR:libraryTests>/outputs
-)
-
-add_custom_command(
-        TARGET libraryTests
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/inputs/
-        $<TARGET_FILE_DIR:libraryTests>/inputs
-)
+## Copy all input/output files needed for testing
+copy_to_test_directory(${CMAKE_CURRENT_SOURCE_DIR}/outputs)
+copy_to_test_directory(${CMAKE_CURRENT_SOURCE_DIR}/inputs)
