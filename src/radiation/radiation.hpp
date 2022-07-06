@@ -63,9 +63,6 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     struct Segment {
         std::vector<PetscInt> cells;  //!< Stores the cell indices of the segment locally.
         std::vector<PetscReal> h;     //!< Stores the space steps of the segment locally.
-                                      //        PetscReal Ij = 0;             //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
-                                      //        PetscReal Krad = 1;           //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
-                                      //        PetscReal I0 = 0;
     };
 
     /** Identifiers are carrying by both the search and solve particles in order to associate them with their origins and ray segments
@@ -118,15 +115,14 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
 
     /// Class Constants
-    const PetscReal sbc = 5.6696e-8;  // Stefan-Boltzman Constant (J/K)
+    const PetscReal sbc = 5.6696e-8;  //!< Stefan-Boltzman Constant (J/K)
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
     PetscInt numRanks;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
 
     /// Class inputs and Variables
-    PetscInt dim = 0;  // Number of dimensions that the domain exists within
-                       //    PetscReal h = 0;   // This is the step size which should be set as the minimum cell radius
-    PetscInt nTheta;   // The number of angles to solve with, given by user input
-    PetscInt nPhi;     // The number of angles to solve with, given by user input (x2)
+    PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
+    PetscInt nTheta;   //!< The number of angles to solve with, given by user input
+    PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
 
     /**
      * Store a log used to output the required information
