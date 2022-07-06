@@ -1,8 +1,9 @@
 target_sources(ablateLibrary
+        PRIVATE
+        constant.cpp
+        sutherland.cpp
         PUBLIC
         transportModel.hpp
         constant.hpp
-        constant.cpp
         sutherland.hpp
-        sutherland.cpp
         )

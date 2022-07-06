@@ -1,11 +1,13 @@
 target_sources(ablateLibrary
+        PRIVATE
+        particles.cpp
+        tracer.cpp
+        inertial.cpp
+
         PUBLIC
         particles.hpp
-        particles.cpp
         tracer.hpp
-        tracer.cpp
         inertial.hpp
-        inertial.cpp
         particleField.hpp
         )
 

@@ -1,28 +1,29 @@
 target_sources(ablateLibrary
+        PRIVATE
+        domain.cpp
+        subDomain.cpp
+        field.cpp
+        fieldDescription.cpp
+        boxMesh.cpp
+        dmWrapper.cpp
+        dmPlex.cpp
+        fileMesh.cpp
+        region.cpp
+        fieldDescription.cpp
+        boxMeshBoundaryCells.cpp
         PUBLIC
         domain.hpp
-        domain.cpp
         subDomain.hpp
-        subDomain.cpp
         field.hpp
-        field.cpp
         fieldDescription.hpp
-        fieldDescription.cpp
         boxMesh.hpp
-        boxMesh.cpp
         dmWrapper.hpp
-        dmWrapper.cpp
         dmPlex.hpp
-        dmPlex.cpp
         fileMesh.hpp
-        fileMesh.cpp
         region.hpp
-        region.cpp
         fieldDescription.hpp
-        fieldDescription.cpp
         fieldDescriptor.hpp
         boxMeshBoundaryCells.hpp
-        boxMeshBoundaryCells.cpp
         )
 
 add_subdirectory(modifiers)

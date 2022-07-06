@@ -27,7 +27,8 @@ TEST(FactoryParameterTests, ShouldCreateFromRegistar) {
     EXPECT_CALL(*mockFactory, GetClassType()).Times(::testing::Exactly(1)).WillOnce(::testing::ReturnRef(expectedClassType));
 
     // act
-    auto instance = ResolveAndCreate<ablate::parameters::Parameters>(mockFactory);
+    auto createMethod = Creator<ablate::parameters::Parameters>::GetCreateMethod(mockFactory->GetClassType());
+    auto instance = createMethod(mockFactory);
 
     // assert
     ASSERT_TRUE(instance != nullptr) << " should create an instance of the Parameters";
