@@ -592,7 +592,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
             }
         }
-        if (log) PetscPrintf(PETSC_COMM_WORLD, "Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
+        if (log) PetscPrintf(PETSC_COMM_WORLD, "Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);
     }
 
     /** ********************************************************************************************************************************
