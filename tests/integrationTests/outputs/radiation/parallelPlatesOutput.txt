@@ -2,18 +2,360 @@ MinMaxAvg euler for timestep 0000:
 	min: [0.177, 2.53e+05,  0,  0]
 	max: [0.623, 2.53e+05,  0,  0]
 	avg: [0.244, 2.53e+05,  0,  0]
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
 MinMaxAvg euler for timestep 0001:
 	min: [0.177, 2.53e+05,  0,  0]
 	max: [0.623, 2.53e+05,  0,  0]
 	avg: [0.244, 2.53e+05,  0,  0]
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
 MinMaxAvg euler for timestep 0002:
 	min: [0.177, 2.53e+05,  0,  0]
 	max: [0.623, 2.53e+05,  0,  0]
 	avg: [0.244, 2.53e+05,  0,  0]
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
 MinMaxAvg euler for timestep 0003:
 	min: [0.177, 2.53e+05,  0,  0]
 	max: [0.623, 2.54e+05,  0,  0]
 	avg: [0.244, 2.53e+05,  0,  0]
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
+DMSwarmDataEx: instance=0
+  topology status:        finalized
+  message lengths status: finalized
+  packer status status:   finalized
+  communication status:   finalized
+  Topology:
+    [0] neighbours: 0
+  Message lengths:
+    [0] atomic size: 56
 MinMaxAvg euler for timestep 0004:
 	min: [0.177, 2.53e+05,  0,  0]
 	max: [0.623, 2.53e+05,  0,  0]
