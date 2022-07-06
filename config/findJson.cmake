@@ -6,4 +6,3 @@ FetchContent_Declare(
         GIT_TAG v3.10.5
 )
 FetchContent_MakeAvailable(json)
-FetchContent_GetProperties(mu-parser)

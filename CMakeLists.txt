@@ -123,7 +123,7 @@ write_basic_package_version_file(
 )
 
 # create config file
-configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/config/Config.cmake.in
         "${CMAKE_CURRENT_BINARY_DIR}/ablateConfig.cmake"
         INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
         )
