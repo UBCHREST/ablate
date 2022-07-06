@@ -1,7 +1,8 @@
 target_sources(ablateLibrary
+        PRIVATE
+        boundarySolver.cpp
         PUBLIC
         boundarySolver.hpp
-        boundarySolver.cpp
         boundaryProcess.hpp
         )
 

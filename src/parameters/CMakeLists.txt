@@ -1,14 +1,15 @@
 target_sources(ablateLibrary
+        PRIVATE
+        parameters.cpp
+        mapParameters.cpp
+        factoryParameters.cpp
+        petscOptionParameters.cpp
+        petscPrefixOptions.cpp
         PUBLIC
         parameters.hpp
-        parameters.cpp
         parameterException.hpp
-        mapParameters.cpp
         mapParameters.hpp
         factoryParameters.hpp
-        factoryParameters.cpp
         petscOptionParameters.hpp
-        petscOptionParameters.cpp
         petscPrefixOptions.hpp
-        petscPrefixOptions.cpp
         )

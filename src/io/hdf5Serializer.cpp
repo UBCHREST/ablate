@@ -128,7 +128,7 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::~Hdf5ObjectSerializer() {
         PetscMPIInt rank;
         MPI_Comm_rank(PetscObjectComm(PetscObject(petscViewer)), &rank);
         if (rank == 0 && !filePath.empty() && std::filesystem::exists(filePath)) {
-            petscXdmfGenerator::Generate(filePath);
+            xdmfGenerator::Generate(filePath);
         }
 
         PetscViewerDestroy(&petscViewer) >> checkError;

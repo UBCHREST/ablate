@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18.4)
 find_package(PkgConfig REQUIRED)
 
 # Check if a C compiler is explicitly stated
@@ -16,7 +16,7 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
 endif ()
 
 # Set the project details
-project(ablateLibrary VERSION 0.8.29)
+project(ablateLibrary VERSION 0.8.30)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -27,8 +27,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# FetContent will allow downloading of other libraries
-include(FetchContent)
+# Load the cmake required libraries
+include(FetchContent) # FetContent will allow downloading of other libraries
+include(GNUInstallDirs) # make cache variables for install destinations
 
 # Check if we should enable testing options
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -36,15 +37,38 @@ if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CTest)
 endif ()
 
-# Add required warnings for projects
-function(ablate_default_target_compile_options_cxx target)
-    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:C>:$<$<OR:$<C_COMPILER_ID:Clang>,$<C_COMPILER_ID:AppleClang>,$<C_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wno-unused-parameter>>)
-    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -Werror -Wall -Wextra -Wwrite-strings -Wno-strict-aliasing -Wno-unknown-pragmas -Wsign-compare -fstack-protector -fno-stack-check -Wsuggest-override -Wno-unused-parameter >>)
-    target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:$<$<CXX_COMPILER_ID:GNU>: -Wno-missing-field-initializers -Wno-maybe-uninitialized>>)
-endfunction()
+# Create the library for ablate
+add_library(ablateLibrary SHARED)
 
-# Load in the subdirectories
+# Load in the subdirectories for the ablate library
 add_subdirectory(src)
+
+# find and load required libraries
+include(config/cmakeFunctions.cmake)
+include(config/findYamlCpp.cmake)
+include(config/findCppParser.cmake)
+include(config/findMuParser.cmake)
+include(config/findXdmfGenerator.cmake)
+include(config/findTChem.cmake)
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+include(config/findOpenCascade.cmake)
+include(config/findJson.cmake)
+include(config/findTensorFlow.cmake)
+
+# specify in the required libaries
+target_link_libraries(ablateLibrary
+        PUBLIC
+        PkgConfig::PETSc
+        CHREST::cppParserLibrary
+        yaml-cpp
+        muparser
+        CHREST::xdmfGeneratorLibrary
+        TChem::TChem
+        Threads::Threads
+        nlohmann_json::nlohmann_json
+        PRIVATE
+        chrestCompilerFlags)
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
@@ -55,16 +79,64 @@ set_property(TARGET ablateLibrary PROPERTY CXX_STANDARD 17)
 if (BUILD_TESTING)
     enable_testing()
     include(GoogleTest)
+    include(config/findGoogleTest.cmake)
     add_subdirectory(tests)
 
     # Include the format command only if we are building tests
-    include(clangFormatter.cmake)
+    include(config/clangFormatter.cmake)
 endif ()
 
 # keep a separate main statement
 add_executable(ablate main.cpp)
-target_link_libraries(ablate PRIVATE ablateLibrary)
-ablate_default_target_compile_options_cxx(ablate)
+target_link_libraries(ablate PUBLIC ablateLibrary chrestCompilerFlags)
 
 # include system specific hacks
-include(systemHacks.cmake)
+include(config/systemHacks.cmake)
+
+# install the cppParserLibrary (and others) target and create export-set
+install(TARGETS ablate ablateLibrary muparser nlohmann_json cppParserLibrary yaml-cpp xdmfGeneratorLibrary chrestCompilerFlags
+        EXPORT ablateTargets
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        )
+set_target_properties(ablate PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# install header file(s)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.hpp")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} FILES_MATCHING PATTERN "*.h")
+update_header_paths_for_install(ablateLibrary ${PROJECT_SOURCE_DIR}/src ${CMAKE_INSTALL_INCLUDEDIR})
+
+# generate and install export file
+install(EXPORT ablateTargets
+        FILE ablateTargets.cmake
+        NAMESPACE CHREST::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
+        )
+
+# generate the version file for the config file
+write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/ablateConfigVersion.cmake"
+        VERSION "${CMAKE_PROJECT_VERSION}"
+        COMPATIBILITY AnyNewerVersion
+)
+
+# create config file
+configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/config/Config.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/ablateConfig.cmake"
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
+        )
+
+# install config files
+install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/ablateConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/ablateConfigVersion.cmake"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ablate
+        )
+
+# generate the export targets for the build tree
+export(EXPORT ablateTargets
+        FILE "${CMAKE_CURRENT_BINARY_DIR}/cmake/ablateTargets.cmake"
+        NAMESPACE CHREST::
+        )

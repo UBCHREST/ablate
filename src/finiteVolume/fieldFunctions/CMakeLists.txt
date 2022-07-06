@@ -1,13 +1,14 @@
 target_sources(ablateLibrary
+        PRIVATE
+        compressibleFlowState.cpp
+        euler.cpp
+        massFractions.cpp
+        densityMassFractions.cpp
+        densityExtraVariables.cpp
         PUBLIC
         compressibleFlowState.hpp
-        compressibleFlowState.cpp
         euler.hpp
-        euler.cpp
         massFractions.hpp
-        massFractions.cpp
         densityMassFractions.hpp
-        densityMassFractions.cpp
         densityExtraVariables.hpp
-        densityExtraVariables.cpp
         )
