@@ -117,7 +117,7 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Ce
     /// Class Constants
     const PetscReal sbc = 5.6696e-8;  //!< Stefan-Boltzman Constant (J/K)
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    PetscInt numRanks;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
+    PetscMPIInt numRanks;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within

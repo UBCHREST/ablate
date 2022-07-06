@@ -7,9 +7,20 @@ has_children: false
 
 ## Mathematical Formulation
 
-The implementation of radiation heat transfer in this solver is based on the radiative transfer equation.
+The radiation implementation in ABLATE must handle participating media, an absorbing media that attenuates passing
+radiation. Radiation solvers are typically formulated to calculate the radiation into a point based on the amount of radiation incoming from a solid
+sphere of directions.
+
+The discrete transfer method involves decomposing the solid sphere into many discrete rays. These rays describe the
+amount of radiation that reaches the point for which the radiation is being calculated.
+
+The calculation of radiative intensity implemented in this radiation solver is based on the radiative transfer equation.
+This equation describes how the intensity of radiation changes through participating media.
 
 $$\frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I)$$
+
+Note that the change in intensity is proportional to the product of the intensity difference and the absorption at a
+given point.
 
 ## Computational Methods
 

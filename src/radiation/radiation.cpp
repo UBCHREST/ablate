@@ -93,7 +93,7 @@ void ablate::radiation::Radiation::RayInit() {
     VecGetArrayRead(cellGeomVec, &cellGeomArray);
     PetscFVCellGeom* cellGeom;
 
-    PetscInt rank;
+    PetscMPIInt rank;
     MPI_Comm_rank(subDomain->GetComm(), &rank);      //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
     MPI_Comm_size(subDomain->GetComm(), &numRanks);  //!< Get the number of ranks in the simulation.
 
@@ -382,7 +382,7 @@ void ablate::radiation::Radiation::RayInit() {
         DMSwarmGetLocalSize(radsearch, &npoints);   //!< Update the loop condition. Recalculate the number of particles that are in the domain.
 
         if (log) {
-            printf("Global Step: %3" PetscInt_FMT "    Global Points: %3i\n", stepcount, nglobalpoints);
+            printf("Global Step: %" PetscInt_FMT "    Global Points: %" PetscInt_FMT "\n", stepcount, nglobalpoints);
             stepcount++;
         }
     }
@@ -431,7 +431,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     struct Identifier* identifier;  //!< Pointer to the ray identifier information
 
     /** Get the current rank associated with this process */
-    PetscInt rank;
+    PetscMPIInt rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);  //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
 
     /** Get all of the ray information from the particle
