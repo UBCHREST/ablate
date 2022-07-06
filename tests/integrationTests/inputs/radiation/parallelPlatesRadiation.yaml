@@ -9,7 +9,7 @@
 #
 # | parameters | formula | value |
 # |:----------|:---------|:------|
-# | $$\kappa$$ | \frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I) | 1.0  |
+# | $$\kappa$$ | $$\frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I)$$ | 1.0  |
 #
 # ### Fields
 # The temperature field in this problem is assigned explicitly as an input. Based on this temperature field and

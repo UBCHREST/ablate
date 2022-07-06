@@ -382,7 +382,7 @@ void ablate::radiation::Radiation::RayInit() {
         DMSwarmGetLocalSize(radsearch, &npoints);   //!< Update the loop condition. Recalculate the number of particles that are in the domain.
 
         if (log) {
-            printf("Global Step: %3i    Global Points: %3i\n", stepcount, nglobalpoints);
+            printf("Global Step: %3" PetscInt_FMT "    Global Points: %3i\n", stepcount, nglobalpoints);
             stepcount++;
         }
     }
@@ -640,7 +640,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         PetscReal losses = 4 * sbc * *temperature * *temperature * *temperature * *temperature;
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
-        if (log) printf("Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
+        if (log) printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);
     }
 
     /** Cleanup*/

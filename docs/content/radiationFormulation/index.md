@@ -7,12 +7,13 @@ has_children: false
 
 ## Mathematical Formulation
 
+The implementation of radiation heat transfer in this solver is based on the radiative transfer equation.
+
+$$\frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I)$$
 
 ## Computational Methods
 
-
 ## Verification
-
 
     /** To transport a particle from one location to another, this simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
      * is called. The initialization particle field can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field could be
