@@ -8,8 +8,8 @@ has_children: false
 ## Mathematical Formulation
 
 The radiation implementation in ABLATE must handle participating media, an absorbing media that attenuates passing
-radiation. Radiation solvers are typically formulated to calculate the radiation into a point based on the amount of radiation incoming from a solid
-sphere of directions.
+radiation. Radiation solvers are typically formulated to calculate the radiation into a point based on the amount of
+radiation incoming from a solid sphere of directions.
 
 The discrete transfer method involves decomposing the solid sphere into many discrete rays. These rays describe the
 amount of radiation that reaches the point for which the radiation is being calculated.
@@ -20,9 +20,20 @@ This equation describes how the intensity of radiation changes through participa
 $$\frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I)$$
 
 Note that the change in intensity is proportional to the product of the intensity difference and the absorption at a
-given point.
+given point. This radiative transfer equation is implemented for each ray. All rays are summed along the solid sphere.
 
 ## Computational Methods
+
+The procedure for the implementation of this method is as follows. The solver is broken into an initialization and a
+solve step.
+
+The initialization of the solver forms the infrastructure for the gathering of ray information and
+communication across domains.
+
+The solve is completed in three stages. 1. Locally compute the source and absorption for each stored ray ID while
+updating the segment values to the fields of the particles. (based on this ray ID) 2. Send the particles to their origin
+ranks in order that the final computation can be completed. 3. Compute energy for every cell by searching through all
+present particles.
 
 ## Verification
 
