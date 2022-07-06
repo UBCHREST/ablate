@@ -128,13 +128,6 @@ void ablate::radiation::Radiation::RayInit() {
         }
     }
 
-    //    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
-    //        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-    //        DMPlexPointLocalRead(subDomain->GetDM(), iCell, cellGeomArray, &cellGeom);      //!< Reads the cell location from the current cell
-    //
-    //        printf("%i %1.3f\n", iCell, cellGeom->centroid[0]);
-    //    }
-
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
 
     PetscInt npoints = (cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
@@ -186,11 +179,10 @@ void ablate::radiation::Radiation::RayInit() {
 
     int ipart = 0;  //!< Initialize a counter to represent the particle index. This will be iterated every time that the inner loop is passed through.
 
-    //    if (rank == 0) {
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
 
-        // make sure we are not working on a ghost cell
+        /** make sure we are not working on a ghost cell */
         PetscInt ghost = -1;
         if (ghostLabel) {
             DMLabelGetValue(ghostLabel, iCell, &ghost);
@@ -206,7 +198,6 @@ void ablate::radiation::Radiation::RayInit() {
          */
         for (int ntheta = 1; ntheta < nTheta; ntheta++) {
             for (int nphi = 0; nphi < nPhi; nphi++) {
-
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
                 virtualcoord[ipart].x = cellGeom->centroid[0];
                 virtualcoord[ipart].y = cellGeom->centroid[1];
@@ -239,16 +230,15 @@ void ablate::radiation::Radiation::RayInit() {
             }
         }
     }
-    //    }
 
     /** Restore the fields associated with the particles */
     DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
     DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
-    //    if (log) {
-    PetscPrintf(subDomain->GetComm(), "Particles Initialized\n");
-    //    }
+    if (log) {
+        PetscPrintf(subDomain->GetComm(), "Particles Initialized\n");
+    }
 
     /** ***********************************************************************************************************************************************
      * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
@@ -292,7 +282,6 @@ void ablate::radiation::Radiation::RayInit() {
             PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from spherical coordinates, adding the position of the current cell
                                      (virtualcoord[ipart].y),   // y component conversion from spherical coordinates, adding the position of the current cell
                                      (virtualcoord[ipart].z)};  // z component conversion from spherical coordinates, adding the position of the current cell
-            //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a position vector in the current angle position
 
             /** This block creates the vector pointing to the cell whose index will be stored during the current loop */
             VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
@@ -374,10 +363,8 @@ void ablate::radiation::Radiation::RayInit() {
             virtualcoord[ipart].x += virtualcoord[ipart].xdir;  //!< x component: add one step to the coordinate position
             virtualcoord[ipart].y += virtualcoord[ipart].ydir;  //!< y component: add one step to the coordinate position
             virtualcoord[ipart].z += virtualcoord[ipart].zdir;  //!< z component: add one step to the coordinate position
-                                                                //(Reference for coordinate transformation: Rad. Heat Transf. Modest pg. 11) Create a direction vector in the current angle direction
 
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
-                                                            //            PetscPrintf(MPI_COMM_WORLD, "Point Step\n");
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
         DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
@@ -389,16 +376,15 @@ void ablate::radiation::Radiation::RayInit() {
         PetscSFDestroy(&cellSF);  //!< Return the stuff to PETSc
 
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
-        //        MPI_Barrier(subDomain->GetComm());
         DMSwarmMigrate(radsearch, PETSC_TRUE);  //!< Migrate the search particles and remove the particles that have left the domain space.
 
         DMSwarmGetSize(radsearch, &nglobalpoints);  //!< Update the loop condition. Recalculate the number of particles that are in the domain.
         DMSwarmGetLocalSize(radsearch, &npoints);   //!< Update the loop condition. Recalculate the number of particles that are in the domain.
 
-        //        if (log) {
-        printf("Global Step: %3i    Global Points: %3i\n", stepcount, nglobalpoints);
-        stepcount++;
-        //        }
+        if (log) {
+            printf("Global Step: %3i    Global Points: %3i\n", stepcount, nglobalpoints);
+            stepcount++;
+        }
     }
     /** Cleanup*/
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray);
@@ -407,14 +393,6 @@ void ablate::radiation::Radiation::RayInit() {
 
 PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
     PetscFunctionBeginUser;
-    /** Abstract PETSc object that manages an abstract grid object and its interactions with the algebraic solvers.
-     * These DM objects belong to the temperature field which is used to calculate radiation transport.
-     * The objects used to interface with the temperature field must be given the same communicator as the subDomain.
-     */
-    //    DM vdm;
-    //    Vec loctemp;
-    //    IS vis;
-    //    PetscScalar* rhsValues;
 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;
@@ -430,17 +408,11 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     VecGetArrayRead(auxVec, &auxArray);
 
     const auto& eulerFieldInfo = subDomain->GetField("euler");
-    //    auto dm = subDomain->GetDM();  //!< Get the main DM for the solution vector
 
     /** Get the temperature field.
      * For ABLATE implementation, get temperature based on this function.
      */
     const auto& temperatureField = subDomain->GetField("temperature");
-    //    auto vdm = subDomain->GetDM();  //!< Get the main DM for the temperature field
-
-    //    PetscScalar* temperatureArray = nullptr;
-    //    subDomain->GetFieldLocalVector(temperatureField, time, &vis, &loctemp, &vdm);
-    //    VecGetArray(loctemp, &temperatureArray);
 
     /** Declare the basic information*/
     PetscReal* sol;          //!< The solution value at any given location
@@ -500,7 +472,6 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                     Gets the temperature from the cell index specified
                 */
                 DMPlexPointLocalFieldRead(subDomain->GetDM(), rays[Key(identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
-                //                DMPlexPointLocalRead(vdm, rays[Key(identifier[ipart])].cells[n], temperatureArray, &temperature);
                 DMPlexPointLocalRead(subDomain->GetDM(), rays[Key(identifier[ipart])].cells[n], solArray, &sol);
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
@@ -526,15 +497,12 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     PetscInt* rankid;
     DMSwarmGetField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
-    //    DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
     for (int ipart = 0; ipart < npoints; ipart++) {
         rankid[ipart] = identifier[ipart].origin;
     }
     DMSwarmRestoreField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
     DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
-    //    DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
 
-    //    MPI_Barrier(subDomain->GetComm());
     DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
 
     /** ********************************************************************************************************************************
@@ -546,14 +514,14 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     solver::Range cellRange;  //!< Access to the cell index information is important here to get all of the ray identifier information.
     GetCellRange(cellRange);
 
-    // check to see if there is a ghost label
+    /** check to see if there is a ghost label */
     DMLabel ghostLabel;
     DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
 
-        // make sure we are not working on a ghost cell
+        /** Make sure we are not working on a ghost cell */
         PetscInt ghost = -1;
         if (ghostLabel) {
             DMLabelGetValue(ghostLabel, iCell, &ghost);
@@ -622,10 +590,9 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 }
                 theta = ((double)ntheta / (double)nTheta) * pi;  //!< This is a fine method of determining theta because it is in the original domain
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
-                                                                                                                                             //                printf(".\n");
             }
         }
-        //        PetscPrintf(PETSC_COMM_WORLD, "Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
+        if (log) PetscPrintf(PETSC_COMM_WORLD, "Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
     }
 
     /** ********************************************************************************************************************************
@@ -666,7 +633,6 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         }
 
         /** Gets the temperature from the cell index specified */
-        //        DMPlexPointLocalRef(vdm, iCell, temperatureArray, &temperature);
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, temperatureField.id, auxArray, &temperature);
 
         /** Put the irradiation into the right hand side function */
@@ -674,13 +640,11 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         PetscReal losses = 4 * sbc * *temperature * *temperature * *temperature * *temperature;
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
-        printf("Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
+        if (log) printf("Cell: %i Intensity: %f\n", iCell, origin[iCell].intensity);
     }
 
     /** Cleanup*/
     VecRestoreArrayRead(rhs, &rhsArray);
-    //    VecRestoreArray(loctemp, &temperatureArray);
-    //    subDomain->RestoreFieldLocalVector(temperatureField, &vis, &loctemp, &vdm);
     RestoreRange(cellRange);
 
     PetscFunctionReturn(0);
