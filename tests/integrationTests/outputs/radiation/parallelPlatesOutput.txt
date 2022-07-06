@@ -360,6 +360,9 @@ MinMaxAvg euler for timestep 0004:
 	min: [0.177, 2.53e+05,  0,  0]
 	max: [0.623, 2.53e+05,  0,  0]
 	avg: [0.244, 2.53e+05,  0,  0]
+WARNING: The following input parameters were not used:
+root/solvers/0/parameters/cfl
+root/timestepper/domain/fields/0/name
 ResultFiles:
 domain.hdf5
 domain.xmf
