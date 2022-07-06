@@ -45,6 +45,7 @@ add_subdirectory(src)
 
 # find and load required libraries
 include(config/cmakeFunctions.cmake)
+include(config/findKokkos.cmake)
 include(config/findYamlCpp.cmake)
 include(config/findCppParser.cmake)
 include(config/findMuParser.cmake)
@@ -64,15 +65,10 @@ target_link_libraries(ablateLibrary
         yaml-cpp
         muparser
         CHREST::xdmfGeneratorLibrary
-        TChem::TChem
+        TChem::tchem
+        Tines::tines
         Threads::Threads
-        nlohmann_json::nlohmann_json
-        PRIVATE
-        chrestCompilerFlags)
-
-#Json
-include(config/findJson.cmake)
-target_link_libraries(ablateLibrary PUBLIC nlohmann_json::nlohmann_json)
+        nlohmann_json::nlohmann_json)
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
@@ -92,13 +88,13 @@ endif ()
 
 # keep a separate main statement
 add_executable(ablate main.cpp)
-target_link_libraries(ablate PUBLIC ablateLibrary chrestCompilerFlags)
+target_link_libraries(ablate PUBLIC ablateLibrary)
 
 # include system specific hacks
 include(config/systemHacks.cmake)
 
 # install the cppParserLibrary (and others) target and create export-set
-install(TARGETS ablate ablateLibrary muparser nlohmann_json cppParserLibrary yaml-cpp xdmfGeneratorLibrary chrestCompilerFlags
+install(TARGETS ablate ablateLibrary muparser nlohmann_json cppParserLibrary yaml-cpp xdmfGeneratorLibrary chrestCompilerFlags tchem tines
         EXPORT ablateTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
