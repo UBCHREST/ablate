@@ -7,29 +7,12 @@ if (Tines::tines)
 elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
     message(STATUS "Tines_DIR not set.  Downloading and building Tines...")
 
-    # Tines would like a blas/lapack library
-    # Check if this was provided
-    OPTION(OPENBLAS_INSTALL_PATH "Path to OpenBLAS installation for Tines")
-    OPTION(LAPACKE_INSTALL_PATH "Path to LAPACKE installation for Tines")
-    OPTION(TINES_ENABLE_MKL "Flag to enable MKL for Tines" OFF)
-
-    # check for env var
-    if (DEFINED ENV{OPENBLAS_INSTALL_PATH} AND NOT OPENBLAS_INSTALL_PATH)
-        SET(OPENBLAS_INSTALL_PATH "$ENV{OPENBLAS_INSTALL_PATH}")
-    endif ()
-    if (DEFINED ENV{LAPACKE_INSTALL_PATH} AND NOT LAPACKE_INSTALL_PATH)
-        SET(LAPACKE_INSTALL_PATH "$ENV{LAPACKE_INSTALL_PATH}")
-    endif ()
-
-    # if not defined, check for default petsc values
-    if (NOT (OPENBLAS_INSTALL_PATH OR LAPACKE_INSTALL_PATH OR TINES_ENABLE_MKL))
-        include(config/findBlasLapack.cmake)
-        find_petsc_blas_lapack(OPENBLAS_INSTALL_PATH LAPACKE_INSTALL_PATH TINES_ENABLE_MKL)
-    endif ()
-
     # tines expects the yaml-cpp target to be at yaml
     add_library(yaml ALIAS yaml-cpp)
     set(TINES_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
+    set(TINES_DENSE_LINEAR_ALGEBRA_WARNING OFF CACHE BOOL "" FORCE)
+    set(TINES_CUDA_WARNING OFF CACHE BOOL "" FORCE)
+    set(TINES_SUNDIALS_WARNING OFF CACHE BOOL "" FORCE)
 
     FetchContent_Declare(tines
             GIT_REPOSITORY https://github.com/UBCHREST/Tines.git
