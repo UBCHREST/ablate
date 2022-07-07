@@ -27,8 +27,6 @@ FUNCTION(check_petsc_argument regexArgument found)
     file(STRINGS "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/petsc/conf/configure-hash" configureLines REGEX "${regexArgument}")
     if (configureLines)
         set(${found} TRUE PARENT_SCOPE)
-    else ()
-        set(${found} FALSE PARENT_SCOPE)
     endif()
 
 ENDFUNCTION()

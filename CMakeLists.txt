@@ -94,7 +94,7 @@ target_link_libraries(ablate PUBLIC ablateLibrary)
 include(config/systemHacks.cmake)
 
 # install the cppParserLibrary (and others) target and create export-set
-install(TARGETS ablate ablateLibrary muparser nlohmann_json cppParserLibrary yaml-cpp xdmfGeneratorLibrary chrestCompilerFlags tchem tines
+install(TARGETS ablate ablateLibrary muparser nlohmann_json cppParserLibrary yaml-cpp xdmfGeneratorLibrary chrestCompilerFlags
         EXPORT ablateTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}

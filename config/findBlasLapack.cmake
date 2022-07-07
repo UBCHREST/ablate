@@ -6,7 +6,7 @@ FUNCTION(find_petsc_blas_lapack OPENBLAS_INSTALL_PATH LAPACKE_INSTALL_PATH TINES
     # check if the specified library is either openblas or mkl
     if (blaslapackDir)
         set(BLA_VENDOR OpenBLAS)
-        find_package(BLAS NO_DEFAULT_PATH PATHS ${blaslapackDir})
+        find_package(BLAS NO_DEFAULT_PATH QUIET PATHS ${blaslapackDir})
         if (BLAS_FOUND)
             set(OPENBLAS_INSTALL_PATH ${blaslapackDir} PARENT_SCOPE)
             message(STATUS Using OPENBLAS_INSTALL_PATH ${OPENBLAS_INSTALL_PATH})
@@ -18,7 +18,7 @@ FUNCTION(find_petsc_blas_lapack OPENBLAS_INSTALL_PATH LAPACKE_INSTALL_PATH TINES
 
         foreach (intelBlas ${intelBlasList})
             set(BLA_VENDOR ${intelBlas})
-            find_package(BLAS NO_DEFAULT_PATH PATHS ${blaslapackDir})
+            find_package(BLAS NO_DEFAULT_PATH QUIET PATHS ${blaslapackDir})
 
             if (BLAS_FOUND)
                 set(TINES_ENABLE_MKL TRUE PARENT_SCOPE)
@@ -33,6 +33,6 @@ FUNCTION(find_petsc_blas_lapack OPENBLAS_INSTALL_PATH LAPACKE_INSTALL_PATH TINES
     if (openBlasDownload)
         # set the open blas to the petsc directory
 
+        return()
     endif ()
-
 ENDFUNCTION()

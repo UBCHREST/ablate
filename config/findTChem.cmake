@@ -9,9 +9,20 @@ elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
 
     # Tines would like a blas/lapack library
     # Check if this was provided
+    message(OPENBLAS_INSTALL_PATH $ENV{OPENBLAS_INSTALL_PATH})
     OPTION(OPENBLAS_INSTALL_PATH "Path to OpenBLAS installation for Tines")
     OPTION(LAPACKE_INSTALL_PATH "Path to LAPACKE installation for Tines")
     OPTION(TINES_ENABLE_MKL "Flag to enable MKL for Tines" OFF)
+
+    # check for env var
+    if (DEFINED ENV{OPENBLAS_INSTALL_PATH} AND NOT OPENBLAS_INSTALL_PATH)
+        SET(OPENBLAS_INSTALL_PATH "$ENV{OPENBLAS_INSTALL_PATH}")
+    endif ()
+    if (DEFINED ENV{LAPACKE_INSTALL_PATH} AND NOT LAPACKE_INSTALL_PATH)
+        SET(LAPACKE_INSTALL_PATH "$ENV{LAPACKE_INSTALL_PATH}")
+    endif ()
+
+    # if not defined, check for default petsc values
     if (NOT (OPENBLAS_INSTALL_PATH OR LAPACKE_INSTALL_PATH OR TINES_ENABLE_MKL))
         include(config/findBlasLapack.cmake)
         find_petsc_blas_lapack(OPENBLAS_INSTALL_PATH LAPACKE_INSTALL_PATH TINES_ENABLE_MKL)
@@ -31,6 +42,26 @@ elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
     if (TARGET tines)
         add_library(Tines::tines ALIAS tines)
     endif ()
+
+    # add tines
+    install(TARGETS tines
+            EXPORT ablateTargets
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            )
+    # check for openblas
+    if (OPENBLAS_INSTALL_PATH)
+        install(TARGETS openblas
+                EXPORT ablateTargets
+                LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+                RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+                INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+                )
+    endif ()
+
 elseif ()
     find_package(Tines REQUIRED)
 endif ()
@@ -52,6 +83,16 @@ if (NOT (DEFINED TChem_DIR|CACHE{TChem_DIR}|ENV{TChem_DIR}))
     if (TARGET tchem)
         add_library(TChem::tchem ALIAS tchem)
     endif ()
+
+    install(TARGETS tchem
+            EXPORT ablateTargets
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+            )
+
 elseif ()
     find_package(TChem REQUIRED)
 endif ()
+
