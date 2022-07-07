@@ -11,7 +11,8 @@ Radiation heat transfer makes up a source term in the energy equation, which has
 components. While the losses are easy to calculate, (using only the properties of the cell in question) the gains
 involve the entire domain. This means that in order to solve for the radiative gains of a single cell, rays are traced
 from the boundaries of the domain into the cell center. The summation of these rays about a solid sphere results in the
-radiative gain that the cell experiences from its environment. The energy equation is shown below.
+radiative gain that the cell experiences from its environment. The calculation of the energy source term due to
+radiation is shown below.
 
 $$ -\nabla \cdot (\vec{q_{rad}}) = -\kappa (4 \sigma T^4 - G_{irr}) $$
 
@@ -20,31 +21,29 @@ The calculated radiation term becomes a source term in the energy equation. The 
 $$ \rho C_p \frac{D T}{D t} + \nabla \cdot (\rho e \vec{v}) = - \nabla \cdot (\vec{q_{rad}} + \vec{q_{cond}}) + Q_
 {source} $$
 
-\begin{itemize}
-\item $\rho$ is density
-\item $C_p$ is constant pressure specific heat
-\item $T$ is temperature
-\item $e$ is internal energy
-\item $\vec{v}$ is velocity
-\item $\vec{q_{rad}}$ is radiative heat
-\item $\vec{q_{cond}}$ is conductive heat
-\item $Q_{source}$ represents an energy source term
-\end{itemize}
+$\rho$ is density, $C_p$ is constant pressure specific heat, $T$ is temperature, $e$ is internal energy, $\vec{v}$ is
+velocity, $\vec{q_{rad}}$ is radiative heat, $\vec{q_{cond}}$ is conductive heat, $Q_{source}$ represents an energy
+source term.
 
 $G_{irr}$ represents the irradiation on the cell by its environment. Ray tracing solves the problem of
 calculating irradiation by discretizing the solid sphere, or breaking it into pieces, and casting discrete rays into the
-domain. A finite number of rays can be used to approximate the total irradiation from every direction away from the cell
-by summing their effects. For our purposes, $\theta$ is extended to $2 \pi$ in order to include the entire sphere and
+domain. The radiative properties along these rays are calculated, and the final radiation due to each ray is contributed
+to the cell. A finite number of rays can be used to approximate the total irradiation from every direction. The figure
+below shows angles considered for the irradiation of a surface. For our
+purposes, $\theta$ is extended to $2 \pi$ in order to include the entire sphere and
 the irradiation of the cell as a volume. The figure describing the solid sphere formulation is shown below.
 
 Solid angle figure here
 
 $$ G_{irr} = \int_{0}^{2\pi} \int_{0}^{\pi} I_{pt}(\theta,\phi)\ sin\theta\ d\theta\ d\phi $$
 
-The summing of ray intensities around the whole solid sphere is as follows. The presence of the sine term is
+The summing of ray intensities around the whole solid sphere is shown. The contribution of each individual ray is added
+to the total irradiation of the solid sphere. The presence of the sine term is
 an artifact of the polar coordinates. For example, at $\theta = 0$, all rays at each $\phi$ occupy the same point.
-Therefore, they are all weighted at 0. The effects of this integral must be broken into a discrete formulation in order
-to be of use computationally.
+Therefore, they are all weighted at 0. Because of this, no rays are cast in the vertical direction. They begin at a
+small angle and are equally spaced through $theta$. The effects of this integral must be broken into a discrete
+formulation in order to be of use computationally. The equation below represents the actual discretization of the above
+integral.
 
 $$ G_{irr}\ = \sum_{\theta=0}^{n_{\theta}}\sum_{\phi=0}^{n_{\phi}} I_{pt}(\theta,\phi)\ sin\theta\ \Delta \theta\ \Delta
 \phi $$
@@ -76,15 +75,54 @@ given point. This radiative transfer equation is implemented for each ray. All r
 ## Computational Methods
 
 The procedure for the implementation of this method is as follows. The solver is broken into an initialization and a
-solve step.
+solve step. The initialization is responsible for forming the ray segments which the properties of the domains are read
+from later on. Each ray is likely to cross a domain boundary. This means that the formation of the ray segments based
+on their geometry is a highly global communication process. The global communication and coordination of this process
+is assisted by PETSc particles. The particle functionality is useful in this process for two reasons. First, the
+particles can be passed from one domain to another based on their physical coordinates. This means that search
+particles can be transported effectively from one domain to another simply stepping them through space along their
+ray line. The second useful attribute of particles in this application is that they can carry information across domains
+as they complete their migration process. The definition of the information is arbitrary. In every implementation of the
+particles for the radiation solver, information has been stored in a small number of structs in the respective
+particle fields.
 
 The initialization of the solver forms the infrastructure for the gathering of ray information and
-communication across domains.
+communication across domains. The particles are transported through space along their rays in order to inform the local
+domain of what rays exist there. The particles are responsible for identifying which cells belong to which ray segment,
+and creating an associated local storage of information which is globally identifiable to a specific ray segment. It
+also is responsible for creating a communication infrastructure which will be used in the later solve steps. The purpose
+of
+the communication infrastructure is to carry identifiable ray segment property information from the domain in which the
+segment is contained to the domain in which the origin cell is contained. The ray segment property information can then
+be used by the origin cell in order to sum the ray intensities and compute the final irradiation. Therefore, as each
+particle travels through a domain associated with a process, that process will establish a local ray segment in memory
+along with a carrier particle for the solve step described. When all particles have exited the simulation domain, the
+ray segment establishment is complete. Each process will have a ray segment collection which is globally linked to a
+cell in another domain. It will also have the carrier particle which is responsible for containing and transporting the
+information associated with these cell segments. After the completion of this initialization, the solver may move on to
+the solve step.
 
-The solve is completed in three stages. 1. Locally compute the source and absorption for each stored ray ID while
-updating the segment values to the fields of the particles. (based on this ray ID) 2. Send the particles to their origin
-ranks in order that the final computation can be completed. 3. Compute energy for every cell by searching through all
-present particles.
+The computation of the energy source term, or the solve, is completed in three stages.
+
+1. Locally compute the source and absorption for each stored ray identifier while updating the segment values to the
+   fields of the carrier particles. (based on the ray identifier)
+2. Send the particles to their origin ranks in order that the final computation can be completed.
+3. Compute energy for every cell by searching through all present (transported) particles.
+
+Notice that the local computation of the ray segment properties is computed first. In the former version of the serial
+solver, the computation of the ray intensities was completed linearly through the ray. The crossing of domains requires
+that the rays be broken into local segments. However, the ray intensities could still be computed linearly through the
+entire ray.
+The organization of the solve into these steps has a few key advantages. The first advantage is that each solve step
+only has one communication through the entire domain. The previous approach involves moving information linearly
+through the entire ray. In this case, multiple communications would occur for each ray. Even if these communications
+were synchronized, the differing number of segments in each ray
+would mean that the number of communications is unknown and that the majority of the processes could be idly waiting
+for the last communication. The second advantage is that the communication of the information in this manner requires
+only one communication for each ray segment. If the rays were solved through linearly, each process would
+require two communications. The first communication would move information into the domain and the second communication
+would move information out of the domain. The organization of all ray segment information to the origin rank in one
+step allows for a single communication where the segment order of information is handled by the local process.
 
 ## Verification
 
