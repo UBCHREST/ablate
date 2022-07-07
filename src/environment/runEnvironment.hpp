@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_RUNENVIRONMENT_HPP
 #define ABLATELIBRARY_RUNENVIRONMENT_HPP
 #include <filesystem>
+#include <functional>
 #include <memory>
 #include <string>
 #include "parameters/parameters.hpp"
