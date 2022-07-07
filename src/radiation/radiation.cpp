@@ -86,7 +86,7 @@ void ablate::radiation::Radiation::RayInit() {
      * Obtain the geometric information about the cells in the DM
      * */
 
-    //    StartEvent("Radiation Solve");
+    StartEvent("Radiation Initialization");
 
     const PetscScalar* cellGeomArray;
     PetscReal minCellRadius;
@@ -393,13 +393,13 @@ void ablate::radiation::Radiation::RayInit() {
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray);
     RestoreRange(cellRange);
 
-    //    EndEvent("Radiation Initialize");
+    EndEvent();
 }
 
 PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
     PetscFunctionBeginUser;
 
-    // StartEvent("Radiation Solve");
+    StartEvent("Radiation Solve");
 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;
@@ -654,7 +654,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     VecRestoreArrayRead(rhs, &rhsArray);
     RestoreRange(cellRange);
 
-    //    EndEvent("Radiation Solve");
+    EndEvent();
 
     PetscFunctionReturn(0);
 }

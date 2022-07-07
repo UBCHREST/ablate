@@ -12,7 +12,8 @@
 
 namespace ablate::radiation {
 
-class Radiation : public solver::CellSolver, public solver::RHSFunction {  // Cell solver provides cell based functionality, right hand side function compatibility with finite element/ volume
+class Radiation : public solver::CellSolver, public solver::RHSFunction, public utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
+                                                                                                       //!< finite element/ volume, loggable allows for the timing and tracking of events
    public:
     /**
      *

@@ -130,6 +130,12 @@ Multiple test cases will be used to verify that the solver is properly functioni
 parallel plates with a media of defined temperature distribution. The one dimensional analytical solution of this
 problem is compared against the results from the solver in order to define the error.
 
+The appropriate number of rays to use for each cell is about 500. 
+
+## Scaling
+
+
+
     /** To transport a particle from one location to another, this simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
      * is called. The initialization particle field can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field could be
      * essentially deleted during the solve portion. It must be replaced with a set of particles associated with every ray segment. The field initialized for the solve portion will have more particles
