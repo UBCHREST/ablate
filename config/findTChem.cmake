@@ -1,6 +1,3 @@
-
-
-
 # check to see if the Tines_DIR was specified, if not build
 if (Tines::tines)
     message(STATUS "Found Tines::tines target")
