@@ -9,7 +9,6 @@ elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
 
     # Tines would like a blas/lapack library
     # Check if this was provided
-    message(OPENBLAS_INSTALL_PATH $ENV{OPENBLAS_INSTALL_PATH})
     OPTION(OPENBLAS_INSTALL_PATH "Path to OpenBLAS installation for Tines")
     OPTION(LAPACKE_INSTALL_PATH "Path to LAPACKE installation for Tines")
     OPTION(TINES_ENABLE_MKL "Flag to enable MKL for Tines" OFF)
