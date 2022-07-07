@@ -23,7 +23,7 @@ FUNCTION(find_petsc_blas_lapack OPENBLAS_INSTALL_PATH LAPACKE_INSTALL_PATH TINES
 
             if (BLAS_FOUND)
                 set(TINES_ENABLE_MKL TRUE PARENT_SCOPE)
-                message(STATUS Set TINES_ENABLE_MKL ${TINES_ENABLE_MKL})
+                message(STATUS "Set TINES_ENABLE_MKL " ${TINES_ENABLE_MKL})
                 return()
             endif ()
         endforeach ()
