@@ -7,6 +7,57 @@ has_children: false
 
 ## Mathematical Formulation
 
+Radiation heat transfer makes up a source term in the energy equation, which has the radiative gains and losses as its
+components. While the losses are easy to calculate, (using only the properties of the cell in question) the gains
+involve the entire domain. This means that in order to solve for the radiative gains of a single cell, rays are traced
+from the boundaries of the domain into the cell center. The summation of these rays about a solid sphere results in the
+radiative gain that the cell experiences from its environment. The energy equation is shown below.
+
+$$ -\nabla \cdot (\vec{q_{rad}}) = -\kappa (4 \sigma T^4 - G_{irr}) $$
+
+The calculated radiation term becomes a source term in the energy equation. The energy equation is as follows.
+
+$$ \rho C_p \frac{D T}{D t} + \nabla \cdot (\rho e \vec{v}) = - \nabla \cdot (\vec{q_{rad}} + \vec{q_{cond}}) + Q_
+{source} $$
+
+\begin{itemize}
+\item $\rho$ is density
+\item $C_p$ is constant pressure specific heat
+\item $T$ is temperature
+\item $e$ is internal energy
+\item $\vec{v}$ is velocity
+\item $\vec{q_{rad}}$ is radiative heat
+\item $\vec{q_{cond}}$ is conductive heat
+\item $Q_{source}$ represents an energy source term
+\end{itemize}
+
+$G_{irr}$ represents the irradiation on the cell by its environment. Ray tracing solves the problem of
+calculating irradiation by discretizing the solid sphere, or breaking it into pieces, and casting discrete rays into the
+domain. A finite number of rays can be used to approximate the total irradiation from every direction away from the cell
+by summing their effects. For our purposes, $\theta$ is extended to $2 \pi$ in order to include the entire sphere and
+the irradiation of the cell as a volume. The figure describing the solid sphere formulation is shown below.
+
+Solid angle figure here
+
+$$ G_{irr} = \int_{0}^{2\pi} \int_{0}^{\pi} I_{pt}(\theta,\phi)\ sin\theta\ d\theta\ d\phi $$
+
+The summing of ray intensities around the whole solid sphere is as follows. The presence of the sine term is
+an artifact of the polar coordinates. For example, at $\theta = 0$, all rays at each $\phi$ occupy the same point.
+Therefore, they are all weighted at 0. The effects of this integral must be broken into a discrete formulation in order
+to be of use computationally.
+
+$$ G_{irr}\ = \sum_{\theta=0}^{n_{\theta}}\sum_{\phi=0}^{n_{\phi}} I_{pt}(\theta,\phi)\ sin\theta\ \Delta \theta\ \Delta
+\phi $$
+
+The third equation shows how the irradiation is calculated for a cell. Each ray is weighted by its partial
+area. The “sine of theta” in this equation represents a conversion from polar coordinates. At each theta there is an
+equal number of rays around the circumference of the band. However, the lower bands have a lower density of rays
+compared to the high bands (small theta). Therefore, when theta is 0 and many rays occupy the same point, they are
+weighted as 0 and so on.
+
+With this solid angle formulation, many rays can be generated for each cell and their intensities individually
+calculated.
+
 The radiation implementation in ABLATE must handle participating media, an absorbing media that attenuates passing
 radiation. Radiation solvers are typically formulated to calculate the radiation into a point based on the amount of
 radiation incoming from a solid sphere of directions.
@@ -36,6 +87,10 @@ ranks in order that the final computation can be completed. 3. Compute energy fo
 present particles.
 
 ## Verification
+
+Multiple test cases will be used to verify that the solver is properly functioning. The first test case used is a set of
+parallel plates with a media of defined temperature distribution. The one dimensional analytical solution of this
+problem is compared against the results from the solver in order to define the error.
 
     /** To transport a particle from one location to another, this simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
      * is called. The initialization particle field can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field could be
