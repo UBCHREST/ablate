@@ -12,8 +12,10 @@
 
 namespace ablate::radiation {
 
-class Radiation : public solver::CellSolver, public solver::RHSFunction, public utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
-                                                                                                       //!< finite element/ volume, loggable allows for the timing and tracking of events
+class Radiation : public solver::CellSolver,
+                  public solver::RHSFunction,
+                  public utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
+                                                           //!< finite element/ volume, loggable allows for the timing and tracking of events
    public:
     /**
      *
@@ -55,10 +57,12 @@ class Radiation : public solver::CellSolver, public solver::RHSFunction, public 
      * This information will be owned by cell index and stored in a map of local cell indices.
      * */
     struct Origin {
-        PetscReal I0 = 0;         //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
-        PetscReal Isource = 0;    //!< Value that will be contributed to by every ray segment.
-        PetscReal Kradd = 1;      //!< Value that will be contributed to by every ray segment.
-        PetscReal intensity = 0;  //!<  Value that will be contributed to by every ray.
+        PetscReal I0 = 0;                   //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
+        PetscReal Isource = 0;              //!< Value that will be contributed to by every ray segment.
+        PetscReal Kradd = 1;                //!< Value that will be contributed to by every ray segment.
+        PetscReal intensity = 0;            //!<  Value that will be contributed to by every ray.
+        std::map<Identifier, Carrier> ray;  //!< Stores local carrier information TODO: Why does is Identifier not recognized?
+        PetscInt nsegmax = 0;               //!< Number of segments that are in this carrier ray. TODO: (Maybe don't need to store this, replace with map function call)
     };
 
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
