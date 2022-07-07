@@ -8,6 +8,7 @@
 #include "monitors/logs/log.hpp"
 #include "solver/cellSolver.hpp"
 #include "solver/timeStepper.hpp"
+#include "utilities/loggable.hpp"
 
 namespace ablate::radiation {
 
