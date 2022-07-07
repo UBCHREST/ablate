@@ -6,6 +6,7 @@ FUNCTION(find_petsc_blas_lapack OPENBLAS_INSTALL_PATH LAPACKE_INSTALL_PATH TINES
     # check if the specified library is either openblas or mkl
     message(STATUS Found PETSc blaslapack-dir ${blaslapackDir})
     if (blaslapackDir)
+        set(BLAS_DIR ${blaslapackDir})
         set(BLA_VENDOR OpenBLAS)
         find_package(BLAS NO_DEFAULT_PATH QUIET PATHS ${blaslapackDir})
         if (BLAS_FOUND)
