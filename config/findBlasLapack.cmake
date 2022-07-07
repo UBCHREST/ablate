@@ -19,7 +19,7 @@ FUNCTION(find_petsc_blas_lapack OPENBLAS_INSTALL_PATH LAPACKE_INSTALL_PATH TINES
 
         foreach (intelBlas ${intelBlasList})
             set(BLA_VENDOR ${intelBlas})
-            find_package(BLAS NO_DEFAULT_PATH QUIET PATHS ${blaslapackDir})
+            find_package(BLAS NO_DEFAULT_PATH PATHS ${blaslapackDir})
 
             if (BLAS_FOUND)
                 set(TINES_ENABLE_MKL TRUE PARENT_SCOPE)
