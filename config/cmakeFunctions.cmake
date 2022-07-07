@@ -11,22 +11,9 @@ FUNCTION(update_header_paths_for_install target buildRoot installRoot)
     set_property(TARGET ${target} PROPERTY INTERFACE_SOURCES ${interfaceListUpdated})
 ENDFUNCTION()
 
-# find petsc argument
-FUNCTION(get_petsc_argument regexArgument argument)
-    file(STRINGS "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/petsc/conf/configure-hash" configureLines REGEX "${regexArgument}")
-    if (configureLines)
-        string(REGEX MATCH ${regexArgument} foundArgument ${configureLines})
-        if (${CMAKE_MATCH_COUNT} GREATER 0)
-            set(${argument} ${CMAKE_MATCH_1} PARENT_SCOPE)
-            return()
-        endif ()
-    endif ()
-ENDFUNCTION()
-
-FUNCTION(check_petsc_argument regexArgument found)
-    file(STRINGS "$ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/petsc/conf/configure-hash" configureLines REGEX "${regexArgument}")
-    if (configureLines)
-        set(${found} TRUE PARENT_SCOPE)
-    endif()
-
+# set the included directories as system
+FUNCTION(set_include_directories_as_system target)
+    get_target_property(_include ${target} INTERFACE_INCLUDE_DIRECTORIES)
+    set_property(TARGET ${target} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
+    target_include_directories(${target} SYSTEM INTERFACE ${_include})
 ENDFUNCTION()

@@ -45,6 +45,10 @@ add_subdirectory(src)
 
 # find and load required libraries
 include(config/cmakeFunctions.cmake)
+
+# prevent error checks on included header files
+set_include_directories_as_system(PkgConfig::PETSc)
+
 include(config/findKokkos.cmake)
 include(config/findYamlCpp.cmake)
 include(config/findCppParser.cmake)
@@ -68,7 +72,9 @@ target_link_libraries(ablateLibrary
         TChem::tchem
         Tines::tines
         Threads::Threads
-        nlohmann_json::nlohmann_json)
+        nlohmann_json::nlohmann_json
+        PRIVATE
+        chrestCompilerFlags)
 
 # Set the ablate library requirements
 set_property(TARGET ablateLibrary PROPERTY CXX_EXTENSIONS ON)
@@ -88,7 +94,7 @@ endif ()
 
 # keep a separate main statement
 add_executable(ablate main.cpp)
-target_link_libraries(ablate PUBLIC ablateLibrary)
+target_link_libraries(ablate PUBLIC ablateLibrary PRIVATE chrestCompilerFlags)
 
 # include system specific hacks
 include(config/systemHacks.cmake)

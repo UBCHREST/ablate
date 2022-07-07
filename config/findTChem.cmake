@@ -17,6 +17,10 @@ elseif (NOT (DEFINED Tines_DIR|CACHE{Tines_DIR}|ENV{Tines_DIR}))
             SOURCE_SUBDIR src
             )
     FetchContent_MakeAvailable(tines)
+
+    # prevent error checks on included header files
+    set_include_directories_as_system(tines)
+
     # make sure it is in the right name space
     if (TARGET tines)
         add_library(Tines::tines ALIAS tines)
@@ -58,6 +62,10 @@ if (NOT (DEFINED TChem_DIR|CACHE{TChem_DIR}|ENV{TChem_DIR}))
             SOURCE_SUBDIR src
             )
     FetchContent_MakeAvailable(tchem)
+
+    # prevent error checks on included header files
+    set_include_directories_as_system(tchem)
+
     # make sure it is in the right name space
     if (TARGET tchem)
         add_library(TChem::tchem ALIAS tchem)
