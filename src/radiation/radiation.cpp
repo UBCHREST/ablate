@@ -399,7 +399,7 @@ void ablate::radiation::Radiation::RayInit() {
 PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
     PetscFunctionBeginUser;
 
-    //    StartEvent("Radiation Solve");
+    StartEvent("Radiation Solve");
 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;
@@ -443,12 +443,12 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 
     /** Get all of the ray information from the particle
      * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
-    if (log) StartEvent("GetFields");
+    //    if (log) StartEvent("GetFields");
     PetscInt npoints;
     DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
-    if (log) EndEvent();
+    //    if (log) EndEvent();
 
     /** ********************************************************************************************************************************
      * Iterate over the particles that are present in the domain
@@ -457,13 +457,13 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * First the particles should be zeroed in case they are carrying information from the last time step.
      * Then the entire solve sequence can be run through. This will require that the particles are iterated through twice.
      * */
-    if (log) StartEvent("Zero Particles");
+    //    if (log) StartEvent("Zero Particles");
     for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate through the particles in the space to zero their information.
         carrier[ipart].Ij = 0;                       //!< Zero the intensity of the segment
         carrier[ipart].Krad = 1;                     //!< Zero the total absorption for this domain
         carrier[ipart].I0 = 0;                       //!< Zero the initial intensity of the ray segment
     }
-    if (log) EndEvent();
+    //    if (log) EndEvent();
     /** Now that the particle information has been zeroed, the solve can begin. */
     for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                      //!< particles then pass out of initialization.
@@ -482,21 +482,21 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                     Get the array that lives inside the vector
                     Gets the temperature from the cell index specified
                 */
-                if (log) StartEvent("Field Read");
+                //                if (log) StartEvent("Field Read");
                 DMPlexPointLocalFieldRead(subDomain->GetDM(), rays[Key(identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
                 DMPlexPointLocalRead(subDomain->GetDM(), rays[Key(identifier[ipart])].cells[n], solArray, &sol);
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-                if (log) EndEvent();
+//                if (log) EndEvent();
 
-                if (log) StartEvent("Local Compute");
+//                if (log) StartEvent("Local Compute");
                 carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(identifier[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
                 carrier[ipart].Krad *= exp(-kappa * rays[Key(identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
 
                 if (n == (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
                     carrier[ipart].I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
                 }
-                if (log) EndEvent();
+                //                if (log) EndEvent();
             }
         }
     }
@@ -509,7 +509,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * Now the carrier has all of the information from the rays that are needed to compute the final ray intensity. Therefore, we will perform the migration.
      * Then, all of the carrier particles will be looped through and the local Origins associated with each cell will be updated
      * */
-    if (log) StartEvent("Rank Assign");
+    //    if (log) StartEvent("Rank Assign");
     PetscInt* rankid;
     DMSwarmGetField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
@@ -518,11 +518,11 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     }
     DMSwarmRestoreField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
     DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
-    if (log) EndEvent();
+    //    if (log) EndEvent();
 
-    if (log) StartEvent("Solve Migrate");
+    //    if (log) StartEvent("Solve Migrate");
     DMSwarmMigrate(radsolve, PETSC_FALSE);  //!< After iterating through all of the particles, perform a migration to the origin ranks. This will move the particles.
-    if (log) EndEvent();
+                                            //    if (log) EndEvent();
 
     /** ********************************************************************************************************************************
      * Now iterate through all of the particles in order to perform the information transfer */
@@ -536,8 +536,6 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         origin[identifier[ipart].iCell].handler[Key(identifier[ipart])].Ij = carrier[ipart].Ij;
         origin[identifier[ipart].iCell].handler[Key(identifier[ipart])].I0 = carrier[ipart].I0;
     }
-
-    // TODO: The carrier particles could probably be deleted at this point so that the information doesn't need to be carried any further through the solve.
 
     /** ********************************************************************************************************************************
      * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
@@ -573,7 +571,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 Identifier loopid = {.origin = rank, .iCell = iCell, .ntheta = ntheta, .nphi = nphi, .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
 
                 /** Get the maximum nsegment by looping through all of the particles and searching for it. (This is dumb and slow but easy to think of)*/
-                if (log) StartEvent("Order Segment");
+                //                if (log) StartEvent("Order Segment");
                 bool pointfound = true;
                 PetscInt oldsegment = loopid.nsegment;
                 while (pointfound) {
@@ -587,7 +585,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                     pointfound = !(oldsegment == loopid.nsegment);  //!< If no point was found during the whole for loop, then we must have stumbled on the last segment in this ray.
                     oldsegment = loopid.nsegment;                   //!< Set the old segment
                 }
-                if (log) EndEvent();
+                //                if (log) EndEvent();
 
                 /** Now that we have found the maximum segment in the domain, we can iterate from the last segment to the beginning segment of this ray identifier */
                 /** Iterate over the particles that are present in the domain
@@ -601,7 +599,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 oldsegment = loopid.nsegment;  //!< Set the old segment to be the head of the ray
                 origin[iCell].I0 = 0;          //!< For the last segment in the domain, take that as the black body intensity of the far field.
 
-                if (log) StartEvent("Global Compute");
+                //                if (log) StartEvent("Global Compute");
                 while (loopid.nsegment > 0) {  //!< Need to go through all of the ray segments until the origin of the ray is reached
 
                     origin[iCell].I0 = (oldsegment == loopid.nsegment) ? origin[iCell].handler[Key(loopid)].I0 : origin[iCell].I0;  //!< Set I0 if it is the last segment in the ray
@@ -618,12 +616,12 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                     origin[iCell].Kradd *= origin[iCell].handler[Key(loopid)].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
                     loopid.nsegment--;                                                                     //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
-                if (log) EndEvent();
+                //                if (log) EndEvent();
 
-                if (log) StartEvent("Ray Sum");
+                //                if (log) StartEvent("Ray Sum");
                 theta = ((double)ntheta / (double)nTheta) * pi;  //!< This is a fine method of determining theta because it is in the original domain
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
-                if (log) EndEvent();
+                                                                                                                                             //                if (log) EndEvent();
             }
         }
         if (log) PetscPrintf(PETSC_COMM_WORLD, "Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);
@@ -633,7 +631,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * Need to delete all of the particles that were transported to different domains so that the process can be repeated in the next step. */
 
     /** Delete all of the particles that were transported to their origin domains -> Delete if (identifier.origin == MPI_Rank() && identifier.nsegment != 0) */
-    if (log) StartEvent("Delete Carriers");
+    //    if (log) StartEvent("Delete Carriers");
     for (int ipart = 0; ipart < npoints; ipart++) {
         if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) {
             DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);  //!< Need to restore the field access before deleting a point
@@ -651,12 +649,12 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     /** Restore the fields associated with the particles after all of the particles have been stepped*/
     DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
-    if (log) EndEvent();
+    //    if (log) EndEvent();
 
     /** ********************************************************************************************************************************
      * Loop through the cell range and compute the origin contributions. */
 
-    if (log) StartEvent("Cell Energy");
+    //    if (log) StartEvent("Cell Energy");
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
 
