@@ -20,19 +20,17 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
     auto monitor = (ablate::monitors::RocketMonitor*)ctx;
 
     if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), step, crtime)) {
+
         auto dm = monitor->GetSolver()->GetSubDomain().GetDM(); // get the dm
-        auto auxDM = monitor->GetSolver()->GetSubDomain().GetAuxDM(); // get the aux dm
         auto solDM = monitor->GetSolver()->GetSubDomain().GetDM(); // get the aux dm
 
         PetscInt dim;
         DMGetDimension(dm, &dim); // get the dimensions of the dm
 
-        const auto& fieldPressure = monitor->GetSolver()->GetSubDomain().GetField("pressure"); // get the pressure field
         const auto& fieldEuler = monitor->GetSolver()->GetSubDomain().GetField("euler"); // get the euler field
-        PetscReal* cellPressure; // Structure to fill with pressure for specific cell
-        PetscReal* cellEuler; // Structure to fill with pressure for specific cell
+        PetscReal* cellEuler;
         PetscReal* conservedValues;
-        PetscReal cellPress;
+        PetscReal cellPressure;
 
         const auto auxVec = monitor->GetSolver()->GetSubDomain().GetAuxVector();
         const PetscScalar* auxArray;
@@ -44,13 +42,10 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
         Vec faceGeomVec;
         Vec cellGeomVec;
         DMPlexComputeGeometryFVM(dm, &cellGeomVec, &faceGeomVec) >> checkError;
-        DM faceDM, cellDM;
+        DM faceDM;
 
         VecGetDM(faceGeomVec, &faceDM) >> checkError;
-        VecGetDM(cellGeomVec, &cellDM) >> checkError;
-        const PetscScalar* cellGeomArray;
         const PetscScalar* faceGeomArray;
-        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
         VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
         // initialize vectors
@@ -76,26 +71,22 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
                 DMPlexGetSupport(dm, face, &neighborCells) >> ablate::checkError;
                 for (PetscInt n = 0; n < numberNeighborCells; n++) {
                     if (ablate::domain::Region::InRegion(monitor->region, dm, neighborCells[n])) {  // check if cell is in region
-                        DMPlexPointLocalFieldRead(auxDM, neighborCells[n], fieldPressure.id, auxArray, &cellPressure);  // Retrieve pressure from cell
-                        DMPlexPointLocalRead(solDM, neighborCells[n], solArray, &conservedValues);  // Retrieve pressure from cell
-                        DMPlexPointLocalFieldRead(solDM, neighborCells[n], fieldEuler.id, solArray, &cellEuler);  // Retrieve pressure from cell
 
-                        PetscFVCellGeom* cg;
-                        DMPlexPointLocalRead(cellDM, neighborCells[n], cellGeomArray, &cg);
-
-                        monitor->computePressure = monitor->eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Pressure, monitor->GetSolver()->GetSubDomain().GetFields());
-                        monitor->computePressure.function(conservedValues, &cellPress, monitor->computePressure.context.get());
+                        DMPlexPointLocalRead(solDM, neighborCells[n], solArray, &conservedValues);  // Retrieve conserved values from cell
+                        monitor->computePressure = monitor->eos->GetThermodynamicFunction(eos::ThermodynamicProperty::Pressure, monitor->GetSolver()->GetSubDomain().GetFields()); // get decode state function/context
+                        monitor->computePressure.function(conservedValues, &cellPressure, monitor->computePressure.context.get()); // Retrieve pressure from cell
+                        DMPlexPointLocalFieldRead(solDM, neighborCells[n], fieldEuler.id, solArray, &cellEuler);  // retrieve euler field for density, density*velocity
 
                         for (PetscInt d = 0; d < dim; d++) {
                             mDotCell[d] = fg->normal[d]*cellEuler[finiteVolume::CompressibleFlowFields::RHOU+d]; // calculate mass flow rate for the cell
                             mDotTotal[d] = mDotTotal[d] + mDotCell[d]; // summation of total mass flow rate along fieldBoundary
-                            thrustCell[d] = (mDotCell[d])*((cellEuler[finiteVolume::CompressibleFlowFields::RHOU+d])/(cellEuler[finiteVolume::CompressibleFlowFields::RHO])) + (fg->normal[d])*(cellPress-101325); // calculate thrust for the cell
+                            thrustCell[d] = (mDotCell[d])*((cellEuler[finiteVolume::CompressibleFlowFields::RHOU+d])/(cellEuler[finiteVolume::CompressibleFlowFields::RHO])) + (fg->normal[d])*(cellPressure-101325); // calculate thrust for the cell
                             thrustTotal[d] = thrustTotal[d] + thrustCell[d]; // summation of total trust along fieldBoundary
                         }
                     }
                 }
                 for (PetscInt d = 0; d < dim; d++) {
-                    if (mDotTotal[d] > 0) {
+                    if (mDotTotal[d] > 0) { // avoid nan
                         Isp[d] = thrustTotal[d] / ((mDotTotal[d]) * 9.8);  // calculate specific Impulse
                     }
                 }
