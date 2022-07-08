@@ -53,6 +53,14 @@ class Radiation : public solver::CellSolver,
    private:
     /// Structs to hold information
 
+    /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
+     * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
+    struct Carrier {
+        PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal I0 = 0;
+    };
+
     /** Each origin cell will need to retain local information given to it by the ray segments in order to compute the final intenisty.
      * This information will be owned by cell index and stored in a map of local cell indices.
      * */
@@ -61,7 +69,7 @@ class Radiation : public solver::CellSolver,
         PetscReal Isource = 0;              //!< Value that will be contributed to by every ray segment.
         PetscReal Kradd = 1;                //!< Value that will be contributed to by every ray segment.
         PetscReal intensity = 0;            //!<  Value that will be contributed to by every ray.
-        std::map<Identifier, Carrier> ray;  //!< Stores local carrier information TODO: Why does is Identifier not recognized?
+        std::map<std::string, Carrier> handler;  //!< Stores local carrier information
         PetscInt nsegmax = 0;               //!< Number of segments that are in this carrier ray. TODO: (Maybe don't need to store this, replace with map function call)
     };
 
@@ -92,14 +100,6 @@ class Radiation : public solver::CellSolver,
         PetscReal zdir;
         PetscInt current;
         PetscReal hhere;
-    };
-
-    /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
-     * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
-    struct Carrier {
-        PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
-        PetscReal I0 = 0;
     };
 
     /// Class Methods

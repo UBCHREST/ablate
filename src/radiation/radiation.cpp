@@ -399,7 +399,7 @@ void ablate::radiation::Radiation::RayInit() {
 PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
     PetscFunctionBeginUser;
 
-//    StartEvent("Radiation Solve");
+    //    StartEvent("Radiation Solve");
 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;
@@ -525,10 +525,22 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     if (log) EndEvent();
 
     /** ********************************************************************************************************************************
-     * Now iterate through all of the ray identifiers in order to perform the information transfer */
+     * Now iterate through all of the particles in order to perform the information transfer */
     DMSwarmGetLocalSize(radsolve, &npoints);                                   //!< Recalculate the number of particles that are in the domain
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);  //!< Field information is needed in order to read data from the incoming particles.
     DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
+
+    /** Iterate through the particles and offload the information to their associated origin cell struct. */
+    for (int ipart = 0; ipart < npoints; ipart++) {
+        origin[identifier[ipart].iCell].handler[Key(identifier[ipart])].Krad = carrier[ipart].Krad;
+        origin[identifier[ipart].iCell].handler[Key(identifier[ipart])].Ij = carrier[ipart].Ij;
+        origin[identifier[ipart].iCell].handler[Key(identifier[ipart])].I0 = carrier[ipart].I0;
+    }
+
+    // TODO: The carrier particles could probably be deleted at this point so that the information doesn't need to be carried any further through the solve.
+
+    /** ********************************************************************************************************************************
+     * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
 
     solver::Range cellRange;  //!< Access to the cell index information is important here to get all of the ray identifier information.
     GetCellRange(cellRange);
@@ -565,11 +577,12 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 bool pointfound = true;
                 PetscInt oldsegment = loopid.nsegment;
                 while (pointfound) {
-                    for (int ipart = 0; ipart < npoints; ipart++) {
-                        if (identifier[ipart].origin == loopid.origin && identifier[ipart].iCell == loopid.iCell && identifier[ipart].ntheta == loopid.ntheta &&
-                            identifier[ipart].nphi == loopid.nphi && identifier[ipart].nsegment == oldsegment) {  //!< If this particle matches the loop identifier...
-                            loopid.nsegment++;                                                                    //!< Look for the next segment in the ray
-                        }
+                    /** Starting at the first possible segment for this ID
+                     * //                             If it exists, increase the segment number that is being checked for.
+                     * Also, set the maximum segment that is available for this ray to the segment that is currently being checked.
+                     * */
+                    if (origin[iCell].handler.count(Key(loopid)) > 0) {
+                        loopid.nsegment++;
                     }
                     pointfound = !(oldsegment == loopid.nsegment);  //!< If no point was found during the whole for loop, then we must have stumbled on the last segment in this ray.
                     oldsegment = loopid.nsegment;                   //!< Set the old segment
@@ -589,26 +602,21 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 origin[iCell].I0 = 0;          //!< For the last segment in the domain, take that as the black body intensity of the far field.
 
                 if (log) StartEvent("Global Compute");
-                while (loopid.nsegment > 0) {                        //!< Need to go through all of the ray segments until the origin of the ray is reached
-                    for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain.
-                        if (identifier[ipart].origin == loopid.origin && identifier[ipart].iCell == loopid.iCell && identifier[ipart].ntheta == loopid.ntheta &&
-                            identifier[ipart].nphi == loopid.nphi && identifier[ipart].nsegment == loopid.nsegment) {  //!< If the segment of the particle matches
+                while (loopid.nsegment > 0) {  //!< Need to go through all of the ray segments until the origin of the ray is reached
 
-                            origin[iCell].I0 = (oldsegment == loopid.nsegment) ? carrier[ipart].I0 : origin[iCell].I0;  //!< Set I0 to the carrier I0 if it is the last segment in the ray
+                    origin[iCell].I0 = (oldsegment == loopid.nsegment) ? origin[iCell].handler[Key(loopid)].I0 : origin[iCell].I0;  //!< Set I0 if it is the last segment in the ray
 
-                            /** Global ray computation happens here, grabbing values from the transported particles.
-                             * The rays end here, their intensity is added to the total intensity of the cell.
-                             * Gives the partial impact of the ray on the total sphere.
-                             * The sin(theta) is a result of the polar coordinate discretization.
-                             * In the parallel form at the end of each ray, the absorption of the initial ray and the absorption of the black body source are computed individually at the end.
-                             * */
-                            /** Parallel things are here
-                             * Meaning that the variables required for the parallelizable analytical solution will be declared here */
-                            origin[iCell].Isource += carrier[ipart].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
-                            origin[iCell].Kradd *= carrier[ipart].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
-                        }
-                    }
-                    loopid.nsegment--;  //!< Decrement the segment number to move to the next closer segment in the ray.
+                    /** Global ray computation happens here, grabbing values from the transported particles.
+                     * The rays end here, their intensity is added to the total intensity of the cell.
+                     * Gives the partial impact of the ray on the total sphere.
+                     * The sin(theta) is a result of the polar coordinate discretization.
+                     * In the parallel form at the end of each ray, the absorption of the initial ray and the absorption of the black body source are computed individually at the end.
+                     * */
+                    /** Parallel things are here
+                     * Meaning that the variables required for the parallelizable analytical solution will be declared here */
+                    origin[iCell].Isource += origin[iCell].handler[Key(loopid)].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
+                    origin[iCell].Kradd *= origin[iCell].handler[Key(loopid)].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
+                    loopid.nsegment--;                                                                     //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
                 if (log) EndEvent();
 
