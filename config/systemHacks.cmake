@@ -9,6 +9,3 @@ if ("${APPLE}" AND (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") AND (${CMAK
 
     target_link_directories(ablateLibrary PUBLIC ${LIBSTDCPP_PATH})
 endif ()
-
-# add workaround for petsc_include directory not being marked as isystem
-target_compile_options(ablateLibrary PUBLIC $<$<COMPILE_LANGUAGE:CXX>:$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -isystem $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/include >>)

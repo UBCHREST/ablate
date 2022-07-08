@@ -45,10 +45,6 @@ add_subdirectory(src)
 
 # find and load required libraries
 include(config/cmakeFunctions.cmake)
-
-# prevent error checks on included header files
-set_include_directories_as_system(PkgConfig::PETSc)
-
 include(config/findKokkos.cmake)
 include(config/findYamlCpp.cmake)
 include(config/findCppParser.cmake)

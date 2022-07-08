@@ -14,6 +14,5 @@ ENDFUNCTION()
 # set the included directories as system
 FUNCTION(set_include_directories_as_system target)
     get_target_property(_include ${target} INTERFACE_INCLUDE_DIRECTORIES)
-    set_property(TARGET ${target} PROPERTY INTERFACE_INCLUDE_DIRECTORIES)
     target_include_directories(${target} SYSTEM INTERFACE ${_include})
 ENDFUNCTION()
