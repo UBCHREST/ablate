@@ -5,6 +5,3 @@ FetchContent_Declare(
         GIT_TAG main
 )
 FetchContent_MakeAvailable(chrestCompilerFlags)
-
-# Load in the source code
-add_subdirectory(src)

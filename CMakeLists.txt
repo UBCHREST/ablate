@@ -60,6 +60,7 @@ find_package(Threads REQUIRED)
 include(config/findOpenCascade.cmake)
 include(config/findJson.cmake)
 include(config/findTensorFlow.cmake)
+include(config/findChrestCompilerFlags.cmake)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary

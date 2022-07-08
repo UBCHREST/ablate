@@ -1,5 +1,5 @@
 # Include system specific hacks
-if("${APPLE}" AND (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang"))
+if ("${APPLE}" AND (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") AND (${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang"))
     # check for homebrew gfortran and get path for libstdc++.dylib
     execute_process(COMMAND gfortran --print-file-name=libstdc++.dylib OUTPUT_VARIABLE LIBSTDCPP_PATH)
 
@@ -8,4 +8,7 @@ if("${APPLE}" AND (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "arm64") AND (${CMAKE
     get_filename_component(LIBSTDCPP_PATH ${LIBSTDCPP_PATH} DIRECTORY)
 
     target_link_directories(ablateLibrary PUBLIC ${LIBSTDCPP_PATH})
-endif()
+endif ()
+
+# add workaround for petsc_include directory not being marked as isystem
+target_compile_options(ablateLibrary PUBLIC $<$<COMPILE_LANGUAGE:CXX>:$<$<OR:$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>,$<CXX_COMPILER_ID:GNU>>: -isystem $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/include >>)
