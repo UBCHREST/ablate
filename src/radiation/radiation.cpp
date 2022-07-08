@@ -18,10 +18,12 @@ void ablate::radiation::Radiation::Setup() { /** allows initialization after the
 }
 
 void ablate::radiation::Radiation::Initialize() {
-    /** To transport a particle from one location to another, this simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
-     * is called. The initialization particle field can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field could be
-     * essentially deleted during the solve portion. It must be replaced with a set of particles associated with every ray segment. The field initialized for the solve portion will have more particles
-     * than the initial field. Having two fields is easier than dynamically adjusting the size of the particle field as the ray length increases for each ray.
+    /** Transporting a particle from one location to another simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
+     * is called. The initialization particle field has a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field ceases to
+     * exist at the end of initialization. It must be replaced with a set of particles associated with every ray segment. The solve particle field will be based only on the local ray segment and the
+     * rank that it is travelling to. In other words, these particles have no coordinates or spatial location. The field initialized for the solve portion will have more particles than the initial
+     * field. This is because the solve field will be represented by a particle for every ray segment as opposed to a particle for every ray. Having two fields is easier than dynamically adjusting the
+     * size of the particle field as the ray length increases for each ray.
      *
      * Steps of the search:
      *      Initialize a particle field with particles at the coordinates of their origin cell, one for each ray. (The search field should probably be a PIC field because it interacts with the mesh)
@@ -487,9 +489,9 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 DMPlexPointLocalRead(subDomain->GetDM(), rays[Key(identifier[ipart])].cells[n], solArray, &sol);
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
-//                if (log) EndEvent();
+                //                if (log) EndEvent();
 
-//                if (log) StartEvent("Local Compute");
+                //                if (log) StartEvent("Local Compute");
                 carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(identifier[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
                 carrier[ipart].Krad *= exp(-kappa * rays[Key(identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
 

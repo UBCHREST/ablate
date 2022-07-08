@@ -130,7 +130,7 @@ Multiple test cases will be used to verify that the solver is properly functioni
 parallel plates with a media of defined temperature distribution. The one dimensional analytical solution of this
 problem is compared against the results from the solver in order to define the error.
 
-The appropriate number of rays to use for each cell is about 500. 
+The selected number of rays to use for each cell is 750.
 
 ## Scaling
 
