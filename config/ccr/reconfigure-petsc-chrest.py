@@ -202,7 +202,7 @@ if __name__ == '__main__':
     '--download-slepc',
     '--download-suitesparse',
     '--download-superlu_dist',
-    '--download-tchem',
+    ' --download-kokkos',
     '--download-triangle',
     '--with-hdf5-dir='+HDF_DIR,
     '--with-valgrind-dir='+VAL_DIR,

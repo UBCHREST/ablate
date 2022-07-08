@@ -192,7 +192,7 @@ if __name__ == '__main__':
     '--download-slepc',
     '--download-suitesparse',
     '--download-superlu_dist',
-    '--download-tchem',
+    '--download-kokkos',
     '--download-triangle',
     '--download-hdf5',
     '--with-valgrind-dir='+VAL_DIR,
