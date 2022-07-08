@@ -1,5 +1,7 @@
 #include "rocketMonitor.hpp"
 #include <utility>
+#include <utilities/mpiError.hpp>
+#include <utilities/petscError.hpp>
 #include "io/interval/fixedInterval.hpp"
 #include "monitors/logs/stdOut.hpp"
 #include "monitors/logs/log.hpp"
@@ -10,9 +12,10 @@ ablate::monitors::RocketMonitor::RocketMonitor(const std::string nameIn, std::sh
 
 void ablate::monitors::RocketMonitor::Register(std::shared_ptr<solver::Solver> solver) {
     Monitor::Register(solver);
-    // use the subDomain to set up the problem
-    std::shared_ptr<ablate::domain::SubDomain> subDomain;
-
+//    PetscMPIInt rank;
+//    MPI_Comm_rank(solver->GetSubDomain().GetComm(), &rank) >> checkMpiError;
+//    PetscInt dim;
+//    DMGetDimension(solver->GetSubDomain().GetDM(), &dim) >> checkError;
 }
 
 PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
@@ -22,10 +25,17 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
     if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), step, crtime)) {
 
         auto dm = monitor->GetSolver()->GetSubDomain().GetDM(); // get the dm
-        auto solDM = monitor->GetSolver()->GetSubDomain().GetDM(); // get the aux dm
+        auto solDM = monitor->GetSolver()->GetSubDomain().GetDM(); // get the sol dm
+        auto comm = PetscObjectComm((PetscObject)monitor->GetSolver()->GetSubDomain().GetDM()); // The communicator in which the reduction takes place.
 
         PetscInt dim;
         DMGetDimension(dm, &dim); // get the dimensions of the dm
+        PetscMPIInt bufferSize; // initialize buffer size
+        PetscMPIIntCast(dim, &bufferSize); // define the number of elements in buffer
+        // check to see if there is a ghost label
+        DMLabel ghostLabel;
+        DMGetLabel(dm, "ghost", &ghostLabel) >> checkError;
+//        PetscInt cellCount = 0;
 
         const auto& fieldEuler = monitor->GetSolver()->GetSubDomain().GetField("euler"); // get the euler field
         PetscReal* cellEuler;
@@ -48,16 +58,24 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
         const PetscScalar* faceGeomArray;
         VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
-        // initialize vectors
+        // initialize vectors (send_buffer)
         PetscReal mDotCell[3] = {0,0,0};
         PetscReal mDotTotal[3] = {0,0,0};
         PetscReal thrustCell[3] = {0,0,0};
         PetscReal thrustTotal[3] = {0,0,0};
-        PetscReal Isp[3] = {0,0,0};
+
+        // initialize global vectors (receive_buffer)
+        PetscReal mDotTotalGlob[3] = {0,0,0};
+        PetscReal thrustTotalGlob[3] = {0,0,0};
+        PetscReal IspGlob[3] = {0,0,0};
 
         // find all faces
         PetscInt fStart, fEnd;
         DMPlexGetHeightStratum(dm, 1, &fStart, &fEnd) >> checkError;
+
+        /** Get the current rank associated with this process */
+        PetscMPIInt rank;
+        MPI_Comm_rank(MPI_COMM_WORLD, &rank);  //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
 
         // need to look for faces at specified fieldBoundary then find cells bordering those faces which are in specified region
         for (PetscInt face = fStart; face < fEnd; ++face) { // Iterate through all faces to check if in fieldBoundary
@@ -70,6 +88,16 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
                 DMPlexGetSupportSize(dm, face, &numberNeighborCells) >> ablate::checkError;
                 DMPlexGetSupport(dm, face, &neighborCells) >> ablate::checkError;
                 for (PetscInt n = 0; n < numberNeighborCells; n++) {
+
+                    // Make sure that we are not working with a ghost cell
+                    PetscInt ghost = -1;
+                    if (ghostLabel) {
+                        DMLabelGetValue(ghostLabel, neighborCells[n], &ghost);
+                    }
+                    if (ghost >= 0) {
+                        continue;
+                    }
+
                     if (ablate::domain::Region::InRegion(monitor->region, dm, neighborCells[n])) {  // check if cell is in region
 
                         DMPlexPointLocalRead(solDM, neighborCells[n], solArray, &conservedValues);  // Retrieve conserved values from cell
@@ -85,21 +113,33 @@ PetscErrorCode ablate::monitors::RocketMonitor::OutputRocket(TS ts, PetscInt ste
                         }
                     }
                 }
-                for (PetscInt d = 0; d < dim; d++) {
-                    if (mDotTotal[d] > 0) { // avoid nan
-                        Isp[d] = thrustTotal[d] / ((mDotTotal[d]) * 9.8);  // calculate specific Impulse
-                    }
-                }
+
+
             }
         }
 
-        if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), step, crtime)) {
-            if (monitor->name != "") { // If user passed a name argument then output name
-                monitor->log->Printf("%s ", monitor->name.c_str());
+        // Take across all ranks
+        MPI_Reduce(mDotTotal, mDotTotalGlob, bufferSize, MPI_DOUBLE, MPI_SUM, 0, comm);
+        MPI_Reduce(thrustTotal, thrustTotalGlob, bufferSize, MPI_DOUBLE, MPI_SUM, 0, comm);
+//        MPI_Allreduce(mDotTotal, mDotTotalGlob, bufferSize, MPI_DOUBLE, MPI_SUM, comm);
+//        MPI_Allreduce(thrustTotal, thrustTotalGlob, bufferSize, MPI_DOUBLE, MPI_SUM, comm);
+
+
+        for (PetscInt d = 0; d < dim; d++) {
+            if (mDotTotalGlob[d] > 0) { // avoid nan
+                IspGlob[d] = thrustTotalGlob[d] / ((mDotTotalGlob[d]) * 9.8);  // calculate specific Impulse
             }
-            monitor->log->Printf("RocketMonitor for timestep %04d:\n", (int)step);
-            monitor->log->Printf("\tThrust:\t [ %1.3f, %1.3f, %1.3f]\n",thrustTotal[0],thrustTotal[1],thrustTotal[2]);
-            monitor->log->Printf("\tIsp:\t [ %1.3f, %1.3f, %1.3f]\n",Isp[0],Isp[1],Isp[2]);
+        }
+
+        if (rank == 0) {
+            if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), step, crtime)) {
+                if (monitor->name != "") {  // If user passed a name argument then output name
+                    monitor->log->Printf("%s ", monitor->name.c_str());
+                }
+                monitor->log->Printf("RocketMonitor for timestep %04d:\n", (int)step);
+                monitor->log->Printf("\tThrust:\t [ %1.3f, %1.3f, %1.3f]\n", thrustTotalGlob[0], thrustTotalGlob[1], thrustTotalGlob[2]);
+                monitor->log->Printf("\tIsp:\t [ %1.3f, %1.3f, %1.3f]\n", IspGlob[0], IspGlob[1], IspGlob[2]);
+            }
         }
 
     }
