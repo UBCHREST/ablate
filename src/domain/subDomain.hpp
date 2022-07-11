@@ -379,6 +379,11 @@ class SubDomain : public io::Serializable {
      * @param time
      */
     void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
+
+    /**
+     * checks each point in this subdomain for nan/inf and reports information
+     */
+    void CheckSolution();
 };
 
 }  // namespace ablate::domain

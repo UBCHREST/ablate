@@ -124,6 +124,13 @@ class Domain {
      * @return
      */
     [[nodiscard]] inline const std::vector<Field>& GetFields() const { return fields; }
+
+    /**
+     * checks check point in this domain for nan/inf in the solution aux vectors
+     * @param fieldId
+     * @return
+     */
+    void CheckSolution();
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H

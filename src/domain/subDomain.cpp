@@ -1,4 +1,5 @@
 #include "subDomain.hpp"
+#include <set>
 #include <utilities/petscError.hpp>
 #include "utilities/mpiError.hpp"
 
@@ -200,6 +201,9 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToSubDM(const std::vector<s
 }
 
 Vec ablate::domain::SubDomain::GetAuxGlobalVector() {
+    if (!auxDM) {
+        return nullptr;
+    }
     DMLocalToGlobal(auxDM, auxLocalVec, INSERT_VALUES, auxGlobalVec) >> checkError;
     return auxGlobalVec;
 }
@@ -732,5 +736,99 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToLocalVector(const std::ve
         } else {
             DMProjectFunctionLocal(dm, time, fieldFunctionsPts.data(), fieldContexts.data(), INSERT_VALUES, locVec) >> checkError;
         }
+    }
+}
+
+void ablate::domain::SubDomain::CheckSolution() {
+    // create a set of points that have failed
+    std::set<PetscInt> failedPoints;
+
+    // Get the solution and aux info
+    Vec solutionVec = GetSolutionVector();
+    const PetscScalar* solutionArray;
+    VecGetArrayRead(solutionVec, &solutionArray) >> checkError;
+
+    // march over point in the domain
+    PetscInt pStart, pEnd;
+    DMPlexGetChart(GetDM(), &pStart, &pEnd) >> checkError;
+    for (PetscInt p = pStart; p < pEnd; ++p) {
+        PetscInt start, end;
+        DMPlexGetPointGlobal(GetDM(), p, &start, &end) >> checkError;
+
+        // check each scalar for nan/inf
+        for (PetscInt m = start; m < end; ++m) {
+            if (PetscIsInfOrNanScalar(solutionArray[m])) {
+                failedPoints.insert(p);
+            }
+        }
+    }
+
+    // also check the aux vector
+    auto auxVec = GetAuxGlobalVector();
+    const PetscScalar* auxArray = nullptr;
+    if (auxVec) {
+        VecGetArrayRead(auxVec, &auxArray) >> checkError;
+
+        PetscInt aStart, aEnd;
+        DMPlexGetChart(GetAuxDM(), &aStart, &aEnd) >> checkError;
+        for (PetscInt a = aStart; a < aEnd; ++a) {
+            PetscInt start, end;
+            DMPlexGetPointGlobal(GetAuxDM(), a, &start, &end) >> checkError;
+
+            // check each scalar for nan/inf
+            for (PetscInt m = start; m < end; ++m) {
+                if (PetscIsInfOrNanScalar(auxArray[m])) {
+                    failedPoints.insert(a);
+                }
+            }
+        }
+    }
+
+    // march over each failed point
+    for (auto& p : failedPoints) {
+        // Get the coordinate
+        PetscReal centroid[3] = {0.0, 0.0, 0.0};
+        DMPlexComputeCellGeometryFVM(GetDM(), p, nullptr, centroid, nullptr) >> checkError;
+
+        std::cout << "Nan/Inf Point (" << p << ") at [" << centroid[0] << "," << centroid[1] << ", " << centroid[2] << "]" << std::endl;
+        // check each local field
+        for (const auto& field : GetFields()) {
+            PetscSection section;
+            DMGetGlobalSection(GetDM(), &section) >> checkError;
+
+            // make sure that this field lives at this point
+            PetscInt offset, dof;
+            PetscSectionGetFieldOffset(section, p, field.id, &offset) >> checkError;
+            PetscSectionGetFieldDof(section, p, field.id, &dof) >> checkError;
+            if (dof) {
+                std::cout << field.name << ":" << std::endl;
+                for (PetscInt c = 0; c < dof; ++c) {
+                    std::cout << "[" << c << "]: " << solutionArray[offset + c] << std::endl;
+                }
+            }
+        }
+
+        // check each aux vector field
+        for (const auto& field : GetFields(FieldLocation::AUX)) {
+            PetscSection section;
+            DMGetGlobalSection(GetAuxDM(), &section) >> checkError;
+
+            // make sure that this field lives at this point
+            PetscInt offset, dof;
+            PetscSectionGetFieldOffset(section, p, field.id, &offset) >> checkError;
+            PetscSectionGetFieldDof(section, p, field.id, &dof) >> checkError;
+            if (dof) {
+                std::cout << field.name << ":" << std::endl;
+                for (PetscInt c = 0; c < dof; ++c) {
+                    std::cout << "[" << c << "]: " << auxArray[offset + c] << std::endl;
+                }
+            }
+        }
+    }
+
+    // cleanup
+    VecRestoreArrayRead(solutionVec, &solutionArray) >> checkError;
+    if (auxArray) {
+        VecRestoreArrayRead(auxVec, &auxArray) >> checkError;
     }
 }
