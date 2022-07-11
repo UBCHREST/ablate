@@ -40,7 +40,7 @@ below shows angles considered for the irradiation of a surface. For our
 purposes, $\theta$ is extended to $2 \pi$ in order to include the entire sphere and
 the irradiation of the cell as a volume. The figure describing the solid sphere formulation is shown below.
 
-[Solid Angle](docs/content/radiationFormulation/assets/SolidAngle.png)
+<img alt="A depiction of the solid angle coordinate formulation." height="50" src="docs/content/radiationFormulation/assets/SolidAngle.png" title="Solid Angle" width="50"/>
 
 $$ G_{irr} = \int_{0}^{2\pi} \int_{0}^{\pi} I_{pt}(\theta,\phi)\ sin\theta\ d\theta\ d\phi $$
 
