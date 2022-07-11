@@ -230,3 +230,9 @@ void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared
     DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec) >> checkError;
     DMRestoreLocalVector(dm, &locVec) >> checkError;
 }
+
+void ablate::domain::Domain::CheckSolution() {
+    for (auto& subdomain : subDomains) {
+        subdomain->CheckSolution();
+    }
+}
