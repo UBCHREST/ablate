@@ -8,13 +8,20 @@ has_children: false
 ## Mathematical Formulation
 
 Radiation heat transfer makes up a source term in the energy equation, which has the radiative gains and losses as its
-components. While the losses are easy to calculate, (using only the properties of the cell in question) the gains
+components. While the losses are easy to calculate (using only the properties of the cell in question), the gains
 involve the entire domain. This means that in order to solve for the radiative gains of a single cell, rays are traced
-from the boundaries of the domain into the cell center. The summation of these rays about a solid sphere results in the
+from the boundaries of the domain into the cell center. The values of the rays represent the amount of energy
+transferred into the cell from the environment. The summation of these rays about a solid sphere of angles results in
+the
 radiative gain that the cell experiences from its environment. The calculation of the energy source term due to
 radiation is shown below.
 
 $$ -\nabla \cdot (\vec{q_{rad}}) = -\kappa (4 \sigma T^4 - G_{irr}) $$
+
+The left-hand side is the negative divergence of radiative heat. Another way to represent this is the amount of heat
+entering the cell. The right-hand side shows the difference between the heat leaving and entering the cell. This
+difference is multiplied by the absorption of the medium which the cell occupies. $G_{irr}$ represents the amount of
+energy entering the cell through radiation. Most of the effort of the solver is spent on the calculation of this term.
 
 The calculated radiation term becomes a source term in the energy equation. The energy equation is as follows.
 
@@ -33,7 +40,7 @@ below shows angles considered for the irradiation of a surface. For our
 purposes, $\theta$ is extended to $2 \pi$ in order to include the entire sphere and
 the irradiation of the cell as a volume. The figure describing the solid sphere formulation is shown below.
 
-Solid angle figure here
+[Solid Angle](docs/content/radiationFormulation/assets/SolidAngle.png)
 
 $$ G_{irr} = \int_{0}^{2\pi} \int_{0}^{\pi} I_{pt}(\theta,\phi)\ sin\theta\ d\theta\ d\phi $$
 
@@ -134,7 +141,7 @@ The selected number of rays to use for each cell is 750.
 
 ## Scaling
 
-
+Early scaling tests indicate that the radiation solver is scalable. Further scaling tests will be performed on Quartz.
 
     /** To transport a particle from one location to another, this simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
      * is called. The initialization particle field can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field could be

@@ -411,7 +411,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     const PetscScalar* solArray;
     VecGetArrayRead(solVec, &solArray);
 
-    /** Get the array of the aux vector */
+    /** Get the array of the aux vector. */
     const auto auxVec = subDomain->GetAuxVector();
     const PetscScalar* auxArray;
     VecGetArrayRead(auxVec, &auxArray);
