@@ -157,8 +157,18 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
         subDomain->CreateSubDomainStructures();
     }
 
+    // set all values to nan to allow for a output check
+    if (!initializations.empty()) {
+        VecSet(solGlobalField, NAN) >> checkError;
+    }
+
     // Set the initial conditions for each field specified
     ProjectFieldFunctions(initializations, solGlobalField);
+
+    // do a sanity check to make sure that all points were initialized
+    if (!initializations.empty() && CheckSolution(CheckReason::Initial)) {
+        throw std::runtime_error("Field values at points in the domain were not initialized.");
+    }
 
     // Initialize each solver
     for (auto& solver : solvers) {
@@ -231,8 +241,10 @@ void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared
     DMRestoreLocalVector(dm, &locVec) >> checkError;
 }
 
-void ablate::domain::Domain::CheckSolution() {
+bool ablate::domain::Domain::CheckSolution(CheckReason checkReason) {
+    bool error = false;
     for (auto& subdomain : subDomains) {
-        subdomain->CheckSolution();
+        error = subdomain->CheckSolution(checkReason) | error;
     }
+    return error;
 }
