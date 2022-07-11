@@ -145,7 +145,7 @@ void ablate::solver::TimeStepper::Solve() {
     PetscErrorCode solveErrCode = TSSolve(ts, solutionVec);
     if (solveErrCode == PETSC_ERR_FP) {
         // print the cell information for the cells that caused this error
-        domain->CheckSolution();
+        domain->CheckSolution(domain::Domain::CheckReason::Error);
     }
     solveErrCode >> checkError;
 
