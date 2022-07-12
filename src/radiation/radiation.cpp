@@ -623,10 +623,12 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 //                if (log) StartEvent("Ray Sum");
                 theta = ((double)ntheta / (double)nTheta) * pi;  //!< This is a fine method of determining theta because it is in the original domain
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
-                                                                                                                                             //                if (log) EndEvent();
+                if (log)
+                    printf("I0: %f Kradd: %f Isource: %f", origin[iCell].I0, origin[iCell].Kradd, origin[iCell].Isource);  //!< Debugging for Quartz
+                                                                                                                           //                if (log) EndEvent();
             }
         }
-        if (log) PetscPrintf(PETSC_COMM_WORLD, "Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);
+        //        if (log) PetscPrintf(PETSC_COMM_WORLD, "Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);
     }
 
     /** ********************************************************************************************************************************
