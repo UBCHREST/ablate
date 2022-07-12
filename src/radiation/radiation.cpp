@@ -89,6 +89,7 @@ void ablate::radiation::Radiation::RayInit() {
      * */
 
     if (log) StartEvent("Radiation Initialization");
+    if (log) printf("Starting Initialize\n");
 
     const PetscScalar* cellGeomArray;
     PetscReal minCellRadius;
@@ -110,6 +111,8 @@ void ablate::radiation::Radiation::RayInit() {
      * */
     solver::Range cellRange;
     GetCellRange(cellRange);
+
+    if (log) printf("Checking Ghost Labels\n");
 
     // check to see if there is a ghost label
     DMLabel ghostLabel;
@@ -133,6 +136,8 @@ void ablate::radiation::Radiation::RayInit() {
         }
     }
 
+    if (log) printf("Particle DMs\n");
+
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
 
     PetscInt npoints = (cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
@@ -153,6 +158,8 @@ void ablate::radiation::Radiation::RayInit() {
 
     DMSwarmSetType(radsolve, DMSWARM_BASIC);
     DMSwarmSetCellDM(radsolve, subDomain->GetDM());
+
+    if (log) printf("Particle Fields\n");
 
     /** Register fields within the DMSwarm */
     DMSwarmRegisterUserStructField(radsearch, "identifier", sizeof(Identifier));       //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
@@ -181,6 +188,8 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmGetField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
     DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
+
+    if (log) printf("Writing Locations\n");
 
     PetscInt ipart = 0;  //!< Initialize a counter to represent the particle index. This will be iterated every time that the inner loop is passed through.
 
@@ -623,9 +632,9 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 //                if (log) StartEvent("Ray Sum");
                 theta = ((double)ntheta / (double)nTheta) * pi;  //!< This is a fine method of determining theta because it is in the original domain
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
-                if (log)
-                    printf("I0: %f Kradd: %f Isource: %f", origin[iCell].I0, origin[iCell].Kradd, origin[iCell].Isource);  //!< Debugging for Quartz
-                                                                                                                           //                if (log) EndEvent();
+                                                                                                                                             //                if (log)
+                //                    printf("I0: %f Kradd: %f Isource: %f", origin[iCell].I0, origin[iCell].Kradd, origin[iCell].Isource);  //!< Debugging for Quartz
+                //                if (log) EndEvent();
             }
         }
         //        if (log) PetscPrintf(PETSC_COMM_WORLD, "Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);
