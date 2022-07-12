@@ -40,7 +40,7 @@ void ablate::radiation::Radiation::Initialize() {
      *          Sub-task: During the cell search, form a vector (the same rays vector) from the information provided by the particle. In other words, the particle will "seed" the ray segments
      *          within each domain. Just pack the ray segment into whatever rays index matches the global scheme. This way when the particles are looped through in their local configuration, the
      *          memory location of the local ray segment can be accessed immediately.
-     *          Sub-task: As the particle search routine is taking place, they should be simultaneously forming a particle field containing the solve field characterstics. This includes the
+     *          Sub-task: As the particle search routine is taking place, they should be simultaneously forming a particle field containing the solve field characteristics. This includes the
      *
      * Steps of the solve:
      *      Locally compute the source and absorption for each stored ray ID. (Loop through the local ray segments by index and run through them if they are not empty).
@@ -182,7 +182,7 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
-    int ipart = 0;  //!< Initialize a counter to represent the particle index. This will be iterated every time that the inner loop is passed through.
+    PetscInt ipart = 0;  //!< Initialize a counter to represent the particle index. This will be iterated every time that the inner loop is passed through.
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
@@ -648,7 +648,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         }
     }
 
-    /** Restore the fields associated with the particles after all of the particles have been stepped*/
+    /** Restore the fields associated with the particles after all of the particles have been stepped. */
     DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
     DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
     //    if (log) EndEvent();

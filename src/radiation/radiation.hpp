@@ -65,12 +65,12 @@ class Radiation : public solver::CellSolver,
      * This information will be owned by cell index and stored in a map of local cell indices.
      * */
     struct Origin {
-        PetscReal I0 = 0;                   //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
-        PetscReal Isource = 0;              //!< Value that will be contributed to by every ray segment.
-        PetscReal Kradd = 1;                //!< Value that will be contributed to by every ray segment.
-        PetscReal intensity = 0;            //!<  Value that will be contributed to by every ray.
+        PetscReal I0 = 0;                        //!< Determing the initial ray intensity by grabbing the head cell of the furthest ray? There will need to be additional setup for this.
+        PetscReal Isource = 0;                   //!< Value that will be contributed to by every ray segment.
+        PetscReal Kradd = 1;                     //!< Value that will be contributed to by every ray segment.
+        PetscReal intensity = 0;                 //!<  Value that will be contributed to by every ray.
         std::map<std::string, Carrier> handler;  //!< Stores local carrier information
-        PetscInt nsegmax = 0;               //!< Number of segments that are in this carrier ray. TODO: (Maybe don't need to store this, replace with map function call)
+        //        PetscInt nsegmax = 0;               //!< Number of segments that are in this carrier ray. TODO: (Maybe don't need to store this, replace with map function call)
     };
 
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
@@ -123,7 +123,7 @@ class Radiation : public solver::CellSolver,
     /// Class Constants
     const PetscReal sbc = 5.6696e-8;  //!< Stefan-Boltzman Constant (J/K)
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    PetscMPIInt numRanks;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
+    PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
@@ -133,7 +133,7 @@ class Radiation : public solver::CellSolver,
     /**
      * Store a log used to output the required information
      */
-    const std::shared_ptr<ablate::monitors::logs::Log> log;
+    const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
 
     std::map<std::string, Segment> rays;
     std::map<PetscInt, Origin> origin;

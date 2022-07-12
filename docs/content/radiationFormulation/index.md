@@ -5,6 +5,8 @@ nav_order: 8
 has_children: false
 ---
 
+# Radiation Heat Transfer
+
 ## Mathematical Formulation
 
 Radiation heat transfer makes up a source term in the energy equation, which has the radiative gains and losses as its
@@ -40,7 +42,7 @@ below shows angles considered for the irradiation of a surface. For our
 purposes, $\theta$ is extended to $2 \pi$ in order to include the entire sphere and
 the irradiation of the cell as a volume. The figure describing the solid sphere formulation is shown below.
 
-<img alt="A depiction of the solid angle coordinate formulation." height="500" src="docs/content/radiationFormulation/assets/SolidAngle.png" title="Solid Angle" width="500"/>
+![](assets/SolidAngle.png)
 
 $$ G_{irr} = \int_{0}^{2\pi} \int_{0}^{\pi} I_{pt}(\theta,\phi)\ sin\theta\ d\theta\ d\phi $$
 
@@ -80,6 +82,27 @@ Note that the change in intensity is proportional to the product of the intensit
 given point. This radiative transfer equation is implemented for each ray. All rays are summed along the solid sphere.
 
 ## Computational Methods
+
+Here the Discrete Transfer Method (DTM) has been applied in the context of domain decomposition parallelization.
+Employing the mathematical formulation described above, the discrete transfer method has some advantages over competing
+methods.
+
+Its first advantage is that it is not very computational expensive. Competing methods include the Monte Carlo
+Method which, despite allowing increased complexity without significant increase in cost, is quite costly to implement.
+Other methods include the Discrete Ordinance Method and Spherical Harmonics.
+
+The second advantage of the discrete transfer method is its accuracy. Some methods do not converge to the exact solution
+of a given problem despite an increase of solver resolution. The DTM converges to the exact solution of a given problem
+with increased solver resolution, which is desirable within this DNS.
+
+### Assumptions
+
+This implementation of radiation heat transfer will ignore spectral dependencies. This is because ignoring wavelength
+reduces the computational complexity significantly without sacrificing much accuracy in the context of the combustion
+environment. This will be referred to as the grey gas assumption. The physical significance of this assumption is that
+the media and surfaces within the simulation domain are assumed to be grey, or without color.
+
+### Implementation
 
 The procedure for the implementation of this method is as follows. The solver is broken into an initialization and a
 solve step. The initialization is responsible for forming the ray segments which the properties of the domains are read
@@ -126,10 +149,26 @@ through the entire ray. In this case, multiple communications would occur for ea
 were synchronized, the differing number of segments in each ray
 would mean that the number of communications is unknown and that the majority of the processes could be idly waiting
 for the last communication. The second advantage is that the communication of the information in this manner requires
-only one communication for each ray segment. If the rays were solved through linearly, each process would
-require two communications. The first communication would move information into the domain and the second communication
+only one communication for each ray segment. If the rays were solved through linearly, each process would require two
+communications. The first communication would move information into the domain and the second communication
 would move information out of the domain. The organization of all ray segment information to the origin rank in one
 step allows for a single communication where the segment order of information is handled by the local process.
+
+It would be possible to avoid multiple communications by simply transporting all environmental information into the
+domain of the to which it belongs. However, this increases the volume of information that is being communicated by
+orders of magnitude and is therefore unhelpful. The ray segments must be handled before the communication such that
+a minimum of information is transported from the domain. Of course, a ray segment can be completely described by two
+values: Absorption, the proportion of radiation attenuated through the segment, and intensity, the amount of radiation
+emitted from the segment.
+
+Breaking up ray segments into independent objects which can be arranged at one point requires a mathematical
+formulation that differs from that implemented in the serial solver. Here, the governing differential equation is
+derived differently to support multiple levels of ray segments. Now, each ray segment can be solved prior to the
+communication and each segment can be treated as two individual values after the communication.
+
+$$ I = I0 \prod_{D = 0}^{N_D} (\prod_{C = 0}^{N_C} e^{- k_c \Delta s}) + \sum_{D = 0}^{N_D} (\sum_{C = 0}^{N_C} I_
+{B_C} (1 - e^{- k_c \Delta s}) \prod_{j = C + 1}^{N_C} e^{-k_j \Delta s} \prod_{j = D + 1}^{N_D} (\prod_{C = 0}^{N_C}
+e^{-k_c \Delta s})) $$
 
 ## Verification
 
