@@ -887,8 +887,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
 //        *MG = (*normalVelocity) / (*aG);
 //        *ML = (*normalVelocity) / (*aL);
 //    }
-
-
+//
+//
 //    else{
     PetscReal etot = (*internalEnergy);
     PetscReal A = cp2 / cv1 / gamma2;
@@ -968,10 +968,10 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     PetscReal a1 = 0;
     PetscReal a2 = 0;
 
-    if ( PetscAbs(Yg/rhoG+Yl/rhoL-1/(*density)) > 1e-10){
+    if ( PetscAbs(Yg/rhoG+Yl/rhoL-1/(*density)) > 1e-6){
         throw std::invalid_argument("rhoG and rhoL decoded do not conserve mass");
     }
-    if ( PetscAbs(Yg*eG+Yl*eL-etot) > 1e-10){
+    if ( PetscAbs(Yg*eG+Yl*eL-etot) > 1e-6) {
         throw std::invalid_argument("eG and eL decoded do not conserve energy");
     }
     //    SNES snes;
