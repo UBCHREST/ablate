@@ -262,7 +262,7 @@ void ablate::radiation::Radiation::RayInit() {
     PetscInt nglobalpoints = 0;
     DMSwarmGetLocalSize(radsearch, &npoints);  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetSize(radsearch, &nglobalpoints);
-    PetscInt stepcount = 0;       //!< Count the number of steps that the particles have taken
+    PetscInt stepcount = 0;  //!< Count the number of steps that the particles have taken
 
     if (log) printf("Got Global Points");
 
@@ -285,7 +285,7 @@ void ablate::radiation::Radiation::RayInit() {
         VecSetBlockSize(intersect, dim);
         VecSetSizes(intersect, PETSC_DECIDE, npoints * dim);  //!< Set size
         VecSetFromOptions(intersect);
-        PetscInt i[3] = {0, 1, 2};              //!< Establish the vector here so that it can be iterated.
+        PetscInt i[3] = {0, 1, 2};  //!< Establish the vector here so that it can be iterated.
 
         if (log) printf("Placing Particles Coordinates");
 
