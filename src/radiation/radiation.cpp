@@ -263,12 +263,17 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmGetLocalSize(radsearch, &npoints);  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetSize(radsearch, &nglobalpoints);
     PetscInt stepcount = 0;       //!< Count the number of steps that the particles have taken
+
+    if (log) printf("Got Global Points");
+
     while (nglobalpoints != 0) {  //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
         /** Get all of the ray information from the particle
          * Get the ntheta and nphi from the particle that is currently being looked at. This will be used to identify its ray and calculate its direction. */
         DMSwarmGetField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
         DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
         DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
+
+        if (log) printf("Got Fields");
 
         /** Iterate over the particles that are present in the domain
          * Add the cell index to the ray
@@ -282,7 +287,7 @@ void ablate::radiation::Radiation::RayInit() {
         VecSetFromOptions(intersect);
         PetscInt i[3] = {0, 1, 2};              //!< Establish the vector here so that it can be iterated.
 
-        if (log) printf("Place Particles Coordinates");
+        if (log) printf("Placing Particles Coordinates");
 
         for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                 //!< particles then pass out of initialization.
