@@ -126,16 +126,10 @@ class Domain {
     [[nodiscard]] inline const std::vector<Field>& GetFields() const { return fields; }
 
     /**
-     * provided reason to check the solution
-     */
-    enum class CheckReason { Initial, Error };
-
-    /**
      * checks check point in this domain for nan/inf in the solution aux vectors
-     * @param fieldId
      * @return bool True is returned if an error is found.
      */
-    bool CheckSolution(CheckReason checkReason = CheckReason::Initial);
+    bool CheckSolution();
 };
 }  // namespace ablate::domain
 #endif  // ABLATELIBRARY_DOMAIN_H

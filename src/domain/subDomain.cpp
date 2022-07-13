@@ -740,7 +740,7 @@ void ablate::domain::SubDomain::ProjectFieldFunctionsToLocalVector(const std::ve
     }
 }
 
-bool ablate::domain::SubDomain::CheckSolution(Domain::CheckReason checkReason) {
+bool ablate::domain::SubDomain::CheckSolution() {
     // create a set of points that have failed
     std::set<PetscInt> failedPoints;
 
@@ -774,43 +774,12 @@ bool ablate::domain::SubDomain::CheckSolution(Domain::CheckReason checkReason) {
         }
     }
 
-    // also check the aux vector
-    auto auxVec = (checkReason == Domain::CheckReason::Error) ? GetAuxGlobalVector() : nullptr;
-    const PetscScalar* auxArray = nullptr;
-    if (auxVec) {
-        PetscSection globalAuxSection;
-        DMGetSection(GetAuxDM(), &globalAuxSection) >> checkError;
-
-        VecGetArrayRead(auxVec, &auxArray) >> checkError;
-
-        PetscInt aStart, aEnd;
-        DMPlexGetChart(GetAuxDM(), &aStart, &aEnd) >> checkError;
-        for (PetscInt a = aStart; a < aEnd; ++a) {
-            const PetscScalar* auxAtA = nullptr;
-            DMPlexPointGlobalRead(GetDM(), a, auxArray, &auxAtA) >> checkError;
-
-            // check each scalar for nan/inf
-            if (auxAtA) {
-                PetscInt dof;
-                PetscSectionGetDof(globalAuxSection, a, &dof);
-
-                for (PetscInt m = 0; m < dof; ++m) {
-                    if (PetscIsInfOrNanScalar(auxAtA[m])) {
-                        failedPoints.insert(a);
-                    }
-                }
-            }
-        }
-    }
-
     // do a global check
     auto localFailedPoints = (PetscMPIInt)failedPoints.size();
     PetscMPIInt globalFailedPoints;
     MPI_Allreduce(&localFailedPoints, &globalFailedPoints, 1, MPI_INT, MPI_SUM, GetComm()) >> checkMpiError;
     if (globalFailedPoints) {
-        if (checkReason == Domain::CheckReason::Initial) {
-            PetscPrintf(GetComm(), "Field values at points in the domain were not initialized.\n") >> checkError;
-        }
+        PetscPrintf(GetComm(), "Field values at points in the domain were not initialized.\n") >> checkError;
 
         PetscMPIInt rank;
         MPI_Comm_rank(GetComm(), &rank) >> checkMpiError;
@@ -862,29 +831,6 @@ bool ablate::domain::SubDomain::CheckSolution(Domain::CheckReason checkReason) {
                     }
                 }
             }
-
-            // check each aux vector field
-            if (auxArray) {
-                for (const auto& field : GetFields(FieldLocation::AUX)) {
-                    PetscSection section;
-                    DMGetGlobalSection(GetAuxDM(), &section) >> checkError;
-
-                    // make sure that this field lives at this point
-                    PetscInt dof;
-                    PetscSectionGetFieldDof(section, p, field.id, &dof) >> checkError;
-
-                    // get the value at the point
-                    const PetscScalar* auxAtP = nullptr;
-                    DMPlexPointGlobalFieldRead(GetAuxDM(), p, field.id, auxArray, &auxAtP) >> checkError;
-
-                    if (dof && auxAtP) {
-                        std::cout << '\t' << field.name << ":" << std::endl;
-                        for (PetscInt c = 0; c < dof; ++c) {
-                            failedPointsMessage << "\t\t[" << c << "]: " << auxAtP[c] << std::endl;
-                        }
-                    }
-                }
-            }
         }
 
         PetscSynchronizedPrintf(GetComm(), "%s", failedPointsMessage.str().c_str()) >> checkError;
@@ -893,9 +839,5 @@ bool ablate::domain::SubDomain::CheckSolution(Domain::CheckReason checkReason) {
 
     // cleanup
     VecRestoreArrayRead(solutionVec, &solutionArray) >> checkError;
-    if (auxArray) {
-        VecRestoreArrayRead(auxVec, &auxArray) >> checkError;
-    }
-
     return (bool)globalFailedPoints;
 }

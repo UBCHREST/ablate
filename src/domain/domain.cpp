@@ -166,7 +166,7 @@ void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_
     ProjectFieldFunctions(initializations, solGlobalField);
 
     // do a sanity check to make sure that all points were initialized
-    if (!initializations.empty() && CheckSolution(CheckReason::Initial)) {
+    if (!initializations.empty() && CheckSolution()) {
         throw std::runtime_error("Field values at points in the domain were not initialized.");
     }
 
@@ -241,10 +241,10 @@ void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared
     DMRestoreLocalVector(dm, &locVec) >> checkError;
 }
 
-bool ablate::domain::Domain::CheckSolution(CheckReason checkReason) {
+bool ablate::domain::Domain::CheckSolution() {
     bool error = false;
     for (auto& subdomain : subDomains) {
-        error = subdomain->CheckSolution(checkReason) | error;
+        error = subdomain->CheckSolution() | error;
     }
     return error;
 }
