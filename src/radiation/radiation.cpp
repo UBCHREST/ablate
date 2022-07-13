@@ -260,7 +260,9 @@ void ablate::radiation::Radiation::RayInit() {
      * */
 
     PetscInt nglobalpoints = 0;
+    if (log) printf("Local Points");
     DMSwarmGetLocalSize(radsearch, &npoints);  //!< Recalculate the number of particles that are in the domain
+    if (log) printf("Global Points");
     DMSwarmGetSize(radsearch, &nglobalpoints);
     PetscInt stepcount = 0;  //!< Count the number of steps that the particles have taken
 
