@@ -383,7 +383,7 @@ class SubDomain : public io::Serializable {
     /**
      * checks each point in this subdomain for nan/inf and reports information.  True is returned if an error is found.
      */
-    bool CheckSolution(Domain::CheckReason);
+    bool CheckSolution();
 };
 
 }  // namespace ablate::domain

@@ -142,13 +142,7 @@ void ablate::solver::TimeStepper::Solve() {
     auto logEvent = RegisterEvent(this->name.c_str());
     PetscLogEventSetDof(logEvent, 0, dof) >> checkError;
     PetscLogEventBegin(logEvent, 0, 0, 0, 0);
-    PetscErrorCode solveErrCode = TSSolve(ts, solutionVec);
-    if (solveErrCode == PETSC_ERR_FP) {
-        // print the cell information for the cells that caused this error
-        domain->CheckSolution(domain::Domain::CheckReason::Error);
-    }
-    solveErrCode >> checkError;
-
+    TSSolve(ts, solutionVec) >> checkError;
     PetscLogEventEnd(logEvent, 0, 0, 0, 0);
 }
 
