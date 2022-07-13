@@ -260,13 +260,16 @@ void ablate::radiation::Radiation::RayInit() {
      * */
 
     PetscInt nglobalpoints = 0;
-    if (log) printf("Local Points");
+    //    if (log) printf("Local Points\n");
     DMSwarmGetLocalSize(radsearch, &npoints);  //!< Recalculate the number of particles that are in the domain
-    if (log) printf("Global Points");
+                                               //    if (log) printf("Global Points\n");
+    if (log) PetscPrintf(subDomain->GetComm(), "Local Points\n");
     DMSwarmGetSize(radsearch, &nglobalpoints);
+    if (log) PetscPrintf(subDomain->GetComm(), "Global Points\n");
+
     PetscInt stepcount = 0;  //!< Count the number of steps that the particles have taken
 
-    if (log) printf("Got Global Points");
+    if (log) PetscPrintf(subDomain->GetComm(), "Got Global Points\n");
 
     while (nglobalpoints != 0) {  //!< WHILE THERE ARE PARTICLES IN ANY DOMAIN
         /** Get all of the ray information from the particle
@@ -275,7 +278,7 @@ void ablate::radiation::Radiation::RayInit() {
         DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier);
         DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord);
 
-        if (log) printf("Got Fields");
+        if (log) PetscPrintf(subDomain->GetComm(), "Got Fields\n");
 
         /** Iterate over the particles that are present in the domain
          * Add the cell index to the ray
@@ -289,7 +292,7 @@ void ablate::radiation::Radiation::RayInit() {
         VecSetFromOptions(intersect);
         PetscInt i[3] = {0, 1, 2};  //!< Establish the vector here so that it can be iterated.
 
-        if (log) printf("Placing Particles Coordinates");
+        if (log) PetscPrintf(subDomain->GetComm(), "Placing Particles Coordinates\n");
 
         for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                 //!< particles then pass out of initialization.
@@ -318,7 +321,7 @@ void ablate::radiation::Radiation::RayInit() {
         PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
         DMLocatePoints(subDomain->GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF);  //!< Call DMLocatePoints here, all of the processes have to call it at once.
 
-        if (log) printf("Place Particles in Cell");
+        if (log) PetscPrintf(subDomain->GetComm(), "Place Particles in Cell\n");
 
         /** An array that maps each point to its containing cell can be obtained with the below
          * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
@@ -401,7 +404,7 @@ void ablate::radiation::Radiation::RayInit() {
         VecDestroy(&intersect);   //!< Return the vector to PETSc
         PetscSFDestroy(&cellSF);  //!< Return the stuff to PETSc
 
-        if (log) printf("DMSwarmMigrate");
+        if (log) PetscPrintf(subDomain->GetComm(), "DMSwarmMigrate\n");
 
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
         DMSwarmMigrate(radsearch, PETSC_TRUE);  //!< Migrate the search particles and remove the particles that have left the domain space.
