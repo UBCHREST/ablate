@@ -281,6 +281,9 @@ void ablate::radiation::Radiation::RayInit() {
         VecSetSizes(intersect, PETSC_DECIDE, npoints * dim);  //!< Set size
         VecSetFromOptions(intersect);
         PetscInt i[3] = {0, 1, 2};              //!< Establish the vector here so that it can be iterated.
+
+        if (log) printf("Place Particles Coordinates");
+
         for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                 //!< particles then pass out of initialization.
             ipart = ip;                         //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy.
@@ -307,6 +310,8 @@ void ablate::radiation::Radiation::RayInit() {
         /** Loop through points to try to get the cell that is sitting on that point*/
         PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
         DMLocatePoints(subDomain->GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF);  //!< Call DMLocatePoints here, all of the processes have to call it at once.
+
+        if (log) printf("Place Particles in Cell");
 
         /** An array that maps each point to its containing cell can be obtained with the below
          * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
@@ -388,6 +393,8 @@ void ablate::radiation::Radiation::RayInit() {
         /** Cleanup */
         VecDestroy(&intersect);   //!< Return the vector to PETSc
         PetscSFDestroy(&cellSF);  //!< Return the stuff to PETSc
+
+        if (log) printf("DMSwarmMigrate");
 
         /** DMSwarm Migrate to move the ray search particle into the next domain if it has crossed. If it no longer appears in this domain then end the ray segment. */
         DMSwarmMigrate(radsearch, PETSC_TRUE);  //!< Migrate the search particles and remove the particles that have left the domain space.
