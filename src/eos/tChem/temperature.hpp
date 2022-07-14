@@ -59,4 +59,4 @@ struct Temperature {
 };
 
 }  // namespace ablate::eos::tChem
-#endif  // ABLATELIBRARY_TEMPERATURE_HPP
+#endif
