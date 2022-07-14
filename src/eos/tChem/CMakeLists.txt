@@ -1,15 +1,16 @@
 target_sources(ablateLibrary
+        PRIVATE
+        temperature.cpp
+        sensibleInternalEnergy.cpp
+        pressure.cpp
+        sensibleEnthalpy.cpp
+        speedOfSound.cpp
         PUBLIC
         temperature.hpp
-        temperature.cpp
         sensibleInternalEnergy.hpp
-        sensibleInternalEnergy.cpp
         sensibleInternalEnergyFcn.hpp
         pressure.hpp
-        pressure.cpp
         sensibleEnthalpy.hpp
-        sensibleEnthalpy.cpp
         sensibleEnthalpyFcn.hpp
         speedOfSound.hpp
-        speedOfSound.cpp
         )

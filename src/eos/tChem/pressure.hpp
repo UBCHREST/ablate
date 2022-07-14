@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_PRESSURE_HPP
-#define ABLATELIBRARY_PRESSURE_HPP
+#ifndef ABLATELIBRARY_TCHEM_PRESSURE_HPP
+#define ABLATELIBRARY_TCHEM_PRESSURE_HPP
 
 #include "TChem_KineticModelData.hpp"
 #include "TChem_Util.hpp"

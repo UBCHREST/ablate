@@ -1,4 +1,4 @@
-# check to see if the Kokkos_DIR was specified, if not build
+# check to see if the Kokkos_DIR was specified, if not check petsc build for kokkos
 if (NOT (DEFINED Kokkos_DIR|CACHE{Kokkos_DIR}|ENV{Kokkos_DIR}))
     # assume that kokkos was built by petsc
     find_package(Kokkos PATHS $ENV{PETSC_DIR}/$ENV{PETSC_ARCH}/lib/cmake/Kokkos/)
