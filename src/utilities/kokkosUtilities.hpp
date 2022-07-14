@@ -6,7 +6,7 @@ namespace ablate::utilities {
 class KokkosUtilities {
    public:
     /**
-     * static call to setup petsc petsc and register cleanup call
+     * static call to setup petsc kokkos and register cleanup call
      */
     static void Initialize();
 

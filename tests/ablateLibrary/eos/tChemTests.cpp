@@ -514,7 +514,7 @@ TEST_P(TChemFieldFunctionTestFixture, ShouldComputeField) {
     }
 }
 
-INSTANTIATE_TEST_SUITE_P(TChemV1Tests, TChemFieldFunctionTestFixture,
+INSTANTIATE_TEST_SUITE_P(TChemTests, TChemFieldFunctionTestFixture,
                          testing::Values((TChemFieldFunctionTestParameters){.mechFile = "inputs/eos/grimech30.dat",
                                                                             .thermoFile = "inputs/eos/thermo30.dat",
                                                                             .property1 = ablate::eos::ThermodynamicProperty::Temperature,

@@ -3,6 +3,9 @@ target_sources(ablateLibrary
         petscOptions.cpp
         mathUtilities.cpp
         demangler.cpp
+        petscUtilities.cpp
+        kokkosUtilities.cpp
+        mpiUtilities.cpp
 
         PUBLIC
         petscError.hpp
@@ -14,10 +17,7 @@ target_sources(ablateLibrary
         mathUtilities.hpp
         vectorUtilities.hpp
         petscUtilities.hpp
-        petscUtilities.cpp
         kokkosUtilities.hpp
-        kokkosUtilities.cpp
         mpiUtilities.hpp
-        mpiUtilities.cpp
         temporaryWorkingDirectory.hpp
         )

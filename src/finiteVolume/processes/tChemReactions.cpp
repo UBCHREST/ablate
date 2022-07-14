@@ -313,6 +313,6 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem library", ARG(ablate::eos::EOS, "eos", "the tChem v1 eos"),
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem library", ARG(ablate::eos::EOS, "eos", "the tChem eos"),
          OPT(ablate::parameters::Parameters, "options",
              "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton)"));
