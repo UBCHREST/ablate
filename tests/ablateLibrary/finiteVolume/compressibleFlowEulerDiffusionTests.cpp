@@ -154,8 +154,6 @@ static void ComputeErrorNorms(TS ts, std::shared_ptr<ablate::finiteVolume::Compr
 
 TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
-        PetscErrorCode ierr;
-
         // initialize petsc and mpi
         ablate::environment::RunEnvironment::Initialize(argc, argv);
         ablate::utilities::PetscUtilities::Initialize();
@@ -284,7 +282,7 @@ TEST_P(CompressibleFlowDiffusionTestFixture, ShouldConvergeToExactSolution) {
         }
 
         environment::RunEnvironment::Get().Finalize();
-        exit(ierr);
+        exit(0);
 
     EndWithMPI
 }
