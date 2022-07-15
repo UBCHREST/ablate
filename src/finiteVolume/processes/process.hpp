@@ -7,7 +7,16 @@ namespace ablate::finiteVolume::processes {
 class Process {
    public:
     virtual ~Process() = default;
-    virtual void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) = 0;
+    /**
+     * Setup up all functions not dependent upon the mesh
+     * @param fv
+     */
+    virtual void Setup(ablate::finiteVolume::FiniteVolumeSolver& fv) = 0;
+    /**
+     * Set up mesh dependent initialization
+     * @param fv
+     */
+    virtual void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv){};
 };
 
 }  // namespace ablate::finiteVolume::processes

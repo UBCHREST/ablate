@@ -20,7 +20,7 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(const std::share
     advectionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
 }
 
-void ablate::finiteVolume::processes::EulerTransport::Initialize(ablate::finiteVolume::FiniteVolumeSolver& flow) {
+void ablate::finiteVolume::processes::EulerTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Register the euler source terms
     if (fluxCalculator) {
         flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD}, {});

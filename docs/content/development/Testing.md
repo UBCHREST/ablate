@@ -44,7 +44,7 @@ TEST_P(ExampleTestFixtureUsingMpi, ShortTestDescription) {
         {
             // arrange
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            Initialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // act
             // Get the current rank
@@ -86,7 +86,7 @@ class ExampleTestFixture : public testingResources::MpiTestFixture, public ::tes
 TEST_P(ExampleTestFixture, ShortDescriptionOfTest) {
     StartWithMPI
         // arrange
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        Initialize(argc, argv, NULL, "HELP") >> testErrorChecker;
 
         const auto& parameters = GetParam();
 

@@ -215,7 +215,7 @@ void ablate::solver::Solver::GetRange(PetscInt depth, Range &faceRange) const {
         DMGetLabel(subDomain->GetDM(), region->GetName().c_str(), &label);
 
         IS labelIS;
-        DMLabelGetStratumIS(label, GetRegion()->GetValue(), &labelIS) >> checkError;
+        DMLabelGetStratumIS(label, region->GetValue(), &labelIS) >> checkError;
         ISIntersect_Caching_Internal(allPointIS, labelIS, &faceRange.is) >> checkError;
         ISDestroy(&labelIS) >> checkError;
     } else {

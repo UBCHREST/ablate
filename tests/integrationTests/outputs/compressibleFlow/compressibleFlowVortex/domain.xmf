@@ -5,7 +5,7 @@
     <Grid CollectionType="Temporal" GridType="Collection" Name="TimeSeries">
       <Time TimeType="List">
         <DataItem Dimensions="26" Format="XML" NumberType="Float">
-          0 9.13371e-05 0.000181815 0.000271472 0.000360588 0.000448474 0.000535648 0.000622535 0.000709513 0.000796843 0.000884698 0.000973074 0.00106196 0.00115135 0.00124099 0.00133086 0.00142098 0.00151137 0.00160202 0.00169286 0.00178391 0.00187513 0.00196648 0.00205791 0.0021494 0.00224093
+          0 9.13371e-05 0.000181815 0.00027147 0.000360585 0.000448502 0.000535695 0.000622744 0.00071004 0.00079759 0.000885537 0.000973922 0.00106275 0.00115205 0.00124178 0.00133182 0.0014221 0.0015126 0.00160327 0.00169399 0.00178477 0.00187559 0.00196648 0.00205743 0.00214843 0.00223948
         </DataItem>
       </Time>
       <Grid GridType="Uniform" Name="domain">
@@ -14,9 +14,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -96,9 +96,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -178,9 +178,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -260,9 +260,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -342,9 +342,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -424,9 +424,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -506,9 +506,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -588,9 +588,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -670,9 +670,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -752,9 +752,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -834,9 +834,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -916,9 +916,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -998,9 +998,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1080,9 +1080,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1162,9 +1162,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1244,9 +1244,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1326,9 +1326,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1408,9 +1408,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1490,9 +1490,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1572,9 +1572,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1654,9 +1654,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1736,9 +1736,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1818,9 +1818,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1900,9 +1900,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -1982,9 +1982,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">
@@ -2064,9 +2064,9 @@
             domain.hdf5:/viz/topology/cells
           </DataItem>
         </Topology>
-        <Geometry GeometryType="XYZ">
-          <DataItem DataType="Float" Dimensions="144 3" Format="HDF" Name="_viz_geometry_vertices" Precision="8">
-            domain.hdf5:/viz/geometry/vertices
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="144 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            domain.hdf5:/geometry/vertices
           </DataItem>
         </Geometry>
         <Attribute Center="Cell" Name="aux_pressure" Type="Scalar">

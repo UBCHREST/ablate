@@ -1,4 +1,3 @@
-DOF: 2
 Timestep: 0000 time = (.*) dt = (.*)<expects> ~ ~
 Timestep: 0001 time = (.*) dt = (.*)<expects> ~ ~
 Timestep: 0002 time = (.*) dt = (.*)<expects> ~ ~

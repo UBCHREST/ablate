@@ -2,7 +2,7 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 ablate::finiteVolume::processes::Buoyancy::Buoyancy(std::vector<double> buoyancyVector) : buoyancyVector(buoyancyVector) {}
 
-void ablate::finiteVolume::processes::Buoyancy::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
+void ablate::finiteVolume::processes::Buoyancy::Setup(ablate::finiteVolume::FiniteVolumeSolver &fv) {
     // Before each step, update the avg density
     auto buoyancyPreStep = std::bind(&ablate::finiteVolume::processes::Buoyancy::UpdateAverageDensity, this, std::placeholders::_1, std::placeholders::_2);
     fv.RegisterPreStep(buoyancyPreStep);
