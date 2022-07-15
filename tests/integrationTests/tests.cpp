@@ -35,13 +35,7 @@ INSTANTIATE_TEST_SUITE_P(
         (MpiTestParameter){.testName = "inputs/compressibleFlow/compressibleSublimationPipe.yaml",
                            .nproc = 2,
                            .expectedOutputFile = "outputs/compressibleFlow/compressibleSublimationPipe/compressibleSublimationPipe.txt",
-                           .arguments = ""},
-        (MpiTestParameter){.testName = "inputs/compressibleFlow/compressibleSublimationPipeWithExtrude.yaml",
-                           .nproc = 2,
-                           .expectedOutputFile = "outputs/compressibleFlow/compressibleSublimationPipeWithExtrude/compressibleSublimationPipeWithExtrude.txt",
-                           .arguments = ""},
-        (MpiTestParameter){
-            .testName = "inputs/compressibleFlow/compressibleFlowCadExample.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowCadExample.txt", .arguments = ""}),
+                           .arguments = ""}),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
@@ -90,7 +84,6 @@ INSTANTIATE_TEST_SUITE_P(ReactingFlow, IntegrationTestsSpecifier,
 INSTANTIATE_TEST_SUITE_P(
     Machinery, IntegrationTestsSpecifier,
     testing::Values((MpiTestParameter){.testName = "inputs/machinery/dmViewFromOptions.yaml", .nproc = 1, .expectedOutputFile = "outputs/machinery/dmViewFromOptions.txt", .arguments = ""},
-                    (MpiTestParameter){.testName = "inputs/machinery/extrudeBoundaryTest.yaml", .nproc = 1, .expectedOutputFile = "outputs/machinery/extrudeBoundaryTest.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/machinery/subDomainFVM.yaml",
                                        .nproc = 1,
                                        .expectedOutputFile = "outputs/machinery/subDomainFVM/subDomainFVM.txt",
