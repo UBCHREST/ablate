@@ -161,10 +161,3 @@ INSTANTIATE_TEST_SUITE_P(Radiation, IntegrationTestsSpecifier,
                              (MpiTestParameter){
                                  .testName = "inputs/radiation/parallelPlatesRadiation.yaml", .nproc = 1, .expectedOutputFile = "outputs/radiation/parallelPlatesOutput.txt", .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
-
-INSTANTIATE_TEST_SUITE_P(Monitors, IntegrationTestsSpecifier,
-                         testing::Values(
-                             (MpiTestParameter){
-                                 .testName = "inputs/monitors/rocketMonitor.yaml",  .nproc = 1, .expectedOutputFile = "outputs/monitors/rocketMonitor.txt", .arguments = ""}),
-
-                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
