@@ -11,6 +11,7 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "domain/modifiers/setFromOptions.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "eos/radiationProperties/radiationProperties.hpp"
@@ -19,6 +20,7 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
+#include "utilities/petscUtilities.hpp"
 
 struct RadiationTestParameters {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -165,7 +167,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
     StartWithMPI
 
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         // keep track of history
         testingResources::ConvergenceTester l2History("l2");
@@ -281,7 +284,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         }
 
         DMRestoreLocalVector(domain->GetDM(), &rhs);
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 }
 

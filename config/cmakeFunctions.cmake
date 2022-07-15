@@ -10,3 +10,9 @@ FUNCTION(update_header_paths_for_install target buildRoot installRoot)
     endforeach ()
     set_property(TARGET ${target} PROPERTY INTERFACE_SOURCES ${interfaceListUpdated})
 ENDFUNCTION()
+
+# set the included directories as system
+FUNCTION(set_include_directories_as_system target)
+    get_target_property(_include ${target} INTERFACE_INCLUDE_DIRECTORIES)
+    target_include_directories(${target} SYSTEM INTERFACE ${_include})
+ENDFUNCTION()

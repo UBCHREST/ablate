@@ -2,7 +2,7 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 ablate::finiteVolume::processes::Gravity::Gravity(std::vector<double> gravityVector) : gravityVector(gravityVector) {}
 
-void ablate::finiteVolume::processes::Gravity::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
+void ablate::finiteVolume::processes::Gravity::Setup(ablate::finiteVolume::FiniteVolumeSolver &fv) {
     // add the source function
     fv.RegisterRHSFunction(ComputeGravitySource, this, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::EULER_FIELD}, {});
 }

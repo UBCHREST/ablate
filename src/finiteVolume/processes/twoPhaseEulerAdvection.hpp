@@ -179,7 +179,7 @@ class TwoPhaseEulerAdvection : public Process {
     TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasGas,
                            std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorGasLiquid, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidGas,
                            std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorLiquidLiquid);
-    void Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
 
    private:
     static PetscErrorCode CompressibleFlowComputeEulerFlux(PetscInt dim, const PetscFVFaceGeom *fg, const PetscInt uOff[], const PetscScalar fieldL[], const PetscScalar fieldR[],
