@@ -13,6 +13,7 @@ target_sources(ablateLibrary
         maxMinAverage.cpp
         physicsTimeStep.cpp
         probes.cpp
+        rocketMonitor.cpp
         PUBLIC
         monitor.hpp
         fieldErrorMonitor.hpp
@@ -29,7 +30,6 @@ target_sources(ablateLibrary
         physicsTimeStep.hpp
         probes.hpp
         rocketMonitor.hpp
-        rocketMonitor.cpp
         )
 
 add_subdirectory(logs)
