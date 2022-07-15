@@ -16,7 +16,7 @@ if (NOT DEFINED CMAKE_CXX_COMPILER)
 endif ()
 
 # Set the project details
-project(ablateLibrary VERSION 0.8.31)
+project(ablateLibrary VERSION 0.9.0)
 
 # Load the Required 3rd Party Libaries
 pkg_check_modules(PETSc REQUIRED IMPORTED_TARGET GLOBAL PETSc)
@@ -45,6 +45,7 @@ add_subdirectory(src)
 
 # find and load required libraries
 include(config/cmakeFunctions.cmake)
+include(config/findKokkos.cmake)
 include(config/findYamlCpp.cmake)
 include(config/findCppParser.cmake)
 include(config/findMuParser.cmake)
@@ -55,6 +56,7 @@ find_package(Threads REQUIRED)
 include(config/findOpenCascade.cmake)
 include(config/findJson.cmake)
 include(config/findTensorFlow.cmake)
+include(config/findChrestCompilerFlags.cmake)
 
 # specify in the required libaries
 target_link_libraries(ablateLibrary
@@ -64,7 +66,8 @@ target_link_libraries(ablateLibrary
         yaml-cpp
         muparser
         CHREST::xdmfGeneratorLibrary
-        TChem::TChem
+        TChem::tchem
+        Tines::tines
         Threads::Threads
         nlohmann_json::nlohmann_json
         PRIVATE
@@ -88,7 +91,7 @@ endif ()
 
 # keep a separate main statement
 add_executable(ablate main.cpp)
-target_link_libraries(ablate PUBLIC ablateLibrary chrestCompilerFlags)
+target_link_libraries(ablate PUBLIC ablateLibrary PRIVATE chrestCompilerFlags)
 
 # include system specific hacks
 include(config/systemHacks.cmake)

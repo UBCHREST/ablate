@@ -18,7 +18,7 @@ class Gravity : public FlowProcess {
 
    public:
     explicit Gravity(std::vector<double> gravityVector);
-    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
 };
 
 }  // namespace ablate::finiteVolume::processes

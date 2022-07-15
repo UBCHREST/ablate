@@ -8,6 +8,7 @@
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/distributeWithGhostCells.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "finiteVolume/boundaryConditions/essentialGhost.hpp"
 #include "finiteVolume/boundaryConditions/ghost.hpp"
@@ -19,7 +20,7 @@
 #include "monitors/solutionErrorMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "solver/directSolverTsInterface.hpp"
-
+#include "utilities/petscUtilities.hpp"
 using namespace ablate;
 
 struct CompressibleFlowAdvectionTestParameters {
@@ -40,7 +41,8 @@ class CompressibleFlowAdvectionFixture : public testingResources::MpiTestFixture
 TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
     StartWithMPI
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         PetscInt initialNx = GetParam().initialNx;
 
@@ -142,9 +144,8 @@ TEST_P(CompressibleFlowAdvectionFixture, ShouldConvergeToExactSolution) {
             FAIL() << lInfMessage;
         }
 
-        PetscErrorCode ierr = PetscFinalize();
-        exit(ierr);
-
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 }
 

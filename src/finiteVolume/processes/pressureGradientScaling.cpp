@@ -150,7 +150,7 @@ PetscErrorCode ablate::finiteVolume::processes::PressureGradientScaling::UpdateP
     PetscFunctionReturn(0);
 }
 
-void ablate::finiteVolume::processes::PressureGradientScaling::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fv) {
+void ablate::finiteVolume::processes::PressureGradientScaling::Setup(ablate::finiteVolume::FiniteVolumeSolver &fv) {
     auto preStep = std::bind(&ablate::finiteVolume::processes::PressureGradientScaling::UpdatePreconditioner, this, std::placeholders::_1, std::placeholders::_2);
     fv.RegisterPreStep(preStep);
 

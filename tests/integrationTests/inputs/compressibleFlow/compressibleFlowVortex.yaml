@@ -75,9 +75,6 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     cfl: 0.5
 
   # there is no transport properties resulting in inviscid flow
-  transport:
-    k: 0.0
-    mu: 0.0
   monitors:
     # output time step information for each time step
     - !ablate::monitors::TimeStepMonitor

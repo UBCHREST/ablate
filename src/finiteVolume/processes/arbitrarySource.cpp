@@ -2,7 +2,7 @@
 #include "arbitrarySource.hpp"
 ablate::finiteVolume::processes::ArbitrarySource::ArbitrarySource(std::map<std::string, std::shared_ptr<ablate::mathFunctions::MathFunction>> functions) : functions(std::move(functions)) {}
 
-void ablate::finiteVolume::processes::ArbitrarySource::Initialize(ablate::finiteVolume::FiniteVolumeSolver &fvmSolver) {
+void ablate::finiteVolume::processes::ArbitrarySource::Setup(ablate::finiteVolume::FiniteVolumeSolver &fvmSolver) {
     for (const auto &[fieldName, function] : functions) {
         // Get the field from the subDomain
         const auto &field = fvmSolver.GetSubDomain().GetField(fieldName);
