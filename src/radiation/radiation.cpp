@@ -8,8 +8,8 @@
 ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : CellSolver(std::move(solverId), std::move(region), std::move(options)), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
-    nTheta = raynumber;    //!< The number of angles to solve with, given by user input
-    nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
+    nTheta = 2;  // raynumber;    //!< The number of angles to solve with, given by user input
+    nPhi = 1;    // 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
 
 void ablate::radiation::Radiation::Setup() { /** allows initialization after the subdomain and dm is established */
@@ -104,8 +104,8 @@ void ablate::radiation::Radiation::RayInit() {
     MPI_Comm_size(subDomain->GetComm(), &numRanks);  //!< Get the number of ranks in the simulation.
 
     /** Declare some local variables */
-    double theta;  //!< represents the actual current angle (inclination)
-    double phi;    //!< represents the actual current angle (rotation)
+    //    double theta;  //!< represents the actual current angle (inclination)
+    //    double phi;    //!< represents the actual current angle (rotation)
 
     /**Locally get a range of cells that are included in this subdomain at this time step for the ray initialization
      * */
@@ -131,7 +131,7 @@ void ablate::radiation::Radiation::RayInit() {
         if (ghostLabel) {
             DMLabelGetValue(ghostLabel, cell, &ghost);
         }
-        if (ghost == -1) {
+        if (ghost <= 0) {
             cellCount++;
         }
     }
@@ -140,8 +140,8 @@ void ablate::radiation::Radiation::RayInit() {
 
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
 
-    PetscInt npoints = (cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
-    PetscInt nsolvepoints = 0;                             //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
+    PetscInt npoints = (rank == (numRanks - 1)) ? (nTheta - 1) * nPhi : 0;  //(cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
+    PetscInt nsolvepoints = 0;                                              //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
     DMCreate(subDomain->GetComm(), &radsearch);
@@ -171,8 +171,8 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmFinalizeFieldRegister(radsolve);                                      //!< Initialize the fields that have been defined
 
     /** Set initial local sizes of the DMSwarm with a buffer length of zero */
-    DMSwarmSetLocalSizes(radsearch, npoints, 0);  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
-    DMSwarmSetLocalSizes(radsolve, 0, 0);         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
+    DMSwarmSetLocalSizes(radsearch, npoints, 10);  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
+    DMSwarmSetLocalSizes(radsolve, 0, 10);         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Set the spatial step size to the minimum cell radius */
     PetscReal hstep = minCellRadius;
@@ -212,6 +212,10 @@ void ablate::radiation::Radiation::RayInit() {
          */
         for (int ntheta = 1; ntheta < nTheta; ntheta++) {
             for (int nphi = 0; nphi < nPhi; nphi++) {
+                if (!(cellGeom->centroid[0] < 0.3 && cellGeom->centroid[0] > 0.2 && cellGeom->centroid[1] < (0.0105 / 3.0) && cellGeom->centroid[1] > (-0.0105 / 3.0))) {
+                    continue;
+                }
+
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
                 virtualcoord[ipart].x = cellGeom->centroid[0];
                 virtualcoord[ipart].y = cellGeom->centroid[1];
@@ -219,13 +223,15 @@ void ablate::radiation::Radiation::RayInit() {
                 virtualcoord[ipart].current = -1;  //!< Set this to a null value so that it can't get confused about where it starts.
 
                 /** Get the initial direction of the search particle from the angle number that it was initialized with */
-                theta = ((double)ntheta / (double)nTheta) * pi;  //!< Theta angle of the ray
-                phi = ((double)nphi / (double)nPhi) * 2.0 * pi;  //!<  Phi angle of the ray
+                //                theta = ((double)ntheta / (double)nTheta) * pi;  //!< Theta angle of the ray
+                //                phi = ((double)nphi / (double)nPhi) * 2.0 * pi;  //!<  Phi angle of the ray
 
                 /** Update the direction vector of the search particle */
-                virtualcoord[ipart].xdir = hstep * (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ipart].ydir = hstep * (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ipart].zdir = hstep * (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].xdir =
+                    hstep * cos( 3.14159);  // hstep * (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].ydir =
+                    hstep * sin(3.14159);  // hstep * (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].zdir = 0;     // hstep * (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord);
@@ -344,7 +350,7 @@ void ablate::radiation::Radiation::RayInit() {
             /** make sure we are not working on a ghost cell */
             PetscInt ghost = -1;
             if (ghostLabel) DMLabelGetValue(ghostLabel, cell[ip].index, &ghost);
-            if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index) && ghost == -1) {
+            if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index) && (ghost == -1)) {
                 index = cell[ip].index;
             } else {
                 index = -1;
@@ -397,6 +403,9 @@ void ablate::radiation::Radiation::RayInit() {
             virtualcoord[ipart].z += virtualcoord[ipart].zdir;  //!< z component: add one step to the coordinate position
 
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
+
+            //            if (log) printf("%f %f %li\n", virtualcoord[ipart].x, virtualcoord[ipart].y, ghost);
+            //            }
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
         DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord);
@@ -416,7 +425,7 @@ void ablate::radiation::Radiation::RayInit() {
         DMSwarmGetLocalSize(radsearch, &npoints);   //!< Update the loop condition. Recalculate the number of particles that are in the domain.
 
         if (log) {
-            PetscPrintf(subDomain->GetComm(), " Global Step: %" PetscInt_FMT "    Global Points: %" PetscInt_FMT "\n", stepcount, nglobalpoints);
+            PetscPrintf(subDomain->GetComm(), " Global Steps: %" PetscInt_FMT "    Global Points: %" PetscInt_FMT "\n", stepcount, nglobalpoints);
             stepcount++;
         }
     }
