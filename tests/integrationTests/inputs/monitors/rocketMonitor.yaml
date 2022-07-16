@@ -1,0 +1,88 @@
+# ### Description
+# A test of the rocket monitor output (thrust, specific impulse) using a simple 2d 5x20 plane of cells
+---
+
+environment:
+  title: rocketMonitor
+  tagDirectory: true
+arguments: { }
+timestepper:
+  name: mainTimeStepper
+  io:
+    interval: 0
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 5
+    ts_dt: 1.0E-10
+    ts_adapt_safety: 0.9
+  domain: !ablate::domain::BoxMeshBoundaryCells
+    name: simpleBoxField
+    faces: [ 5, 40 ]
+    lower: [ 0 , -0.5 ]
+    upper: [ 0.5 , 0.5 ]
+    simplex: false
+    preModifiers:
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    postModifiers:
+      - !ablate::domain::modifiers::TagLabelInterface
+        leftRegion:
+          name: interiorCells
+        rightRegion:
+          name: boundaryCellsTop
+        boundaryFaceRegion:
+          name: upperWallBoundaryFaces
+        leftBoundaryCellRegion:
+          name: upperWallFlowCells
+      - !ablate::domain::modifiers::TagLabelInterface
+        leftRegion:
+          name: interiorCells
+        rightRegion:
+          name: boundaryCellsRight
+        boundaryFaceRegion:
+          name: outletBoundaryFaces
+        leftBoundaryCellRegion:
+          name: outletFlowCells
+      - !ablate::domain::modifiers::GhostBoundaryCells
+    fields:
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+      - !ablate::domain::FieldDescription
+        name: pressure
+        type: FV
+        location: aux
+  initialization:
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state: &initFlowState
+        eos: *eos
+#        pressure: 101325.0
+        pressure: "101325.0 + 100*y + 250*x"
+        temperature: 300
+#        velocity: "100, 15"
+        velocity: " 65 + 10*y , 10 + 30*x "
+solvers:
+  - !ablate::finiteVolume::CompressibleFlowSolver
+    id: flowField
+    region:
+      name: interiorCells
+    eos: *eos
+    monitors:
+      - !ablate::monitors::RocketMonitor
+        eos: *eos
+        name: Outlet
+        region:
+          name: outletFlowCells
+        fieldBoundary:
+          name: outletBoundaryFaces
+        interval: 0
+      - !ablate::monitors::RocketMonitor
+        eos: *eos
+        name: Upper Wall
+        region:
+          name: upperWallFlowCells
+        fieldBoundary:
+          name: upperWallBoundaryFaces
+        interval: 0
