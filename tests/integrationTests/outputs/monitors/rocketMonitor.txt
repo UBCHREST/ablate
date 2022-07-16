@@ -1,0 +1,40 @@
+Outlet RocketMonitor for timestep 0000: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> n5100.0615359 z z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> n6.7957143 z z
+Upper Wall RocketMonitor for timestep 0000: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> z n246.6584150 z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> z n2.4413783 z
+Outlet RocketMonitor for timestep 0001: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> n5100.0615359 z z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> n6.7957143 z z
+Upper Wall RocketMonitor for timestep 0001: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> z n246.6584150 z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> z n2.4413783 z
+Outlet RocketMonitor for timestep 0002: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> n5100.0615359 z z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> n6.7957143 z z
+Upper Wall RocketMonitor for timestep 0002: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> z n246.6584150 z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> z n2.4413783 z
+Outlet RocketMonitor for timestep 0003: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> n5100.0615359 z z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> n6.7957143 z z
+Upper Wall RocketMonitor for timestep 0003: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> z n246.6584150 z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> z n2.4413783 z
+Outlet RocketMonitor for timestep 0004: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> n5100.0615359 z z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> n6.7957143 z z
+Upper Wall RocketMonitor for timestep 0004: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> z n246.6584150 z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> z n2.4413783 z
+Outlet RocketMonitor for timestep 0005: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> n5100.0615359 z z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> n6.7957143 z z
+Upper Wall RocketMonitor for timestep 0005: time: (.*)<expects> ~
+	Thrust:	 \[(.*),(.*),(.*)\]<expects> z n246.6584150 z
+	Isp:	 \[(.*),(.*),(.*)\]<expects> z n2.4413783 z
+ResultFiles:
+domain.hdf5
+domain.xmf
+restart.rst
