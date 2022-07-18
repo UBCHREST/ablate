@@ -1,7 +1,5 @@
 #include "cylinder.hpp"
 
-#include <utility>
-
 ablate::mathFunctions::geom::Cylinder::Cylinder(std::vector<double> start, std::vector<double> end, double radius, const std::shared_ptr<mathFunctions::MathFunction> &insideValues,
                                                 const std::shared_ptr<mathFunctions::MathFunction> &outsideValues)
     : CylinderShell(std::move(start), std::move(end), 0.0, radius, insideValues, outsideValues)
