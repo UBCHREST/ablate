@@ -22,8 +22,6 @@ class Geometry : public MathFunction {
    protected:
     explicit Geometry(const std::shared_ptr<mathFunctions::MathFunction>& insideValues, const std::shared_ptr<mathFunctions::MathFunction>& outsideValues);
 
-    virtual bool InsideGeometry(const double* xyz, const int& ndims, const double& time) const = 0;
-
     static PetscErrorCode GeometryPetscFunction(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar* u, void* ctx);
 
    public:
@@ -38,6 +36,25 @@ class Geometry : public MathFunction {
     void* GetContext() override { return this; }
 
     PetscFunction GetPetscFunction() override { return GeometryPetscFunction; }
+
+    /**
+     * determines if inside geometry
+     * @param xyz
+     * @param ndims
+     * @param time
+     * @return
+     */
+    virtual bool InsideGeometry(const double* xyz, const int& ndims, const double& time) const = 0;
+
+    /**
+     * Returns the inside values function
+     */
+    inline const std::shared_ptr<mathFunctions::MathFunction>& InsideValues() const { return insideValues; };
+
+    /**
+     * Returns the outside values function
+     */
+    inline const std::shared_ptr<mathFunctions::MathFunction> OutsideValues() const { return outsideValues; };
 };
 
 }  // namespace ablate::mathFunctions::geom

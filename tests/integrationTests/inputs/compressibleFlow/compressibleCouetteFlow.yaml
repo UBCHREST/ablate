@@ -25,8 +25,6 @@ timestepper:
     simplex: false
     # specify any modifications to be performed to the mesh/domain
     modifiers:
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 0
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
       # if using a FVM ghost boundary cells must be added

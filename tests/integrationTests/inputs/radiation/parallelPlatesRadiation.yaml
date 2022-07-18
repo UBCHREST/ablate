@@ -39,10 +39,10 @@ timestepper:
     lower: [ 0 , -0.0105 ]
     upper: [ 0.5 , 0.0105 ]
     simplex: false
+    options:
+      dm_refine: 0
+      dm_plex_hash_location: true
     preModifiers:
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 0
-        dm_plex_hash_location: true
       - !ablate::domain::modifiers::DistributeWithGhostCells
     postModifiers:
       - !ablate::domain::modifiers::GhostBoundaryCells

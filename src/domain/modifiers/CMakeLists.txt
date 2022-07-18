@@ -3,7 +3,6 @@ target_sources(ablateLibrary
         modifier.cpp
         distributeWithGhostCells.cpp
         ghostBoundaryCells.cpp
-        setFromOptions.cpp
         createLabel.cpp
         tagLabelBoundary.cpp
         mergeLabels.cpp
@@ -11,11 +10,12 @@ target_sources(ablateLibrary
         subtractLabel.cpp
         tagLabelInterface.cpp
         labelSupport.cpp
+        tagMeshBoundaryFaces.cpp
+
         PUBLIC
         modifier.hpp
         distributeWithGhostCells.hpp
         ghostBoundaryCells.hpp
-        setFromOptions.hpp
         createLabel.hpp
         tagLabelBoundary.hpp
         mergeLabels.hpp
@@ -23,4 +23,5 @@ target_sources(ablateLibrary
         subtractLabel.hpp
         tagLabelInterface.hpp
         labelSupport.hpp
+        tagMeshBoundaryFaces.hpp
         )

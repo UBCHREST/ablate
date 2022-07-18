@@ -48,9 +48,6 @@ timestepper:
           petscfv_type: leastsquares
           petsclimiter_type: none
     modifiers:
-      # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 0
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
         # if using a FVM ghost boundary cells must be added

@@ -14,9 +14,15 @@ ablate::boundarySolver::BoundarySolver::~BoundarySolver() {
     }
 }
 
-static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel boundaryLabel, PetscInt boundaryValue, PetscInt depth, DM dm, PetscInt cell, PetscInt maxDepth) {
+static void AddNeighborsToStencil(const std::shared_ptr<ablate::domain::SubDomain>& subdomain, std::set<PetscInt>& stencilSet, DMLabel boundaryLabel, PetscInt boundaryValue, PetscInt depth, DM dm,
+                                  PetscInt cell, PetscInt maxDepth) {
     // Check to see if this cell is already in the list
     if (stencilSet.count(cell)) {
+        return;
+    }
+
+    // do not allow this stencil to go to another subdomain
+    if (!subdomain->InRegion(cell)) {
         return;
     }
 
@@ -47,7 +53,7 @@ static void AddNeighborsToStencil(std::set<PetscInt>& stencilSet, DMLabel bounda
             DMPlexGetSupportSize(dm, face, &numberNeighborCells) >> ablate::checkError;
             DMPlexGetSupport(dm, face, &neighborCells) >> ablate::checkError;
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, depth + 1, dm, neighborCells[n], maxDepth);
+                AddNeighborsToStencil(subdomain, stencilSet, boundaryLabel, boundaryValue, depth + 1, dm, neighborCells[n], maxDepth);
             }
         }
     }
@@ -102,7 +108,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
 
     // compute the max depth
-    PetscInt maxCellDepth = PetscMin(2, dim);
+    PetscInt maxCellDepth = dim;
 
     // March over each cell in this region to create the stencil
     solver::Range cellRange;
@@ -160,7 +166,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
                 referenceCell = neighborCells[0] == cell ? neighborCells[1] : neighborCells[0];
 
                 for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                    AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n], maxCellDepth);
+                    AddNeighborsToStencil(subDomain, stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n], maxCellDepth);
                 }
 
                 // Add this geometry to the BoundaryFVFaceGeom
@@ -238,7 +244,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
                 DMPlexGetSupport(subDomain->GetDM(), face, &neighborCells) >> checkError;
 
                 for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                    AddNeighborsToStencil(stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n], maxCellDepth);
+                    AddNeighborsToStencil(subDomain, stencilSet, boundaryLabel, boundaryValue, 1, subDomain->GetDM(), neighborCells[n], maxCellDepth);
                 }
 
                 // Add this geometry to the BoundaryFVFaceGeom
