@@ -141,7 +141,7 @@ void ablate::radiation::Radiation::RayInit() {
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
 
     PetscInt npoints = (cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
-    PetscInt nsolvepoints = 0;                                              //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
+    PetscInt nsolvepoints = 0;                             //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
     DMCreate(subDomain->GetComm(), &radsearch) >> checkError;
@@ -162,9 +162,10 @@ void ablate::radiation::Radiation::RayInit() {
     //    if (log) printf("Particle Fields\n");
 
     /** Register fields within the DMSwarm */
-    DMSwarmRegisterUserStructField(radsearch, "identifier", sizeof(Identifier)) >> checkError;       //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
-    DMSwarmRegisterUserStructField(radsearch, "virtual coord", sizeof(Virtualcoord)) >> checkError;  //!< A field representing the three dimensional coordinates of the particle. Three "virtual" dims are required.
-    DMSwarmFinalizeFieldRegister(radsearch) >> checkError;                                           //!< Initialize the fields that have been defined
+    DMSwarmRegisterUserStructField(radsearch, "identifier", sizeof(Identifier)) >> checkError;  //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
+    DMSwarmRegisterUserStructField(radsearch, "virtual coord", sizeof(Virtualcoord)) >>
+        checkError;                                         //!< A field representing the three dimensional coordinates of the particle. Three "virtual" dims are required.
+    DMSwarmFinalizeFieldRegister(radsearch) >> checkError;  //!< Initialize the fields that have been defined
 
     DMSwarmRegisterUserStructField(radsolve, "identifier", sizeof(Identifier)) >> checkError;  //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
     DMSwarmRegisterUserStructField(radsolve, "carrier", sizeof(Carrier)) >> checkError;        //!< A struct to carry information about the ray segment that the particle is communicating from
@@ -336,7 +337,20 @@ void ablate::radiation::Radiation::RayInit() {
             if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index) && (ghost == -1)) {
                 index = cell[ip].index;
             } else {
+                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord) >> checkError;
+                DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier) >> checkError;
+                DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord) >> checkError;
+
+                DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
+
+                DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;  //!< Need to recalculate the number of particles that are in the domain again
+                DMSwarmGetField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord) >> checkError;
+                DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier) >> checkError;
+                DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord) >> checkError;
+                ipart--;  //!< Check the point replacing the one that was deleted
+                ip--;
                 index = -1;
+                continue;
             }
 
             if (index > -1) {
@@ -346,14 +360,16 @@ void ablate::radiation::Radiation::RayInit() {
                      * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
                      * */
                     if (rays.count(Key(identifier[ipart])) ==
-                        0) {                           //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
-                        identifier[ipart].nsegment++;  //!< The particle has passed through another domain!
-                        DMSwarmAddPoint(radsolve) >> checkError;     //!< Another solve particle is added here because the search particle has entered a new domain
+                        0) {                                      //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
+                        identifier[ipart].nsegment++;             //!< The particle has passed through another domain!
+                        DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
 
                         DMSwarmGetLocalSize(radsolve,
-                                            &nsolvepoints) >> checkError;  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last one is newest)
+                                            &nsolvepoints) >>
+                            checkError;  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last one is newest)
 
-                        DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier) >> checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
+                        DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&solveidentifier) >>
+                            checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
                         DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier) >> checkError;
 
                         PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
@@ -642,7 +658,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 theta = ((double)ntheta / (double)nTheta) * pi;  //!< This is a fine method of determining theta because it is in the original domain
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
                                                                                                                                              //                if (log)
-                //                    printf("I0: %f Kradd: %f Isource: %f", origin[iCell].I0, origin[iCell].Kradd, origin[iCell].Isource);  //!< Debugging for Quartz
+                printf("I0: %f Kradd: %f Isource: %f\n", origin[iCell].I0, origin[iCell].Kradd, origin[iCell].Isource);                      //!< Debugging for Quartz
                 //                if (log) EndEvent();
             }
         }
