@@ -92,6 +92,16 @@ void ablate::solver::TimeStepper::Solve() {
                 serializer->Register(serializable);
             }
         }
+
+        // register any monitors with the seralizer
+        for (const auto& monitorPerSolver : monitors) {
+            for (const auto& monitor : monitorPerSolver.second) {
+                auto serializable = std::dynamic_pointer_cast<io::Serializable>(monitor);
+                if (serializable && serializable->Serialize()) {
+                    serializer->Register(serializable);
+                }
+            }
+        }
     }
 
     // Get the solution vector
