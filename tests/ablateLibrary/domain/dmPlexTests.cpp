@@ -1,6 +1,5 @@
 #include <petsc.h>
 #include <cmath>
-#include <domain/modifiers/setFromOptions.hpp>
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "PetscTestErrorChecker.hpp"
@@ -35,9 +34,7 @@ TEST_P(DMPlexTestFixture, ShouldCreateAndViewDMPlex) {
 
             // act
             auto dmPlex = std::make_shared<ablate::domain::DMPlex>(
-                std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>>{},
-                "dmPlex",
-                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::SetFromOptions>(testingParam.parameters)});
+                std::vector<std::shared_ptr<ablate::domain::FieldDescriptor>>{}, "dmPlex", std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{}, testingParam.parameters);
 
             // assert - print the dmPlex to standard out
             DMView(dmPlex->GetDM(), PETSC_VIEWER_STDOUT_WORLD) >> testErrorChecker;

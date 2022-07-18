@@ -16,8 +16,6 @@ timestepper:
     lower: [ 0 ]
     upper: [ 1 ]
     preModifiers:
-      - !<!ablate::domain::modifiers::SetFromOptions>
-        dm_refine: 0
       - !<!ablate::domain::modifiers::DistributeWithGhostCells>
     postModifiers:
       - !<!ablate::domain::modifiers::GhostBoundaryCells>

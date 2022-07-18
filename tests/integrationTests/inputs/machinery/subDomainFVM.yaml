@@ -26,10 +26,10 @@ timestepper:
     upper: [ 1, 1 ]
     boundary: [ "NONE", "NONE" ]
     simplex: false
+    # specify arguments to be used for the creation of the dm/domain
+    options:
+      dm_refine: 1
     modifiers:
-      # specify arguments to be used for the creation of the dm/domain
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 1
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
 

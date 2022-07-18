@@ -180,6 +180,7 @@ if __name__ == '__main__':
     '--with-fc=mpif90',
     '--with-debugging='+str(DEBUG),
     '--download-ctetgen',
+    '--download-tetgen',
     '--download-egads',
     '--download-metis',
     #'--download-ml',

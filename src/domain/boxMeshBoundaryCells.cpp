@@ -11,8 +11,17 @@
 
 ablate::domain::BoxMeshBoundaryCells::BoxMeshBoundaryCells(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors,
                                                            std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers, std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers,
-                                                           std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper, bool simplex)
-    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, std::move(fieldDescriptors), AddBoundaryModifiers(lower, upper, std::move(preModifiers), std::move(postModifiers))) {}
+                                                           std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper, bool simplex,
+                                                           std::shared_ptr<parameters::Parameters> options)
+    : Domain(CreateBoxDM(name, std::move(faces), lower, upper, simplex), name, std::move(fieldDescriptors), AddBoundaryModifiers(lower, upper, std::move(preModifiers), std::move(postModifiers)),
+             std::move(options)) {
+    // make sure that dm_refine was not set
+    if (options) {
+        if (options->Get("dm_refine", 0) != 0) {
+            throw std::invalid_argument("dm_refine when used with ablate::domain::BoxMeshBoundaryCells must be 0.");
+        }
+    }
+}
 
 ablate::domain::BoxMeshBoundaryCells::~BoxMeshBoundaryCells() {
     if (dm) {
@@ -47,12 +56,13 @@ DM ablate::domain::BoxMeshBoundaryCells::CreateBoxDM(const std::string& name, st
     std::vector<PetscInt> facesPetsc(faces.begin(), faces.end());
     DM dm;
     DMPlexCreateBoxMesh(PETSC_COMM_WORLD, (PetscInt)dimensions, simplex ? PETSC_TRUE : PETSC_FALSE, &facesPetsc[0], &lower[0], &upper[0], nullptr, PETSC_TRUE, &dm) >> checkError;
+    PetscObjectSetName((PetscObject)dm, name.c_str()) >> ablate::checkError;
     return dm;
 }
 std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>> ablate::domain::BoxMeshBoundaryCells::AddBoundaryModifiers(std::vector<double> lower, std::vector<double> upper,
                                                                                                                              std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
                                                                                                                              std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers) {
-    auto modifiers = preModifiers;
+    auto modifiers = std::move(preModifiers);
     auto interiorLabel = std::make_shared<domain::Region>(interiorCellsLabel);
     auto boundaryFaceRegion = std::make_shared<domain::Region>(boundaryFacesLabel);
     modifiers.push_back(std::make_shared<ablate::domain::modifiers::CreateLabel>(interiorLabel, std::make_shared<ablate::mathFunctions::geom::Box>(lower, upper)));
@@ -133,4 +143,5 @@ REGISTER(ablate::domain::Domain, ablate::domain::BoxMeshBoundaryCells,
          OPT(std::vector<ablate::domain::modifiers::Modifier>, "preModifiers", "a list of domain modifiers to apply before ghost labeling"),
          OPT(std::vector<ablate::domain::modifiers::Modifier>, "postModifiers", "a list of domain modifiers to apply after ghost labeling"),
          ARG(std::vector<int>, "faces", "the number of faces in each direction"), ARG(std::vector<double>, "lower", "the lower bound of the mesh"),
-         ARG(std::vector<double>, "upper", "the upper bound of the mesh"), OPT(bool, "simplex", "sets if the elements/cells are simplex"));
+         ARG(std::vector<double>, "upper", "the upper bound of the mesh"), OPT(bool, "simplex", "sets if the elements/cells are simplex"),
+         OPT(ablate::parameters::Parameters, "options", "PETSc options specific to this dm.  Default value allows the dm to access global options."));

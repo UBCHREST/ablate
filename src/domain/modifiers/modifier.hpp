@@ -12,6 +12,9 @@ class Modifier {
     virtual void Modify(DM&) = 0;
 
     virtual std::string ToString() const = 0;
+
+   protected:
+    static void ReplaceDm(DM& originalDm, DM& replaceDm);
 };
 
 std::ostream& operator<<(std::ostream& os, const Modifier& modifier);

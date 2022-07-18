@@ -12,7 +12,8 @@ class DMPlex : public Domain {
     static DM CreateDM(const std::string& name);
 
    public:
-    DMPlex(std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::string name = "dmplex", std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {});
+    DMPlex(std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, const std::string& name = "dmplex", std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {},
+           std::shared_ptr<parameters::Parameters> options = {});
     ~DMPlex() override;
 };
 }  // namespace ablate::domain

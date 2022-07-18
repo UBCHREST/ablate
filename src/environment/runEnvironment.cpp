@@ -2,6 +2,8 @@
 #include <mpi.h>
 #include <chrono>
 #include <iostream>
+#include <regex>
+#include <string>
 
 ablate::environment::RunEnvironment::RunEnvironment() : outputDirectory(), title("") {}
 
@@ -79,3 +81,5 @@ void ablate::environment::RunEnvironment::Finalize() {
 }
 
 void ablate::environment::RunEnvironment::Setup() { environment::RunEnvironment::runEnvironment = std::unique_ptr<environment::RunEnvironment>(new environment::RunEnvironment()); }
+
+void ablate::environment::RunEnvironment::ExpandVariables(std::string& value) const { value = std::regex_replace(value, OutputDirectoryVariable, GetOutputDirectory().string()); }
