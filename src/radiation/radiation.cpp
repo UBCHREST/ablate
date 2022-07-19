@@ -335,6 +335,7 @@ void ablate::radiation::Radiation::RayInit() {
             PetscInt ghost = -1;
             if (ghostLabel) DMLabelGetValue(ghostLabel, cell[ip].index, &ghost) >> checkError;
             if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index) && (ghost == -1)) {
+                //            if (!(virtualcoord[ipart].x > 0.5 || virtualcoord[ipart].x < 0 || virtualcoord[ipart].y > 0.0105 || virtualcoord[ipart].y < -0.0105)) {
                 index = cell[ip].index;
             } else {
                 DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord) >> checkError;
@@ -658,7 +659,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                 theta = ((double)ntheta / (double)nTheta) * pi;  //!< This is a fine method of determining theta because it is in the original domain
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
                                                                                                                                              //                if (log)
-                printf("I0: %f Kradd: %f Isource: %f\n", origin[iCell].I0, origin[iCell].Kradd, origin[iCell].Isource);                      //!< Debugging for Quartz
+                //                printf("I0: %f Kradd: %f Isource: %f\n", origin[iCell].I0, origin[iCell].Kradd, origin[iCell].Isource);                      //!< Debugging for Quartz
                 //                if (log) EndEvent();
             }
         }
