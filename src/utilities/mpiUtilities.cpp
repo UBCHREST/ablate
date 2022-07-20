@@ -22,3 +22,22 @@ void ablate::utilities::MpiUtilities::RoundRobin(MPI_Comm comm, std::function<vo
         }
     }
 }
+
+void ablate::utilities::MpiUtilities::Once(MPI_Comm comm, std::function<void()> function) {
+    int rank = 0;
+
+    int mpiInitialized;
+    MPI_Initialized(&mpiInitialized) >> checkMpiError;
+    if (mpiInitialized) {
+        MPI_Comm_rank(comm, &rank) >> checkMpiError;
+    }
+
+    // call each function one at a time
+    if (rank == 0) {
+        function();
+    }
+
+    if (mpiInitialized) {
+        MPI_Barrier(comm) >> checkMpiError;
+    }
+}

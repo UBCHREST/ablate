@@ -1,6 +1,6 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
-#include <mathFunctions/mathFunction.hpp>
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
@@ -290,24 +290,16 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeIJacobianLocal(DM, Pets
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm, PetscReal time, Vec locX, Vec F, void* timeStepperCtx) {
+PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm, PetscReal time, Vec locX, Vec locF, void* timeStepperCtx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
     auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
 
-    Vec locF;
-    DMGetLocalVector(dm, &locF);
-    VecZeroEntries(locF);
-
     for (auto& solver : timeStepper->rhsFunctionSolvers) {
         ierr = solver->ComputeRHSFunction(time, locX, locF);
         CHKERRQ(ierr);
     }
-
-    DMLocalToGlobalBegin(dm, locF, ADD_VALUES, F);
-    DMLocalToGlobalEnd(dm, locF, ADD_VALUES, F);
-    DMRestoreLocalVector(dm, &locF);
 
     PetscFunctionReturn(0);
 }
