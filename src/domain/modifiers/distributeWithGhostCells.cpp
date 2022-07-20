@@ -5,10 +5,14 @@ ablate::domain::modifiers::DistributeWithGhostCells::DistributeWithGhostCells(in
 void ablate::domain::modifiers::DistributeWithGhostCells::Modify(DM &dm) {
     // Make sure that the flow is set up distributed
     DM dmDist;
+
     // create any ghost cells that are needed
-    DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE) >> checkError;
     DMPlexDistribute(dm, ghostCellDepth, NULL, &dmDist) >> checkError;
     ReplaceDm(dm, dmDist);
+
+    // if we are using ghost cells, set the adjacency for fvm
+    DMSetBasicAdjacency(dm, PETSC_TRUE, PETSC_FALSE) >> checkError;
+
     TagMpiGhostCells(dm) >> checkError;
 }
 

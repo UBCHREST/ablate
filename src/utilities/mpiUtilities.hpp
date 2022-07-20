@@ -13,6 +13,12 @@ class MpiUtilities {
      */
     static void RoundRobin(MPI_Comm comm, std::function<void(int rank)>);
 
+    /**
+     * call this function on root and wait to complete
+     * @param comm
+     */
+    static void Once(MPI_Comm comm, std::function<void()>);
+
    private:
     MpiUtilities() = delete;
 };
