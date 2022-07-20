@@ -41,7 +41,7 @@ timestepper:
     simplex: false
     options:
       dm_refine: 0
-      dm_plex_hash_location: true
+      dm_plex_hash_location: false
     preModifiers:
       - !ablate::domain::modifiers::DistributeWithGhostCells
     postModifiers:

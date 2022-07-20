@@ -1,4 +1,10 @@
 #include "radiation.hpp"
+#include <petsc/private/dmimpl.h>
+#include <petscdm.h>
+#include <petscdmda.h>
+#include <petscdmshell.h>
+#include <petscdmswarm.h>
+#include <petscsf.h>
 #include <set>
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
@@ -334,7 +340,7 @@ void ablate::radiation::Radiation::RayInit() {
             /** make sure we are not working on a ghost cell */
             PetscInt ghost = -1;
             if (ghostLabel) DMLabelGetValue(ghostLabel, cell[ip].index, &ghost) >> checkError;
-            if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index) && (ghost == -1)) {
+            if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) {
                 //            if (!(virtualcoord[ipart].x > 0.5 || virtualcoord[ipart].x < 0 || virtualcoord[ipart].y > 0.0105 || virtualcoord[ipart].y < -0.0105)) {
                 index = cell[ip].index;
             } else {

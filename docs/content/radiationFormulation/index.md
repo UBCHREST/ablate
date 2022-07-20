@@ -50,7 +50,7 @@ The summing of ray intensities around the whole solid sphere is shown. The contr
 to the total irradiation of the solid sphere. The presence of the sine term is
 an artifact of the polar coordinates. For example, at $\theta = 0$, all rays at each $\phi$ occupy the same point.
 Therefore, they are all weighted at 0. Because of this, no rays are cast in the vertical direction. They begin at a
-small angle and are equally spaced through $theta$. The effects of this integral must be broken into a discrete
+small angle and are equally spaced through $\theta$. The effects of this integral must be broken into a discrete
 formulation in order to be of use computationally. The equation below represents the actual discretization of the above
 integral.
 
@@ -66,8 +66,9 @@ weighted as 0 and so on.
 With this solid angle formulation, many rays can be generated for each cell and their intensities individually
 calculated.
 
-The radiation implementation in ABLATE must handle participating media, an absorbing media that attenuates passing
-radiation. Radiation solvers are typically formulated to calculate the radiation into a point based on the amount of
+The radiation implementation in ABLATE must handle participating media, an absorbing media that attenuates the radiation
+passing
+through it. Radiation solvers are typically formulated to calculate the radiation into a point based on the amount of
 radiation incoming from a solid sphere of directions.
 
 The discrete transfer method involves decomposing the solid sphere into many discrete rays. These rays describe the
@@ -80,6 +81,10 @@ $$\frac{d I}{d x} = \kappa (\frac{\sigma T^4}{\pi} - I)$$
 
 Note that the change in intensity is proportional to the product of the intensity difference and the absorption at a
 given point. This radiative transfer equation is implemented for each ray. All rays are summed along the solid sphere.
+
+The behavior of the radiative transfer equation indicates that a strongly absorbing media will change the intensity of
+a ray over a very short distance. The temperature of the ray will follow the temperature of the medium with a first
+order response.
 
 ## Computational Methods
 
@@ -101,6 +106,18 @@ This implementation of radiation heat transfer will ignore spectral dependencies
 reduces the computational complexity significantly without sacrificing much accuracy in the context of the combustion
 environment. This will be referred to as the grey gas assumption. The physical significance of this assumption is that
 the media and surfaces within the simulation domain are assumed to be grey, or without color.
+
+The solver currently ignores any effects due to reflection, scattering, or refraction. These effects can be ignored
+while still achieving a reasonable degree of accuracy in the cases being analyzed here. The solver has been formulated
+such that adding reflection is possible in the future. Reflection is the most significant additional effect that could
+be considered.
+
+Surface effects have yet to be taken into account within the radiation solver. In the future, the effects of radiation
+heat transfer into the surface of the wax will need to be considered within the context of its contribution to the
+sublimation of fuel off of the surface of the wax. The machinery associated with the current functioning of the solver
+can be effectively applied here, despite the solver only being designed to interface with cell volumes and not the
+surface of cell faces up to this point. The ray tracing process can be carried out for each face for which the radiative
+heat flux is desired. Rays can then be cast from the surface of the face over the hemisphere normal to it.
 
 ### Implementation
 
@@ -129,7 +146,29 @@ particle travels through a domain associated with a process, that process will e
 along with a carrier particle for the solve step described. When all particles have exited the simulation domain, the
 ray segment establishment is complete. Each process will have a ray segment collection which is globally linked to a
 cell in another domain. It will also have the carrier particle which is responsible for containing and transporting the
-information associated with these cell segments. After the completion of this initialization, the solver may move on to
+information associated with these cell segments.
+
+The steps of the initialization are as follows:
+
+1. Initialize a number of particles at the center of each cell. Each of these particles is associated with a ray. Each
+   particle is given a position and direction from which it will move outward. The particle carries a global identifier
+   with it. This way, the solver particles and ray segments that it creates along the way will be globally identifiable
+   and
+   may be communicated to the proper location in the global mesh.
+2. The initialized particles in a given local domain are iterated through. Each particle location is evaluated and the
+   cell it occupies is added to the unique local ray segment. The length of the path it has travelled in order to reach
+   this cell is also recorded in order to assist the computation of attenuation processes. This only happens if the
+   particle is occupying a new cell. This is because the use of adaptive space stepping has been implemented in order to
+   speed the solve process.
+3. Each particle is stepped through space by one step. The coordinate location of every particle is updated.
+4. The particles are migrated. The migration process moves every cell that has crossed a rank boundary to the new rank.
+   The particle carries all of its information with it into the new rank. It can be globally identified as belonging to
+   a
+   given ray by its identifier. The rays that it established in this new rank will be globally associated with the
+   origin
+   cell through the established communication scheme.
+
+After the completion of this initialization, the solver may move on to
 the solve step.
 
 The computation of the energy source term, or the solve, is completed in three stages.
@@ -170,17 +209,22 @@ $$ I = I0 \prod_{D = 0}^{N_D} (\prod_{C = 0}^{N_C} e^{- k_c \Delta s}) + \sum_{D
 {B_C} (1 - e^{- k_c \Delta s}) \prod_{j = C + 1}^{N_C} e^{-k_j \Delta s} \prod_{j = D + 1}^{N_D} (\prod_{C = 0}^{N_C}
 e^{-k_c \Delta s})) $$
 
+This equation has been derived from the radiative transfer equation described above. This is the process by which the
+final intensity can be described for each ray. Through this process, the communication is synchronized and the majority
+of computation can be localized before the communication occurs. This minimizes the time period for which communication
+occurs as well as minimizing the volume of communication that occurs between distant processes.
+
 ## Verification
 
 Multiple test cases will be used to verify that the solver is properly functioning. The first test case used is a set of
 parallel plates with a media of defined temperature distribution. The one dimensional analytical solution of this
-problem is compared against the results from the solver in order to define the error.
-
-The selected number of rays to use for each cell is 750.
+problem is compared against the results from the solver in order to define the error. The selected number of rays to use
+for each cell is 750.
 
 ## Scaling
 
-Early scaling tests indicate that the radiation solver is scalable. Further scaling tests will be performed on Quartz.
+Early scaling tests indicate that the radiation solver is ideally scalable to an unknown limit. Further scaling tests
+will be performed on Quartz to determine the limits and condition of the solver scalability.
 
     /** To transport a particle from one location to another, this simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
      * is called. The initialization particle field can have a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field could be

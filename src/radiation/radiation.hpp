@@ -47,6 +47,7 @@ class Radiation : public solver::CellSolver,
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
    protected:
+    DM dmcell;
     DM radsolve;   //!< DM associated with the radiation particles
     DM radsearch;  //!< DM which the search particles occupy
 
