@@ -210,7 +210,6 @@ void ablate::radiation::Radiation::RayInit() {
          */
         for (int ntheta = 1; ntheta < nTheta; ntheta++) {
             for (int nphi = 0; nphi < nPhi; nphi++) {
-
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
                 virtualcoord[ipart].x = cellGeom->centroid[0];
                 virtualcoord[ipart].y = cellGeom->centroid[1];
@@ -331,20 +330,20 @@ void ablate::radiation::Radiation::RayInit() {
             if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) {
                 index = cell[ip].index;
             } else {
-                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord) >> checkError;
-                DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier) >> checkError;
-                DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord) >> checkError;
-
-                DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
-
-                DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;  //!< Need to recalculate the number of particles that are in the domain again
-                DMSwarmGetField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord) >> checkError;
-                DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier) >> checkError;
-                DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord) >> checkError;
-                ipart--;  //!< Check the point replacing the one that was deleted
-                ip--;
+                //                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord) >> checkError;
+                //                DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier) >> checkError;
+                //                DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord) >> checkError;
+                //
+                //                DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
+                //
+                //                DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;  //!< Need to recalculate the number of particles that are in the domain again
+                //                DMSwarmGetField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord) >> checkError;
+                //                DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier) >> checkError;
+                //                DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord) >> checkError;
+                //                ipart--;  //!< Check the point replacing the one that was deleted
+                //                ip--;
                 index = -1;
-                continue;
+                //                continue;
             }
 
             if (index > -1) {
@@ -663,6 +662,17 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     /** ********************************************************************************************************************************
      * Loop through the cell range and compute the origin contributions. */
 
+    const PetscScalar* cellGeomArray;
+    PetscReal minCellRadius;
+    DM cellDM;
+    PetscFVCellGeom* cellGeom;
+
+    if (log) {
+        VecGetDM(cellGeomVec, &cellDM);
+        DMPlexGetGeometryFVM(cellDM, nullptr, nullptr, &minCellRadius) >> checkError;
+        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    }
+
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
 
@@ -683,19 +693,29 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         PetscReal losses = 4 * sbc * *temperature * *temperature * *temperature * *temperature;
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
-        if (log) printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);
+        if (log) {
+            DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
+
+            if ((cellGeom->centroid[0] > 0.44) && (cellGeom->centroid[0] < 0.56)) {
+                //                printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);  //!< Wrap in a statement which only prints the cells in the middle of the domain.
+                printf("%f %f\n", cellGeom->centroid[1], origin[iCell].intensity);
+            }
+        }
     }
 
     /** Cleanup*/
     VecRestoreArrayRead(rhs, &rhsArray);
     RestoreRange(cellRange);
 
-    if (log) EndEvent();
+    if (log) {
+        EndEvent();
+        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+    }
 
     PetscFunctionReturn(0);
 }
 
-PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity*/
+PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */
     const PetscReal sbc = 5.6696e-8;                                                         //!< Stefan-Boltzman Constant (J/K)
     const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
     return epsilon * sbc * temperature * temperature * temperature * temperature / pi;

@@ -71,7 +71,6 @@ class Radiation : public solver::CellSolver,
         PetscReal Kradd = 1;                     //!< Value that will be contributed to by every ray segment.
         PetscReal intensity = 0;                 //!<  Value that will be contributed to by every ray.
         std::map<std::string, Carrier> handler;  //!< Stores local carrier information
-        //        PetscInt nsegmax = 0;               //!< Number of segments that are in this carrier ray. TODO: (Maybe don't need to store this, replace with map function call)
     };
 
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
