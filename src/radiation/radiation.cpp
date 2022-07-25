@@ -175,7 +175,7 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmSetLocalSizes(radsolve, 0, 10) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Set the spatial step size to the minimum cell radius */
-    PetscReal hstep = minCellRadius;
+    PetscReal hstep = minCellRadius / 15;
 
     /** Declare some information associated with the field declarations */
     PetscReal* coord;                    //!< Pointer to the coordinate field information
@@ -330,23 +330,10 @@ void ablate::radiation::Radiation::RayInit() {
             if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) {
                 index = cell[ip].index;
             } else {
-                //                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord) >> checkError;
-                //                DMSwarmRestoreField(radsearch, "identifier", NULL, NULL, (void**)&identifier) >> checkError;
-                //                DMSwarmRestoreField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord) >> checkError;
-                //
-                //                DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
-                //
-                //                DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;  //!< Need to recalculate the number of particles that are in the domain again
-                //                DMSwarmGetField(radsearch, DMSwarmPICField_coor, NULL, NULL, (void**)&coord) >> checkError;
-                //                DMSwarmGetField(radsearch, "identifier", NULL, NULL, (void**)&identifier) >> checkError;
-                //                DMSwarmGetField(radsearch, "virtual coord", NULL, NULL, (void**)&virtualcoord) >> checkError;
-                //                ipart--;  //!< Check the point replacing the one that was deleted
-                //                ip--;
                 index = -1;
-                //                continue;
             }
 
-            if (index > -1) {
+            if (index > -1) { //TODO: Stepping and coordinate updating routine is what will need to be updated. The stepping will always add a new coordinate and cell to the collection
                 if (virtualcoord[ipart].current != index) {
                     /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
                      * Hash the identifier into a key value that can be used in the map
@@ -695,11 +682,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-
-            if ((cellGeom->centroid[0] > 0.44) && (cellGeom->centroid[0] < 0.56)) {
-                //                printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);  //!< Wrap in a statement which only prints the cells in the middle of the domain.
-                printf("%f %f\n", cellGeom->centroid[1], origin[iCell].intensity);
-            }
+            //                printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);  //!< Wrap in a statement which only prints the cells in the middle of the domain.
+            printf("%f %f\n", cellGeom->centroid[1], origin[iCell].intensity);
         }
     }
 
