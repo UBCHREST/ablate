@@ -12,6 +12,7 @@ target_sources(ablateLibrary
         labelSupport.cpp
         extrudeLabel.cpp
         tagMeshBoundaryFaces.cpp
+        completeLabel.cpp
 
         PUBLIC
         modifier.hpp
@@ -26,4 +27,5 @@ target_sources(ablateLibrary
         labelSupport.hpp
         extrudeLabel.hpp
         tagMeshBoundaryFaces.hpp
+        completeLabel.hpp
         )
