@@ -1,8 +1,9 @@
 #include "tChemReactions.hpp"
 #include <TChem_EnthalpyMass.hpp>
 #include <TChem_IgnitionZeroD.hpp>
-#include <utilities/petscError.hpp>
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "utilities/petscError.hpp"
+#include "utilities/vectorUtilities.hpp"
 
 ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<ablate::parameters::Parameters> options)
     : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), numberSpecies(eosIn->GetSpecies().size()) {
@@ -13,14 +14,18 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
 
     // Make sure the massFractionBounds are valid
     if (options) {
-        dtMin = options->Get<double>("dtMin", dtMin);
-        dtMax = options->Get<double>("dtMax", dtMax);
-        dtDefault = options->Get<double>("dtDefault", dtDefault);
-        dtEstimateFactor = options->Get<double>("dtEstimateFactor", dtEstimateFactor);
-        relToleranceTime = options->Get<double>("relToleranceTime", relToleranceTime);
-        absToleranceTime = options->Get<double>("absToleranceTime", absToleranceTime);
-        relToleranceNewton = options->Get<double>("relToleranceNewton", relToleranceNewton);
-        absToleranceNewton = options->Get<double>("absToleranceNewton", absToleranceNewton);
+        dtMin = options->Get("dtMin", dtMin);
+        dtMax = options->Get("dtMax", dtMax);
+        dtDefault = options->Get("dtDefault", dtDefault);
+        dtEstimateFactor = options->Get("dtEstimateFactor", dtEstimateFactor);
+        relToleranceTime = options->Get("relToleranceTime", relToleranceTime);
+        absToleranceTime = options->Get("absToleranceTime", absToleranceTime);
+        relToleranceNewton = options->Get("relToleranceNewton", relToleranceNewton);
+        absToleranceNewton = options->Get("absToleranceNewton", absToleranceNewton);
+        maxNumNewtonIterations = options->Get("maxNumNewtonIterations", maxNumNewtonIterations);
+        numTimeIterationsPerInterval = options->Get("numTimeIterationsPerInterval", numTimeIterationsPerInterval);
+        jacobianInterval = options->Get("jacobianInterval", jacobianInterval);
+        maxAttempts = options->Get("maxAttempts", maxAttempts);
     }
 }
 ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {}
@@ -65,10 +70,10 @@ void ablate::finiteVolume::processes::TChemReactions::Initialize(ablate::finiteV
     timeAdvanceDefault._dt = dtDefault;
     timeAdvanceDefault._dtmin = dtMin;
     timeAdvanceDefault._dtmax = dtMax;
-    timeAdvanceDefault._max_num_newton_iterations = 100;
-    timeAdvanceDefault._num_time_iterations_per_interval = 100000;
+    timeAdvanceDefault._max_num_newton_iterations = maxNumNewtonIterations;
+    timeAdvanceDefault._num_time_iterations_per_interval = numTimeIterationsPerInterval;
     timeAdvanceDefault._num_outer_time_iterations_per_interval = 10;
-    timeAdvanceDefault._jacobian_interval = 1;
+    timeAdvanceDefault._jacobian_interval = jacobianInterval;
 
     // Copy the default values to device
     timeAdvanceDevice = time_advance_type_1d_view("timeAdvanceDevice", numberCells);
@@ -119,7 +124,7 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     }
 
     // Get the valid cell range over this region
-    auto& fvSolver = static_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
+    auto& fvSolver = dynamic_cast<ablate::finiteVolume::FiniteVolumeSolver&>(solver);
     solver::Range cellRange;
     fvSolver.GetCellRangeWithoutGhost(cellRange);
     auto numberCells = cellRange.end - cellRange.start;
@@ -131,6 +136,10 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     // store the current dt
     PetscReal dt;
     PetscCall(TSGetTimeStep(flowTs, &dt));
+
+    // get the rank
+    PetscMPIInt rank;
+    PetscCallMPI(MPI_Comm_rank(fvSolver.GetSubDomain().GetComm(), &rank));
 
     // get access to the underlying data for the flow
     const auto& flowEulerId = fvSolver.GetSubDomain().GetField("euler").id;
@@ -195,25 +204,12 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     Kokkos::deep_copy(internalEnergyRefDevice, internalEnergyRefHost);
     Kokkos::deep_copy(stateDevice, stateHost);
 
-    // Use a parallel for updating timeAdvanceDevice dt
-    Kokkos::parallel_for(
-        "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
-            auto& tAdvAtI = timeAdvanceDevice(i);
-            tAdvAtI._tbeg = time;
-            tAdvAtI._tend = time + dt;
-            tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i) * dtEstimateFactor, dt), tAdvAtI._dtmax), tAdvAtI._dtmin);
-            // set the default time information
-            timeViewDevice(i) = time;
-        });
-
     // setup the enthalpy, temperature, pressure, chemistry function policies
-    auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(numberCells, Kokkos::AUTO());
+    auto temperatureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
     temperatureFunctionPolicy.set_scratch_size(1,
                                                Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChem::Temperature::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
-    auto pressureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(numberCells, Kokkos::AUTO());
+    auto pressureFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
     pressureFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(ablate::eos::tChem::Pressure::getWorkSpaceSize(kineticModelGasConstDataDevice.nSpec))));
-    auto chemistryFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(numberCells, Kokkos::AUTO());
-    chemistryFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(TChem::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
 
     // Compute temperature into the state field in the device
     ablate::eos::tChem::Temperature::runDeviceBatch(
@@ -222,14 +218,50 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
     // Compute the pressure into the state field in the device
     ablate::eos::tChem::Pressure::runDeviceBatch(pressureFunctionPolicy, stateDevice, kineticModelGasConstDataDevice);
 
-    // assume a constant pressure zero D reaction for each cell
-    tChemLib::IgnitionZeroD::runDeviceBatch(
-        chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
+    double minimumPressure = 0;
+    for (int attempt = 0; (attempt < maxAttempts) && minimumPressure == 0; ++attempt) {
+        // Use a parallel for updating timeAdvanceDevice dt
+        Kokkos::parallel_for(
+            "timeAdvanceUpdate", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto i) {
+                auto& tAdvAtI = timeAdvanceDevice(i);
+                tAdvAtI._tbeg = time;
+                tAdvAtI._tend = time + dt;
+                tAdvAtI._dt = PetscMax(PetscMin(PetscMin(dtViewDevice(i) * dtEstimateFactor, dt), tAdvAtI._dtmax) / (PetscPowInt(2, attempt)), tAdvAtI._dtmin);
+                // set the default time information
+                timeViewDevice(i) = time;
+            });
+
+        auto chemistryFunctionPolicy = tChemLib::UseThisTeamPolicy<tChemLib::exec_space>::type(TChem::exec_space(), numberCells, Kokkos::AUTO());
+        chemistryFunctionPolicy.set_scratch_size(1, Kokkos::PerTeam(TChem::Scratch<real_type_1d_view>::shmem_size(TChem::IgnitionZeroD::getWorkSpaceSize(kineticModelGasConstDataDevice))));
+
+        // assume a constant pressure zero D reaction for each cell
+        tChemLib::IgnitionZeroD::runDeviceBatch(
+            chemistryFunctionPolicy, tolNewtonDevice, tolTimeDevice, facDevice, timeAdvanceDevice, stateDevice, timeViewDevice, dtViewDevice, endStateDevice, kineticModelGasConstDataDevices);
+
+        // check the output pressure, if it is zero the integration failed
+        Kokkos::parallel_reduce(
+            "pressureCheck",
+            Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells),
+            KOKKOS_LAMBDA(const int& chemIndex, double& pressureMin) {
+                // cast the state at i to a state vector
+                const auto stateAtI = Kokkos::subview(endStateDevice, chemIndex, Kokkos::ALL());
+                Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
+                auto pressureAtI = stateVector.Pressure();
+                if (pressureAtI < pressureMin) {
+                    pressureMin = pressureAtI;
+                }
+            },
+            Kokkos::Min<double>(minimumPressure));
+    }
 
     // Use a parallel for computing the source term
     auto enthalpyOfFormation = eos->GetEnthalpyOfFormation();
     Kokkos::parallel_for(
-        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(0, numberCells), KOKKOS_LAMBDA(const auto chemIndex) {
+        "sourceTermCompute", Kokkos::RangePolicy<typename tChemLib::exec_space>(cellRange.start, cellRange.end), KOKKOS_LAMBDA(const auto i) {
+            // get the host data from the petsc field
+            const PetscInt cell = cellRange.points ? cellRange.points[i] : i;
+            const std::size_t chemIndex = i - cellRange.start;
+
             // cast the state at i to a state vector
             const auto stateAtI = Kokkos::subview(stateDevice, chemIndex, Kokkos::ALL());
             Impl::StateVector<real_type_1d_view> stateVector(kineticModelGasConstDataDevice.nSpec, stateAtI);
@@ -239,23 +271,49 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::ChemistryFlowPre
             Impl::StateVector<real_type_1d_view> endStateVector(kineticModelGasConstDataDevice.nSpec, endStateAtI);
             const auto ye = endStateVector.MassFractions();
 
+            // get the source term at this chemIndex
             const auto sourceTermAtI = Kokkos::subview(sourceTermsDevice, chemIndex, Kokkos::ALL());
 
-            // compute the source term from the change in the heat of formation
-            sourceTermAtI(0) = 0.0;
-            for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
-                sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormation(s);
-            }
+            // the IgnitionZeroD::runDeviceBatch sets the pressure to zero if it does not converge
+            if (endStateVector.Pressure() > 0) {
+                // compute the source term from the change in the heat of formation
+                sourceTermAtI(0) = 0.0;
+                for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
+                    sourceTermAtI(0) += (ys(s) - ye(s)) * enthalpyOfFormation(s);
+                }
 
-            for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
-                // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                sourceTermAtI(s + 1) = ye(s) - ys(s);
-            }
+                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
+                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                    sourceTermAtI(s + 1) = ye(s) - ys(s);
+                }
 
-            // Now scale everything by density/dt
-            for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
-                // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
-                sourceTermAtI(j) *= stateVector.Density() / dt;
+                // Now scale everything by density/dt
+                for (std::size_t j = 0; j < sourceTermAtI.extent(0); ++j) {
+                    // for constant density problem, d Yi rho/dt = rho * d Yi/dt + Yi*d rho/dt = rho*dYi/dt ~~ rho*(Yi+1 - Y1)/dt
+                    sourceTermAtI(j) *= stateVector.Density() / dt;
+                }
+            } else {
+                // set to zero
+                sourceTermAtI(0) = 0.0;
+                for (ordinal_type s = 0; s < stateVector.NumSpecies(); ++s) {
+                    sourceTermAtI(s + 1) = 0.0;
+                }
+
+                // compute the cell centroid
+                PetscReal centroid[3];
+                DMPlexComputeCellGeometryFVM(dm, cell, nullptr, centroid, nullptr) >> checkError;
+
+                // Output error information
+                std::stringstream warningMessage;
+                warningMessage << "Warning: Could not integrate chemistry at cell " << cell << " on rank " << rank << " at location " << utilities::VectorUtilities::Concatenate(centroid, dim) << "\n";
+                warningMessage << "dt: " << std::setprecision(16) << dt << "\n";
+                warningMessage << "state: "
+                               << "\n";
+                for (std::size_t s = 0; s < stateAtI.size(); ++s) {
+                    warningMessage << "\t[" << s << "] " << stateAtI[s] << "\n";
+                }
+
+                std::cout << warningMessage.str() << std::endl;
             }
         });
 
@@ -315,4 +373,5 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TChemReactions, "reactions using the TChem library", ARG(ablate::eos::EOS, "eos", "the tChem eos"),
          OPT(ablate::parameters::Parameters, "options",
-             "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton)"));
+             "time stepping options (dtMin, dtMax, dtDefault, dtEstimateFactor, relToleranceTime, relToleranceTime, absToleranceTime, relToleranceNewton, absToleranceNewton, maxNumNewtonIterations, "
+             "numTimeIterationsPerInterval, jacobianInterval, maxAttempts)"));
