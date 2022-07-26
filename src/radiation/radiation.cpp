@@ -386,6 +386,9 @@ void ablate::radiation::Radiation::RayInit() {
                 DMPlexGetConeSize(subDomain->GetDM(), index, &numberFaces) >> checkError;
                 DMPlexGetCone(subDomain->GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
 
+                const PetscReal segmentA[6] = {
+                    virtualcoord[ipart].xdir, virtualcoord[ipart].xdir + 1, virtualcoord[ipart].ydir, virtualcoord[ipart].ydir + 1, virtualcoord[ipart].zdir, virtualcoord[ipart].zdir + 1};
+
                 for (PetscInt f = 0; f < numberFaces; f++) {
                     PetscInt face = cellFaces[f];
                     //                DMLabelGetValue(boundaryLabel, face, &faceValue) >> checkError; //!< Is this face a boundary face
@@ -393,35 +396,44 @@ void ablate::radiation::Radiation::RayInit() {
                     //                        // TODO: Maybe we want to do something when the ray reaches the boundary of the domain
                     //                    }
                     DMPlexPointLocalRead(faceDM, index, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
+
+                    //      get the intersection of the direction vector with the cell face
+                    PetscBool* hasIntersection;
+                    PetscReal intersection[dim];
+                    //                const PetscReal segmentA[6];  // = {virtualcoord[ipart].xdir, virtualcoord[ipart].ydir};
+                    //                const PetscReal segmentB[6];  // = {faceGeom->centroid[0]};
+                    //                const PetscReal segmentC[6];  // = {faceGeom->centroid[0]};
+
+                    switch (dim) {  //!< Use the PETSc machinery to get the intersection of the direction vector with the face of the cell that the particle is currently occupying.
+                        case 3:
+                            DMPlexGetLinePlaneIntersection_3D_Internal(segmentA, segmentA, segmentA, intersection, hasIntersection) >> checkError;
+                            break;
+                        case 2:
+                            DMPlexGetLineIntersection_2D_Internal(segmentA, segmentA, intersection, hasIntersection) >> checkError;
+                            break;
+                    }
+                    if (hasIntersection /** TODO: And isn't the face that it originally came in through */) f = numberFaces; //!< End the loop if we found the correct face.
                 }
 
-                //      get the intersection of the direction vector with the cell face
-                //                                PetscBool* hasIntersection;
-                //                                PetscReal intersection[dim];
-                //                                const PetscReal segmentA[dim] = (dim == 2) ? {virtualcoord->xdir, virtualcoord->ydir} : {virtualcoord->xdir, virtualcoord->ydir, virtualcoord->zdir};
-                //                                const PetscReal segmentB[dim];
-                //                                const PetscReal segmentC[dim];
-
-                switch (dim) {
-                    case 3:
-                        //                        DMPlexGetLinePlaneIntersection_3D_Internal(segmentA[], const PetscReal segmentB[], const PetscReal segmentC[], intersection, hasIntersection);
-                        break;
-                    case 2:
-                        //                        DMPlexGetLineIntersection_2D_Internal(const PetscReal segmentA[], const PetscReal segmentB[], PetscReal intersection[], hasIntersection);
-                        break;
-                }
-
-                /** Now that the intersection has been found, get the path length by taking the difference between the intersection and the current virtual coordinates. */
-                // TODO: Solve for the third intersection point if the simulation is in 2 dimensions
-                //                virtualcoord[ipart].hhere = sqrt(abs(virtualcoord->x - intersection[1]) + () + ());
-                rays[Key(identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
+                /** Step 3: Now that the intersection has been found, get the path length by taking the difference between the intersection and the current virtual coordinates.
+                 * Solve for the third intersection point if the simulation is in 2 dimensions
+                 * */
+                PetscReal virtualcoordz = (dim == 3) ? intersection[2] : (virtualcoord[ipart].zdir / virtualcoord[ipart].ydir) * (intersection[1] - virtualcoord[ipart].y) + virtualcoord[ipart].z;
+                //!< Use the intersection if it exists. Otherwise, use the calculated virtual coordinate intersection for the z direction.
+                virtualcoord[ipart].hhere =
+                    sqrt((virtualcoord[ipart].x - intersection[0]) * (virtualcoord[ipart].x - intersection[0]) + (virtualcoord[ipart].y - intersection[1]) * (virtualcoord[ipart].y - intersection[1]) +
+                         (virtualcoord[ipart].z - virtualcoordz) * (virtualcoord[ipart].z - virtualcoordz));  //!< Get the path length that the particle has travelled.
+                rays[Key(identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);                          //!< Add this space step if the current index is being added.
 
                 virtualcoord[ipart].hhere = 0;
                 virtualcoord[ipart].current = index;  //!< Sets the current cell for the adaptive space stepping to compare against
 
-                /** Step 3: Push the particle virtual coordinates to the intersection that was found in the previous step. */
+                /** Step 4: Push the particle virtual coordinates to the intersection that was found in the previous step. */
+                virtualcoord[ipart].x = intersection[0];
+                virtualcoord[ipart].x = intersection[1];
+                virtualcoord[ipart].z = virtualcoordz;  //!< Only use the literal intersection coordinate if it exists.
 
-                /** Step 4: Get the supporting cell connected to the other side of this face and push the particle to its center. */
+                /** Step 5: Get the supporting cell connected to the other side of this face and push the particle to its center. */
 
                 // Get the connected cells
                 PetscInt numberNeighborCells;
