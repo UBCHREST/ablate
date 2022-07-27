@@ -1,0 +1,88 @@
+ZmixPresent: Y
+activity_regularizer: N
+concatenateZmix: Y
+dataSetMethod: AllSpecies_randomequaltraintestsplit_AllDependants
+input_data_cols:
+- YiH
+- YiO2
+- YiO
+- YiOH
+- YiH2
+- YiH2O
+- YiHO2
+- YiH2O2
+- YiCO
+- YiCO2
+- YiHCO
+- YiCH
+- YiT-CH2
+- YiCH3
+- YiCH2O
+- YiHCCO
+- YiC2H
+- YiCH2CO
+- YiC2H2
+- YiS-CH2
+- YiC2H4
+- YiCH3OH
+- YiCH2OH
+- YiCH3O
+- YiCH4
+- YiCH3O2
+- YiC2H3
+- YiC2H5
+- YiCH2CHO
+- YiCH3CHO
+- YiH2C2
+- YiC2H5O
+- YiN-C3H7
+- YiC2H6
+- YiC3H8
+- YiC3H6
+- YiC3H3
+- YiP-C3H4
+- YiA-C3H4
+- YiS-C3H5
+- YiC2H3CHO
+- YiA-C3H5
+- YiC2O
+- YiC4H4
+- YiCH3OCO
+- YiC3H2O
+- YiT-C3H5
+- YiC3H5O
+- YiC4H6
+- YiN-C4H5
+- YiI-C4H5
+- YiI-C3H7
+- YiHOCHO
+- YiCH3CHCO
+- YiCH3COCH2
+- YiC2H3CHCHO
+- YiCH3COCH3
+- YiCH3CO
+- YiI-C3H5CO
+- YiMP2D_C4H6O2
+- YiMP2J_C4H7O2
+- YiMP3J_C4H7O2
+- YiMMETHMJ_C5H7O2
+- YiMMETHAC_C5H8O2
+- YiMMETHPJ_C5H7O2
+- YiN2
+- YiAR
+ipscaler: null
+kernel_constraint: Y
+kernel_regularizer: Y
+model_R2: 0.9706506389689524
+noOfCpv: 9
+opscaler: StandardScaler
+val_losses:
+  dynamic_source_prediction_R2_split: 0.9292237758636475
+  dynamic_source_prediction_loss: -0.9326620697975159
+  dynamic_source_prediction_source_pred_mean: 0.008823205716907978
+  dynamic_source_prediction_source_true_mean: 0.009189433418214321
+  loss: -1.8317655324935913
+  static_source_prediction_R2: 0.9307761192321777
+  static_source_prediction_loss: -0.9324138760566711
+  static_source_prediction_mae: 0.045651067048311234
+  static_source_prediction_mse: 0.047713566571474075
