@@ -20,6 +20,11 @@ class TChemReactions : public Process {
     double relToleranceNewton = 1.0E-6;
     double absToleranceNewton = 1.0E-10;
 
+    int maxNumNewtonIterations = 100;
+    int numTimeIterationsPerInterval = 100000;
+    int jacobianInterval = 1;
+    int maxAttempts = 4;
+
     // eos of state variables
     std::shared_ptr<eos::TChem> eos;
     const size_t numberSpecies;
