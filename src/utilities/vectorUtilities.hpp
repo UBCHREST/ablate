@@ -1,7 +1,9 @@
 #ifndef ABLATELIBRARY_VECTORUTILITIES_HPP
 #define ABLATELIBRARY_VECTORUTILITIES_HPP
 #include <numeric>
+#include <string>
 #include <vector>
+
 namespace ablate::utilities {
 class VectorUtilities {
    public:
@@ -39,6 +41,49 @@ class VectorUtilities {
         for (const auto& ptr : vector) {
             result.push_back(*ptr);
         }
+        return result;
+    }
+
+   private:
+    /**
+     * helper function for Concatenate to string
+     * @param value
+     * @return
+     */
+    std::string toString(const std::string& value) { return value; }
+
+   public:
+    /**
+     * Concatenate a vector to strings
+     * @tparam T
+     * @param list
+     * @return
+     */
+    template <class T>
+    static inline std::string Concatenate(const std::vector<T>& vector, const std::string& delimiter = ", ") {
+        using namespace std;
+        return std::accumulate(std::begin(vector), std::end(vector), std::string(), [&delimiter](std::string& ss, auto& s) { return ss.empty() ? to_string(s) : ss + delimiter + to_string(s); });
+    }
+
+    /**
+     * Concatenate an array to strings
+     * @tparam T
+     * @param list
+     * @return
+     */
+    template <class T, class S>
+    static inline std::string Concatenate(const T* vector, S size, const std::string& delimiter = ", ") {
+        using namespace std;
+        if (size <= 0) {
+            return "";
+        }
+
+        std::string result = to_string(vector[0]);
+
+        for (S i = 1; i < size; ++i) {
+            result += delimiter + to_string(vector[i]);
+        }
+
         return result;
     }
 
