@@ -20,3 +20,4 @@ ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
 
 # copy the tensorflow image
 COPY --from=tensor_flow_image /tensorflow /tensorflow
+ENV TENSORFLOW_DIR=/tensorflow
