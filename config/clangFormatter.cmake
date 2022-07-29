@@ -16,10 +16,9 @@ if(CLANG_FORMAT AND Python_Interpreter_FOUND)
             COMMAND ${Python_EXECUTABLE} ${run-clang-format_SOURCE_DIR}/run-clang-format.py
             --style=file
             -r
-            --extensions=cpp,hpp,cc,hh,c++,h++,cxx,hxx
+            --extensions=cpp,hpp,cc,hh,c++,h++,cxx,hxx,c,h
             ${PROJECT_SOURCE_DIR}/src
             ${PROJECT_SOURCE_DIR}/tests
-            COMMAND ${PROJECT_SOURCE_DIR}/extern/petscFormat/petscFormatTest.sh
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             USES_TERMINAL
     )
