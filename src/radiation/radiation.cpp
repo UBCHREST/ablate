@@ -681,8 +681,9 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         PetscReal losses = 4 * sbc * *temperature * *temperature * *temperature * *temperature;
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
         if (log) {
-            DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;        //!< Reads the cell location from the current cell
-            printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);  //!< Wrap in a statement which only prints the cells in the middle of the domain.
+            DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
+            //                printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);  //!< Wrap in a statement which only prints the cells in the middle of the domain.
+            printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity);
         }
     }
 
