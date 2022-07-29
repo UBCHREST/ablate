@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Using Git with ABLATE
+title: Git Overview
 parent: Code Development
 nav_order: 2
 ---
@@ -55,52 +55,6 @@ Git allows you to easily collaborate between people, back-up your code, and keep
    # If this is the first time pushing a branch you get an error like "fatal: The current branch mcgurn/doc-getting-started has no upstream branch." Follow the on screen instructions to set the remote information and push. 
    ```
 
-## Contributing Code (aka Pull Request)
-It is highly recommend that you merge your changes back into ABLATE often.  This is done using a [Pull Request](https://docs.github.com/en/github/collaborating-with-issues-and-pull-requests/about-pull-requests), which asks the team to review and "pull" your changes back into ABLATE from your fork/branch. 
-1. Start on your feature branch outlined in [Working with Git](#working-with-git) with any changes that you would like to share.
-1. Update any documentation within the docs folder.
-1. Update and create any needed tests.  The [GoogleTest](https://github.com/google/googletest) framework is used to control and monitor tests.
-1. Make sure that all code meets formatting requirements [Google Style Guide](https://google.github.io/styleguide/) for c++ and [PETSc Style and Usage Guide](https://docs.petsc.org/en/latest/developers/style/) for C.
-    ```bash
-    # To run a format check from build directory
-    make format-check
-    ```
-1. Update the ABLATE version in the CMakeLists.txt file in the root of the project following [semantic versioning](https://semver.org/).
-1. Follow the [Working with Git](#working-with-git) steps to commit and push any additional changes.
-1. Navigate to your fork of ABLATE on GitHub.com.
-1. If presented with the button to "Compare & pull request" you can select this.  Otherwise, select the "Pull requests" tab and select the "New pull request" button.
-   ![github start pr](assets/github_start_pr.png)
-1. Configure and create your pull request
-   1. Check the source and destination repositories.  The source repository should be your feature branch on your fork.  The destination repository should be UBCHREST/ablate main.
-   1. Add a title and detailed description.  Within the description you should link/close any related issues.
-   1. Assign any reviewer that you would like to review the pr.
-   1. Create the pull request
-   ![github configuring pr issue](assets/github_issue_pr.png)
-1. Squash and Merge your pull request once all of the tests have run/pass and your code changes are reviewed.  If the tests fail or if changes are requested you can simply make changes to your local branch and push.  The PR will be automatically updated and the tests re-run.
-1. Once your code changes have been merged, you will want to [update your fork](#updating-your-fork).
-
 ## Updating your Fork
-Before you can do complete a Pull Request or if you need a newer version of ABLATE you will need to update your fork with the changes to ABLATE.  [GitHub Syncing](https://docs.github.com/en/github/getting-started-with-github/fork-a-repo#step-3-configure-git-to-sync-your-fork-with-the-original-spoon-knife-repository) provides detailed direction for updating your repository. A summary specific to ABLATE is provided here.
+You will need to sync your ABLATE fork with upstream to keep it uptodate.  The easiest way is to sync a fork using the [WebUI](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork#syncing-a-fork-branch-from-the-web-ui).
 
-1. **Access your Git Fork** If you have been using your repository it probably has been locally cloned.
-2. **Add Upstream URL** You need to tell git to check the ABLATE repository for changes.  This is done by setting the Git repository as upstream.  This only needs to be done once.
-   ```bash
-   # Navigate into your local fork repository
-   
-   # List the remote urls
-   git remote -v
-   
-   # If upstream is not listed, add it with the following command
-   git remote add upstream https://github.com/UBCHREST/ablate.git
-   ```
-2. **Fetch and Merge Changes** Fetch the changes from the upstream main ABLATE branch.
-   ```bash
-   # Fetch the changes in ABLATE
-   git fetch upstream
-   
-   # Check out your fork's local default branch
-   git checkout main
-   
-   # Merge the changes from the upstream default branch
-   git merge upstream/main
-   ```

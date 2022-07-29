@@ -1,8 +1,9 @@
 ---
 layout: default
 title: Non-Dimensional Terms
-parent: Flow Formulations
-nav_order: 1
+parent: Low Mach Flow
+grand_parent: Formulations
+nav_order: 5
 ---
 
 The low mach number flow formulation is based upon the work of J. Principe and R. Codina reproduced here in dimensionless form. For simplicity:
