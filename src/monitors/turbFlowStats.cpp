@@ -58,9 +58,9 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
         //f - field iterator
         //c - cell iterator
         //p - field component iterator
+        const PetscScalar* fieldDat;
         for(int f = 0; f < (int)monitor->fieldNames.size(); f++) {
             // Extract the field vector global array
-            const PetscScalar* fieldDat;
             ierr = VecGetArrayRead(vec[f], &fieldDat);
             CHKERRQ(ierr);
 
