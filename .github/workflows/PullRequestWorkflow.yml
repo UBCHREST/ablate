@@ -80,7 +80,7 @@ jobs:
           docker rm -v $id
 
       # use a hack to update the url to localhost:8000
-      - name: Build with Jekyll
+      - name: Configure Jekyll
         run: cat docs/_config_pr.yml >> docs/_config.yaml
 
       # use a hack to update the url to localhost:8000
