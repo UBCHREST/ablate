@@ -18,6 +18,10 @@ ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<do
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
 
+ablate::radiation::Radiation::~Radiation() {
+    if (radsolve) DMDestroy(&radsolve) >> checkError;
+}
+
 void ablate::radiation::Radiation::Setup() { /** allows initialization after the subdomain and dm is established */
     ablate::solver::CellSolver::Setup();
     dim = subDomain->GetDimensions();  //!< Number of dimensions already defined in the setup
@@ -408,6 +412,7 @@ void ablate::radiation::Radiation::RayInit() {
     /** Cleanup*/
     VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     RestoreRange(cellRange);
+    DMDestroy(&radsearch) >> checkError;
 
     if (log) EndEvent();
 }
@@ -415,7 +420,7 @@ void ablate::radiation::Radiation::RayInit() {
 PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
     PetscFunctionBeginUser;
 
-    StartEvent("Radiation Solve");
+    if (log) StartEvent("Radiation Solve");
 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;

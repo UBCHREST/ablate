@@ -27,6 +27,8 @@ class Radiation : public solver::CellSolver,
     Radiation(std::string solverId, std::shared_ptr<domain::Region> region, PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
               std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
+    ~Radiation() override;
+
     /** Returns the black body intensity for a given temperature and emissivity*/
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 

@@ -19,6 +19,5 @@ MinMaxAvg euler for timestep 0004:
 	max: [0.623, 2.53e+05,  0,  0]
 	avg: [0.244, 2.53e+05,  0,  0]
 ResultFiles:
-domain.hdf5
 domain.xmf
 restart.rst

@@ -28,8 +28,6 @@ environment:
 arguments: { }
 timestepper:
   name: theMainTimeStepper
-  io:
-    interval: 0
   arguments:
     ts_type: rk
     ts_max_steps: 4
@@ -41,7 +39,7 @@ timestepper:
     simplex: false
     options:
       dm_refine: 0
-      dm_plex_hash_location: false
+      dm_plex_hash_location: true
     preModifiers:
       - !ablate::domain::modifiers::DistributeWithGhostCells
     postModifiers:
@@ -53,11 +51,6 @@ timestepper:
             gamma: 1.4
             Rgas: 287.0
         name: domain
-      - !ablate::domain::FieldDescription
-        name: error
-        type: FV
-        location: aux
-
   initialization:
     - !ablate::finiteVolume::fieldFunctions::Euler
       state:
@@ -89,6 +82,8 @@ solvers:
     id: radiation
     region:
       name: interiorCells
+    fieldBoundary:
+      name: boundaryFaces
     rays: 15
     properties: !ablate::eos::radiationProperties::Constant
       absorptivity: 1
