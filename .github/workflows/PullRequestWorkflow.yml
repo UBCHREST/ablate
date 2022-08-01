@@ -6,6 +6,11 @@ on:
     branches:
       - main
 
+# only allow one test per PR to be run
+concurrency:
+  group: ${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   test-matrix:
     strategy:
