@@ -63,84 +63,84 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           custom_tag: ${{env.VERSION}}
 
-  generate-auto-docs:
-    strategy:
-      matrix:
-        arch: [ { runson: ubuntu-latest, id: -amd64 } ]
-        compiler: [ { cc: gcc, cxx: g++, id: -gcc } ]
-        indices: [ { index64bit: 0, id: "" } ]
-        petscConfig: [ arch-ablate-opt ]
-    runs-on: ${{ matrix.arch.runson }}
-    if: github.event_name == 'push'
-
-    steps:
-      # setup python for later use
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-        with:
-          python-version: '3.8'
-      - name: Install python dep
-        run: pip install inflection
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        id: cache
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-
-
-      - name: Build the docker image
-        run: |
-          ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
-          
-          docker buildx build .\
-            --file DockerTestFile \
-            --tag framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} \
-            --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
-            --build-arg ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
-            --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE \
-            --load \
-            --cache-from "type=local,src=/tmp/.buildx-cache" \
-            --cache-to "type=local,dest=/tmp/.buildx-cache" 
-
-      - name: Get the version from the build file
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --version > docs/_includes/generated/version.html
-
-      - name: Get the PETSc version used to build/test
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} git -C /petsc rev-parse --short HEAD | tr -d '\n' > docs/_includes/generated/petscVersion.html
-
-      - name: Write the component docs
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --help > components.md
-
-      - name: Run tye python websiteDocsGenerator script
-        run: |
-          python docs/websiteDocsGenerator.py \
-            --componentListSource  components.md \
-            --componentOutputDir docs/content/simulations/components/ \
-            --exampleInputDir tests/integrationTests/inputs \
-            --exampleOutputDir docs/content/simulations/examples/
-
-      - name: Update the doxyfile.config with the version
-        run: echo "PROJECT_NUMBER = $(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --version)" >> doxyfile.config
-
-      - name: Generate Source File Documentation
-        uses: mattnotmitt/doxygen-action@v1.9.2
-        with:
-          doxyfile-path: 'doxyfile.config'
-
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v7
-        with:
-          default_author: github_actions
-          message: 'auto-generated documentation'
-          add: 'docs/_includes/generated/* docs/sourceDocs docs/content/simulations/components/* docs/content/simulations/examples/* --force'
-          push: 'origin HEAD:gh-pages --force'
+#  generate-auto-docs:
+#    strategy:
+#      matrix:
+#        arch: [ { runson: ubuntu-latest, id: -amd64 } ]
+#        compiler: [ { cc: gcc, cxx: g++, id: -gcc } ]
+#        indices: [ { index64bit: 0, id: "" } ]
+#        petscConfig: [ arch-ablate-opt ]
+#    runs-on: ${{ matrix.arch.runson }}
+#    if: github.event_name == 'push'
+#
+#    steps:
+#      # setup python for later use
+#      - uses: actions/checkout@v3
+#      - uses: actions/setup-python@v3
+#        with:
+#          python-version: '3.8'
+#      - name: Install python dep
+#        run: pip install inflection
+#
+#      - name: Set up Docker Buildx
+#        uses: docker/setup-buildx-action@v1
+#
+#      - uses: actions/checkout@v2
+#        with:
+#          submodules: recursive
+#
+#      - name: Cache Docker layers
+#        uses: actions/cache@v2
+#        id: cache
+#        with:
+#          path: /tmp/.buildx-cache
+#          key: ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-${{ github.sha }}
+#          restore-keys: |
+#            ${{ runner.os }}-${{matrix.tensorFlowConfig}}${{ matrix.compiler.id }}${{ matrix.indices.id }}${{ matrix.arch.id }}-buildx-
+#
+#      - name: Build the docker image
+#        run: |
+#          ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies${{matrix.compiler.id}}${{matrix.indices.id}}:latest
+#
+#          docker buildx build .\
+#            --file DockerTestFile \
+#            --tag framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} \
+#            --build-arg PETSC_BUILD_ARCH='${{ matrix.petscConfig }}' \
+#            --build-arg ENABLE_TENSOR_FLOW='${{ matrix.tensorFlowConfig }}' \
+#            --build-arg ABLATE_DEPENDENCY_IMAGE=$ABLATE_DEPENDENCY_IMAGE \
+#            --load \
+#            --cache-from "type=local,src=/tmp/.buildx-cache" \
+#            --cache-to "type=local,dest=/tmp/.buildx-cache"
+#
+#      - name: Get the version from the build file
+#        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --version > docs/_includes/generated/version.html
+#
+#      - name: Get the PETSc version used to build/test
+#        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} git -C /petsc rev-parse --short HEAD | tr -d '\n' > docs/_includes/generated/petscVersion.html
+#
+#      - name: Write the component docs
+#        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --help > components.md
+#
+#      - name: Run tye python websiteDocsGenerator script
+#        run: |
+#          python docs/websiteDocsGenerator.py \
+#            --componentListSource  components.md \
+#            --componentOutputDir docs/content/simulations/components/ \
+#            --exampleInputDir tests/integrationTests/inputs \
+#            --exampleOutputDir docs/content/simulations/examples/
+#
+#      - name: Update the doxyfile.config with the version
+#        run: echo "PROJECT_NUMBER = $(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --version)" >> doxyfile.config
+#
+#      - name: Generate Source File Documentation
+#        uses: mattnotmitt/doxygen-action@v1.9.2
+#        with:
+#          doxyfile-path: 'doxyfile.config'
+#
+#      - name: Commit changes
+#        uses: EndBug/add-and-commit@v7
+#        with:
+#          default_author: github_actions
+#          message: 'auto-generated documentation'
+#          add: 'docs/_includes/generated/* docs/sourceDocs docs/content/simulations/components/* docs/content/simulations/examples/* --force'
+#          push: 'origin HEAD:gh-pages --force'
