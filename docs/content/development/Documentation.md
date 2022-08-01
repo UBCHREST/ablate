@@ -33,3 +33,19 @@ docker run -v $PWD/docs:/docs -p 4000:4000 --rm docs_image
 # 4. View the docs url at localhost:4000/ablate/
 
 ```
+
+### Pull Request Preview
+After a PR has been made and the automated testing is complete an artifact is generated of the new ablate.dev files. This can be previewed locally by:
+
+1. Download and extract the artifacts for the associated PR.
+2. Local a local web server such as python http.server
+   ```bash
+   cd artifact
+   
+   # for python 3
+   python3 -m http.server 8000
+   
+   # for python 2
+   python -m SimpleHTTPServer 8000
+   ```
+3. Load the local preview website at <http://localhost:8000>
