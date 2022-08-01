@@ -36,6 +36,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      # generate the auto generated files
+      - name: testInfo
+        run: echo "v123" > docs/_includes/generated/version.html
+
       # now build the pages with the standard Build with Jekyll actions
       - name: Setup Pages
         uses: actions/configure-pages@v1
