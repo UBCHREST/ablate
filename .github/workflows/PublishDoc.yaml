@@ -24,14 +24,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # setup python for later use
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-        with:
-          python-version: '3.8'
-      - name: Install python dep
-        run: pip install inflection
-
       # checkout the latest commit of the code
       - name: Checkout
         uses: actions/checkout@v3
@@ -67,13 +59,18 @@ jobs:
       - name: Write the component docs
         run: docker run --rm framework-doc-image ./ablate --help > components.md
 
-      - name: Run tye python websiteDocsGenerator script
+      - name: Run the python websiteDocsGenerator script
         run: |
           python docs/websiteDocsGenerator.py \
             --componentListSource  components.md \
             --componentOutputDir docs/content/simulations/components/ \
             --exampleInputDir tests/integrationTests/inputs \
             --exampleOutputDir docs/content/simulations/examples/
+
+      - name: Configure documentation
+        run: |
+          docker run  -v  ${PWD}:/docSourceRoot  --rm framework-doc-image
+          
 
       - name: Update the doxyfile.config with the version
         run: echo "PROJECT_NUMBER = $(docker run --rm framework-doc-image ./ablate --version)" >> doxyfile.config

@@ -7,3 +7,5 @@ install
 sourceDocs
 /content/simulations/components/
 /content/simulations/examples/
+_componentListSource.md
+doxyfile.tmp.config
