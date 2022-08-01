@@ -76,7 +76,7 @@ jobs:
             --exampleOutputDir docs/content/simulations/examples/
 
       - name: Update the doxyfile.config with the version
-        run: echo "PROJECT_NUMBER = $(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --version)" >> doxyfile.config
+        run: echo "PROJECT_NUMBER = $(docker run --rm framework-doc-image ./ablate --version)" >> doxyfile.config
 
       - name: Generate Source File Documentation
         uses: mattnotmitt/doxygen-action@v1.9.2

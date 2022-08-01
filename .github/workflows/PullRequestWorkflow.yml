@@ -13,8 +13,8 @@ jobs:
         arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
         compiler: [ { cc: gcc, cxx: g++, id: -gcc }, { cc: clang, cxx: clang++, id: -clang } ]
         indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
-        petscConfig: [arch-ablate-opt]
-        tensorFlowConfig: ["", "enabled_tf"]
+        petscConfig: [ arch-ablate-opt ]
+        tensorFlowConfig: [ "", "enabled_tf" ]
     runs-on: ${{ matrix.arch.runson }}
     timeout-minutes: 90
 
@@ -66,6 +66,38 @@ jobs:
       - name: Run tests
         run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
 
+      # Build the ablate.dev documentation for a preview
+      - name: Get the version from the build file
+          run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --version > docs/_includes/generated/version.html
+
+      - name: Get the PETSc version used to build/test
+        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} git -C /petsc rev-parse --short HEAD | tr -d '\n' > docs/_includes/generated/petscVersion.html
+
+      - name: Write the component docs
+        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --help > components.md
+
+      - name: Run tye python websiteDocsGenerator script
+        run: |
+          python docs/websiteDocsGenerator.py \
+            --componentListSource  components.md \
+            --componentOutputDir docs/content/simulations/components/ \
+            --exampleInputDir tests/integrationTests/inputs \
+            --exampleOutputDir docs/content/simulations/examples/
+
+      - name: Update the doxyfile.config with the version
+        run: echo "PROJECT_NUMBER = $(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --version)" >> doxyfile.config
+
+      - name: Generate Source File Documentation
+        uses: mattnotmitt/doxygen-action@v1.9.2
+        with:
+          doxyfile-path: 'doxyfile.config'
+
+      - name: 'Upload the ablate.dev Artifact'
+        uses: actions/upload-artifact@v3
+        with:
+          name: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
+          path: docs/_site
+          retention-days: 5
   test:
     runs-on: ubuntu-latest
     needs: test-matrix
