@@ -72,9 +72,12 @@ jobs:
       - name: Run tests
         run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
 
-      # Build the ablate.dev documentation for a preview
+      # copy the configured docs container from the test image
       - name: Configure documentation
-        run: docker run  -v  ${PWD}:/docSourceRoot  --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} python3 /docSourceRoot/docs/ablateDevGenerator.py  --rootDir=/docSourceRoot/ --ablateExe=/build/ablate
+        run: |
+          id=$(docker create framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}})
+          docker cp $id:/source/docs/ ./docs 
+          docker rm -v $id
 
       # use a hack to update the url to localhost:8000
       - name: Build with Jekyll

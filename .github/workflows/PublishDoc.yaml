@@ -3,7 +3,7 @@ name: Deploy ABLATE.dev workflow
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: [ "main" ]
+    branches: [ "mcgurn/doc-update" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -50,9 +50,12 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache"
 
-      # build the custom
+      # copy the configured docs container from the test image
       - name: Configure documentation
-        run: docker run  -v  ${PWD}:/docSourceRoot  --rm framework-doc-image python3 /docSourceRoot/docs/ablateDevGenerator.py  --rootDir=/docSourceRoot/ --ablateExe=/build/ablate
+        run: |
+          id=$(docker create framework-doc-image)
+          docker cp $id:/source/docs/ ./docs 
+          docker rm -v $id
 
       # now build the pages with the standard Build with Jekyll actions
       - name: Setup Pages
