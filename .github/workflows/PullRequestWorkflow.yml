@@ -86,7 +86,7 @@ jobs:
       # use a hack to update the url to localhost:8000
       - name: Build with Jekyll
         # right now this can only run on github hosted machines
-        if: matrix.arch.runon == ubuntu-latest
+        if: matrix.arch.runon == 'ubuntu-latest'
         uses: actions/jekyll-build-pages@v1
         with:
           source: ./docs-configure
@@ -94,7 +94,7 @@ jobs:
 
       - name: 'Upload the ablate.dev Artifact'
         # right now this can only run on github hosted machines
-        if: matrix.arch.runon == ubuntu-latest
+        if: matrix.arch.runon == 'ubuntu-latest'
         uses: actions/upload-artifact@v3
         with:
           name: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
