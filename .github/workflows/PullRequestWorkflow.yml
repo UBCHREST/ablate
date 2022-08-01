@@ -76,25 +76,25 @@ jobs:
       - name: Configure documentation
         run: |
           id=$(docker create framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}})
-          docker cp $id:/source/docs/ ./docs 
+          docker cp $id:/source/docs/ ./docs-configure 
           docker rm -v $id
 
       # use a hack to update the url to localhost:8000
       - name: Configure Jekyll
-        run: cat docs/_config_pr.yml >> docs/_config.yaml
+        run: cat docs-configure/_config_pr.yml >> docs-configure/_config.yaml
 
       # use a hack to update the url to localhost:8000
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
-          source: ./docs
+          source: ./docs-configure
           destination: ./_site
 
       - name: 'Upload the ablate.dev Artifact'
         uses: actions/upload-artifact@v3
         with:
           name: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
-          path: docs/_site
+          path: _site
           retention-days: 5
 
   test:
