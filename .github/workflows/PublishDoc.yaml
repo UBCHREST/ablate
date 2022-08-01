@@ -3,7 +3,7 @@ name: Deploy ABLATE.dev workflow
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: [ "mcgurn/doc-update" ]
+    branches: [ "main" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -50,7 +50,7 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache"
 
-      # copy the configured docs container from the test image
+      # copy the configured docs from the test image container
       - name: Configure documentation
         run: |
           id=$(docker create framework-doc-image)
