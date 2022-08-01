@@ -1,4 +1,4 @@
-name: Deploy Jekyll with GitHub Pages dependencies preinstalled
+name: Deploy ABLATE.dev workflow
 
 on:
   # Runs on pushes targeting the default branch
@@ -24,8 +24,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # setup python for later use
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+      - name: Install python dep
+        run: pip install inflection
+
+      # checkout the latest commit of the code
       - name: Checkout
         uses: actions/checkout@v3
+
+      # now build the pages with the standard Build with Jekyll actions
       - name: Setup Pages
         uses: actions/configure-pages@v1
       - name: Build with Jekyll
@@ -33,6 +44,8 @@ jobs:
         with:
           source: ./docs
           destination: ./_site
+
+      # Upload all the artifacts
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v1
 
