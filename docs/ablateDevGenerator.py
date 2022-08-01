@@ -28,7 +28,7 @@ if __name__ == "__main__":
         print(petscVersionMatches.group(1), file=f, end='')
 
     # Get the component information
-    componentInformation = subprocess.run([str(args.ablate_exe), "-help"], check=False, capture_output=True,
+    componentInformation = subprocess.run([str(args.ablate_exe), "--help"], check=False, capture_output=True,
                                           text=True).stdout
     componentInformationFile = args.root_dir / 'docs/_componentListSource.md'
     with open(str(componentInformationFile), 'w') as f:
