@@ -76,32 +76,14 @@ jobs:
         run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
 
       # Build the ablate.dev documentation for a preview
-      - name: Get the version from the build file
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --version > docs/_includes/generated/version.html
+      - name: Configure documentation
+        run: docker run  -v  ${PWD}:/docSourceRoot  --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} python3 /docSourceRoot/docs/ablateDevGenerator.py  --rootDir=/docSourceRoot/ --ablateExe=/build/ablate
 
-      - name: Get the PETSc version used to build/test
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} git -C /petsc rev-parse --short HEAD | tr -d '\n' > docs/_includes/generated/petscVersion.html
+      # use a hack to update the url to localhost:8000
+      - name: Build with Jekyll
+        run: cat docs/_config_pr.yml >> docs/_config.yaml
 
-      - name: Write the component docs
-        run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --help > components.md
-
-      - name: Run tye python websiteDocsGenerator script
-        run: |
-          python docs/websiteDocsGenerator.py \
-            --componentListSource  components.md \
-            --componentOutputDir docs/content/simulations/components/ \
-            --exampleInputDir tests/integrationTests/inputs \
-            --exampleOutputDir docs/content/simulations/examples/
-
-      - name: Update the doxyfile.config with the version
-        run: echo "PROJECT_NUMBER = $(docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}} ./ablate --version)" >> doxyfile.config
-
-      - name: Generate Source File Documentation
-        uses: mattnotmitt/doxygen-action@v1.9.2
-        with:
-          doxyfile-path: 'doxyfile.config'
-
-      # use a hack to
+      # use a hack to update the url to localhost:8000
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:

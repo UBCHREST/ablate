@@ -1,7 +1,5 @@
 import os
 import subprocess
-import tempfile
-
 import componentListGenerator
 import argparse
 import pathlib
@@ -12,7 +10,7 @@ if __name__ == "__main__":
         description='Generate documentation for ablate.dev assuming that this is run from the root repo directory')
     parser.add_argument('--ablateExe', dest='ablate_exe', type=pathlib.Path,
                         help='The path to the ablate executable', required=True)
-    parser.add_argument('--root_dir', dest='root_dir', default=os.getcwd(), type=pathlib.Path,
+    parser.add_argument('--rootDir', dest='root_dir', default=os.getcwd(), type=pathlib.Path,
                         help='the root repo directory')
     args = parser.parse_args()
 

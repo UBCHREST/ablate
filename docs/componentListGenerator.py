@@ -147,8 +147,8 @@ def create_example_files(example_input_directory, example_output_directory):
                             # close off input
                             markdown_file.write("\n```")
 
-        if example_meta_datas:
-            categories_meta_data[example_category_title] = example_meta_datas
+            if example_meta_datas:
+                categories_meta_data[example_category_title] = example_meta_datas
 
     # output an index file
     with open(example_output_directory / ExamplesIndex, 'w') as index_file:

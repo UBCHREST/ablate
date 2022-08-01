@@ -3,7 +3,7 @@ name: Deploy ABLATE.dev workflow
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: [ "main" ]
+    branches: [ "mcgurn/doc-update" ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -50,35 +50,9 @@ jobs:
             --cache-from "type=local,src=/tmp/.buildx-cache" \
             --cache-to "type=local,dest=/tmp/.buildx-cache"
 
-      - name: Get the version from the build file
-        run: docker run --rm framework-doc-image ./ablate --version > docs/_includes/generated/version.html
-
-      - name: Get the PETSc version used to build/test
-        run: docker run --rm framework-doc-image git -C /petsc rev-parse --short HEAD | tr -d '\n' > docs/_includes/generated/petscVersion.html
-
-      - name: Write the component docs
-        run: docker run --rm framework-doc-image ./ablate --help > components.md
-
-      - name: Run the python websiteDocsGenerator script
-        run: |
-          python docs/websiteDocsGenerator.py \
-            --componentListSource  components.md \
-            --componentOutputDir docs/content/simulations/components/ \
-            --exampleInputDir tests/integrationTests/inputs \
-            --exampleOutputDir docs/content/simulations/examples/
-
+      # build the custom
       - name: Configure documentation
-        run: |
-          docker run  -v  ${PWD}:/docSourceRoot  --rm framework-doc-image
-          
-
-      - name: Update the doxyfile.config with the version
-        run: echo "PROJECT_NUMBER = $(docker run --rm framework-doc-image ./ablate --version)" >> doxyfile.config
-
-      - name: Generate Source File Documentation
-        uses: mattnotmitt/doxygen-action@v1.9.2
-        with:
-          doxyfile-path: 'doxyfile.config'
+        run: docker run  -v  ${PWD}:/docSourceRoot  --rm framework-doc-image python3 /docSourceRoot/docs/ablateDevGenerator.py  --rootDir=/docSourceRoot/ --ablateExe=/build/ablate
 
       # now build the pages with the standard Build with Jekyll actions
       - name: Setup Pages

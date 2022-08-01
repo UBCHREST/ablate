@@ -9,3 +9,4 @@ sourceDocs
 /content/simulations/examples/
 _componentListSource.md
 doxyfile.tmp.config
+_includes/generated
