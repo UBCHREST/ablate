@@ -20,6 +20,14 @@ jobs:
     timeout-minutes: 90
 
     steps:
+      # setup python for later use
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: '3.8'
+      - name: Install python dep
+        run: pip install inflection
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
@@ -92,6 +100,13 @@ jobs:
         uses: mattnotmitt/doxygen-action@v1.9.2
         with:
           doxyfile-path: 'doxyfile.config'
+
+      # use a hack to
+      - name: Build with Jekyll
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
 
       - name: 'Upload the ablate.dev Artifact'
         uses: actions/upload-artifact@v3
