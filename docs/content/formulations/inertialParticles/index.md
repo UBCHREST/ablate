@@ -1,8 +1,8 @@
 ---
 layout: default
-title: Low Mach Flow
+title: Inertial Particles
 has_children: true
-nav_order: 2
 parent: Formulations
+nav_order: 5
 ---
-# Low Mach Flow Formulation
+# Incompressible Flow

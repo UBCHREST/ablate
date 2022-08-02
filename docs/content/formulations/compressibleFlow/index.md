@@ -1,8 +1,8 @@
 ---
 layout: default
-title: Compressible Flow Formulation
+title: Compressible Flow
 has_children: true
-nav_order: 4
-parent: Flow Formulations
+nav_order: 1
+parent: Formulations
 ---
 # Compressible Flow Formulation

@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Solutions
-parent: Incompressible Flow Formulation
-grand_parent: Flow Formulations
+parent: Incompressible Flow
+grand_parent: Formulations
 nav_order: 4
 ---
 
