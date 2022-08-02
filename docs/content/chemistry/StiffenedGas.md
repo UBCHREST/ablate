@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Stiffened Gas
-parent: EOS Formulations 
+parent: Chemistry
 nav_order: 2
 ---
 

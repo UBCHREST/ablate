@@ -2,7 +2,7 @@
 layout: default
 title: DAKOTA Integration
 parent: Code Development
-nav_order: 13
+nav_order: 22
 ---
 
 
@@ -33,7 +33,7 @@ This guide assumes that you are building and running ABLATE and DAKOTA on your l
 
 The mechanics of how DAKOTA communicates with and runs an ABLATE simulation are demonstrated in this figure.
 
-![DAKOTA-ABLATE interface workflow.](assets/integration.png)
+![DAKOTA-ABLATE interface workflow.](assets/dakota/integration.png)
 
 For most UQ analyses, DAKOTA calls/runs the ABLATE simulation using the following steps: 
 
@@ -64,11 +64,11 @@ By running the `ignitionDelay2S_CH4_CM2.yaml` with the parameters specified in `
 
 Identifying the ABALATE simulation inputs and outputs is the key factor in the UQ analysis and DAKOTA integration. In this example, we want to compute the sensitivity indices of two parameters, the activation energies of each reaction. The figure below shows a part of the `2S_CH4_CM2.mech.dat` in which the two parameters are highlighted.
 
-![Two parameters in `2S_CH4_CM2.mech.dat` for the chemical kinetics model for VSA in this example.](assets/sa_ch4_parameters.png)
+![Two parameters in `2S_CH4_CM2.mech.dat` for the chemical kinetics model for VSA in this example.](assets/dakota/sa_ch4_parameters.png)
 
 The figure below highlights the model output (ignition delay) in the `ignitionDelayTemperature.txt`.
 
-![The model output (ignition delay) in the `ignitionDelayTemperature.txt` for VSA in this example.](assets/sa_ch4_output.png)
+![The model output (ignition delay) in the `ignitionDelayTemperature.txt` for VSA in this example.](assets/dakota/sa_ch4_output.png)
 
 
 #### 2 - Set up the DAKOTA sensitivity analysis:

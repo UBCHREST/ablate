@@ -2,7 +2,7 @@
 layout: default
 title: Testing
 parent: Code Development
-nav_order: 11
+nav_order: 3
 ---
 
 Testing is essential for any high-quality software product and should be integrated at an early stage of development. Primary testing in performed as either unit or integration tests.  Unit testing is designed to test single functions/classes often using mocks.  Unit testing allows to test a much larger set of inputs and expected outputs.  Unit testing lends itself [Test-Driven Development (TDD)](https://en.wikipedia.org/wiki/Test-driven_development).   Integration testing is designed to test entire code functionally where in ABLATE this is usually simulation level inputs.
@@ -14,7 +14,7 @@ There are some useful command line flags that can be used when debugging tests:
 - \-\-runMpiTestDirectly=true : when passed in (along with google test single test selection or through CLion run configuration) this flag allows for a test to be run/debug directly.  This bypasses the separate process launch making it easier to debug, but you must directly pass in any needed arguments.
 - \-\-keepOutputFile=true : keeps all output files from the tests and reports the file name.
 
-Automated testing is performed on a series of linux Docker images automatically before a pull request can be merged.  If the tests are passing locally but failing for a pull request you can debug using the same environment as the pull request using [Downloading and Building with CLion (with docker dependencies)]({{ site.baseurl }}{%link content/development/BuildingAblateLocally.md %}).  Tests can also be run directly in docker using the following commands.
+Automated testing is performed on a series of linux Docker images automatically before a pull request can be merged.  If the tests are passing locally but failing for a pull request you can debug using the same environment as the pull request using [Docker Install]({{ site.baseurl }}{%link content/installation/DockerInstall.md %}).  Tests can also be run directly in docker using the following commands.
 
 ```bash
 # Build the default docker testing image

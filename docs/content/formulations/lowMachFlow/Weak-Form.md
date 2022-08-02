@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Weak Form
-parent: Low Mach Flow Formulation
-grand_parent: Flow Formulations
+parent: Low Mach Flow
+grand_parent: Formulations
 nav_order: 2
 ---
 
