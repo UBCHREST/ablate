@@ -10,6 +10,7 @@
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "utilities/mathUtilities.hpp"
+#include "utilities/constants.hpp"
 
 ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
@@ -212,8 +213,8 @@ void ablate::radiation::Radiation::RayInit() {
         /** for every angle theta
          * for every angle phi
          */
-        for (int ntheta = 1; ntheta < nTheta; ntheta++) {
-            for (int nphi = 0; nphi < nPhi; nphi++) {
+        for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
+            for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
                 virtualcoord[ipart].x = cellGeom->centroid[0];
                 virtualcoord[ipart].y = cellGeom->centroid[1];
@@ -283,7 +284,7 @@ void ablate::radiation::Radiation::RayInit() {
         VecSetSizes(intersect, PETSC_DECIDE, npoints * dim) >> checkError;  //!< Set size
         VecSetFromOptions(intersect) >> checkError;
         PetscInt i[3] = {0, 1, 2};              //!< Establish the vector here so that it can be iterated.
-        for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
+        for (PetscInt ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                 //!< particles then pass out of initialization.
             ipart = ip;                         //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy.
 
@@ -318,7 +319,7 @@ void ablate::radiation::Radiation::RayInit() {
         const PetscSFNode* cell = nullptr;
         PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
 
-        for (int ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
+        for (PetscInt ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
 
             ipart = ip;  //!< Iterate the loop variable
 
@@ -343,7 +344,7 @@ void ablate::radiation::Radiation::RayInit() {
                      * Hash the identifier into a key value that can be used in the map
                      * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
                      * */
-                    if (rays.count(Key(identifier[ipart])) ==
+                    if (rays.count(Key(&identifier[ipart])) ==
                         0) {                                      //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
                         identifier[ipart].nsegment++;             //!< The particle has passed through another domain!
                         DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
@@ -367,8 +368,8 @@ void ablate::radiation::Radiation::RayInit() {
                     /** ********************************************
                      * Adaptive stepping stuff lives here: to be added after each time the position is updated
                      * The current cell should be added before the loop begins*/
-                    rays[Key(identifier[ipart])].cells.push_back(index);
-                    rays[Key(identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
+                    rays[Key(&identifier[ipart])].cells.push_back(index);
+                    rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
                     virtualcoord[ipart].hhere = 0;
                     virtualcoord[ipart].current = index;  //!< Sets the current cell for the adaptive space stepping to compare against
 
@@ -476,36 +477,36 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * First the particles should be zeroed in case they are carrying information from the last time step.
      * Then the entire solve sequence can be run through. This will require that the particles are iterated through twice.
      * */
-    for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate through the particles in the space to zero their information.
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate through the particles in the space to zero their information.
         carrier[ipart].Ij = 0;                       //!< Zero the intensity of the segment
         carrier[ipart].Krad = 1;                     //!< Zero the total absorption for this domain
         carrier[ipart].I0 = 0;                       //!< Zero the initial intensity of the ray segment
     }
     /** Now that the particle information has been zeroed, the solve can begin. */
-    for (int ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                      //!< particles then pass out of initialization.
         /** Each ray is born here. They begin at the far field temperature.
             Initial ray intensity should be set based on which boundary it is coming from.
             If the ray originates from the walls, then set the initial ray intensity to the wall temperature, etc.
          */
         /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
-        int numPoints = static_cast<int>(rays[Key(identifier[ipart])].cells.size());
+        PetscInt numPoints = static_cast<int>(rays[Key(&identifier[ipart])].cells.size());
 
         if (numPoints > 0) {
-            for (int n = 0; n < (numPoints); n++) {
+            for (PetscInt n = 0; n < (numPoints); n++) {
                 /** Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
                     Define the absorptivity and temperature in this section
                     For ABLATE implementation, get temperature based on this function
                     Get the array that lives inside the vector
                     Gets the temperature from the cell index specified
                 */
-                DMPlexPointLocalFieldRead(subDomain->GetDM(), rays[Key(identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
-                DMPlexPointLocalRead(subDomain->GetDM(), rays[Key(identifier[ipart])].cells[n], solArray, &sol);
+                DMPlexPointLocalFieldRead(subDomain->GetDM(), rays[Key(&identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
+                DMPlexPointLocalRead(subDomain->GetDM(), rays[Key(&identifier[ipart])].cells[n], solArray, &sol);
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 
-                carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(identifier[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
-                carrier[ipart].Krad *= exp(-kappa * rays[Key(identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
+                carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(&identifier[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
+                carrier[ipart].Krad *= exp(-kappa * rays[Key(&identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
 
                 if (n == (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
                     carrier[ipart].I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
@@ -525,7 +526,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     PetscInt* rankid;
     DMSwarmGetField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
     DMSwarmGetField(radsolve, "identifier", NULL, NULL, (void**)&identifier);
-    for (int ipart = 0; ipart < npoints; ipart++) {
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         rankid[ipart] = identifier[ipart].origin;
     }
     DMSwarmRestoreField(radsolve, "DMSwarm_rank", NULL, NULL, (void**)&rankid);
@@ -540,10 +541,10 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     DMSwarmGetField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
 
     /** Iterate through the particles and offload the information to their associated origin cell struct. */
-    for (int ipart = 0; ipart < npoints; ipart++) {
-        origin[identifier[ipart].iCell].handler[Key(identifier[ipart])].Krad = carrier[ipart].Krad;
-        origin[identifier[ipart].iCell].handler[Key(identifier[ipart])].Ij = carrier[ipart].Ij;
-        origin[identifier[ipart].iCell].handler[Key(identifier[ipart])].I0 = carrier[ipart].I0;
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+        origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].Krad = carrier[ipart].Krad;
+        origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].Ij = carrier[ipart].Ij;
+        origin[identifier[ipart].iCell].handler[Key(&identifier[ipart])].I0 = carrier[ipart].I0;
     }
 
     /** ********************************************************************************************************************************
@@ -573,8 +574,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         /** for every angle theta
          * for every angle phi
          */
-        for (int ntheta = 1; ntheta < nTheta; ntheta++) {
-            for (int nphi = 0; nphi < nPhi; nphi++) {
+        for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
+            for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
                  * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
                 Identifier loopid = {.origin = rank, .iCell = iCell, .ntheta = ntheta, .nphi = nphi, .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
@@ -587,7 +588,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                      * //                             If it exists, increase the segment number that is being checked for.
                      * Also, set the maximum segment that is available for this ray to the segment that is currently being checked.
                      * */
-                    if (origin[iCell].handler.count(Key(loopid)) > 0) {
+                    if (origin[iCell].handler.count(Key(&loopid)) > 0) {
                         loopid.nsegment++;
                     }
                     pointfound = !(oldsegment == loopid.nsegment);  //!< If no point was found during the whole for loop, then we must have stumbled on the last segment in this ray.
@@ -608,7 +609,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 
                 while (loopid.nsegment > 0) {  //!< Need to go through all of the ray segments until the origin of the ray is reached
 
-                    origin[iCell].I0 = (oldsegment == loopid.nsegment) ? origin[iCell].handler[Key(loopid)].I0 : origin[iCell].I0;  //!< Set I0 if it is the last segment in the ray
+                    origin[iCell].I0 = (oldsegment == loopid.nsegment) ? origin[iCell].handler[Key(&loopid)].I0 : origin[iCell].I0;  //!< Set I0 if it is the last segment in the ray
 
                     /** Global ray computation happens here, grabbing values from the transported particles.
                      * The rays end here, their intensity is added to the total intensity of the cell.
@@ -618,8 +619,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                      * */
                     /** Parallel things are here
                      * Meaning that the variables required for the parallelizable analytical solution will be declared here */
-                    origin[iCell].Isource += origin[iCell].handler[Key(loopid)].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
-                    origin[iCell].Kradd *= origin[iCell].handler[Key(loopid)].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
+                    origin[iCell].Isource += origin[iCell].handler[Key(&loopid)].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
+                    origin[iCell].Kradd *= origin[iCell].handler[Key(&loopid)].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
                     loopid.nsegment--;                                                                     //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
 
@@ -633,7 +634,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * Need to delete all of the particles that were transported to different domains so that the process can be repeated in the next step. */
 
     /** Delete all of the particles that were transported to their origin domains -> Delete if (identifier.origin == MPI_Rank() && identifier.nsegment != 0) */
-    for (int ipart = 0; ipart < npoints; ipart++) {
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) {
             DMSwarmRestoreField(radsolve, "identifier", NULL, NULL, (void**)&identifier);  //!< Need to restore the field access before deleting a point
             DMSwarmRestoreField(radsolve, "carrier", NULL, NULL, (void**)&carrier);
@@ -705,14 +706,12 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 }
 
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */
-    const PetscReal sbc = 5.6696e-8;                                                         //!< Stefan-Boltzman Constant (J/K)
-    const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
     return epsilon * sbc * temperature * temperature * temperature * temperature / pi;
 }
 
-std::string ablate::radiation::Radiation::Key(Identifier id) {  //!< Nested Cantor pairing function in order to identify ray segment
+std::string ablate::radiation::Radiation::Key(Identifier* id) {  //!< Nested Cantor pairing function in order to identify ray segment
 
-    std::string key = std::to_string(id.origin) + "." + std::to_string(id.iCell) + "." + std::to_string(id.ntheta) + "." + std::to_string(id.nphi) + "." + std::to_string(id.nsegment);
+    std::string key = std::to_string(id->origin) + "." + std::to_string(id->iCell) + "." + std::to_string(id->ntheta) + "." + std::to_string(id->nphi) + "." + std::to_string(id->nsegment);
     return key;
 }
 

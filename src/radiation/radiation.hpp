@@ -117,14 +117,11 @@ class Radiation : public solver::CellSolver,
      * The ray segment will always be accessed by a particle carrying an identifier so it does not need to be inverted.
      * (Unless the particles created for the solve need to find their ray segments efficiently? Maybe dont destroy the particles of the search?)
      * */
-    std::string Key(Identifier id);
+    std::string Key(Identifier* id);
 
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
 
-    /// Class Constants
-    const PetscReal sbc = 5.6696e-8;  //!< Stefan-Boltzman Constant (J/K)
-    const PetscReal pi = 3.1415926535897932384626433832795028841971693993;
     PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
 
     /// Class inputs and Variables
