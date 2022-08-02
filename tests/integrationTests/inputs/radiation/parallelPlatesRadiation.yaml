@@ -33,7 +33,7 @@ timestepper:
     ts_max_steps: 4
   domain: !ablate::domain::BoxMeshBoundaryCells
     name: simpleBoxField
-    faces: [ 3, 20 ]
+    faces: [ 3, 5 ]
     lower: [ 0 , -0.0105 ]
     upper: [ 0.5 , 0.0105 ]
     simplex: false
@@ -84,6 +84,6 @@ solvers:
       name: interiorCells
     fieldBoundary:
       name: boundaryFaces
-    rays: 15
+    rays: 5
     properties: !ablate::eos::radiationProperties::Constant
       absorptivity: 1

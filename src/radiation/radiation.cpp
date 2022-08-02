@@ -19,7 +19,7 @@ ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<do
 }
 
 ablate::radiation::Radiation::~Radiation() {
-    if (radsolve) DMDestroy(&radsolve) >> checkError;
+    if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
 }
 
 void ablate::radiation::Radiation::Setup() { /** allows initialization after the subdomain and dm is established */
