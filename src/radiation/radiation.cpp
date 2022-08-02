@@ -222,8 +222,8 @@ void ablate::radiation::Radiation::RayInit() {
                 virtualcoord[ipart].current = -1;  //!< Set this to a null value so that it can't get confused about where it starts.
 
                 /** Get the initial direction of the search particle from the angle number that it was initialized with */
-                theta = ((double)ntheta / (double)nTheta) * pi;  //!< Theta angle of the ray
-                phi = ((double)nphi / (double)nPhi) * 2.0 * pi;  //!<  Phi angle of the ray
+                theta = ((double)ntheta / (double)nTheta) * ablate::utilities::VectorUtilities::pi;  //!< Theta angle of the ray
+                phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::VectorUtilities::pi;  //!<  Phi angle of the ray
 
                 /** Update the direction vector of the search particle */
                 virtualcoord[ipart].xdir = hstep * (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
@@ -446,8 +446,8 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     /** Declare the basic information*/
     PetscReal* sol;          //!< The solution value at any given location
     PetscReal* temperature;  //!< The temperature at any given location
-    PetscReal dTheta = pi / nTheta;
-    PetscReal dPhi = (2 * pi) / nPhi;
+    PetscReal dTheta = ablate::utilities::VectorUtilities::pi / nTheta;
+    PetscReal dPhi = (2 * ablate::utilities::VectorUtilities::pi) / nPhi;
     double kappa = 1;  //!< Absorptivity coefficient, property of each cell
     double theta;
 
@@ -624,7 +624,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                     loopid.nsegment--;                                                                      //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
 
-                theta = ((double)ntheta / (double)nTheta) * pi;  //!< This is a fine method of determining theta because it is in the original domain
+                theta = ((double)ntheta / (double)nTheta) * ablate::utilities::VectorUtilities::pi;  //!< This is a fine method of determining theta because it is in the original domain
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
             }
         }
@@ -684,7 +684,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
         /** Put the irradiation into the right hand side function */
         PetscScalar* rhsValues;
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-        PetscReal losses = 4 * sbc * *temperature * *temperature * *temperature * *temperature;
+        PetscReal losses = 4 * ablate::utilities::VectorUtilities::sbc * *temperature * *temperature * *temperature * *temperature;
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
@@ -706,7 +706,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 }
 
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */
-    return epsilon * sbc * temperature * temperature * temperature * temperature / pi;
+    return epsilon * ablate::utilities::VectorUtilities::sbc * temperature * temperature * temperature * temperature / ablate::utilities::VectorUtilities::pi;
 }
 
 std::string ablate::radiation::Radiation::Key(Identifier* id) {  //!< Nested Cantor pairing function in order to identify ray segment
