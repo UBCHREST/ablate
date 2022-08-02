@@ -23,11 +23,12 @@ class TurbFlowStats : public Monitor, public io::Serializable{
     const std::shared_ptr<ablate::eos::EOS> eos;
     const std::shared_ptr<io::interval::Interval> interval;
     const std::string name = "TurbFlowStats";
-    std::vector<PetscInt> fieldComps;
     std::vector<PetscInt> fieldTrack;
     Vec turbVec;
     DM turbDM;
     ttf densityFunc;
+
+    //Keeps track of the categories used
     struct {
         PetscInt densitySum = 0;
         PetscInt densityDtSum = 1;
@@ -50,7 +51,7 @@ class TurbFlowStats : public Monitor, public io::Serializable{
             rms = favreAvg + numComps;
             mRms = rms + numComps;
         }
-    }FieldOffset, FieldOrder;
+    }CatOffset, CatOrder;
 
     inline static const double tiny = 1e-30;
     static PetscErrorCode MonitorTurbFlowStats(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);

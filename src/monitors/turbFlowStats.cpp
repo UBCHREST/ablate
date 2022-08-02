@@ -88,25 +88,23 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                     monitor->densityFunc.function(solPt, &densLoc, monitor->densityFunc.context.get());
 
                     // Perform actual calculations now
-                    turbPt[monitor->FieldOffset.densitySum] += densLoc;
-                    turbPt[monitor->FieldOffset.densityDtSum] += densLoc * dt;
+                    turbPt[monitor->CatOffset.densitySum] += densLoc;
+                    turbPt[monitor->CatOffset.densityDtSum] += densLoc * dt;
 
-                    // Initialize the iterator that will march over each field component in each field
-                    int num = monitor->fieldTrack[f];
-                    for (int p = 0; p < monitor->fieldComps[f]; p++) {
-                        num += p;
+                    //March over each field component
+                    for (int p = monitor->fieldTrack[f]; p < monitor->fieldTrack[f+1]; p++) {
 
-                        turbPt[monitor->FieldOffset.densityMult + num] += fieldPt[p] * densLoc;
-                        turbPt[monitor->FieldOffset.densityDtMult + num] += fieldPt[p] * densLoc * dt;
-                        turbPt[monitor->FieldOffset.densitySqr + num] += fieldPt[p] * fieldPt[p] * densLoc;
-                        turbPt[monitor->FieldOffset.sum + num] += fieldPt[p];
-                        turbPt[monitor->FieldOffset.sumSqr + num] += fieldPt[p] * fieldPt[p];
-                        turbPt[monitor->FieldOffset.favreAvg + num] += turbPt[monitor->FieldOffset.densityDtMult + num] / (turbPt[monitor->FieldOffset.densityDtSum] + monitor->tiny);
-                        turbPt[monitor->FieldOffset.rms + num] =
-                            PetscSqrtReal(turbPt[monitor->FieldOffset.sumSqr + num] / (step + monitor->tiny) - PetscPowReal(turbPt[monitor->FieldOffset.sum + num] / (step + monitor->tiny), 2));
-                        turbPt[monitor->FieldOffset.mRms + num] =
-                            PetscSqrtReal(turbPt[monitor->FieldOffset.densitySqr + num] / (turbPt[monitor->FieldOffset.densitySum] + monitor->tiny) -
-                                          PetscPowReal(turbPt[monitor->FieldOffset.densityMult + num] / (turbPt[monitor->FieldOffset.densitySum] + monitor->tiny), 2));
+                        turbPt[monitor->CatOffset.densityMult + p] += fieldPt[p] * densLoc;
+                        turbPt[monitor->CatOffset.densityDtMult + p] += fieldPt[p] * densLoc * dt;
+                        turbPt[monitor->CatOffset.densitySqr + p] += fieldPt[p] * fieldPt[p] * densLoc;
+                        turbPt[monitor->CatOffset.sum + p] += fieldPt[p];
+                        turbPt[monitor->CatOffset.sumSqr + p] += fieldPt[p] * fieldPt[p];
+                        turbPt[monitor->CatOffset.favreAvg + p] += turbPt[monitor->CatOffset.densityDtMult + p] / (turbPt[monitor->CatOffset.densityDtSum] + monitor->tiny);
+                        turbPt[monitor->CatOffset.rms + p] =
+                            PetscSqrtReal(turbPt[monitor->CatOffset.sumSqr + p] / (step + monitor->tiny) - PetscPowReal(turbPt[monitor->CatOffset.sum + p] / (step + monitor->tiny), 2));
+                        turbPt[monitor->CatOffset.mRms + p] =
+                            PetscSqrtReal(turbPt[monitor->CatOffset.densitySqr + p] / (turbPt[monitor->CatOffset.densitySum] + monitor->tiny) -
+                                          PetscPowReal(turbPt[monitor->CatOffset.densityMult + p] / (turbPt[monitor->CatOffset.densitySum] + monitor->tiny), 2));
                     }
                 }
             }
@@ -136,8 +134,8 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
 
     //Copy the master DM over, set fields, and initialize vector values
     DMPlexFilter(this->GetSolver()->GetSubDomain().GetDM(), this->GetSolver()->GetSubDomain().GetLabel(), 1, &turbDM);
-    std::string dmName = "TurbDM";
-    PetscObjectSetName((PetscObject)turbDM, dmName.c_str());
+    std::string DmName = "TurbDM";
+    PetscObjectSetName((PetscObject)turbDM, DmName.c_str());
 
     //Add the densitySum and densityDtSum fields
     std::string densitySum = "rhoSum";
@@ -147,60 +145,69 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     AddField(turbDM, densityDtSum.c_str(), 1);
 
     //Initialize the numComps variable, which will store the sum of all the fields
-    PetscInt numComp = 2;
+    PetscInt numComp = 0;
 
     //Resize the numComps and fieldTrack vectors to be the same size as the number of fields
-    fieldComps.resize(fieldNames.size(), 0);
-    fieldTrack.resize(fieldNames.size(), 0);
+    fieldTrack.resize(fieldNames.size() + 1, 0);
     fieldTrack[0] = 0;
 
-    //Need to find numComps across all fields here
+    //Need to find the total number of field components and the indices marking the beginning of each field
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         const auto& field = this->GetSolver()->GetSubDomain().GetField(fieldNames[f]);
-        std::string densityMult = "rhoMult_" + fieldNames[f];
-        AddField(turbDM, densityMult.c_str(), numComp);
 
         numComp += field.numberComponents;
-        fieldComps[f] = field.numberComponents;
-        if((f+1) < (int)fieldNames.size()) {
+        if((f+1) < (int)fieldTrack.size()) {
             fieldTrack[f + 1] = fieldTrack[f] + field.numberComponents;
         }
     }
 
-    //Set the mode of FieldOffset and FieldOrder
-    FieldOffset.SetMode(numComp);
-    FieldOrder.SetMode((int)fieldNames.size());
+    //Set the mode of the category offset and the category order
+    CatOffset.SetMode(numComp);
+    CatOrder.SetMode((int)fieldNames.size());
 
+    //Add all fields to the rhoMult category
+    for(int f = 0; f < (int)fieldNames.size(); f++) {
+        std::string densityMult = "rhoMult_" + fieldNames[f];
+        AddField(turbDM, densityMult.c_str(), numComp);
+    }
+
+    //Add all fields to the rhoDtMult category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string densityDtMult = "rhoDtMult_" + fieldNames[f];
         AddField(turbDM, densityDtMult.c_str(), numComp);
     }
 
+    //Add all fields to the rhoSqr category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string densitySqr = "rhoSqr_" + fieldNames[f];
         AddField(turbDM, densitySqr.c_str(), numComp);
     }
 
+    //Add all fields to the sum category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string sum = "sum_" + fieldNames[f];
         AddField(turbDM, sum.c_str(), numComp);
     }
 
+    //Add all fields to the sumSqr category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string sumSqr = "sumSqr_" + fieldNames[f];
         AddField(turbDM, sumSqr.c_str(), numComp);
     }
 
+    //Add all fields to the favreAvg category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string favreAvg = "favreAvg_" + fieldNames[f];
         AddField(turbDM, favreAvg.c_str(), numComp);
     }
 
+    //Add all fields to the rms category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string rms = "rms_" + fieldNames[f];
         AddField(turbDM, rms.c_str(), numComp);
     }
 
+    //Add all fields to the mRms category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string mRms = "mRms_" + fieldNames[f];
         AddField(turbDM, mRms.c_str(), numComp);
@@ -211,21 +218,21 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     DMGetLocalSection(turbDM, &turbSection);
 
     //Register densitySum and densityDtSum with the PetscSection
-    PetscSectionSetComponentName(turbSection, FieldOrder.densitySum, 0, densitySum.c_str());
-    PetscSectionSetComponentName(turbSection, FieldOrder.densityDtSum, 0, densityDtSum.c_str());
+    PetscSectionSetComponentName(turbSection, CatOrder.densitySum, 0, densitySum.c_str());
+    PetscSectionSetComponentName(turbSection, CatOrder.densityDtSum, 0, densityDtSum.c_str());
 
-    //Register all component-number-dependent fields
+    //Register all component-number-dependent fields with their proper category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         const auto& field = this->GetSolver()->GetSubDomain().GetField(fieldNames[f]);
         for(int p = 0; p < field.numberComponents; p++) {
-            PetscSectionSetComponentName(turbSection, FieldOrder.densityMult + f, p, field.components[p].c_str());
-            PetscSectionSetComponentName(turbSection, FieldOrder.densityDtMult + f, p, field.components[p].c_str());
-            PetscSectionSetComponentName(turbSection, FieldOrder.densitySqr + f, p, field.components[p].c_str());
-            PetscSectionSetComponentName(turbSection, FieldOrder.sum + f, p, field.components[p].c_str());
-            PetscSectionSetComponentName(turbSection, FieldOrder.sumSqr + f, p, field.components[p].c_str());
-            PetscSectionSetComponentName(turbSection, FieldOrder.favreAvg + f, p, field.components[p].c_str());
-            PetscSectionSetComponentName(turbSection, FieldOrder.rms + f, p, field.components[p].c_str());
-            PetscSectionSetComponentName(turbSection, FieldOrder.mRms + f, p, field.components[p].c_str());
+            PetscSectionSetComponentName(turbSection, CatOrder.densityMult + f, p, field.components[p].c_str());
+            PetscSectionSetComponentName(turbSection, CatOrder.densityDtMult + f, p, field.components[p].c_str());
+            PetscSectionSetComponentName(turbSection, CatOrder.densitySqr + f, p, field.components[p].c_str());
+            PetscSectionSetComponentName(turbSection, CatOrder.sum + f, p, field.components[p].c_str());
+            PetscSectionSetComponentName(turbSection, CatOrder.sumSqr + f, p, field.components[p].c_str());
+            PetscSectionSetComponentName(turbSection, CatOrder.favreAvg + f, p, field.components[p].c_str());
+            PetscSectionSetComponentName(turbSection, CatOrder.rms + f, p, field.components[p].c_str());
+            PetscSectionSetComponentName(turbSection, CatOrder.mRms + f, p, field.components[p].c_str());
         }
     }
 
