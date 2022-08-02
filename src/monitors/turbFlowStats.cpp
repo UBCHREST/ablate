@@ -238,7 +238,7 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
 
     //!Replace name with id here
     //Name the PetscSection
-    PetscObjectSetName((PetscObject)turbSection, name.c_str());
+    PetscObjectSetName((PetscObject)turbSection, GetId().c_str());
 
     DMCreateGlobalVector(turbDM, &turbVec);
 
