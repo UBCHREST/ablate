@@ -92,13 +92,18 @@ jobs:
           source: ./docs-configure
           destination: ./_site
 
+      # prevent issues by zipping the artifact
+      - name: Zip the artifact
+        if: ${{ matrix.arch.runson == 'ubuntu-latest' }}
+        run: zip -r ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}.zip ./_site/
+
       - name: 'Upload the ablate.dev Artifact'
         # right now this can only run on github hosted machines
         if: ${{ matrix.arch.runson == 'ubuntu-latest' }}
         uses: actions/upload-artifact@v3
         with:
-          name: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
-          path: _site
+          name: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}.zip
+          path: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}.zip
           retention-days: 5
 
   test:
