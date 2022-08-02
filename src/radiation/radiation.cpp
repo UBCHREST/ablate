@@ -9,8 +9,8 @@
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "finiteVolume/finiteVolumeSolver.hpp"
-#include "utilities/mathUtilities.hpp"
 #include "utilities/constants.hpp"
+#include "utilities/mathUtilities.hpp"
 
 ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
@@ -283,10 +283,10 @@ void ablate::radiation::Radiation::RayInit() {
         VecSetBlockSize(intersect, dim) >> checkError;
         VecSetSizes(intersect, PETSC_DECIDE, npoints * dim) >> checkError;  //!< Set size
         VecSetFromOptions(intersect) >> checkError;
-        PetscInt i[3] = {0, 1, 2};              //!< Establish the vector here so that it can be iterated.
+        PetscInt i[3] = {0, 1, 2};                   //!< Establish the vector here so that it can be iterated.
         for (PetscInt ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
-                                                //!< particles then pass out of initialization.
-            ipart = ip;                         //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy.
+                                                     //!< particles then pass out of initialization.
+            ipart = ip;                              //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy.
 
             /** Update the physical coordinate field so that the real particle location can be updated. */
             UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
@@ -478,13 +478,13 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
      * Then the entire solve sequence can be run through. This will require that the particles are iterated through twice.
      * */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate through the particles in the space to zero their information.
-        carrier[ipart].Ij = 0;                       //!< Zero the intensity of the segment
-        carrier[ipart].Krad = 1;                     //!< Zero the total absorption for this domain
-        carrier[ipart].I0 = 0;                       //!< Zero the initial intensity of the ray segment
+        carrier[ipart].Ij = 0;                            //!< Zero the intensity of the segment
+        carrier[ipart].Krad = 1;                          //!< Zero the total absorption for this domain
+        carrier[ipart].I0 = 0;                            //!< Zero the initial intensity of the ray segment
     }
     /** Now that the particle information has been zeroed, the solve can begin. */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
-                                                     //!< particles then pass out of initialization.
+                                                          //!< particles then pass out of initialization.
         /** Each ray is born here. They begin at the far field temperature.
             Initial ray intensity should be set based on which boundary it is coming from.
             If the ray originates from the walls, then set the initial ray intensity to the wall temperature, etc.
@@ -621,7 +621,7 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
                      * Meaning that the variables required for the parallelizable analytical solution will be declared here */
                     origin[iCell].Isource += origin[iCell].handler[Key(&loopid)].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
                     origin[iCell].Kradd *= origin[iCell].handler[Key(&loopid)].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
-                    loopid.nsegment--;                                                                     //!< Decrement the segment number to move to the next closer segment in the ray.
+                    loopid.nsegment--;                                                                      //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
 
                 theta = ((double)ntheta / (double)nTheta) * pi;  //!< This is a fine method of determining theta because it is in the original domain
