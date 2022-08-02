@@ -110,14 +110,18 @@ class Radiation : public solver::CellSolver,
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
      * This function must be run on every updated particle before swarm migrate is used */
-    void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord);
+    void UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord) const;
 
     /** Create a unique identifier from an array of integers.
      * This is done using the nested Cantor pairing function
      * The ray segment will always be accessed by a particle carrying an identifier so it does not need to be inverted.
      * (Unless the particles created for the solve need to find their ray segments efficiently? Maybe dont destroy the particles of the search?)
      * */
-    std::string Key(Identifier* id);
+    std::string static inline Key(Identifier* id) {  //!< Nested Cantor pairing function in order to identify ray segment
+
+        std::string key = std::to_string(id->origin) + "." + std::to_string(id->iCell) + "." + std::to_string(id->ntheta) + "." + std::to_string(id->nphi) + "." + std::to_string(id->nsegment);
+        return key;
+    }
 
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
