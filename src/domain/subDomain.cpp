@@ -557,7 +557,7 @@ PetscErrorCode ablate::domain::SubDomain::GetFieldLocalVector(const ablate::doma
         auto entireDm = GetDM();
         auto entireVec = GetSolutionVector();
 
-        // Create a subD
+        // Create a subDM
         ierr = DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm);
         CHKERRQ(ierr);
 
