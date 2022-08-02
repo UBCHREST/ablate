@@ -16,9 +16,6 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
     ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
-    double kapparef = 1;  //!< Reference absorptivity
-    double Tsurf = 300.;  //!< Reference temperature in Kelvin
-
     /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
     double kappaH2O = 0;
     double kappaCO2 = 0;
