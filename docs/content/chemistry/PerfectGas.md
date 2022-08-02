@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Perfect Gas
-parent: EOS Formulations
+parent: Chemistry
 nav_order: 1
 ---
 

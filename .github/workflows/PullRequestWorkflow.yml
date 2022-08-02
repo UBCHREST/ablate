@@ -5,6 +5,12 @@ on:
   pull_request:
     branches:
       - main
+
+# only allow one test per PR to be run
+concurrency:
+  group: ${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   test-matrix:
     strategy:
@@ -13,8 +19,8 @@ jobs:
         arch: [ { runson: ARM64, id: -arm64 }, { runson: ubuntu-latest, id: -amd64 } ]
         compiler: [ { cc: gcc, cxx: g++, id: -gcc }, { cc: clang, cxx: clang++, id: -clang } ]
         indices: [ { index64bit: 0, id: "" },  { index64bit: 1, id: "-index64" } ]
-        petscConfig: [arch-ablate-opt]
-        tensorFlowConfig: ["", "enabled_tf"]
+        petscConfig: [ arch-ablate-opt ]
+        tensorFlowConfig: [ "", "enabled_tf" ]
     runs-on: ${{ matrix.arch.runson }}
     timeout-minutes: 90
 
@@ -65,6 +71,40 @@ jobs:
 
       - name: Run tests
         run: docker run --rm framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}
+
+      # copy the configured docs from the test image container
+      - name: Configure documentation
+        run: |
+          id=$(docker create framework-test-image-${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}})
+          docker cp $id:/source/docs/ ./docs-configure 
+          docker rm -v $id
+
+      # use a hack to update the url to localhost:8000
+      - name: Configure Jekyll for Local
+        run: cat docs-configure/_config_pr.yml >> docs-configure/_config.yaml
+
+      # use a hack to update the url to localhost:8000
+      - name: Build with Jekyll
+        # right now this can only run on github hosted machines
+        if: ${{ matrix.arch.runson == 'ubuntu-latest' }}
+        uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs-configure
+          destination: ./_site
+
+      # prevent issues by zipping the artifact
+      - name: Zip the artifact
+        if: ${{ matrix.arch.runson == 'ubuntu-latest' }}
+        run: zip -r ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}.zip ./_site/
+
+      - name: 'Upload the ablate.dev Artifact'
+        # right now this can only run on github hosted machines
+        if: ${{ matrix.arch.runson == 'ubuntu-latest' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}.zip
+          path: ablate.dev.${{matrix.tensorFlowConfig}}-${{ matrix.petscConfig }}${{matrix.compiler.id}}${{matrix.indices.id}}.zip
+          retention-days: 5
 
   test:
     runs-on: ubuntu-latest

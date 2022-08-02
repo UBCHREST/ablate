@@ -1,7 +1,8 @@
 ---
 layout: default
 title: Drag Models
-parent: Particle Formulations
+parent: Inertial Particles
+grand_parent: Formulations
 nav_order: 2
 ---
 

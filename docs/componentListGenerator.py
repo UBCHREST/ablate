@@ -19,18 +19,19 @@ def format_title(title):
 
 def print_interface_file(interface_name, component_output_dir, interface_documentation):
     # write the buffer to the file
-    component_file_path = component_output_dir / (interface_name + ".md")
-    with open(component_file_path, 'w') as component_file:
-        # write the header
-        component_file.write('---\n')
-        component_file.write('layout: default\n')
-        component_file.write(f'title: {interface_name}\n')
-        component_file.write(f'parent: {ComponentsTitle}\n')
-        component_file.write(f'grand_parent: {SimulationsTitle}\n')
-        component_file.write('nav_exclude: true\n')
-        component_file.write('---\n')
+    if interface_name:
+        component_file_path = component_output_dir / (interface_name + ".md")
+        with open(component_file_path, 'w') as component_file:
+            # write the header
+            component_file.write('---\n')
+            component_file.write('layout: default\n')
+            component_file.write(f'title: {interface_name}\n')
+            component_file.write(f'parent: {ComponentsTitle}\n')
+            component_file.write(f'grand_parent: {SimulationsTitle}\n')
+            component_file.write('nav_exclude: true\n')
+            component_file.write('---\n')
 
-        component_file.writelines(interface_documentation)
+            component_file.writelines(interface_documentation)
 
 
 # Convert the single markdown component list into multiple files
@@ -147,8 +148,8 @@ def create_example_files(example_input_directory, example_output_directory):
                             # close off input
                             markdown_file.write("\n```")
 
-        if example_meta_datas:
-            categories_meta_data[example_category_title] = example_meta_datas
+            if example_meta_datas:
+                categories_meta_data[example_category_title] = example_meta_datas
 
     # output an index file
     with open(example_output_directory / ExamplesIndex, 'w') as index_file:

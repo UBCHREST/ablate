@@ -1,7 +1,8 @@
 ---
 layout: default
-title: Governing Equations for Inertial Particles
-parent: Particle Formulations
+title: Governing Equations
+parent: Inertial Particles
+grand_parent: Formulations
 nav_order: 1
 ---
 

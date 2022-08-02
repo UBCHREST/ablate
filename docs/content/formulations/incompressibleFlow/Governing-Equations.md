@@ -1,13 +1,13 @@
 ---
 layout: default
 title: Governing Equations
-parent: Incompressible Flow Formulation
-grand_parent: Flow Formulations
+parent: Incompressible Flow
+grand_parent: Formulations
 nav_order: 3
 ---
 
 ### Governing Equations
-The incompressible low mach flow formulation is based upon the work of J. Principe and R. Codina reproduced here in dimensionless form.  The definitions for the dimensionless terms are provided in [Non-Dimensional Terms]({{ site.baseurl}}{%link content/formulations/NonDimensional.md %}).
+The incompressible low mach flow formulation is based upon the work of J. Principe and R. Codina reproduced here in dimensionless form.  The definitions for the dimensionless terms are provided in [Non-Dimensional Terms]({{ site.baseurl}}{%link content/formulations/lowMachFlow/NonDimensional.md %}).
 
 $$\begin{eqnarray}
 \nabla \cdot \boldsymbol{u} = 0 \\

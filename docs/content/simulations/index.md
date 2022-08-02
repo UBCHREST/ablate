@@ -1,11 +1,11 @@
 ---
 layout: default
 title: Running Simulations
-nav_order: 3
+nav_order: 4
 has_children: true
 ---
 
-ABLATE includes a yaml parser for setting up and configuring simulations.  The yaml input files specifies all the details of the simulation without the need to recompile the code.   These directions assume you have built ABLATE as outlined in [Building ABLATE Locally]({{ site.baseurl}}{%link content/development/BuildingAblateLocally.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover using ablate built with the command line and [CLion](https://www.jetbrains.com/clion/).
+ABLATE includes a yaml parser for setting up and configuring simulations.  The yaml input files specifies all the details of the simulation without the need to recompile the code.   These directions assume you have built ABLATE as outlined in [Installation]({{ site.baseurl}}{%link content/installation/index.md  %}).  There are a variety of ways to build and interact with ABLATE including the command line and integrated development environments (IDEs). This document will cover using ablate built with the command line and [CLion](https://www.jetbrains.com/clion/).
 
 ## Input Files
 ABLATE uses an [YAML input file]({{ site.baseurl}}{%link content/simulations/Examples.md  %}) based implementation of a parser/factory.  In this implementation arguments are passed as dictionary objects and lists.  When a class must be specified in YAML (no default specified) this must be done with a YAML tag.  A full list of possible components and their required arguments is available under [Component List]({{ site.baseurl}}{%link content/simulations/Components.md  %}).  The minimum for an input file is outlined below where additional arguments must be provided for the time stepper and solver(s).
