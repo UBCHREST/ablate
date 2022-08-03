@@ -21,7 +21,7 @@ RBF::RBF(DM dm, PetscInt p){
   }
 
   // Set the minimum number of cells to get compute the RBF matrix
-  RBF::minNumberCells = (PetscInt)(1.75*(RBF::nPoly));
+  RBF::minNumberCells = (PetscInt)floor(2*(RBF::nPoly));
 
   DMPlexGetHeightStratum(RBF::dm, 0, &(RBF::cStart), &(RBF::cEnd)) >> ablate::checkError;      // Range of cells
 

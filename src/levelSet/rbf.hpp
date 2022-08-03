@@ -46,9 +46,6 @@ class RBF {
     Mat *RBFMatrix = nullptr;
 
 
-
-
-
   protected:
     PetscReal DistanceSquared(PetscReal x[], PetscReal y[]);
     PetscReal DistanceSquared(PetscReal x[]);

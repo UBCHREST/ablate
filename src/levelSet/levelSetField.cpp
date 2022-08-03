@@ -240,9 +240,36 @@ std::vector<std::shared_ptr<ablate::domain::FieldDescription>> LevelSetField::Ge
     std::vector<std::shared_ptr<ablate::domain::FieldDescription>> levelSetField{
         std::make_shared<domain::FieldDescription>("level set field", "phi", domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM, region)};
 
-    return levelSetField;
+  return levelSetField;
 }
 
+PetscReal LevelSetField::Interpolate(PetscScalar xyz[3]) {
+  std::shared_ptr<RBF>  rbf = LevelSetField::rbf;
+  DMInterpolationInfo   ctx;
+  DM                    dm = rbf->GetDM();
+  PetscInt              c = -1;
+  Vec                   phi = LevelSetField::phi;
+  PetscReal             val;
+
+  DMInterpolationCreate(PETSC_COMM_WORLD, &ctx) >> ablate::checkError;
+  DMInterpolationSetDim(ctx, LevelSetField::dim) >> ablate::checkError;
+  DMInterpolationAddPoints(ctx, 1, xyz) >> ablate::checkError;
+  DMInterpolationSetUp(ctx, dm, PETSC_FALSE, PETSC_TRUE) >> ablate::checkError;
+  c = ctx->cells[0];
+  DMInterpolationDestroy(&ctx) >> ablate::checkError;
+
+  val = rbf->Interpolate(phi, c, xyz);
+
+  return val;
+}
+
+PetscReal LevelSetField::Interpolate(const PetscReal x, const double y, const double z) {
+
+  PetscReal xyz[3] = {x, y, z};
+  PetscReal val = LevelSetField::Interpolate(xyz);
+
+  return val;
+}
 
 
 /* Sphere */
