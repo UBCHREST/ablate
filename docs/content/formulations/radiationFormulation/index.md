@@ -1,6 +1,7 @@
 ---
 layout: default
 title: Radiation Formulation
+parent: Formulations
 nav_order: 8
 has_children: false
 ---
