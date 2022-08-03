@@ -127,9 +127,9 @@ LevelSetField::LevelSetField(std::shared_ptr<RBF> rbf, LevelSetField::levelSetSh
   DMCreateGlobalVector(dm, &(LevelSetField::curv)) >> ablate::checkError;
 
   PetscInt lsz, gsz;
-  VecGetLocalSize(phi, &lsz);
-  VecGetSize(phi, &gsz);
-  VecCreateMPI(PETSC_COMM_WORLD, dim*lsz, dim*gsz, &(LevelSetField::normal));
+  VecGetLocalSize(phi, &lsz) >> ablate::checkError;
+  VecGetSize(phi, &gsz) >> ablate::checkError;
+  VecCreateMPI(PETSC_COMM_WORLD, dim*lsz, dim*gsz, &(LevelSetField::normal)) >> ablate::checkError;
   VecSetBlockSize(LevelSetField::normal, dim) >> ablate::checkError;
 
   DMGetBoundingBox(dm, lo, hi) >> ablate::checkError;
@@ -270,6 +270,54 @@ PetscReal LevelSetField::Interpolate(const PetscReal x, const double y, const do
 
   return val;
 }
+
+
+
+void LevelSetField::Advect(Vec velocity, const PetscReal dt) {
+
+  Vec               phi = LevelSetField::phi, nextPhi = nullptr;
+  DM                dm = LevelSetField::dm;
+  PetscInt          dim = LevelSetField::dim;
+  PetscInt          cStart, cEnd, c, cShift;
+  PetscScalar       *newVal;
+  const PetscScalar *vel;
+  PetscReal         pos[3] = {0.0, 0.0, 0.0};
+
+
+  VecDuplicate(phi, &nextPhi);
+
+  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;       // Range of cells
+
+  VecGetArray(nextPhi, &newVal) >> ablate::checkError;
+  VecGetArrayRead(velocity, &vel) >> ablate::checkError;
+  for (c = cStart; c < cEnd; ++c) {
+    cShift = c - cStart;
+    // Cell center
+    DMPlexComputeCellGeometryFVM(dm, c, NULL, pos, NULL) >> ablate::checkError;
+
+    // Step backward
+    for (PetscInt d = 0; d < dim; ++d) {
+      pos[d] -= dt*vel[cShift*dim + d];
+    }
+
+    newVal[cShift] = LevelSetField::Interpolate(pos);
+  }
+  VecRestoreArrayRead(velocity, &vel) >> ablate::checkError;
+  VecRestoreArray(nextPhi, &newVal) >> ablate::checkError;
+
+  VecCopy(nextPhi, phi) >> ablate::checkError;
+  VecDestroy(&nextPhi) >> ablate::checkError;
+
+  VecGhostUpdateBegin(phi, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
+  VecGhostUpdateEnd(phi, INSERT_VALUES, SCATTER_FORWARD) >> ablate::checkError;
+
+
+  VecDestroy(&nextPhi);
+
+
+
+}
+
 
 
 /* Sphere */

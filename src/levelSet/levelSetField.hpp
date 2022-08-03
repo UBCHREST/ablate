@@ -49,6 +49,8 @@ class LevelSetField : public domain::FieldDescriptor {
     PetscReal Interpolate(const PetscReal x, const double y, const double z);
     PetscReal Interpolate(PetscReal xyz[3]);
 
+    void Advect(Vec vel, const PetscReal dt);
+
    private:
     // Copied from current ABLATE code. Need to talk to Matt M. about how to integrate
     const std::shared_ptr<domain::Region> region = nullptr;
