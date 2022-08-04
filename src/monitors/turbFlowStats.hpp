@@ -24,6 +24,7 @@ class TurbFlowStats : public Monitor, public io::Serializable{
     const std::shared_ptr<io::interval::Interval> interval;
     const std::string name = "TurbFlowStats";
     std::vector<PetscInt> fieldTrack;
+    std::vector<PetscInt> fieldComps;
     Vec turbVec;
     DM turbDM;
     ttf densityFunc;

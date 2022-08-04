@@ -2,6 +2,7 @@
 #include "io/interval/fixedInterval.hpp"
 #include "petscmath.h"
 #include "solver/range.hpp"
+#include <iostream>
 
 
 using tp = ablate::eos::ThermodynamicProperty;
@@ -93,7 +94,6 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
 
                     //March over each field component
                     for (int p = monitor->fieldTrack[f]; p < monitor->fieldTrack[f+1]; p++) {
-
                         turbPt[monitor->CatOffset.densityMult + p] += fieldPt[p] * densLoc;
                         turbPt[monitor->CatOffset.densityDtMult + p] += fieldPt[p] * densLoc * dt;
                         turbPt[monitor->CatOffset.densitySqr + p] += fieldPt[p] * fieldPt[p] * densLoc;
@@ -147,7 +147,8 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     //Initialize the numComps variable, which will store the sum of all the fields
     PetscInt numComp = 0;
 
-    //Resize the numComps and fieldTrack vectors to be the same size as the number of fields
+    //Resize the fieldTrack and fieldComps vectors to be the proper size (fieldTrack one greater than num fields, fieldComps equal to num fields)
+    fieldComps.resize(fieldNames.size(), 0);
     fieldTrack.resize(fieldNames.size() + 1, 0);
     fieldTrack[0] = 0;
 
@@ -155,6 +156,7 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         const auto& field = this->GetSolver()->GetSubDomain().GetField(fieldNames[f]);
 
+        fieldComps[f] = field.numberComponents;
         numComp += field.numberComponents;
         if((f+1) < (int)fieldTrack.size()) {
             fieldTrack[f + 1] = fieldTrack[f] + field.numberComponents;
@@ -168,49 +170,49 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     //Add all fields to the rhoMult category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string densityMult = "rhoMult_" + fieldNames[f];
-        AddField(turbDM, densityMult.c_str(), numComp);
+        AddField(turbDM, densityMult.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the rhoDtMult category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string densityDtMult = "rhoDtMult_" + fieldNames[f];
-        AddField(turbDM, densityDtMult.c_str(), numComp);
+        AddField(turbDM, densityDtMult.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the rhoSqr category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string densitySqr = "rhoSqr_" + fieldNames[f];
-        AddField(turbDM, densitySqr.c_str(), numComp);
+        AddField(turbDM, densitySqr.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the sum category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string sum = "sum_" + fieldNames[f];
-        AddField(turbDM, sum.c_str(), numComp);
+        AddField(turbDM, sum.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the sumSqr category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string sumSqr = "sumSqr_" + fieldNames[f];
-        AddField(turbDM, sumSqr.c_str(), numComp);
+        AddField(turbDM, sumSqr.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the favreAvg category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string favreAvg = "favreAvg_" + fieldNames[f];
-        AddField(turbDM, favreAvg.c_str(), numComp);
+        AddField(turbDM, favreAvg.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the rms category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string rms = "rms_" + fieldNames[f];
-        AddField(turbDM, rms.c_str(), numComp);
+        AddField(turbDM, rms.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the mRms category
     for(int f = 0; f < (int)fieldNames.size(); f++) {
         std::string mRms = "mRms_" + fieldNames[f];
-        AddField(turbDM, mRms.c_str(), numComp);
+        AddField(turbDM, mRms.c_str(), fieldComps[f]);
     }
 
     //Create the PetscSection
