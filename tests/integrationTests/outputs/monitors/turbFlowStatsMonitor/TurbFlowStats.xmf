@@ -1,0 +1,589 @@
+<?xml version="1.0" ?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf>
+  <Domain Name="domain">
+    <Grid CollectionType="Temporal" GridType="Collection" Name="TimeSeries">
+      <Time TimeType="List">
+        <DataItem Dimensions="3" Format="XML" NumberType="Float">
+          0 0.1 1
+        </DataItem>
+      </Time>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="44" TopologyType="Quadrilateral">
+          <DataItem Dimensions="44 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            TurbFlowStats.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="59 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            TurbFlowStats.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="Turb_favreAvg_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_favreAvg_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_favreAvg_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_favreAvg_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_mRms_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_mRms_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_mRms_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_mRms_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoDtMult_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoDtMult_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoDtMult_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoDtMult_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoDtSum" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoDtSum
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoMult_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoMult_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoMult_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoMult_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoSqr_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoSqr_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoSqr_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoSqr_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoSum" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoSum
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rms_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rms_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rms_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rms_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sumSqr_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sumSqr_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sumSqr_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sumSqr_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sum_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sum_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sum_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              0 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sum_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="44" TopologyType="Quadrilateral">
+          <DataItem Dimensions="44 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            TurbFlowStats.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="59 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            TurbFlowStats.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="Turb_favreAvg_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_favreAvg_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_favreAvg_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_favreAvg_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_mRms_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_mRms_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_mRms_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_mRms_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoDtMult_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoDtMult_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoDtMult_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoDtMult_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoDtSum" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoDtSum
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoMult_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoMult_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoMult_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoMult_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoSqr_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoSqr_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoSqr_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoSqr_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoSum" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoSum
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rms_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rms_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rms_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rms_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sumSqr_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sumSqr_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sumSqr_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sumSqr_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sum_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sum_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sum_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              1 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sum_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+      <Grid GridType="Uniform" Name="domain">
+        <Topology NumberOfElements="44" TopologyType="Quadrilateral">
+          <DataItem Dimensions="44 4" Format="HDF" ItemType="Uniform" Name="_viz_topology_cells" NumberType="Float" Precision="8">
+            TurbFlowStats.hdf5:/viz/topology/cells
+          </DataItem>
+        </Topology>
+        <Geometry GeometryType="XY">
+          <DataItem DataType="Float" Dimensions="59 2" Format="HDF" Name="_geometry_vertices" Precision="8">
+            TurbFlowStats.hdf5:/geometry/vertices
+          </DataItem>
+        </Geometry>
+        <Attribute Center="Cell" Name="Turb_favreAvg_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_favreAvg_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_favreAvg_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_favreAvg_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_mRms_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_mRms_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_mRms_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_mRms_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoDtMult_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoDtMult_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoDtMult_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoDtMult_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoDtSum" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoDtSum
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoMult_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoMult_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoMult_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoMult_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoSqr_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoSqr_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoSqr_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoSqr_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rhoSum" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rhoSum
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rms_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rms_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_rms_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_rms_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sumSqr_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sumSqr_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sumSqr_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sumSqr_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sum_temperature" Type="Scalar">
+          <DataItem Dimensions="1 44 1" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 1
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 1" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sum_temperature
+            </DataItem>
+          </DataItem>
+        </Attribute>
+        <Attribute Center="Cell" Name="Turb_sum_velocity" Type="Vector">
+          <DataItem Dimensions="1 44 2" ItemType="HyperSlab" Type="HyperSlab">
+            <DataItem Dimensions="3 3" Format="XML">
+              2 0 0 1 1 1 1 44 2
+            </DataItem>
+            <DataItem DataType="Float" Dimensions="3 44 2" Format="HDF" Precision="8">
+              TurbFlowStats.hdf5:/cell_fields/Turb_sum_velocity
+            </DataItem>
+          </DataItem>
+        </Attribute>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>

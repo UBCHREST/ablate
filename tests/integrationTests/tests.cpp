@@ -149,7 +149,16 @@ INSTANTIATE_TEST_SUITE_P(
     [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
 
 INSTANTIATE_TEST_SUITE_P(Monitors, IntegrationTestsSpecifier,
-                         testing::Values((MpiTestParameter){.testName = "inputs/monitors/rocketMonitor.yaml", .nproc = 1, .expectedOutputFile = "outputs/monitors/rocketMonitor.txt", .arguments = ""}),
+                         testing::Values((MpiTestParameter){.testName = "inputs/monitors/rocketMonitor.yaml",
+                                                            .nproc = 1,
+                                                            .expectedOutputFile = "outputs/monitors/rocketMonitor.txt",
+                                                            .arguments = ""},
+                                        (MpiTestParameter){.testName = "inputs/monitors/turbFlowStatsMonitor.yaml",
+                                                            .nproc = 1,
+                                                            .expectedOutputFile = "outputs/monitors/turbFlowStatsMonitor.txt",
+                                                            .arguments = "",
+                                                            .expectedFiles{{"outputs/monitors/TurbFlowStatsMonitor/TurbFlowStats.xmf", "TurbFlowStats.xmf"},
+                                                                                 {"outputs/montiors/TurbFlowStatsMonitor/domain.xmf", "domain.xmf"}}}),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(Radiation, IntegrationTestsSpecifier,
