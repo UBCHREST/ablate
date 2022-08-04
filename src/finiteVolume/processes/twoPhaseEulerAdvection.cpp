@@ -853,57 +853,57 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     PetscReal gamma1 = eosGas->GetSpecificHeatRatio();
     PetscReal gamma2 = eosLiquid->GetSpecificHeatRatio();
     PetscReal cv1 = R1 / (gamma1 - 1);
-//    PetscReal cp1 = gamma1*cv1;
-    if (Yl<=1e-12){
-        PetscReal rhoG, rhoL, eG, eL;
-        rhoG = (*density);
-        eG = (*internalEnergy);
-        PetscReal TG = eG/cv1;
-        PetscReal pG = (gamma1-1.0)*rhoG*eG;
-        rhoL = gamma2/(gamma2-1)*(pG+p02)/cp2/TG;
-        eL = (pG+gamma2*p02)/(gamma2-1)/rhoL;
-        PetscReal a1 = PetscSqrtReal(gamma1*pG/rhoG);
-        PetscReal a2 = PetscSqrtReal(gamma2*(pG+p02)/rhoL);
-
-        // once state defined
-        *T=TG;
-        *densityG = rhoG;
-        *densityL = rhoL;
-        *internalEnergyG = eG;
-        *internalEnergyL = eL;
-        *alpha = densityVF / (*densityG);
-        *p = pG;  // pressure equilibrium, pG = pL
-        *aG = a1;
-        *aL = a2;
-        *MG = (*normalVelocity) / (*aG);
-        *ML = (*normalVelocity) / (*aL);
-    } else if ( Yl>=(1.0-1e-12) ){
-        PetscReal rhoG, rhoL, eG, eL;
-        rhoL = (*density);
-        eL = (*internalEnergy);
-        PetscReal TL = (eL-p02/rhoL)*gamma2/cp2;
-        PetscReal pL = (gamma2-1.0)*rhoL*eL-gamma2*p02;
-        rhoG = pL/TL/R1;
-        eG = cv1*TL;
-        PetscReal a1 = PetscSqrtReal(gamma1*pL/rhoG);
-        PetscReal a2 = PetscSqrtReal(gamma2*(pL+p02)/rhoL);
-
-        // once state defined
-        *T = TL;
-        *densityG = rhoG;
-        *densityL = rhoL;
-        *internalEnergyG = eG;
-        *internalEnergyL = eL;
-        *alpha = densityVF / (*densityG);
-        *p = pL;  // pressure equilibrium, pG = pL
-        *aG = a1;
-        *aL = a2;
-        *MG = (*normalVelocity) / (*aG);
-        *ML = (*normalVelocity) / (*aL);
-    }
-
-
-    else{
+////    PetscReal cp1 = gamma1*cv1;
+//    if (Yl<=1e-12){
+//        PetscReal rhoG, rhoL, eG, eL;
+//        rhoG = (*density);
+//        eG = (*internalEnergy);
+//        PetscReal TG = eG/cv1;
+//        PetscReal pG = (gamma1-1.0)*rhoG*eG;
+//        rhoL = gamma2/(gamma2-1)*(pG+p02)/cp2/TG;
+//        eL = (pG+gamma2*p02)/(gamma2-1)/rhoL;
+//        PetscReal a1 = PetscSqrtReal(gamma1*pG/rhoG);
+//        PetscReal a2 = PetscSqrtReal(gamma2*(pG+p02)/rhoL);
+//
+//        // once state defined
+//        *T=TG;
+//        *densityG = rhoG;
+//        *densityL = rhoL;
+//        *internalEnergyG = eG;
+//        *internalEnergyL = eL;
+//        *alpha = densityVF / (*densityG);
+//        *p = pG;  // pressure equilibrium, pG = pL
+//        *aG = a1;
+//        *aL = a2;
+//        *MG = (*normalVelocity) / (*aG);
+//        *ML = (*normalVelocity) / (*aL);
+//    } else if ( Yl>=(1.0-1e-12) ){
+//        PetscReal rhoG, rhoL, eG, eL;
+//        rhoL = (*density);
+//        eL = (*internalEnergy);
+//        PetscReal TL = (eL-p02/rhoL)*gamma2/cp2;
+//        PetscReal pL = (gamma2-1.0)*rhoL*eL-gamma2*p02;
+//        rhoG = pL/TL/R1;
+//        eG = cv1*TL;
+//        PetscReal a1 = PetscSqrtReal(gamma1*pL/rhoG);
+//        PetscReal a2 = PetscSqrtReal(gamma2*(pL+p02)/rhoL);
+//
+//        // once state defined
+//        *T = TL;
+//        *densityG = rhoG;
+//        *densityL = rhoL;
+//        *internalEnergyG = eG;
+//        *internalEnergyL = eL;
+//        *alpha = densityVF / (*densityG);
+//        *p = pL;  // pressure equilibrium, pG = pL
+//        *aG = a1;
+//        *aL = a2;
+//        *MG = (*normalVelocity) / (*aG);
+//        *ML = (*normalVelocity) / (*aL);
+//    }
+//
+//
+//    else{
     PetscReal etot = (*internalEnergy);
     PetscReal A = cp2 / cv1 / gamma2;
     PetscReal B = Yg + Yl * A;
@@ -1095,7 +1095,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     *aL = a2;
     *MG = (*normalVelocity) / (*aG);
     *ML = (*normalVelocity) / (*aL);
-}
+//}
 
 }
 
