@@ -58,6 +58,7 @@ class TurbFlowStats : public Monitor, public io::Serializable {
 
    public:
     explicit TurbFlowStats(const std::vector<std::string> nameIn, const std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<io::interval::Interval> intervalIn = {});
+    ~TurbFlowStats();
     PetscMonitorFunction GetPetscFunction() override { return MonitorTurbFlowStats; }
     void Register(std::shared_ptr<ablate::solver::Solver> solverIn) override;
 
