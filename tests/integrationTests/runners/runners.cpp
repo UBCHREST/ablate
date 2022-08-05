@@ -9,7 +9,6 @@ TEST_P(IntegrationTestsSpecifier, ShouldRun) {
             FAIL() << "Integration testing requires PETSC_LOG";
         }
         PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> testErrorChecker;
-        PetscOptionsSetValue(NULL, "-checkstack", "true") >> testErrorChecker;
         ablate::environment::RunEnvironment::Initialize(argc, argv);
         ablate::utilities::PetscUtilities::Initialize("Integration Level Testing");
         {
@@ -58,7 +57,6 @@ TEST_P(IntegrationRestartTestsSpecifier, ShouldRunAndRestart) {
     StartWithMPI
         // initialize petsc and mpi
         PetscOptionsSetValue(NULL, "-objects_dump", NULL) >> testErrorChecker;
-        PetscOptionsSetValue(NULL, "-checkstack", "true") >> testErrorChecker;
         ablate::environment::RunEnvironment::Initialize(argc, argv);
         ablate::utilities::PetscUtilities::Initialize("Integration Level Testing");
 
