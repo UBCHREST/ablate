@@ -7,7 +7,6 @@
 #include "io/interval/interval.hpp"
 #include "io/serializable.hpp"
 #include "monitor.hpp"
-#include "monitors/logs/log.hpp"
 
 namespace ablate::monitors {
 
