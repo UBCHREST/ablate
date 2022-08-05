@@ -81,7 +81,6 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscR
   PetscInt        numAdd, *addList;
   PetscInt        n = 0, n0, list[10000];
   PetscInt        l, i;
-  PetscReal       h;
   PetscErrorCode  ierr;
 
   PetscFunctionBegin;
@@ -96,24 +95,30 @@ PetscErrorCode DMPlexGetNeighborCells(DM dm, PetscInt p, PetscInt levels, PetscR
     else {
 
       minNumberCells = PETSC_MAX_INT;
+      if (maxDist < 0.0) maxDist = PETSC_MAX_REAL;
 
+
+#if 0
       // If the maximum distance isn't provided estimate it based on the number of levels
-      if (maxDist < -0.5) {
+      if (maxDist < 0.0) {
+        PetscReal       h;
         DMPlexGetMinRadius(dm, &h); // This returns the minimum distance from any cell centroid to a face.
         h *= 2.0;                   // Double it to get the grid spacing.
         maxDist = ((PetscReal)levels+1.0)*h;
       }
+#endif
     }
 
     // Get one level of neighboring cells
     ierr = DMPlexGetNeighborCells_Internal(dm, p, maxDist, useVertices, &n, &addList);CHKERRQ(ierr);
-
     ierr = PetscArraycpy(&list[0], addList, n);
+    ierr = PetscFree(addList);
 
-    l = 0;
+    l = 1;
 
     while (l < levels && n<minNumberCells) {
       ++l;
+      printf("%d\n", l);
       n0 = n;
       for (i = 0; i < n0; ++i) {
         ierr = DMPlexGetNeighborCells_Internal(dm, list[i], maxDist, useVertices, &numAdd, &addList);CHKERRQ(ierr);
