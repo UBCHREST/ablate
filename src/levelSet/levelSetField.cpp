@@ -318,7 +318,34 @@ void LevelSetField::Advect(Vec velocity, const PetscReal dt) {
 
 }
 
+bool LevelSetField::HasInterface(PetscInt p) {
+  bool              hasInterface = false;
+  PetscInt          nCells = 0, *cells = NULL;
+  PetscInt          i, cStart;
+  Vec               phi = LevelSetField::phi;
+  const PetscScalar *array;
+  PetscScalar       c0;
+  DM                dm = LevelSetField::dm;
 
+  DMPlexGetHeightStratum(dm, 0, &cStart, NULL) >> ablate::checkError;
+
+  DMPlexGetNeighborCells(dm, p, 1, -1, -1, PETSC_TRUE, &nCells, &cells) >> ablate::checkError;
+
+  VecGetArrayRead(phi, &array) >> ablate::checkError;
+  c0 = array[p - cStart];
+
+  i = 0;
+  while (i < nCells && !hasInterface) {
+    hasInterface = ((c0 * array[cells[i] - cStart])<=0.0);
+    ++i;
+  }
+
+  VecRestoreArrayRead(phi, &array) >> ablate::checkError;
+  PetscFree(cells) >> ablate::checkError;
+
+  return hasInterface;
+
+}
 
 /* Sphere */
 PetscReal LevelSetField::Sphere(PetscReal pos[], PetscReal center[], PetscReal radius) {

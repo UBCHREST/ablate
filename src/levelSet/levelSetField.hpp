@@ -46,10 +46,15 @@ class LevelSetField : public domain::FieldDescriptor {
     void ComputeAllCurvature();
     void ComputeAllNormal();
 
+    // Level set function interpolation
     PetscReal Interpolate(const PetscReal x, const double y, const double z);
     PetscReal Interpolate(PetscReal xyz[3]);
 
+    // Given a velocity field advect the level set
     void Advect(Vec vel, const PetscReal dt);
+
+
+    bool HasInterface(PetscInt p);
 
    private:
     // Copied from current ABLATE code. Need to talk to Matt M. about how to integrate
