@@ -87,6 +87,23 @@ class VectorUtilities {
         return result;
     }
 
+    /**
+     * Finds the first item in list that is of type S
+     * @tparam S the type of item to find
+     * @tparam T
+     * @param list
+     * @return the first item of type S or null
+     */
+    template <class S, class T>
+    static inline std::shared_ptr<S> Find(const std::vector<std::shared_ptr<T>>& list) {
+        for (auto& item : list) {
+            if (auto itemAsS = std::dynamic_pointer_cast<S>(item)) {
+                return itemAsS;
+            }
+        }
+        return {};
+    }
+
    private:
     VectorUtilities() = delete;
 };
