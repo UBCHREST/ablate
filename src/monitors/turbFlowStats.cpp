@@ -12,6 +12,11 @@ typedef ablate::solver::Range Range;
 ablate::monitors::TurbFlowStats::TurbFlowStats(const std::vector<std::string> nameIn, const std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<io::interval::Interval> intervalIn)
     : fieldNames(nameIn), eos(eosIn), interval(intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>()){}
 
+ablate::monitors::TurbFlowStats::~TurbFlowStats() {
+    VecDestroy(&turbVec);
+    DMDestroy(&turbDM);
+}
+
 PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
@@ -23,7 +28,7 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
         std::vector<Vec> vec(monitor->fieldNames.size(), nullptr);
         std::vector<IS> vecIS(monitor->fieldNames.size(), nullptr);
         std::vector<DM> subDM(monitor->fieldNames.size(), nullptr);
-        for(int f = 0; f < (int)monitor->fieldNames.size(); f++) {
+        for(std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
             const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
 
             ierr = monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIS[f], &vec[f], &subDM[f]);
@@ -60,13 +65,13 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
         //c - cell iterator
         //p - field component iterator
         const PetscScalar* fieldDat;
-        for(int f = 0; f < (int)monitor->fieldNames.size(); f++) {
+        for(std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
             // Extract the field vector global array
             ierr = VecGetArrayRead(vec[f], &fieldDat);
             CHKERRQ(ierr);
 
             //! Compute measures
-            for (int c = cellRange.start; c < cellRange.end; c++) {
+            for (PetscInt c = cellRange.start; c < cellRange.end; c++) {
                 const PetscScalar* fieldPt;
                 const PetscScalar* solPt;
                 PetscScalar* turbPt;
@@ -153,64 +158,64 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     fieldTrack[0] = 0;
 
     //Need to find the total number of field components and the indices marking the beginning of each field
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         const auto& field = this->GetSolver()->GetSubDomain().GetField(fieldNames[f]);
 
         fieldComps[f] = field.numberComponents;
         numComp += field.numberComponents;
-        if((f+1) < (int)fieldTrack.size()) {
+        if((f+1) < fieldTrack.size()) {
             fieldTrack[f + 1] = fieldTrack[f] + field.numberComponents;
         }
     }
 
     //Set the mode of the category offset and the category order
     CatOffset.SetMode(numComp);
-    CatOrder.SetMode((int)fieldNames.size());
+    CatOrder.SetMode(fieldNames.size());
 
     //Add all fields to the rhoMult category
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         std::string densityMult = "rhoMult_" + fieldNames[f];
         AddField(turbDM, densityMult.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the rhoDtMult category
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         std::string densityDtMult = "rhoDtMult_" + fieldNames[f];
         AddField(turbDM, densityDtMult.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the rhoSqr category
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         std::string densitySqr = "rhoSqr_" + fieldNames[f];
         AddField(turbDM, densitySqr.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the sum category
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         std::string sum = "sum_" + fieldNames[f];
         AddField(turbDM, sum.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the sumSqr category
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         std::string sumSqr = "sumSqr_" + fieldNames[f];
         AddField(turbDM, sumSqr.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the favreAvg category
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         std::string favreAvg = "favreAvg_" + fieldNames[f];
         AddField(turbDM, favreAvg.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the rms category
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         std::string rms = "rms_" + fieldNames[f];
         AddField(turbDM, rms.c_str(), fieldComps[f]);
     }
 
     //Add all fields to the mRms category
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         std::string mRms = "mRms_" + fieldNames[f];
         AddField(turbDM, mRms.c_str(), fieldComps[f]);
     }
@@ -224,7 +229,7 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     PetscSectionSetComponentName(turbSection, CatOrder.densityDtSum, 0, densityDtSum.c_str());
 
     //Register all component-number-dependent fields with their proper category
-    for(int f = 0; f < (int)fieldNames.size(); f++) {
+    for(std::size_t f = 0; f < fieldNames.size(); f++) {
         const auto& field = this->GetSolver()->GetSubDomain().GetField(fieldNames[f]);
         for(int p = 0; p < field.numberComponents; p++) {
             PetscSectionSetComponentName(turbSection, CatOrder.densityMult + f, p, field.components[p].c_str());
