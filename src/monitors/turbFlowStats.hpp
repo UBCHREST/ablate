@@ -1,22 +1,21 @@
 #ifndef ABLATELIBRARY_TURBFLOWSTATS_HPP
 #define ABLATELIBRARY_TURBFLOWSTATS_HPP
 
-#include "monitor.hpp"
 #include <string>
-#include "monitors/logs/log.hpp"
-#include "io/interval/interval.hpp"
-#include "eos/eos.hpp"
 #include "domain/field.hpp"
+#include "eos/eos.hpp"
+#include "io/interval/interval.hpp"
 #include "io/serializable.hpp"
+#include "monitor.hpp"
+#include "monitors/logs/log.hpp"
 
 namespace ablate::monitors {
 
-class TurbFlowStats : public Monitor, public io::Serializable{
-
+class TurbFlowStats : public Monitor, public io::Serializable {
     using ttf = ablate::eos::ThermodynamicFunction;
 
    protected:
-    void AddField(DM &dm, const char* nameField, PetscInt numComp);
+    void AddField(DM& dm, const char* nameField, PetscInt numComp);
 
    private:
     const std::vector<std::string> fieldNames;
@@ -29,7 +28,7 @@ class TurbFlowStats : public Monitor, public io::Serializable{
     DM turbDM;
     ttf densityFunc;
 
-    //Keeps track of the categories used
+    // Keeps track of the categories used
     struct {
         PetscInt densitySum = 0;
         PetscInt densityDtSum = 1;
@@ -52,7 +51,7 @@ class TurbFlowStats : public Monitor, public io::Serializable{
             rms = favreAvg + numComps;
             mRms = rms + numComps;
         }
-    }CatOffset, CatOrder;
+    } CatOffset, CatOrder;
 
     inline static const double tiny = 1e-30;
     static PetscErrorCode MonitorTurbFlowStats(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
@@ -62,13 +61,12 @@ class TurbFlowStats : public Monitor, public io::Serializable{
     PetscMonitorFunction GetPetscFunction() override { return MonitorTurbFlowStats; }
     void Register(std::shared_ptr<ablate::solver::Solver> solverIn) override;
 
-    //Here are the serializable functions to override
-    const std::string& GetId() const override {return name;}
+    // Here are the serializable functions to override
+    const std::string& GetId() const override { return name; }
     void Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
     void Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) override;
-
 };
 
-}
+}  // namespace ablate::monitors
 
-#endif //ABLATELIBRARY_TURBFLOWSTATS_HPP
+#endif  // ABLATELIBRARY_TURBFLOWSTATS_HPP
