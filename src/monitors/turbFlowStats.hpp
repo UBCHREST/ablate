@@ -52,7 +52,6 @@ class TurbFlowStats : public Monitor, public io::Serializable {
         }
     } CatOffset, CatOrder;
 
-    inline static const double tiny = 1e-30;
     static PetscErrorCode MonitorTurbFlowStats(TS ts, PetscInt step, PetscReal crtime, Vec u, void* ctx);
 
    public:

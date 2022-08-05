@@ -3,9 +3,11 @@
 #include "io/interval/fixedInterval.hpp"
 #include "petscmath.h"
 #include "solver/range.hpp"
+#include "utilities/constants.hpp"
 
 using tp = ablate::eos::ThermodynamicProperty;
 using fLoc = ablate::domain::FieldLocation;
+using Constant = ablate::utilities::Constants;
 typedef ablate::solver::Range Range;
 
 ablate::monitors::TurbFlowStats::TurbFlowStats(const std::vector<std::string> nameIn, const std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<io::interval::Interval> intervalIn)
@@ -103,11 +105,11 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                         turbPt[monitor->CatOffset.densitySqr + p] += fieldPt[p] * fieldPt[p] * densLoc;
                         turbPt[monitor->CatOffset.sum + p] += fieldPt[p];
                         turbPt[monitor->CatOffset.sumSqr + p] += fieldPt[p] * fieldPt[p];
-                        turbPt[monitor->CatOffset.favreAvg + p] += turbPt[monitor->CatOffset.densityDtMult + p] / (turbPt[monitor->CatOffset.densityDtSum] + monitor->tiny);
+                        turbPt[monitor->CatOffset.favreAvg + p] += turbPt[monitor->CatOffset.densityDtMult + p] / (turbPt[monitor->CatOffset.densityDtSum] + Constant::tiny);
                         turbPt[monitor->CatOffset.rms + p] =
-                            PetscSqrtReal(turbPt[monitor->CatOffset.sumSqr + p] / (step + monitor->tiny) - PetscPowReal(turbPt[monitor->CatOffset.sum + p] / (step + monitor->tiny), 2));
-                        turbPt[monitor->CatOffset.mRms + p] = PetscSqrtReal(turbPt[monitor->CatOffset.densitySqr + p] / (turbPt[monitor->CatOffset.densitySum] + monitor->tiny) -
-                                                                            PetscPowReal(turbPt[monitor->CatOffset.densityMult + p] / (turbPt[monitor->CatOffset.densitySum] + monitor->tiny), 2));
+                            PetscSqrtReal(turbPt[monitor->CatOffset.sumSqr + p] / (step + Constant::tiny) - PetscPowReal(turbPt[monitor->CatOffset.sum + p] / (step + Constant::tiny), 2));
+                        turbPt[monitor->CatOffset.mRms + p] = PetscSqrtReal(turbPt[monitor->CatOffset.densitySqr + p] / (turbPt[monitor->CatOffset.densitySum] + Constant::tiny) -
+                                                                            PetscPowReal(turbPt[monitor->CatOffset.densityMult + p] / (turbPt[monitor->CatOffset.densitySum] + Constant::tiny), 2));
                     }
                 }
             }
