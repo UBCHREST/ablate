@@ -51,8 +51,6 @@ solvers:
     id: flowField
     region:
       name: interiorCells
-    parameters:
-      cfl: 0.5
     eos: *eos
     monitors:
       - !ablate::monitors::TurbFlowStats
