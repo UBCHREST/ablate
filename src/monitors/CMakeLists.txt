@@ -14,6 +14,7 @@ target_sources(ablateLibrary
         physicsTimeStep.cpp
         probes.cpp
         rocketMonitor.cpp
+        turbFlowStats.cpp
         PUBLIC
         monitor.hpp
         fieldErrorMonitor.hpp
@@ -30,6 +31,7 @@ target_sources(ablateLibrary
         physicsTimeStep.hpp
         probes.hpp
         rocketMonitor.hpp
+        turbFlowStats.hpp
         )
 
 add_subdirectory(logs)
