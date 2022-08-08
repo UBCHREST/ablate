@@ -74,8 +74,8 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
 
   # all the processes must be specified because FiniteVolumeSolver was specified directly
   processes:
-    # the EulerTransport processes handles bulk advection and diffusion
-    - !ablate::finiteVolume::processes::EulerTransport
+    # the NavierStokesTransport processes handles bulk advection and diffusion
+    - !ablate::finiteVolume::processes::NavierStokesTransport
       parameters:
         cfl: 0.5
       # a flux calculator must be specified to so solver for advection
