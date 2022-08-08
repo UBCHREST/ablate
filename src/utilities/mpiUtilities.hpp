@@ -17,7 +17,7 @@ class MpiUtilities {
      * call this function on root and wait to complete
      * @param comm
      */
-    static void Once(MPI_Comm comm, std::function<void()>);
+    static void Once(MPI_Comm comm, std::function<void()>, int root = 0);
 
    private:
     MpiUtilities() = delete;
