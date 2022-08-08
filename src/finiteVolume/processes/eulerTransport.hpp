@@ -5,6 +5,7 @@
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "flowProcess.hpp"
+#include "pressureGradientScaling.hpp"
 
 namespace ablate::finiteVolume::processes {
 
@@ -49,6 +50,18 @@ class EulerTransport : public FlowProcess {
 
     eos::ThermodynamicFunction computePressureFunction;
 
+    // Store the required ctx for time stepping
+    struct TimeStepData {
+        /* thermal conductivity*/
+        AdvectionData* advectionData;
+
+        /**
+         * pressure gradient scaling
+         */
+        std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs;
+    };
+    TimeStepData timeStepData;
+
     // static function to compute time step for euler advection
     static double ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx);
 
@@ -75,7 +88,7 @@ class EulerTransport : public FlowProcess {
      * public constructor for euler advection
      */
     EulerTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
-                   std::shared_ptr<eos::transport::TransportModel> transportModel = {});
+                   std::shared_ptr<eos::transport::TransportModel> transportModel = {}, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
 
     /**
      * public function to link this process with the flow
