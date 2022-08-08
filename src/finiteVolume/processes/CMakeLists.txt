@@ -1,7 +1,7 @@
 target_sources(ablateLibrary
         PRIVATE
         flowProcess.cpp
-        eulerTransport.cpp
+        navierStokesTransport.cpp
         speciesTransport.cpp
         evTransport.cpp
         tChemReactions.cpp
@@ -14,7 +14,7 @@ target_sources(ablateLibrary
         PUBLIC
         process.hpp
         flowProcess.hpp
-        eulerTransport.hpp
+        navierStokesTransport.hpp
         speciesTransport.hpp
         evTransport.hpp
         tChemReactions.hpp

@@ -58,7 +58,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         // set decode state functions
         computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
         // add in aux update variables
-        bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
+        bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxTemperatureField,
                                        &computeTemperatureFunction,
                                        std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                        {});
@@ -149,7 +149,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
-    PetscCall(ablate::finiteVolume::processes::EulerTransport::CompressibleFlowComputeStressTensor(dim, viscosity, gradBoundaryVelocity, tau));
+    PetscCall(ablate::finiteVolume::processes::NavierStokesTransport::CompressibleFlowComputeStressTensor(dim, viscosity, gradBoundaryVelocity, tau));
 
     // Add the source term, kg/s for rho
     source[sOff[EULER_LOC] + fp::RHO] = massFlux * area;
