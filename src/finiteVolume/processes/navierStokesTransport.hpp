@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_EULERTRANSPORT_HPP
-#define ABLATELIBRARY_EULERTRANSPORT_HPP
+#ifndef ABLATELIBRARY_NAVIERSTOKESTRANSPORT_HPP
+#define ABLATELIBRARY_NAVIERSTOKESTRANSPORT_HPP
 
 #include <petsc.h>
 #include "eos/transport/transportModel.hpp"
@@ -9,7 +9,7 @@
 
 namespace ablate::finiteVolume::processes {
 
-class EulerTransport : public FlowProcess {
+class NavierStokesTransport : public FlowProcess {
    public:
     // Store ctx needed for static function advection function passed to PETSc
     struct AdvectionData {
@@ -87,8 +87,8 @@ class EulerTransport : public FlowProcess {
      *
      * public constructor for euler advection
      */
-    EulerTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
-                   std::shared_ptr<eos::transport::TransportModel> transportModel = {}, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
+    NavierStokesTransport(const std::shared_ptr<parameters::Parameters>& parameters, std::shared_ptr<eos::EOS> eos, std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalcIn = {},
+                          std::shared_ptr<eos::transport::TransportModel> transportModel = {}, std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> = {});
 
     /**
      * public function to link this process with the flow
@@ -129,4 +129,4 @@ class EulerTransport : public FlowProcess {
 };
 
 }  // namespace ablate::finiteVolume::processes
-#endif  // ABLATELIBRARY_EULERTRANSPORT_HPP
+#endif  // ABLATELIBRARY_NAVIERSTOKESTRANSPORT_HPP

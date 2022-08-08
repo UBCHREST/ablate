@@ -1,17 +1,13 @@
 #include <petsc.h>
 #include <PetscTestFixture.hpp>
-#include <finiteVolume/processes/eulerTransport.hpp>
 #include <vector>
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
 #include "eos/mockEOS.hpp"
-#include "eos/perfectGas.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "finiteVolume/fluxCalculator/ausm.hpp"
 #include "finiteVolume/processes/buoyancy.hpp"
 #include "gtest/gtest.h"
 #include "mathFunctions/simpleFormula.hpp"
-#include "parameters/mapParameters.hpp"
 
 struct BuoyancyTestParameters {
     std::vector<double> buoyancy;

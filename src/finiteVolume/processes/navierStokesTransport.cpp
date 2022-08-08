@@ -1,4 +1,4 @@
-#include "eulerTransport.hpp"
+#include "navierStokesTransport.hpp"
 
 #include <utility>
 #include "finiteVolume/compressibleFlowFields.hpp"
@@ -6,9 +6,10 @@
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::finiteVolume::processes::EulerTransport::EulerTransport(const std::shared_ptr<parameters::Parameters>& parametersIn, std::shared_ptr<eos::EOS> eosIn,
-                                                                std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn, std::shared_ptr<eos::transport::TransportModel> transportModelIn,
-                                                                std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs)
+ablate::finiteVolume::processes::NavierStokesTransport::NavierStokesTransport(const std::shared_ptr<parameters::Parameters>& parametersIn, std::shared_ptr<eos::EOS> eosIn,
+                                                                              std::shared_ptr<fluxCalculator::FluxCalculator> fluxCalculatorIn,
+                                                                              std::shared_ptr<eos::transport::TransportModel> transportModelIn,
+                                                                              std::shared_ptr<ablate::finiteVolume::processes::PressureGradientScaling> pgs)
     : fluxCalculator(std::move(fluxCalculatorIn)), eos(std::move(eosIn)), transportModel(std::move(transportModelIn)), advectionData() {
     // If there is a flux calculator assumed advection
     if (fluxCalculator) {
@@ -25,7 +26,7 @@ ablate::finiteVolume::processes::EulerTransport::EulerTransport(const std::share
     timeStepData.pgs = std::move(pgs);
 }
 
-void ablate::finiteVolume::processes::EulerTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
+void ablate::finiteVolume::processes::NavierStokesTransport::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Register the euler source terms
     if (fluxCalculator) {
         flow.RegisterRHSFunction(AdvectionFlux, &advectionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD}, {});
@@ -72,8 +73,9 @@ void ablate::finiteVolume::processes::EulerTransport::Setup(ablate::finiteVolume
     }
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscScalar* fieldL, const PetscScalar* fieldR,
-                                                                              const PetscInt* aOff, const PetscScalar* auxL, const PetscScalar* auxR, PetscScalar* flux, void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::AdvectionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt* uOff, const PetscScalar* fieldL,
+                                                                                     const PetscScalar* fieldR, const PetscInt* aOff, const PetscScalar* auxL, const PetscScalar* auxR,
+                                                                                     PetscScalar* flux, void* ctx) {
     PetscFunctionBeginUser;
 
     auto eulerAdvectionData = (AdvectionData*)ctx;
@@ -186,7 +188,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::AdvectionFlux(Pe
     PetscFunctionReturn(0);
 }
 
-double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
+double ablate::finiteVolume::processes::NavierStokesTransport::ComputeTimeStep(TS ts, ablate::finiteVolume::FiniteVolumeSolver& flow, void* ctx) {
     // Get the dm and current solution vector
     DM dm;
     TSGetDM(ts, &dm) >> checkError;
@@ -256,9 +258,9 @@ double ablate::finiteVolume::processes::EulerTransport::ComputeTimeStep(TS ts, a
     flow.RestoreRange(cellRange);
     return dtMin;
 }
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
-                                                                              const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
-                                                                              const PetscScalar gradAux[], PetscScalar flux[], void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::DiffusionFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[],
+                                                                                     const PetscScalar grad[], const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[],
+                                                                                     const PetscScalar gradAux[], PetscScalar flux[], void* ctx) {
     PetscFunctionBeginUser;
     // this order is based upon the order that they are passed into RegisterRHSFunction
     const int T = 0;
@@ -314,7 +316,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::DiffusionFlux(Pe
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVel, PetscReal* tau) {
+PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::CompressibleFlowComputeStressTensor(PetscInt dim, PetscReal mu, const PetscReal* gradVel, PetscReal* tau) {
     PetscFunctionBeginUser;
     // pre-compute the div of the velocity field
     PetscReal divVel = 0.0;
@@ -338,8 +340,8 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::CompressibleFlow
     PetscFunctionReturn(0);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
-                                                                                       const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxVelocityField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
+                                                                                              const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
     PetscReal density = conservedValues[uOff[0] + CompressibleFlowFields::RHO];
 
@@ -351,8 +353,8 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocit
 }
 
 // When used, you must request euler, then densityYi
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
-                                                                                          const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxTemperatureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
+                                                                                                 const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
     auto computeTemperatureFunction = (eos::ThermodynamicTemperatureFunction*)ctx;
     PetscCall(computeTemperatureFunction->function(conservedValues, *(auxField + aOff[0]), auxField + aOff[0], computeTemperatureFunction->context.get()));
@@ -361,8 +363,8 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxTempera
 }
 
 // When used, you must request euler, then densityYi
-PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
-                                                                                       const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
+PetscErrorCode ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxPressureField(PetscReal time, PetscInt dim, const PetscFVCellGeom* cellGeom, const PetscInt uOff[],
+                                                                                              const PetscScalar* conservedValues, const PetscInt aOff[], PetscScalar* auxField, void* ctx) {
     PetscFunctionBeginUser;
     auto pressureFunction = (eos::ThermodynamicFunction*)ctx;
 
@@ -373,7 +375,7 @@ PetscErrorCode ablate::finiteVolume::processes::EulerTransport::UpdateAuxPressur
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::EulerTransport, "build advection/diffusion for the euler field",
+REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::NavierStokesTransport, "build advection/diffusion for the euler field",
          OPT(ablate::parameters::Parameters, "parameters", "the parameters used by advection"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"),
          OPT(ablate::finiteVolume::fluxCalculator::FluxCalculator, "fluxCalculator", "the flux calculator (default is no advection)"),
          OPT(ablate::eos::transport::TransportModel, "transport", "the diffusion transport model (default is no diffusion)"),
