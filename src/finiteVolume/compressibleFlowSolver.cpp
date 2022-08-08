@@ -1,8 +1,8 @@
 #include "compressibleFlowSolver.hpp"
-#include <finiteVolume/processes/evTransport.hpp>
 #include <utility>
 #include "compressibleFlowFields.hpp"
 #include "finiteVolume/processes/eulerTransport.hpp"
+#include "finiteVolume/processes/evTransport.hpp"
 #include "finiteVolume/processes/speciesTransport.hpp"
 #include "utilities/vectorUtilities.hpp"
 
@@ -16,7 +16,8 @@ ablate::finiteVolume::CompressibleFlowSolver::CompressibleFlowSolver(std::string
                          utilities::VectorUtilities::Merge(
                              {
                                  // create assumed processes for compressible flow
-                                 std::make_shared<ablate::finiteVolume::processes::EulerTransport>(parameters, eosIn, fluxCalculatorIn, transport),
+                                 std::make_shared<ablate::finiteVolume::processes::EulerTransport>(
+                                     parameters, eosIn, fluxCalculatorIn, transport, utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses)),
                                  std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eosIn, fluxCalculatorIn, transport),
                                  std::make_shared<ablate::finiteVolume::processes::EVTransport>(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD, finiteVolume::CompressibleFlowFields::EV_FIELD,
                                                                                                 eosIn, fluxCalculatorIn, transport),

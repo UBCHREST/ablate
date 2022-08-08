@@ -42,12 +42,12 @@ PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<ex
 PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <2000
 PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <2000
 PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <2000
-PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <2000
-PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <2000
-PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <2000
-PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <2000
-PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <2000
-PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <2000
+PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <3000
+PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <3000
+PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <3000
+PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <3000
+PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <3000
+PGS: (.*) \(alpha\), (.*) \(maxMach\),  (.*) \(maxMach'\), (.*) \(maxDeltaP\)<expects> >2 <0.018 >0.02 <3000
 ResultFiles:
 domain.hdf5
 domain.xmf
