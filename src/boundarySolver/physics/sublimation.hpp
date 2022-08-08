@@ -3,7 +3,7 @@
 
 #include "boundarySolver/boundaryProcess.hpp"
 #include "eos/transport/transportModel.hpp"
-#include "finiteVolume/processes/eulerTransport.hpp"
+#include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
 namespace ablate::boundarySolver::physics {
 

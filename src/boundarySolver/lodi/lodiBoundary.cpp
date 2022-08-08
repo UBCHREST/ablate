@@ -112,7 +112,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
         nEqs += bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD).numberComponents;
 
         if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::VELOCITY_FIELD)) {
-            bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxVelocityField,
+            bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxVelocityField,
                                            nullptr,
                                            std::vector<std::string>{finiteVolume::CompressibleFlowFields::VELOCITY_FIELD},
                                            {finiteVolume::CompressibleFlowFields::EULER_FIELD});
@@ -122,7 +122,7 @@ void ablate::boundarySolver::lodi::LODIBoundary::Initialize(ablate::boundarySolv
             // set decode state functions
             computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
             // add in aux update variables
-            bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
+            bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxTemperatureField,
                                            &computeTemperatureFunction,
                                            std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                            {});

@@ -1,6 +1,6 @@
 #include "ignitionDelayTemperature.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "finiteVolume/processes/eulerTransport.hpp"
+#include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "monitors/logs/stdOut.hpp"
 #include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
