@@ -49,4 +49,4 @@ if __name__ == "__main__":
         doxyFile.write(f'PROJECT_NUMBER = {ablateVersion}')
 
     # call doxygen
-    completeInformation = subprocess.run(['doxygen', args.root_dir / 'docs/doxyfile.tmp.config'], check=True)
+    completeInformation = subprocess.run(['doxygen', args.root_dir / 'docs/doxyfile.tmp.config'], cwd=args.root_dir, check=True)
