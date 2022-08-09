@@ -1,7 +1,3 @@
-//
-// Created by owen on 4/14/22.
-//
-
 #include <petsc.h>
 #include <mathFunctions/functionFactory.hpp>
 #include <memory>
@@ -19,6 +15,7 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
+#include "radiation/volumeRadiation.hpp"
 #include "utilities/petscUtilities.hpp"
 
 struct RadiationTestParameters {
@@ -208,7 +205,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // Create an instance of radiation
         auto radiationModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
-        auto radiation = std::make_shared<ablate::radiation::Radiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, 20, nullptr, radiationModel);
+        auto radiation =
+            std::make_shared<ablate::radiation::VolumeRadiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 20, nullptr, radiationModel, nullptr);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});

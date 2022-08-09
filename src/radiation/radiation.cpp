@@ -13,7 +13,7 @@ ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::
                                         const std::shared_ptr<parameters::Parameters>& options, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
                                         std::shared_ptr<ablate::monitors::logs::Log> log)
     : solverId((std::basic_string<char> &&) solverId),
-      region((std::shared_ptr<domain::Region> &&) region),
+      region(std::move(region)),
       options((std::shared_ptr<parameters::Parameters> &&) options),
       radiationModel(std::move(radiationModelIn)),
       fieldBoundary(std::move(fieldBoundary)),
@@ -93,12 +93,11 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     // check to see if there is a ghost label
     DMLabel ghostLabel;
     DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
-    PetscInt cellCount = 0;
+    //    PetscInt cellCount = 0;
 
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
-
-    PetscInt npoints = (cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
-    PetscInt nsolvepoints = 0;                             //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
+    PetscInt npoints = (cellRange.end - cellRange.start) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
+    PetscInt nsolvepoints = 0;                                                   //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
     DMCreate(subDomain->GetComm(), &radsearch) >> checkError;
@@ -127,8 +126,8 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     DMSwarmFinalizeFieldRegister(radsolve) >> checkError;                                      //!< Initialize the fields that have been defined
 
     /** Set initial local sizes of the DMSwarm with a buffer length of zero */
-    DMSwarmSetLocalSizes(radsearch, npoints, 10) >> checkError;  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
-    DMSwarmSetLocalSizes(radsolve, 0, 10) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
+    DMSwarmSetLocalSizes(radsearch, npoints, 0) >> checkError;  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
+    DMSwarmSetLocalSizes(radsolve, 0, 0) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Set the spatial step size to the minimum cell radius */
     PetscReal hstep = minCellRadius / 5;
@@ -150,7 +149,7 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscReal centroid[3];
-        DMPlexComputeCellGeometryFVM(subDomain->GetDM(), c, nullptr, centroid, nullptr) >> checkError;
+        DMPlexComputeCellGeometryFVM(subDomain->GetDM(), iCell, nullptr, centroid, nullptr) >> checkError;
 
         /** for every angle theta
          * for every angle phi

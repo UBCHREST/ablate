@@ -144,7 +144,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     std::map<std::string, Segment> rays;
     std::basic_string<char>&& solverId;
-    std::shared_ptr<domain::Region>&& region;
+    const std::shared_ptr<domain::Region> region;
     std::shared_ptr<parameters::Parameters>&& options;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
     const std::shared_ptr<domain::Region> fieldBoundary;  //!< Hold the region used to define the boundary faces
