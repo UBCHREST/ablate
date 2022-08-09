@@ -51,7 +51,7 @@ class Solver {
     /** Setup and size the subDomain with the subDomain **/
     virtual void Setup() = 0;
 
-    /** Finalize the Setup of the subDomain before running **/
+    /*** Set up mesh dependent initialization, this may be called multiple times if the mesh changes **/
     virtual void Initialize() = 0;
 
     /** string id for this solver **/
