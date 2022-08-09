@@ -5,6 +5,22 @@
 namespace ablate::radiation {
 
 class VolumeRadiation : public Radiation, public solver::CellSolver {
+   public:
+    /**
+     * Function passed into PETSc to compute the FV RHS
+     * @param dm
+     * @param time
+     * @param locXVec
+     * @param globFVec
+     * @param ctx
+     * @return
+     */
+    PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec);
+
+    void Initialize() override;
+    void Setup() override;
+    void Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) override;
+
     /**
      *
      * @param solverId the id for this solver
@@ -12,24 +28,10 @@ class VolumeRadiation : public Radiation, public solver::CellSolver {
      * @param rayNumber
      * @param options other options
      */
-    Radiation(std::string solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
-              std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
+                    const std::shared_ptr<parameters::Parameters>& options1, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<monitors::logs::Log> unnamed1);
 
-    ~Radiation();
-
-    /**
-     * Function passed into PETSc to compute the FV RHS
-     * @param dm
-     * @param time
-     * @param locXVec
-     * @param globFVec
-     *
-     * @param ctx
-     * @return
-     */
-    PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec);
-
-    void Initialize() override;
+    ~VolumeRadiation();
 };
 }  // namespace ablate::radiation
 #endif  // ABLATELIBRARY_VOLUMERADIATION_HPP

@@ -22,7 +22,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param rayNumber
      * @param options other options
      */
-    Radiation(std::string solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
+    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber, const std::shared_ptr<parameters::Parameters>& options,
               std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     ~Radiation();
@@ -81,7 +81,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     /// Class Methods
     const std::map<PetscInt, Origin>& Solve(Vec solVec, Vec rhs);
 
-   private:
     /// Structs to hold information
 
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
