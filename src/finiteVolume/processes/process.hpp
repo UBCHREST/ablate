@@ -1,5 +1,5 @@
-#ifndef ABLATELIBRARY_PROCESS_HPP
-#define ABLATELIBRARY_PROCESS_HPP
+#ifndef ABLATELIBRARY_FINITEVOLUME_PROCESS_HPP
+#define ABLATELIBRARY_FINITEVOLUME_PROCESS_HPP
 
 #include <finiteVolume/finiteVolumeSolver.hpp>
 namespace ablate::finiteVolume::processes {
