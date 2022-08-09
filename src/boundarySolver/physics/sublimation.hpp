@@ -14,7 +14,7 @@ class Sublimation : public BoundaryProcess {
    private:
     const PetscReal latentHeatOfFusion;
     //! transport model used to compute the conductivity
-    const std::shared_ptr<ablate::eos::transport::TransportModel> transportModel;
+    const std::shared_ptr<ablate::eos::transport::TransportModel> transportModel = nullptr;
     const std::shared_ptr<ablate::eos::EOS> eos;
     const std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux;
     PetscReal currentTime = 0.0;

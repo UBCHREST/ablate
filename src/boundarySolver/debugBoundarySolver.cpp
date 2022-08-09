@@ -3,6 +3,7 @@
 #include <set>
 #include "boundaryProcess.hpp"
 #include "environment/runEnvironment.hpp"
+#include "utilities/mpiError.hpp"
 #include "utilities/mpiUtilities.hpp"
 
 ablate::boundarySolver::DebugBoundarySolver::DebugBoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
@@ -11,6 +12,24 @@ ablate::boundarySolver::DebugBoundarySolver::DebugBoundarySolver(std::string sol
 
 void ablate::boundarySolver::DebugBoundarySolver::Setup() {
     BoundarySolver::Setup();
+
+    // Get the solver name
+    const auto& solverName = GetSolverId();
+    const auto& solverRegion = GetRegion();
+
+    // check to make sure that gradientStencils is not zero
+    PetscMPIInt numberStencilLocal = (PetscMPIInt)gradientStencils.size();
+    PetscMPIInt numberStencilGlobal;
+    MPI_Reduce(&numberStencilLocal, &numberStencilGlobal, 1, MPI_INT, MPI_SUM, 0, GetSubDomain().GetComm()) >> checkMpiError;
+
+    utilities::MpiUtilities::Once(
+        GetSubDomain().GetComm(),
+        [numberStencilGlobal, &solverName, &solverRegion]() {
+            if (numberStencilGlobal == 0) {
+                throw std::invalid_argument("The " + solverName + " setup resulted in zero boundary cells for region " + solverRegion->ToString());
+            }
+        },
+        0);
 
     // Create an output directory for this solver
     auto solverDirectory = ablate::environment::RunEnvironment::Get().GetOutputDirectory() / GetSolverId();

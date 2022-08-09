@@ -49,27 +49,4 @@ if __name__ == "__main__":
         doxyFile.write(f'PROJECT_NUMBER = {ablateVersion}')
 
     # call doxygen
-    completeInformation = subprocess.run(['doxygen', args.root_dir / 'docs/doxyfile.tmp.config'], check=True)
-
-    # versionFile = args.doc_dir/'_includes/generated/version.html'
-    # with open(versionFile, 'w') as f:
-    #     print(ablateVersion, file=f, end='')
-    #
-    # # set the directory information
-    # componentListSource = args.doc_dir / "_componentListSource.md"
-    #
-
-    # parser.add_argument('--componentListSource', dest='component_list_source', type=pathlib.Path,
-    #                     help='The path to the markdown file with all components')
-    # parser.add_argument('--componentOutputDir', dest='component_output_dir', type=pathlib.Path,
-    #                     help='Optional path to output directory for components')
-    # parser.add_argument('--exampleInputDir', dest='example_input_dir', type=pathlib.Path,
-    #                     help='The directory holding the yaml input file examples')
-    # parser.add_argument('--exampleOutputDir', dest='example_output_dir', type=pathlib.Path,
-    #                     help='Optional path to output directory for the generated example markdowns')
-    #
-    # # create component markdown
-    # if args.component_list_source:
-    #     componentListGenerator.split_component_list(args.component_list_source, args.component_output_dir)
-    # if args.example_input_dir:
-    #     componentListGenerator.create_example_files(args.example_input_dir, args.example_output_dir)
+    completeInformation = subprocess.run(['doxygen', args.root_dir / 'docs/doxyfile.tmp.config'], cwd=args.root_dir, check=True)
