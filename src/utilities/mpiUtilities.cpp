@@ -23,7 +23,7 @@ void ablate::utilities::MpiUtilities::RoundRobin(MPI_Comm comm, std::function<vo
     }
 }
 
-void ablate::utilities::MpiUtilities::Once(MPI_Comm comm, std::function<void()> function) {
+void ablate::utilities::MpiUtilities::Once(MPI_Comm comm, std::function<void()> function, int root) {
     int rank = 0;
 
     int mpiInitialized;
@@ -33,7 +33,7 @@ void ablate::utilities::MpiUtilities::Once(MPI_Comm comm, std::function<void()> 
     }
 
     // call each function one at a time
-    if (rank == 0) {
+    if (rank == root) {
         function();
     }
 
