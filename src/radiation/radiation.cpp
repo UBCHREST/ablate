@@ -74,13 +74,13 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     //    PetscFVFaceGeom* faceGeom;
 
     /** do a simple sanity check for labels */
-    region->CheckForLabel(subDomain->GetDM());
-    fieldBoundary->CheckForLabel(subDomain->GetDM());
-
-    /** Get the labels */
-    DMLabel boundaryLabel;
-    //    PetscInt boundaryValue = fieldBoundary->GetValue();
-    DMGetLabel(subDomain->GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
+    //    region->CheckForLabel(subDomain->GetDM());
+    //    fieldBoundary->CheckForLabel(subDomain->GetDM());
+    //
+    //    /** Get the labels */
+    //    DMLabel boundaryLabel;
+    //    //    PetscInt boundaryValue = fieldBoundary->GetValue();
+    //    DMGetLabel(subDomain->GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
 
     PetscMPIInt rank;
     MPI_Comm_rank(subDomain->GetComm(), &rank);      //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
@@ -91,8 +91,8 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     double phi;    //!< represents the actual current angle (rotation)
 
     // check to see if there is a ghost label
-    DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
+    //    DMLabel ghostLabel;
+    //    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
     //    PetscInt cellCount = 0;
 
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
@@ -271,8 +271,8 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
              * The boundary has been reached if any of these conditions don't hold
              * */
             /** make sure we are not working on a ghost cell */
-            PetscInt ghost = -1;
-            if (ghostLabel) DMLabelGetValue(ghostLabel, cell[ip].index, &ghost) >> checkError;
+            //            PetscInt ghost = -1;
+            //            if (ghostLabel) DMLabelGetValue(ghostLabel, cell[ip].index, &ghost) >> checkError;
             if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) {
                 index = cell[ip].index;
             } else {
