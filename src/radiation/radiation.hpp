@@ -53,6 +53,10 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     /** SubDomain Register and Setup **/
     void Setup();
+
+    /**
+     * @param cellRange The range of cells for which rays are initialized
+     */
     void Initialize(solver::Range cellRange);
     /** Get the subdomain */
     void Register(std::shared_ptr<ablate::domain::SubDomain>);
@@ -62,19 +66,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     // use the subDomain to setup the problem
     std::shared_ptr<ablate::domain::SubDomain> subDomain;
-
-    //    /**
-    //     * Function passed into PETSc to compute the FV RHS
-    //     * @param dm
-    //     * @param time
-    //     * @param locXVec
-    //     * @param globFVec
-    //     *
-    //     * @param ctx
-    //     * @return
-    //     */
-    //    PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec);
-    // TODO: Move the compute right hand side function to the finite volume implementation
 
    protected:
     DM dmcell;
@@ -86,6 +77,9 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     //! Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
     Vec faceGeomVec = nullptr;
+
+    /// Class Methods
+    const std::map<PetscInt, Origin>& Solve(Vec solVec, Vec rhs);
 
    private:
     /// Structs to hold information
@@ -118,13 +112,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscInt current;
         PetscReal hhere;
     };
-
-    /// Class Methods
-    /**
-     * @param cellRange The range of cells for which rays are initialized
-     */
-    void RayInit();
-    const std::map<PetscInt, Origin>& Solve(Vec solVec, Vec rhs);
 
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates

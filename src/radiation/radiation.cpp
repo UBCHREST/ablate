@@ -40,10 +40,7 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         log->Initialize(subDomain->GetComm());
     }
     cellRange = cellRangeIn;
-    this->RayInit();
-}
 
-void ablate::radiation::Radiation::RayInit() {
     /** Initialization to call, draws each ray vector and gets all of the cells associated with it
      * (sorted by distance and starting at the boundary working in)
      * This is done by creating particles at the center of each cell and iterating through them
@@ -669,6 +666,8 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
 
     /** Cleanup*/
     VecRestoreArrayRead(rhs, &rhsArray);
+    VecRestoreArrayRead(solVec, &solArray);
+    VecRestoreArrayRead(auxVec, &auxArray);
 
     if (log) {
         EndEvent();
@@ -676,26 +675,7 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     }
 }
 
-// PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
-//     PetscFunctionBegin;
-//
-//     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
-//     const PetscScalar* rhsArray;
-//     VecGetArrayRead(rhs, &rhsArray);
-//
-//     solver::Range cellRange;
-//     GetCellRange(cellRange);
-//
-//     ablate::radiation::Radiation::Solve(time, solVec, rhs);
-//
-//         for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
-//             const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-//             PetscScalar* rhsValues;
-//             rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += origin[iCell].intensity;  // GetIntensity(iCell);  //!< Loop through the cells and update the equation of state
-//         }
-//     PetscFunctionReturn(0);
-// }
-//  TODO: Move the compute right hand side function to the finite volume implementation
+
 
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */
     return epsilon * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature / ablate::utilities::Constants::pi;
