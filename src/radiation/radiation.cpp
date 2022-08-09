@@ -12,7 +12,12 @@
 ablate::radiation::Radiation::Radiation(std::string solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
                                         std::shared_ptr<parameters::Parameters> options, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
                                         std::shared_ptr<ablate::monitors::logs::Log> log)
-    : solverId(std::move(solverId)), region((std::shared_ptr<domain::Region> &&) std::move(region)), options(std::move(options)), radiationModel(std::move(radiationModelIn)), fieldBoundary(std::move(fieldBoundary)), log(std::move(log)) {
+    : solverId(std::move(solverId)),
+      region((std::shared_ptr<domain::Region> &&) std::move(region)),
+      options(std::move(options)),
+      radiationModel(std::move(radiationModelIn)),
+      fieldBoundary(std::move(fieldBoundary)),
+      log(std::move(log)) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
@@ -143,12 +148,14 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
+        PetscReal centroid[3];
+        //        if (surface) {
+        //            DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom) >> checkError;
+        //        } else {
+        //            DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
+        //        }
+        DMPlexComputeCellGeometryFVM(subDomain->GetDM(), c, NULL, centroid, NULL) >> checkError;
 
-        if (surface) {
-            DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom) >> checkError;
-        } else {
-            DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-        }
         // TODO: Is there a check for whether the current cell is a face or cell?
 
         /** for every angle theta
@@ -157,9 +164,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
-                virtualcoord[ipart].x = (surface) ? faceGeom->centroid[0] : cellGeom->centroid[0];
-                virtualcoord[ipart].y = (surface) ? faceGeom->centroid[1] : cellGeom->centroid[1];
-                virtualcoord[ipart].z = (surface) ? faceGeom->centroid[2] : cellGeom->centroid[2];
+                virtualcoord[ipart].x = centroid[0];
+                virtualcoord[ipart].y = centroid[1];
+                virtualcoord[ipart].z = centroid[2];
                 virtualcoord[ipart].current = iCell;  //!< Set this to a null value so that it can't get confused about where it starts.
                                                       // TODO: Is there a check for whether the current cell is a face or cell?
 
@@ -675,8 +682,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     }
 }
 
-
-
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */
     return epsilon * ablate::utilities::Constants::sbc * temperature * temperature * temperature * temperature / ablate::utilities::Constants::pi;
 }
@@ -694,10 +699,3 @@ void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoor
             break;
     }
 }
-
-#include "registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
-         ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "boundary of the radiation region"),
-         ARG(int, "rays", "number of rays used by the solver"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
-         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
-         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
