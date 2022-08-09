@@ -12,9 +12,7 @@
 
 namespace ablate::radiation {
 
-class Radiation : public solver::CellSolver,
-                  public solver::RHSFunction,
-                  public utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
+class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver provides cell based functionality, right hand side function compatibility with
                                                            //!< finite element/ volume, loggable allows for the timing and tracking of events
    public:
     /**
@@ -24,37 +22,10 @@ class Radiation : public solver::CellSolver,
      * @param rayNumber
      * @param options other options
      */
-    Radiation(std::string solverId, std::shared_ptr<domain::Region> region, PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
-              std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    Radiation(std::string solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
+              std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
-    ~Radiation() override;
-
-    /** Returns the black body intensity for a given temperature and emissivity*/
-    static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
-
-    /** SubDomain Register and Setup **/
-    void Setup() override;
-    void Initialize() override;
-
-    /**
-     * Function passed into PETSc to compute the FV RHS
-     * @param dm
-     * @param time
-     * @param locXVec
-     * @param globFVec
-     *
-     * @param ctx
-     * @return
-     */
-    PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
-
-   protected:
-    DM dmcell;
-    DM radsolve;   //!< DM associated with the radiation particles
-    DM radsearch;  //!< DM which the search particles occupy
-
-   private:
-    /// Structs to hold information
+    ~Radiation();
 
     /** Carriers are attached to the solve particles and bring ray information from the local segments to the origin cells
      * They are transported directly from the segment to the origin. They carry only the values that the Segment computes and not the spatial information necessary to  */
@@ -74,6 +45,50 @@ class Radiation : public solver::CellSolver,
         PetscReal intensity = 0;                 //!<  Value that will be contributed to by every ray.
         std::map<std::string, Carrier> handler;  //!< Stores local carrier information
     };
+
+    std::map<PetscInt, Origin> origin;
+
+    /** Returns the black body intensity for a given temperature and emissivity*/
+    static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
+
+    /** SubDomain Register and Setup **/
+    void Setup();
+    void Initialize(solver::Range cellRange);
+    /** Get the subdomain */
+    void Register(std::shared_ptr<ablate::domain::SubDomain>);
+    inline PetscReal GetIntensity(PetscInt iCell) { //!< Function to give other classes access to the intensity
+        return origin[iCell].intensity;
+    }
+
+    // use the subDomain to setup the problem
+    std::shared_ptr<ablate::domain::SubDomain> subDomain;
+
+    //    /**
+    //     * Function passed into PETSc to compute the FV RHS
+    //     * @param dm
+    //     * @param time
+    //     * @param locXVec
+    //     * @param globFVec
+    //     *
+    //     * @param ctx
+    //     * @return
+    //     */
+    //    PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec);
+    // TODO: Move the compute right hand side function to the finite volume implementation
+
+   protected:
+    DM dmcell;
+    DM radsolve;   //!< DM associated with the radiation particles
+    DM radsearch;  //!< DM which the search particles occupy
+
+    //! Vector used to describe the entire cell geom of the dm.  This is constant and does not depend upon region.
+    Vec cellGeomVec = nullptr;
+
+    //! Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    Vec faceGeomVec = nullptr;
+
+   private:
+    /// Structs to hold information
 
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
     struct Segment {
@@ -105,7 +120,11 @@ class Radiation : public solver::CellSolver,
     };
 
     /// Class Methods
+    /**
+     * @param cellRange The range of cells for which rays are initialized
+     */
     void RayInit();
+    const std::map<PetscInt, Origin>& Solve(Vec solVec, Vec rhs);
 
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
@@ -124,7 +143,6 @@ class Radiation : public solver::CellSolver,
     }
 
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
-    const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
 
     PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
 
@@ -132,14 +150,19 @@ class Radiation : public solver::CellSolver,
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
     PetscInt nTheta;   //!< The number of angles to solve with, given by user input
     PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
+    solver::Range cellRange;
 
     /**
      * Store a log used to output the required information
      */
-    const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
 
     std::map<std::string, Segment> rays;
-    std::map<PetscInt, Origin> origin;
+    std::basic_string<char>&& solverId;
+    std::shared_ptr<domain::Region>&& region;
+    std::shared_ptr<parameters::Parameters>&& options;
+    const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
+    const std::shared_ptr<domain::Region> fieldBoundary;  //!< Hold the region used to define the boundary faces
+    const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;
 };
 
 }  // namespace ablate::radiation
