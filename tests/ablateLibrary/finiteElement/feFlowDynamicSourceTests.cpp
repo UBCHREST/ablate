@@ -4,7 +4,7 @@ static char help[] =
 #include <petsc.h>
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
-#include "domain/modifiers/setFromOptions.hpp"
+#include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlowSolver.hpp"
 #include "finiteElement/lowMachFlowFields.hpp"
@@ -13,6 +13,7 @@ static char help[] =
 #include "mathFunctions/simpleFormula.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "solver/directSolverTsInterface.hpp"
+#include "utilities/petscUtilities.hpp"
 
 // We can define them because they are the same between fe flows
 #define VTEST 0
@@ -120,7 +121,8 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             auto testingParam = GetParam();
 
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, help) >> testErrorChecker;
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize(help);
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
@@ -129,12 +131,8 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>(ablate::domain::Region::ENTIREDOMAIN, true)};
 
             // Create a simple test mesh
-            auto mesh = std::make_shared<domain::BoxMesh>("mesh",
-                                                          fieldDescriptors,
-                                                          std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::SetFromOptions>()},
-                                                          std::vector<int>{2, 2},
-                                                          std::vector<double>{0.0, 0.0},
-                                                          std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<domain::BoxMesh>(
+                "mesh", fieldDescriptors, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{}, std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
 
             TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
@@ -204,7 +202,8 @@ TEST_P(FEFlowDynamicSourceMMSTestFixture, ShouldConvergeToExactSolution) {
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 }
 

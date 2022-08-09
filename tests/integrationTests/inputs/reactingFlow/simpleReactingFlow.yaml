@@ -1,6 +1,6 @@
 ---
 environment:
-  title: simpleReactingFlow
+  title: _simpleReactingFlow
   tagDirectory: false
 arguments: 
   dm_plex_separate_marker: ""
@@ -22,15 +22,12 @@ timestepper:
     boundary: [ "NONE", "NONE" ]
     simplex: false
     modifiers:
-      - !ablate::domain::modifiers::SetFromOptions
-          dm_refine: 0
       - !ablate::domain::modifiers::GhostBoundaryCells
       - !ablate::domain::modifiers::DistributeWithGhostCells
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: &eos !ablate::eos::TChem
-          mechFile: ../mechanisms/grimech30.mech.dat
-          thermoFile: ../mechanisms/grimech30.thermo.dat
+          mechFile: ../mechanisms/gri30.yaml
   initialization:
     - &eulerField
       fieldName: "euler" #for euler all components are in a single field
@@ -44,8 +41,7 @@ timestepper:
       field: 0,0,0,0.2,0,0,0,0,0,0,0,0,0,0.2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.6,0,0,0,0,0
 solver: !ablate::finiteVolume::ReactingCompressibleFlowSolver
   id: vortexFlowField
-  parameters:
-    cfl: 0.4
+  parameters: {}
   transport:
     k: 0.0
     mu: 0.0

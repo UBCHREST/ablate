@@ -28,10 +28,10 @@ class BoxMeshBoundaryCells : public Domain {
    public:
     BoxMeshBoundaryCells(const std::string& name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> preModifiers,
                          std::vector<std::shared_ptr<modifiers::Modifier>> postModifiers, std::vector<int> faces, const std::vector<double>& lower, const std::vector<double>& upper,
-                         bool simplex = true);
+                         bool simplex = true, std::shared_ptr<parameters::Parameters> options = {});
 
-    ~BoxMeshBoundaryCells();
+    ~BoxMeshBoundaryCells() override;
 };
 }  // namespace ablate::domain
 
-#endif  // ABLATELIBRARY_BOXMESH_HPP
+#endif  // ABLATELIBRARY_BOXMESHBOUNDARYCELLS_HPP

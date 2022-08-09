@@ -48,9 +48,6 @@ timestepper:
           petscfv_type: leastsquares
           petsclimiter_type: none
     modifiers:
-      # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 0
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::DistributeWithGhostCells
         # if using a FVM ghost boundary cells must be added
@@ -77,8 +74,8 @@ solver: !ablate::finiteVolume::FiniteVolumeSolver
 
   # all the processes must be specified because FiniteVolumeSolver was specified directly
   processes:
-    # the EulerTransport processes handles bulk advection and diffusion
-    - !ablate::finiteVolume::processes::EulerTransport
+    # the NavierStokesTransport processes handles bulk advection and diffusion
+    - !ablate::finiteVolume::processes::NavierStokesTransport
       parameters:
         cfl: 0.5
       # a flux calculator must be specified to so solver for advection

@@ -35,7 +35,13 @@ INSTANTIATE_TEST_SUITE_P(
         (MpiTestParameter){.testName = "inputs/compressibleFlow/compressibleSublimationPipe.yaml",
                            .nproc = 2,
                            .expectedOutputFile = "outputs/compressibleFlow/compressibleSublimationPipe/compressibleSublimationPipe.txt",
-                           .arguments = ""}),
+                           .arguments = ""},
+        (MpiTestParameter){.testName = "inputs/compressibleFlow/compressibleSublimationPipeWithExtrude.yaml",
+                           .nproc = 2,
+                           .expectedOutputFile = "outputs/compressibleFlow/compressibleSublimationPipeWithExtrude/compressibleSublimationPipeWithExtrude.txt",
+                           .arguments = ""},
+        (MpiTestParameter){
+            .testName = "inputs/compressibleFlow/compressibleFlowCadExample.yaml", .nproc = 1, .expectedOutputFile = "outputs/compressibleFlow/compressibleFlowCadExample.txt", .arguments = ""}),
 
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
@@ -84,6 +90,7 @@ INSTANTIATE_TEST_SUITE_P(ReactingFlow, IntegrationTestsSpecifier,
 INSTANTIATE_TEST_SUITE_P(
     Machinery, IntegrationTestsSpecifier,
     testing::Values((MpiTestParameter){.testName = "inputs/machinery/dmViewFromOptions.yaml", .nproc = 1, .expectedOutputFile = "outputs/machinery/dmViewFromOptions.txt", .arguments = ""},
+                    (MpiTestParameter){.testName = "inputs/machinery/extrudeBoundaryTest.yaml", .nproc = 1, .expectedOutputFile = "outputs/machinery/extrudeBoundaryTest.txt", .arguments = ""},
                     (MpiTestParameter){.testName = "inputs/machinery/subDomainFVM.yaml",
                                        .nproc = 1,
                                        .expectedOutputFile = "outputs/machinery/subDomainFVM/subDomainFVM.txt",
@@ -147,6 +154,15 @@ INSTANTIATE_TEST_SUITE_P(
         .mpiTestParameter = {.testName = "inputs/particles/tracerParticles2DRestart.yaml", .nproc = 1, .expectedOutputFile = "outputs/particles/tracerParticles2DRestart.txt", .arguments = ""},
         .restartOverrides = {{"timestepper::arguments::ts_max_steps", "10"}}}),
     [](const testing::TestParamInfo<IntegrationRestartTestsParameters>& info) { return info.param.mpiTestParameter.getTestName() + "_" + std::to_string(info.param.mpiTestParameter.nproc); });
+
+INSTANTIATE_TEST_SUITE_P(Monitors, IntegrationTestsSpecifier,
+                         testing::Values((MpiTestParameter){.testName = "inputs/monitors/rocketMonitor.yaml", .nproc = 1, .expectedOutputFile = "outputs/monitors/rocketMonitor.txt", .arguments = ""},
+                                         (MpiTestParameter){.testName = "inputs/monitors/turbFlowStatsMonitor.yaml",
+                                                            .nproc = 1,
+                                                            .arguments = "",
+                                                            .expectedFiles{{"outputs/monitors/turbFlowStatsMonitor/TurbFlowStats.xmf", "TurbFlowStats.xmf"},
+                                                                           {"outputs/monitors/turbFlowStatsMonitor/domain.xmf", "domain.xmf"}}}),
+                         [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(Radiation, IntegrationTestsSpecifier,
                          testing::Values(

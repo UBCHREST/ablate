@@ -2,13 +2,14 @@
 #include "monitors/monitor.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
-#include "utilities/petscOptions.hpp"
 #include "version.h"
 
 void ablate::Builder::Run(std::shared_ptr<cppParser::Factory> parser) {
     // get the global arguments
-    auto globalArguments = parser->Get(cppParser::ArgumentIdentifier<std::map<std::string, std::string>>{.inputName = "arguments"});
-    utilities::PetscOptionsUtils::Set(globalArguments);
+    auto globalArguments = parser->GetByName<ablate::parameters::Parameters>("arguments");
+    if (globalArguments) {
+        globalArguments->Fill(nullptr);
+    }
 
     // create a time stepper
     auto timeStepper = parser->Get(cppParser::ArgumentIdentifier<solver::TimeStepper>{.inputName = "timestepper"});

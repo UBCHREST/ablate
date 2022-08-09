@@ -1,5 +1,12 @@
-# Use the petsc-build as the base
+# Setup required args
 ARG PETSC_BASE_IMAGE=ghcr.io/ubchrest/petsc-docker/petsc-build-gcc:latest
+ARG TENSORFLOW_IMAGE=ghcr.io/ubchrest/tensorflow-docker/tensorflow-build:latest
+
+# Setup pull from tensorflow as workaround for --from not seeing argument
+FROM $TENSORFLOW_IMAGE as tensor_flow_image
+
+# Use the petsc-build as the base
+ARG PETSC_BASE_IMAGE
 FROM $PETSC_BASE_IMAGE
 
 # Install any additional dependencies
@@ -11,6 +18,6 @@ ENV PETSC_ARCH=arch-ablate-debug
 ENV PKG_CONFIG_PATH="${PETSC_DIR}/${PETSC_ARCH}/lib/pkgconfig:$PKG_CONFIG_PATH"
 ENV PATH="${PETSC_DIR}/${PETSC_ARCH}/bin:$PATH"
 
-# Copy over the tensorflow build
-COPY --from=ghcr.io/ubchrest/tensorflow-docker/tensorflow-build:latest /tensorflow /tensorflow
+# copy the tensorflow image
+COPY --from=tensor_flow_image /tensorflow /tensorflow
 ENV TENSORFLOW_DIR=/tensorflow

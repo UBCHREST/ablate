@@ -27,6 +27,15 @@ class Region {
 
     inline const std::string ToString() const { return name + ":" + std::to_string(value); };
 
+    /**
+     * create and returns a label/region value
+     * @param region
+     * @param dm
+     * @param regionLabel
+     * @param regionValue
+     */
+    void CreateLabel(DM dm, DMLabel& regionLabel, PetscInt& regionValue);
+
     static void GetLabel(const std::shared_ptr<Region>& region, DM dm, DMLabel& regionLabel, PetscInt& regionValue);
 
     static bool InRegion(const std::shared_ptr<Region>& region, DM dm, PetscInt point);

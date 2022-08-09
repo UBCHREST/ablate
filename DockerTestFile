@@ -1,6 +1,10 @@
 ARG ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchrest/ablate/ablate-dependencies-gcc:latest
 FROM $ABLATE_DEPENDENCY_IMAGE
 
+# Install testing dependencies
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get -y install doxygen python3-inflection
+
 # Setup the petsc env for tests
 ARG PETSC_BUILD_ARCH=arch-ablate-opt
 ENV PETSC_ARCH=$PETSC_BUILD_ARCH
@@ -18,6 +22,9 @@ WORKDIR /build
 # Configure & build
 run cmake -DCMAKE_BUILD_TYPE=Release -S /source/ -B .
 run make -j $(nproc)
+
+# Build the custom documentation components
+run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/build/ablate
 
 # Specify Entry Point for tests
 ENV CTEST_OUTPUT_ON_FAILURE=ON

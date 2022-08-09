@@ -2,7 +2,7 @@
 #include <memory>
 #include "MpiTestFixture.hpp"
 #include "domain/boxMesh.hpp"
-#include "domain/modifiers/setFromOptions.hpp"
+#include "environment/runEnvironment.hpp"
 #include "finiteElement/boundaryConditions/essential.hpp"
 #include "finiteElement/incompressibleFlow.h"
 #include "finiteElement/incompressibleFlowSolver.hpp"
@@ -14,6 +14,7 @@
 #include "particles/initializers/boxInitializer.hpp"
 #include "particles/tracer.hpp"
 #include "solver/directSolverTsInterface.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 using namespace ablate::finiteElement;
@@ -291,19 +292,16 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             omega = testingParam.omega;
 
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // setup the required fields for the flow
             std::vector<std::shared_ptr<domain::FieldDescriptor>> fieldDescriptors = {std::make_shared<ablate::finiteElement::LowMachFlowFields>()};
 
             // setup the ts
             TSCreate(PETSC_COMM_WORLD, &ts) >> testErrorChecker;
-            auto mesh = std::make_shared<ablate::domain::BoxMesh>("mesh",
-                                                                  fieldDescriptors,
-                                                                  std::vector<std::shared_ptr<domain::modifiers::Modifier>>{std::make_shared<domain::modifiers::SetFromOptions>()},
-                                                                  std::vector<int>{2, 2},
-                                                                  std::vector<double>{0.0, 0.0},
-                                                                  std::vector<double>{1.0, 1.0});
+            auto mesh = std::make_shared<ablate::domain::BoxMesh>(
+                "mesh", fieldDescriptors, std::vector<std::shared_ptr<domain::modifiers::Modifier>>{}, std::vector<int>{2, 2}, std::vector<double>{0.0, 0.0}, std::vector<double>{1.0, 1.0});
             TSSetDM(ts, mesh->GetDM()) >> testErrorChecker;
             TSSetExactFinalTime(ts, TS_EXACTFINALTIME_MATCHSTEP) >> testErrorChecker;
 
@@ -389,7 +387,8 @@ TEST_P(TracerParticleMMSTestFixture, ParticleTracerFlowMMSTests) {
             // Cleanup
             TSDestroy(&ts) >> testErrorChecker;
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 }
 

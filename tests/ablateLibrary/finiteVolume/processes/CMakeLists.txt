@@ -1,6 +1,6 @@
 target_sources(libraryTests
         PRIVATE
-        eulerTransportTests.cpp
+        navierStokesTransportTests.cpp
         twoPhaseEulerAdvectionTests.cpp
         buoyancyTests.cpp
         pressureGradientScalingTests.cpp

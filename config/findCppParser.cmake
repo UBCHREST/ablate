@@ -1,5 +1,4 @@
 # Get the CPP dependency
-
 IF(TARGET CHREST::cppParserLibrary)
     message(STATUS "Found CHREST::cppParserLibrary target")
 ELSE()

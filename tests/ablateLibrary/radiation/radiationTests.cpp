@@ -10,7 +10,7 @@
 #include "convergenceTester.hpp"
 #include "domain/boxMesh.hpp"
 #include "domain/modifiers/ghostBoundaryCells.hpp"
-#include "domain/modifiers/setFromOptions.hpp"
+#include "environment/runEnvironment.hpp"
 #include "eos/perfectGas.hpp"
 #include "eos/radiationProperties/constant.hpp"
 #include "eos/radiationProperties/radiationProperties.hpp"
@@ -19,6 +19,7 @@
 #include "monitors/timeStepMonitor.hpp"
 #include "parameters/mapParameters.hpp"
 #include "radiation/radiation.hpp"
+#include "utilities/petscUtilities.hpp"
 
 struct RadiationTestParameters {
     testingResources::MpiTestParameter mpiTestParameter;
@@ -165,7 +166,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
     StartWithMPI
 
         // initialize petsc and mpi
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        ablate::environment::RunEnvironment::Initialize(argc, argv);
+        ablate::utilities::PetscUtilities::Initialize();
 
         // keep track of history
         testingResources::ConvergenceTester l2History("l2");
@@ -179,13 +181,13 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         auto domain = std::make_shared<ablate::domain::BoxMesh>("simpleMesh",
                                                                 fieldDescriptors,
-                                                                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{std::make_shared<ablate::domain::modifiers::SetFromOptions>(
-                                                                    ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}))},
+                                                                std::vector<std::shared_ptr<ablate::domain::modifiers::Modifier>>{},
                                                                 GetParam().meshFaces,
                                                                 GetParam().meshStart,
                                                                 GetParam().meshEnd,
                                                                 std::vector<std::string>{},
-                                                                false);
+                                                                false,
+                                                                ablate::parameters::MapParameters::Create({{"dm_plex_hash_location", "true"}}));
 
         IS allPointIS;
         DMGetStratumIS(domain->GetDM(), "dim", 2, &allPointIS) >> testErrorChecker;
@@ -206,7 +208,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // Create an instance of radiation
         auto radiationModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
-        auto radiation = std::make_shared<ablate::radiation::Radiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, 10, nullptr, radiationModel);
+        auto radiation = std::make_shared<ablate::radiation::Radiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, 20, nullptr, radiationModel);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
@@ -281,7 +283,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         }
 
         DMRestoreLocalVector(domain->GetDM(), &rhs);
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 }
 
@@ -299,5 +302,12 @@ INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
                                                                    .meshEnd = {0.25, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
                                                                    .expectedResult = ablate::mathFunctions::Create("x + y"),
-                                                                   .absorptivity = 1.1}),
+                                                                   .absorptivity = 1.1},
+                                         (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 2 proc.", .nproc = 2},
+                                                                   .meshFaces = {3, 15},
+                                                                   .meshStart = {-0.25, -0.0105},
+                                                                   .meshEnd = {0.25, 0.0105},
+                                                                   .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
+                                                                   .absorptivity = 1.0}),
                          [](const testing::TestParamInfo<RadiationTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });

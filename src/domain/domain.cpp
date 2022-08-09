@@ -1,14 +1,27 @@
 #include "domain.hpp"
 #include <typeinfo>
 #include <utilities/mpiError.hpp>
+#include <utility>
 #include "monitors/logs/stdOut.hpp"
 #include "solver/solver.hpp"
 #include "subDomain.hpp"
 #include "utilities/demangler.hpp"
 #include "utilities/petscError.hpp"
+#include "utilities/petscOptions.hpp"
 
-ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn)
-    : dm(dmIn), name(name), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solGlobalField(nullptr), modifiers(std::move(modifiersIn)) {
+ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn,
+                               const std::shared_ptr<parameters::Parameters>& options)
+    : dm(dmIn), name(std::move(name)), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solGlobalField(nullptr), modifiers(std::move(modifiersIn)) {
+    // if provided, convert options to a petscOptions
+    if (options) {
+        PetscOptionsCreate(&petscOptions) >> checkError;
+        options->Fill(petscOptions);
+    }
+
+    // Apply petsc options to the domain
+    PetscObjectSetOptions((PetscObject)dm, petscOptions) >> checkError;
+    DMSetFromOptions(dm) >> checkError;
+
     // update the dm with the modifiers
     for (auto& modifier : modifiers) {
         modifier->Modify(dm);
@@ -50,6 +63,9 @@ ablate::domain::Domain::~Domain() {
     if (solGlobalField) {
         VecDestroy(&solGlobalField) >> checkError;
     }
+    if (petscOptions) {
+        ablate::utilities::PetscOptionsDestroyAndCheck("ablate::domain::Domain", &petscOptions);
+    }
 }
 
 void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescription& fieldDescription) {
@@ -77,7 +93,7 @@ void ablate::domain::Domain::RegisterField(const ablate::domain::FieldDescriptio
     PetscObjectDestroy(&petscField);
 
     // Record the field
-    fields.push_back(Field::FromFieldDescription(fieldDescription, fields.size()));
+    fields.push_back(Field::FromFieldDescription(fieldDescription, (PetscInt)fields.size()));
 }
 
 PetscInt ablate::domain::Domain::GetDimensions() const noexcept {
@@ -88,7 +104,7 @@ PetscInt ablate::domain::Domain::GetDimensions() const noexcept {
 
 void ablate::domain::Domain::CreateStructures() {
     // Setup the solve with the ts
-    DMPlexCreateClosureIndex(dm, NULL) >> checkError;
+    DMPlexCreateClosureIndex(dm, nullptr) >> checkError;
     DMCreateGlobalVector(dm, &(solGlobalField)) >> checkError;
     PetscObjectSetName((PetscObject)solGlobalField, "solution") >> checkError;
 
@@ -104,7 +120,7 @@ void ablate::domain::Domain::CreateStructures() {
     }
 }
 
-std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(std::shared_ptr<domain::Region> region) {
+std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(const std::shared_ptr<domain::Region>& region) {
     // Check to see if there is a label for this region
     if (region) {
         // March over each ds region, and return the subdomain if this region is inside of any subDomain region
@@ -124,7 +140,7 @@ std::shared_ptr<ablate::domain::SubDomain> ablate::domain::Domain::GetSubDomain(
     }
 }
 
-void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<solver::Solver>> solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+void ablate::domain::Domain::InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
                                                   const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& exactSolutions) {
     // determine the number of fields
     for (auto& solver : solvers) {
@@ -141,8 +157,18 @@ void ablate::domain::Domain::InitializeSubDomains(std::vector<std::shared_ptr<so
         subDomain->CreateSubDomainStructures();
     }
 
+    // set all values to nan to allow for a output check
+    if (!initializations.empty()) {
+        VecSet(solGlobalField, NAN) >> checkError;
+    }
+
     // Set the initial conditions for each field specified
     ProjectFieldFunctions(initializations, solGlobalField);
+
+    // do a sanity check to make sure that all points were initialized
+    if (!initializations.empty() && CheckSolution()) {
+        throw std::runtime_error("Field values at points in the domain were not initialized.");
+    }
 
     // Initialize each solver
     for (auto& solver : solvers) {
@@ -213,4 +239,12 @@ void ablate::domain::Domain::ProjectFieldFunctions(const std::vector<std::shared
     // push the results back to the global vector
     DMLocalToGlobal(dm, locVec, INSERT_VALUES, globVec) >> checkError;
     DMRestoreLocalVector(dm, &locVec) >> checkError;
+}
+
+bool ablate::domain::Domain::CheckSolution() {
+    bool error = false;
+    for (auto& subdomain : subDomains) {
+        error = subdomain->CheckSolution() | error;
+    }
+    return error;
 }

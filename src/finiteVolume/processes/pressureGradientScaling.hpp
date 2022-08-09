@@ -78,7 +78,7 @@ class PressureGradientScaling : public FlowProcess, public io::Serializable {
      * Function to setup timestepping with the PressureGradientScaling.  This can be called multiple times and will only be registered once
      * @return
      */
-    void Initialize(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver& fv) override;
 
     // Alpha accessor
     inline const PetscReal& GetAlpha() { return alpha; }

@@ -29,9 +29,6 @@ timestepper:
 
     # specify any modifications to be performed to the mesh/domain
     modifiers:
-      # petsc options passed directly into petsc for the dm creation
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 0
       # if using mpi, this modifier distributes cells
       - !ablate::domain::modifiers::GhostBoundaryCells
       # if using a FVM ghost boundary cells must be added

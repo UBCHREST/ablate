@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Residual Terms
-parent: Incompressible Flow Formulation
-grand_parent: Flow Formulations
+parent: Incompressible Flow
+grand_parent: Formulations
 nav_order: 3
 ---
 Provides the term to evaluate and multiply by the test function/test gradient function at each quadrature location.  The density is assumed to be unity for the implementation (i.e. equal to the reference density).  The Residual and Jacobians are in terms of

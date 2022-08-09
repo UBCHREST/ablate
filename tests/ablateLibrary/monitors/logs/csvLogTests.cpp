@@ -4,10 +4,11 @@
 #include <fstream>
 #include <memory>
 #include "MpiTestFixture.hpp"
-#include "PetscTestErrorChecker.hpp"
+#include "environment/runEnvironment.hpp"
 #include "gtest/gtest.h"
 #include "monitors/logs/csvLog.hpp"
 #include "testRunEnvironment.hpp"
+#include "utilities/petscUtilities.hpp"
 
 using namespace ablate;
 
@@ -18,7 +19,8 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFile) {
         {
             // arrange
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Create the fileLog
             auto logPath = MakeTemporaryPath("logFile.csv", PETSC_COMM_WORLD);
@@ -40,7 +42,8 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFile) {
             otherData = {5.5, 6.6, 7.7};
             log->Print("otherData", otherData);
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 
     // Load the file
@@ -56,7 +59,8 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFileInOutputDirectory) {
         {
             // arrange
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
@@ -81,7 +85,8 @@ TEST_P(CsvLogTestFixture, ShouldPrintToFileInOutputDirectory) {
             otherData = {5.5, 6.6, 7.7};
             log->Print("otherData", otherData);
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 
     // Load the file
@@ -98,7 +103,8 @@ TEST_P(CsvLogTestFixture, ShouldAppendToFileInOutputDirectory) {
         {
             // arrange
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            ablate::environment::RunEnvironment::Initialize(argc, argv);
+            ablate::utilities::PetscUtilities::Initialize();
 
             // Set the global environment
             auto tempDir = MakeTemporaryPath("nameOfTestDir", PETSC_COMM_WORLD);
@@ -145,7 +151,8 @@ TEST_P(CsvLogTestFixture, ShouldAppendToFileInOutputDirectory) {
                 log->Print("otherData", otherData);
             }
         }
-        exit(PetscFinalize());
+        ablate::environment::RunEnvironment::Finalize();
+        exit(0);
     EndWithMPI
 
     // Load the file

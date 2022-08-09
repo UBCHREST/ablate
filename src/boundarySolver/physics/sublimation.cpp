@@ -40,8 +40,10 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
     }
 
     // extract the effectiveConductivity and viscosity model
-    effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, bSolver.GetSubDomain().GetFields());
-    viscosityFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, bSolver.GetSubDomain().GetFields());
+    if (transportModel) {
+        effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, bSolver.GetSubDomain().GetFields());
+        viscosityFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, bSolver.GetSubDomain().GetFields());
+    }
 
     // If there is a additionalHeatFlux function, we need to update time
     if (additionalHeatFlux || massFractions) {
@@ -58,7 +60,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         // set decode state functions
         computeTemperatureFunction = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Temperature, bSolver.GetSubDomain().GetFields());
         // add in aux update variables
-        bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::EulerTransport::UpdateAuxTemperatureField,
+        bSolver.RegisterAuxFieldUpdate(ablate::finiteVolume::processes::NavierStokesTransport::UpdateAuxTemperatureField,
                                        &computeTemperatureFunction,
                                        std::vector<std::string>{finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
                                        {});
@@ -98,8 +100,10 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[TEMPERATURE_LOC]], stencilSize, stencilTemperature.data(), stencilWeights, dTdn);
 
     // compute the effectiveConductivity
-    PetscReal effectiveConductivity;
-    PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
+    PetscReal effectiveConductivity = 0.0;
+    if (sublimation->effectiveConductivity.function) {
+        PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
+    }
 
     // compute the heat flux
     PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity;
@@ -144,12 +148,14 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     }
 
     // compute the effectiveConductivity
-    PetscReal viscosity;
-    PetscCall(sublimation->viscosityFunction.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &viscosity, sublimation->viscosityFunction.context.get()));
+    PetscReal viscosity = 0.0;
+    if (sublimation->viscosityFunction.function) {
+        PetscCall(sublimation->viscosityFunction.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &viscosity, sublimation->viscosityFunction.context.get()));
+    }
 
     // Compute the stress tensor tau
     PetscReal tau[9];  // Maximum size without symmetry
-    PetscCall(ablate::finiteVolume::processes::EulerTransport::CompressibleFlowComputeStressTensor(dim, viscosity, gradBoundaryVelocity, tau));
+    PetscCall(ablate::finiteVolume::processes::NavierStokesTransport::CompressibleFlowComputeStressTensor(dim, viscosity, gradBoundaryVelocity, tau));
 
     // Add the source term, kg/s for rho
     source[sOff[EULER_LOC] + fp::RHO] = massFlux * area;
@@ -279,7 +285,7 @@ void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physics::Sublimation, "Adds in the euler/yi sources for a sublimating material.  Should be used with a LODI boundary.",
          ARG(double, "latentHeatOfFusion", "the latent heat of fusion [J/kg]"),
-         ARG(ablate::eos::transport::TransportModel, "transportModel", "the effective conductivity model to compute heat flux to the surface [W/(m⋅K)]"),
+         OPT(ablate::eos::transport::TransportModel, "transportModel", "the effective conductivity model to compute heat flux to the surface [W/(m⋅K)]"),
          ARG(ablate::eos::EOS, "eos", "the eos used to compute temperature on the boundary"),
          OPT(ablate::mathFunctions::FieldFunction, "massFractions", "the species to deposit the off gas mass to (required if solving species)"),
          OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"),

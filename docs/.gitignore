@@ -4,6 +4,9 @@ _site
 .bundle
 vendor
 install
-sourceDocs
+source
 /content/simulations/components/
 /content/simulations/examples/
+_componentListSource.md
+doxyfile.tmp.config
+_includes/generated
