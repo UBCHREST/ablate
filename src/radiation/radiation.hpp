@@ -110,6 +110,9 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal hhere;
     };
 
+    /// Class Methods
+    static PetscReal FaceIntersect(Virtualcoord, PetscFVFaceGeom*);  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
+
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
      * This function must be run on every updated particle before swarm migrate is used */
