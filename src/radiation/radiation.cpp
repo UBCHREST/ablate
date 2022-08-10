@@ -61,7 +61,7 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     if (log) PetscPrintf(subDomain->GetComm(), "Starting Initialize\n");
 
     PetscReal minCellRadius;
-    DM cellDM;  //, faceDM;
+    DM cellDM;
     DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;
     VecGetDM(cellGeomVec, &cellDM);
     DMPlexGetGeometryFVM(cellDM, nullptr, nullptr, &minCellRadius) >> checkError;
@@ -110,7 +110,7 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     DMSwarmSetLocalSizes(radsolve, 0, 0) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Set the spatial step size to the minimum cell radius */
-    PetscReal hstep = minCellRadius / 5;
+    PetscReal hstep = minCellRadius / 3;
 
     /** Declare some information associated with the field declarations */
     PetscReal* coord;                    //!< Pointer to the coordinate field information
