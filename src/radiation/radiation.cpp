@@ -335,12 +335,8 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
 
     if (log) EndEvent();
 }
-const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiation::Radiation::Solve(Vec solVec, Vec rhs) {
+const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiation::Radiation::Solve(Vec solVec) {
     if (log) StartEvent("Radiation Solve");
-
-    /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
-    const PetscScalar* rhsArray;
-    VecGetArrayRead(rhs, &rhsArray);
 
     /** Get the array of the solution vector. */
     const PetscScalar* solArray;
@@ -350,8 +346,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     const auto auxVec = subDomain->GetAuxVector();
     const PetscScalar* auxArray;
     VecGetArrayRead(auxVec, &auxArray);
-
-    const auto& eulerFieldInfo = subDomain->GetField("euler");
 
     /** Get the temperature field.
      * For ABLATE implementation, get temperature based on this function.
@@ -592,10 +586,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
 
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, temperatureField.id, auxArray, &temperature);
-
-        /** Put the irradiation into the right hand side function */
-        PetscScalar* rhsValues;
-        DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
@@ -605,7 +595,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     }
 
     /** Cleanup*/
-    VecRestoreArrayRead(rhs, &rhsArray);
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
 

@@ -77,7 +77,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     Vec faceGeomVec = nullptr;
 
     /// Class Methods
-    const std::map<PetscInt, Origin>& Solve(Vec solVec, Vec rhs);
+    const std::map<PetscInt, Origin>& Solve(Vec solVec);
 
     /// Structs to hold information
 
