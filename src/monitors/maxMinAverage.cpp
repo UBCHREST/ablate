@@ -27,25 +27,28 @@ PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, Pets
         std::vector<double> max(field.numberComponents, std::numeric_limits<double>::lowest());
         std::vector<double> avg(field.numberComponents, 0.0);
 
-        // Get the local size of the vec
-        PetscInt locSize;
-        ierr = VecGetLocalSize(vec, &locSize);
-        CHKERRQ(ierr);
-
         const PetscScalar* data;
         ierr = VecGetArrayRead(vec, &data);
         CHKERRQ(ierr);
 
-        // Determine the number of data points
-        PetscInt pts = locSize / field.numberComponents;
+        // Get the point range for this field
+        PetscInt pStart, pEnd;
+        const PetscInt *points;
+        PetscCall(ISGetPointRange(vecIs, &pStart, &pEnd, &points));
 
         // Compute max/min/avg values
-        for (PetscInt p = 0; p < pts; p++) {
-            for (PetscInt d = 0; d < field.numberComponents; d++) {
-                const double value = data[p * field.numberComponents + d];
-                min[d] = PetscMin(min[d], PetscReal(value));
-                max[d] = PetscMax(max[d], PetscReal(value));
-                avg[d] += PetscReal(value);
+        for (PetscInt p = pStart; p < pEnd; p++) {
+            PetscInt point = points? points[p]: p;
+
+            const PetscScalar* localData;
+            PetscCall(DMPlexPointGlobalRead(subDm, point, data, &localData));
+
+            if(localData) {
+                for (PetscInt d = 0; d < field.numberComponents; d++) {
+                    min[d] = PetscMin(min[d], PetscReal(localData[d]));
+                    max[d] = PetscMax(max[d], PetscReal(localData[d]));
+                    avg[d] += PetscReal(localData[d]);
+                }
             }
         }
 

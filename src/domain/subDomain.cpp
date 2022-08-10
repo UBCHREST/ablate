@@ -525,13 +525,12 @@ PetscErrorCode ablate::domain::SubDomain::GetFieldGlobalVector(const Field& fiel
     auto entireDm = GetFieldDM(field);
     auto entireVec = GetGlobalVec(field);
 
-    PetscErrorCode ierr;
-    ierr = DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm);
-    CHKERRQ(ierr);
+    PetscCall(DMCreateSubDM(entireDm, 1, &field.id, vecIs, subdm));
+    PetscSection globSection;
+    PetscCall(DMGetGlobalSection(*subdm, &globSection));
 
     // Get the sub vector
-    ierr = VecGetSubVector(entireVec, *vecIs, vec);
-    CHKERRQ(ierr);
+    PetscCall(VecGetSubVector(entireVec, *vecIs, vec));
     PetscFunctionReturn(0);
 }
 
