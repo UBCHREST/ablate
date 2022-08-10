@@ -1,9 +1,13 @@
 #include "particleSolver.hpp"
-ablate::particles::ParticleSolver::ParticleSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::vector<ParticleField> fields,
+#include <algorithm>
+#include <numeric>
+#include "utilities/mpiError.hpp"
+
+ablate::particles::ParticleSolver::ParticleSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::vector<FieldDescription> fields,
                                                   std::vector<std::shared_ptr<processes::Process>> processes, std::shared_ptr<initializers::Initializer> initializer,
                                                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution)
     : Solver(solverId, region, options),
-      fields(fields),
+      fieldsDescriptions(fields),
       processes(processes),
       initializer(initializer),
       fieldInitialization(fieldInitialization)
@@ -51,32 +55,53 @@ void ablate::particles::ParticleSolver::Setup() {
 
     // if the exact solution was provided, register the initial particle location in the field
     if (exactSolution) {
-        fields.push_back(ParticleField{.name = ParticleInitialLocation, .components = coordComponents, .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
+        fieldsDescriptions.push_back(FieldDescription{.name = ParticleInitialLocation, .components = coordComponents, .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
     }
 
-    // register each field
-    for (auto &field : fields) {
-        RegisterParticleField(field);
-    }
+    // record the automatic field of coordinates
+    auto coordField = FieldDescription{.name = ParticleCoordinates, .components = coordComponents, .type = domain::FieldLocation::SOL, .dataType = PETSC_REAL};
+    fieldsDescriptions.push_back(coordField);
 
-    // add back in the default fields
-    auto coordField = ParticleField{.name = DMSwarmPICField_coor, .components = coordComponents, .type = domain::FieldLocation::SOL, .dataType = PETSC_REAL};
-    solutionFields.push_back(coordField);
-    solutionFields.push_back(coordField);
-    fields.push_back(ParticleField{.name = DMSwarmField_pid, .type = domain::FieldLocation::AUX, .dataType = PETSC_INT64});
+    // march over each field and record the field description
+    for (auto &fieldsDescription : fieldsDescriptions) {
+        RegisterParticleField(fieldsDescription);
+    }
 
     // if more than one solution field is provided, create a new field to hold them packed together
-    if (solutionFields.size() > 1) {
-        auto packedSolutionComponentSize = 0;
+    if (std::count_if(fields.begin(), fields.end(), [](const Field &field) { return field.type == domain::FieldLocation::SOL; }) > 1) {
+        std::vector<std::string> solutionFieldComponentNames;
 
-        for (const auto &solution : solutionFields) {
-            packedSolutionComponentSize += solution.components.size();
+        // March over each solution field and compute the current offset
+        for (const auto &field : fields) {
+            if (field.type == domain::FieldLocation::SOL) {
+                // Create a global list of names for this field
+                if (field.components.size() == 1) {
+                    solutionFieldComponentNames.push_back(field.name);
+                } else {
+                    solutionFieldComponentNames.insert(solutionFieldComponentNames.end(), field.components.begin(), field.components.end());
+                }
+            }
         }
 
         // Compute the size of the exact solution (each component added up)
-        RegisterParticleField(
-            ParticleField{.name = PackedSolution, .components = std::vector<std::string>(packedSolutionComponentSize, "_"), .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
+        RegisterParticleField(FieldDescription{.name = PackedSolution, .components = solutionFieldComponentNames, .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
+
+        // Update all solution field components with the size of the number of components
+        for (auto &field : fields) {
+            if (field.type == domain::FieldLocation::SOL) {
+                field.dataSize = solutionFieldComponentNames.size();
+            }
+        }
+        for (auto &field : fieldsMap) {
+            if (field.second.type == domain::FieldLocation::SOL) {
+                field.second.dataSize = solutionFieldComponentNames.size();
+            }
+        }
     }
+
+    //    // Add in a reference to prebuilt fields
+    //    fields.push_back(Field{.name = DMSwarmField_pid, .type = domain::FieldLocation::AUX, .dataType = PETSC_INT64});
+    //    fieldsMap.insert({DMSwarmField_pid, Field{.name = DMSwarmField_pid, .type = domain::FieldLocation::AUX, .dataType = PETSC_INT64}});
 }
 
 void ablate::particles::ParticleSolver::Initialize() {
@@ -118,15 +143,48 @@ void ablate::particles::ParticleSolver::Initialize() {
     for (auto &field : fieldInitialization) {
         this->ProjectFunction(field);
     }
+
+    // Set the start time for TSSolve
+    TSSetTime(particleTs, timeInitial) >> checkError;
+
+    // set the particle RHS
+    TSSetRHSFunction(particleTs, NULL, ComputeParticleRHS, this) >> checkError;
+
+    // link the solution with the flowTS
+    RegisterPostStep([this](TS flowTs, ablate::solver::Solver &) { this->MacroStepParticles(flowTs); });
 }
 
-void ablate::particles::ParticleSolver::RegisterParticleField(const ablate::particles::ParticleField &field) {
-    // add the value to the field
-    DMSwarmRegisterPetscDatatypeField(swarmDm, field.name.c_str(), field.components.size(), field.dataType) >> checkError;
+void ablate::particles::ParticleSolver::RegisterParticleField(const FieldDescription &fieldDescription) {
+    // Convert the fieldDescription to a field
+    Field field{//! The unique name of the particle field
+                .name = fieldDescription.name,
 
-    // store the field if it is a solution field
-    if (field.type == domain::FieldLocation::SOL) {
-        solutionFields.push_back(field);
+                //! The name of the components
+                .numberComponents = (PetscInt)fieldDescription.components.size(),
+
+                //! The name of the components
+                .components = fieldDescription.components,
+
+                //! The field type (sol or aux)
+                .type = fieldDescription.type,
+
+                //! The type of field
+                .dataType = fieldDescription.dataType,
+
+                //! The offset in the local array, 0 for aux, computed for sol
+                .offset = std::accumulate(fields.begin(), fields.end(), 0, [&](PetscInt count, const Field &field) { return field.type == domain::FieldLocation::SOL ? field.numberComponents : 0; }),
+
+                //! The size of the component for this data
+                .dataSize = (PetscInt)fieldDescription.components.size()};
+
+    // Store the field
+    fields.push_back(field);
+    fieldsMap.insert({field.name, field});
+
+    // register the field if it is a aux field, sol fields will be added later
+    if (field.type == domain::FieldLocation::AUX) {
+        // add the value to the field
+        DMSwarmRegisterPetscDatatypeField(swarmDm, field.name.c_str(), field.components.size(), field.dataType) >> checkError;
     }
 }
 
@@ -146,7 +204,7 @@ void ablate::particles::ParticleSolver::StoreInitialParticleLocations() {
     DMSwarmRestoreField(swarmDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&coord) >> checkError;
     DMSwarmRestoreField(swarmDm, ParticleInitialLocation, nullptr, nullptr, (void **)&initialLocation) >> checkError;
 }
-PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleError(TS particleTS, Vec u,  Vec errorVec) {
+PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleError(TS particleTS, Vec u, Vec errorVec) {
     PetscFunctionBeginUser;
 
     // get a pointer to this particle class
@@ -179,9 +237,9 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleError(TS partic
     // Calculate the size of solution field
     // TODO: Change this to set individual/multiple fields in the exact solution
     PetscInt solutionFieldSize = 0;
-    for (const auto &field : particles->solutionFields) {
-        solutionFieldSize += field.components.size();
-    }
+    //    for (const auto &field : particles->solutionFields) {
+    //        solutionFieldSize += field.components.size();
+    //    }
 
     // get the initial location array
     const PetscScalar *initialParticleLocationArray;
@@ -239,7 +297,8 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleError(TS partic
 
     PetscFunctionReturn(0);
 }
-void ablate::particles::ParticleSolver::ProjectFunction(const std::shared_ptr<mathFunctions::FieldFunction>& fieldFunction) {
+
+void ablate::particles::ParticleSolver::ProjectFunction(const std::shared_ptr<mathFunctions::FieldFunction> &fieldFunction, PetscReal time) {
     // Get the local number of particles
     PetscInt np;
     DMSwarmGetLocalSize(swarmDm, &np) >> checkError;
@@ -247,17 +306,12 @@ void ablate::particles::ParticleSolver::ProjectFunction(const std::shared_ptr<ma
     // Get the raw access to position and update field
     PetscInt dim;
     PetscReal *positionData;
-    DMSwarmGetField(swarmDm, DMSwarmPICField_coor, &dim, NULL, (void **)&positionData) >> checkError;
+    DMSwarmGetField(swarmDm, DMSwarmPICField_coor, &dim, nullptr, (void **)&positionData) >> checkError;
 
-    // Get the field name
-    const auto& fieldName = fieldFunction->GetName();
-
-    PetscInt fieldComponents;
-    PetscDataType fieldType;
+    // Get the field
     PetscReal *fieldData;
-    DMSwarmGetField(swarmDm, fieldName.c_str(), &fieldComponents, &fieldType, (void **)&fieldData) >> checkError;
-
-    if (fieldType != PETSC_REAL) {
+    const auto &field = GetField(fieldFunction->GetName(), &fieldData);
+    if (field.dataType != PETSC_REAL) {
         throw std::invalid_argument("ProjectFunction only supports PETSC_REAL");
     }
 
@@ -271,12 +325,167 @@ void ablate::particles::ParticleSolver::ProjectFunction(const std::shared_ptr<ma
         const PetscInt positionOffset = p * dim;
 
         // Compute the field offset
-        const PetscInt fieldOffset = p * fieldComponents;
+        const PetscInt fieldOffset = field[p];
 
         // Call the update function
-        functionPointer(dim, 0.0, positionData + positionOffset, fieldComponents, fieldData + fieldOffset, functionContext) >> checkError;
+        functionPointer(dim, time, positionData + positionOffset, field.numberComponents, fieldData + fieldOffset, functionContext) >> checkError;
     }
-    DMSwarmRestoreField(swarmDm, DMSwarmPICField_coor, NULL, NULL, (void **)&positionData);
-    DMSwarmRestoreField(swarmDm, fieldName.c_str(), NULL, NULL, (void **)&fieldData);
+    DMSwarmRestoreField(swarmDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&positionData);
+    RestoreField(field, &fieldData);
+}
+void ablate::particles::ParticleSolver::SwarmMigrate() {
+    // current number of local/global particles
+    PetscInt numberLocal;
+    PetscInt numberGlobal;
 
+    // Get the current size
+    DMSwarmGetLocalSize(swarmDm, &numberLocal) >> checkError;
+    DMSwarmGetSize(swarmDm, &numberGlobal) >> checkError;
+
+    // Migrate any particles that have moved
+    DMSwarmMigrate(swarmDm, PETSC_TRUE) >> checkError;
+
+    // get the new sizes
+    PetscInt newNumberLocal;
+    PetscInt newNumberGlobal;
+
+    // Get the updated size
+    DMSwarmGetLocalSize(swarmDm, &newNumberLocal) >> checkError;
+    DMSwarmGetSize(swarmDm, &newNumberGlobal) >> checkError;
+
+    // Check to see if any of the ranks changed size after migration
+    PetscMPIInt dmChangedLocal = newNumberGlobal != numberGlobal || newNumberLocal != numberLocal;
+    MPI_Comm comm;
+    PetscObjectGetComm((PetscObject)particleTs, &comm) >> checkError;
+    PetscMPIInt dmChangedAll = PETSC_FALSE;
+    MPI_Allreduce(&dmChangedLocal, &dmChangedAll, 1, MPIU_INT, MPIU_MAX, comm) >> checkMpiError;
+    dmChanged = dmChangedAll == PETSC_TRUE;
+}
+
+void ablate::particles::ParticleSolver::MacroStepParticles(TS macroTS) {
+    PetscReal time;
+
+    // if the dm has changed size (new particles, particles moved between ranks, particles deleted) reset the ts
+    if (dmChanged) {
+        TSReset(particleTs) >> checkError;
+        dmChanged = PETSC_FALSE;
+    }
+
+    // Update the coordinates in the solution vector
+    CoordinatesToSolutionVector();
+
+    // get the particle time step
+    PetscReal dtInitial;
+    TSGetTimeStep(particleTs, &dtInitial) >> checkError;
+
+    // Set the max end time based upon the flow end time
+    TSGetTime(macroTS, &time) >> checkError;
+    TSSetMaxTime(particleTs, time) >> checkError;
+    timeFinal = time;
+
+    // get the solution vector as a vector
+    Vec solutionVector;
+    DMSwarmCreateGlobalVectorFromField(swarmDm, PackedSolution, &solutionVector) >> checkError;
+
+    // take the needed timesteps to get to the flow time
+    TSSolve(particleTs, solutionVector) >> checkError;
+    timeInitial = timeFinal;
+
+    // get the updated time step, and reset if it has gone down
+    PetscReal dtUpdated;
+    TSGetTimeStep(particleTs, &dtUpdated) >> checkError;
+    if (dtUpdated < dtInitial) {
+        TSSetTimeStep(particleTs, dtInitial) >> checkError;
+    }
+
+    // put back the vector
+    DMSwarmDestroyGlobalVectorFromField(swarmDm, PackedSolution, &solutionVector) >> checkError;
+
+    // Decode the solution vector to coordinates
+    CoordinatesFromSolutionVector();
+
+    // Migrate any particles that have moved
+    SwarmMigrate();
+}
+void ablate::particles::ParticleSolver::CoordinatesToSolutionVector() {
+    // Get the local number of particles
+    PetscInt np;
+    DMSwarmGetLocalSize(swarmDm, &np) >> checkError;
+
+    // Get the raw access to position and update field
+    PetscInt dim;
+    PetscReal *positionData;
+    DMSwarmGetField(swarmDm, DMSwarmPICField_coor, &dim, nullptr, (void **)&positionData) >> checkError;
+
+    // Get the field
+    PetscReal *fieldData;
+    const auto &field = GetField(ParticleCoordinates, &fieldData);
+
+    // Iterate over each local particle
+    for (PetscInt p = 0; p < np; ++p) {
+        // compute the position offset
+        const PetscInt positionOffset = p * dim;
+
+        // Compute the field offset
+        const PetscInt fieldOffset = field[p];
+
+        PetscArraycpy(fieldData + fieldOffset, positionData + positionOffset, dim) >> checkError;
+    }
+
+    DMSwarmRestoreField(swarmDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&positionData);
+    RestoreField(field, &fieldData);
+}
+
+void ablate::particles::ParticleSolver::CoordinatesFromSolutionVector() {
+    // Get the local number of particles
+    PetscInt np;
+    DMSwarmGetLocalSize(swarmDm, &np) >> checkError;
+
+    // Get the raw access to position and update field
+    PetscInt dim;
+    PetscReal *positionData;
+    DMSwarmGetField(swarmDm, DMSwarmPICField_coor, &dim, nullptr, (void **)&positionData) >> checkError;
+
+    // Get the field
+    PetscReal *fieldData;
+    const auto &field = GetField(ParticleCoordinates, &fieldData);
+
+    // Iterate over each local particle
+    for (PetscInt p = 0; p < np; ++p) {
+        // compute the position offset
+        const PetscInt positionOffset = p * dim;
+
+        // Compute the field offset
+        const PetscInt fieldOffset = field[p];
+
+        PetscArraycpy(positionData + positionOffset, fieldData + fieldOffset, dim) >> checkError;
+    }
+
+    DMSwarmRestoreField(swarmDm, DMSwarmPICField_coor, nullptr, nullptr, (void **)&positionData);
+    RestoreField(field, &fieldData);
+}
+
+PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleRHS(TS ts, PetscReal t, Vec X, Vec F, void *ctx) {
+    PetscFunctionBeginUser;
+
+    auto particleSolver = (ablate::particles::ParticleSolver *)ctx;
+
+    // Build the needed data structures
+    SwarmData swarmData(particleSolver->swarmDm, particleSolver->fieldsMap, X);
+    RhsData rhsData(particleSolver->fieldsMap, F);
+
+    // Get the number of particles
+    PetscInt np;
+    PetscCall(DMSwarmGetLocalSize(particleSolver->swarmDm, &np));
+
+    // March over each processes
+    try {
+        for (auto &processes : particleSolver->processes) {
+            processes->ComputeRHS(np, t, swarmData, rhsData);
+        }
+    } catch (std::exception &exception) {
+        SETERRQ(PetscObjectComm((PetscObject)ts), PETSC_ERR_LIB, "%s", exception.what());
+    }
+
+    PetscFunctionReturn(0);
 }

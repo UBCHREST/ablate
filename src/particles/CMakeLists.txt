@@ -3,14 +3,19 @@ target_sources(ablateLibrary
         particles.cpp
         tracer.cpp
         inertial.cpp
-        particleSolver.hpp
+        particleSolver.cpp
 
         PUBLIC
         particles.hpp
         tracer.hpp
         inertial.hpp
-        particleField.hpp
-        particleSolver.cpp
+        field.hpp
+        particleSolver.hpp
+        fieldDescription.hpp
+        swarmData.hpp
+        particleData.hpp
+        rhsData.hpp
+        eulerianData.hpp
         )
 
 add_subdirectory(initializers)

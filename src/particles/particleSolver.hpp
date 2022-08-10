@@ -1,8 +1,9 @@
 #ifndef ABLATELIBRARY_PARTICLESOLVER_HPP
 #define ABLATELIBRARY_PARTICLESOLVER_HPP
 
-#include "particleField.hpp"
-#include "particles/initializers/initializer.hpp"
+#include "field.hpp"
+#include "fieldDescription.hpp"
+#include "initializers/initializer.hpp"
 #include "processes/process.hpp"
 #include "solver/solver.hpp"
 
@@ -16,6 +17,9 @@ class ParticleSolver : public solver::Solver {
     inline static const char ParticleDensity[] = "ParticleDensity";
     inline static const char PackedSolution[] = "PackedSolution";
     inline static const char ParticleInitialLocation[] = "InitialLocation";
+
+    //! These coordinates are part of the solution vector
+    inline static const char ParticleCoordinates[] = "ParticleCoordinates";
 
    private:
     //!  particle dm, this is a swarm
@@ -36,11 +40,14 @@ class ParticleSolver : public solver::Solver {
     //! store a boolean to state if a dmChanged (number of particles local/global changed)
     bool dmChanged = false;
 
-    //! the fields to create in the particle solver
-    std::vector<ParticleField> fields;
+    //! the fields specific to be created to create in the particle solver
+    std::vector<FieldDescription> fieldsDescriptions;
 
-    //! fields that interact with the particle ts
-    std::vector<ParticleField> solutionFields;
+    //! all fields in the particle solver
+    std::vector<Field> fields;
+
+    //! a map of fields for easy field lookup
+    std::map<std::string_view, Field> fieldsMap;
 
     //! the processes that add source terms to the particle and domain ts
     std::vector<std::shared_ptr<processes::Process>> processes;
@@ -55,7 +62,7 @@ class ParticleSolver : public solver::Solver {
     const std::shared_ptr<mathFunctions::MathFunction> exactSolution = nullptr;
 
    public:
-    ParticleSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<ParticleField> fields,
+    ParticleSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<FieldDescription> fields,
                    std::vector<std::shared_ptr<processes::Process>> processes, std::shared_ptr<initializers::Initializer> initializer,
                    std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution);
 
@@ -67,12 +74,17 @@ class ParticleSolver : public solver::Solver {
     /*** Set up mesh dependent initialization, this may be called multiple times if the mesh changes **/
     void Initialize() override;
 
+    /**
+     * Function to be be called after each flow time step
+     */
+    void MacroStepParticles(TS macroTS);
+
    private:
     /**
      * The register fields adds the field to the swarm
      * @param fieldDescriptor
      */
-    void RegisterParticleField(const ParticleField& fieldDescriptor);
+    void RegisterParticleField(const FieldDescription& fieldDescriptor);
 
     /**
      * stores the initial particle locations in the ParticleInitialLocation field
@@ -91,7 +103,81 @@ class ParticleSolver : public solver::Solver {
     /**
      * Project the field function to the particle field
      */
-    void ProjectFunction(const std::shared_ptr<mathFunctions::FieldFunction>& fieldFunction);
+    void ProjectFunction(const std::shared_ptr<mathFunctions::FieldFunction>& fieldFunction, PetscReal time = 0.0);
+
+    /**
+     * Migrate the particle between ranks based upon the background mesh
+     */
+    void SwarmMigrate();
+
+    /**
+     * map the coordinates to the solution vector
+     */
+    void CoordinatesToSolutionVector();
+
+    /**
+     * map the solution vector coordinates to the particle coordinates
+     */
+    void CoordinatesFromSolutionVector();
+
+   protected:
+    /**
+     * Get the array based upon field
+     */
+    template <class T>
+    void GetField(const Field& field, T** values) {
+        if (field.type == domain::FieldLocation::SOL) {
+            // Get the solution vector
+            DMSwarmGetField(swarmDm, DMSwarmPICField_coor, NULL, NULL, (void**)values) >> checkError;
+        } else {
+            // get the raw field
+            DMSwarmGetField(swarmDm, field.name.c_str(), NULL, NULL, (void**)values) >> checkError;
+        }
+    }
+
+    /**
+     * Restore the array and field information based upon field name
+     */
+    template <class T>
+    void RestoreField(const Field& field, T** values) {
+        if (field.type == domain::FieldLocation::SOL) {
+            // Get the solution vector
+            DMSwarmRestoreField(swarmDm, DMSwarmPICField_coor, NULL, NULL, (void**)values) >> checkError;
+        } else {
+            // get the raw field
+            DMSwarmRestoreField(swarmDm, field.name.c_str(), NULL, NULL, (void**)values) >> checkError;
+        }
+    }
+
+    /**
+     * Get the array and field information based upon field name
+     */
+    template <class T>
+    const Field& GetField(const std::string_view& fieldName, T** values) {
+        const auto& field = fieldsMap.at(fieldName);
+        GetField(field, values);
+        return field;
+    }
+
+    /**
+     * Restore the array and field information based upon field name
+     */
+    template <class T>
+    void RestoreField(const std::string_view& fieldName, T** values) {
+        const auto& field = fieldsMap.at(fieldName);
+        RestoreField(field, values);
+    }
+
+    /**
+     * computes the particle rhs for the particle TS
+     * @param ts
+     * @param t
+     * @param X
+     * @param F
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode ComputeParticleRHS(TS ts, PetscReal t, Vec X, Vec F, void* ctx);
 };
 
 }  // namespace ablate::particles
