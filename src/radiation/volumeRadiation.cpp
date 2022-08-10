@@ -34,7 +34,7 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
     VecGetArrayRead(rhs, &rhsArray);
     const auto& eulerFieldInfo = Radiation::subDomain->GetField("euler");
 
-    origin = ablate::radiation::Radiation::Solve(solVec, rhs);
+    origin = ablate::radiation::Radiation::Solve(solVec);
 
     solver::Range cellRange;
     GetCellRange(cellRange);  //!< Gets the cell range to iterate over when retrieving cell indexes from the solver
