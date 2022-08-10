@@ -64,8 +64,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         return origin[iCell].intensity;
     }
 
-    // use the subDomain to setup the problem
-    std::shared_ptr<ablate::domain::SubDomain> subDomain;
+    std::shared_ptr<ablate::domain::SubDomain> subDomain;  //!< use the subDomain to setup the problem
 
    protected:
     DM dmcell;

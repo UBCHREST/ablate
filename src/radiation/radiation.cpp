@@ -60,28 +60,13 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     if (log) StartEvent("Radiation Initialization");
     if (log) PetscPrintf(subDomain->GetComm(), "Starting Initialize\n");
 
-    //    const PetscScalar* cellGeomArray;
-    //    const PetscScalar* faceGeomArray;
     PetscReal minCellRadius;
     DM cellDM;  //, faceDM;
     DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;
     VecGetDM(cellGeomVec, &cellDM);
-    //    VecGetDM(faceGeomVec, &faceDM);
     DMPlexGetGeometryFVM(cellDM, nullptr, nullptr, &minCellRadius) >> checkError;
-    //    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    //    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
-    //    PetscFVCellGeom* cellGeom;
-    //    PetscFVFaceGeom* faceGeom;
 
     /** do a simple sanity check for labels */
-    //    region->CheckForLabel(subDomain->GetDM());
-    //    fieldBoundary->CheckForLabel(subDomain->GetDM());
-    //
-    //    /** Get the labels */
-    //    DMLabel boundaryLabel;
-    //    //    PetscInt boundaryValue = fieldBoundary->GetValue();
-    //    DMGetLabel(subDomain->GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
-
     PetscMPIInt rank;
     MPI_Comm_rank(subDomain->GetComm(), &rank);      //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
     MPI_Comm_size(subDomain->GetComm(), &numRanks);  //!< Get the number of ranks in the simulation.
@@ -89,11 +74,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     /** Declare some local variables */
     double theta;  //!< represents the actual current angle (inclination)
     double phi;    //!< represents the actual current angle (rotation)
-
-    // check to see if there is a ghost label
-    //    DMLabel ghostLabel;
-    //    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
-    //    PetscInt cellCount = 0;
 
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
     PetscInt npoints = (cellRange.end - cellRange.start) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
@@ -237,9 +217,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
              * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
 
             /** Get the particle coordinates here and put them into the intersect */
-            PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from spherical coordinates, adding the position of the current cell
-                                     (virtualcoord[ipart].y),   // y component conversion from spherical coordinates, adding the position of the current cell
-                                     (virtualcoord[ipart].z)};  // z component conversion from spherical coordinates, adding the position of the current cell
+            PetscReal position[3] = {(virtualcoord[ipart].x),   //!< x component conversion from spherical coordinates, adding the position of the current cell
+                                     (virtualcoord[ipart].y),   //!< y component conversion from spherical coordinates, adding the position of the current cell
+                                     (virtualcoord[ipart].z)};  //!< z component conversion from spherical coordinates, adding the position of the current cell
 
             /** This block creates the vector pointing to the cell whose index will be stored during the current loop */
             VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
@@ -271,8 +251,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
              * The boundary has been reached if any of these conditions don't hold
              * */
             /** make sure we are not working on a ghost cell */
-            //            PetscInt ghost = -1;
-            //            if (ghostLabel) DMLabelGetValue(ghostLabel, cell[ip].index, &ghost) >> checkError;
             if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) {
                 index = cell[ip].index;
             } else {
@@ -353,7 +331,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         }
     }
     /** Cleanup*/
-    //    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     DMDestroy(&radsearch) >> checkError;
 
     if (log) EndEvent();
@@ -622,7 +599,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-            //                printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);  //!< Wrap in a statement which only prints the cells in the middle of the domain.
             printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
