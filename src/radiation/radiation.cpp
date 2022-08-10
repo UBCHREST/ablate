@@ -620,12 +620,12 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
         PetscScalar* rhsValues;
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
-        origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
             //                printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);  //!< Wrap in a statement which only prints the cells in the middle of the domain.
             printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity);
         }
+        origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
 
     /** Cleanup*/

@@ -32,8 +32,9 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
     /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
     const PetscScalar* rhsArray;
     VecGetArrayRead(rhs, &rhsArray);
+    const auto& eulerFieldInfo = Radiation::subDomain->GetField("euler");
 
-    ablate::radiation::Radiation::Solve(solVec, rhs);
+    origin = ablate::radiation::Radiation::Solve(solVec, rhs);
 
     solver::Range cellRange;
     GetCellRange(cellRange);  //!< Gets the cell range to iterate over when retrieving cell indexes from the solver
@@ -41,8 +42,11 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscScalar* rhsValues;
+        DMPlexPointLocalFieldRead(Radiation::subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += origin[iCell].intensity;  // GetIntensity(iCell);  //!< Loop through the cells and update the equation of state
     }
+    RestoreRange(cellRange);
+    VecRestoreArrayRead(rhs, &rhsArray);
     PetscFunctionReturn(0);
 }
 

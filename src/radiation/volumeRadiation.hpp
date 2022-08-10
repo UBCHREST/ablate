@@ -4,7 +4,7 @@
 #include "radiation.hpp"
 namespace ablate::radiation {
 
-class VolumeRadiation : public Radiation, public solver::CellSolver {
+class VolumeRadiation : public Radiation, public solver::CellSolver, public solver::RHSFunction {
    public:
     /**
      * Function passed into PETSc to compute the FV RHS
@@ -15,7 +15,7 @@ class VolumeRadiation : public Radiation, public solver::CellSolver {
      * @param ctx
      * @return
      */
-    PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec);
+    PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
 
     void Initialize() override;
     void Setup() override;

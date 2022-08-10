@@ -22,8 +22,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param rayNumber
      * @param options other options
      */
-    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber, const std::shared_ptr<parameters::Parameters>& options,
-              std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
+    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
+              const std::shared_ptr<parameters::Parameters>& options, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     ~Radiation();
 
@@ -60,7 +60,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     void Initialize(solver::Range cellRange);
     /** Get the subdomain */
     void Register(std::shared_ptr<ablate::domain::SubDomain>);
-    inline PetscReal GetIntensity(PetscInt iCell) { //!< Function to give other classes access to the intensity
+    inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
         return origin[iCell].intensity;
     }
 
