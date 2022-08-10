@@ -43,7 +43,7 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscScalar* rhsValues;
         DMPlexPointLocalFieldRead(Radiation::subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += GetIntensity(iCell);  //!< Loop through the cells and update the equation of state
+        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += origin[iCell].intensity;  // GetIntensity(iCell);  //!< Loop through the cells and update the equation of state
     }
     RestoreRange(cellRange);
     VecRestoreArrayRead(rhs, &rhsArray);
