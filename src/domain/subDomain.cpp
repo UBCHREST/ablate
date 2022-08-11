@@ -842,7 +842,7 @@ bool ablate::domain::SubDomain::CheckSolution() {
     return (bool)globalFailedPoints;
 }
 
-void ablate::domain::SubDomain::CheckSubDM(DM* inDM) {
+void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM) {
     if(GetLabel()) {
         DMPlexFilter(GetDM(), GetLabel(), 1, inDM);
     }

@@ -389,7 +389,7 @@ class SubDomain : public io::Serializable {
      * This checks for whether the label describing the subdomain exists. If it does, use DMPlexFilter. If not, use DMClone to return new DM.
      * @param inDM
      */
-    void CheckSubDM(DM* inDM);
+    void CreateEmptySubDM(DM* inDM);
 };
 
 }  // namespace ablate::domain
