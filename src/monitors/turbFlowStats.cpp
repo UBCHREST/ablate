@@ -137,7 +137,7 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     ablate::monitors::Monitor::Register(solverIn);
 
     // Copy the master DM over, set fields, and initialize vector values
-    DMPlexFilter(this->GetSolver()->GetSubDomain().GetDM(), this->GetSolver()->GetSubDomain().GetLabel(), 1, &turbDM);
+    this->GetSolver()->GetSubDomain().CheckSubDM(&turbDM);
     std::string DmName = "TurbDM";
     PetscObjectSetName((PetscObject)turbDM, DmName.c_str());
 
