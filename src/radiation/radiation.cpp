@@ -9,69 +9,33 @@
 #include "utilities/constants.hpp"
 #include "utilities/mathUtilities.hpp"
 
-ablate::radiation::Radiation::Radiation(std::string solverId, std::shared_ptr<domain::Region> region, const PetscInt raynumber, std::shared_ptr<parameters::Parameters> options,
-                                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : CellSolver(std::move(solverId), std::move(region), std::move(options)), radiationModel(std::move(radiationModelIn)), log(std::move(log)) {
+ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
+                                        const std::shared_ptr<parameters::Parameters>& options, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
+                                        std::shared_ptr<ablate::monitors::logs::Log> log)
+    : solverId((std::basic_string<char> &&) solverId),
+      region(std::move(region)),
+      options((std::shared_ptr<parameters::Parameters> &&) options),
+      radiationModel(std::move(radiationModelIn)),
+      fieldBoundary(std::move(fieldBoundary)),
+      log(std::move(log)) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
 
 ablate::radiation::Radiation::~Radiation() {
     if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
+    if (cellGeomVec) VecDestroy(&cellGeomVec) >> checkError;
+    if (faceGeomVec) VecDestroy(&faceGeomVec) >> checkError;
 }
 
-void ablate::radiation::Radiation::Setup() { /** allows initialization after the subdomain and dm is established */
-    ablate::solver::CellSolver::Setup();
+void ablate::radiation::Radiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
+
+/** allows initialization after the subdomain and dm is established */
+void ablate::radiation::Radiation::Setup() {
     dim = subDomain->GetDimensions();  //!< Number of dimensions already defined in the setup
 }
 
-void ablate::radiation::Radiation::Initialize() {
-    /** Transporting a particle from one location to another simply happens within a coordinate field. The particle is transported to a different rank based on its coordinates every time Migrate
-     * is called. The initialization particle field has a field of coordinates that the DMLocatePoints function reads from in order to build the local storage of ray segments. This field ceases to
-     * exist at the end of initialization. It must be replaced with a set of particles associated with every ray segment. The solve particle field will be based only on the local ray segment and the
-     * rank that it is travelling to. In other words, these particles have no coordinates or spatial location. The field initialized for the solve portion will have more particles than the initial
-     * field. This is because the solve field will be represented by a particle for every ray segment as opposed to a particle for every ray. Having two fields is easier than dynamically adjusting the
-     * size of the particle field as the ray length increases for each ray.
-     *
-     * Steps of the search:
-     *      Initialize a particle field with particles at the coordinates of their origin cell, one for each ray. (The search field should probably be a PIC field because it interacts with the mesh)
-     *      Store the direction of the ray motion in the particle as a field.
-     *      Loop through the particles that are present within a given domain.
-     *      March the particle coordinates in the direction of the direction vector.
-     *          Do existing ray filling routine.
-     *          Run swarm migrate and check if the particle has left the domain for every space step that is taken. This is currently the best known way to check for domain crosses.
-     *          If yes: Finish that ray segment and store it with its ray ID / domain number.
-     *          If no: Repeat march and filling routine.
-     *      The ray segments should be stored as vectors, with the indices matching the ray identity. These indices can be the same as the existing rays vector most likely.
-     *      The difference is that this is an entirely local variable. Only the local ray segment identities which have ray segments passing through this domain will be non-empty for the local rays
-     *      vector. This provides a global indexing scheme that the particles and domains can interface between without occupying a lot of local memory.
-     *          Sub-task: During the cell search, form a vector (the same rays vector) from the information provided by the particle. In other words, the particle will "seed" the ray segments
-     *          within each domain. Just pack the ray segment into whatever rays index matches the global scheme. This way when the particles are looped through in their local configuration, the
-     *          memory location of the local ray segment can be accessed immediately.
-     *          Sub-task: As the particle search routine is taking place, they should be simultaneously forming a particle field containing the solve field characteristics. This includes the
-     *
-     * Steps of the solve:
-     *      Locally compute the source and absorption for each stored ray ID. (Loop through the local ray segments by index and run through them if they are not empty).
-     *      Update the values to the fields of the particles (based on this ray ID). (Loop through the particles in the domain and update the values by the assocated index)
-     *      Send the particles to their origin ranks.
-     *      Compute energy for every cell by searching through all present particles.
-     *      Delete the particles that are not from this rank.
-     *
-     * The local calculation of the ray absorption and intensity needs to be enabled by the local storage of ray segment cell indices.
-     * This could be achieved by storing them within a vector that contains identifying information.
-     *      Sub-task: The local calculation must loop through all ray identities, doing the calculation for only those rays that are present within the process. (If this segment index !empty)
-     *      Sub-task: The ray segments must update the particle field by looping though the particles present in the domain and grabbing the calculated values from their associated ray segments.
-     *      Since the associated ray segments are globally indexed, this might be faster.
-     *
-     * During the communication solve portion, the only information that needs to be transported is: ray ID, K, Ij, and domain #.
-     *      Sub-task: Loop through every particle and call a non-deleting migrate on every particle in the domain (which does not belong to this domain).
-     *
-     *
-     * During the global solve, each process needs to loop through the ray identities that are stored within that subdomain.
-     *      Sub-task: Figure out how to iterate through cells within a single process and not the global subdomain.
-     *      Sub-task: Delete the cells that are not from this rank.
-     * */
-
+void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     /** Begins radiation properties model
      * Runs the ray initialization, finding cell indices
      * Initialize the log if provided
@@ -81,10 +45,8 @@ void ablate::radiation::Radiation::Initialize() {
     if (log) {
         log->Initialize(subDomain->GetComm());
     }
-    this->RayInit();
-}
+    cellRange = cellRangeIn;
 
-void ablate::radiation::Radiation::RayInit() {
     /** Initialization to call, draws each ray vector and gets all of the cells associated with it
      * (sorted by distance and starting at the boundary working in)
      * This is done by creating particles at the center of each cell and iterating through them
@@ -98,14 +60,13 @@ void ablate::radiation::Radiation::RayInit() {
     if (log) StartEvent("Radiation Initialization");
     if (log) PetscPrintf(subDomain->GetComm(), "Starting Initialize\n");
 
-    const PetscScalar* cellGeomArray;
     PetscReal minCellRadius;
     DM cellDM;
+    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;
     VecGetDM(cellGeomVec, &cellDM);
     DMPlexGetGeometryFVM(cellDM, nullptr, nullptr, &minCellRadius) >> checkError;
-    VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    PetscFVCellGeom* cellGeom;
 
+    /** do a simple sanity check for labels */
     PetscMPIInt rank;
     MPI_Comm_rank(subDomain->GetComm(), &rank);      //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
     MPI_Comm_size(subDomain->GetComm(), &numRanks);  //!< Get the number of ranks in the simulation.
@@ -114,37 +75,9 @@ void ablate::radiation::Radiation::RayInit() {
     double theta;  //!< represents the actual current angle (inclination)
     double phi;    //!< represents the actual current angle (rotation)
 
-    /**Locally get a range of cells that are included in this subdomain at this time step for the ray initialization
-     * */
-    solver::Range cellRange;
-    GetCellRange(cellRange);
-
-    // check to see if there is a ghost label
-    DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
-    PetscInt cellCount = 0;
-
-    /** Make sure that the cells being iterated over are within the region of the subdomain
-     *
-     * */
-    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {
-        // if there is a cell array, use it, otherwise it is just c
-        const PetscInt cell = cellRange.points ? cellRange.points[c] : c;
-
-        // make sure we are not working on a ghost cell
-        PetscInt ghost = -1;
-        if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, cell, &ghost) >> checkError;
-        }
-        if (ghost < 0) {
-            cellCount++;
-        }
-    }
-
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
-
-    PetscInt npoints = (cellCount) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
-    PetscInt nsolvepoints = 0;                             //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
+    PetscInt npoints = (cellRange.end - cellRange.start) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
+    PetscInt nsolvepoints = 0;                                                   //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
     DMCreate(subDomain->GetComm(), &radsearch) >> checkError;
@@ -173,11 +106,11 @@ void ablate::radiation::Radiation::RayInit() {
     DMSwarmFinalizeFieldRegister(radsolve) >> checkError;                                      //!< Initialize the fields that have been defined
 
     /** Set initial local sizes of the DMSwarm with a buffer length of zero */
-    DMSwarmSetLocalSizes(radsearch, npoints, 10) >> checkError;  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
-    DMSwarmSetLocalSizes(radsolve, 0, 10) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
+    DMSwarmSetLocalSizes(radsearch, npoints, 0) >> checkError;  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
+    DMSwarmSetLocalSizes(radsolve, 0, 0) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Set the spatial step size to the minimum cell radius */
-    PetscReal hstep = minCellRadius / 5;
+    PetscReal hstep = minCellRadius / 3;
 
     /** Declare some information associated with the field declarations */
     PetscReal* coord;                    //!< Pointer to the coordinate field information
@@ -195,17 +128,8 @@ void ablate::radiation::Radiation::RayInit() {
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-
-        /** make sure we are not working on a ghost cell */
-        PetscInt ghost = -1;
-        if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, iCell, &ghost) >> checkError;
-        }
-        if (ghost >= 0) {
-            continue;
-        }
-
-        DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
+        PetscReal centroid[3];
+        DMPlexComputeCellGeometryFVM(subDomain->GetDM(), iCell, nullptr, centroid, nullptr) >> checkError;
 
         /** for every angle theta
          * for every angle phi
@@ -213,10 +137,10 @@ void ablate::radiation::Radiation::RayInit() {
         for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
-                virtualcoord[ipart].x = cellGeom->centroid[0];
-                virtualcoord[ipart].y = cellGeom->centroid[1];
-                virtualcoord[ipart].z = cellGeom->centroid[2];
-                virtualcoord[ipart].current = -1;  //!< Set this to a null value so that it can't get confused about where it starts.
+                virtualcoord[ipart].x = centroid[0];
+                virtualcoord[ipart].y = centroid[1];
+                virtualcoord[ipart].z = centroid[2];
+                virtualcoord[ipart].current = iCell;  //!< Set this to a null value so that it can't get confused about where it starts.
 
                 /** Get the initial direction of the search particle from the angle number that it was initialized with */
                 theta = ((double)ntheta / (double)nTheta) * ablate::utilities::Constants::pi;  //!< Theta angle of the ray
@@ -293,9 +217,9 @@ void ablate::radiation::Radiation::RayInit() {
              * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
 
             /** Get the particle coordinates here and put them into the intersect */
-            PetscReal position[3] = {(virtualcoord[ipart].x),   // x component conversion from spherical coordinates, adding the position of the current cell
-                                     (virtualcoord[ipart].y),   // y component conversion from spherical coordinates, adding the position of the current cell
-                                     (virtualcoord[ipart].z)};  // z component conversion from spherical coordinates, adding the position of the current cell
+            PetscReal position[3] = {(virtualcoord[ipart].x),   //!< x component conversion from spherical coordinates, adding the position of the current cell
+                                     (virtualcoord[ipart].y),   //!< y component conversion from spherical coordinates, adding the position of the current cell
+                                     (virtualcoord[ipart].z)};  //!< z component conversion from spherical coordinates, adding the position of the current cell
 
             /** This block creates the vector pointing to the cell whose index will be stored during the current loop */
             VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
@@ -327,8 +251,6 @@ void ablate::radiation::Radiation::RayInit() {
              * The boundary has been reached if any of these conditions don't hold
              * */
             /** make sure we are not working on a ghost cell */
-            PetscInt ghost = -1;
-            if (ghostLabel) DMLabelGetValue(ghostLabel, cell[ip].index, &ghost) >> checkError;
             if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) {
                 index = cell[ip].index;
             } else {
@@ -409,21 +331,12 @@ void ablate::radiation::Radiation::RayInit() {
         }
     }
     /** Cleanup*/
-    VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    RestoreRange(cellRange);
     DMDestroy(&radsearch) >> checkError;
 
     if (log) EndEvent();
 }
-
-PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
-    PetscFunctionBeginUser;
-
+const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiation::Radiation::Solve(Vec solVec) {
     if (log) StartEvent("Radiation Solve");
-
-    /** Get the array of the local f vector, put the intensity into part of that array instead of using the radiative gain variable. */
-    const PetscScalar* rhsArray;
-    VecGetArrayRead(rhs, &rhsArray);
 
     /** Get the array of the solution vector. */
     const PetscScalar* solArray;
@@ -433,8 +346,6 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
     const auto auxVec = subDomain->GetAuxVector();
     const PetscScalar* auxArray;
     VecGetArrayRead(auxVec, &auxArray);
-
-    const auto& eulerFieldInfo = subDomain->GetField("euler");
 
     /** Get the temperature field.
      * For ABLATE implementation, get temperature based on this function.
@@ -547,9 +458,6 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 
     /** ********************************************************************************************************************************
      * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
-
-    solver::Range cellRange;  //!< Access to the cell index information is important here to get all of the ray identifier information.
-    GetCellRange(cellRange);
 
     /** check to see if there is a ghost label */
     DMLabel ghostLabel;
@@ -678,29 +586,23 @@ PetscErrorCode ablate::radiation::Radiation::ComputeRHSFunction(PetscReal time, 
 
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, temperatureField.id, auxArray, &temperature);
-
-        /** Put the irradiation into the right hand side function */
-        PetscScalar* rhsValues;
-        DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
-        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += -kappa * (losses - origin[iCell].intensity);
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-            //                printf("Cell: %" PetscInt_FMT " Intensity: %f\n", iCell, origin[iCell].intensity);  //!< Wrap in a statement which only prints the cells in the middle of the domain.
             printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity);
         }
+        origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
 
     /** Cleanup*/
-    VecRestoreArrayRead(rhs, &rhsArray);
-    RestoreRange(cellRange);
+    VecRestoreArrayRead(solVec, &solArray);
+    VecRestoreArrayRead(auxVec, &auxArray);
 
     if (log) {
         EndEvent();
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     }
-
-    PetscFunctionReturn(0);
+    return origin;
 }
 
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */
@@ -720,9 +622,3 @@ void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoor
             break;
     }
 }
-
-#include "registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
-         ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(int, "rays", "number of rays used by the solver"),
-         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
-         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
