@@ -14,6 +14,7 @@ target_sources(ablateLibrary
         tagMeshBoundaryFaces.cpp
         completeLabel.cpp
         dmPlexCheck.cpp
+        fvmCheck.cpp
 
         PUBLIC
         modifier.hpp
@@ -30,4 +31,5 @@ target_sources(ablateLibrary
         tagMeshBoundaryFaces.hpp
         completeLabel.hpp
         dmPlexCheck.hpp
+        fvmCheck.hpp
         )

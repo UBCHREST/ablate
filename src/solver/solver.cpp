@@ -202,7 +202,7 @@ void ablate::solver::Solver::GetFaceRange(Range &faceRange) const {
 }
 
 void ablate::solver::Solver::GetRange(PetscInt depth, Range &faceRange) const {
-    // Start out getting all of the points
+    // Start out getting all the points
     IS allPointIS;
     DMGetStratumIS(subDomain->GetDM(), "dim", depth, &allPointIS) >> checkError;
     if (!allPointIS) {

@@ -40,7 +40,7 @@ PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, Pets
         for (PetscInt p = pStart; p < pEnd; p++) {
             PetscInt point = points? points[p]: p;
 
-            const PetscScalar* localData;
+            const PetscScalar* localData = nullptr;
             PetscCall(DMPlexPointGlobalRead(subDm, point, data, &localData));
 
             if(localData) {
