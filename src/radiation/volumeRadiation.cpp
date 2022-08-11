@@ -39,6 +39,9 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
     solver::Range cellRange;
     GetCellRange(cellRange);  //!< Gets the cell range to iterate over when retrieving cell indexes from the solver
 
+    /** Get the cell count of non ghost cells that are in the flow region */
+    //    ablate::finiteVolume::FiniteVolumeSolver::GetCellRangeWithoutGhost(&cellRange)
+
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscScalar* rhsValues;

@@ -111,7 +111,13 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     };
 
     /// Class Methods
-    static PetscReal FaceIntersect(Virtualcoord, PetscFVFaceGeom*);  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
+    /** Returns the forward path length of a travelling particle with any face.
+     * The function will return zero if the intersection is not in the direction of travel.
+     *
+     * @param virtualcoord the struct containing particle position information
+     * @param face the struct containing information about a cell face
+     */
+    PetscReal FaceIntersect(Virtualcoord virtualcoord, PetscFVFaceGeom* face);  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
 
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
@@ -138,6 +144,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     PetscInt nTheta;   //!< The number of angles to solve with, given by user input
     PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
     solver::Range cellRange;
+    PetscReal minCellRadius;
 
     /**
      * Store a log used to output the required information
