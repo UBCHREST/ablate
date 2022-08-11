@@ -841,3 +841,12 @@ bool ablate::domain::SubDomain::CheckSolution() {
     VecRestoreArrayRead(solutionVec, &solutionArray) >> checkError;
     return (bool)globalFailedPoints;
 }
+
+void ablate::domain::SubDomain::CheckSubDM(DM* inDM) {
+    if(GetLabel()) {
+        DMPlexFilter(GetDM(), GetLabel(), 1, inDM);
+    }
+    else {
+        DMClone(GetDM(), inDM);
+    }
+}

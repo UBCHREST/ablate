@@ -384,6 +384,12 @@ class SubDomain : public io::Serializable {
      * checks each point in this subdomain for nan/inf and reports information.  True is returned if an error is found.
      */
     bool CheckSolution();
+
+    /**
+     * This checks for whether the label describing the subdomain exists. If it does, use DMPlexFilter. If not, use DMClone to return new DM.
+     * @param inDM
+     */
+    void CheckSubDM(DM* inDM);
 };
 
 }  // namespace ablate::domain
