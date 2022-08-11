@@ -44,7 +44,7 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
     TSSetPostEvaluate(ts, TSPostEvaluateFunction) >> checkError;
 }
 
-ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
+ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts) >> checkError; }
 
 void ablate::solver::TimeStepper::Solve() {
     if (solvers.empty()) {
