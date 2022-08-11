@@ -843,10 +843,9 @@ bool ablate::domain::SubDomain::CheckSolution() {
 }
 
 void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM) {
-    if(GetLabel()) {
+    if (GetLabel()) {
         DMPlexFilter(GetDM(), GetLabel(), 1, inDM);
-    }
-    else {
+    } else {
         DMClone(GetDM(), inDM);
     }
 }
