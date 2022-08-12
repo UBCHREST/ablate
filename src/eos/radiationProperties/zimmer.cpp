@@ -196,7 +196,7 @@ PetscInt ablate::eos::radiationProperties::Zimmer::GetFieldComponentOffset(const
      * The index will be set to -1 if the component does not exist in the field.
      * Convert all component names to lower case for string comparison
      * */
-    auto itr = std::find_if(field.components.begin(), field.components.end(), [&str](auto &components) {
+    auto itr = std::find_if(field.components.begin(), field.components.end(), [&str](const auto &components) {
         std::string component = components;
         std::transform(component.begin(), component.end(), component.begin(), [](unsigned char c) { return std::tolower(c); });
         return component == str;
