@@ -1,8 +1,8 @@
 ---
 layout: default
 title: LES Model
-parent: Compressible Flow 
-grand_parent: Flow Formulations
+parent: Compressible Flow
+grand_parent: Formulations
 nav_order: 5
 ---
 ## Large-eddy Simulation of Compressible Flows
