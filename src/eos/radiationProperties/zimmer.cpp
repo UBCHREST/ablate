@@ -194,8 +194,13 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 PetscInt ablate::eos::radiationProperties::Zimmer::GetFieldComponentOffset(const std::string &str, const domain::Field &field) const {
     /** Returns the index where a certain field component can be found.
      * The index will be set to -1 if the component does not exist in the field.
+     * Convert all component names to lower case for string comparison
      * */
-    auto itr = std::find_if(field.components.begin(), field.components.end(), [&str](const auto &components) { return components == str; });
+    auto itr = std::find_if(field.components.begin(), field.components.end(), [&str](const auto &components) {
+        std::string component = components;
+        std::transform(component.begin(), component.end(), component.begin(), [](unsigned char c) { return std::tolower(c); });
+        return component == str;
+    });
     PetscInt ind = (itr == field.components.end()) ? -1 : std::distance(field.components.begin(), itr) + field.offset;
     return ind;
 }
