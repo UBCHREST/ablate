@@ -82,7 +82,7 @@ class Zimmer : public RadiationModel {
      */
     [[nodiscard]] ThermodynamicTemperatureFunction GetRadiationPropertiesTemperatureFunction(RadiationProperty property, const std::vector<domain::Field>& fields) const override;
 
-    PetscInt GetFieldComponentOffset(const std::string& str, const domain::Field& field) const;
+    PetscInt GetFieldComponentOffset(const std::string &str, const domain::Field &field) const;
 };
 
 }  // namespace ablate::eos::radiationProperties
