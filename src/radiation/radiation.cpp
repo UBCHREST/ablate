@@ -218,10 +218,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
              * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
 
             /** Get the particle coordinates here and put them into the intersect */
-            PetscReal position[3] = {
-                (virtualcoord[ipart].x),   //!< x component conversion from spherical coordinates, adding the position of the current cell
-                (virtualcoord[ipart].y),   //!< y component conversion from spherical coordinates, adding the position of the current cell
-                (virtualcoord[ipart].z)};  //!< z component conversion from spherical coordinates, adding the position of the current cell
+            PetscReal position[3] = {(virtualcoord[ipart].x),   //!< x component conversion from spherical coordinates, adding the position of the current cell
+                                     (virtualcoord[ipart].y),   //!< y component conversion from spherical coordinates, adding the position of the current cell
+                                     (virtualcoord[ipart].z)};  //!< z component conversion from spherical coordinates, adding the position of the current cell
 
             /** This block creates the vector pointing to the cell whose index will be stored during the current loop */
             VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
@@ -301,7 +300,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                 const PetscInt* cellFaces;
                 DMPlexGetConeSize(subDomain->GetDM(), index, &numberFaces) >> checkError;
                 DMPlexGetCone(subDomain->GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
-                                                                                     //                PetscInt chosenFace = -1;
                 PetscReal path = 0;
 
                 /** Check every face for intersection with the segment.
@@ -348,17 +346,30 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                  * this will be the same procedure.
                  * */
                 switch (dim) {
-                    case 2:                                                                                             //!< If there are only two dimensions in this simulation
+                    case 2:                                                                                           //!< If there are only two dimensions in this simulation
                         coord[2 * ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Update the two physical coordinates
                         coord[(2 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
                         break;
-                    case 3:                                                                                             //!< If there are three dimensions in this simulation
+                    case 3:                                                                                           //!< If there are three dimensions in this simulation
                         coord[3 * ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Update the three physical coordinates
                         coord[(3 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
                         coord[(3 * ipart) + 2] = virtualcoord[ipart].z + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
                         break;
                 }  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
                 virtualcoord[ipart].hhere = 0;
+            } else {
+                /** Delete the particles that are no longer in a valid region */
+                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+                DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+                DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+
+                DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
+
+                DMSwarmGetLocalSize(radsearch, &npoints);  //!< Need to recalculate the number of particles that are in the domain again
+                DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+                DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+                DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+                ip--;  //!< Check the point replacing the one that was deleted
             }
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
