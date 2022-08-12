@@ -198,8 +198,7 @@ PetscInt ablate::eos::radiationProperties::Zimmer::GetFieldComponentOffset(const
      * */
     auto itr = std::find_if(field.components.begin(), field.components.end(), [&str](auto &components) {
         std::string component = components;
-            std::transform(component.begin(), component.end(), component.begin(),
-                           [](unsigned char c){ return std::tolower(c); });
+        std::transform(component.begin(), component.end(), component.begin(), [](unsigned char c) { return std::tolower(c); });
         return component == str;
     });
     PetscInt ind = (itr == field.components.end()) ? -1 : std::distance(field.components.begin(), itr) + field.offset;
