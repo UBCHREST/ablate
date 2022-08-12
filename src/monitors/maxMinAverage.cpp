@@ -33,17 +33,17 @@ PetscErrorCode ablate::monitors::MaxMinAverage::MonitorMaxMinAverage(TS ts, Pets
 
         // Get the point range for this field
         PetscInt pStart, pEnd;
-        const PetscInt *points;
+        const PetscInt* points;
         PetscCall(ISGetPointRange(vecIs, &pStart, &pEnd, &points));
 
         // Compute max/min/avg values
         for (PetscInt p = pStart; p < pEnd; p++) {
-            PetscInt point = points? points[p]: p;
+            PetscInt point = points ? points[p] : p;
 
             const PetscScalar* localData = nullptr;
             PetscCall(DMPlexPointGlobalRead(subDm, point, data, &localData));
 
-            if(localData) {
+            if (localData) {
                 for (PetscInt d = 0; d < field.numberComponents; d++) {
                     min[d] = PetscMin(min[d], PetscReal(localData[d]));
                     max[d] = PetscMax(max[d], PetscReal(localData[d]));

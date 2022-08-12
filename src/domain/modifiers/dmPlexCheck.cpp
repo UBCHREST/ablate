@@ -1,9 +1,7 @@
 #include "dmPlexCheck.hpp"
 #include <utilities/petscError.hpp>
 
-void ablate::domain::modifiers::DMPlexCheck::Modify(DM &dm) {
-    ::DMPlexCheck(dm) >> checkError;
-}
+void ablate::domain::modifiers::DMPlexCheck::Modify(DM &dm) { ::DMPlexCheck(dm) >> checkError; }
 std::string ablate::domain::modifiers::DMPlexCheck::ToString() const { return "ablate::domain::modifiers::DMPlexCheck"; }
 
 #include "registrar.hpp"

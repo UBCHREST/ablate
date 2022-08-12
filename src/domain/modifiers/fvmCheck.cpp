@@ -189,6 +189,11 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                     std::cout << "\tarea[" << d << "]: " << std::setprecision(16) << cellInfo.second[d] << std::endl;
                 }
 
+                // DM dm, PetscInt cell, PetscReal *vol, PetscReal centroid[], PetscReal normal[]
+                PetscReal volume;
+                DMPlexComputeCellGeometryFVM(dm, cellInfo.first, &volume, nullptr, nullptr) >> checkError;
+                std::cout << "volume: " << std::setprecision(16) << volume << std::endl;
+
                 // Print all labels at this cell
                 // output the labels at this point
                 PetscInt numberLabels;
@@ -214,12 +219,78 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                 PetscInt numberFaces;
                 DMPlexGetConeSize(dm, cellInfo.first, &numberFaces) >> checkError;
                 DMPlexGetCone(dm, cellInfo.first, &faces) >> checkError;
+                std::cout << "faces: " << std::endl;
 
                 for (PetscInt f = 0; f < numberFaces; f++) {
                     PetscInt face = faces[f];
 
+                    // get the cells that touch this face
+                    const PetscInt* cells;
+                    PetscInt numberCells;
+                    DMPlexGetSupport(dm, face, &cells) >> checkError;
+                    DMPlexGetSupportSize(dm, face, &numberCells) >> checkError;
+
                     std::cout << "\tface: " << face << std::endl;
 
+                    // compute the area for this face
+                    PetscReal area;
+                    PetscReal normal[3];
+                    PetscReal centroid[3];
+
+                    // DM dm, PetscInt cell, PetscReal *vol, PetscReal centroid[], PetscReal normal[]
+                    DMPlexComputeCellGeometryFVM(dm, face, &area, centroid, normal) >> checkError;
+
+                    // check to see if we need to flip the area
+                    PetscInt leftCell = cells[0];
+                    PetscInt rightCell = cells[1];
+                    PetscScalar leftCellCentroid[3];
+                    if (leftCell >= boundaryCellStart) {
+                        PetscArraycpy(leftCellCentroid, centroid, dim);
+                    } else {
+                        DMPlexComputeCellGeometryFVM(dm, leftCell, nullptr, leftCellCentroid, nullptr) >> checkError;
+                    }
+                    PetscScalar rightCellCentroid[3];
+                    if (numberCells < 2 || rightCell >= boundaryCellStart) {
+                        PetscArraycpy(rightCellCentroid, centroid, dim);
+
+                    } else {
+                        DMPlexComputeCellGeometryFVM(dm, rightCell, nullptr, rightCellCentroid, nullptr) >> checkError;
+                    }
+
+                    // Check the normal direction, it should go from left[0] to right[1]
+                    PetscScalar lToR[3] = {0.0, 0.0, 0.0};
+                    ablate::utilities::MathUtilities::Subtract(dim, rightCellCentroid, leftCellCentroid, lToR);
+
+                    // Check if left or right
+                    PetscInt leftOrRight = leftCell == cellInfo.first ? -1 : 1;
+
+                    // Check the normal direction
+                    auto direction = PetscSignReal(ablate::utilities::MathUtilities::DotVector(dim, lToR, normal));
+
+                    std::cout << "\t\torgNormal: [" << normal[0] << ", " << normal[1] << ", " << normal[2] << "]" << std::endl;
+                    std::cout << "\t\tleftToRight: [" << lToR[0] << ", " << lToR[1] << ", " << lToR[2] << "]" << std::endl;
+                    std::cout << "\t\tleftToRightDotNormal: " << ablate::utilities::MathUtilities::DotVector(dim, lToR, normal) << std::endl;
+                    std::cout << "\t\tleftCellCentroid: [" << leftCellCentroid[0] << ", " << leftCellCentroid[1] << ", " << leftCellCentroid[2] << "]" << std::endl;
+                    std::cout << "\t\trightCellCentroid: [" << rightCellCentroid[0] << ", " << rightCellCentroid[1] << ", " << rightCellCentroid[2] << "]" << std::endl;
+                    std::cout << "\t\tfaceCentroid: [" << centroid[0] << ", " << centroid[1] << ", " << centroid[2] << "]" << std::endl;
+
+                    // Scale the normal by the area and direction
+                    for (PetscInt d = 0; d < dim; d++) {
+                        normal[d] *= area * direction;
+                    }
+
+                    std::cout << "\t\tleft(-1) or right(1.0): " << leftOrRight << std::endl;
+                    std::cout << "\t\tdirection: " << direction << std::endl;
+                    std::cout << "\t\tarea: " << std::setprecision(16) << area << std::endl;
+                    std::cout << "\t\tcomputedNormalArea: [" << normal[0] << ", " << normal[1] << ", " << normal[2] << "]" << std::endl;
+
+                    // Get the stored area
+                    PetscFVFaceGeom* fg;
+                    DMPlexPointLocalRead(faceDM, face, faceGeomArray, &fg) >> checkError;
+
+                    std::cout << "\t\tstoredNormalArea: [" << fg->normal[0] << ", " << fg->normal[1] << ", " << fg->normal[2] << "]" << std::endl;
+
+                    std::cout << "\t\tnodes:" << std::endl;
                     // March over each node
                     PetscInt* points = nullptr;
                     PetscInt numPoints;
@@ -235,8 +306,8 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
                         // check if node
                         if (pointDepth == 0) {
                             PetscScalar nodeLocation[3];
-                            DMPlexComputeCellGeometryFVM(dm, point, NULL, nodeLocation, NULL) >> checkError;
-                            std::cout << "\t\t" << point << ": [" << nodeLocation[0] << ", " << nodeLocation[1] << ", " << nodeLocation[2] << "]" << std::endl;
+                            DMPlexComputeCellGeometryFVM(dm, point, nullptr, nodeLocation, nullptr) >> checkError;
+                            std::cout << "\t\t\t" << point << ": [" << nodeLocation[0] << ", " << nodeLocation[1] << ", " << nodeLocation[2] << "]" << std::endl;
                             nodesInCell.insert(point);
                         }
                     }
