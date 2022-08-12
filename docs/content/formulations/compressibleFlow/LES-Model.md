@@ -33,7 +33,7 @@ energy $$k$$:
 $$\begin{equation}\frac{\partial (\bar{\rho }k)}{\partial t} + \frac{\partial (\bar{\rho } \tilde{u}_j k)}{\partial x_{j}} -\frac{\partial}{\partial x_{j}} \left[\\
 \left(\nu + \nu_t\right) \frac{\partial(\bar{\rho } k)}{\partial x_{j}} \right] =-\bar{\rho } \tau_{ij} .\widetilde{ S_{ij}} \; -\; C_{\epsilon} \frac{\bar{\rho } k^{3/2}}{\Delta},\end{equation}$$
 
-where $$$\Delta$$ is the grid size and the default model coefficients are $$ C_k=0.094, C_\epsilon =1.048$$.
+where $$\Delta$$ is the grid size and the default model coefficients are $$ C_k=0.094, C_\epsilon =1.048$$.
 
 ## References
 - [1] Hirsch, C., Numerical computation of internal and external flows. Vol. 1 - Computational methods for inviscid and viscous
