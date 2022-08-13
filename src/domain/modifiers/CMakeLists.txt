@@ -13,6 +13,8 @@ target_sources(ablateLibrary
         extrudeLabel.cpp
         tagMeshBoundaryFaces.cpp
         completeLabel.cpp
+        dmPlexCheck.cpp
+        fvmCheck.cpp
 
         PUBLIC
         modifier.hpp
@@ -28,4 +30,6 @@ target_sources(ablateLibrary
         extrudeLabel.hpp
         tagMeshBoundaryFaces.hpp
         completeLabel.hpp
+        dmPlexCheck.hpp
+        fvmCheck.hpp
         )
