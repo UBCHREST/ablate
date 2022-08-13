@@ -81,7 +81,7 @@ jobs:
 
       # use a hack to update the url to localhost:8000
       - name: Configure Jekyll for Local
-        run: cat docs-configure/_config_pr.yml >> docs-configure/_config.yaml
+        run: cp -f docs-configure/_config_pr.yml  docs-configure/_config.yaml
 
       # use a hack to update the url to localhost:8000
       - name: Build with Jekyll

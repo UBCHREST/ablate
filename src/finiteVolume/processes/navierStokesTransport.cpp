@@ -247,9 +247,9 @@ double ablate::finiteVolume::processes::NavierStokesTransport::ComputeTimeStep(T
 
             PetscReal velSum = 0.0;
             for (PetscInt d = 0; d < dim; d++) {
-                velSum += euler[CompressibleFlowFields::RHOU + d] / rho;
+                velSum += PetscAbsReal(euler[CompressibleFlowFields::RHOU + d]) / rho;
             }
-            PetscReal dt = advectionData->cfl * dx / (a / pgsAlpha + PetscAbsReal(velSum));
+            PetscReal dt = advectionData->cfl * dx / (a / pgsAlpha + velSum);
 
             dtMin = PetscMin(dtMin, dt);
         }
