@@ -25,26 +25,29 @@ void ablate::domain::modifiers::ExtrudeLabel::Modify(DM &dm) {
 
     // add points from each region
     for (const auto &region : regions) {
-        region->CheckForLabel(dm);
+        region->CheckForLabel(dm, PetscObjectComm((PetscObject)dm));
         DMLabel regionLabel;
         PetscInt regionValue;
         domain::Region::GetLabel(region, dm, regionLabel, regionValue);
 
-        IS bdIS;
-        const PetscInt *points;
-        PetscInt n, i;
+        // If this label exists on this domain
+        if (regionLabel) {
+            IS bdIS;
+            const PetscInt *points;
+            PetscInt n, i;
 
-        DMLabelGetStratumIS(regionLabel, regionValue, &bdIS) >> checkError;
-        if (!bdIS) {
-            continue;
+            DMLabelGetStratumIS(regionLabel, regionValue, &bdIS) >> checkError;
+            if (!bdIS) {
+                continue;
+            }
+            ISGetLocalSize(bdIS, &n) >> checkError;
+            ISGetIndices(bdIS, &points) >> checkError;
+            for (i = 0; i < n; ++i) {
+                DMLabelSetValue(adaptLabel, points[i], DM_ADAPT_REFINE) >> checkError;
+            }
+            ISRestoreIndices(bdIS, &points) >> checkError;
+            ISDestroy(&bdIS) >> checkError;
         }
-        ISGetLocalSize(bdIS, &n) >> checkError;
-        ISGetIndices(bdIS, &points) >> checkError;
-        for (i = 0; i < n; ++i) {
-            DMLabelSetValue(adaptLabel, points[i], DM_ADAPT_REFINE) >> checkError;
-        }
-        ISRestoreIndices(bdIS, &points) >> checkError;
-        ISDestroy(&bdIS) >> checkError;
     }
 
     // set the options for the transform

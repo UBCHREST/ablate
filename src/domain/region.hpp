@@ -46,6 +46,13 @@ class Region {
      * @param dm
      */
     void CheckForLabel(DM dm) const;
+
+    /**
+     * throws exception if the label is not in the dm on any rank
+     * @param region
+     * @param dm
+     */
+    void CheckForLabel(DM dm, MPI_Comm comm) const;
 };
 
 std::ostream& operator<<(std::ostream& os, const Region& region);
