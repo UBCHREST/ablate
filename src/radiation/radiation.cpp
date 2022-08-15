@@ -376,6 +376,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     }
     /** Cleanup */
     DMDestroy(&radsearch) >> checkError;
+    VecRestoreArrayRead(faceGeomVec, &faceGeomArray);
+    DMDestroy(&cellDM);
+    DMDestroy(&faceDM);
 
     if (log) EndEvent();
 }
@@ -598,7 +601,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
 
     if (log) {
         VecGetDM(cellGeomVec, &cellDM);
-        DMPlexGetGeometryFVM(cellDM, nullptr, nullptr, &minCellRadius) >> checkError;
         VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     }
 
@@ -615,7 +617,7 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
 
-    /** Cleanup*/
+    /** Cleanup */
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
 
@@ -645,8 +647,6 @@ void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoor
 }
 
 PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* faceGeom) {
-    //    if (virtualcoord.x * faceGeom->normal[0] + virtualcoord.y * faceGeom->normal[1] + virtualcoord.z * faceGeom->normal[2] == 0)
-    //        return 0;  //!< In this case, the line and plane are parallel and there will be no valid intersection.
     PetscReal ldotn = (virtualcoord[ip].xdir * faceGeom->normal[0]) + (virtualcoord[ip].ydir * faceGeom->normal[1]) + (virtualcoord[ip].zdir * faceGeom->normal[2]);
     if (ldotn == 0) return 0;
     PetscReal d = (((faceGeom->normal[0] * faceGeom->centroid[0]) + (faceGeom->normal[1] * faceGeom->centroid[1]) + (faceGeom->normal[2] * faceGeom->centroid[2])) -
