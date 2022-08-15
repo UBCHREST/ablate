@@ -117,7 +117,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param virtualcoord the struct containing particle position information
      * @param face the struct containing information about a cell face
      */
-    PetscReal FaceIntersect(Virtualcoord virtualcoord, PetscFVFaceGeom* face);  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
+    PetscReal FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* face);  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
 
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates

@@ -32,6 +32,9 @@ class VolumeRadiation : public Radiation, public solver::CellSolver, public solv
                     const std::shared_ptr<parameters::Parameters>& options1, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<monitors::logs::Log> unnamed1);
 
     ~VolumeRadiation();
+
+    //!! Store an region of all cells not in the ghost for faster iteration
+    std::shared_ptr<domain::Region> solverRegionMinusGhost;
 };
 }  // namespace ablate::radiation
 #endif  // ABLATELIBRARY_VOLUMERADIATION_HPP
