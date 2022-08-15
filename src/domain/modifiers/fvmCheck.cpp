@@ -63,8 +63,10 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
         const PetscInt face = faceRange.points ? faceRange.points[f] : f;
 
         // make sure that this is a valid face
-        PetscInt ghost, nsupp, nchild;
-        DMLabelGetValue(ghostLabel, face, &ghost) >> checkError;
+        PetscInt ghost = -1, nsupp, nchild;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, face, &ghost) >> checkError;
+        }
         DMPlexGetSupportSize(dm, face, &nsupp) >> checkError;
         DMPlexGetTreeChildren(dm, face, &nchild, nullptr) >> checkError;
         if (ghost >= 0 || nsupp > 2 || nchild > 0) continue;
@@ -99,7 +101,10 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
 
         // check value
         PetscInt cellLabelValue = regionValue;
-        DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> checkError;
+        ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, faceCells[0], &ghost) >> checkError;
+        }
         if (regionLabel) {
             DMLabelGetValue(regionLabel, faceCells[0], &cellLabelValue) >> checkError;
         }
@@ -116,7 +121,10 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
         }
 
         cellLabelValue = regionValue;
-        DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> checkError;
+        ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, faceCells[1], &ghost) >> checkError;
+        }
         if (regionLabel) {
             DMLabelGetValue(regionLabel, faceCells[1], &cellLabelValue) >> checkError;
         }

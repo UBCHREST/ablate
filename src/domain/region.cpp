@@ -1,5 +1,6 @@
 #include "region.hpp"
 #include <functional>
+#include "utilities/mpiError.hpp"
 #include "utilities/petscError.hpp"
 
 ablate::domain::Region::Region(std::string name, int valueIn) : name(name), value(valueIn == 0 ? 1 : valueIn) {
@@ -22,10 +23,26 @@ void ablate::domain::Region::GetLabel(const std::shared_ptr<Region>& region, DM 
         regionValue = region->GetValue();
     }
 }
+
 void ablate::domain::Region::CheckForLabel(DM dm) const {
     DMLabel label = nullptr;
     DMGetLabel(dm, GetName().c_str(), &label) >> checkError;
     if (label == nullptr) {
+        throw std::invalid_argument("Unable to locate " + GetName() + " in domain");
+    }
+}
+
+;
+void ablate::domain::Region::CheckForLabel(DM dm, MPI_Comm comm) const {
+    DMLabel label = nullptr;
+    DMGetLabel(dm, GetName().c_str(), &label) >> checkError;
+
+    int found = (label != nullptr);
+    int anyFound;
+
+    MPI_Allreduce(&found, &anyFound, 1, MPI_INT, MPI_MAX, comm) >> checkMpiError;
+
+    if (!anyFound) {
         throw std::invalid_argument("Unable to locate " + GetName() + " in domain");
     }
 }
