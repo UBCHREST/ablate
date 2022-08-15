@@ -350,19 +350,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                         break;
                 }  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
                 virtualcoord[ip].hhere = 0;
-            } else {
-                //                /** Delete the particles that are no longer in a valid region */
-                //                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
-                //                DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-                //                DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-                //
-                //                DMSwarmRemovePointAtIndex(radsearch, ip);  //!< Delete the particle!
-                //
-                //                DMSwarmGetLocalSize(radsearch, &npoints);  //!< Need to recalculate the number of particles that are in the domain again
-                //                DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
-                //                DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-                //                DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-                //                ip--;  //!< Check the point replacing the one that was deleted
             }
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
@@ -516,21 +503,8 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     /** ********************************************************************************************************************************
      * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
 
-    /** check to see if there is a ghost label */
-    DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
-
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-
-        /** Make sure we are not working on a ghost cell */
-        PetscInt ghost = -1;
-        if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, iCell, &ghost);
-        }
-        if (ghost >= 0) {
-            continue;
-        }
 
         origin[iCell].intensity = 0;  //!< Make sure to zero the intensity of every cell before beginning to calculate the intensity for this time step.
 
@@ -630,15 +604,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-
-        // make sure we are not working on a ghost cell
-        PetscInt ghost = -1;
-        if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, iCell, &ghost);
-        }
-        if (ghost >= 0) {
-            continue;
-        }
 
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, temperatureField.id, auxArray, &temperature);
