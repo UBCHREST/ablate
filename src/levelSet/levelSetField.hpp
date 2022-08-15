@@ -53,8 +53,9 @@ class LevelSetField : public domain::FieldDescriptor {
     // Given a velocity field advect the level set
     void Advect(Vec vel, const PetscReal dt);
 
+    bool HasInterface(const PetscInt p);
 
-    bool HasInterface(PetscInt p);
+    PetscReal VOF(const PetscInt c);
 
    private:
     // Copied from current ABLATE code. Need to talk to Matt M. about how to integrate

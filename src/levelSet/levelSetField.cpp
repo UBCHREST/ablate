@@ -318,7 +318,412 @@ void LevelSetField::Advect(Vec velocity, const PetscReal dt) {
 
 }
 
-bool LevelSetField::HasInterface(PetscInt p) {
+
+// Area of a triangle.
+// It's 1/2 of the determinant of
+//   | x1 x2 |
+//   | y1 y2 |
+// where the coordinates are shifted so that x[0] is at the origin.
+PetscReal CellArea_Triangle(const PetscReal coords[]) {
+  const PetscReal x1 = coords[2] - coords[0], y1 = coords[3] - coords[1];
+  const PetscReal x2 = coords[4] - coords[0], y2 = coords[5] - coords[1];
+  const PetscReal area = 0.5*(x1*y2 - y1*x2);
+
+  return PetscAbsReal(area);
+}
+
+// Volume of a tetrahedron.
+// It's 1/6 of the determinant of
+//   | x1 x2 x3 |
+//   | y1 y2 y3 |
+//   | z1 z2 z3 |
+// where the coordinates are shifted so that x[0] is at the origin.
+PetscReal CellVolume_Tetrahedron(const PetscReal coords[]) {
+  const PetscReal x1 = coords[3] - coords[0], y1 = coords[4]  - coords[1], z1 = coords[5]  - coords[2];
+  const PetscReal x2 = coords[6] - coords[0], y2 = coords[7]  - coords[1], z2 = coords[8]  - coords[2];
+  const PetscReal x3 = coords[9] - coords[0], y3 = coords[10] - coords[1], z3 = coords[11] - coords[2];
+  const PetscReal vol = (x2*y3*z1 + x3*y1*z2 + x1*y2*z3 - x3*y2*z1 - x2*y1*z3 - x1*y3*z2)/6.0;
+
+  return PetscAbsReal(vol);
+}
+
+
+// 2D Simplex: DM_POLYTOPE_TRIANGLE
+// Note: The article returns the area of the unit triangle. To get the actual volume you would
+//    multiply the value by 2*(volume of the cell). Since we're interested in the VOF we simply multiply
+//    the value by 2, as we would be dividing by the volume of the cell to get the VOF.
+void VOF_2D_Tri(const PetscReal coords[], const PetscReal c[], PetscReal *vof, PetscReal *cellArea) {
+
+
+  if (vof) {
+    PetscReal p[3];
+    if (c[0] < 0.0 && c[1] < 0.0 && c[2] < 0.0) {
+      *vof = 1.0;
+    } else if (c[0] >= 0.0 && c[1] >= 0.0 && c[2] >= 0.0) {
+      *vof = 0.0;
+    } else {
+      if ((c[0] >= 0.0 && c[1] < 0.0 && c[2] < 0.0) || (c[0] < 0.0 && c[1] >= 0.0 && c[2] >= 0.0)) {
+        p[0] = c[2];
+        p[1] = c[1];
+        p[2] = c[0];
+      } else if ((c[1] >= 0.0 && c[0]<0.0 && c[2]<0.0) || (c[1] < 0.0 && c[0] >= 0.0 && c[2] >= 0.0)) {
+        p[0] = c[0];
+        p[1] = c[2];
+        p[2] = c[1];
+      } else if ((c[2] >= 0.0 && c[0] < 0.0 && c[1] < 0.0) || (c[2] < 0.0 && c[0] >= 0.0 && c[1] >= 0.0)) {
+        p[0] = c[0];
+        p[1] = c[1];
+        p[2] = c[2];
+      }
+
+      *vof = p[2]*p[2]/((p[2] - p[0])*(p[2] - p[1]));
+
+      // Then this is actually the amount in the outer domain.
+      if (p[2] >= 0.0) {
+        *vof = 1.0 - *vof;
+      }
+    }
+  }
+
+  if (cellArea) *cellArea = CellArea_Triangle(coords);
+
+}
+
+// 2D Non-Simplex: DM_POLYTOPE_QUADRILATERAL
+/*
+     3--------2
+     |        |
+     |        |
+     |        |
+     0--------1
+*/
+void VOF_2D_Quad(const PetscReal coords[], const PetscReal c[], PetscReal *vof, PetscReal *cellArea) {
+  // Triangle using vertices 0-1-3
+  const PetscReal x1[6] = {coords[0], coords[1], coords[2], coords[3], coords[6], coords[7]};
+  const PetscReal c1[3] = {c[0], c[1], c[3]};
+  PetscReal vof1, cellArea1;
+
+  // Triangle using vertices 2-1-3
+  const PetscReal x2[6] = {coords[4], coords[5], coords[2], coords[3], coords[6], coords[7]};
+  const PetscReal c2[3] = {c[2], c[1], c[3]};
+  PetscReal vof2, cellArea2;
+
+  // VOF and area of each triangle.
+  VOF_2D_Tri(x1, c1, &vof1, &cellArea1);
+  VOF_2D_Tri(x2, c2, &vof2, &cellArea2);
+
+  if(vof)      *vof = (vof1*cellArea1 + vof2*cellArea2) / (cellArea1 + cellArea2);
+  if(cellArea) *cellArea = cellArea1 + cellArea2;
+
+}
+
+// 3D Simplex: DM_POLYTOPE_TETRAHEDRON
+/*
+         3
+         ^
+        /|\
+       / | \
+      /  |  \
+     0'-.|.-'2
+         1
+*/
+void VOF_3D_Tetra(const PetscReal coords[12], const PetscReal c[4], PetscReal *vof, PetscReal *cellVol) {
+
+  if (vof) {
+    if ( c[0] == 0.0 && c[1] == 0.0 && c[2] == 0.0 && c[3] == 0.0) {
+        throw std::logic_error("It appears that all nodes of the tetrahedron have a zero level set value!\n");
+    } else if ( c[0] <= 0.0 && c[1] <= 0.0 && c[2] <= 0.0 && c[3] <= 0.0) {
+      *vof = 1.0;
+    } else if ( c[0] >= 0.0 && c[1] >= 0.0 && c[2] >= 0.0 && c[3] >= 0.0) {
+      *vof = 0.0;
+    } else {
+      PetscReal p[4];
+      PetscBool twoNodes;
+
+      if ( (c[0] >= 0.0 && c[1] <  0.0 && c[2] <  0.0 && c[3] <  0.0) ||  // Case 1
+           (c[0] <  0.0 && c[1] >= 0.0 && c[2] >= 0.0 && c[3] >= 0.0) ) { // Case 2
+        p[3] = c[0];
+        p[0] = c[1];
+        p[2] = c[2];
+        p[1] = c[3];
+        twoNodes = PETSC_FALSE;
+      } else if ( (c[1] >= 0.0 && c[0] <  0.0 && c[2] <  0.0 && c[3] <  0.0) ||  // Case 3
+                  (c[1] <  0.0 && c[0] >= 0.0 && c[2] >= 0.0 && c[3] >= 0.0) ) { // Case 4
+        p[0] = c[0];
+        p[3] = c[1];
+        p[1] = c[2];
+        p[2] = c[3];
+        twoNodes = PETSC_FALSE;
+      } else if ( (c[0] >= 0.0 && c[1] >= 0.0 && c[2] <  0.0 && c[3] <  0.0) ||  // Case 5
+                  (c[0] <  0.0 && c[1] <  0.0 && c[2] >= 0.0 && c[3] >= 0.0) ) { // Case 6
+        p[0] = c[0];
+        p[3] = c[1];
+        p[1] = c[2];
+        p[2] = c[3];
+        twoNodes = PETSC_TRUE;
+      } else if ( (c[2] >= 0.0 && c[0] <  0.0 && c[1] <  0.0 && c[3] <  0.0) ||  // Case 7
+                  (c[2] <  0.0 && c[0] >= 0.0 && c[1] >= 0.0 && c[3] >= 0.0) ) { // Case 8
+        p[0] = c[0];
+        p[2] = c[1];
+        p[3] = c[2];
+        p[1] = c[3];
+        twoNodes = PETSC_FALSE;
+      } else if ( (c[0] >= 0.0 && c[2] >= 0.0 && c[1] <  0.0 && c[3] <  0.0) ||  // Case 9
+                  (c[0] <  0.0 && c[2] <  0.0 && c[1] >= 0.0 && c[3] >= 0.0) ) { // Case 10
+        p[0] = c[0];
+        p[2] = c[1];
+        p[3] = c[2];
+        p[1] = c[3];
+        twoNodes = PETSC_TRUE;
+      } else if ( (c[3] >= 0.0 && c[0] <  0.0 && c[1] <  0.0 && c[2] <  0.0) ||  // Case 11
+                  (c[3] <  0.0 && c[0] >= 0.0 && c[1] >= 0.0 && c[2] >= 0.0) ) { // Case 12
+        p[0] = c[0];
+        p[1] = c[1];
+        p[2] = c[2];
+        p[3] = c[3];
+        twoNodes = PETSC_FALSE;
+      } else if ( (c[0] >= 0.0 && c[3] >= 0.0 && c[1] <  0.0 && c[2] <  0.0) ||  // Case 13
+                  (c[0] <  0.0 && c[3] <  0.0 && c[1] >= 0.0 && c[2] >= 0.0) ) { // Case 14
+        p[0] = c[0];
+        p[1] = c[1];
+        p[2] = c[2];
+        p[3] = c[3];
+        twoNodes = PETSC_TRUE;
+      }
+      else {
+        throw std::logic_error("Unable to determine the condition for tetrahedral volume calculation.\n");
+      }
+
+      if (twoNodes){
+        const PetscReal d31 = p[3] - p[1], d32 = p[3] - p[2], d01 = p[0] - p[1], d02 = p[0] - p[2];
+        *vof = (d31*d32*p[0]*p[0] - d32*p[0]*p[1]*p[3] - d01*p[2]*p[3]*p[3])/(d01*d02*d31*d32);
+      }
+      else {
+        *vof = p[3]*p[3]*p[3]/((p[3] - p[0])*(p[3] - p[1])*(p[3] - p[2]));
+      }
+
+      if ( p[3] >= 0.0 ) {
+        *vof = 1.0 - *vof;
+      }
+    }
+  }
+
+  if (cellVol) *cellVol = CellVolume_Tetrahedron(coords);
+}
+
+
+// Test using x-y+z
+void VOF_3D_Tetra_Test( ){
+  const PetscReal coords[] = { 0.0, 0.0, 0.0,
+                                2.0, 0.5, 0.0,
+                                0.0, 1.0, 0.5,
+                                2.0, 0.0, 1.0};
+
+  PetscReal       vof = -1.0, vol = -1.0;
+  const PetscReal trueVol = 5.0/12.0;
+  const PetscInt  nCases = 22;
+  const PetscReal trueVof[] = {0.0, 1.0, 7.0/8.0, 1.0/8.0, 7.0/8.0, 1.0/8.0, 7.0/8.0, 1.0/8.0, 7.0/8.0, 1.0/8.0, 11.0/18.0, 7.0/18.0, 11.0/18.0, 7.0/18.0, 11.0/18.0, 7.0/18.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0};
+  const PetscReal c[] = {  1.0,  1.0,  1.0,  1.0,  // 0
+                          -1.0, -1.0, -1.0, -1.0,  // 1
+                           1.0, -1.0, -1.0, -1.0,  // Case 1, 1/8
+                          -1.0,  1.0,  1.0,  1.0,  // Case 2, 7/8
+                          -1.0,  1.0, -1.0, -1.0,  // Case 3, 1/8
+                           1.0, -1.0,  1.0,  1.0,  // Case 4, 7/8
+                          -1.0, -1.0,  1.0, -1.0,  // Case 7, 1/8
+                           1.0,  1.0, -1.0,  1.0,  // Case 8, 7/8
+                          -1.0, -1.0, -1.0,  1.0,  // Case 11, 1/8
+                           1.0,  1.0,  1.0, -1.0,  // Case 12, 7/8
+                           0.5,  1.0, -1.0, -1.0,  // Case 5, 7/18
+                          -0.5, -1.0,  1.0,  1.0,  // Case 6, 11/18
+                           0.5, -1.0,  1.0, -1.0,  // Case 9, 7/18
+                          -0.5,  1.0, -1.0,  1.0,  // Case 10, 11/18
+                           0.5, -1.0, -1.0,  1.0,  // Case 13, 7/18
+                          -0.5,  1.0,  1.0, -1.0,  // Case 14, 11/18
+                           0.0,  0.0,  1.0,  1.0,  // 0
+                           0.0,  0.0, -1.0, -1.0,  // 1
+                           0.0,  1.0,  0.0,  1.0,  // 0
+                           0.0, -1.0,  0.0, -1.0,  // 1
+                           0.0,  1.0,  1.0,  0.0,  // 0
+                           0.0, -1.0, -1.0,  0.0   // 1
+                        };
+
+//  VOF_3D_Tetra(coords, &c[3*4], &vof, &vol);
+//  printf("%+f\t%+f\n", vof, vol);
+
+  for (PetscInt i = 0; i < nCases; ++i ) {
+    VOF_3D_Tetra(coords, &c[i*4], &vof, &vol);
+    printf("VOF: %d\t%+f\t%+f\n", PetscAbsReal(vof - trueVof[i])<1.e-8 , vof, trueVof[i]);
+  }
+  printf("VOL: %d\t%+f\t%+f\n", PetscAbsReal(vol - trueVol)<1.e-8 , vol, trueVol);
+
+}
+
+// 3D Non-Simplex: DM_POLYTOPE_HEXAHEDRON
+/*
+        7--------6
+       /|       /|
+      / |      / |
+     4--------5  |
+     |  |     |  |
+     |  |     |  |
+     |  1--------2
+     | /      | /
+     |/       |/
+     0--------3
+*/
+// Uses "HOW TO SUBDIVIDE PYRAMIDS, PRISMS AND HEXAHEDRA INTO TETRAHEDRA" to get the divisions.
+// Note that the numbering differs between the paper and DMPLEX:
+// V1->0, V2->3, V3->2, V4->1, V5->4, V6->5, V7->6, V8->7
+void VOF_3D_Hex(const PetscReal coords[], const PetscReal c[], PetscReal *vof, PetscReal *cellVol) {
+  const PetscInt  nTet = 5, nVerts = 4, dim = 3;
+  PetscInt        t, v, d, vid;
+  PetscReal       x[nVerts*dim], f[nVerts], tetVOF, tetVOL, sumVOF = 0.0, sumVOL = 0.0;
+//  PetscInt        TID[nTet*nVerts] = { 0, 3, 2, 5,  // Tet1
+//                                       0, 2, 7, 5,  // Tet2
+//                                       0, 2, 1, 7,  // Tet3
+//                                       0, 5, 7, 4,  // Tet4
+//                                       2, 7, 5, 6}; // Tet5
+
+PetscInt        TID[nTet*nVerts] = { 0, 3, 2, 5,  // Tet1
+                                     2, 7, 5, 6,  // Tet2
+                                     0, 4, 7, 5,  // Tet3
+                                     0, 1, 2, 7,  // Tet4
+                                     0, 2, 7, 5}; // Tet5
+
+
+
+  for (t = 0; t < nTet; ++t) {      // Iterate over all tetrahedrons
+    for (v = 0; v < nVerts; ++v) {  // The 4 verties
+      vid = TID[t*nVerts + v];      // Hex vertex ID
+      f[v] = c[vid];                // Level-set val
+      for (d = 0; d < dim; ++d) {   // Set coordinates
+        x[v*dim + d] = coords[vid*dim + d];
+      }
+    }
+
+    VOF_3D_Tetra(x, f, &tetVOF, &tetVOL);
+    sumVOF += tetVOF*tetVOL;
+    sumVOL += tetVOL;
+//    printf("%d: %+f\t%+f\n", t, tetVOF, tetVOL);
+//    exit(0);
+  }
+
+  if(vof)     *vof = sumVOF/sumVOL;
+  if(cellVol) *cellVol = sumVOL;
+}
+
+
+void VOF_3D_Hex_Test( ){
+  const PetscReal coords[] = {1.0, 1.0, 1.0,
+                              1.0, 3.0, 2.0,
+                              2.0, 4.0, 2.0,
+                              2.0, 2.0, 1.0,
+                              2.0, 1.0, 2.0,
+                              3.0, 2.0, 2.0,
+                              3.0, 4.0, 3.0,
+                              2.0, 3.0, 3.0};
+
+  PetscReal       vof = -1.0, vol = -1.0;
+  const PetscReal trueVol = 3.0;
+  const PetscInt  nCases = 4;
+  const PetscReal trueVof[] = {1.0/24.0, 23.0/24.0, 0.25, 0.75};
+  const PetscReal c[] = { -1.0,  1.0,  3.0,  1.0,  0.0,  2.0,  4.0,  2.0, // 1/24
+                           1.0, -1.0, -3.0, -1.0,  0.0, -2.0, -4.0, -2.0, // 23/24
+                          -1.0,  1.0,  2.0,  0.0, -1.0,  0.0,  2.0,  1.0, // 1/4
+                           1.0, -1.0, -2.0,  0.0,  1.0,  0.0, -2.0, -1.0, // 3/4
+                        };
+
+  for (PetscInt i = 0; i < nCases; ++i ) {
+    VOF_3D_Hex(coords, &c[i*8], &vof, &vol);
+    printf("VOF: %d\t%+f\t%+f\n", PetscAbsReal(vof - trueVof[i])<1.e-8 , vof, trueVof[i]);
+  }
+  printf("VOL: %d\t%+f\t%+f\n", PetscAbsReal(vol - trueVol)<1.e-8 , vol, trueVol);
+
+}
+
+// Returns the VOF for a given cell. Refer to "Quadrature rules for triangular and tetrahedral elements with generalized functions"
+//  by Holdych, Noble, and Secor, Int. J. Numer. Meth. Engng 2008; 73:1310-1327.
+PetscReal LevelSetField::VOF(const PetscInt p) {
+
+  DMPolytopeType    ct;
+  PetscInt          dim = LevelSetField::dim, Nc, cStart, nVerts, i, j;
+  PetscReal         x0[3] = {0.0, 0.0, 0.0}, n[3] = {0.0, 0.0, 0.0}, g;
+  PetscReal         *c = NULL, *coords = NULL, c0, vof = -1.0;
+  DM                dm = LevelSetField::dm;
+  const PetscScalar *array;
+  PetscBool         isDG;
+
+  // Usually cStart is 0, but get it just in case it changes
+  DMPlexGetHeightStratum(dm, 0, &cStart, NULL) >> ablate::checkError;
+
+  // The cell center
+  DMPlexComputeCellGeometryFVM(dm, p, NULL, x0, NULL) >> ablate::checkError;
+
+  // Level-set value at cell-center
+  VecGetArrayRead(LevelSetField::phi, &array) >> ablate::checkError;
+  c0 = array[p - cStart];
+  VecRestoreArrayRead(LevelSetField::phi, &array) >> ablate::checkError;
+
+  // Normal vector
+  VecGetArrayRead(LevelSetField::normal, &array) >> ablate::checkError;
+  g = 0.0;
+  for (i = 0; i < dim; ++i) {
+    n[i] = array[(p - cStart)*dim + i];
+    g += PetscSqr(n[i]);
+  }
+  VecRestoreArrayRead(LevelSetField::normal, &array) >> ablate::checkError;
+  g = PetscSqrtReal(g);
+  for (i = 0; i < dim; ++i) n[i] /= g;
+
+
+  // Coordinates of the cell vertices
+  DMPlexGetCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> ablate::checkError;
+
+  // Number of vertices
+  nVerts = Nc/dim;
+
+  PetscMalloc(nVerts, &c) >> ablate::checkError;
+
+
+
+  // The level set value of each vertex. This assumes that the interface is a line/plane
+  //    with the given unit normal.
+  for (i = 0; i < nVerts; ++i) {
+    c[i] = c0;
+    for (j = 0; j < dim; ++j) {
+      c[i] += n[j]*(coords[i*dim + j] - x0[j]);
+    }
+  }
+
+  DMPlexRestoreCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> ablate::checkError;
+
+
+  // Get the cell type and call appropriate VOF function
+  DMPlexGetCellType(dm, p, &ct) >> ablate::checkError;
+  switch (ct) {
+    case DM_POLYTOPE_TRIANGLE:
+//      vof = VOF_2D_Tri(c);
+      break;
+    case DM_POLYTOPE_QUADRILATERAL:
+//      vof = VOF_2D_Quad(c);
+      break;
+    case DM_POLYTOPE_TETRAHEDRON:
+//      vof = VOF_3D_Tetra(c);
+      break;
+    case DM_POLYTOPE_HEXAHEDRON:
+//      vof = VOF_3D_Hex(c);
+      break;
+    default: SETERRQ(PetscObjectComm((PetscObject) dm), PETSC_ERR_ARG_OUTOFRANGE, "No element geometry for cell %" PetscInt_FMT " with type %s", p, DMPolytopeTypes[PetscMax(0, PetscMin(ct, DM_NUM_POLYTOPES))]);
+  }
+
+
+  PetscFree(c);
+
+  return vof;
+
+}
+
+bool LevelSetField::HasInterface(const PetscInt p) {
   bool              hasInterface = false;
   PetscInt          nCells = 0, *cells = NULL;
   PetscInt          i, cStart;
