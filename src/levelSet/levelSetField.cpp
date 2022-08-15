@@ -201,8 +201,6 @@ LevelSetField::~LevelSetField() {
   VecDestroy(&(LevelSetField::phi));
   VecDestroy(&(LevelSetField::normal));
   VecDestroy(&(LevelSetField::curv));
-
-
 }
 
 void LevelSetField::ComputeAllNormal() {
@@ -682,7 +680,7 @@ PetscReal LevelSetField::VOF(const PetscInt p) {
   // Number of vertices
   nVerts = Nc/dim;
 
-  PetscMalloc(nVerts, &c) >> ablate::checkError;
+  PetscMalloc1(nVerts, &c) >> ablate::checkError;
 
 
 
@@ -695,29 +693,26 @@ PetscReal LevelSetField::VOF(const PetscInt p) {
     }
   }
 
-  DMPlexRestoreCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> ablate::checkError;
-
-
   // Get the cell type and call appropriate VOF function
   DMPlexGetCellType(dm, p, &ct) >> ablate::checkError;
   switch (ct) {
     case DM_POLYTOPE_TRIANGLE:
-//      vof = VOF_2D_Tri(c);
+      VOF_2D_Tri(coords, c, &vof, NULL);
       break;
     case DM_POLYTOPE_QUADRILATERAL:
-//      vof = VOF_2D_Quad(c);
+      VOF_2D_Quad(coords, c, &vof, NULL);
       break;
     case DM_POLYTOPE_TETRAHEDRON:
-//      vof = VOF_3D_Tetra(c);
+      VOF_3D_Tetra(coords, c, &vof, NULL);
       break;
     case DM_POLYTOPE_HEXAHEDRON:
-//      vof = VOF_3D_Hex(c);
+      VOF_3D_Hex(coords, c, &vof, NULL);
       break;
     default: SETERRQ(PetscObjectComm((PetscObject) dm), PETSC_ERR_ARG_OUTOFRANGE, "No element geometry for cell %" PetscInt_FMT " with type %s", p, DMPolytopeTypes[PetscMax(0, PetscMin(ct, DM_NUM_POLYTOPES))]);
   }
 
-
-  PetscFree(c);
+  DMPlexRestoreCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> ablate::checkError;
+  PetscFree(c) >> ablate::checkError;
 
   return vof;
 
