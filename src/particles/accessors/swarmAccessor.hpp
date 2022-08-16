@@ -65,7 +65,7 @@ class SwarmAccessor : public Accessor<const PetscReal>{
                 DMSwarmRestoreField(swarmDm, name.c_str(), nullptr, nullptr, (void**)&values) >> checkError;
             });
 
-            return ConstPointData(solutionValues, field);
+            return ConstPointData(values, field);
         }
     }
 

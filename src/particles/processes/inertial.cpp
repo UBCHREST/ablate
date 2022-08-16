@@ -25,7 +25,7 @@ void ablate::particles::processes::Inertial::ComputeRHS(PetscReal time, ablate::
 
     for (PetscInt p = 0; p < np; ++p) {
         PetscReal rep = 0.0;
-        PetscReal corFactor = 0.0;
+        PetscReal corFactor;
         PetscScalar tauP;
 
         for (PetscInt n = 0; n < dim; n++) {
