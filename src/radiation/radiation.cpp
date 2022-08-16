@@ -8,24 +8,18 @@
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "utilities/constants.hpp"
 #include "utilities/mathUtilities.hpp"
+#include "utilities/petscOptions.hpp"
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
-                                        const std::shared_ptr<parameters::Parameters>& options, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
-                                        std::shared_ptr<ablate::monitors::logs::Log> log)
-    : solverId((std::basic_string<char> &&) solverId),
-      region(std::move(region)),
-      options((std::shared_ptr<parameters::Parameters> &&) options),
-      radiationModel(std::move(radiationModelIn)),
-      fieldBoundary(std::move(fieldBoundary)),
-      log(std::move(log)) {
+                                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
+    : solverId((std::basic_string<char> &&) solverId), region(std::move(region)), radiationModel(std::move(radiationModelIn)), fieldBoundary(std::move(fieldBoundary)), log(std::move(log)) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
 
 ablate::radiation::Radiation::~Radiation() {
     if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
-    if (cellGeomVec) VecDestroy(&cellGeomVec) >> checkError;
-    if (faceGeomVec) VecDestroy(&faceGeomVec) >> checkError;
+    //    if (cellGeomVec) VecDestroy(&cellGeomVec) >> checkError;
 }
 
 void ablate::radiation::Radiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
@@ -60,11 +54,16 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     if (log) StartEvent("Radiation Initialization");
     if (log) PetscPrintf(subDomain->GetComm(), "Starting Initialize\n");
 
-    PetscReal minCellRadius;
-    DM cellDM;
-    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;
-    VecGetDM(cellGeomVec, &cellDM);
-    DMPlexGetGeometryFVM(cellDM, nullptr, nullptr, &minCellRadius) >> checkError;
+    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    Vec cellGeomVec = nullptr;
+    DM faceDM;
+    const PetscScalar* faceGeomArray;
+    PetscFVFaceGeom* faceGeom;
+
+    DMPlexGetMinRadius(subDomain->GetDM(), &minCellRadius) >> checkError;                    //!< The minimum cell radius is used to scale the face stepping procedures
+    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
+    VecGetDM(faceGeomVec, &faceDM) >> checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
     /** do a simple sanity check for labels */
     PetscMPIInt rank;
@@ -109,9 +108,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     DMSwarmSetLocalSizes(radsearch, npoints, 0) >> checkError;  //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
     DMSwarmSetLocalSizes(radsolve, 0, 0) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
-    /** Set the spatial step size to the minimum cell radius */
-    PetscReal hstep = minCellRadius / 3;
-
     /** Declare some information associated with the field declarations */
     PetscReal* coord;                    //!< Pointer to the coordinate field information
     struct Virtualcoord* virtualcoord;   //!< Pointer to the primary (virtual) coordinate field information
@@ -137,9 +133,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
-                virtualcoord[ipart].x = centroid[0];
-                virtualcoord[ipart].y = centroid[1];
-                virtualcoord[ipart].z = centroid[2];
+                virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
+                virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
+                virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
                 virtualcoord[ipart].current = iCell;  //!< Set this to a null value so that it can't get confused about where it starts.
 
                 /** Get the initial direction of the search particle from the angle number that it was initialized with */
@@ -147,9 +143,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                 phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;  //!<  Phi angle of the ray
 
                 /** Update the direction vector of the search particle */
-                virtualcoord[ipart].xdir = hstep * (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ipart].ydir = hstep * (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
-                virtualcoord[ipart].zdir = hstep * (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].xdir = (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].ydir = (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
+                virtualcoord[ipart].zdir = (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord);
@@ -207,19 +203,15 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         PetscInt i[3] = {0, 1, 2};                   //!< Establish the vector here so that it can be iterated.
         for (PetscInt ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                      //!< particles then pass out of initialization.
-            ipart = ip;                              //!< Set the particle index as a different variable in the loop so it doesn't make the compiler unhappy.
-
-            /** Update the physical coordinate field so that the real particle location can be updated. */
-            UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
 
             /** FIRST TAKE THIS LOCATION INTO THE RAYS VECTOR
              * "I found a particle in my domain. Maybe it was just moved here and I've never seen it before.
              * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
 
             /** Get the particle coordinates here and put them into the intersect */
-            PetscReal position[3] = {(virtualcoord[ipart].x),   //!< x component conversion from spherical coordinates, adding the position of the current cell
-                                     (virtualcoord[ipart].y),   //!< y component conversion from spherical coordinates, adding the position of the current cell
-                                     (virtualcoord[ipart].z)};  //!< z component conversion from spherical coordinates, adding the position of the current cell
+            PetscReal position[3] = {(coord[dim * ip + 0]),   //!< x component conversion from spherical coordinates, adding the position of the current cell
+                                     (coord[dim * ip + 1]),   //!< y component conversion from spherical coordinates, adding the position of the current cell
+                                     (coord[dim * ip + 2])};  //!< z component conversion from spherical coordinates, adding the position of the current cell
 
             /** This block creates the vector pointing to the cell whose index will be stored during the current loop */
             VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
@@ -242,8 +234,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
 
         for (PetscInt ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
 
-            ipart = ip;  //!< Iterate the loop variable
-
             /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
              * This function returns multiple values if multiple points are input to it
              * Make sure that whatever cell is returned is in the stencil set (and not outside of the radiation domain)
@@ -253,60 +243,106 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
             /** make sure we are not working on a ghost cell */
             if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) {
                 index = cell[ip].index;
-            } else {
-                index = -1;
-            }
 
-            if (index > -1) {
-                if (virtualcoord[ipart].current != index) {
-                    /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
-                     * Hash the identifier into a key value that can be used in the map
-                     * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
-                     * */
-                    if (rays.count(Key(&identifier[ipart])) ==
-                        0) {                                      //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
-                        identifier[ipart].nsegment++;             //!< The particle has passed through another domain!
-                        DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
+                /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
+                 * Hash the identifier into a key value that can be used in the map
+                 * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
+                 * */
+                if (rays.count(Key(&identifier[ip])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
+                    identifier[ip].nsegment++;                //!< The particle has passed through another domain!
+                    DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
 
-                        DMSwarmGetLocalSize(radsolve,
-                                            &nsolvepoints) >>
-                            checkError;  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last one is newest)
+                    DMSwarmGetLocalSize(radsolve,
+                                        &nsolvepoints) >>
+                        checkError;  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last one is newest)
 
-                        DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >>
-                            checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
-                        DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+                    DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >>
+                        checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
+                    DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
 
-                        PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
-                        solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
-                        carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
+                    PetscInt newpoint = nsolvepoints - 1;        //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
+                    solveidentifier[newpoint] = identifier[ip];  //!< Give the particle an identifier which matches the particle it was created with
+                    carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
 
-                        DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >>
-                            checkError;  //!< The fields must be returned so that the swarm can be updated correctly?
-                        DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
-                    }
-
-                    /** ********************************************
-                     * Adaptive stepping stuff lives here: to be added after each time the position is updated
-                     * The current cell should be added before the loop begins*/
-                    rays[Key(&identifier[ipart])].cells.push_back(index);
-                    rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
-                    virtualcoord[ipart].hhere = 0;
-                    virtualcoord[ipart].current = index;  //!< Sets the current cell for the adaptive space stepping to compare against
-
-                } else {
-                    virtualcoord[ipart].hhere += hstep;  //!< If the cell is not different then we simply increase the stored path length by one step.
+                    DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >> checkError;  //!< The fields must be returned so that the swarm can be updated correctly?
+                    DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
                 }
+
+                /** ********************************************
+                 * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
+                 * boundary conditions and the conditions at reflection can be accounted for. This will make the entire initialization much faster by only requiring a single step through each
+                 * cell. Additionally, the option for reflection is opened because the faces and their normals are now more easily accessed during the initialization. The boundary condition for
+                 * the search cells to disappear will be dependant upon whether they have intersected with a boundary face. For now, the particles can simply be deleted when they hit a boundary
+                 * face. In the future, the carrier particles may want to be endowed with some information that the boundary label carries when the search particle happens upon it.
+                 * */
+
+                /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
+                 * */
+                rays[Key(&identifier[ip])].cells.push_back(index);
+
+                /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
+                 * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
+                 * Here we are figuring out what distance the ray spends inside the cell that it has just registered.
+                 * */
+                /** March over each face on this cell in order to check them for the one which intersects this ray next */
+                PetscInt numberFaces;
+                const PetscInt* cellFaces;
+                DMPlexGetConeSize(subDomain->GetDM(), index, &numberFaces) >> checkError;
+                DMPlexGetCone(subDomain->GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
+                PetscReal path = 0;
+
+                /** Check every face for intersection with the segment.
+                 * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
+                 * */
+                for (PetscInt f = 0; f < numberFaces; f++) {
+                    PetscInt face = cellFaces[f];
+                    DMPlexPointLocalRead(faceDM, face, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
+
+                    /** Get the intersection of the direction vector with the cell face
+                     * Use the plane equation and ray segment equation in order to get the face intersection with the shortest path length
+                     * This will be the next position of the search particle
+                     * */
+                    path = FaceIntersect(ip, virtualcoord, faceGeom);  //!< Use plane intersection equation by getting the centroid and normal vector of the face
+
+                    /** Step 3: Take this path if it is shorter than the previous one, getting the shortest path.
+                     * The path should never be zero if the forwardIntersect check is functioning properly.
+                     * */
+                    if (path > 0) {
+                        virtualcoord[ip].hhere = (virtualcoord[ip].hhere == 0) ? (path * 1.1) : virtualcoord[ip].hhere;  //!< Dumb check to ensure that the path length is always updated
+                        if (virtualcoord[ip].hhere > path) {
+                            virtualcoord[ip].hhere = path;  //!> Get the shortest path length of all of the faces. The point must be in the direction that the ray is travelling in order to be valid.
+                        }
+                    }
+                }
+                rays[Key(&identifier[ip])].h.push_back(virtualcoord[ip].hhere);  //!< Add this space step if the current index is being added.
+
+                /** Step 4: Push the particle virtual coordinates to the intersection that was found in the previous step.
+                 * This ensures that the next calculated path length will start from the boundary of the adjacent cell.
+                 * */
+                virtualcoord[ip].x += virtualcoord[ip].xdir * virtualcoord[ip].hhere;
+                virtualcoord[ip].y += virtualcoord[ip].ydir * virtualcoord[ip].hhere;
+                virtualcoord[ip].z += virtualcoord[ip].zdir * virtualcoord[ip].hhere;  //!< Only use the literal intersection coordinate if it exists. This will be decided above.
+
+                /** Step 5: Instead of using the cell face to step into the opposite cell, step the physical coordinates just beyond the intersection.
+                 * This avoids issues with hitting corners and potential ghost cell weirdness.
+                 * It will be slower than the face flipping but it will be more reliable.
+                 * Update the coordinates of the particle.
+                 * It doesn't matter which method is used,
+                 * this will be the same procedure.
+                 * */
+                switch (dim) {
+                    case 2:                                                                                  //!< If there are only two dimensions in this simulation
+                        coord[2 * ip] = virtualcoord[ip].x + (virtualcoord[ip].xdir * 0.1 * minCellRadius);  //!< Update the two physical coordinates
+                        coord[(2 * ip) + 1] = virtualcoord[ip].y + (virtualcoord[ip].ydir * 0.1 * minCellRadius);
+                        break;
+                    case 3:                                                                                  //!< If there are three dimensions in this simulation
+                        coord[3 * ip] = virtualcoord[ip].x + (virtualcoord[ip].xdir * 0.1 * minCellRadius);  //!< Update the three physical coordinates
+                        coord[(3 * ip) + 1] = virtualcoord[ip].y + (virtualcoord[ip].ydir * 0.1 * minCellRadius);
+                        coord[(3 * ip) + 2] = virtualcoord[ip].z + (virtualcoord[ip].zdir * 0.1 * minCellRadius);
+                        break;
+                }  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
+                virtualcoord[ip].hhere = 0;
             }
-
-            /** Step the vector forward in space until it is no longer in the cell it was ins
-             * After the coordinates have left the cell it was it, the coordinates of the particle should be updated
-             * Update the coordinates of the particle (virtual and physical)
-             * */
-            virtualcoord[ipart].x += virtualcoord[ipart].xdir;  //!< x component: add one step to the coordinate position
-            virtualcoord[ipart].y += virtualcoord[ipart].ydir;  //!< y component: add one step to the coordinate position
-            virtualcoord[ipart].z += virtualcoord[ipart].zdir;  //!< z component: add one step to the coordinate position
-
-            UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
         DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
@@ -330,8 +366,11 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
             stepcount++;
         }
     }
-    /** Cleanup*/
+    /** Cleanup */
     DMDestroy(&radsearch) >> checkError;
+    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    VecDestroy(&cellGeomVec) >> checkError;
+    VecDestroy(&faceGeomVec) >> checkError;
 
     if (log) EndEvent();
 }
@@ -459,21 +498,8 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     /** ********************************************************************************************************************************
      * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
 
-    /** check to see if there is a ghost label */
-    DMLabel ghostLabel;
-    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
-
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-
-        /** Make sure we are not working on a ghost cell */
-        PetscInt ghost = -1;
-        if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, iCell, &ghost);
-        }
-        if (ghost >= 0) {
-            continue;
-        }
 
         origin[iCell].intensity = 0;  //!< Make sure to zero the intensity of every cell before beginning to calculate the intensity for this time step.
 
@@ -539,7 +565,7 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     /** ********************************************************************************************************************************
      * Need to delete all of the particles that were transported to different domains so that the process can be repeated in the next step. */
 
-    /** Delete all of the particles that were transported to their origin domains -> Delete if (identifier.origin == MPI_Rank() && identifier.nsegment != 0) */
+    /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) {
             DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);  //!< Need to restore the field access before deleting a point
@@ -561,28 +587,21 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     /** ********************************************************************************************************************************
      * Loop through the cell range and compute the origin contributions. */
 
-    const PetscScalar* cellGeomArray;
-    PetscReal minCellRadius;
+    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    Vec cellGeomVec = nullptr;
     DM cellDM;
+    const PetscScalar* cellGeomArray;
     PetscFVCellGeom* cellGeom;
 
     if (log) {
-        VecGetDM(cellGeomVec, &cellDM);
-        DMPlexGetGeometryFVM(cellDM, nullptr, nullptr, &minCellRadius) >> checkError;
+        DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
+        VecGetDM(cellGeomVec, &cellDM) >> checkError;
         VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+        printf("x           y           z           G\n");  //!< Line labelling the log outputs for readability
     }
 
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-
-        // make sure we are not working on a ghost cell
-        PetscInt ghost = -1;
-        if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, iCell, &ghost);
-        }
-        if (ghost >= 0) {
-            continue;
-        }
 
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, temperatureField.id, auxArray, &temperature);
@@ -594,13 +613,15 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
 
-    /** Cleanup*/
+    /** Cleanup */
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
 
     if (log) {
         EndEvent();
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+        VecDestroy(&cellGeomVec) >> checkError;
+        VecDestroy(&faceGeomVec) >> checkError;
     }
     return origin;
 }
@@ -620,5 +641,18 @@ void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoor
             coord[(3 * ipart) + 1] = virtualcoord[ipart].y;
             coord[(3 * ipart) + 2] = virtualcoord[ipart].z;
             break;
+    }
+}
+
+PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* faceGeom) {
+    PetscReal ldotn = (virtualcoord[ip].xdir * faceGeom->normal[0]) + (virtualcoord[ip].ydir * faceGeom->normal[1]) + (virtualcoord[ip].zdir * faceGeom->normal[2]);
+    if (ldotn == 0) return 0;
+    PetscReal d = (((faceGeom->normal[0] * faceGeom->centroid[0]) + (faceGeom->normal[1] * faceGeom->centroid[1]) + (faceGeom->normal[2] * faceGeom->centroid[2])) -
+                   ((faceGeom->normal[0] * virtualcoord[ip].x) + (faceGeom->normal[1] * virtualcoord[ip].y) + (faceGeom->normal[2] * virtualcoord[ip].z))) /
+                  ldotn;  //!<(planeNormal.dot(planePoint) - planeNormal.dot(linePoint)) / planeNormal.dot(lineDirection.normalize())
+    if (d > minCellRadius * 1E-5) {
+        return d;
+    } else {
+        return 0;
     }
 }

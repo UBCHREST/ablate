@@ -206,7 +206,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         // Create an instance of radiation
         auto radiationModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
         auto radiation =
-            std::make_shared<ablate::radiation::VolumeRadiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 20, nullptr, radiationModel, nullptr);
+            std::make_shared<ablate::radiation::VolumeRadiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, nullptr, radiationModel, nullptr);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
@@ -288,23 +288,23 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
 INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
                          testing::Values((RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 1", .nproc = 1},
-                                                                   .meshFaces = {3, 15},
-                                                                   .meshStart = {-0.25, -0.0105},
-                                                                   .meshEnd = {0.25, 0.0105},
+                                                                   .meshFaces = {3, 20},
+                                                                   .meshStart = {-0.5, -0.0105},
+                                                                   .meshEnd = {0.5, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
                                                                    .expectedResult = ablate::mathFunctions::Create("x + y"),
                                                                    .absorptivity = 1.0},
                                          (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 1.1", .nproc = 1},
-                                                                   .meshFaces = {3, 15},
-                                                                   .meshStart = {-0.25, -0.0105},
-                                                                   .meshEnd = {0.25, 0.0105},
+                                                                   .meshFaces = {3, 20},
+                                                                   .meshStart = {-0.5, -0.0105},
+                                                                   .meshEnd = {0.5, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
                                                                    .expectedResult = ablate::mathFunctions::Create("x + y"),
                                                                    .absorptivity = 1.1},
                                          (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 2 proc.", .nproc = 2},
-                                                                   .meshFaces = {3, 15},
-                                                                   .meshStart = {-0.25, -0.0105},
-                                                                   .meshEnd = {0.25, 0.0105},
+                                                                   .meshFaces = {3, 20},
+                                                                   .meshStart = {-0.5, -0.0105},
+                                                                   .meshEnd = {0.5, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
                                                                    .expectedResult = ablate::mathFunctions::Create("x + y"),
                                                                    .absorptivity = 1.0}),
