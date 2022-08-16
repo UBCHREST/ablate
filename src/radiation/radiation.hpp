@@ -23,7 +23,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param options other options
      */
     Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
-              const std::shared_ptr<parameters::Parameters>& options, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
+              std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     ~Radiation();
 
@@ -70,12 +70,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     DM radsolve;   //!< DM associated with the radiation particles
     DM radsearch;  //!< DM which the search particles occupy
 
-    //! Vector used to describe the entire cell geom of the dm.  This is constant and does not depend upon region.
-    Vec cellGeomVec = nullptr;
-
-    //! Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
-    Vec faceGeomVec = nullptr;
-
     /// Class Methods
     const std::map<PetscInt, Origin>& Solve(Vec solVec);
 
@@ -110,6 +104,15 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal hhere;
     };
 
+    /// Class Methods
+    /** Returns the forward path length of a travelling particle with any face.
+     * The function will return zero if the intersection is not in the direction of travel.
+     *
+     * @param virtualcoord the struct containing particle position information
+     * @param face the struct containing information about a cell face
+     */
+    PetscReal FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* face);  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
+
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
      * This function must be run on every updated particle before swarm migrate is used */
@@ -135,6 +138,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     PetscInt nTheta;   //!< The number of angles to solve with, given by user input
     PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
     solver::Range cellRange;
+    PetscReal minCellRadius;
 
     /**
      * Store a log used to output the required information
@@ -143,7 +147,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     std::map<std::string, Segment> rays;
     std::basic_string<char>&& solverId;
     const std::shared_ptr<domain::Region> region;
-    std::shared_ptr<parameters::Parameters>&& options;
     const std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModel;
     const std::shared_ptr<domain::Region> fieldBoundary;  //!< Hold the region used to define the boundary faces
     const std::shared_ptr<ablate::monitors::logs::Log> log = nullptr;

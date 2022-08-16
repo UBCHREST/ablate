@@ -4,7 +4,7 @@
 ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary,
                                                     const PetscInt raynumber, const std::shared_ptr<parameters::Parameters>& options,
                                                     std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : Radiation(solverId1, region, fieldBoundary, raynumber, options, radiationModelIn, log), CellSolver(solverId1, region, options) {}
+    : Radiation(solverId1, region, fieldBoundary, raynumber, radiationModelIn, log), CellSolver(solverId1, region, options) {}
 ablate::radiation::VolumeRadiation::~VolumeRadiation() {}
 
 void ablate::radiation::VolumeRadiation::Setup() {
@@ -43,7 +43,7 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscScalar* rhsValues;
         DMPlexPointLocalFieldRead(Radiation::subDomain->GetDM(), iCell, eulerFieldInfo.id, rhsArray, &rhsValues);
-        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += origin[iCell].intensity;  // GetIntensity(iCell);  //!< Loop through the cells and update the equation of state
+        rhsValues[ablate::finiteVolume::CompressibleFlowFields::RHOE] += GetIntensity(iCell);  //!< Loop through the cells and update the equation of state
     }
     RestoreRange(cellRange);
     VecRestoreArrayRead(rhs, &rhsArray);
