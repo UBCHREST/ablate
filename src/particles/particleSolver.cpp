@@ -160,26 +160,29 @@ void ablate::particles::ParticleSolver::Initialize() {
 
 void ablate::particles::ParticleSolver::RegisterParticleField(const FieldDescription &fieldDescription) {
     // Convert the fieldDescription to a field
-    Field field{//! The unique name of the particle field
-                .name = fieldDescription.name,
+    Field field{
+        //! The unique name of the particle field
+        .name = fieldDescription.name,
 
-                //! The name of the components
-                .numberComponents = (PetscInt)fieldDescription.components.size(),
+        //! The name of the components
+        .numberComponents = (PetscInt)fieldDescription.components.size(),
 
-                //! The name of the components
-                .components = fieldDescription.components,
+        //! The name of the components
+        .components = fieldDescription.components,
 
-                //! The field type (sol or aux)
-                .type = fieldDescription.type,
+        //! The field type (sol or aux)
+        .type = fieldDescription.type,
 
-                //! The type of field
-                .dataType = fieldDescription.dataType,
+        //! The type of field
+        .dataType = fieldDescription.dataType,
 
-                //! The offset in the local array, 0 for aux, computed for sol
-                .offset = std::accumulate(fields.begin(), fields.end(), 0, [&](PetscInt count, const Field &field) { return field.type == domain::FieldLocation::SOL ? field.numberComponents : 0; }),
+        //! The offset in the local array, 0 for aux, computed for sol
+        .offset = field.type == domain::FieldLocation::SOL
+                      ? std::accumulate(fields.begin(), fields.end(), 0, [&](PetscInt count, const Field &field) { return field.type == domain::FieldLocation::SOL ? field.numberComponents : 0; })
+                      : 0,
 
-                //! The size of the component for this data
-                .dataSize = (PetscInt)fieldDescription.components.size()};
+        //! The size of the component for this data
+        .dataSize = (PetscInt)fieldDescription.components.size()};
 
     // Store the field
     fields.push_back(field);
@@ -264,12 +267,11 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleError(TS partic
         }
 
         // Also set the exact solution
-        if(exactSolutionField.name == ParticleCoordinates){
+        if (exactSolutionField.name == ParticleCoordinates) {
             // for each local particle, get the exact location and other variables
             for (PetscInt p = 0; p < np; ++p) {
                 // Call the update function
-                functionPointer(
-                    dim, time, initialParticleLocationArray + initialParticleLocationField[p], exactSolutionField.numberComponents, exactLocationArray + (p*dim), functionContext) >>
+                functionPointer(dim, time, initialParticleLocationArray + initialParticleLocationField[p], exactSolutionField.numberComponents, exactLocationArray + (p * dim), functionContext) >>
                     checkError;
             }
         }
@@ -289,7 +291,7 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleError(TS partic
     VecWAXPY(errorVec, -1, exactSolutionVec, u);
 
     // get the solution field size to zero the the error
-    const auto solutionFieldSize =  particles->GetField(PackedSolution).dataSize;
+    const auto solutionFieldSize = particles->GetField(PackedSolution).dataSize;
 
     // zero out the error if any particle moves outside of the domain
     for (PetscInt p = 0; p < np; ++p) {
