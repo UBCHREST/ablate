@@ -19,7 +19,7 @@ class ParticleSolver : public solver::Solver {
     inline static const char ParticleInitialLocation[] = "InitialLocation";
 
     //! These coordinates are part of the solution vector
-    inline static const char ParticleCoordinates[] = "ParticleCoordinates";
+    inline static const char ParticleCoordinates[] = "coordinates";
 
    private:
     //!  particle dm, this is a swarm
@@ -47,7 +47,7 @@ class ParticleSolver : public solver::Solver {
     std::vector<Field> fields;
 
     //! a map of fields for easy field lookup
-    std::map<std::string_view, Field> fieldsMap;
+    std::map<std::string, Field> fieldsMap;
 
     //! the processes that add source terms to the particle and domain ts
     std::vector<std::shared_ptr<processes::Process>> processes;
@@ -59,12 +59,12 @@ class ParticleSolver : public solver::Solver {
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization;
 
     //! store the exact solution if provided
-    const std::shared_ptr<mathFunctions::MathFunction> exactSolution = nullptr;
+    const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
     ParticleSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<FieldDescription> fields,
                    std::vector<std::shared_ptr<processes::Process>> processes, std::shared_ptr<initializers::Initializer> initializer,
-                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::shared_ptr<mathFunctions::MathFunction> exactSolution);
+                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
 
     ~ParticleSolver() override;
 
@@ -78,6 +78,25 @@ class ParticleSolver : public solver::Solver {
      * Function to be be called after each flow time step
      */
     void MacroStepParticles(TS macroTS);
+
+    /**
+     * return access to the particle dm
+     * @return the swamParticle dm
+     */
+    inline DM GetParticleDM() { return swarmDm; }
+
+    /**
+     * return access to the particle dm
+     * @return the swamParticle dm
+     */
+    inline TS GetParticleTS() { return particleTs; }
+
+    /**
+     * Helper function useful for tests
+     * @param particleTS
+     * @return
+     */
+    static PetscErrorCode ComputeParticleExactSolution(TS particleTS, Vec);
 
    private:
     /**
@@ -128,7 +147,7 @@ class ParticleSolver : public solver::Solver {
     void GetField(const Field& field, T** values) {
         if (field.type == domain::FieldLocation::SOL) {
             // Get the solution vector
-            DMSwarmGetField(swarmDm, DMSwarmPICField_coor, NULL, NULL, (void**)values) >> checkError;
+            DMSwarmGetField(swarmDm, PackedSolution, NULL, NULL, (void**)values) >> checkError;
         } else {
             // get the raw field
             DMSwarmGetField(swarmDm, field.name.c_str(), NULL, NULL, (void**)values) >> checkError;
@@ -142,31 +161,38 @@ class ParticleSolver : public solver::Solver {
     void RestoreField(const Field& field, T** values) {
         if (field.type == domain::FieldLocation::SOL) {
             // Get the solution vector
-            DMSwarmRestoreField(swarmDm, DMSwarmPICField_coor, NULL, NULL, (void**)values) >> checkError;
+            DMSwarmRestoreField(swarmDm, PackedSolution, NULL, NULL, (void**)values) >> checkError;
         } else {
             // get the raw field
             DMSwarmRestoreField(swarmDm, field.name.c_str(), NULL, NULL, (void**)values) >> checkError;
         }
     }
 
+
     /**
      * Get the array and field information based upon field name
      */
     template <class T>
-    const Field& GetField(const std::string_view& fieldName, T** values) {
-        const auto& field = fieldsMap.at(fieldName);
+    const Field& GetField(const std::string& fieldName, T** values) {
+        const auto& field = GetField(fieldName);
         GetField(field, values);
         return field;
     }
+
 
     /**
      * Restore the array and field information based upon field name
      */
     template <class T>
-    void RestoreField(const std::string_view& fieldName, T** values) {
-        const auto& field = fieldsMap.at(fieldName);
+    void RestoreField(const std::string& fieldName, T** values) {
+        const auto& field = GetField(fieldName);
         RestoreField(field, values);
     }
+
+    /**
+     * Get field information based upon field name
+     */
+    const Field& GetField(const std::string& fieldName) const { return fieldsMap.at(fieldName); }
 
     /**
      * computes the particle rhs for the particle TS

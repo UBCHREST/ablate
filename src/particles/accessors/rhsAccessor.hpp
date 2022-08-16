@@ -1,20 +1,20 @@
-#ifndef ABLATELIBRARY_RhsDATA_HPP
-#define ABLATELIBRARY_RhsDATA_HPP
+#ifndef ABLATELIBRARY_RHSACCESSOR_HPP
+#define ABLATELIBRARY_RHSACCESSOR_HPP
 
 #include <petsc.h>
 #include <map>
+#include "accessor.hpp"
 #include "particles/field.hpp"
 #include "utilities/petscError.hpp"
-#include "particleData.hpp"
 
-namespace ablate::particles {
+namespace ablate::particles::accessors {
 /**
  * class that determines the rhs information
  */
-class RhsData {
+class RhsAccessor : public Accessor<PetscReal> {
    private:
     //! a map of fields for easy field lookup
-    const std::map<std::string_view, Field>& fieldsMap;
+    const std::map<std::string, Field>& fieldsMap;
 
     //! The rhs vector currently used in the ts
     Vec rhsVec;
@@ -23,22 +23,25 @@ class RhsData {
     PetscScalar* rhsValues;
 
    public:
-    RhsData(const std::map<std::string_view, Field>& fieldsMap, Vec rhsVec) : fieldsMap(fieldsMap), rhsVec(rhsVec) {
+    RhsAccessor(bool cachePointData, const std::map<std::string, Field>& fieldsMap, Vec rhsVec) : Accessor(cachePointData), fieldsMap(fieldsMap), rhsVec(rhsVec) {
         // extract the array from the vector
         VecGetArray(rhsVec, &rhsValues) >> checkError;
     }
 
-    ~RhsData() { VecRestoreArray(rhsVec, &rhsValues) >> checkError; }
+    /**
+     * clean up the rhs values
+     */
+    ~RhsAccessor() override { VecRestoreArray(rhsVec, &rhsValues) >> checkError; }
 
     /**
-     * Get the field data for this field
+     * Create point data from the rhs field
      * @param fieldName
      * @return
      */
-    ParticleData GetRHSData(std::string_view fieldName) {
+    PointData CreateData(const std::string& fieldName) override {
         const auto& field = fieldsMap.at(fieldName);
         if (field.type == domain::FieldLocation::SOL) {
-            return ParticleData(field, rhsValues);
+            return PointData(rhsValues, field);
         } else {
             throw std::invalid_argument("The field " + std::string(fieldName) + " is not a solution variable");
         }
@@ -47,7 +50,7 @@ class RhsData {
     /**
      * prevent copy of this class
      */
-    RhsData(const RhsData&) = delete;
+    RhsAccessor(const RhsAccessor&) = delete;
 };
-}  // namespace ablate::particles::processes
+}  // namespace ablate::particles::accessors
 #endif  // ABLATELIBRARY_SWARMDATA_HPP

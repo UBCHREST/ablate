@@ -1,8 +1,9 @@
 #ifndef ABLATELIBRARY_PARTICLE_PROCESS_HPP
 #define ABLATELIBRARY_PARTICLE_PROCESS_HPP
 
-#include "particles/rhsData.hpp"
-#include "particles/swarmData.hpp"
+#include "particles/accessors/rhsAccessor.hpp"
+#include "particles/accessors/swarmAccessor.hpp"
+#include "particles/accessors/eulerianAccessor.hpp"
 
 namespace ablate::particles::processes {
 
@@ -15,7 +16,7 @@ class Process {
      * @param swarmData
      * @param rhsData
      */
-    virtual void ComputeRHS(PetscInt np, PetscReal time, const SwarmData& swarmData, const RhsData& rhsData){};
+    virtual void ComputeRHS(PetscReal time, accessors::SwarmAccessor& swarmAccessor, accessors::RhsAccessor& rhsAccessor, accessors::EulerianAccessor& eulerianAccessor) = 0;
 };
 
 }  // namespace ablate::particles::processes
