@@ -70,12 +70,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     DM radsolve;   //!< DM associated with the radiation particles
     DM radsearch;  //!< DM which the search particles occupy
 
-    //! Vector used to describe the entire cell geom of the dm.  This is constant and does not depend upon region.
-    Vec cellGeomVec = nullptr;
-
-    //! Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
-    Vec faceGeomVec = nullptr;
-
     /// Class Methods
     const std::map<PetscInt, Origin>& Solve(Vec solVec);
 

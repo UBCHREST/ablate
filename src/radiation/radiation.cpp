@@ -19,8 +19,7 @@ ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::
 
 ablate::radiation::Radiation::~Radiation() {
     if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
-    if (cellGeomVec) VecDestroy(&cellGeomVec) >> checkError;
-    if (faceGeomVec) VecDestroy(&faceGeomVec) >> checkError;
+    //    if (cellGeomVec) VecDestroy(&cellGeomVec) >> checkError;
 }
 
 void ablate::radiation::Radiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
@@ -55,15 +54,16 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     if (log) StartEvent("Radiation Initialization");
     if (log) PetscPrintf(subDomain->GetComm(), "Starting Initialize\n");
 
+    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    Vec cellGeomVec = nullptr;
+    DM faceDM;
     const PetscScalar* faceGeomArray;
-    DM cellDM, faceDM;
-    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;
-    VecGetDM(cellGeomVec, &cellDM);
-    VecGetDM(faceGeomVec, &faceDM);
-    DMPlexGetGeometryFVM(cellDM, nullptr, nullptr, &minCellRadius) >> checkError;
-    DMPlexComputeGeometryFVM(faceDM, &cellGeomVec, &faceGeomVec) >> checkError;
-    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
     PetscFVFaceGeom* faceGeom;
+
+    DMPlexGetMinRadius(subDomain->GetDM(), &minCellRadius) >> checkError; //!< The minimum cell radius is used to scale the face stepping procedures
+    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError; //!< Get the geometry vectors
+    VecGetDM(faceGeomVec, &faceDM) >> checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
     /** do a simple sanity check for labels */
     PetscMPIInt rank;
@@ -369,8 +369,8 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     /** Cleanup */
     DMDestroy(&radsearch) >> checkError;
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
-    DMDestroy(&cellDM) >> checkError;
-    DMDestroy(&faceDM) >> checkError;
+    VecDestroy(&cellGeomVec) >> checkError;
+    VecDestroy(&faceGeomVec) >> checkError;
 
     if (log) EndEvent();
 }
@@ -586,26 +586,12 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
 
     /** ********************************************************************************************************************************
      * Loop through the cell range and compute the origin contributions. */
-
-    const PetscScalar* cellGeomArray;
-    DM cellDM;
-    PetscFVCellGeom* cellGeom;
-
-    if (log) {
-        VecGetDM(cellGeomVec, &cellDM);
-        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    }
-
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
 
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, temperatureField.id, auxArray, &temperature);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
-        if (log) {
-            DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity);
-        }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
 
@@ -613,10 +599,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
 
-    if (log) {
-        EndEvent();
-        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-    }
     return origin;
 }
 
