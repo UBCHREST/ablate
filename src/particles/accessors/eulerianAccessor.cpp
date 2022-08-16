@@ -9,7 +9,7 @@ ablate::particles::accessors::EulerianAccessor::EulerianAccessor(bool cachePoint
     auto coodinatesField = swarm.GetData(ablate::particles::ParticleSolver::ParticleCoordinates);
 
     // Size up and copy the coordinates
-    coordinates.resize(np);
+    coordinates.resize(np * coodinatesField.numberComponents);
     coodinatesField.CopyAll(coordinates.data(), np);
 }
 
@@ -38,7 +38,7 @@ ablate::particles::accessors::ConstPointData ablate::particles::accessors::Euler
 
     // Create a vec to hold the information
     Vec eulerianFieldAtParticles;
-    VecCreateSeq(PETSC_COMM_SELF, np*eulerianField.numberComponents, &eulerianFieldAtParticles) >> checkError;
+    VecCreateSeq(PETSC_COMM_SELF, np * eulerianField.numberComponents, &eulerianFieldAtParticles) >> checkError;
 
     // interpolate
     DMInterpolationEvaluate(interpolant, eulerianFieldDm, locEulerianField, eulerianFieldAtParticles) >> checkError;
