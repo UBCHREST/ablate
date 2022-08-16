@@ -60,8 +60,8 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     const PetscScalar* faceGeomArray;
     PetscFVFaceGeom* faceGeom;
 
-    DMPlexGetMinRadius(subDomain->GetDM(), &minCellRadius) >> checkError; //!< The minimum cell radius is used to scale the face stepping procedures
-    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError; //!< Get the geometry vectors
+    DMPlexGetMinRadius(subDomain->GetDM(), &minCellRadius) >> checkError;                    //!< The minimum cell radius is used to scale the face stepping procedures
+    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
     VecGetDM(faceGeomVec, &faceDM) >> checkError;
     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
