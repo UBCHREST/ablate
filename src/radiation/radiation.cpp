@@ -586,12 +586,30 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
 
     /** ********************************************************************************************************************************
      * Loop through the cell range and compute the origin contributions. */
+
+    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    Vec cellGeomVec = nullptr;
+    DM cellDM;
+    const PetscScalar* cellGeomArray;
+    PetscFVCellGeom* cellGeom;
+
+    if (log) {
+        DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
+        VecGetDM(cellGeomVec, &cellDM) >> checkError;
+        VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+        printf("x           y           z           G\n"); //!< Line labelling the log outputs for readability
+    }
+
     for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
 
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalFieldRead(subDomain->GetDM(), iCell, temperatureField.id, auxArray, &temperature);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
+        if (log) {
+            DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
+            printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity);
+        }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
 
@@ -599,6 +617,12 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
 
+    if (log) {
+        EndEvent();
+        VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
+        VecDestroy(&cellGeomVec) >> checkError;
+        VecDestroy(&faceGeomVec) >> checkError;
+    }
     return origin;
 }
 
