@@ -8,13 +8,12 @@
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "utilities/constants.hpp"
 #include "utilities/mathUtilities.hpp"
+#include "utilities/petscOptions.hpp"
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
-                                        const std::shared_ptr<parameters::Parameters>& options, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn,
-                                        std::shared_ptr<ablate::monitors::logs::Log> log)
+                                        std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : solverId((std::basic_string<char> &&) solverId),
       region(std::move(region)),
-      options((std::shared_ptr<parameters::Parameters> &&) options),
       radiationModel(std::move(radiationModelIn)),
       fieldBoundary(std::move(fieldBoundary)),
       log(std::move(log)) {
@@ -209,9 +208,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         for (PetscInt ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                      //!< particles then pass out of initialization.
 
-            /** Update the physical coordinate field so that the real particle location can be updated. */
-            //            UpdateCoordinates(ipart, virtualcoord, coord);  //!< Update the particle coordinates into the physical coordinate system
-
             /** FIRST TAKE THIS LOCATION INTO THE RAYS VECTOR
              * "I found a particle in my domain. Maybe it was just moved here and I've never seen it before.
              * Therefore, my first step should be to add this location to the local rays vector. Then I can adjust the coordinates and migrate the particle." */
@@ -376,9 +372,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     }
     /** Cleanup */
     DMDestroy(&radsearch) >> checkError;
-    VecRestoreArrayRead(faceGeomVec, &faceGeomArray);
-    DMDestroy(&cellDM);
-    DMDestroy(&faceDM);
+    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+    DMDestroy(&cellDM) >> checkError;
+    DMDestroy(&faceDM) >> checkError;
 
     if (log) EndEvent();
 }
@@ -573,7 +569,7 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     /** ********************************************************************************************************************************
      * Need to delete all of the particles that were transported to different domains so that the process can be repeated in the next step. */
 
-    /** Delete all of the particles that were transported to their origin domains -> Delete if (identifier.origin == MPI_Rank() && identifier.nsegment != 0) */
+    /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         if (identifier[ipart].origin == rank && identifier[ipart].nsegment != 1) {
             DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);  //!< Need to restore the field access before deleting a point
