@@ -1,5 +1,6 @@
 #include "tracer.hpp"
 #include "particles/particleSolver.hpp"
+
 ablate::particles::processes::Tracer::Tracer(const std::string& eulerianVelocityFieldIn) : eulerianVelocityField(eulerianVelocityFieldIn.empty() ? "velocity" : eulerianVelocityFieldIn) {}
 
 void ablate::particles::processes::Tracer::ComputeRHS(PetscReal time, ablate::particles::accessors::SwarmAccessor& swarmAccessor, ablate::particles::accessors::RhsAccessor& rhsAccessor,
@@ -13,3 +14,7 @@ void ablate::particles::processes::Tracer::ComputeRHS(PetscReal time, ablate::pa
         coordinateRhs.CopyFrom(fluidVelocity[p], p);
     }
 }
+
+#include "registrar.hpp"
+REGISTER(ablate::particles::processes::Process, ablate::particles::processes::Tracer, "massless particles that advects with the flow",
+         OPT(std::string, "eulerianVelocityFieldIn", "optional name of the Eulerian velocity field (defaults to velocity)"))

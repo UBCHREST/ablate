@@ -9,7 +9,7 @@
 
 namespace ablate::particles {
 
-class ParticleSolver : public solver::Solver {
+class ParticleSolver : public solver::Solver, public io::Serializable {
    public:
     /** common field names for particles **/
     inline static const char ParticleVelocity[] = "ParticleVelocity";
@@ -90,7 +90,6 @@ class ParticleSolver : public solver::Solver {
                    std::vector<std::shared_ptr<processes::Process>> processes, std::shared_ptr<initializers::Initializer> initializer,
                    std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
 
-
     ~ParticleSolver() override;
 
     /** Setup and size the subDomain with the subDomain **/
@@ -122,6 +121,30 @@ class ParticleSolver : public solver::Solver {
      * @return
      */
     static PetscErrorCode ComputeParticleExactSolution(TS particleTS, Vec);
+
+    /**
+     * only required function, returns the id of the object.  Should be unique for the simulation
+     * @return
+     */
+    const std::string& GetId() const override { return GetSolverId(); }
+
+    /**
+     * shared function to view all particles;
+     * @param viewer
+     * @param steps
+     * @param time
+     * @param u
+     */
+    void Save(PetscViewer viewer, PetscInt steps, PetscReal time) override;
+
+    /**
+     * shared function to view all particles;
+     * @param viewer
+     * @param steps
+     * @param time
+     * @param u
+     */
+    void Restore(PetscViewer viewer, PetscInt steps, PetscReal time) override;
 
    private:
     /**
@@ -172,10 +195,10 @@ class ParticleSolver : public solver::Solver {
     void GetField(const Field& field, T** values) {
         if (field.location == domain::FieldLocation::SOL) {
             // Get the solution vector
-            DMSwarmGetField(swarmDm, PackedSolution, NULL, NULL, (void**)values) >> checkError;
+            DMSwarmGetField(swarmDm, PackedSolution, nullptr, nullptr, (void**)values) >> checkError;
         } else {
             // get the raw field
-            DMSwarmGetField(swarmDm, field.name.c_str(), NULL, NULL, (void**)values) >> checkError;
+            DMSwarmGetField(swarmDm, field.name.c_str(), nullptr, nullptr, (void**)values) >> checkError;
         }
     }
 
@@ -186,10 +209,10 @@ class ParticleSolver : public solver::Solver {
     void RestoreField(const Field& field, T** values) {
         if (field.location == domain::FieldLocation::SOL) {
             // Get the solution vector
-            DMSwarmRestoreField(swarmDm, PackedSolution, NULL, NULL, (void**)values) >> checkError;
+            DMSwarmRestoreField(swarmDm, PackedSolution, nullptr, nullptr, (void**)values) >> checkError;
         } else {
             // get the raw field
-            DMSwarmRestoreField(swarmDm, field.name.c_str(), NULL, NULL, (void**)values) >> checkError;
+            DMSwarmRestoreField(swarmDm, field.name.c_str(), nullptr, nullptr, (void**)values) >> checkError;
         }
     }
 
@@ -215,7 +238,7 @@ class ParticleSolver : public solver::Solver {
     /**
      * Get field information based upon field name
      */
-    const Field& GetField(const std::string& fieldName) const { return fieldsMap.at(fieldName); }
+    [[nodiscard]] const Field& GetField(const std::string& fieldName) const { return fieldsMap.at(fieldName); }
 
     /**
      * computes the particle rhs for the particle TS

@@ -1,4 +1,5 @@
 #include "particleSolver.hpp"
+#include <petscviewerhdf5.h>
 #include <numeric>
 #include <utility>
 #include "particles/accessors/eulerianAccessor.hpp"
@@ -20,10 +21,11 @@ ablate::particles::ParticleSolver::ParticleSolver(std::string solverId, std::sha
 
 {}
 ablate::particles::ParticleSolver::ParticleSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
-                                                  const std::vector<std::shared_ptr<FieldDescription>>& fields, std::vector<std::shared_ptr<processes::Process>> processes,
+                                                  const std::vector<std::shared_ptr<FieldDescription>> &fields, std::vector<std::shared_ptr<processes::Process>> processes,
                                                   std::shared_ptr<initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
                                                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : ParticleSolver(std::move(solverId), std::move(region), std::move(options), ablate::utilities::VectorUtilities::Copy(fields), std::move(processes), std::move(initializer), std::move(fieldInitialization), std::move(exactSolutions)) {}
+    : ParticleSolver(std::move(solverId), std::move(region), std::move(options), ablate::utilities::VectorUtilities::Copy(fields), std::move(processes), std::move(initializer),
+                     std::move(fieldInitialization), std::move(exactSolutions)) {}
 
 ablate::particles::ParticleSolver::~ParticleSolver() {
     if (swarmDm) {
@@ -385,8 +387,6 @@ void ablate::particles::ParticleSolver::SwarmMigrate() {
 }
 
 void ablate::particles::ParticleSolver::MacroStepParticles(TS macroTS) {
-    PetscReal time;
-
     // if the dm has changed size (new particles, particles moved between ranks, particles deleted) reset the ts
     if (dmChanged) {
         TSReset(particleTs) >> checkError;
@@ -401,6 +401,7 @@ void ablate::particles::ParticleSolver::MacroStepParticles(TS macroTS) {
     TSGetTimeStep(particleTs, &dtInitial) >> checkError;
 
     // Set the max end time based upon the flow end time
+    PetscReal time;
     TSGetTime(macroTS, &time) >> checkError;
     TSSetMaxTime(particleTs, time) >> checkError;
     timeFinal = time;
@@ -564,3 +565,223 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleExactSolution(T
     particles->RestoreField(ParticleInitialLocation, &initialParticleLocationArray);
     PetscFunctionReturn(0);
 }
+
+static PetscErrorCode DMSequenceViewTimeHDF5(DM dm, PetscViewer viewer) {
+    Vec stamp;
+    PetscMPIInt rank;
+    PetscErrorCode ierr;
+
+    PetscFunctionBegin;
+
+    // get the seqnum and value from the dm
+    PetscInt seqnum;
+    PetscReal value;
+    ierr = DMGetOutputSequenceNumber(dm, &seqnum, &value);
+    CHKERRMPI(ierr);
+
+    if (seqnum < 0) {
+        PetscFunctionReturn(0);
+    }
+    ierr = MPI_Comm_rank(PetscObjectComm((PetscObject)viewer), &rank);
+    CHKERRMPI(ierr);
+    ierr = VecCreateMPI(PetscObjectComm((PetscObject)viewer), rank ? 0 : 1, 1, &stamp);
+    CHKERRQ(ierr);
+    ierr = VecSetBlockSize(stamp, 1);
+    CHKERRQ(ierr);
+    ierr = PetscObjectSetName((PetscObject)stamp, "time");
+    CHKERRQ(ierr);
+    if (!rank) {
+        ierr = VecSetValue(stamp, 0, value, INSERT_VALUES);
+        CHKERRQ(ierr);
+    }
+    ierr = VecAssemblyBegin(stamp);
+    CHKERRQ(ierr);
+    ierr = VecAssemblyEnd(stamp);
+    CHKERRQ(ierr);
+    ierr = PetscViewerHDF5PushGroup(viewer, "/");
+    CHKERRQ(ierr);
+    ierr = PetscViewerHDF5SetTimestep(viewer, seqnum);
+    CHKERRQ(ierr);
+    ierr = VecView(stamp, viewer);
+    CHKERRQ(ierr);
+    ierr = PetscViewerHDF5PopGroup(viewer);
+    CHKERRQ(ierr);
+    ierr = VecDestroy(&stamp);
+    CHKERRQ(ierr);
+    PetscFunctionReturn(0);
+}
+
+void ablate::particles::ParticleSolver::Save(PetscViewer viewer, PetscInt steps, PetscReal time) {
+    DMSetOutputSequenceNumber(GetParticleDM(), steps, time) >> checkError;
+    Vec particleVector;
+
+    // if this is an hdf5Viewer
+    PetscBool ishdf5;
+    PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> checkError;
+    if (ishdf5) {
+        PetscBool isInTimestepping;
+        PetscViewerHDF5IsTimestepping(viewer, &isInTimestepping) >> checkError;
+        if (!isInTimestepping) {
+            PetscViewerHDF5PushTimestepping(viewer) >> checkError;
+        }
+    }
+
+    // output the default coordinate field
+    DMSwarmCreateGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &particleVector) >> checkError;
+    PetscObjectSetName((PetscObject)particleVector, DMSwarmPICField_coor) >> checkError;
+    VecView(particleVector, viewer) >> checkError;
+    DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), DMSwarmPICField_coor, &particleVector) >> checkError;
+
+    // output all the fields
+    for (auto const &field : fields) {
+        if (field.dataType == PETSC_REAL && field.location == domain::FieldLocation::AUX) {
+            DMSwarmCreateGlobalVectorFromField(GetParticleDM(), field.name.c_str(), &particleVector) >> checkError;
+            PetscObjectSetName((PetscObject)particleVector, field.name.c_str()) >> checkError;
+            VecView(particleVector, viewer) >> checkError;
+
+            // write the field components to the file if hdf5
+            if (ishdf5 && field.numberComponents > 1) {
+                PetscViewerHDF5PushGroup(viewer, "/particle_fields") >> checkError;
+
+                for (std::size_t c = 0; c < field.components.size(); c++) {
+                    std::string componentNameLabel = "componentName" + std::to_string(c);
+                    PetscViewerHDF5WriteObjectAttribute(viewer, (PetscObject)particleVector, componentNameLabel.c_str(), PETSC_STRING, field.components[c].c_str()) >> checkError;
+                }
+
+                PetscViewerHDF5PopGroup(viewer) >> checkError;
+            }
+
+            DMSwarmDestroyGlobalVectorFromField(GetParticleDM(), field.name.c_str(), &particleVector) >> checkError;
+        }
+    }
+
+    // Get the particle info
+    int rank;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank) >> checkMpiError;
+
+    // get the local number of particles
+    PetscInt globalSize;
+    DMSwarmGetSize(GetParticleDM(), &globalSize) >> checkMpiError;
+
+    // record the number of particles per rank
+    Vec particleCountVec;
+    VecCreateMPI(PetscObjectComm((PetscObject)GetParticleDM()), PETSC_DECIDE, 1, &particleCountVec) >> checkError;
+    PetscObjectSetName((PetscObject)particleCountVec, "particleCount") >> checkError;
+    VecSetValue(particleCountVec, 0, globalSize, INSERT_VALUES) >> checkError;
+    VecAssemblyBegin(particleCountVec) >> checkError;
+    VecAssemblyEnd(particleCountVec) >> checkError;
+    VecView(particleCountVec, viewer);
+    VecDestroy(&particleCountVec) >> checkError;
+
+    if (ishdf5) {
+        DMSequenceViewTimeHDF5(GetParticleDM(), viewer) >> checkError;
+    }
+}
+void ablate::particles::ParticleSolver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    DMSetOutputSequenceNumber(GetParticleDM(), sequenceNumber, time) >> checkError;
+
+    // Update the ts with the current values
+    TSSetTime(particleTs, time) >> checkError;
+    timeInitial = time;
+
+    // There is not a hdf5 specific swarm vec load, so that needs to be in this code
+    PetscBool ishdf5;
+    PetscObjectTypeCompare((PetscObject)viewer, PETSCVIEWERHDF5, &ishdf5) >> checkError;
+    if (ishdf5) {
+        PetscViewerHDF5PushTimestepping(viewer) >> checkError;
+        PetscViewerHDF5SetTimestep(viewer, sequenceNumber) >> checkError;
+    }
+
+    // load in the global particle size
+    Vec particleCountVec;
+    VecCreateSeq(PETSC_COMM_SELF, 1, &particleCountVec) >> checkError;
+    PetscObjectSetName((PetscObject)particleCountVec, "particleCount") >> checkError;
+    VecLoad(particleCountVec, viewer) >> checkError;
+
+    PetscReal globalSize;
+    PetscInt index[1] = {0};
+    VecGetValues(particleCountVec, 1, index, &globalSize) >> checkError;
+    VecDestroy(&particleCountVec) >> checkError;
+
+    // Get the particle mpi, info
+    int rank, size;
+    MPI_Comm_rank(PetscObjectComm((PetscObject)GetParticleDM()), &rank) >> checkMpiError;
+    MPI_Comm_size(PetscObjectComm((PetscObject)GetParticleDM()), &size) >> checkMpiError;
+
+    // distribute the number of particles across all ranks
+    PetscInt localSize = ((PetscInt)globalSize) / size;
+
+    // Use the first rank to hold any left over
+    if (rank == 0) {
+        localSize = globalSize - (localSize * (size - 1));
+    }
+
+    // Set the local swarm size
+    DMSwarmSetLocalSizes(GetParticleDM(), localSize, 0) >> checkError;
+
+    // Move in the hdf5 to the right group
+    if (ishdf5) {
+        PetscViewerHDF5PushGroup(viewer, "/particle_fields") >> checkError;
+        PetscViewerHDF5SetTimestep(viewer, sequenceNumber) >> checkError;
+    }
+
+    {  // restore the default coordinate field
+        Vec particleVector;
+        Vec particleVectorLoad;
+        DMSwarmCreateGlobalVectorFromField(swarmDm, DMSwarmPICField_coor, &particleVector) >> checkError;
+
+        // A copy of this vector is needed, because vec load breaks the memory linkage between the swarm and vec
+        VecDuplicate(particleVector, &particleVectorLoad) >> checkError;
+
+        // Load the vector
+        PetscObjectSetName((PetscObject)particleVectorLoad, DMSwarmPICField_coor) >> checkError;
+        VecLoad(particleVectorLoad, viewer) >> checkError;
+
+        // Copy the data over
+        VecCopy(particleVectorLoad, particleVector) >> checkError;
+
+        DMSwarmDestroyGlobalVectorFromField(swarmDm, DMSwarmPICField_coor, &particleVector) >> checkError;
+        VecDestroy(&particleVectorLoad) >> checkError;
+    }
+
+    // restore the aux vectors
+    for (auto const &field : fields) {
+        if (field.dataType == PETSC_REAL && field.location == domain::FieldLocation::AUX) {
+            Vec particleVector;
+            Vec particleVectorLoad;
+            DMSwarmCreateGlobalVectorFromField(swarmDm, field.name.c_str(), &particleVector) >> checkError;
+
+            // A copy of this vector is needed, because vec load breaks the memory linkage between the swarm and vec
+            VecDuplicate(particleVector, &particleVectorLoad) >> checkError;
+
+            // Load the vector
+            PetscObjectSetName((PetscObject)particleVectorLoad, field.name.c_str()) >> checkError;
+            VecLoad(particleVectorLoad, viewer) >> checkError;
+
+            // Copy the data over
+            VecCopy(particleVectorLoad, particleVector) >> checkError;
+
+            DMSwarmDestroyGlobalVectorFromField(swarmDm, field.name.c_str(), &particleVector) >> checkError;
+            VecDestroy(&particleVectorLoad) >> checkError;
+        }
+    }
+
+    if (ishdf5) {
+        PetscViewerHDF5PopGroup(viewer) >> checkError;
+        PetscViewerHDF5PopTimestepping(viewer) >> checkError;
+    }
+
+    // Migrate the particle to the correct rank for the dmPlex
+    DMSwarmMigrate(swarmDm, PETSC_TRUE) >> checkError;
+    dmChanged = true;
+}
+
+#include "registrar.hpp"
+REGISTER(ablate::solver::Solver, ablate::particles::ParticleSolver, "Lagrangian particle solver", ARG(std::string, "id", "the name of the particle solver"),
+         OPT(ablate::domain::Region, "region", "the region to apply this solver.  Default is entire domain"),
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
+         OPT(std::vector<ablate::particles::FieldDescription>, "fields", "any additional fields beside coordinates"),
+         ARG(std::vector<ablate::particles::processes::Process>, "processes", "the processes used to describe the particle source terms"),
+         ARG(ablate::particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
+         OPT(std::vector<ablate::mathFunctions::FieldFunction>, "fieldInitialization ", "the initial particle fields values"),
+         OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolutions", "particle fields (SOL) exact solutions"))

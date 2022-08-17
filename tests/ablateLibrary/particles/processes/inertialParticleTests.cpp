@@ -271,7 +271,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
                 particleOptions,
                 std::vector<ablate::particles::FieldDescription>{{ablate::particles::ParticleSolver::ParticleVelocity, domain::FieldLocation::SOL, {"u", "v"}},
                                                                  {ablate::particles::ParticleSolver::ParticleDiameter, domain::FieldLocation::AUX},
-                                                                 {ablate::particles::ParticleSolver::ParticleDensity,  domain::FieldLocation::AUX}},
+                                                                 {ablate::particles::ParticleSolver::ParticleDensity, domain::FieldLocation::AUX}},
                 std::vector<std::shared_ptr<ablate::particles::processes::Process>>{std::make_shared<ablate::particles::processes::Inertial>(particleParameters)},
                 GetParam().particleInitializer,
                 fieldInitialization,
