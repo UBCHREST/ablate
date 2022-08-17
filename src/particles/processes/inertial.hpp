@@ -1,8 +1,8 @@
 #ifndef ABLATELIBRARY_INERTIAL_HPP
 #define ABLATELIBRARY_INERTIAL_HPP
 
-#include "process.hpp"
 #include <array>
+#include "process.hpp"
 
 namespace ablate::particles::processes {
 

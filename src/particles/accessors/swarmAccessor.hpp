@@ -11,7 +11,7 @@ namespace ablate::particles::accessors {
 /**
  * class that will be passed to each processes to allow getting required data
  */
-class SwarmAccessor : public Accessor<const PetscReal>{
+class SwarmAccessor : public Accessor<const PetscReal> {
    private:
     //! borrowed reference to
     const DM& swarmDm;
@@ -38,7 +38,7 @@ class SwarmAccessor : public Accessor<const PetscReal>{
      * Returns the local size of the particlesdestination
      * @return
      */
-    inline PetscInt GetNumberParticles() const{
+    inline PetscInt GetNumberParticles() const {
         PetscInt size;
         DMSwarmGetLocalSize(swarmDm, &size) >> checkError;
         return size;

@@ -2,9 +2,9 @@
 #define ABLATELIBRARY_PARTICLECOUNT_HPP
 
 #include <petsc.h>
+#include "monitor.hpp"
 #include "monitors/logs/log.hpp"
 #include "particles/particleSolver.hpp"
-#include "monitor.hpp"
 
 namespace ablate::monitors {
 

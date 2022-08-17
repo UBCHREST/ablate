@@ -27,7 +27,7 @@ class EulerianAccessor : public Accessor<const PetscReal> {
     const PetscInt np;
 
    public:
-    EulerianAccessor(bool cachePointData, std::shared_ptr<ablate::domain::SubDomain> subDomain, SwarmAccessor& , PetscReal currentTime);
+    EulerianAccessor(bool cachePointData, std::shared_ptr<ablate::domain::SubDomain> subDomain, SwarmAccessor&, PetscReal currentTime);
 
     /**
      * Create point data from the rhs field
@@ -44,9 +44,7 @@ class EulerianAccessor : public Accessor<const PetscReal> {
     /**
      * Get the number of dimensions
      */
-    inline PetscInt GetDimensions() const{
-        return subDomain->GetDimensions();
-    }
+    inline PetscInt GetDimensions() const { return subDomain->GetDimensions(); }
 };
 }  // namespace ablate::particles::accessors
 #endif  // ABLATELIBRARY_SWARMDATA_HPP

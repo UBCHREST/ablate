@@ -13,7 +13,7 @@ namespace ablate::particles::accessors {
 /**
  * Class responsible for computing point data locations for particle integration
  */
-template<class DataType>
+template <class DataType>
 class Accessor {
    private:
     /**
@@ -53,9 +53,7 @@ class Accessor {
      * @param fieldName
      * @return
      */
-    Data<DataType> operator[](const std::string& fieldName) {
-        return GetData(fieldName);
-    }
+    Data<DataType> operator[](const std::string& fieldName) { return GetData(fieldName); }
 
     /**
      * Get the field data for this field

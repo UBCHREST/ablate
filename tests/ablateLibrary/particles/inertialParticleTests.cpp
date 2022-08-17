@@ -259,8 +259,10 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
             // store the exact solution
             std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactParticleSolutions{
-                std::make_shared<ablate::mathFunctions::FieldFunction>(particles::ParticleSolver::ParticleCoordinates, ablate::mathFunctions::Create(testingParam.particleExactPosition, &testingParam.parameters)),
-                std::make_shared<ablate::mathFunctions::FieldFunction>(particles::ParticleSolver::ParticleVelocity, ablate::mathFunctions::Create(testingParam.particleExactVelocity, &testingParam.parameters))};
+                std::make_shared<ablate::mathFunctions::FieldFunction>(particles::ParticleSolver::ParticleCoordinates,
+                                                                       ablate::mathFunctions::Create(testingParam.particleExactPosition, &testingParam.parameters)),
+                std::make_shared<ablate::mathFunctions::FieldFunction>(particles::ParticleSolver::ParticleVelocity,
+                                                                       ablate::mathFunctions::Create(testingParam.particleExactVelocity, &testingParam.parameters))};
 
             // Create an inertial particle object
             auto particles = std::make_shared<ablate::particles::ParticleSolver>(

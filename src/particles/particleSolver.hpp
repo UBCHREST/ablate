@@ -168,7 +168,6 @@ class ParticleSolver : public solver::Solver {
         }
     }
 
-
     /**
      * Get the array and field information based upon field name
      */
@@ -178,7 +177,6 @@ class ParticleSolver : public solver::Solver {
         GetField(field, values);
         return field;
     }
-
 
     /**
      * Restore the array and field information based upon field name

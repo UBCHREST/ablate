@@ -32,8 +32,8 @@ struct Field {
 
     //! Inline function to compute offset
     template <class IndexType>
-    inline IndexType operator[](IndexType particle) const{
-        return particle*dataSize + offset;
+    inline IndexType operator[](IndexType particle) const {
+        return particle * dataSize + offset;
     }
 };
 

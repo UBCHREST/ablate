@@ -24,8 +24,7 @@ class Tracer : public Process {
      * @param eulerianAccessor
      */
     void ComputeRHS(PetscReal time, accessors::SwarmAccessor& swarmAccessor, accessors::RhsAccessor& rhsAccessor, accessors::EulerianAccessor& eulerianAccessor) override;
-
 };
 
-}
+}  // namespace ablate::particles::processes
 #endif  // ABLATELIBRARY_TRACER_HPP

@@ -3,8 +3,8 @@
 
 #include <petsc.h>
 #include <monitors/logs/log.hpp>
-#include "particles/particleSolver.hpp"
 #include "monitor.hpp"
+#include "particles/particleSolver.hpp"
 
 namespace ablate::monitors {
 

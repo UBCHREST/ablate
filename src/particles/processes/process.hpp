@@ -1,9 +1,9 @@
 #ifndef ABLATELIBRARY_PARTICLE_PROCESS_HPP
 #define ABLATELIBRARY_PARTICLE_PROCESS_HPP
 
+#include "particles/accessors/eulerianAccessor.hpp"
 #include "particles/accessors/rhsAccessor.hpp"
 #include "particles/accessors/swarmAccessor.hpp"
-#include "particles/accessors/eulerianAccessor.hpp"
 
 namespace ablate::particles::processes {
 

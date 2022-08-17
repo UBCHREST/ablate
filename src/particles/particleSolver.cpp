@@ -102,10 +102,6 @@ void ablate::particles::ParticleSolver::Setup() {
             }
         }
     }
-
-    //    // Add in a reference to prebuilt fields
-    //    fields.push_back(Field{.name = DMSwarmField_pid, .type = domain::FieldLocation::AUX, .dataType = PETSC_INT64});
-    //    fieldsMap.insert({DMSwarmField_pid, Field{.name = DMSwarmField_pid, .type = domain::FieldLocation::AUX, .dataType = PETSC_INT64}});
 }
 
 void ablate::particles::ParticleSolver::Initialize() {
@@ -177,9 +173,10 @@ void ablate::particles::ParticleSolver::RegisterParticleField(const FieldDescrip
         .dataType = fieldDescription.dataType,
 
         //! The offset in the local array, 0 for aux, computed for sol
-        .offset = field.type == domain::FieldLocation::SOL
-                      ? std::accumulate(fields.begin(), fields.end(), 0, [&](PetscInt count, const Field &field) { return field.type == domain::FieldLocation::SOL ? field.numberComponents : 0; })
-                      : 0,
+        .offset =
+            field.type == domain::FieldLocation::SOL
+                ? std::accumulate(fields.begin(), fields.end(), 0, [&](PetscInt count, const Field &field) { return count + (field.type == domain::FieldLocation::SOL ? field.numberComponents : 0); })
+                : 0,
 
         //! The size of the component for this data
         .dataSize = (PetscInt)fieldDescription.components.size()};
