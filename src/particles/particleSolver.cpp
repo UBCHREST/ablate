@@ -1,22 +1,30 @@
 #include "particleSolver.hpp"
 #include <numeric>
+#include <utility>
 #include "particles/accessors/eulerianAccessor.hpp"
 #include "particles/accessors/rhsAccessor.hpp"
 #include "particles/accessors/swarmAccessor.hpp"
 #include "utilities/mpiError.hpp"
+#include "utilities/vectorUtilities.hpp"
 
 ablate::particles::ParticleSolver::ParticleSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options, std::vector<FieldDescription> fields,
                                                   std::vector<std::shared_ptr<processes::Process>> processes, std::shared_ptr<initializers::Initializer> initializer,
                                                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
                                                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
-    : Solver(solverId, region, options),
-      fieldsDescriptions(fields),
-      processes(processes),
-      initializer(initializer),
-      fieldInitialization(fieldInitialization),
-      exactSolutions(exactSolutions)
+    : Solver(std::move(solverId), std::move(region), std::move(options)),
+      fieldsDescriptions(std::move(std::move(fields))),
+      processes(std::move(processes)),
+      initializer(std::move(initializer)),
+      fieldInitialization(std::move(fieldInitialization)),
+      exactSolutions(std::move(exactSolutions))
 
 {}
+ablate::particles::ParticleSolver::ParticleSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options,
+                                                  const std::vector<std::shared_ptr<FieldDescription>>& fields, std::vector<std::shared_ptr<processes::Process>> processes,
+                                                  std::shared_ptr<initializers::Initializer> initializer, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization,
+                                                  std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions)
+    : ParticleSolver(std::move(solverId), std::move(region), std::move(options), ablate::utilities::VectorUtilities::Copy(fields), std::move(processes), std::move(initializer), std::move(fieldInitialization), std::move(exactSolutions)) {}
+
 ablate::particles::ParticleSolver::~ParticleSolver() {
     if (swarmDm) {
         DMDestroy(&swarmDm) >> checkError;
@@ -59,11 +67,11 @@ void ablate::particles::ParticleSolver::Setup() {
 
     // if the exact solution was provided, register the initial particle location in the field
     if (!exactSolutions.empty()) {
-        fieldsDescriptions.push_back(FieldDescription{.name = ParticleInitialLocation, .components = coordComponents, .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
+        fieldsDescriptions.emplace_back(ParticleInitialLocation, domain::FieldLocation::AUX, coordComponents);
     }
 
     // record the automatic field of coordinates
-    auto coordField = FieldDescription{.name = ParticleCoordinates, .components = coordComponents, .type = domain::FieldLocation::SOL, .dataType = PETSC_REAL};
+    auto coordField = FieldDescription{ParticleCoordinates, domain::FieldLocation::SOL, coordComponents};
     fieldsDescriptions.push_back(coordField);
 
     // march over each field and record the field description
@@ -77,7 +85,7 @@ void ablate::particles::ParticleSolver::Setup() {
 
         // March over each solution field and compute the current offset
         for (const auto &field : fields) {
-            if (field.type == domain::FieldLocation::SOL) {
+            if (field.location == domain::FieldLocation::SOL) {
                 // Create a global list of names for this field
                 if (field.components.size() == 1) {
                     solutionFieldComponentNames.push_back(field.name);
@@ -88,17 +96,17 @@ void ablate::particles::ParticleSolver::Setup() {
         }
 
         // Compute the size of the exact solution (each component added up)
-        RegisterParticleField(FieldDescription{.name = PackedSolution, .components = solutionFieldComponentNames, .type = domain::FieldLocation::AUX, .dataType = PETSC_REAL});
+        RegisterParticleField(FieldDescription{PackedSolution, domain::FieldLocation::AUX, solutionFieldComponentNames});
 
         // Update all solution field components with the size of the number of components
         for (auto &field : fields) {
-            if (field.type == domain::FieldLocation::SOL) {
-                field.dataSize = solutionFieldComponentNames.size();
+            if (field.location == domain::FieldLocation::SOL) {
+                field.dataSize = (PetscInt)solutionFieldComponentNames.size();
             }
         }
         for (auto &field : fieldsMap) {
-            if (field.second.type == domain::FieldLocation::SOL) {
-                field.second.dataSize = solutionFieldComponentNames.size();
+            if (field.second.location == domain::FieldLocation::SOL) {
+                field.second.dataSize = (PetscInt)solutionFieldComponentNames.size();
             }
         }
     }
@@ -128,7 +136,7 @@ void ablate::particles::ParticleSolver::Initialize() {
     TSSetDM(particleTs, swarmDm);
     TSSetProblemType(particleTs, TS_NONLINEAR) >> checkError;
     TSSetExactFinalTime(particleTs, TS_EXACTFINALTIME_MATCHSTEP) >> checkError;
-    TSSetMaxSteps(particleTs, 100000000) >> checkError;  // set the max ts to a very large number. This can be over written using ts_max_steps options
+    TSSetMaxSteps(particleTs, 100000000) >> checkError;  // set the max ts to a very large number. This can be overwritten using ts_max_steps options
 
     // finish ts setup
     TSSetFromOptions(particleTs) >> checkError;
@@ -148,7 +156,7 @@ void ablate::particles::ParticleSolver::Initialize() {
     TSSetTime(particleTs, timeInitial) >> checkError;
 
     // set the particle RHS
-    TSSetRHSFunction(particleTs, NULL, ComputeParticleRHS, this) >> checkError;
+    TSSetRHSFunction(particleTs, nullptr, ComputeParticleRHS, this) >> checkError;
 
     // link the solution with the flowTS
     RegisterPostStep([this](TS flowTs, ablate::solver::Solver &) { this->MacroStepParticles(flowTs); });
@@ -167,16 +175,16 @@ void ablate::particles::ParticleSolver::RegisterParticleField(const FieldDescrip
         .components = fieldDescription.components,
 
         //! The field type (sol or aux)
-        .type = fieldDescription.type,
+        .location = fieldDescription.location,
 
         //! The type of field
         .dataType = fieldDescription.dataType,
 
         //! The offset in the local array, 0 for aux, computed for sol
-        .offset =
-            field.type == domain::FieldLocation::SOL
-                ? std::accumulate(fields.begin(), fields.end(), 0, [&](PetscInt count, const Field &field) { return count + (field.type == domain::FieldLocation::SOL ? field.numberComponents : 0); })
-                : 0,
+        .offset = field.location == domain::FieldLocation::SOL
+                      ? std::accumulate(
+                            fields.begin(), fields.end(), 0, [&](PetscInt count, const Field &field) { return count + (field.location == domain::FieldLocation::SOL ? field.numberComponents : 0); })
+                      : 0,
 
         //! The size of the component for this data
         .dataSize = (PetscInt)fieldDescription.components.size()};
@@ -186,9 +194,9 @@ void ablate::particles::ParticleSolver::RegisterParticleField(const FieldDescrip
     fieldsMap.insert({field.name, field});
 
     // register the field if it is an aux field, sol fields will be added later
-    if (field.type == domain::FieldLocation::AUX) {
+    if (field.location == domain::FieldLocation::AUX) {
         // add the value to the field
-        DMSwarmRegisterPetscDatatypeField(swarmDm, field.name.c_str(), field.components.size(), field.dataType) >> checkError;
+        DMSwarmRegisterPetscDatatypeField(swarmDm, field.name.c_str(), (PetscInt)field.components.size(), field.dataType) >> checkError;
     }
 }
 
@@ -211,7 +219,6 @@ void ablate::particles::ParticleSolver::StoreInitialParticleLocations() {
 
 PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleError(TS particleTS, Vec u, Vec errorVec) {
     PetscFunctionBeginUser;
-
     // get a pointer to this particle class
     ablate::particles::ParticleSolver *particles;
     TSGetApplicationContext(particleTS, (void **)&particles) >> checkError;
@@ -247,7 +254,7 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleError(TS partic
     for (const auto &exactSolutionFunction : particles->exactSolutions) {
         const auto &exactSolutionField = particles->GetField(exactSolutionFunction->GetName());
 
-        if (exactSolutionField.type != domain::FieldLocation::SOL) {
+        if (exactSolutionField.location != domain::FieldLocation::SOL) {
             throw std::invalid_argument("The exactSolution field (" + exactSolutionField.name + ") must be of type domain::FieldLocation::SOL");
         }
 
@@ -279,18 +286,18 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleError(TS partic
 
     // Get all points still in this mesh
     DM flowDM = particles->subDomain->GetDM();
-    PetscSF cellSF = NULL;
+    PetscSF cellSF = nullptr;
     DMLocatePoints(flowDM, exactLocationVec, DM_POINTLOCATION_NONE, &cellSF) >> checkError;
     const PetscSFNode *cells;
-    PetscSFGetGraph(cellSF, NULL, NULL, NULL, &cells) >> checkError;
+    PetscSFGetGraph(cellSF, nullptr, nullptr, nullptr, &cells) >> checkError;
 
     // compute the difference between exact and u
     VecWAXPY(errorVec, -1, exactSolutionVec, u);
 
-    // get the solution field size to zero the the error
+    // get the solution field size to zero the error
     const auto solutionFieldSize = particles->GetField(PackedSolution).dataSize;
 
-    // zero out the error if any particle moves outside of the domain
+    // zero out the error if any particle moves outside the domain
     for (PetscInt p = 0; p < np; ++p) {
         if (cells[p].index == DMLOCATEPOINT_POINT_NOT_FOUND) {
             for (PetscInt c = 0; c < solutionFieldSize; ++c) {
@@ -534,7 +541,7 @@ PetscErrorCode ablate::particles::ParticleSolver::ComputeParticleExactSolution(T
     for (const auto &exactSolutionFunction : particles->exactSolutions) {
         const auto &exactSolutionField = particles->GetField(exactSolutionFunction->GetName());
 
-        if (exactSolutionField.type != domain::FieldLocation::SOL) {
+        if (exactSolutionField.location != domain::FieldLocation::SOL) {
             throw std::invalid_argument("The exactSolution field (" + exactSolutionField.name + ") must be of type domain::FieldLocation::SOL");
         }
 

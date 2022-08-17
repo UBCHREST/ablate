@@ -52,7 +52,7 @@ class SwarmAccessor : public Accessor<const PetscReal> {
      */
     ConstPointData CreateData(const std::string& fieldName) override {
         const auto& field = fieldsMap.at(fieldName);
-        if (field.type == domain::FieldLocation::SOL) {
+        if (field.location == domain::FieldLocation::SOL) {
             return ConstPointData(solutionValues, field);
         } else {
             // get the field from the dm

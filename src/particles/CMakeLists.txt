@@ -10,7 +10,6 @@ target_sources(ablateLibrary
         )
 
 add_subdirectory(initializers)
-add_subdirectory(drag)
 add_subdirectory(processes)
 add_subdirectory(accessors)
 

@@ -40,7 +40,7 @@ class RhsAccessor : public Accessor<PetscReal> {
      */
     PointData CreateData(const std::string& fieldName) override {
         const auto& field = fieldsMap.at(fieldName);
-        if (field.type == domain::FieldLocation::SOL) {
+        if (field.location == domain::FieldLocation::SOL) {
             return PointData(rhsValues, field);
         } else {
             throw std::invalid_argument("The field " + std::string(fieldName) + " is not a solution variable");

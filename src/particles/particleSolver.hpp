@@ -62,9 +62,34 @@ class ParticleSolver : public solver::Solver {
     const std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions;
 
    public:
+    /**
+     * default constructor
+     * @param solverId
+     * @param options
+     * @param fields
+     * @param processes
+     * @param initializer
+     * @param fieldInitialization
+     * @param exactSolutions
+     */
     ParticleSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, std::vector<FieldDescription> fields,
                    std::vector<std::shared_ptr<processes::Process>> processes, std::shared_ptr<initializers::Initializer> initializer,
                    std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
+
+    /**
+     * shared pointer version of the constructor
+     * @param solverId
+     * @param options
+     * @param fields
+     * @param processes
+     * @param initializer
+     * @param fieldInitialization
+     * @param exactSolutions
+     */
+    ParticleSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options, const std::vector<std::shared_ptr<FieldDescription>>& fields,
+                   std::vector<std::shared_ptr<processes::Process>> processes, std::shared_ptr<initializers::Initializer> initializer,
+                   std::vector<std::shared_ptr<mathFunctions::FieldFunction>> fieldInitialization, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions = {});
+
 
     ~ParticleSolver() override;
 
@@ -145,7 +170,7 @@ class ParticleSolver : public solver::Solver {
      */
     template <class T>
     void GetField(const Field& field, T** values) {
-        if (field.type == domain::FieldLocation::SOL) {
+        if (field.location == domain::FieldLocation::SOL) {
             // Get the solution vector
             DMSwarmGetField(swarmDm, PackedSolution, NULL, NULL, (void**)values) >> checkError;
         } else {
@@ -159,7 +184,7 @@ class ParticleSolver : public solver::Solver {
      */
     template <class T>
     void RestoreField(const Field& field, T** values) {
-        if (field.type == domain::FieldLocation::SOL) {
+        if (field.location == domain::FieldLocation::SOL) {
             // Get the solution vector
             DMSwarmRestoreField(swarmDm, PackedSolution, NULL, NULL, (void**)values) >> checkError;
         } else {

@@ -16,10 +16,21 @@ struct FieldDescription {
     const std::vector<std::string> components = {"_"};
 
     //! The type of field, (solution or aux)
-    enum domain::FieldLocation type = domain::FieldLocation::AUX;
+    enum domain::FieldLocation location = domain::FieldLocation::AUX;
 
     //! The data type, default is double
     const PetscDataType dataType = PETSC_REAL;
+
+   public:
+    /**
+     * default constructor
+     * @param name name of the field
+     * @param type AUX or SOL type
+     * @param components the name of each components, if empty it it is assumed to be one component
+     * @param dataType the type of data, default is real
+     */
+    FieldDescription(std::string name, domain::FieldLocation type, std::vector<std::string> components = {},PetscDataType dataType = PETSC_DATATYPE_UNKNOWN);
+
 };
 
 }  // namespace ablate::particles

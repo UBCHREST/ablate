@@ -3,7 +3,7 @@
 
 #include <petsc.h>
 
-namespace ablate::particles::drag {
+namespace ablate::particles::processes::drag {
 
 class DragModel {
    public:
@@ -13,6 +13,6 @@ class DragModel {
     virtual ~DragModel() = default;
 };
 
-}  // namespace ablate::particles::drag
+}  // namespace ablate::particles::processes::drag
 
 #endif  // ABLATELIBRARY_DRAGMODEL_HPP

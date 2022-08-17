@@ -1,8 +1,8 @@
 #include "quadratic.hpp"
 #include "utilities/mathUtilities.hpp"
 
-void ablate::particles::drag::Quadratic::ComputeDragForce(const PetscInt dim, const PetscReal *partVel, const PetscReal *flowVel, const PetscReal muF, const PetscReal rhoF, const PetscReal partDiam,
-                                                          PetscReal *dragForce) {
+void ablate::particles::processes::drag::Quadratic::ComputeDragForce(const PetscInt dim, const PetscReal *partVel, const PetscReal *flowVel, const PetscReal muF, const PetscReal rhoF,
+                                                                     const PetscReal partDiam, PetscReal *dragForce) {
     /** \brief Quadratic drag formula for a solid sphere at high Reynolds numbers.
      *
      * \details \f$\vec{F}_d = -C_d \frac{\pi}{8} d^2 \cdot \frac{1}{2} \rho_f |\vec{V}| \vec{V}\f$
@@ -30,4 +30,5 @@ void ablate::particles::drag::Quadratic::ComputeDragForce(const PetscInt dim, co
 };
 
 #include "registrar.hpp"
-REGISTER_WITHOUT_ARGUMENTS(ablate::particles::drag::DragModel, ablate::particles::drag::Quadratic, "Computes drag according to a high Reynolds number drag model for solid spheres.");
+REGISTER_WITHOUT_ARGUMENTS(ablate::particles::processes::drag::DragModel, ablate::particles::processes::drag::Quadratic,
+                           "Computes drag according to a high Reynolds number drag model for solid spheres.");

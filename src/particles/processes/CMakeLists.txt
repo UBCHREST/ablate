@@ -8,3 +8,5 @@ target_sources(ablateLibrary
         tracer.hpp
         inertial.hpp
         )
+
+add_subdirectory(drag)

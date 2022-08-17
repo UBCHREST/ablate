@@ -18,8 +18,8 @@ struct Field {
     //! The name of the components
     const std::vector<std::string> components;
 
-    //! The field type (sol or aux)
-    enum domain::FieldLocation type = domain::FieldLocation::AUX;
+    //! The field location (sol or aux)
+    enum domain::FieldLocation location = domain::FieldLocation::AUX;
 
     //! The type of field
     const PetscDataType dataType;
