@@ -60,7 +60,9 @@ INSTANTIATE_TEST_SUITE_P(Particles, IntegrationTestsSpecifier,
                                                 .arguments = "",
                                                 .expectedFiles{{"outputs/particles/tracerParticles2DHDF5Monitor/flowTracerParticles.xmf", "flowTracerParticles.xmf"},
                                                                {"outputs/particles/tracerParticles2DHDF5Monitor/domain.xmf", "domain.xmf"}}},
-                             (MpiTestParameter){.testName = "inputs/particles/tracerParticles3D.yaml", .nproc = 1, .expectedOutputFile = "outputs/particles/tracerParticles3D.txt", .arguments = ""}),
+                             (MpiTestParameter){.testName = "inputs/particles/tracerParticles3D.yaml", .nproc = 1, .expectedOutputFile = "outputs/particles/tracerParticles3D.txt", .arguments = ""},
+                             (MpiTestParameter){
+                                 .testName = "inputs/particles/inertialParticles2D.yaml", .nproc = 1, .expectedOutputFile = "outputs/particles/inertialParticles2D.txt", .arguments = ""}),
                          [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(

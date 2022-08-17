@@ -39,11 +39,15 @@ class RhsAccessor : public Accessor<PetscReal> {
      * @return
      */
     PointData CreateData(const std::string& fieldName) override {
-        const auto& field = fieldsMap.at(fieldName);
-        if (field.location == domain::FieldLocation::SOL) {
-            return PointData(rhsValues, field);
-        } else {
-            throw std::invalid_argument("The field " + std::string(fieldName) + " is not a solution variable");
+        try {
+            const auto& field = fieldsMap.at(fieldName);
+            if (field.location == domain::FieldLocation::SOL) {
+                return PointData(rhsValues, field);
+            } else {
+                throw std::invalid_argument("The field " + std::string(fieldName) + " is not a solution variable");
+            }
+        } catch (std::exception& exception) {
+            throw std::invalid_argument("Unable to locate particle field " + fieldName);
         }
     }
 

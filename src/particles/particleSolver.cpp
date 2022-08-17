@@ -783,5 +783,5 @@ REGISTER(ablate::solver::Solver, ablate::particles::ParticleSolver, "Lagrangian 
          OPT(std::vector<ablate::particles::FieldDescription>, "fields", "any additional fields beside coordinates"),
          ARG(std::vector<ablate::particles::processes::Process>, "processes", "the processes used to describe the particle source terms"),
          ARG(ablate::particles::initializers::Initializer, "initializer", "the initial particle setup methods"),
-         OPT(std::vector<ablate::mathFunctions::FieldFunction>, "fieldInitialization ", "the initial particle fields values"),
+         OPT(std::vector<ablate::mathFunctions::FieldFunction>, "fieldInitialization", "the initial particle fields values"),
          OPT(std::vector<ablate::mathFunctions::FieldFunction>, "exactSolutions", "particle fields (SOL) exact solutions"))

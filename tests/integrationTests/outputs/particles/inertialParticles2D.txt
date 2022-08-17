@@ -1,0 +1,108 @@
+flowParticles Count: 100
+flowParticles Avg: [0.5, 0.5]
+flowParticles Count: 100
+flowParticles Avg: [0.5, 0.5]
+flowParticles Count: 100
+flowParticles Avg: [0.500276, 0.500574]
+flowParticles Count: 100
+flowParticles Avg: [0.500814, 0.501682]
+flowParticles Count: 100
+flowParticles Avg: [0.501596, 0.503279]
+flowParticles Count: 100
+flowParticles Avg: [0.502597, 0.505306]
+flowParticles Count: 100
+flowParticles Avg: [0.503794, 0.507717]
+flowParticles Count: 100
+flowParticles Avg: [0.505173, 0.51048]
+flowParticles Count: 100
+flowParticles Avg: [0.506716, 0.513563]
+flowParticles Count: 100
+flowParticles Avg: [0.50839, 0.516904]
+flowParticles Count: 100
+flowParticles Avg: [0.510182, 0.520486]
+flowParticles Count: 100
+flowParticles Avg: [0.51208, 0.524291]
+flowParticles Count: 100
+flowParticles Avg: [0.514073, 0.528305]
+flowParticles Count: 100
+flowParticles Avg: [0.516112, 0.532431]
+flowParticles Count: 100
+flowParticles Avg: [0.518173, 0.53663]
+flowParticles Count: 100
+flowParticles Avg: [0.520243, 0.540885]
+flowParticles Count: 100
+flowParticles Avg: [0.522308, 0.545159]
+flowParticles Count: 100
+flowParticles Avg: [0.524359, 0.549435]
+flowParticles Count: 100
+flowParticles Avg: [0.526391, 0.553712]
+flowParticles Count: 100
+flowParticles Avg: [0.528408, 0.557996]
+flowParticles Count: 100
+flowParticles Avg: [0.530413, 0.562275]
+flowParticles Count: 100
+flowParticles Avg: [0.532409, 0.566558]
+flowParticles Count: 100
+flowParticles Avg: [0.534402, 0.57086]
+flowParticles Count: 100
+flowParticles Avg: [0.536396, 0.575192]
+flowParticles Count: 100
+flowParticles Avg: [0.538398, 0.579555]
+flowParticles Count: 100
+flowParticles Avg: [0.540412, 0.583952]
+flowParticles Count: 100
+flowParticles Avg: [0.542442, 0.588386]
+flowParticles Count: 100
+flowParticles Avg: [0.544485, 0.592847]
+flowParticles Count: 100
+flowParticles Avg: [0.54654, 0.59732]
+flowParticles Count: 100
+flowParticles Avg: [0.548613, 0.601811]
+flowParticles Count: 100
+flowParticles Avg: [0.550715, 0.606341]
+flowParticles Count: 100
+flowParticles Avg: [0.552849, 0.610919]
+flowParticles Count: 100
+flowParticles Avg: [0.555019, 0.615547]
+flowParticles Count: 100
+flowParticles Avg: [0.557213, 0.620204]
+flowParticles Count: 100
+flowParticles Avg: [0.559429, 0.624873]
+flowParticles Count: 100
+flowParticles Avg: [0.561662, 0.629546]
+flowParticles Count: 100
+flowParticles Avg: [0.563909, 0.634217]
+flowParticles Count: 100
+flowParticles Avg: [0.566178, 0.638894]
+flowParticles Count: 100
+flowParticles Avg: [0.568469, 0.643584]
+flowParticles Count: 100
+flowParticles Avg: [0.570777, 0.64828]
+flowParticles Count: 100
+flowParticles Avg: [0.573099, 0.652983]
+flowParticles Count: 100
+flowParticles Avg: [0.575434, 0.657692]
+flowParticles Count: 100
+flowParticles Avg: [0.577782, 0.66241]
+flowParticles Count: 98
+flowParticles Avg: [0.577827, 0.661951]
+flowParticles Count: 94
+flowParticles Avg: [0.576984, 0.655926]
+flowParticles Count: 91
+flowParticles Avg: [0.582521, 0.652059]
+flowParticles Count: 90
+flowParticles Avg: [0.587038, 0.653837]
+flowParticles Count: 90
+flowParticles Avg: [0.589416, 0.658538]
+flowParticles Count: 90
+flowParticles Avg: [0.591798, 0.663228]
+flowParticles Count: 90
+flowParticles Avg: [0.594185, 0.667912]
+flowParticles Count: 90
+flowParticles Avg: [0.596574, 0.672586]
+ResultFiles:
+domain.hdf5
+domain.xmf
+flowParticles.hdf5
+flowParticles.xmf
+restart.rst
