@@ -40,6 +40,14 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         log->Initialize(subDomain->GetComm());
     }
     cellRange = cellRangeIn;
+    //
+    //    // do a simple sanity check for labels
+    //    region->CheckForLabel(subDomain->GetDM());
+    //    fieldBoundary->CheckForLabel(subDomain->GetDM());
+    //    // Get the labels
+    //    DMLabel boundaryLabel;
+    //    PetscInt boundaryValue = fieldBoundary->GetValue();
+    //    DMGetLabel(subDomain->GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
 
     /** Initialization to call, draws each ray vector and gets all of the cells associated with it
      * (sorted by distance and starting at the boundary working in)
@@ -132,12 +140,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
          */
         for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
-                /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
-                virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
-                virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
-                virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
-                virtualcoord[ipart].current = iCell;  //!< Set this to a null value so that it can't get confused about where it starts.
-
                 /** Get the initial direction of the search particle from the angle number that it was initialized with */
                 theta = ((double)ntheta / (double)nTheta) * ablate::utilities::Constants::pi;  //!< Theta angle of the ray
                 phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;  //!<  Phi angle of the ray
@@ -146,6 +148,12 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                 virtualcoord[ipart].xdir = (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
                 virtualcoord[ipart].ydir = (sin(theta) * sin(phi));  //!< y component conversion from spherical coordinates, adding the position of the current cell
                 virtualcoord[ipart].zdir = (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
+
+                /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
+                virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
+                virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
+                virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
+                virtualcoord[ipart].current = iCell;  //!< Set this to a null value so that it can't get confused about where it starts.
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord);
@@ -298,6 +306,12 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                     PetscInt face = cellFaces[f];
                     DMPlexPointLocalRead(faceDM, face, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
 
+                    //                    PetscInt faceValue;
+                    //                    DMLabelGetValue(boundaryLabel, face, &faceValue) >> checkError;
+                    //                    if (faceValue != boundaryValue) {
+                    //                        faceValue = 1;
+                    //                    }
+
                     /** Get the intersection of the direction vector with the cell face
                      * Use the plane equation and ray segment equation in order to get the face intersection with the shortest path length
                      * This will be the next position of the search particle
@@ -314,6 +328,7 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                         }
                     }
                 }
+                // virtualcoord[ip].hhere = (virtualcoord[ip].hhere == 0) ? minCellRadius : virtualcoord[ip].hhere;  // Debugging
                 rays[Key(&identifier[ip])].h.push_back(virtualcoord[ip].hhere);  //!< Add this space step if the current index is being added.
 
                 /** Step 4: Push the particle virtual coordinates to the intersection that was found in the previous step.
@@ -342,7 +357,21 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                         break;
                 }  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
                 virtualcoord[ip].hhere = 0;
-            }
+            }  // else if (ghost == 2) {
+            //                /** Delete the particles that have become stuck within a boundary ghost cell */
+            //                /** Delete the particles that are no longer in a valid region */
+            //                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+            //                DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+            //                DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+            //
+            //                DMSwarmRemovePointAtIndex(radsearch, ip);  //!< Delete the particle!
+            //
+            //                DMSwarmGetLocalSize(radsearch, &npoints);  //!< Need to recalculate the number of particles that are in the domain again
+            //                DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+            //                DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+            //                DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+            //                ip--;  //!< Check the point replacing the one that was deleted
+            //}
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
         DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
