@@ -19,7 +19,6 @@ ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::
 
 ablate::radiation::Radiation::~Radiation() {
     if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
-    //    if (cellGeomVec) VecDestroy(&cellGeomVec) >> checkError;
 }
 
 void ablate::radiation::Radiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
@@ -52,9 +51,7 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     /** Initialization to call, draws each ray vector and gets all of the cells associated with it
      * (sorted by distance and starting at the boundary working in)
      * This is done by creating particles at the center of each cell and iterating through them
-     * */
-
-    /** Get setup things for the position vector of the current cell index
+     * Get setup things for the position vector of the current cell index
      * Declare the variables that will contain the geometry of the cells
      * Obtain the geometric information about the cells in the DM
      * */
@@ -81,6 +78,11 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     /** Declare some local variables */
     double theta;  //!< represents the actual current angle (inclination)
     double phi;    //!< represents the actual current angle (rotation)
+
+    // TODO: Check the ghost labels for source of weirdness
+    // check to see if there is a ghost label
+    DMLabel ghostLabel;
+    DMGetLabel(subDomain->GetDM(), "ghost", &ghostLabel) >> checkError;
 
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
     PetscInt npoints = (cellRange.end - cellRange.start) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
@@ -134,6 +136,33 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscReal centroid[3];
         DMPlexComputeCellGeometryFVM(subDomain->GetDM(), iCell, nullptr, centroid, nullptr) >> checkError;
+
+        // TODO: Check all of the faces in the domain to see if any of them have the observed invalid geometry
+        /** March over each face on this cell in order to check them for the one which intersects this ray next */
+        PetscInt numberFaces;
+        const PetscInt* cellFaces;
+        DMPlexGetConeSize(subDomain->GetDM(), iCell, &numberFaces) >> checkError;
+        DMPlexGetCone(subDomain->GetDM(), iCell, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
+
+        // make sure we are not working on a ghost cell
+        PetscInt ghost = -1;
+        if (ghostLabel) {
+            DMLabelGetValue(ghostLabel, iCell, &ghost);
+        }
+        if (ghost >= 0) {
+            printf("Ghost label!\n"); //TODO: If this is a ghost cell then maybe it will have an empty face, explaining the strangeness
+        }
+
+        /** Check every face for intersection with the segment.
+         * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
+         * */
+        for (PetscInt f = 0; f < numberFaces; f++) {
+            PetscInt face = cellFaces[f];
+            DMPlexPointLocalRead(faceDM, face, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
+            if (faceGeom->normal[0] == 0 && faceGeom->normal[1] == 0 && faceGeom->normal[2] == 0) {
+                printf("Empty face normal!\n");
+            }
+        }
 
         /** for every angle theta
          * for every angle phi
@@ -356,22 +385,23 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                         coord[(3 * ip) + 2] = virtualcoord[ip].z + (virtualcoord[ip].zdir * 0.1 * minCellRadius);
                         break;
                 }  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
-                virtualcoord[ip].hhere = 0;
-            }  // else if (ghost == 2) {
-            //                /** Delete the particles that have become stuck within a boundary ghost cell */
-            //                /** Delete the particles that are no longer in a valid region */
-            //                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
-            //                DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-            //                DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-            //
-            //                DMSwarmRemovePointAtIndex(radsearch, ip);  //!< Delete the particle!
-            //
-            //                DMSwarmGetLocalSize(radsearch, &npoints);  //!< Need to recalculate the number of particles that are in the domain again
-            //                DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
-            //                DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-            //                DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-            //                ip--;  //!< Check the point replacing the one that was deleted
-            //}
+            }
+            if (virtualcoord[ip].hhere == 0) {
+                /** Delete the particles that have become stuck within a boundary ghost cell */
+                /** Delete the particles that are no longer in a valid region */
+                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+                DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+                DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+
+                DMSwarmRemovePointAtIndex(radsearch, ip);  //!< Delete the particle!
+
+                DMSwarmGetLocalSize(radsearch, &npoints);  //!< Need to recalculate the number of particles that are in the domain again
+                DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+                DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+                DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+                ip--;  //!< Check the point replacing the one that was deleted
+            }
+            virtualcoord[ip].hhere = 0;
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
         DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
