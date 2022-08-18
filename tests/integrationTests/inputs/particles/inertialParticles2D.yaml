@@ -15,7 +15,7 @@ timestepper:
   arguments:
     ts_type: rk
     ts_adapt_type: none
-    ts_max_steps: 50
+    ts_max_steps: 20
   # sets a single box domain with periodic boundary conditions
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
@@ -86,9 +86,9 @@ solvers:
       ts_dt: 0.005
     # initial particle locations
     initializer: !ablate::particles::initializers::BoxInitializer
-      lower: [ 0.25,0.25 ]
-      upper: [ 0.75,0.75 ]
-      particlesPerDim: 10
+      lower: [ 0.3,0.3 ]
+      upper: [ 0.7,0.3 ]
+      particlesPerDim: 9
 
     # all fields except the coordinate must be specified
     fields:
