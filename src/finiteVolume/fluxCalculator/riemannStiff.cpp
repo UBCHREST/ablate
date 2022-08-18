@@ -149,7 +149,8 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         i++;
     }
     if (i > MAXIT) {
-        throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
+        pstar = pold - (f_L_0 + f_R_0 + del_u)/(f_L_1 + f_R_1);
+//        throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
     }
 
     // Now, start backing out the rest of the info.

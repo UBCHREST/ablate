@@ -846,6 +846,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     // mass fractions
     PetscReal Yg = densityVF / (*density);
     PetscReal Yl = ((*density) - densityVF) / (*density);
+//    if (Yg>1.0 || Yl>1.0){
+//        throw std::invalid_argument("alpha is too big");
+//    }
 
     PetscReal R1 = eosGas->GetGasConstant();
     PetscReal cp2 = eosLiquid->GetSpecificHeatCp();
@@ -1084,6 +1087,10 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     *internalEnergyG = eG;
     *internalEnergyL = eL;
     *alpha = densityVF / (*densityG);
+//    if (*alpha > 1.0+1E-8){
+//        *alpha = 1.0;
+//        throw std::invalid_argument("alpha calculated is greater than 1");
+//    }
 //    if (PetscAbs((*density)-(*alpha)*rhoG-(1-(*alpha))*rhoL)>1e-10){
 //        throw std::invalid_argument("volume fraction not conserved");
 //    }
@@ -1096,6 +1103,15 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     *MG = (*normalVelocity) / (*aG);
     *ML = (*normalVelocity) / (*aL);
 //}
+    PetscReal a1t, a2t, ainv, amix, bmodt;
+    a1t = PetscSqrtReal((gamma1-1)*cv1*(*T));
+    a2t = PetscSqrtReal((gamma2-1)/gamma2*cp2*(*T));
+    ainv = Yg/(rhoG*rhoG*a1t*a1t) + Yl/(rhoL*rhoL*a2t*a2t);
+    amix = PetscSqrtReal(1/ainv)/(*density);
+    bmodt = (*density)*amix*amix;
+    if (bmodt < 0.0){
+        throw std::invalid_argument("isothermal bulk modulus of mixture negative");
+    }
 
 }
 
