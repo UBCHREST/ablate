@@ -3,43 +3,43 @@ flowParticles Avg: \[(.*),(.*)\]<expects> n0.5 n0.3
 flowParticles Count: 81
 flowParticles Avg: \[(.*),(.*)\]<expects> n0.5 n0.3
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.50021 n0.300135
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.50 >0.30
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.500629 n0.300409
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.50 >0.30
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.501265 n0.30083
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.50 >0.30
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.502106 n0.301403
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.50 >0.30
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.503144 n0.302144
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.50 >0.30
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.504373 n0.30308
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.50 >0.30
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.505784 n0.304241
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.50 >0.30
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.507349 n0.305651
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.50 >0.30
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.509058 n0.307355
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.50 >0.307
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.510898 n0.309399
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.51 >0.30
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.512854 n0.311824
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.51 >0.31
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.514874 n0.314618
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.51 >0.31
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.516922 n0.317786
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.51 >0.31
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.518985 n0.321333
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.51 >0.32
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.521047 n0.325245
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.52 >0.32
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.523097 n0.329502
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.52 >0.32
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.525131 n0.334087
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.52 >0.33
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.52714 n0.33898
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.52 >0.33
 flowParticles Count: 81
-flowParticles Avg: \[(.*),(.*)\]<expects> n0.529127 n0.344116
+flowParticles Avg: \[(.*),(.*)\]<expects> >0.52 >0.34
 ResultFiles:
 domain.hdf5
 domain.xmf
