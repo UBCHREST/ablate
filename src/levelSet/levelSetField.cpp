@@ -817,12 +817,12 @@ void VOF_3D_Hex_Test( ){
 
 // Returns the VOF for a given cell. Refer to "Quadrature rules for triangular and tetrahedral elements with generalized functions"
 //  by Holdych, Noble, and Secor, Int. J. Numer. Meth. Engng 2008; 73:1310-1327.
-PetscReal LevelSetField::VOF(const PetscInt p) {
+void LevelSetField::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, PetscReal *vol) {
 
   DMPolytopeType    ct;
   PetscInt          dim = LevelSetField::dim, Nc, cStart, nVerts, i, j;
   PetscReal         x0[3] = {0.0, 0.0, 0.0}, n[3] = {0.0, 0.0, 0.0}, g;
-  PetscReal         *c = NULL, *coords = NULL, c0, vof = -1.0;
+  PetscReal         *c = NULL, *coords = NULL, c0;
   DM                dm = LevelSetField::dm;
   const PetscScalar *array;
   PetscBool         isDG;
@@ -873,36 +873,55 @@ PetscReal LevelSetField::VOF(const PetscInt p) {
   DMPlexGetCellType(dm, p, &ct) >> ablate::checkError;
   switch (ct) {
     case DM_POLYTOPE_TRIANGLE:
-      VOF_2D_Tri(coords, c, &vof, NULL, NULL);
+      VOF_2D_Tri(coords, c, vof, area, vol);
       break;
     case DM_POLYTOPE_QUADRILATERAL:
-      VOF_2D_Quad(coords, c, &vof, NULL, NULL);
+      VOF_2D_Quad(coords, c, vof, area, vol);
       break;
     case DM_POLYTOPE_TETRAHEDRON:
-      VOF_3D_Tetra(coords, c, &vof, NULL, NULL);
+      VOF_3D_Tetra(coords, c, vof, area, vol);
       break;
     case DM_POLYTOPE_HEXAHEDRON:
-      VOF_3D_Hex(coords, c, &vof, NULL, NULL);
+      VOF_3D_Hex(coords, c, vof, area, vol);
       break;
-    default: SETERRQ(PetscObjectComm((PetscObject) dm), PETSC_ERR_ARG_OUTOFRANGE, "No element geometry for cell %" PetscInt_FMT " with type %s", p, DMPolytopeTypes[PetscMax(0, PetscMin(ct, DM_NUM_POLYTOPES))]);
+    default:
+      throw std::invalid_argument("No element geometry for cell " + std::to_string(p) + " with type " + DMPolytopeTypes[ct]);
   }
 
   DMPlexRestoreCellCoordinates(dm, p, &isDG, &Nc, &array, &coords) >> ablate::checkError;
   PetscFree(c) >> ablate::checkError;
 
-  return vof;
-
 }
 
 
-//// Reinitialize a level set field to make it a signed distance function and to match a target VOF for each cell
-//void LevelSetField::Reinitialize(Vec VOF) {
-//  PetscInt          cStart, cEnd;
-//  DM                dm = LevelSetField::dm;
-//  const PetscScalar *array;
+// Reinitialize a level set field to make it a signed distance function and to match a target VOF for each cell
+void LevelSetField::Reinitialize(Vec VOF) {
+  PetscInt          c, cStart, cEnd;
+  DM                dm = LevelSetField::dm;
+  const PetscScalar *vofVal;
+  PetscScalar       *phiVal;
+  PetscReal         vof, faceArea, cellVolume;
+  Vec               newPhi;
+
+  VecDuplicate(LevelSetField::phi, &newPhi);
+
+  VecDuplicate(newPhi, &newPhi);
+
+  VecGetArrayRead(VOF, &vofVal) >> ablate::checkError;
+  VecGetArray(newPhi, &phiVal) >> ablate::checkError;
+
+  DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;
+  for (c = cStart; c < cEnd; ++c) {
+    LevelSetField::VOF(c, &vof, &faceArea, &cellVolume);
+
+  }
+
+  VecRestoreArray(newPhi, &phiVal);
+  VecRestoreArrayRead(VOF, &vofVal) >> ablate::checkError;
+  VecDestroy(&newPhi);
 
 
-//}
+}
 
 
 bool LevelSetField::HasInterface(const PetscInt p) {

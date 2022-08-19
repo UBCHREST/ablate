@@ -55,9 +55,14 @@ class LevelSetField : public domain::FieldDescriptor {
 
     bool HasInterface(const PetscInt p);
 
-    PetscReal VOF(const PetscInt c);
+    void Reinitialize(Vec VOF);
 
    private:
+
+
+    void VOF(const PetscInt p, PetscReal *vof, PetscReal *area, PetscReal *vol);
+
+
     // Copied from current ABLATE code. Need to talk to Matt M. about how to integrate
     const std::shared_ptr<domain::Region> region = nullptr;
 
