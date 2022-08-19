@@ -1,15 +1,15 @@
-#ifndef ABLATELIBRARY_QUADRATIC_HPP
-#define ABLATELIBRARY_QUADRATIC_HPP
+#ifndef ABLATELIBRARY_LINEAR_HPP
+#define ABLATELIBRARY_LINEAR_HPP
 
 #include "dragModel.hpp"
 
-namespace ablate::particles::drag {
+namespace ablate::particles::processes::drag {
 
-class Quadratic : public DragModel {
+class Linear : public DragModel {
    public:
     void ComputeDragForce(const PetscInt dim, const PetscReal *partVel, const PetscReal *flowVel, const PetscReal muF, const PetscReal rhoF, const PetscReal partDiam, PetscReal *dragForce) override;
 };
 
-}  // namespace ablate::particles::drag
+}  // namespace ablate::particles::processes::drag
 
-#endif  // ABLATELIBRARY_QUADRATIC_HPP
+#endif  // ABLATELIBRARY_LINEAR_HPP

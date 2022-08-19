@@ -4,7 +4,7 @@ ablate::monitors::ParticleCount::ParticleCount(int interval, std::shared_ptr<log
 void ablate::monitors::ParticleCount::Register(std::shared_ptr<solver::Solver> monitorableObject) {
     ablate::monitors::Monitor::Register(monitorableObject);
 
-    particles = std::dynamic_pointer_cast<particles::Particles>(monitorableObject);
+    particles = std::dynamic_pointer_cast<particles::ParticleSolver>(monitorableObject);
     if (!particles) {
         throw std::invalid_argument("The ParticleCount monitor can only be used with ablate::particles::Particles");
     }
@@ -25,7 +25,7 @@ PetscErrorCode ablate::monitors::ParticleCount::OutputParticleCount(TS ts, Petsc
         ierr = DMSwarmGetSize(monitor->particles->GetParticleDM(), &particleCount);
         CHKERRQ(ierr);
 
-        monitor->log->Printf("%s Count: %" PetscInt_FMT "\n", monitor->particles->GetId().c_str(), particleCount);
+        monitor->log->Printf("%s Count: %" PetscInt_FMT "\n", monitor->particles->GetSolverId().c_str(), particleCount);
     }
     PetscFunctionReturn(0);
 }

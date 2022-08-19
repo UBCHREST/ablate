@@ -21,4 +21,5 @@ target_sources(ablateLibrary
         mpiUtilities.hpp
         temporaryWorkingDirectory.hpp
         constants.hpp
+        stringUtilities.hpp
         )

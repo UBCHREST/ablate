@@ -1,7 +1,2 @@
-target_sources(libraryTests
-        PRIVATE
-        tracerParticleTests.cpp
-        inertialParticleTests.cpp
-        )
+add_subdirectory(processes)
 
-add_subdirectory(drag)

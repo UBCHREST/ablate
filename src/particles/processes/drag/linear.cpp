@@ -1,7 +1,7 @@
 #include "linear.hpp"
 
-void ablate::particles::drag::Linear::ComputeDragForce(const PetscInt dim, const PetscReal *partVel, const PetscReal *flowVel, const PetscReal muF, const PetscReal rhoF, const PetscReal partDiam,
-                                                       PetscReal *dragForce) {
+void ablate::particles::processes::drag::Linear::ComputeDragForce(const PetscInt dim, const PetscReal *partVel, const PetscReal *flowVel, const PetscReal muF, const PetscReal rhoF,
+                                                                  const PetscReal partDiam, PetscReal *dragForce) {
     /** \brief Linear drag formula for a solid sphere at low Reynolds numbers.
      *
      * \details \f$\vec{F}_d = -3 \pi d^2 \mu_f \vec{V}\f$
@@ -20,4 +20,4 @@ void ablate::particles::drag::Linear::ComputeDragForce(const PetscInt dim, const
 };
 
 #include "registrar.hpp"
-REGISTER_WITHOUT_ARGUMENTS(ablate::particles::drag::DragModel, ablate::particles::drag::Linear, "Computes drag according to Stokes' law.");
+REGISTER_WITHOUT_ARGUMENTS(ablate::particles::processes::drag::DragModel, ablate::particles::processes::drag::Linear, "Computes drag according to Stokes' law.");

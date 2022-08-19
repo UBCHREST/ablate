@@ -11,8 +11,9 @@
 #include "parameters/mapParameters.hpp"
 #include "parameters/petscOptionParameters.hpp"
 #include "parameters/petscPrefixOptions.hpp"
-#include "particles/inertial.hpp"
 #include "particles/initializers/boxInitializer.hpp"
+#include "particles/particleSolver.hpp"
+#include "particles/processes/inertial.hpp"
 #include "solver/directSolverTsInterface.hpp"
 #include "utilities/petscUtilities.hpp"
 
@@ -67,7 +68,8 @@ struct InertialParticleExactParameters {
     ExactFunction TExact;
     ExactFunction u_tExact;
     ExactFunction T_tExact;
-    ExactFunction particleExact;
+    ExactFunction particleExactPosition;
+    ExactFunction particleExactVelocity;
     IntegrandTestFunction f0_v;
     IntegrandTestFunction f0_w;
     IntegrandTestFunction f0_q;
@@ -80,7 +82,7 @@ class InertialParticleExactTestFixture : public testingResources::MpiTestFixture
     void SetUp() override { SetMpiParameters(GetParam().mpiTestParameter); }
 };
 
-static PetscErrorCode settling(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *x, void *ctx) {
+static PetscErrorCode settlingPosition(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *x, void *ctx) {
     const PetscReal x0 = X[0];
     const PetscReal y0 = X[1];
 
@@ -90,8 +92,16 @@ static PetscErrorCode settling(PetscInt Dim, PetscReal time, const PetscReal X[]
     PetscReal uSt = tauP * parameters->grav * (1.0 - parameters->rhoF / parameters->rhoP);           // particle terminal (settling) velocity
     x[0] = uSt * (time + tauP * PetscExpReal(-time / tauP) - tauP) + x0;
     x[1] = y0;
-    x[2] = uSt * (1.0 - PetscExpReal(-time / tauP));
-    x[3] = 0.0;
+    return 0;
+}
+
+static PetscErrorCode settlingVelocity(PetscInt Dim, PetscReal time, const PetscReal X[], PetscInt Nf, PetscScalar *x, void *ctx) {
+    ExactSolutionParameters *parameters = (ExactSolutionParameters *)ctx;
+
+    PetscReal tauP = parameters->rhoP * parameters->dp * parameters->dp / (18.0 * parameters->muF);  // particle relaxation time
+    PetscReal uSt = tauP * parameters->grav * (1.0 - parameters->rhoF / parameters->rhoP);           // particle terminal (settling) velocity
+    x[0] = uSt * (1.0 - PetscExpReal(-time / tauP));
+    x[1] = 0.0;
     return 0;
 }
 
@@ -133,6 +143,8 @@ static void SourceFunction(f0_quiescent_w) {
 }
 
 static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscReal crtime, Vec u, void *ctx) {
+    PetscFunctionBeginUser;
+
     PetscErrorCode (*exactFuncs[3])(PetscInt dim, PetscReal time, const PetscReal x[], PetscInt Nf, PetscScalar *u, void *ctx);
     void *ctxs[3];
     DM dm;
@@ -141,7 +153,6 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     PetscInt f;
     PetscErrorCode ierr;
 
-    PetscFunctionBeginUser;
     ierr = TSGetDM(ts, &dm);
     CHKERRQ(ierr);
     ierr = DMGetDS(dm, &ds);
@@ -156,7 +167,7 @@ static PetscErrorCode MonitorFlowAndParticleError(TS ts, PetscInt step, PetscRea
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
 
     // get the particle data from the context
-    ablate::particles::Inertial *tracerParticles = (ablate::particles::Inertial *)ctx;
+    auto *tracerParticles = (ablate::particles::ParticleSolver *)ctx;
     PetscInt particleCount;
     ierr = DMSwarmGetSize(tracerParticles->GetParticleDM(), &particleCount);
     CHKERRABORT(PETSC_COMM_WORLD, ierr);
@@ -238,20 +249,33 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
 
             // convert the constant values to fieldInitializations
             auto fieldInitialization = std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{
-                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::Inertial::ParticleVelocity, ablate::mathFunctions::Create(testingParam.parameters.pVel)),
-                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::Inertial::ParticleDiameter, ablate::mathFunctions::Create(testingParam.parameters.dp)),
-                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::Inertial::ParticleDensity, ablate::mathFunctions::Create(testingParam.parameters.rhoP)),
+                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::ParticleSolver::ParticleVelocity, ablate::mathFunctions::Create(testingParam.parameters.pVel)),
+                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::ParticleSolver::ParticleDiameter, ablate::mathFunctions::Create(testingParam.parameters.dp)),
+                std::make_shared<mathFunctions::FieldFunction>(ablate::particles::ParticleSolver::ParticleDensity, ablate::mathFunctions::Create(testingParam.parameters.rhoP)),
             };
 
             // Use the petsc options that start with -particle_
             auto particleOptions = std::make_shared<ablate::parameters::PetscPrefixOptions>("-particle_");
 
             // store the exact solution
-            auto exactSolutionFunction = ablate::mathFunctions::Create(testingParam.particleExact, &testingParam.parameters);
+            std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactParticleSolutions{
+                std::make_shared<ablate::mathFunctions::FieldFunction>(particles::ParticleSolver::ParticleCoordinates,
+                                                                       ablate::mathFunctions::Create(testingParam.particleExactPosition, &testingParam.parameters)),
+                std::make_shared<ablate::mathFunctions::FieldFunction>(particles::ParticleSolver::ParticleVelocity,
+                                                                       ablate::mathFunctions::Create(testingParam.particleExactVelocity, &testingParam.parameters))};
 
             // Create an inertial particle object
-            auto particles = std::make_shared<ablate::particles::Inertial>(
-                "particle", ablate::domain::Region::ENTIREDOMAIN, particleOptions, 2, particleParameters, GetParam().particleInitializer, fieldInitialization, exactSolutionFunction);
+            auto particles = std::make_shared<ablate::particles::ParticleSolver>(
+                "particle",
+                ablate::domain::Region::ENTIREDOMAIN,
+                particleOptions,
+                std::vector<ablate::particles::FieldDescription>{{ablate::particles::ParticleSolver::ParticleVelocity, domain::FieldLocation::SOL, {"u", "v"}},
+                                                                 {ablate::particles::ParticleSolver::ParticleDiameter, domain::FieldLocation::AUX},
+                                                                 {ablate::particles::ParticleSolver::ParticleDensity, domain::FieldLocation::AUX}},
+                std::vector<std::shared_ptr<ablate::particles::processes::Process>>{std::make_shared<ablate::particles::processes::Inertial>(particleParameters)},
+                GetParam().particleInitializer,
+                fieldInitialization,
+                exactParticleSolutions);
 
             mesh->InitializeSubDomains({flowObject, particles},
                                        std::vector<std::shared_ptr<mathFunctions::FieldFunction>>{velocityExact, pressureExact, temperatureExact},
@@ -283,7 +307,7 @@ TEST_P(InertialParticleExactTestFixture, ParticleShouldMoveAsExpected) {
             // Check the convergence
             DMTSCheckFromOptions(ts, mesh->GetSolutionVector()) >> testErrorChecker;
 
-            TSSetComputeInitialCondition(particles->GetTS(), ablate::particles::Particles::ComputeParticleExactSolution) >> testErrorChecker;
+            TSSetComputeInitialCondition(particles->GetParticleTS(), ablate::particles::ParticleSolver::ComputeParticleExactSolution) >> testErrorChecker;
 
             // setup the flow monitor to also check particles
             TSMonitorSet(ts, MonitorFlowAndParticleError, particles.get(), NULL) >> testErrorChecker;
@@ -318,7 +342,8 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleTests, InertialParticleExactTestFixture
                                                                            .TExact = quiescent_T,
                                                                            .u_tExact = quiescent_u_t,
                                                                            .T_tExact = quiescent_T_t,
-                                                                           .particleExact = settling,
+                                                                           .particleExactPosition = settlingPosition,
+                                                                           .particleExactVelocity = settlingVelocity,
                                                                            .f0_v = f0_quiescent_v,
                                                                            .f0_w = f0_quiescent_w,
                                                                            .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
@@ -339,7 +364,8 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleTests, InertialParticleExactTestFixture
                                              .TExact = quiescent_T,
                                              .u_tExact = quiescent_u_t,
                                              .T_tExact = quiescent_T_t,
-                                             .particleExact = settling,
+                                             .particleExactPosition = settlingPosition,
+                                             .particleExactVelocity = settlingVelocity,
                                              .f0_v = f0_quiescent_v,
                                              .f0_w = f0_quiescent_w,
                                              .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
@@ -358,7 +384,8 @@ INSTANTIATE_TEST_SUITE_P(InertialParticleTests, InertialParticleExactTestFixture
                                                                            .TExact = quiescent_T,
                                                                            .u_tExact = quiescent_u_t,
                                                                            .T_tExact = quiescent_T_t,
-                                                                           .particleExact = settling,
+                                                                           .particleExactPosition = settlingPosition,
+                                                                           .particleExactVelocity = settlingVelocity,
                                                                            .f0_v = f0_quiescent_v,
                                                                            .f0_w = f0_quiescent_w,
                                                                            .parameters = {.dim = 2, .pVel = {0.0, 0.0}, .dp = 0.22, .rhoP = 90.0, .rhoF = 1.0, .muF = 1.0, .grav = 1.0},
