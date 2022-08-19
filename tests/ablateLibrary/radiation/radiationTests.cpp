@@ -25,7 +25,6 @@ struct RadiationTestParameters {
     std::vector<double> meshEnd;
     std::shared_ptr<ablate::mathFunctions::MathFunction> temperatureField;
     std::shared_ptr<ablate::mathFunctions::MathFunction> expectedResult;
-    double absorptivity;
 };
 
 class RadiationTestFixture : public testingResources::MpiTestFixture, public ::testing::WithParamInterface<RadiationTestParameters> {
@@ -65,19 +64,16 @@ static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double>& f) {
 }
 
 static PetscReal EInteg(int order, double x) {
-    if (x == 0 && order != 1) return 1 / (order - 1);  // Simple solution in this case, exit
+    if (x == 0 && order != 1) return 1.0 / (order - 1.0);  // Simple solution in this case, exit
     std::vector<PetscReal> En;
-    double N = 100;
-    for (double n = 1; n < N; n++) {
-        double mu = n / N;
+    int N = 100;
+    for (int n = 1; n < N; n++) {
+        double mu = (double)n / N;
         if (order == 1) {
             En.push_back(exp(-x / mu) / mu);
         }
         if (order == 2) {
             En.push_back(exp(-x / mu));
-        }
-        if (order == 3) {
-            En.push_back(exp(-x / mu) * mu);
         }
     }
     PetscReal final = CSimp(0, 1, En);
@@ -105,20 +101,19 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
 
     PetscReal pi = 3.1415926535897932384626433832795028841971693993;
     const PetscReal sbc = 5.6696e-8;
-    PetscReal nZp = 1000;
-    Ibz = 0;
+    PetscInt nZp = 1000;
 
     std::vector<PetscReal> Iplus;
     std::vector<PetscReal> Iminus;
 
-    for (double nzp = 1; nzp < (nZp - 1); nzp++) {
+    for (PetscInt nzp = 1; nzp < (nZp - 1); nzp++) {
         /** Plus integral goes from bottom to Z
          * Calculate the z height
          * Get the temperature
          * Two parabolas, is the z coordinate in one half of the domain or the other
          * */
-        PetscReal zp = zBottom + (nzp / nZp) * (z - zBottom);  // Calculate the z height
-        if (zp <= 0) {                                         // Two parabolas, is the z coordinate in one half of the domain or the other
+        PetscReal zp = zBottom + ((PetscReal)nzp / nZp) * (z - zBottom);  // Calculate the z height
+        if (zp <= 0) {                                                    // Two parabolas, is the z coordinate in one half of the domain or the other
             temperature = -6.349E6 * zp * zp + 2000.0;
         } else {
             temperature = -1.179E7 * zp * zp + 2000.0;
@@ -127,8 +122,8 @@ static PetscReal ReallySolveParallelPlates(PetscReal z) {
         Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
         Iplus.push_back(Ibz * EInteg(1, kappa * (z - zp)));
     }
-    for (double nzp = 1; nzp < (nZp - 1); nzp++) {    /** Minus integral goes from z to top*/
-        PetscReal zp = z + (nzp / nZp) * (zTop - z);  // Calculate the zp height
+    for (PetscInt nzp = 1; nzp < (nZp - 1); nzp++) {             /** Minus integral goes from z to top*/
+        PetscReal zp = z + ((PetscReal)nzp / nZp) * (zTop - z);  // Calculate the zp height
         /** Get the temperature*/
         if (zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
             temperature = -6.349E6 * zp * zp + 2000.0;
@@ -194,6 +189,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         PetscInt s;
         ISGetSize(allPointIS, &s);
         DMView(domain->GetDM(), PETSC_VIEWER_STDOUT_WORLD);
+
         // Setup the flow data
         auto parameters = std::make_shared<ablate::parameters::MapParameters>(std::map<std::string, std::string>{{"cfl", ".4"}});
 
@@ -245,7 +241,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
             VecGetArrayRead(rhs, &rhsArray) >> testErrorChecker;
 
             /// Declare L2 norm variables
-            PetscReal l2sum;
+            PetscReal l2sum = 0.0;
             double error;  // Number of cells in the domain
 
             ablate::solver::Range cellRange;
@@ -292,20 +288,17 @@ INSTANTIATE_TEST_SUITE_P(RadiationTests, RadiationTestFixture,
                                                                    .meshStart = {-0.5, -0.0105},
                                                                    .meshEnd = {0.5, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
-                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
-                                                                   .absorptivity = 1.0},
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y")},
                                          (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 1.1", .nproc = 1},
                                                                    .meshFaces = {3, 20},
                                                                    .meshStart = {-0.5, -0.0105},
                                                                    .meshEnd = {0.5, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
-                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
-                                                                   .absorptivity = 1.1},
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y")},
                                          (RadiationTestParameters){.mpiTestParameter = {.testName = "1D uniform temperature 2 proc.", .nproc = 2},
                                                                    .meshFaces = {3, 20},
                                                                    .meshStart = {-0.5, -0.0105},
                                                                    .meshEnd = {0.5, 0.0105},
                                                                    .temperatureField = ablate::mathFunctions::Create("y < 0 ? (-6.349E6*y*y + 2000.0) : (-1.179E7*y*y + 2000.0)"),
-                                                                   .expectedResult = ablate::mathFunctions::Create("x + y"),
-                                                                   .absorptivity = 1.0}),
+                                                                   .expectedResult = ablate::mathFunctions::Create("x + y")}),
                          [](const testing::TestParamInfo<RadiationTestParameters>& info) { return info.param.mpiTestParameter.getTestName(); });

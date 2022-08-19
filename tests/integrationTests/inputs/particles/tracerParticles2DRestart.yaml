@@ -1,6 +1,6 @@
 ---
 environment:
-  title: 2DTracerParticles
+  title: _2DTracerParticles
 arguments:
   dm_plex_separate_marker: ""
   vel_petscspace_degree: 2
@@ -71,16 +71,19 @@ solvers:
         boundaryValue: *temperatureField
     monitors:
       - !ablate::monitors::TimeStepMonitor
-  - !ablate::particles::Tracer
+  - !ablate::particles::ParticleSolver
     id: flowTracerParticles
-    ndims: 2
     options:
       ts_dt: 0.005
+    processes:
+      - !ablate::particles::processes::Tracer
     initializer: !ablate::particles::initializers::BoxInitializer
       lower: [0.25,0.25]
       upper: [0.75,0.75]
       particlesPerDim: 10
-    exactSolution: "t + x + y"
+    exactSolutions:
+      - fieldName: coordinates
+        field: "t + x + y"
     monitors:
       - !ablate::monitors::ParticleCount
       - !ablate::monitors::ParticleAverage

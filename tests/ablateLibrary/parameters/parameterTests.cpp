@@ -554,4 +554,101 @@ INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureDoubleVector,
                          ::testing::Values(std::make_tuple("22.3", std::vector<double>{22.3}), std::make_tuple("1E-3 2.3 ", std::vector<double>{1.0E-3, 2.3}),
                                            std::make_tuple("", std::vector<double>{})));
 
+// double vector
+class ParameterTestFixtureDoubleArray : public testing::TestWithParam<std::tuple<std::string, std::array<double, 4>>> {};
+
+TEST_P(ParameterTestFixtureDoubleArray, GetShouldReturnValue) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedString));
+
+    // act
+    auto actualValue = mockParameters.Get<std::array<double, 4>>(key);
+
+    // assert
+    EXPECT_TRUE(actualValue.has_value());
+    EXPECT_EQ(actualValue.value(), expectedValue);
+}
+
+TEST_P(ParameterTestFixtureDoubleArray, GetShouldReturnEmptyOptional) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1));
+
+    // act
+    auto actualValue = mockParameters.Get<std::array<double, 4>>(key);
+
+    // assert
+    EXPECT_FALSE(actualValue.has_value());
+}
+
+TEST_P(ParameterTestFixtureDoubleArray, GetExpectShouldReturnValue) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedString));
+
+    // act
+    auto actualValue = mockParameters.Get<std::array<double, 4>>(key);
+
+    // assert
+    EXPECT_EQ(actualValue, expectedValue);
+}
+
+TEST_P(ParameterTestFixtureDoubleArray, GetShouldThrowExceptionWhenNotFound) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1));
+
+    // act
+    // assert
+    EXPECT_THROW((mockParameters.GetExpect<std::array<double, 4>>(key)), ParameterException);
+}
+
+TEST_P(ParameterTestFixtureDoubleArray, GetExpectShouldReturnValueEvenWithDefault) {
+    // arrange
+    const auto [expectedString, expectedValue] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1)).WillOnce(::testing::Return(expectedString));
+
+    // act
+    auto actualValue = mockParameters.Get<std::array<double, 4>>(key, {101.1, 202.2, 303.3, 404.4});
+
+    // assert
+    EXPECT_EQ(actualValue, expectedValue);
+}
+
+TEST_P(ParameterTestFixtureDoubleArray, GetShouldReturnDefaultValue) {
+    // arrange
+    const auto [expectedString, _] = GetParam();
+    const std::string key = "key 123";
+
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetString(key)).Times(::testing::Exactly(1));
+
+    // act
+    auto actualValue = mockParameters.Get<std::array<double, 4>>(key, {101.1, 202.2, 303.3, 404.4});
+
+    // assert
+    EXPECT_EQ(actualValue, (std::array<double, 4>{101.1, 202.2, 303.3, 404.4}));
+}
+
+INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureDoubleArray,
+                         ::testing::Values(std::make_tuple("22.3", std::array<double, 4>{22.3, 0, 0, 0}), std::make_tuple("1E-3 2.3 ", std::array<double, 4>{1.0E-3, 2.3, 0, 0}),
+                                           std::make_tuple("", std::array<double, 4>{0, 0, 0, 0}), std::make_tuple("11.1 22.2 33.3 44.4", std::array<double, 4>{11.1, 22.2, 33.3, 44.4}),
+                                           std::make_tuple("11.1 22.2 33.3 44.4 55.5", std::array<double, 4>{11.1, 22.2, 33.3, 44.4})));
+
 }  // namespace ablateTesting::parameters

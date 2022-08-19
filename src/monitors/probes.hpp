@@ -1,11 +1,12 @@
 #ifndef ABLATELIBRARY_PROBES_HPP
 #define ABLATELIBRARY_PROBES_HPP
 
-#include <particles/particles.hpp>
 #include <utility>
 #include "io/interval/interval.hpp"
+#include "monitor.hpp"
 #include "probes/probe.hpp"
 #include "probes/probeInitializer.hpp"
+
 namespace ablate::monitors {
 
 /**

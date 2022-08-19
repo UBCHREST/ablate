@@ -109,12 +109,12 @@ class Domain {
      */
     [[nodiscard]] inline const Field& GetField(int fieldId) const { return fields[fieldId]; }
 
-    [[nodiscard]] inline const Field& GetField(const std::string& fieldName) const {
+    [[nodiscard]] inline const Field& GetField(const std::string_view& fieldName) const {
         auto field = std::find_if(fields.begin(), fields.end(), [&fieldName](auto field) { return field.name == fieldName; });
         if (field != fields.end()) {
             return *field;
         } else {
-            throw std::invalid_argument("Cannot locate field with name " + fieldName + " in domain " + name);
+            throw std::invalid_argument("Cannot locate field with name " + std::string(fieldName) + " in domain " + name);
         }
     }
 
