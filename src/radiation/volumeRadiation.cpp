@@ -17,6 +17,7 @@ void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain
     ablate::radiation::Radiation::Register(subDomain);
 }
 
+
 void ablate::radiation::VolumeRadiation::Initialize() {
     solver::Range cellRange;
     GetCellRange(cellRange);  //!< Gets the cell range that should be applied to the radiation solver

@@ -144,25 +144,25 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         DMPlexGetConeSize(subDomain->GetDM(), iCell, &numberFaces) >> checkError;
         DMPlexGetCone(subDomain->GetDM(), iCell, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
 
-        // make sure we are not working on a ghost cell
-        PetscInt ghost = -1;
-        if (ghostLabel) {
-            DMLabelGetValue(ghostLabel, iCell, &ghost);
-        }
-        if (ghost >= 0) {
-            printf("Ghost label!\n"); //TODO: If this is a ghost cell then maybe it will have an empty face, explaining the strangeness
-        }
-
-        /** Check every face for intersection with the segment.
-         * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
-         * */
-        for (PetscInt f = 0; f < numberFaces; f++) {
-            PetscInt face = cellFaces[f];
-            DMPlexPointLocalRead(faceDM, face, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
-            if (faceGeom->normal[0] == 0 && faceGeom->normal[1] == 0 && faceGeom->normal[2] == 0) {
-                printf("Empty face normal!\n");
-            }
-        }
+        //        // make sure we are not working on a ghost cell
+        //        PetscInt ghost = -1;
+        //        if (ghostLabel) {
+        //            DMLabelGetValue(ghostLabel, iCell, &ghost);
+        //        }
+        //        if (ghost >= 0) {
+        //            printf("Ghost label!\n"); //TODO: If this is a ghost cell then maybe it will have an empty face, explaining the strangeness
+        //        }
+        //
+        //        /** Check every face for intersection with the segment.
+        //         * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
+        //         * */
+        //        for (PetscInt f = 0; f < numberFaces; f++) {
+        //            PetscInt face = cellFaces[f];
+        //            DMPlexPointLocalRead(faceDM, face, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
+        //            if (faceGeom->normal[0] == 0 && faceGeom->normal[1] == 0 && faceGeom->normal[2] == 0) {
+        //                printf("Empty face normal!\n");
+        //            }
+        //        }
 
         /** for every angle theta
          * for every angle phi
@@ -357,8 +357,8 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                         }
                     }
                 }
-                // virtualcoord[ip].hhere = (virtualcoord[ip].hhere == 0) ? minCellRadius : virtualcoord[ip].hhere;  // Debugging
-                rays[Key(&identifier[ip])].h.push_back(virtualcoord[ip].hhere);  //!< Add this space step if the current index is being added.
+                virtualcoord[ip].hhere = (virtualcoord[ip].hhere == 0) ? 2 * minCellRadius : virtualcoord[ip].hhere;  // Debugging
+                rays[Key(&identifier[ip])].h.push_back(virtualcoord[ip].hhere);                                       //!< Add this space step if the current index is being added.
 
                 /** Step 4: Push the particle virtual coordinates to the intersection that was found in the previous step.
                  * This ensures that the next calculated path length will start from the boundary of the adjacent cell.
