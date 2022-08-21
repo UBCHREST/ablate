@@ -1,4 +1,4 @@
-#include "LES.h"
+#include "LES.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscError.hpp"
