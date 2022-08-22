@@ -33,5 +33,5 @@ TEST_P(PetscDataTypesFromStringTestFixture, ShouldConvertFromStringToPetscDataTy
 }
 
 INSTANTIATE_TEST_SUITE_P(PetscUtilititiesTests, PetscDataTypesFromStringTestFixture,
-                         testing::Values(std::make_pair("double", PETSC_REAL), std::make_pair("real", PETSC_REAL), std::make_pair("scalar", PETSC_SCALAR), std::make_pair("real", PETSC_REAL),
+                         testing::Values(std::make_pair("double", PETSC_REAL), std::make_pair("real", PETSC_REAL), std::make_pair("scalar", PETSC_SCALAR), std::make_pair("REAL", PETSC_REAL),
                                          std::make_pair("long", PETSC_LONG), std::make_pair("complex", PETSC_COMPLEX)));
