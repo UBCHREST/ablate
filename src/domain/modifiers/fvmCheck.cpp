@@ -58,6 +58,11 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
     PetscInt boundaryCellStart;
     DMPlexGetGhostCellStratum(dm, &boundaryCellStart, nullptr) >> checkError;
 
+    if (boundaryCellStart < 0 && region == nullptr) {
+        throw std::invalid_argument(
+            "The FVM check cannot be used over the entire mesh if there are no boundary ghost cells. Add boundary ghost cells with ablate::domain::modifiers::GhostBoundaryCells");
+    }
+
     // March over each face in this region
     for (PetscInt f = faceRange.start; f < faceRange.end; ++f) {
         const PetscInt face = faceRange.points ? faceRange.points[f] : f;
@@ -69,7 +74,7 @@ void ablate::domain::modifiers::FvmCheck::Modify(DM& dm) {
         }
         DMPlexGetSupportSize(dm, face, &nsupp) >> checkError;
         DMPlexGetTreeChildren(dm, face, &nchild, nullptr) >> checkError;
-        if (ghost >= 0 || nsupp > 2 || nchild > 0) continue;
+        if (ghost >= 0 || nsupp != 2 || nchild > 0) continue;
 
         // Get the face geometry
         const PetscInt* faceCells;
