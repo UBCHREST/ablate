@@ -28,7 +28,7 @@ class VolumeRadiation : public Radiation, public solver::CellSolver, public solv
      * @param rayNumber
      * @param options other options
      */
-    VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
+    VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber, const PetscInt interval,
                     const std::shared_ptr<parameters::Parameters>& options1, std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<monitors::logs::Log> unnamed1);
 
     ~VolumeRadiation();

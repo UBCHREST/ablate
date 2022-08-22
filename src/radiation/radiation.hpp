@@ -22,7 +22,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param rayNumber
      * @param options other options
      */
-    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
+    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber, const PetscInt intervalIn,
               std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     ~Radiation();
@@ -67,8 +67,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     std::shared_ptr<ablate::domain::SubDomain> subDomain;  //!< use the subDomain to setup the problem
 
    protected:
-    DM radsolve{};   //!< DM associated with the radiation particles
-    DM radsearch{};  //!< DM which the search particles occupy
+    DM radsolve;   //!< DM associated with the radiation particles
+    DM radsearch;  //!< DM which the search particles occupy
 
     /// Class Methods
     const std::map<PetscInt, Origin>& Solve(Vec solVec);
@@ -111,7 +111,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param virtualcoord the struct containing particle position information
      * @param face the struct containing information about a cell face
      */
-    PetscReal FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* face) const;  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
+    PetscReal FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* face);  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
 
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
@@ -138,7 +138,9 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     PetscInt nTheta;   //!< The number of angles to solve with, given by user input
     PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
     solver::Range cellRange;
-    PetscReal minCellRadius{};
+    PetscReal minCellRadius;
+    PetscReal interval;
+    PetscReal solveStep;
 
     /**
      * Store a log used to output the required information
