@@ -107,7 +107,13 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
 
         if (pstar < 0) {  // correct if negative pstar
-            pstar = err;
+            if (p0L>0 && p0R>0){
+                pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);
+            }
+            else{
+                pstar = err;
+            }
+
         }
 
         if (pstar <= pL)  // expansion wave equation from Toto
@@ -149,8 +155,7 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
         i++;
     }
     if (i > MAXIT) {
-        pstar = pold - (f_L_0 + f_R_0 + del_u)/(f_L_1 + f_R_1);
-//        throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
+        throw std::runtime_error("Can't find pstar; Iteration not converging; Go back and do it again");
     }
 
     // Now, start backing out the rest of the info.
