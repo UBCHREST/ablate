@@ -311,36 +311,37 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                         }
                     }
                 }
-                virtualcoord[ip].hhere = (virtualcoord[ip].hhere == 0) ? minCellRadius : virtualcoord[ip].hhere;
-                rays[Key(&identifier[ip])].h.push_back(virtualcoord[ip].hhere);                                       //!< Add this space step if the current index is being added.
-
-                /** Step 4: Push the particle virtual coordinates to the intersection that was found in the previous step.
-                 * This ensures that the next calculated path length will start from the boundary of the adjacent cell.
-                 * */
-                virtualcoord[ip].x += virtualcoord[ip].xdir * virtualcoord[ip].hhere;
-                virtualcoord[ip].y += virtualcoord[ip].ydir * virtualcoord[ip].hhere;
-                virtualcoord[ip].z += virtualcoord[ip].zdir * virtualcoord[ip].hhere;  //!< Only use the literal intersection coordinate if it exists. This will be decided above.
-
-                /** Step 5: Instead of using the cell face to step into the opposite cell, step the physical coordinates just beyond the intersection.
-                 * This avoids issues with hitting corners and potential ghost cell weirdness.
-                 * It will be slower than the face flipping but it will be more reliable.
-                 * Update the coordinates of the particle.
-                 * It doesn't matter which method is used,
-                 * this will be the same procedure.
-                 * */
-                switch (dim) {
-                    case 2:                                                                                  //!< If there are only two dimensions in this simulation
-                        coord[2 * ip] = virtualcoord[ip].x + (virtualcoord[ip].xdir * 0.1 * minCellRadius);  //!< Update the two physical coordinates
-                        coord[(2 * ip) + 1] = virtualcoord[ip].y + (virtualcoord[ip].ydir * 0.1 * minCellRadius);
-                        break;
-                    case 3:                                                                                  //!< If there are three dimensions in this simulation
-                        coord[3 * ip] = virtualcoord[ip].x + (virtualcoord[ip].xdir * 0.1 * minCellRadius);  //!< Update the three physical coordinates
-                        coord[(3 * ip) + 1] = virtualcoord[ip].y + (virtualcoord[ip].ydir * 0.1 * minCellRadius);
-                        coord[(3 * ip) + 2] = virtualcoord[ip].z + (virtualcoord[ip].zdir * 0.1 * minCellRadius);
-                        break;
-                }  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
-                virtualcoord[ip].hhere = 0;
             }
+            virtualcoord[ip].hhere = (virtualcoord[ip].hhere == 0) ? minCellRadius : virtualcoord[ip].hhere;
+            rays[Key(&identifier[ip])].h.push_back(virtualcoord[ip].hhere);  //!< Add this space step if the current index is being added.
+
+            /** Step 4: Push the particle virtual coordinates to the intersection that was found in the previous step.
+             * This ensures that the next calculated path length will start from the boundary of the adjacent cell.
+             * */
+            virtualcoord[ip].x += virtualcoord[ip].xdir * virtualcoord[ip].hhere;
+            virtualcoord[ip].y += virtualcoord[ip].ydir * virtualcoord[ip].hhere;
+            virtualcoord[ip].z += virtualcoord[ip].zdir * virtualcoord[ip].hhere;  //!< Only use the literal intersection coordinate if it exists. This will be decided above.
+
+            /** Step 5: Instead of using the cell face to step into the opposite cell, step the physical coordinates just beyond the intersection.
+             * This avoids issues with hitting corners and potential ghost cell weirdness.
+             * It will be slower than the face flipping but it will be more reliable.
+             * Update the coordinates of the particle.
+             * It doesn't matter which method is used,
+             * this will be the same procedure.
+             * */
+            switch (dim) {
+                case 2:                                                                                  //!< If there are only two dimensions in this simulation
+                    coord[2 * ip] = virtualcoord[ip].x + (virtualcoord[ip].xdir * 0.1 * minCellRadius);  //!< Update the two physical coordinates
+                    coord[(2 * ip) + 1] = virtualcoord[ip].y + (virtualcoord[ip].ydir * 0.1 * minCellRadius);
+                    break;
+                case 3:                                                                                  //!< If there are three dimensions in this simulation
+                    coord[3 * ip] = virtualcoord[ip].x + (virtualcoord[ip].xdir * 0.1 * minCellRadius);  //!< Update the three physical coordinates
+                    coord[(3 * ip) + 1] = virtualcoord[ip].y + (virtualcoord[ip].ydir * 0.1 * minCellRadius);
+                    coord[(3 * ip) + 2] = virtualcoord[ip].z + (virtualcoord[ip].zdir * 0.1 * minCellRadius);
+                    break;
+            }  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
+            virtualcoord[ip].hhere = 0;
+            //            }
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
         DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
