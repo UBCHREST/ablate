@@ -6,7 +6,7 @@ vendor
 install
 source
 /content/simulations/components/
-/content/simulations/examples/
+/content/simulations/integrationExamples/
 _componentListSource.md
 doxyfile.tmp.config
 _includes/generated

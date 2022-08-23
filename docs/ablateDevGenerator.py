@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # Create example file
     componentListGenerator.create_example_files(args.root_dir / 'tests/integrationTests/inputs',
-                                                args.root_dir / 'docs/content/simulations/examples')
+                                                args.root_dir / 'docs/content/simulations/integrationExamples')
 
     # Update the doxyfile.config with the version
     doxyFileOrg = open(args.root_dir / 'docs/doxyfile.config', "r")
