@@ -1,9 +1,6 @@
 name: Automated Regression Test Workflow
 
 on:
-  # Run tests for any PRs.
-  push:
-
   # Run the tests at 00:15 UTC on Mondays and Thursdays
   schedule:
     - cron: '15 0 * * 1,4'
