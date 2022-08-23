@@ -36,7 +36,7 @@ class VolumeRadiation : public Radiation, public solver::CellSolver, public solv
 
     ~VolumeRadiation();
 
-    PetscErrorCode RadiationPreStep(TS ts, ablate::solver::Solver& solver);
+    PetscErrorCode RadiationPreStep(TS ts);
 
     const std::shared_ptr<io::interval::Interval> interval;
 };

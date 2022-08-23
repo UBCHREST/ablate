@@ -221,6 +221,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         VecZeroEntries(rhs) >> testErrorChecker;
 
         // Apply the rhs function for the radiation solver
+        radiation->RadiationPreStep(timeStepper.GetTS()) >> testErrorChecker;
         radiation->ComputeRHSFunction(0, rhs, rhs);  // The ray tracing function needs to be renamed in order to occupy the role of compute right hand side function
 
         // determine the euler field

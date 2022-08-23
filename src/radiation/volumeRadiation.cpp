@@ -13,7 +13,7 @@ ablate::radiation::VolumeRadiation::~VolumeRadiation() {}
 void ablate::radiation::VolumeRadiation::Setup() {
     ablate::solver::CellSolver::Setup();
     ablate::radiation::Radiation::Setup();
-    auto radiationPreStep = [this](auto && PH1, auto && PH2) { RadiationPreStep(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2)); };
+    auto radiationPreStep = [this](auto && PH1, auto && PH2) { RadiationPreStep(std::forward<decltype(PH1)>(PH1)); };
     RegisterPreStep(radiationPreStep);
 }
 
@@ -31,7 +31,7 @@ void ablate::radiation::VolumeRadiation::Initialize() {
     RestoreRange(cellRange);
 }
 
-PetscErrorCode ablate::radiation::VolumeRadiation::RadiationPreStep(TS ts, ablate::solver::Solver& solver) {
+PetscErrorCode ablate::radiation::VolumeRadiation::RadiationPreStep(TS ts) {
     PetscFunctionBegin;
 
     /** Only update the radiation solution if the sufficient interval has passed */
