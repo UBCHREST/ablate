@@ -32,12 +32,15 @@ void ablate::radiation::VolumeRadiation::Initialize() {
 }
 
 PetscErrorCode ablate::radiation::VolumeRadiation::RadiationPreStep(TS ts, ablate::solver::Solver& solver) {
+    PetscFunctionBegin;
+
     /** Only update the radiation solution if the sufficient interval has passed */
     PetscInt step;
     PetscReal time;
     if (interval->Check(Radiation::subDomain->GetComm(), TSGetStepNumber(ts, &step), TSGetTime(ts, &time))) {
         origin = ablate::radiation::Radiation::Solve(Radiation::subDomain->GetSolutionVector());
     }
+    PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
