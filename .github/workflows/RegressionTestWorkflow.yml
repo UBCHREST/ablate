@@ -3,14 +3,12 @@ name: Automated Regression Test Workflow
 on:
   # Run tests for any PRs.
   push:
-    branches:
-      - mcgurn/reg-testing
 
   # Run the tests at 00:15 UTC on Mondays and Thursdays
   schedule:
     - cron: '15 0 * * 1,4'
 
-  # Allow this event to be triggered in the github ui
+  # Allow this event to be triggered in the GitHub ui
   workflow_dispatch:
 
 jobs:
