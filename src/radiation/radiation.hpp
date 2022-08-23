@@ -22,7 +22,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * @param rayNumber
      * @param options other options
      */
-    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber, const PetscInt intervalIn,
+    Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
               std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> = {});
 
     ~Radiation();
@@ -139,8 +139,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
     solver::Range cellRange;
     PetscReal minCellRadius;
-    PetscReal interval;
-    PetscReal solveStep;
 
     /**
      * Store a log used to output the required information
