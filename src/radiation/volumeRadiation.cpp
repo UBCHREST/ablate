@@ -13,7 +13,7 @@ ablate::radiation::VolumeRadiation::~VolumeRadiation() {}
 void ablate::radiation::VolumeRadiation::Setup() {
     ablate::solver::CellSolver::Setup();
     ablate::radiation::Radiation::Setup();
-    auto radiationPreStep = [this](auto && PH1, auto && PH2) { RadiationPreStep(std::forward<decltype(PH1)>(PH1)); };
+    auto radiationPreStep = [this](auto&& PH1, auto&& PH2) { RadiationPreStep(std::forward<decltype(PH1)>(PH1)); };
     RegisterPreStep(radiationPreStep);
 }
 
