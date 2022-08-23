@@ -38,9 +38,12 @@ if __name__ == "__main__":
     componentListGenerator.split_component_list(componentInformationFile,
                                                 args.root_dir / 'docs/content/simulations/components')
 
-    # Create example file
+    # Create example file lists
     componentListGenerator.create_example_files(args.root_dir / 'tests/integrationTests/inputs',
                                                 args.root_dir / 'docs/content/simulations/integrationExamples')
+
+    componentListGenerator.create_example_files(args.root_dir / 'tests/regressionTests/inputs',
+                                                args.root_dir / 'docs/content/simulations/regressionExamples')
 
     # Update the doxyfile.config with the version
     doxyFileOrg = open(args.root_dir / 'docs/doxyfile.config', "r")
@@ -49,4 +52,5 @@ if __name__ == "__main__":
         doxyFile.write(f'PROJECT_NUMBER = {ablateVersion}')
 
     # call doxygen
-    completeInformation = subprocess.run(['doxygen', args.root_dir / 'docs/doxyfile.tmp.config'], cwd=args.root_dir, check=True)
+    completeInformation = subprocess.run(['doxygen', args.root_dir / 'docs/doxyfile.tmp.config'], cwd=args.root_dir,
+                                         check=True)

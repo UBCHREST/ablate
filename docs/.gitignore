@@ -7,6 +7,7 @@ install
 source
 /content/simulations/components/
 /content/simulations/integrationExamples/
+/content/simulations/regressionExamples/
 _componentListSource.md
 doxyfile.tmp.config
 _includes/generated
