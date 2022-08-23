@@ -628,7 +628,7 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
             VecDestroy(&cellGeomVec) >> checkError;
             VecDestroy(&faceGeomVec) >> checkError;
         }
-    solveStep = 0;
+        solveStep = 0;
     }
     solveStep++;
     return origin;

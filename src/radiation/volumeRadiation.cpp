@@ -17,7 +17,6 @@ void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain
     ablate::radiation::Radiation::Register(subDomain);
 }
 
-
 void ablate::radiation::VolumeRadiation::Initialize() {
     solver::Range cellRange;
     GetCellRange(cellRange);  //!< Gets the cell range that should be applied to the radiation solver
@@ -54,5 +53,6 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::radiation::VolumeRadiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "boundary of the radiation region"),
-         ARG(int, "rays", "number of rays used by the solver"), ARG(int, "interval", "number of time steps between the radiation solves"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
+         ARG(int, "rays", "number of rays used by the solver"), ARG(int, "interval", "number of time steps between the radiation solves"),
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
          ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
