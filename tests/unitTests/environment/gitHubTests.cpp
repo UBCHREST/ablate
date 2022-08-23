@@ -11,7 +11,7 @@ TEST_F(GitHubTestsFixture, ShouldDownloadDirectory) {
     // check for test
     if (const char* gitHubToken = std::getenv("GITHUB_TOKEN")) {
         // arrange
-        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/unitTests/inputs", gitHubToken);
+        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/ablateLibrary/inputs", gitHubToken);
 
         // act
         auto computedFilePath = fileLocator.Locate();
@@ -37,7 +37,7 @@ TEST_F(GitHubTestsFixture, ShouldDownloadAndRelocateDirectory) {
         // setup the run env
         testingResources::TestRunEnvironment testRunEnvironment(outputDir, "");
 
-        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/unitTests/inputs", gitHubToken);
+        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/ablateLibrary/inputs", gitHubToken);
 
         // act
         auto computedFilePath = fileLocator.Locate();
@@ -59,7 +59,7 @@ TEST_F(GitHubTestsFixture, ShouldDownloadFile) {
     // check for test
     if (const char* gitHubToken = std::getenv("GITHUB_TOKEN")) {
         // arrange
-        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/unitTests/inputs/eos/grimech30.dat", gitHubToken);
+        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/ablateLibrary/inputs/eos/grimech30.dat", gitHubToken);
 
         // act
         auto computedFilePath = fileLocator.Locate();
@@ -86,7 +86,7 @@ TEST_F(GitHubTestsFixture, ShouldDownloadAndRelocateFile) {
         // setup the run env
         testingResources::TestRunEnvironment testRunEnvironment(outputDir);
 
-        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/unitTests/inputs/eos/grimech30.dat", gitHubToken);
+        ablate::environment::GitHub fileLocator("ubchrest/ablate", "tests/ablateLibrary/inputs/eos/grimech30.dat", gitHubToken);
 
         // act
         auto computedFilePath = fileLocator.Locate();

@@ -5,7 +5,7 @@
 #include "gtest/gtest.h"
 #include "testRunEnvironment.hpp"
 
-#define REMOTE_URL "https://raw.githubusercontent.com/UBCHREST/ablate/main/tests/unitTests/inputs/eos/thermo30.dat"
+#define REMOTE_URL "https://raw.githubusercontent.com/UBCHREST/ablate/main/tests/ablateLibrary/inputs/eos/thermo30.dat"
 
 class DownloadTestsFixture : public testingResources::PetscTestFixture {};
 
