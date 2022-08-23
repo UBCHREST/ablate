@@ -37,7 +37,9 @@ PetscErrorCode ablate::radiation::VolumeRadiation::RadiationPreStep(TS ts, ablat
     /** Only update the radiation solution if the sufficient interval has passed */
     PetscInt step;
     PetscReal time;
-    if (interval->Check(Radiation::subDomain->GetComm(), TSGetStepNumber(ts, &step), TSGetTime(ts, &time))) {
+    TSGetStepNumber(ts, &step) >> checkError;
+    TSGetTime(ts, &time) >> checkError;
+    if (interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
         origin = ablate::radiation::Radiation::Solve(Radiation::subDomain->GetSolutionVector());
     }
     PetscFunctionReturn(0);
