@@ -448,7 +448,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
                 */
                 DMPlexPointLocalFieldRead(subDomain->GetAuxDM(), rays[Key(&identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
                 DMPlexPointLocalRead(subDomain->GetDM(), rays[Key(&identifier[ipart])].cells[n], solArray, &sol);
-                printf("%i %f\n", rays[Key(&identifier[ipart])].cells[n], *temperature);
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 
@@ -457,7 +456,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
 
                 if (n == (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
                     carrier[ipart].I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
-                    printf("%f\n", carrier[ipart].I0);
                 }
             }
         }
