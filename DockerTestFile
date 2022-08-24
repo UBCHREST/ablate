@@ -28,5 +28,4 @@ run python3 /source/docs/ablateDevGenerator.py  --rootDir=/source/ --ablateExe=/
 
 # Specify Entry Point for tests
 ENV CTEST_OUTPUT_ON_FAILURE=ON
-CMD ["ctest"]
-CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest"
+CMD bash -c "echo 'Running Tests for ${PETSC_ARCH}' && make format-check && ctest -L 'unitTests|integrationTests'"
