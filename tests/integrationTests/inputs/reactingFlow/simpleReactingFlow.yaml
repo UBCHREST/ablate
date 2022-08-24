@@ -27,7 +27,7 @@ timestepper:
     fields:
       - !ablate::finiteVolume::CompressibleFlowFields
         eos: &eos !ablate::eos::TChem
-          mechFile: ../mechanisms/gri30.yaml
+          mechFile: ../mechanisms/gri30.yml
   initialization:
     - &eulerField
       fieldName: "euler" #for euler all components are in a single field

@@ -1,0 +1,44 @@
+# This is an example of a well documented regression or integration test with linked files and images.
+# Anything before the first set of ___ will be treated as part of the ablate.dev website documentation (with the first # removed.
+# Everything after the first # in this section will be treated as markdown allowing for
+# ## Equations
+# $$a*x^2 + b*x + c = 0$$
+#
+# ## Images
+# Images should be placed locally and specified as a relative file path (node the ! for images).  This can be but doesn't have to be in subdirectories.
+#
+# ![example regression rate image](exampleImage.png)
+#
+# ## Linked files
+# [Linked files](assets/exampleFile.txt) work in a way that is similar to the images but without the !. This can be but doesn't have to be in subdirectories.
+#
+# ## Tables
+#
+# | parameters  | value |
+# |:-----------|:------|
+# | a    |  101  |
+# | b         |  102 |
+#
+---
+# metadata for the simulation
+environment:
+  title: _exampleIntegrationTest
+  tagDirectory: false
+# global arguments that can be used by petsc
+arguments: {}
+# set up the time stepper responsible for marching in time
+timestepper:
+  # time stepper specific input arguments
+  arguments: {}
+  # the domain/mesh must be specified at the start of a simulation
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 12, 12 ]
+    lower: [ 0, 0 ]
+    upper: [ 1, 1 ]
+    # specify any modifications to be performed to the mesh/domain
+    modifiers: []
+    fields: []
+
+# use no solvers in this very simple example
+solvers: []

@@ -22,5 +22,5 @@ Ideal gas thermal properties and reactions kinetics are modeled using the [TChem
    # web located cantera input file
     - eos: &eos !ablate::eos::TChem
         mechFile: !ablate::environment::Download
-          https://raw.githubusercontent.com/UBCHREST/ablate/main/tests/integrationTests/inputs/mechanisms/gri30.yaml
+          https://raw.githubusercontent.com/UBCHREST/ablate/main/tests/integrationTests/inputs/mechanisms/gri30.yml
 ```
