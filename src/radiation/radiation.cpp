@@ -237,9 +237,14 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
              * Assemble a vector of vectors etc associated with each cell index, angular coordinate, and space step?
              * The boundary has been reached if any of these conditions don't hold
              * */
+
+            //            if (identifier[ip].iCell == 257) printf("I'm here\n");
+
             /** make sure we are not working on a ghost cell */
-            if (nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) {
-                index = cell[ip].index;
+            if ((nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) || stepcount == 0) {
+                index = (stepcount == 0) ? identifier[ip].iCell : cell[ip].index;
+
+                //                if (identifier[ip].iCell == 257) printf("            I'm putting a cell in\n");
 
                 /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
                  * Hash the identifier into a key value that can be used in the map
@@ -311,9 +316,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                         }
                     }
                 }
+                rays[Key(&identifier[ip])].h.push_back(virtualcoord[ip].hhere);  //!< Add this space step if the current index is being added.
             }
             virtualcoord[ip].hhere = (virtualcoord[ip].hhere == 0) ? minCellRadius : virtualcoord[ip].hhere;
-            rays[Key(&identifier[ip])].h.push_back(virtualcoord[ip].hhere);  //!< Add this space step if the current index is being added.
 
             /** Step 4: Push the particle virtual coordinates to the intersection that was found in the previous step.
              * This ensures that the next calculated path length will start from the boundary of the adjacent cell.
@@ -361,8 +366,8 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
 
         if (log) {
             PetscPrintf(subDomain->GetComm(), " Global Steps: %" PetscInt_FMT "    Global Points: %" PetscInt_FMT "\n", stepcount, nglobalpoints);
-            stepcount++;
         }
+        stepcount++;
     }
     /** Cleanup */
     DMDestroy(&radsearch) >> checkError;
