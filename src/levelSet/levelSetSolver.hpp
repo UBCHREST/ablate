@@ -26,7 +26,11 @@ class LevelSetSolver {
 //    LevelSetSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options);
     // Constructor
     LevelSetSolver(std::shared_ptr<LevelSetField> lsField = nullptr);
-
+//    LevelSetSolver(
+//      std::string solverId,
+//      std::shared_ptr<domain::Region>,
+//      std::shared_ptr<parameters::Parameters> options,
+//      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep = false);
 //    /** SubDomain Register and Setup **/
 //    void Setup() override;
 //    void Initialize() override;

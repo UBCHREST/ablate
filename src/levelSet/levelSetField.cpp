@@ -508,7 +508,7 @@ void VOF_2D_Quad_Test( ){
 }
 
 
-
+//Move stuff like this to the solver
 // 3D Simplex: DM_POLYTOPE_TETRAHEDRON
 /*
          3
@@ -909,6 +909,14 @@ void LevelSetField::Reinitialize(Vec VOF) {
 
   VecGetArrayRead(VOF, &vofVal) >> ablate::checkError;
   VecGetArray(newPhi, &phiVal) >> ablate::checkError;
+
+//Take a look at boundarySolver/physics/sublimation.cpp lines 233-246 + 276
+
+//Use DMPlexPointGlobalFieldRead to get field values
+//Stuff like const auto &eulerFieldInfo = solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD); will return the field info in the DM.
+//Make the level set a solution variable in the ablate solver
+
+
 
   DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;
   for (c = cStart; c < cEnd; ++c) {
