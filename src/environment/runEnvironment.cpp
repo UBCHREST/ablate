@@ -2,6 +2,8 @@
 #include <mpi.h>
 #include <chrono>
 #include <iostream>
+#include <regex>
+#include <string>
 
 ablate::environment::RunEnvironment::RunEnvironment() : outputDirectory(), title("") {}
 
@@ -57,4 +59,27 @@ void ablate::environment::RunEnvironment::Setup(const ablate::parameters::Parame
     environment::RunEnvironment::runEnvironment = std::unique_ptr<environment::RunEnvironment>(new environment::RunEnvironment(parameters, inputPath));
 }
 
+void ablate::environment::RunEnvironment::Initialize(int* argc, char*** args) {
+    GlobalArgc = argc;
+    GlobalArgs = args;
+}
+
+void ablate::environment::RunEnvironment::RegisterCleanUpFunction(const std::string& name, std::function<void()> newFunction) {
+    auto iterator = std::find_if(finalizeFunctions.begin(), finalizeFunctions.end(), [&name](const auto& function) { return function.name == name; });
+    if (iterator == finalizeFunctions.end()) {
+        finalizeFunctions.push_back({.name = name, .function = newFunction});
+    } else {
+        iterator->function = newFunction;
+    }
+}
+
+void ablate::environment::RunEnvironment::Finalize() {
+    /* Iterate vector in reverse order */
+    for (auto cleanUpFunction = finalizeFunctions.rbegin(); cleanUpFunction != finalizeFunctions.rend(); ++cleanUpFunction) {
+        cleanUpFunction->function();
+    }
+}
+
 void ablate::environment::RunEnvironment::Setup() { environment::RunEnvironment::runEnvironment = std::unique_ptr<environment::RunEnvironment>(new environment::RunEnvironment()); }
+
+void ablate::environment::RunEnvironment::ExpandVariables(std::string& value) const { value = std::regex_replace(value, OutputDirectoryVariable, GetOutputDirectory().string()); }

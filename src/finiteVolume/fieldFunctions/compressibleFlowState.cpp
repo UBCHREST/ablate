@@ -1,6 +1,6 @@
 #include "compressibleFlowState.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "finiteVolume/processes/eulerTransport.hpp"
+#include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "mathFunctions/functionWrapper.hpp"
 
 ablate::finiteVolume::fieldFunctions::CompressibleFlowState::CompressibleFlowState(std::shared_ptr<ablate::eos::EOS> eosIn, std::shared_ptr<mathFunctions::MathFunction> temperatureFunctionIn,

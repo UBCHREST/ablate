@@ -1,8 +1,10 @@
 target_sources(ablateLibrary
+        PRIVATE
+        cellInitializer.cpp
+        boxInitializer.cpp
+
         PUBLIC
         initializer.hpp
         cellInitializer.hpp
-        cellInitializer.cpp
         boxInitializer.hpp
-        boxInitializer.cpp
         )

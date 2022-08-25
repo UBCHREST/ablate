@@ -1,8 +1,9 @@
 target_sources(ablateLibrary
+        PRIVATE
+        ghost.cpp
+        essentialGhost.cpp
         PUBLIC
         boundaryCondition.hpp
         ghost.hpp
-        ghost.cpp
         essentialGhost.hpp
-        essentialGhost.cpp
         )

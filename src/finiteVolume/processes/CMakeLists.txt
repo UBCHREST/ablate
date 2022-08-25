@@ -1,26 +1,27 @@
 target_sources(ablateLibrary
+        PRIVATE
+        flowProcess.cpp
+        navierStokesTransport.cpp
+        speciesTransport.cpp
+        evTransport.cpp
+        tChemReactions.cpp
+        twoPhaseEulerAdvection.cpp
+        gravity.cpp
+        pressureGradientScaling.cpp
+        arbitrarySource.cpp
+        buoyancy.cpp
+        constantPressureFix.cpp
         PUBLIC
         process.hpp
         flowProcess.hpp
-        flowProcess.cpp
-        eulerTransport.hpp
-        eulerTransport.cpp
+        navierStokesTransport.hpp
         speciesTransport.hpp
-        speciesTransport.cpp
         evTransport.hpp
-        evTransport.cpp
         tChemReactions.hpp
-        tChemReactions.cpp
         twoPhaseEulerAdvection.hpp
-        twoPhaseEulerAdvection.cpp
         gravity.hpp
-        gravity.cpp
         pressureGradientScaling.hpp
-        pressureGradientScaling.cpp
         arbitrarySource.hpp
-        arbitrarySource.cpp
         buoyancy.hpp
-        buoyancy.cpp
         constantPressureFix.hpp
-        constantPressureFix.cpp
         )

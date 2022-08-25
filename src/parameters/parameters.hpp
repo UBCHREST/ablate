@@ -1,6 +1,7 @@
 #ifndef ABLATELIBRARY_PARAMETERS_HPP
 #define ABLATELIBRARY_PARAMETERS_HPP
 #include <petsc.h>
+#include <array>
 #include <map>
 #include <optional>
 #include <sstream>
@@ -25,6 +26,21 @@ class Parameters {
         T tempValue;
         while (ss >> tempValue) {
             outputValue.push_back(tempValue);
+        }
+    }
+
+    template <typename T, std::size_t N>
+    static void toValue(const std::string& inputString, std::array<T, N>& outputValue) {
+        std::istringstream ss(inputString);
+        T tempValue;
+        std::size_t index = 0;
+        // set to default value of T
+        T defaultValue = {};
+        outputValue.fill(defaultValue);
+
+        while (ss >> tempValue && index < N) {
+            outputValue[index] = tempValue;
+            index++;
         }
     }
 

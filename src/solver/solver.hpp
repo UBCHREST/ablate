@@ -51,7 +51,7 @@ class Solver {
     /** Setup and size the subDomain with the subDomain **/
     virtual void Setup() = 0;
 
-    /** Finalize the Setup of the subDomain before running **/
+    /*** Set up mesh dependent initialization, this may be called multiple times if the mesh changes **/
     virtual void Initialize() = 0;
 
     /** string id for this solver **/
@@ -62,6 +62,12 @@ class Solver {
      * @return
      */
     inline ablate::domain::SubDomain& GetSubDomain() noexcept { return *subDomain; }
+
+    /**
+     * Get the sub domain used in this solver
+     * @return
+     */
+    inline const ablate::domain::SubDomain& GetSubDomain() const noexcept { return *subDomain; }
 
     /**
      * Get the region used to define this solver

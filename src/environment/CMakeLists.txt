@@ -1,9 +1,10 @@
 target_sources(ablateLibrary
+        PRIVATE
+        runEnvironment.cpp
+        download.cpp
+        gitHub.cpp
         PUBLIC
         runEnvironment.hpp
-        runEnvironment.cpp
         download.hpp
-        download.cpp
         gitHub.hpp
-        gitHub.cpp
         )

@@ -5,7 +5,6 @@
 #include <string>
 #include "compressibleFlowSolver.hpp"
 #include "domain/domain.hpp"
-#include "eos/tChem.hpp"
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "parameters/parameters.hpp"

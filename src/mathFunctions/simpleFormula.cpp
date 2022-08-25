@@ -132,4 +132,4 @@ std::invalid_argument ablate::mathFunctions::SimpleFormula::ConvertToException(m
 
 #include "registrar.hpp"
 REGISTER_DEFAULT_PASS_THROUGH(ablate::mathFunctions::MathFunction, ablate::mathFunctions::SimpleFormula,
-                              "a string based function to be parsed with muparser. The (string) formula that may accept x, y, z, t as variables", std::string);
+                              "a string based function to be parsed with [muparser](https://beltoforion.de/en/muparser/). The (string) formula that may accept x, y, z, t as variables", std::string);

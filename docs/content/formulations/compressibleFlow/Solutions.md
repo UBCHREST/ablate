@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Solutions
-parent: Compressible Flow Formulation
-grand_parent: Flow Formulations
+parent: Compressible Flow
+grand_parent: Formulations
 nav_order: 3
 ---
 

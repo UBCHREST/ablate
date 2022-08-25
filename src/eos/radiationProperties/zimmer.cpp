@@ -16,9 +16,6 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
     ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
-    double kapparef = 1;  //!< Reference absorptivity
-    double Tsurf = 300.;  //!< Reference temperature in Kelvin
-
     /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
     double kappaH2O = 0;
     double kappaCO2 = 0;
@@ -197,8 +194,13 @@ ablate::eos::ThermodynamicTemperatureFunction ablate::eos::radiationProperties::
 PetscInt ablate::eos::radiationProperties::Zimmer::GetFieldComponentOffset(const std::string &str, const domain::Field &field) const {
     /** Returns the index where a certain field component can be found.
      * The index will be set to -1 if the component does not exist in the field.
+     * Convert all component names to lower case for string comparison
      * */
-    auto itr = std::find_if(field.components.begin(), field.components.end(), [&str](const auto &components) { return components == str; });
+    auto itr = std::find_if(field.components.begin(), field.components.end(), [&str](const auto &components) {
+        std::string component = components;
+        std::transform(component.begin(), component.end(), component.begin(), [](unsigned char c) { return std::tolower(c); });
+        return component == str;
+    });
     PetscInt ind = (itr == field.components.end()) ? -1 : std::distance(field.components.begin(), itr) + field.offset;
     return ind;
 }

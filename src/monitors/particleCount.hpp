@@ -2,15 +2,16 @@
 #define ABLATELIBRARY_PARTICLECOUNT_HPP
 
 #include <petsc.h>
-#include <monitors/logs/log.hpp>
-#include <particles/particles.hpp>
+#include "monitor.hpp"
+#include "monitors/logs/log.hpp"
+#include "particles/particleSolver.hpp"
 
 namespace ablate::monitors {
 
 class ParticleCount : public Monitor {
    private:
     const PetscInt interval;
-    std::shared_ptr<ablate::particles::Particles> particles;
+    std::shared_ptr<ablate::particles::ParticleSolver> particles;
     const std::shared_ptr<logs::Log> log;
 
     static PetscErrorCode OutputParticleCount(TS ts, PetscInt steps, PetscReal time, Vec u, void *mctx);

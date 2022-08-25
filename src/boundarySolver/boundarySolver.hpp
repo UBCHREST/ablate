@@ -118,9 +118,11 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     // Hold a list of boundaryProcesses that contribute to this solver
     std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses;
 
+   protected:
     // Hold a list of GradientStencils, this order corresponds to the face order
     std::vector<GradientStencil> gradientStencils;
 
+   private:
     // keep track of maximumStencilSize
     PetscInt maximumStencilSize = 0;
 

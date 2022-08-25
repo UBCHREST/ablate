@@ -6,8 +6,6 @@ ablate::domain::modifiers::SubtractLabel::SubtractLabel(std::shared_ptr<domain::
     : differenceRegion(differenceRegion), minuendRegion(minuendRegion), subtrahendRegions(subtrahendRegions), incompleteLabel(incompleteLabel) {}
 
 void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
-    int rank;
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     // Create a new label
     DMCreateLabel(dm, differenceRegion->GetName().c_str()) >> checkError;
     DMLabel differenceLabel;

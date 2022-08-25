@@ -1,8 +1,8 @@
 ---
 layout: default
-title: Registering Components with Parser
+title: Adding Components
 parent: Code Development
-nav_order: 12
+nav_order: 20
 ---
 ## Registering Your Class with Parser
 

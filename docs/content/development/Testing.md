@@ -2,7 +2,7 @@
 layout: default
 title: Testing
 parent: Code Development
-nav_order: 11
+nav_order: 3
 ---
 
 Testing is essential for any high-quality software product and should be integrated at an early stage of development. Primary testing in performed as either unit or integration tests.  Unit testing is designed to test single functions/classes often using mocks.  Unit testing allows to test a much larger set of inputs and expected outputs.  Unit testing lends itself [Test-Driven Development (TDD)](https://en.wikipedia.org/wiki/Test-driven_development).   Integration testing is designed to test entire code functionally where in ABLATE this is usually simulation level inputs.
@@ -14,7 +14,7 @@ There are some useful command line flags that can be used when debugging tests:
 - \-\-runMpiTestDirectly=true : when passed in (along with google test single test selection or through CLion run configuration) this flag allows for a test to be run/debug directly.  This bypasses the separate process launch making it easier to debug, but you must directly pass in any needed arguments.
 - \-\-keepOutputFile=true : keeps all output files from the tests and reports the file name.
 
-Automated testing is performed on a series of linux Docker images automatically before a pull request can be merged.  If the tests are passing locally but failing for a pull request you can debug using the same environment as the pull request using [Downloading and Building with CLion (with docker dependencies)]({{ site.baseurl }}{%link content/development/BuildingAblateLocally.md %}).  Tests can also be run directly in docker using the following commands.
+Automated testing is performed on a series of linux Docker images automatically before a pull request can be merged.  If the tests are passing locally but failing for a pull request you can debug using the same environment as the pull request using [Docker Install]({{ site.baseurl }}{%link content/installation/DockerInstall.md %}).  Tests can also be run directly in docker using the following commands.
 
 ```bash
 # Build the default docker testing image
@@ -26,6 +26,8 @@ docker build -t testing_image --build-arg ABLATE_DEPENDENCY_IMAGE=ghcr.io/ubchre
 # Run the built tests and view results
 docker run --rm testing_image 
 
+# Run the built tests including regression tests
+docker run --rm testing_image ctest
 ```
 
 ## Testing Resources
@@ -44,7 +46,7 @@ TEST_P(ExampleTestFixtureUsingMpi, ShortTestDescription) {
         {
             // arrange
             // initialize petsc and mpi
-            PetscInitialize(argc, argv, NULL, NULL) >> testErrorChecker;
+            Initialize(argc, argv, NULL, NULL) >> testErrorChecker;
 
             // act
             // Get the current rank
@@ -86,7 +88,7 @@ class ExampleTestFixture : public testingResources::MpiTestFixture, public ::tes
 TEST_P(ExampleTestFixture, ShortDescriptionOfTest) {
     StartWithMPI
         // arrange
-        PetscInitialize(argc, argv, NULL, "HELP") >> testErrorChecker;
+        Initialize(argc, argv, NULL, "HELP") >> testErrorChecker;
 
         const auto& parameters = GetParam();
 
@@ -112,7 +114,7 @@ INSTANTIATE_TEST_SUITE_P(ExampleTests, ExampleTestFixture,
 ```
 
 ## Unit Tests
-Unit tests reside in the `tests/ablateLibrary` directory where the test location should match the folder hierarchy in  `ablateLibrary`.  File names should match the corresponding class name followed by `Tests`.  The unit tests should be designed to test single functions/classes where mocks can be used for any required dependency.  Because unit testing should be designed to test a large set of inputs and expected outputs parameterized tests are recommended.
+Unit tests reside in the `tests/unitTests` directory where the test location should match the folder hierarchy in  `src`.  File names should match the corresponding class name followed by `Tests`.  The unit tests should be designed to test single functions/classes where mocks can be used for any required dependency.  Because unit testing should be designed to test a large set of inputs and expected outputs parameterized tests are recommended.
 
 ## Integration Tests
 Integration tests use the standard yaml input files to test simulation level functions where the output and generated files are compared against expected outputs.  The integration test files also serve as examples for users and are therefor organized by general topic area inside the `inputs` directory.  All integration tests must be rested in the `tests/integrationTests/tests.cpp` file in an existing or new category.  The tests use an `IntegrationTestsSpecifier` struct to specify the required inputs. Any comments before the first '---' will be treated ad markdown (with the # removed) when the documentation is generated and should be written as such.  Math and equations are rendered using [MathJax](https://www.mathjax.org) using Latex style equations where $$ is used to define math regions.  The `MpiTestParameter` inside `IntegrationTestsSpecifier` is used to specify:
@@ -124,6 +126,9 @@ Integration tests use the standard yaml input files to test simulation level fun
 - .expectedFiles: optional list of expected files to compare.  Each entry must be a {"outputs/path/to/file", "nameOfFileInOutputFolder"}
 
 If using the `IntegrationRestartTestsSpecifier` the simulation will be restarted after specify a list of `restartOverrides`.  This is used to test save/restore functionality.
+
+## Regression Tests
+Regression tests operate similarly to the Integration Tests but are not run as part of the pull request process.  Instead, they run on an automated schedule.  These larger/longer simulations are used to ensure that ABLATE functionally does not regress and serve as well documented examples of using ABLATE with real world problems.
 
 ## Expected Output Files
 The output log and other files can be compared against expected results for testing.  However, the expected number output may slightly differ based upon compiler/computer configurations so the output format was created.  This file uses your specified [regex](https://www.cplusplus.com/reference/regex/) and compares against an expected value used the specified comparison.  Lines in the expected file that contains `<expects>` are parsed and compared against the provided numbers. Online c++ regex testers might be useful for testing.

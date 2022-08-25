@@ -1,25 +1,35 @@
 target_sources(ablateLibrary
+        PRIVATE
+        modifier.cpp
+        distributeWithGhostCells.cpp
+        ghostBoundaryCells.cpp
+        createLabel.cpp
+        tagLabelBoundary.cpp
+        mergeLabels.cpp
+        intersectLabels.cpp
+        subtractLabel.cpp
+        tagLabelInterface.cpp
+        labelSupport.cpp
+        extrudeLabel.cpp
+        tagMeshBoundaryFaces.cpp
+        completeLabel.cpp
+        dmPlexCheck.cpp
+        fvmCheck.cpp
+
         PUBLIC
         modifier.hpp
-        modifier.cpp
         distributeWithGhostCells.hpp
-        distributeWithGhostCells.cpp
         ghostBoundaryCells.hpp
-        ghostBoundaryCells.cpp
-        setFromOptions.hpp
-        setFromOptions.cpp
         createLabel.hpp
-        createLabel.cpp
         tagLabelBoundary.hpp
-        tagLabelBoundary.cpp
         mergeLabels.hpp
-        mergeLabels.cpp
         intersectLabels.hpp
-        intersectLabels.cpp
         subtractLabel.hpp
-        subtractLabel.cpp
         tagLabelInterface.hpp
-        tagLabelInterface.cpp
         labelSupport.hpp
-        labelSupport.cpp
+        extrudeLabel.hpp
+        tagMeshBoundaryFaces.hpp
+        completeLabel.hpp
+        dmPlexCheck.hpp
+        fvmCheck.hpp
         )
