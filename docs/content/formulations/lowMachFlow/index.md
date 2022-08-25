@@ -1,8 +1,8 @@
 ---
 layout: default
-title: Low Mach Flow Formulation
+title: Low Mach Flow
 has_children: true
-nav_order: 3
-parent: Flow Formulations
+nav_order: 2
+parent: Formulations
 ---
 # Low Mach Flow Formulation

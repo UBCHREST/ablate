@@ -1,5 +1,9 @@
 target_sources(ablateLibrary
+        PRIVATE
+        radiation.cpp
+        volumeRadiation.cpp
+
         PUBLIC
         radiation.hpp
-        radiation.cpp
+        volumeRadiation.hpp
         )

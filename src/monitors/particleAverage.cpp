@@ -5,7 +5,7 @@ ablate::monitors::ParticleAverage::ParticleAverage(int interval, std::shared_ptr
 void ablate::monitors::ParticleAverage::Register(std::shared_ptr<solver::Solver> monitorableObject) {
     ablate::monitors::Monitor::Register(monitorableObject);
 
-    particles = std::dynamic_pointer_cast<particles::Particles>(monitorableObject);
+    particles = std::dynamic_pointer_cast<particles::ParticleSolver>(monitorableObject);
     if (!particles) {
         throw std::invalid_argument("The ParticleAverage monitor can only be used with ablate::particles::Particles");
     }
@@ -54,7 +54,7 @@ PetscErrorCode ablate::monitors::ParticleAverage::OutputParticleAverage(TS ts, P
         CHKERRMPI(mpiErr);
 
         // print to the log
-        monitor->log->Printf("%s ", monitor->particles->GetId().c_str());
+        monitor->log->Printf("%s ", monitor->particles->GetSolverId().c_str());
         monitor->log->Print("Avg", dims, globAvg);
         monitor->log->Print("\n");
     }

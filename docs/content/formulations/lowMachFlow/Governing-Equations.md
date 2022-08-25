@@ -1,13 +1,13 @@
 ---
 layout: default
 title: Governing Equations
-parent: Low Mach Flow Formulation
-grand_parent: Flow Formulations
+parent: Low Mach Flow
+grand_parent: Formulations
 nav_order: 1
 ---
 
 ## Governing Equations
-The low mach number flow formulation is based upon the work of J. Principe and R. Codina reproduced here in dimensionless form (see [Non-Dimensional Terms]({{ site.baseurl}}{%link content/formulations/NonDimensional.md %}).).
+The low mach number flow formulation is based upon the work of J. Principe and R. Codina reproduced here in dimensionless form (see [Non-Dimensional Terms]({{ site.baseurl}}{%link content/formulations/lowMachFlow/NonDimensional.md %}).).
 
 $$\begin{eqnarray}
 S\frac{\partial \rho}{\partial t} + \nabla \cdot \left(\rho \boldsymbol{u} \right ) = 0 \\

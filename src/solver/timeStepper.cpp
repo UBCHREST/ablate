@@ -1,6 +1,6 @@
 #include "timeStepper.hpp"
 #include <petscdm.h>
-#include <mathFunctions/mathFunction.hpp>
+#include "utilities/mpiUtilities.hpp"
 #include "utilities/petscError.hpp"
 #include "utilities/petscOptions.hpp"
 
@@ -8,7 +8,7 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
                                          std::shared_ptr<ablate::io::Serializer> serializerIn, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> initializations,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> exactSolutions, std::vector<std::shared_ptr<mathFunctions::FieldFunction>> absoluteTolerances,
                                          std::vector<std::shared_ptr<mathFunctions::FieldFunction>> relativeTolerances)
-    : name(nameIn),
+    : name(nameIn.empty() ? "timeStepper" : nameIn),
       domain(domain),
       serializer(serializerIn),
       initializations(initializations),
@@ -44,11 +44,11 @@ ablate::solver::TimeStepper::TimeStepper(std::string nameIn, std::shared_ptr<abl
     TSSetPostEvaluate(ts, TSPostEvaluateFunction) >> checkError;
 }
 
-ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts); }
+ablate::solver::TimeStepper::~TimeStepper() { TSDestroy(&ts) >> checkError; }
 
 void ablate::solver::TimeStepper::Solve() {
     if (solvers.empty()) {
-        throw std::runtime_error("No solvers have been set.");
+        return;
     }
 
     domain->InitializeSubDomains(solvers, initializations, exactSolutions);
@@ -90,6 +90,16 @@ void ablate::solver::TimeStepper::Solve() {
             auto serializable = std::dynamic_pointer_cast<io::Serializable>(solver);
             if (serializable && serializable->Serialize()) {
                 serializer->Register(serializable);
+            }
+        }
+
+        // register any monitors with the seralizer
+        for (const auto& monitorPerSolver : monitors) {
+            for (const auto& monitor : monitorPerSolver.second) {
+                auto serializable = std::dynamic_pointer_cast<io::Serializable>(monitor);
+                if (serializable && serializable->Serialize()) {
+                    serializer->Register(serializable);
+                }
             }
         }
     }
@@ -280,30 +290,22 @@ PetscErrorCode ablate::solver::TimeStepper::SolverComputeIJacobianLocal(DM, Pets
 
     PetscFunctionReturn(0);
 }
-PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm, PetscReal time, Vec locX, Vec F, void* timeStepperCtx) {
+PetscErrorCode ablate::solver::TimeStepper::SolverComputeRHSFunctionLocal(DM dm, PetscReal time, Vec locX, Vec locF, void* timeStepperCtx) {
     PetscFunctionBeginUser;
     PetscErrorCode ierr;
 
     auto timeStepper = (ablate::solver::TimeStepper*)timeStepperCtx;
-
-    Vec locF;
-    DMGetLocalVector(dm, &locF);
-    VecZeroEntries(locF);
 
     for (auto& solver : timeStepper->rhsFunctionSolvers) {
         ierr = solver->ComputeRHSFunction(time, locX, locF);
         CHKERRQ(ierr);
     }
 
-    DMLocalToGlobalBegin(dm, locF, ADD_VALUES, F);
-    DMLocalToGlobalEnd(dm, locF, ADD_VALUES, F);
-    DMRestoreLocalVector(dm, &locF);
-
     PetscFunctionReturn(0);
 }
 
 #include "registrar.hpp"
-REGISTER_DEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", ARG(std::string, "name", "the time stepper name"),
+REGISTER_DEFAULT(ablate::solver::TimeStepper, ablate::solver::TimeStepper, "the basic stepper", OPT(std::string, "name", "the optional time stepper name"),
                  ARG(ablate::domain::Domain, "domain", "the mesh used for the simulation"), ARG(std::map<std::string TMP_COMMA std::string>, "arguments", "arguments to be passed to petsc"),
                  OPT(ablate::io::Serializer, "io", "the serializer used with this timestepper"),
                  OPT(std::vector<ablate::mathFunctions::FieldFunction>, "initialization", "initialization field functions"),

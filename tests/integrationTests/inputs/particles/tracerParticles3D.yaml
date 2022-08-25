@@ -1,6 +1,6 @@
 ---
 environment:
-  title: Tracer Particles with incompressible Flow 3D
+  title: _TracerParticlesWithIncompressibleFlow3D
 arguments:
   vel_petscspace_degree: 2
   pres_petscspace_degree: 1
@@ -30,9 +30,8 @@ timestepper:
     faces: [ 2, 2, 2 ]
     lower: [ 0, 0, 0 ]
     upper: [ 1, 1, 1 ]
-    modifiers:
-      - !ablate::domain::modifiers::SetFromOptions
-        dm_refine: 1
+    options:
+      dm_refine: 1
     fields:
       - !ablate::finiteElement::LowMachFlowFields
   initialization:
@@ -70,13 +69,16 @@ solvers:
         boundaryValue: *temperatureField
     monitors:
       - !ablate::monitors::TimeStepMonitor
-  - !ablate::particles::Tracer
+  - !ablate::particles::ParticleSolver
     id: particles
-    ndims: 3
     options:
       ts_dt: 0.005
     initializer: !ablate::particles::initializers::BoxInitializer
       lower: [0.25,0.25,.25]
       upper: [0.75,0.75,.75]
       particlesPerDim: 10
-    exactSolution: "t + x + y"
+    processes:
+      - !ablate::particles::processes::Tracer
+    exactSolutions:
+      - fieldName: coordinates
+        field: "t + x + y"

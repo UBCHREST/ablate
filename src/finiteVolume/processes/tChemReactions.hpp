@@ -4,59 +4,64 @@
 #include <eos/tChem.hpp>
 #include "process.hpp"
 
+namespace tChemLib = TChem;
+
 namespace ablate::finiteVolume::processes {
 
 class TChemReactions : public Process {
    private:
-    DM fieldDm;
-    Vec sourceVec;
+    // store some default values
+    double dtMin = 1.0E-12;
+    double dtMax = 1.0E-1;
+    double dtDefault = 1E-4;
+    double dtEstimateFactor = 1.5;
+    double relToleranceTime = 1.0E-4;
+    double absToleranceTime = 1.0E-8;
+    double relToleranceNewton = 1.0E-6;
+    double absToleranceNewton = 1.0E-10;
 
-    // Petsc options specific to the chemTs. These may be null by default
-    PetscOptions petscOptions;
+    int maxNumNewtonIterations = 100;
+    int numTimeIterationsPerInterval = 100000;
+    int jacobianInterval = 1;
+    int maxAttempts = 4;
 
+    // eos of state variables
     std::shared_ptr<eos::TChem> eos;
     const size_t numberSpecies;
-    inline const static PetscReal dtInitDefault = 1E-5;
-    PetscReal dtInit; /** this may be different than default if set with petsc options **/
 
-    // Hold the single point TS
-    TS ts;
-    Vec pointData;
-    Mat jacobian;
-    /* Dense array workspace where Tchem computes the T, yi */
-    double *tchemScratch;
-    /* Dense array workspace where Tchem computes the Jacobian */
-    double *jacobianScratch;
-    /* Dense array for the local Jacobian rows */
-    PetscInt *rows;
+    // tchem memory storage on host/device.  These will be sized for the number of active nodes in the domain
+    real_type_2d_view stateDevice;
+    real_type_2d_view_host stateHost;
 
-    // store any inert species
-    std::vector<std::size_t> inertSpeciesIds;
+    // store the end state for the device/host
+    real_type_2d_view endStateDevice;
 
-    // Set a minimum/maximum value of mass fractions
-    const std::vector<double> massFractionBounds;
+    // the time advance information
+    time_advance_type_1d_view timeAdvanceDevice;
+    time_advance_type timeAdvanceDefault;
 
-    /**
-     * Private function to integrate single point chemistry in time
-     * @param ts
-     * @param t
-     * @param X
-     * @param F
-     * @param ptr
-     * @return
-     */
-    static PetscErrorCode SinglePointChemistryRHS(TS ts, PetscReal t, Vec X, Vec F, void *ptr);
+    // store host/device memory for computing state
+    real_type_1d_view internalEnergyRefDevice;
+    real_type_1d_view_host internalEnergyRefHost;
+    real_type_2d_view perSpeciesScratchDevice;
 
-    /**
-     * Private function to integrate single point chemistry in time by computing the jacobian
-     * @param ts
-     * @param t
-     * @param X
-     * @param F
-     * @param ptr
-     * @return
-     */
-    static PetscErrorCode SinglePointChemistryJacobian(TS ts, PetscReal t, Vec X, Mat aMat, Mat pMat, void *ptr);
+    // store the source terms (density* energy + density*species)
+    real_type_2d_view_host sourceTermsHost;
+    real_type_2d_view sourceTermsDevice;
+
+    // tolerance constraints
+    real_type_2d_view tolTimeDevice;
+    real_type_1d_view tolNewtonDevice;
+    real_type_2d_view facDevice;
+
+    // store the time and delta for the ode solver
+    real_type_1d_view timeViewDevice;
+    real_type_1d_view dtViewDevice;
+
+    // store device specific kineticModelGasConstants
+    tChemLib::KineticModelConstData<typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevice;
+    kmd_type_1d_view_host kineticModelDataClone;
+    Kokkos::View<KineticModelGasConstData<typename Tines::UseThisDevice<exec_space>::type> *, typename Tines::UseThisDevice<exec_space>::type> kineticModelGasConstDataDevices;
 
     /**
      * private function to compute the energy and densityYi source terms over the next dt
@@ -69,14 +74,19 @@ class TChemReactions : public Process {
     static PetscErrorCode AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
-    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<parameters::Parameters> options = {}, std::vector<std::string> inertSpecies = {},
-                            std::vector<double> massFractionBounds = {});
+    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<ablate::parameters::Parameters> options = {});
     ~TChemReactions() override;
     /**
      * public function to link this process with the flow
      * @param flow
      */
+    void Setup(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
+
+    /**
+     * compute/setup memory for the current mesh
+     * @param flow
+     */
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
 };
 }  // namespace ablate::finiteVolume::processes
-#endif  // ABLATELIBRARY_TCHEMREACTIONS_HPP
+#endif

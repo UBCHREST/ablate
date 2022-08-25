@@ -27,6 +27,15 @@ class Region {
 
     inline const std::string ToString() const { return name + ":" + std::to_string(value); };
 
+    /**
+     * create and returns a label/region value
+     * @param region
+     * @param dm
+     * @param regionLabel
+     * @param regionValue
+     */
+    void CreateLabel(DM dm, DMLabel& regionLabel, PetscInt& regionValue);
+
     static void GetLabel(const std::shared_ptr<Region>& region, DM dm, DMLabel& regionLabel, PetscInt& regionValue);
 
     static bool InRegion(const std::shared_ptr<Region>& region, DM dm, PetscInt point);
@@ -37,6 +46,13 @@ class Region {
      * @param dm
      */
     void CheckForLabel(DM dm) const;
+
+    /**
+     * throws exception if the label is not in the dm on any rank
+     * @param region
+     * @param dm
+     */
+    void CheckForLabel(DM dm, MPI_Comm comm) const;
 };
 
 std::ostream& operator<<(std::ostream& os, const Region& region);

@@ -1,23 +1,25 @@
 target_sources(ablateLibrary
-        PUBLIC
+        PRIVATE
         simpleFormula.cpp
-        simpleFormula.hpp
         functionWrapper.cpp
+        functionPointer.cpp
+        fieldFunction.cpp
+        constantValue.cpp
+        parsedSeries.cpp
+        linearTable.cpp
+        formula.cpp
+
+        PUBLIC
+        simpleFormula.hpp
         functionWrapper.hpp
         functionPointer.hpp
-        functionPointer.cpp
         mathFunction.hpp
         functionFactory.hpp
-        fieldFunction.cpp
         fieldFunction.hpp
         constantValue.hpp
-        constantValue.cpp
         parsedSeries.hpp
-        parsedSeries.cpp
         linearTable.hpp
-        linearTable.cpp
         formula.hpp
-        formula.cpp
         )
 
 add_subdirectory(geom)

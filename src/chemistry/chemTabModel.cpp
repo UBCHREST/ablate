@@ -18,17 +18,25 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     const std::string rpath = path / "regressor";
     const std::string wpath = path / "weights.csv";
     const std::string ipath = path / "weights_inv.csv";
-    const std::string spath = path / "scaling_params.txt";
 
     // Check for missing files
     if (!std::filesystem::exists(rpath)) {
-        throw std::runtime_error("The 'regressor' file cannot be located in the specified ChemTabModel Folder " + path.string());
+        throw std::runtime_error(
+            "The 'regressor' file cannot be located in the "
+            "specified ChemTabModel Folder " +
+            path.string());
     }
     if (!std::filesystem::exists(wpath)) {
-        throw std::runtime_error("The 'weights.csv' file cannot be located in the specified ChemTabModel Folder " + path.string());
+        throw std::runtime_error(
+            "The 'weights.csv' file cannot be located in the "
+            "specified ChemTabModel Folder " +
+            path.string());
     }
     if (!std::filesystem::exists(ipath)) {
-        throw std::runtime_error("The 'weights_inv.csv' file cannot be located in the specified ChemTabModel Folder " + path.string());
+        throw std::runtime_error(
+            "The 'weights_inv.csv' file cannot be located in "
+            "the specified ChemTabModel Folder " +
+            path.string());
     }
 
     // Load the source energy predictor model first
@@ -58,22 +66,6 @@ ablate::chemistry::ChemTabModel::ChemTabModel(std::filesystem::path path) {
     inputFileStream.close();
     inputFileStream.open(ipath.c_str(), std::ios::in);
     LoadBasisVectors(inputFileStream, speciesNames.size(), iWmat);
-    inputFileStream.close();
-    // load source energy scaler
-    sourceEnergyScaler = (PetscReal *)malloc(2 * sizeof(PetscReal));
-    inputFileStream.open(spath.c_str(), std::ios::in);
-    std::string line, value;
-
-    std::getline(inputFileStream, line);
-    std::stringstream lineStream1(line);
-    getline(lineStream1, value, ' ');
-    sourceEnergyScaler[0] = std::stod(value);
-
-    std::getline(inputFileStream, line);
-    std::stringstream lineStream2(line);
-    getline(lineStream2, value, ' ');
-    sourceEnergyScaler[1] = std::stod(value);
-
     inputFileStream.close();
 }
 
@@ -148,19 +140,26 @@ void ablate::chemistry::ChemTabModel::LoadBasisVectors(std::istream &inputStream
 void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(const PetscReal *progressVariables, std::size_t progressVariablesSize, PetscReal *massFractions,
                                                                                std::size_t massFractionsSize, void *ctx) {
     // y = inv(W)'C
-    // for now the mass fractions will be obtained using the inverse of the weights. Will be replaced by a ML predictive model in the next iteration
+    // for now the mass fractions will be obtained using the inverse of the
+    // weights. Will be replaced by a ML predictive model in the next iteration
     auto ctModel = (ChemTabModel *)ctx;
-    // size of progressVariables should match the expected number of progressVariables
+    // size of progressVariables should match the expected number of
+    // progressVariables
     if (progressVariablesSize != ctModel->progressVariablesNames.size()) {
-        throw std::invalid_argument("The progressVariables size does not match the supported number of progressVariables");
+        throw std::invalid_argument(
+            "The progressVariables size does not match the "
+            "supported number of progressVariables");
     }
     // size of massFractions should match the expected number of species
     if (massFractionsSize != ctModel->speciesNames.size()) {
-        throw std::invalid_argument("The massFractions size does not match the supported number of species");
+        throw std::invalid_argument(
+            "The massFractions size does not match the "
+            "supported number of species");
     }
     for (size_t i = 0; i < ctModel->speciesNames.size(); i++) {
         PetscReal v = 0;
-        // j starts from 1 because the first entry in progressVariables is assumed to be zMix
+        // j starts from 1 because the first entry in progressVariables is assumed
+        // to be zMix
         for (size_t j = 1; j < ctModel->progressVariablesNames.size(); j++) {
             v += ctModel->iWmat[j - 1][i] * progressVariables[j];
         }
@@ -171,9 +170,12 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeMassFractionsFunction(c
 void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const PetscReal progressVariables[], const std::size_t progressVariablesSize, PetscReal *predictedSourceEnergy,
                                                                         PetscReal *progressVariableSource, const std::size_t progressVariableSourceSize, void *ctx) {
     auto ctModel = (ChemTabModel *)ctx;
-    // size of progressVariables should match the expected number of progressVariables
+    // size of progressVariables should match the expected number of
+    // progressVariables
     if (progressVariablesSize != ctModel->progressVariablesNames.size()) {
-        throw std::invalid_argument("The progressVariables size does not match the supported number of progressVariables");
+        throw std::invalid_argument(
+            "The progressVariables size does not match the "
+            "supported number of progressVariables");
     }
     // size of progressVariableSource should match the expected number of progressVariables (excluding zmix)
     if (progressVariableSourceSize != ctModel->progressVariablesNames.size() - 1) {
@@ -202,12 +204,22 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     TF_Tensor **outputValues = (TF_Tensor **)malloc(sizeof(TF_Tensor *) * numOutputs);
 
     int ndims = 2;
-    int ninputs = (int)ctModel->progressVariablesNames.size() - 1;
+
+    /*int ninputs = (int)ctModel->progressVariablesNames.size() - 1;
     int64_t dims[] = {1, ninputs};
     float data[ninputs];
     // Ignoring the zmix variable for predicting the source terms
     for (int i = 0; i < ninputs; i++) {
         data[i] = progressVariables[i + 1];
+    }*/
+
+    // according to Varun this should work for including Zmix
+    int ninputs = (int)ctModel->progressVariablesNames.size();
+    int64_t dims[] = {1, ninputs};
+    float data[ninputs];
+    // Ignoring the zmix variable for predicting the source terms
+    for (int i = 0; i < ninputs; i++) {
+        data[i] = progressVariables[i];
     }
 
     int ndata = ninputs * sizeof(float);
@@ -222,8 +234,7 @@ void ablate::chemistry::ChemTabModel::ChemTabModelComputeSourceFunction(const Pe
     float *outputArray;
     outputArray = (float *)TF_TensorData(outputValues[1]);
     PetscReal p = (PetscReal)outputArray[0];
-    // rescale the predicted energy
-    *predictedSourceEnergy = (p * ctModel->sourceEnergyScaler[0]) + ctModel->sourceEnergyScaler[1];
+    *predictedSourceEnergy = p;
 
     outputArray = (float *)TF_TensorData(outputValues[0]);
     for (size_t i = 0; i < progressVariableSourceSize; i++) {
@@ -241,13 +252,18 @@ const std::vector<std::string> &ablate::chemistry::ChemTabModel::GetSpecies() co
 const std::vector<std::string> &ablate::chemistry::ChemTabModel::GetProgressVariables() const { return progressVariablesNames; }
 void ablate::chemistry::ChemTabModel::ComputeProgressVariables(const PetscReal *massFractions, std::size_t massFractionsSize, PetscReal *progressVariables, std::size_t progressVariablesSize) const {
     // c = W'y
-    // size of progressVariables should match the expected number of progressVariables
+    // size of progressVariables should match the expected number of
+    // progressVariables
     if (progressVariablesSize != progressVariablesNames.size()) {
-        throw std::invalid_argument("The progressVariables size does not match the supported number of progressVariables");
+        throw std::invalid_argument(
+            "The progressVariables size does not match the "
+            "supported number of progressVariables");
     }
     // size of massFractions should match the expected number of species
     if (massFractionsSize != speciesNames.size()) {
-        throw std::invalid_argument("The massFractions size does not match the supported number of species");
+        throw std::invalid_argument(
+            "The massFractions size does not match the "
+            "supported number of species");
     }
     // the first entry in progressVariables corresponds to zMix and is fixed to 0
     progressVariables[0] = 0;
