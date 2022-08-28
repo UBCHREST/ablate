@@ -27,8 +27,6 @@ class LES : public FlowProcess {
     };
     DiffusionData diffusionData;
 
-    PetscInt numberSpecies{};
-
    public:
     explicit LES(std::shared_ptr<eos::EOS> eos, std::shared_ptr<eos::transport::TransportModel> transportModel = {});
 
