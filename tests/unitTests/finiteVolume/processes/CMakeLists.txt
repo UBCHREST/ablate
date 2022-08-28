@@ -4,4 +4,5 @@ target_sources(unitTests
         twoPhaseEulerAdvectionTests.cpp
         buoyancyTests.cpp
         pressureGradientScalingTests.cpp
+        lesTests.cpp
         )
