@@ -167,7 +167,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::lesevFlux(PetscInt dim, con
 
     PetscErrorCode ierr;
     auto flowParameters = (DiffusionData*)ctx;
-    const PetscFVCellGeom* cg  = nullptr;
+    const PetscFVCellGeom* cg;
 
     // get the current density from euler
     const PetscReal density = field[uOff[euler] + CompressibleFlowFields::RHO];
