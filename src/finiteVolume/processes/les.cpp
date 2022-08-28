@@ -12,7 +12,7 @@ ablate::finiteVolume::processes::LES::LES(std::shared_ptr<eos::EOS> eosIn, std::
         // set the eos functions
         diffusionData.numberEV = 0;
         diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
-        
+
     } else {
         diffusionData.diffFunction.function = nullptr;
     }
@@ -167,7 +167,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::lesevFlux(PetscInt dim, con
 
     PetscErrorCode ierr;
     auto flowParameters = (DiffusionData*)ctx;
-    const PetscFVCellGeom* cg;
+    const PetscFVCellGeom* cg  = nullptr;
 
     // get the current density from euler
     const PetscReal density = field[uOff[euler] + CompressibleFlowFields::RHO];
