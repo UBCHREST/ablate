@@ -167,7 +167,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::lesevFlux(PetscInt dim, con
 
     PetscErrorCode ierr;
     auto flowParameters = (DiffusionData*)ctx;
-    const PetscFVCellGeom* cg;
+    const PetscReal areaMag = utilities::MathUtilities::MagVector(dim, fg->normal);
 
     // get the current density from euler
     const PetscReal density = field[uOff[euler] + CompressibleFlowFields::RHO];
@@ -190,7 +190,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::lesevFlux(PetscInt dim, con
             PetscReal lesevFlux = 0.0;
             for (PetscInt c = 0; c < dim; ++c) {
                 //
-                lesevFlux += -cg->volume * density * lesTau[d * dim + c] * lesTau[d * dim + c] / mut;
+                lesevFlux += areaMag * sqrt(areaMag) * density * lesTau[d * dim + c] * lesTau[d * dim + c] / mut;
             }
 
             //  LESevFlux( rho Di dEVi/dx + rho Di dEVi/dy + rho Di dEVi//dz) . n A +  LESevFlux(-rho ce EV^3/2 ) . n A
