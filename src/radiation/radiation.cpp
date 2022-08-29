@@ -124,6 +124,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         PetscReal centroid[3];
         DMPlexComputeCellGeometryFVM(subDomain->GetDM(), iCell, nullptr, centroid, nullptr) >> checkError;
 
+        //        PetscReal radius = sqrt((centroid[0] * centroid[0] + centroid[1] * centroid[1] + centroid[2] * centroid[2]));
+        //        printf("%i %f\n", iCell, radius);  // Output the cell index and coordinates
+
         /** for every angle theta
          * for every angle phi
          */
@@ -287,7 +290,7 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                 const PetscInt* cellFaces;
                 DMPlexGetConeSize(subDomain->GetDM(), index, &numberFaces) >> checkError;
                 DMPlexGetCone(subDomain->GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
-                PetscReal path = 0;
+                PetscReal path;
 
                 /** Check every face for intersection with the segment.
                  * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
@@ -643,7 +646,7 @@ void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoor
     }
 }
 
-PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* faceGeom) {
+PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* faceGeom) const {
     PetscReal ldotn = (virtualcoord[ip].xdir * faceGeom->normal[0]) + (virtualcoord[ip].ydir * faceGeom->normal[1]) + (virtualcoord[ip].zdir * faceGeom->normal[2]);
     if (ldotn == 0) return 0;
     PetscReal d = (((faceGeom->normal[0] * faceGeom->centroid[0]) + (faceGeom->normal[1] * faceGeom->centroid[1]) + (faceGeom->normal[2] * faceGeom->centroid[2])) -
