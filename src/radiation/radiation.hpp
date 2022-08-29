@@ -100,7 +100,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         PetscReal xdir;
         PetscReal ydir;
         PetscReal zdir;
-        PetscInt current;
+//        PetscInt current;
         PetscReal hhere;
     };
 

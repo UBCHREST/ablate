@@ -12,7 +12,7 @@
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : solverId((std::basic_string<char> &&) solverId), region(std::move(region)), radiationModel(std::move(radiationModelIn)), fieldBoundary(std::move(fieldBoundary)), log(std::move(log)) {
+    : solverId((std::basic_string<char> &&) solverId), region(region), radiationModel(std::move(radiationModelIn)), fieldBoundary(std::move(fieldBoundary)), log(std::move(log)) {
     nTheta = raynumber;    //!< The number of angles to solve with, given by user input
     nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
@@ -145,7 +145,7 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
                 virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
                 virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
                 virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
-                virtualcoord[ipart].current = iCell;  //!< Set this to a null value so that it can't get confused about where it starts.
+//                virtualcoord[ipart].current = iCell;  //!< Set this to a null value so that it can't get confused about where it starts.
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord);
