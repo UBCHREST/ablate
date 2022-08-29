@@ -238,13 +238,9 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
              * The boundary has been reached if any of these conditions don't hold
              * */
 
-            //            if (identifier[ip].iCell == 257) printf("I'm here\n");
-
             /** make sure we are not working on a ghost cell */
             if ((nFound > -1 && cell[ip].index >= 0 && subDomain->InRegion(cell[ip].index)) || stepcount == 0) {
                 index = (stepcount == 0) ? identifier[ip].iCell : cell[ip].index;
-
-                //                if (identifier[ip].iCell == 257) printf("            I'm putting a cell in\n");
 
                 /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
                  * Hash the identifier into a key value that can be used in the map
