@@ -31,7 +31,7 @@ void ablate::domain::modifiers::SubtractLabel::Modify(DM& dm) {
 
     // Merge the regions
     IS subtrahendsIS = nullptr;
-    ISConcatenate(PetscObjectComm((PetscObject)minuendIS), isList.size(), isList.data(), &subtrahendsIS) >> checkError;
+    ISConcatenate(PETSC_COMM_SELF, isList.size(), isList.data(), &subtrahendsIS) >> checkError;
     ISSortRemoveDups(subtrahendsIS) >> checkError;
 
     // compute the difference
