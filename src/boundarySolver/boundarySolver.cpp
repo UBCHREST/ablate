@@ -3,6 +3,7 @@
 #include <utility>
 #include "boundaryProcess.hpp"
 #include "utilities/mathUtilities.hpp"
+#include "utilities/stringUtilities.hpp"
 
 ablate::boundarySolver::BoundarySolver::BoundarySolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<domain::Region> fieldBoundary,
                                                        std::vector<std::shared_ptr<BoundaryProcess>> boundaryProcesses, std::shared_ptr<parameters::Parameters> options, bool mergeFaces)
@@ -318,12 +319,12 @@ void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySo
 
     for (auto& inputField : inputFields) {
         auto& inputFieldId = subDomain->GetField(inputField);
-        functionDescription.inputFields.push_back(inputFieldId.subId);
+        functionDescription.inputFieldsOffset.push_back(inputFieldId.offset);
     }
 
     for (const auto& auxField : auxFields) {
         auto& auxFieldId = subDomain->GetField(auxField);
-        functionDescription.auxFields.push_back(auxFieldId.subId);
+        functionDescription.auxFieldsOffset.push_back(auxFieldId.offset);
     }
 
     if (type == BoundarySourceType::Face) {
@@ -333,11 +334,11 @@ void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySo
 
             // If this is the end (not found) add to the list
             if (componentLoc == outputComponents.end()) {
-                functionDescription.sourceFields.push_back(outputComponents.size());
+                functionDescription.sourceFieldsOffset.push_back((PetscInt)outputComponents.size());
                 outputComponents.push_back(sourceField);
             } else {
                 // it was found, just add component
-                functionDescription.sourceFields.push_back((PetscInt)std::distance(componentLoc, outputComponents.begin()));
+                functionDescription.sourceFieldsOffset.push_back((PetscInt)std::distance(componentLoc, outputComponents.begin()));
             }
         }
 
@@ -346,7 +347,7 @@ void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySo
         // check the subdomain for information about the fields
         for (auto& sourceField : sourceFields) {
             auto& fieldId = subDomain->GetField(sourceField);
-            functionDescription.sourceFields.push_back(fieldId.subId);
+            functionDescription.sourceFieldsOffset.push_back(fieldId.offset);
         }
 
         boundarySourceFunctions.push_back(functionDescription);
@@ -405,11 +406,6 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
     PetscCall(PetscDSGetTotalDimension(subDomain->GetDiscreteSystem(), &scratchSize));
     std::vector<PetscScalar> distributedSourceScratch(scratchSize);
 
-    // presize the offsets
-    std::vector<PetscInt> sourceOffsets(subDomain->GetFields().size(), -1);
-    std::vector<PetscInt> inputOffsets(subDomain->GetFields().size(), -1);
-    std::vector<PetscInt> auxOffsets(subDomain->GetFields(domain::FieldLocation::AUX).size(), -1);
-
     // Get the region to march over
     if (!gradientStencils.empty()) {
         // Get pointers to sol, aux, and f vectors
@@ -427,19 +423,10 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
 
         // March over each boundary function
         for (const auto& function : activeBoundarySourceFunctions) {
-            for (std::size_t i = 0; i < function.sourceFields.size(); i++) {
-                sourceOffsets[i] = offsetsTotal[function.sourceFields[i]];
-            }
-            for (std::size_t i = 0; i < function.inputFields.size(); i++) {
-                inputOffsets[i] = offsetsTotal[function.inputFields[i]];
-            }
-            for (std::size_t i = 0; i < function.auxFields.size(); i++) {
-                auxOffsets[i] = auxOffTotal[function.auxFields[i]];
-            }
 
-            auto sourceOffsetsPointer = sourceOffsets.data();
-            auto inputOffsetsPointer = inputOffsets.data();
-            auto auxOffsetsPointer = auxOffsets.data();
+            auto sourceOffsetsPointer = function.sourceFieldsOffset.data();
+            auto inputOffsetsPointer = function.inputFieldsOffset.data();
+            auto auxOffsetsPointer = function.auxFieldsOffset.data();
 
             // March over each cell in this region
             for (const auto& stencilInfo : gradientStencils) {
@@ -558,9 +545,13 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
                         break;
 
                     case BoundarySourceType::Face:
+                        // Get the vec DM from the locFArray
+                        DM vecDm;
+                        PetscCall(VecGetDM(locFVec, &vecDm));
+
                         // Assume that the right hand side vector is for face information
                         PetscScalar* faceRhs;
-                        PetscCall(DMPlexPointLocalRef(dm, stencilInfo.geometry.faceId, locFArray, &faceRhs));
+                        PetscCall(DMPlexPointLocalRef(vecDm, stencilInfo.geometry.faceId, locFArray, &faceRhs));
 
                         /*PetscErrorCode (*)(PetscInt dim, const BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell,
                                            const PetscInt uOff[], const PetscScalar* boundaryValues, const PetscScalar* stencilValues[],
@@ -826,6 +817,23 @@ void ablate::boundarySolver::BoundarySolver::UpdateVariablesPreStep(TS, ablate::
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
     }
     DMRestoreLocalVector(subDomain->GetDM(), &locXVec) >> checkError;
+}
+
+std::istream& ablate::boundarySolver::operator>>(std::istream& is, ablate::boundarySolver::BoundarySolver::BoundarySourceType& value) {
+    std::string typeString;
+    is >> typeString;
+    ablate::utilities::StringUtilities::ToLower(typeString);
+
+    if (typeString == "point")
+        value = BoundarySolver::BoundarySourceType::Point;
+    else if (typeString == "distributed")
+        value = BoundarySolver::BoundarySourceType::Distributed;
+    else if (typeString == "flux")
+        value = BoundarySolver::BoundarySourceType::Flux;
+    else if (typeString == "face")
+        value = BoundarySolver::BoundarySourceType::Face;
+
+    return is;
 }
 
 #include "registrar.hpp"

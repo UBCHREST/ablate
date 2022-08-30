@@ -92,9 +92,9 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
         void* context;
         BoundarySourceType type;
 
-        std::vector<PetscInt> sourceFields;
-        std::vector<PetscInt> inputFields;
-        std::vector<PetscInt> auxFields;
+        std::vector<PetscInt> sourceFieldsOffset;
+        std::vector<PetscInt> inputFieldsOffset;
+        std::vector<PetscInt> auxFieldsOffset;
     };
 
     /**
@@ -215,7 +215,30 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * Return a reference to the boundary geometry.  This is a slow call and should only be done for init/debugging/testing
      */
     [[nodiscard]] std::vector<GradientStencil> GetBoundaryGeometry(PetscInt cell) const;
+
+    /**
+     * Return a copy of all GradientStencil
+     */
+    const std::vector<GradientStencil>& GetBoundaryGeometry() const { return gradientStencils; }
+
+    /**
+     * Get access to the output fields
+     */
+    inline const std::vector<std::string>& GetOutputComponents() { return outputComponents; }
+
+    /**
+     * Get access to the output functions
+     */
+    inline const std::vector<BoundarySourceFunctionDescription>& GetOutputFunctions() { return boundaryOutputFunctions; }
 };
+
+/**
+ * Public function from stream to BoundarySourceType
+ * @param is
+ * @param v
+ * @return
+ */
+std::istream& operator>>(std::istream& is, BoundarySolver::BoundarySourceType& v);
 
 }  // namespace ablate::boundarySolver
 #endif  // ABLATELIBRARY_BOUNDARYSOLVER_HPP

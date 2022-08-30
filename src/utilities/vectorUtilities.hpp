@@ -121,6 +121,27 @@ class VectorUtilities {
         return {};
     }
 
+    /**
+     * Finds the first item in list that is of type S
+     * @tparam L the vector or map
+     * @tparam S the type of item to transform into
+     * @tparam T the source list type
+     * @param list
+     * @param the transformation function
+     * @return the transformed list
+     */
+    template <class L, class S, class T>
+    static inline std::vector<S> Transform(const L& items, std::function<S(const T&)> function) {
+        std::vector<S> transformed;
+        transformed.reserve(items.size());
+
+        for (const auto& item : items) {
+            transformed.push_back(function(item));
+        }
+
+        return transformed;
+    }
+
    private:
     VectorUtilities() = delete;
 };
