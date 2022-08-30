@@ -1,15 +1,20 @@
 #include "volumeRadiation.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "io/interval/fixedInterval.hpp"
 
 ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary,
-                                                    const PetscInt raynumber, const std::shared_ptr<parameters::Parameters>& options,
+                                                    const PetscInt raynumber, std::shared_ptr<io::interval::Interval> intervalIn, const std::shared_ptr<parameters::Parameters>& options,
                                                     std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
-    : Radiation(solverId1, region, fieldBoundary, raynumber, radiationModelIn, log), CellSolver(solverId1, region, options) {}
+    : Radiation(solverId1, region, fieldBoundary, raynumber, radiationModelIn, log),
+      CellSolver(solverId1, region, options),
+      interval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())) {}
 ablate::radiation::VolumeRadiation::~VolumeRadiation() {}
 
 void ablate::radiation::VolumeRadiation::Setup() {
     ablate::solver::CellSolver::Setup();
     ablate::radiation::Radiation::Setup();
+    auto radiationPreStep = [this](auto&& PH1, auto&& PH2) { RadiationPreStep(std::forward<decltype(PH1)>(PH1)); };
+    RegisterPreStep(radiationPreStep);
 }
 
 void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
@@ -26,6 +31,20 @@ void ablate::radiation::VolumeRadiation::Initialize() {
     RestoreRange(cellRange);
 }
 
+PetscErrorCode ablate::radiation::VolumeRadiation::RadiationPreStep(TS ts) {
+    PetscFunctionBegin;
+
+    /** Only update the radiation solution if the sufficient interval has passed */
+    PetscInt step;
+    PetscReal time;
+    TSGetStepNumber(ts, &step) >> checkError;
+    TSGetTime(ts, &time) >> checkError;
+    if (interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+        origin = ablate::radiation::Radiation::Solve(Radiation::subDomain->GetSolutionVector());
+    }
+    PetscFunctionReturn(0);
+}
+
 PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal time, Vec solVec, Vec rhs) {
     PetscFunctionBegin;
 
@@ -33,8 +52,6 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
     const PetscScalar* rhsArray;
     VecGetArrayRead(rhs, &rhsArray);
     const auto& eulerFieldInfo = Radiation::subDomain->GetField("euler");
-
-    origin = ablate::radiation::Radiation::Solve(solVec);
 
     solver::Range cellRange;
     GetCellRange(cellRange);  //!< Gets the cell range to iterate over when retrieving cell indexes from the solver
@@ -53,5 +70,6 @@ PetscErrorCode ablate::radiation::VolumeRadiation::ComputeRHSFunction(PetscReal 
 #include "registrar.hpp"
 REGISTER(ablate::solver::Solver, ablate::radiation::VolumeRadiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "boundary of the radiation region"),
-         ARG(int, "rays", "number of rays used by the solver"), OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
+         ARG(int, "rays", "number of rays used by the solver"), ARG(ablate::io::interval::Interval, "interval", "number of time steps between the radiation solves"),
+         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
          ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));

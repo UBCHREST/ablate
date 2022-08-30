@@ -201,8 +201,8 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
 
         // Create an instance of radiation
         auto radiationModel = std::make_shared<ablate::eos::radiationProperties::Constant>(1.0);
-        auto radiation =
-            std::make_shared<ablate::radiation::VolumeRadiation>("radiation", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, nullptr, radiationModel, nullptr);
+        auto radiation = std::make_shared<ablate::radiation::VolumeRadiation>(
+            "radiation", ablate::domain::Region::ENTIREDOMAIN, ablate::domain::Region::ENTIREDOMAIN, 15, nullptr, nullptr, radiationModel, nullptr);
 
         // register the flowSolver with the timeStepper
         timeStepper.Register(radiation, {std::make_shared<ablate::monitors::TimeStepMonitor>()});
@@ -221,6 +221,7 @@ TEST_P(RadiationTestFixture, ShouldComputeCorrectSourceTerm) {
         VecZeroEntries(rhs) >> testErrorChecker;
 
         // Apply the rhs function for the radiation solver
+        radiation->RadiationPreStep(timeStepper.GetTS()) >> testErrorChecker;
         radiation->ComputeRHSFunction(0, rhs, rhs);  // The ray tracing function needs to be renamed in order to occupy the role of compute right hand side function
 
         // determine the euler field

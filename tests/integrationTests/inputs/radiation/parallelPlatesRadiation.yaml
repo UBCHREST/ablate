@@ -85,5 +85,6 @@ solvers:
     fieldBoundary:
       name: boundaryFaces
     rays: 5
+    interval: 1
     properties: !ablate::eos::radiationProperties::Constant
       absorptivity: 1
