@@ -20,7 +20,7 @@ class LES : public FlowProcess {
     inline const static PetscReal c_e = 1.048;
     inline const static PetscReal c_p = 1.040;
 
-    static PetscInt ev_tke;
+     PetscInt tke_ev;
 
     /* store turbulent diffusion  data */
     struct DiffusionData {
@@ -30,6 +30,7 @@ class LES : public FlowProcess {
         PetscInt numberSpecies;
         PetscInt numberEV;
 
+        PetscInt tke_ev;
 
 
 
@@ -111,7 +112,7 @@ class LES : public FlowProcess {
      * @param mut
      * @return
      */
-    static PetscErrorCode LesViscosity(PetscInt dim, const PetscFVFaceGeom* fg, const PetscScalar field[], const PetscInt uOff[], PetscReal& mut);
+    static PetscErrorCode LesViscosity(PetscInt dim, void * ctx, const PetscFVFaceGeom* fg, const PetscScalar field[], const PetscInt uOff[], PetscReal& mut);
 };
 
 }  // namespace ablate::finiteVolume::processes
