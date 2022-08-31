@@ -28,7 +28,7 @@ void ablate::radiation::Radiation::Setup() {
     dim = subDomain->GetDimensions();  //!< Number of dimensions already defined in the setup
 }
 
-void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
+void ablate::radiation::Radiation::Initialize(const solver::Range &cellRange) {
     /** Begins radiation properties model
      * Runs the ray initialization, finding cell indices
      * Initialize the log if provided
@@ -38,7 +38,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
     if (log) {
         log->Initialize(subDomain->GetComm());
     }
-    cellRange = cellRangeIn;
 
     /** Initialization to call, draws each ray vector and gets all of the cells associated with it
      * (sorted by distance and starting at the boundary working in)
@@ -497,8 +496,7 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     /** ********************************************************************************************************************************
      * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
 
-    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
-        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
+    for (auto &[iCell, o] : origin) { //!< Iterate through the cells that are stored in the origin
 
         origin[iCell].intensity = 0;  //!< Make sure to zero the intensity of every cell before beginning to calculate the intensity for this time step.
 
@@ -599,17 +597,15 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
         printf("x           y           z           G\n");  //!< Line labelling the log outputs for readability
     }
 
-    for (PetscInt c = cellRange.start; c < cellRange.end; ++c) {            //!< This will iterate only though local cells
-        const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
-
+    for (auto &[iCell, o] : origin) { //!< Iterate through the cells that are stored in the origin
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalFieldRead(subDomain->GetAuxDM(), iCell, temperatureField.id, auxArray, &temperature);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity);
+            printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], o.intensity);
         }
-        origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
+        o.intensity = -kappa * (losses - o.intensity);
     }
 
     /** Cleanup */
