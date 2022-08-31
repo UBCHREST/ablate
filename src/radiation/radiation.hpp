@@ -57,7 +57,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     /**
      * @param cellRange The range of cells for which rays are initialized
      */
-    void Initialize(solver::Range cellRange);
+    void Initialize(const solver::Range &cellRange);
     /** Get the subdomain */
     void Register(std::shared_ptr<ablate::domain::SubDomain>);
     inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
@@ -137,7 +137,6 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
     PetscInt nTheta;   //!< The number of angles to solve with, given by user input
     PetscInt nPhi;     //!< The number of angles to solve with, given by user input (x2)
-    solver::Range cellRange;
     PetscReal minCellRadius{};
 
     /**
