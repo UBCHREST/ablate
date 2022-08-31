@@ -118,12 +118,46 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     // map to the local face ids in the faceDm
     IS subPointIs;
     DMPlexGetSubpointIS(faceDm, &subPointIs) >> checkError;
-    PetscInt size;
-    VecGetSize(localBoundaryVec, &size);
-    VecGetSize(globalFaceVec, &size);
-    ISGetSize(subPointIs, &size);
 
-    VecISCopy(localBoundaryVec, subPointIs, SCATTER_REVERSE, globalFaceVec) >> checkError;
+    // Get the raw data for the global vectors
+    const PetscScalar* localBoundaryArray;
+    VecGetArrayRead(localBoundaryVec, &localBoundaryArray) >> checkError;
+    PetscScalar* globalFaceArray;
+    VecGetArray(globalFaceVec, &globalFaceArray) >> checkError;
+
+    // Determine the size of data
+    PetscInt dataSize;
+    VecGetBlockSize(globalFaceVec, &dataSize) >> checkError;
+
+    // March over each cell in the face dm
+    PetscInt cStart, cEnd;
+    DMPlexGetHeightStratum(faceDm, 0, &cStart, &cEnd) >> checkError;
+
+    // get the mapping information
+    IS faceIs;
+    const PetscInt* faceToBoundary = nullptr;
+    DMPlexGetSubpointIS(faceDm, &faceIs) >> checkError;
+    ISGetIndices(faceIs, &faceToBoundary) >> checkError;
+
+    // Copy over the values that are in the globalFaceVec.  We may skip some local ghost values
+    for (PetscInt facePt = cStart; facePt < cEnd; ++facePt) {
+        PetscInt boundaryPt = faceToBoundary[facePt];
+
+        const PetscScalar* localBoundaryData;
+        PetscScalar* globalFaceData;
+
+        DMPlexPointLocalRead(boundaryDm, boundaryPt, localBoundaryArray, &localBoundaryData) >> checkError;
+        DMPlexPointGlobalRef(faceDm, facePt, globalFaceArray, &globalFaceData) >> checkError;
+        if (globalFaceData && localBoundaryData) {
+            PetscArraycpy(globalFaceData, localBoundaryData, dataSize) >> checkError;
+        }
+    }
+
+    // restore
+    ISRestoreIndices(faceIs, &faceToBoundary) >> checkError;
+
+    VecRestoreArrayRead(localBoundaryVec, &localBoundaryArray) >> checkError;
+    VecRestoreArray(globalFaceVec, &globalFaceArray) >> checkError;
 
     // write to the output file
     VecView(globalFaceVec, viewer) >> checkError;
