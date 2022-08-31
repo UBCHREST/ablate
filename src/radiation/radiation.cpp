@@ -124,9 +124,6 @@ void ablate::radiation::Radiation::Initialize(solver::Range cellRangeIn) {
         PetscReal centroid[3];
         DMPlexComputeCellGeometryFVM(subDomain->GetDM(), iCell, nullptr, centroid, nullptr) >> checkError;
 
-        //        PetscReal radius = sqrt((centroid[0] * centroid[0] + centroid[1] * centroid[1] + centroid[2] * centroid[2]));
-        //        printf("%i %f\n", iCell, radius);  // Output the cell index and coordinates
-
         /** for every angle theta
          * for every angle phi
          */
