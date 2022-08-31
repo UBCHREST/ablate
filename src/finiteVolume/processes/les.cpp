@@ -250,7 +250,8 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesViscosity(PetscInt dim, 
     const PetscReal k = field[uOff[EV_FIELD] + ev_tke];
     // compute LES viscosity
     mut = c_k * sqrt(areaMag * k / density);
-}
+    PetscFunctionReturn(0);
+    }
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::LES, "Creating LES sources for Navier-Stokes Eqs.",
