@@ -10,7 +10,9 @@ target_sources(ablateLibrary
         pressureGradientScaling.cpp
         arbitrarySource.cpp
         buoyancy.cpp
+        les.cpp
         constantPressureFix.cpp
+        
         PUBLIC
         process.hpp
         flowProcess.hpp
@@ -24,5 +26,5 @@ target_sources(ablateLibrary
         arbitrarySource.hpp
         buoyancy.hpp
         constantPressureFix.hpp
-        les.cpp
+        les.hpp
         )
