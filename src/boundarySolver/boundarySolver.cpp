@@ -423,7 +423,6 @@ PetscErrorCode ablate::boundarySolver::BoundarySolver::ComputeRHSFunction(PetscR
 
         // March over each boundary function
         for (const auto& function : activeBoundarySourceFunctions) {
-
             auto sourceOffsetsPointer = function.sourceFieldsOffset.data();
             auto inputOffsetsPointer = function.inputFieldsOffset.data();
             auto auxOffsetsPointer = function.auxFieldsOffset.data();

@@ -35,7 +35,6 @@ class ArbitrarySource : public BoundaryProcess {
      * @param bSolver
      */
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
-
 };
 
 }  // namespace ablate::boundarySolver::physics

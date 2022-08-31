@@ -97,7 +97,17 @@ INSTANTIATE_TEST_SUITE_P(
                                        .nproc = 1,
                                        .expectedOutputFile = "outputs/machinery/subDomainFVM/subDomainFVM.txt",
                                        .arguments = "",
-                                       .expectedFiles{{"outputs/machinery/subDomainFVM/fluidField.xmf", "fluidField.xmf"}}}),
+                                       .expectedFiles{{"outputs/machinery/subDomainFVM/fluidField.xmf", "fluidField.xmf"}}},
+                    (MpiTestParameter){.testName = "inputs/machinery/boundaryMonitorTest2D.yaml",
+                                       .nproc = 2,
+                                       .expectedOutputFile = "outputs/machinery/boundaryMonitorTest2D/boundaryMonitorTest.txt",
+                                       .arguments = "",
+                                       .expectedFiles{{"outputs/machinery/boundaryMonitorTest2D/bottomBoundary_monitor.xmf", "bottomBoundary_monitor.xmf"}}},
+                    (MpiTestParameter){.testName = "inputs/machinery/boundaryMonitorTest3D.yaml",
+                                       .nproc = 1,
+                                       .expectedOutputFile = "outputs/machinery/boundaryMonitorTest3D/boundaryMonitorTest.txt",
+                                       .arguments = "",
+                                       .expectedFiles{{"outputs/machinery/boundaryMonitorTest3D/bottomBoundary_monitor.xmf", "bottomBoundary_monitor.xmf"}}}),
     [](const testing::TestParamInfo<MpiTestParameter>& info) { return info.param.getTestName(); });
 
 INSTANTIATE_TEST_SUITE_P(

@@ -34,54 +34,55 @@ void ablate::monitors::BoundarySolverMonitor::Register(std::shared_ptr<solver::S
     DMLabel boundaryFaceLabel;
     DMGetLabel(boundaryDm, "boundaryFaceLabel", &boundaryFaceLabel) >> checkError;
 
-    // Create a dm that holds a single set of values at each face in this label
+    // Also create a section on each of the faces.  This needs to be a custom section
+    PetscSection boundaryFaceSection;
+    PetscSectionCreate(PetscObjectComm((PetscObject)boundaryDm), &boundaryFaceSection) >> checkError;
+    // Set the max/min bounds
     PetscInt fStart, fEnd;
     DMPlexGetHeightStratum(solver->GetSubDomain().GetDM(), 1, &fStart, &fEnd) >> checkError;
-
-    // create a face solution dm for that is the required number of variables per face
-    PetscSection solutionSection;
-    PetscSectionCreate(PetscObjectComm((PetscObject)boundaryDm), &solutionSection) >> checkError;
-    PetscSectionSetChart(solutionSection, fStart, fEnd) >> checkError;
-
+    PetscSectionSetChart(boundaryFaceSection, fStart, fEnd) >> checkError;
 
     // default section dof to zero
     for (PetscInt f = fStart; f < fEnd; ++f) {
-        PetscSectionSetDof(solutionSection, f, 0) >> checkError;
+        PetscSectionSetDof(boundaryFaceSection, f, 0) >> checkError;
     }
 
-    // Set the rest to number of fields
+    // set the label at each of the faces and set the dof at each point
     const auto numberOfComponents = (PetscInt)boundarySolver->GetOutputComponents().size();
     for (const auto& gradientStencil : boundarySolver->GetBoundaryGeometry()) {
-            // set both the label (used for filtering) and section for global variable creation
-            DMLabelSetValue(boundaryFaceLabel, gradientStencil.geometry.faceId, 1) >> checkError;
-            PetscSectionSetDof(solutionSection, gradientStencil.geometry.faceId, numberOfComponents) >> checkError;
+        // set both the label (used for filtering) and section for global variable creation
+        DMLabelSetValue(boundaryFaceLabel, gradientStencil.geometry.faceId, 1) >> checkError;
+
+        // set the dof at each section to the numberOfComponents
+        PetscSectionSetDof(boundaryFaceSection, gradientStencil.geometry.faceId, numberOfComponents) >> checkError;
     }
 
-    PetscSectionSetUp(solutionSection) >> checkError;
-    DMSetLocalSection(boundaryDm, solutionSection) >> checkError;
-    PetscSectionDestroy(&solutionSection) >> checkError;
+    // finish the section
+    PetscSectionSetUp(boundaryFaceSection) >> checkError;
+    DMSetLocalSection(boundaryDm, boundaryFaceSection) >> checkError;
+    PetscSectionDestroy(&boundaryFaceSection) >> checkError;
 
     // Complete the label
     DMPlexLabelComplete(boundaryDm, boundaryFaceLabel) >> checkError;
 
     // Now create a sub dm with only the faces
-//    DMPlexFilter(boundaryDm, boundaryFaceLabel, 1, &faceDm) >> checkError;
-    DMPlexCreateSubmesh(boundaryDm, boundaryFaceLabel, 1, PETSC_TRUE, &faceDm)  >> checkError;
-    DMView(faceDm, PETSC_VIEWER_STDOUT_WORLD);
-    // create a helper function to add fields
-    auto addField = [](DM& dm, const char* nameField, DMLabel label) {
+    DMPlexFilter(boundaryDm, boundaryFaceLabel, 1, &faceDm) >> checkError;
+
+    // Add each of the output components on each face in the faceDm
+    for (const auto& field : boundarySolver->GetOutputComponents()) {
         PetscFV fvm;
-        PetscFVCreate(PetscObjectComm(PetscObject(dm)), &fvm) >> checkError;
-        PetscObjectSetName((PetscObject)fvm, nameField) >> checkError;
+        PetscFVCreate(PetscObjectComm(PetscObject(faceDm)), &fvm) >> checkError;
+        PetscObjectSetName((PetscObject)fvm, field.c_str()) >> checkError;
         PetscFVSetFromOptions(fvm) >> checkError;
         PetscFVSetNumComponents(fvm, 1) >> checkError;
+        PetscInt dim;
+        DMGetCoordinateDim(faceDm, &dim) >> checkError;
+        PetscFVSetSpatialDimension(fvm, dim) >> checkError;
 
-        DMAddField(dm, label, (PetscObject)fvm) >> checkError;
+        DMAddField(faceDm, nullptr, (PetscObject)fvm) >> checkError;
         PetscFVDestroy(&fvm);
-    };
-    for (const auto& component : boundarySolver->GetOutputComponents()) {
-        addField(faceDm, component.c_str(), nullptr);
     }
+    DMCreateDS(faceDm) >> checkError;
 }
 
 void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
@@ -117,6 +118,11 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     // map to the local face ids in the faceDm
     IS subPointIs;
     DMPlexGetSubpointIS(faceDm, &subPointIs) >> checkError;
+    PetscInt size;
+    VecGetSize(localBoundaryVec, &size);
+    VecGetSize(globalFaceVec, &size);
+    ISGetSize(subPointIs, &size);
+
     VecISCopy(localBoundaryVec, subPointIs, SCATTER_REVERSE, globalFaceVec) >> checkError;
 
     // write to the output file

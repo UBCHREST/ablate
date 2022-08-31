@@ -1,0 +1,104 @@
+# This test sets up a simple boundary monitor with known values to test machinery in 3D
+---
+# metadata for the simulation
+environment:
+  title: _boundaryMonitorTest3D
+  tagDirectory: false
+arguments:
+  # ask petsc to label the boundary values
+  dm_plex_separate_marker: ""
+# set up the time stepper responsible for marching in time
+timestepper:
+  name: theMainTimeStepper
+  arguments:
+    ts_type: rk
+    ts_max_time: 100000
+    ts_max_steps: 50
+    ts_dt: 1
+    ts_adapt_type: none
+  # io controls how often the results are saved to a file for visualization and restart
+  io:
+    interval: 0 # results (including the boundary monitor) are saved at every 5 steps.  In real simulations this should be much larger.
+
+  # Create a simple box mesh to start
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 5, 5, 5 ]
+    lower: [ -.5, -.5, -.5]
+    upper: [ .5, .5, .5]
+    simplex: false
+    # pass in these options to petsc when setting up the domain.  Using an option list here prevents command line arguments from being seen.
+    options:
+      dm_distribute: true # turn off default dm_distribute so that we can extrude label first
+      dm_distribute_overlap: 0
+    modifiers:
+      # if using mpi, this modifier distributes cells
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+        ghostCellDepth: 2
+
+      # define a sphere in the middle of the domain
+      - !ablate::domain::modifiers::CreateLabel
+        region: &insideRegion
+          name: inside
+        function: !ablate::mathFunctions::geom::Sphere
+          &insideSphere
+          center: [0.0, 0.0, 0.0]
+          radius: 0.25
+
+      # define the rest of the domain
+      - !ablate::domain::modifiers::CreateLabel
+        region: &outsideRegion
+          name: outside
+        function: !ablate::mathFunctions::geom::Inverse
+          geometry: *insideSphere
+
+      # tag the label boundary
+      - !ablate::domain::modifiers::TagLabelInterface
+        leftRegion: *insideRegion
+        rightRegion: *outsideRegion
+        boundaryFaceRegion:
+          &boundaryFaceRegion
+          name:  boundaryFaces
+        leftBoundaryCellRegion:
+          &boundaryCellRegion
+          name: boundaryCells
+
+      # create ghost boundary cells needed for the fvm method
+      - !ablate::domain::modifiers::GhostBoundaryCells
+
+    fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287.0
+
+  # set the initial conditions of the flow field
+  initialization:
+    # The ablate::finiteVolume::CompressibleFlowFields is a helper
+    # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state:
+        &flowFieldState
+        eos: *eos
+        pressure: 101325.0
+        temperature: 300
+        velocity: "0.0, 0.0, 0.0"
+solvers:
+  # use a boundary solver to describe the solver in the boundary cells and output the solution
+  - !ablate::boundarySolver::BoundarySolver
+    id: bottomBoundary
+    region: *boundaryCellRegion
+    fieldBoundary: *boundaryFaceRegion
+    processes:
+      # define an ArbitrarySource processes of type Face that outputs two variables
+      - !ablate::boundarySolver::physics::ArbitrarySource
+        functions:
+          heatFlux: z*t
+          regRate: z*z*t
+        type: Face
+    monitors:
+      # a monitor is needed to write to a hdf5
+      - !ablate::monitors::BoundarySolverMonitor
