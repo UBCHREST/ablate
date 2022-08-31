@@ -20,7 +20,7 @@ ablate::finiteVolume::LesCompressibleFlowSolver::LesCompressibleFlowSolver(std::
                                  std::make_shared<ablate::finiteVolume::processes::NavierStokesTransport>(
                                      parameters, eosIn, fluxCalculatorIn, transport, utilities::VectorUtilities::Find<ablate::finiteVolume::processes::PressureGradientScaling>(additionalProcesses)),
                                  std::make_shared<ablate::finiteVolume::processes::SpeciesTransport>(eosIn, fluxCalculatorIn, transport),
-                                 std::make_shared<ablate::finiteVolume::processes::LES>(eosIn),
+                                 std::make_shared<ablate::finiteVolume::processes::LES>(std::string tke, eosIn),
                                  std::make_shared<ablate::finiteVolume::processes::EVTransport>(finiteVolume::CompressibleFlowFields::DENSITY_EV_FIELD, finiteVolume::CompressibleFlowFields::EV_FIELD,
                                                                                                 eosIn, fluxCalculatorIn, transport),
                              },
