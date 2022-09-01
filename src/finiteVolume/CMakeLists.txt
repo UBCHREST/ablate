@@ -6,6 +6,8 @@ target_sources(ablateLibrary
         reactingCompressibleFlowSolver.cpp
         faceInterpolant.cpp
         cellInterpolant.cpp
+                        lesCompressibleFlowSolver.cpp
+
         PUBLIC
         finiteVolumeSolver.hpp
         compressibleFlowFields.hpp
@@ -13,6 +15,8 @@ target_sources(ablateLibrary
         reactingCompressibleFlowSolver.hpp
         faceInterpolant.hpp
         cellInterpolant.hpp
+                lesCompressibleFlowSolver.hpp
+
         )
 
 add_subdirectory(boundaryConditions)
