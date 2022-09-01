@@ -5,6 +5,7 @@
 
 ablate::finiteVolume::processes::LES::LES( std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {
     //diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
+    
 }
 
 void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
@@ -28,7 +29,7 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
             }
         }
         if ( diffusionData.tke_ev < 0) {
-            throw std::invalid_argument("The LES solver cannot find the " " tke");
+            throw std::invalid_argument("The LES solver cannot find the " +tke+" tke");
         }
 
 
