@@ -3,7 +3,7 @@
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::finiteVolume::processes::LES::LES( std::shared_ptr<eos::EOS> eosIn) : eos(std::move(eosIn)) {
+ablate::finiteVolume::processes::LES::LES( std::string tke, std::shared_ptr<eos::EOS> eosIn) : tke(tke), eos(std::move(eosIn)) {
     //diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
     
 }
