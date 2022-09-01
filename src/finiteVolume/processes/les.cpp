@@ -49,10 +49,7 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
                                      {CompressibleFlowFields::VELOCITY_FIELD, CompressibleFlowFields::EV_FIELD});
         }
 
-        else {
-
-            throw std::invalid_argument("The ablate::finiteVolume::processes::LES process expects the (" + CompressibleFlowFields::EV_FIELD + ")  tke to be in the flow.");
-        }
+    
     }
 }
 
