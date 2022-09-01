@@ -16,7 +16,7 @@ class LES : public FlowProcess {
 
     const std::shared_ptr<eos::EOS> eos;
 
-
+PetscInt string;
     // constant values
     inline const static PetscReal c_k = 0.094;
     inline const static PetscReal c_e = 1.048;
