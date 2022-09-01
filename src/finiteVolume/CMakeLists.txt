@@ -6,7 +6,7 @@ target_sources(ablateLibrary
         reactingCompressibleFlowSolver.cpp
         faceInterpolant.cpp
         cellInterpolant.cpp
-        lesCompressibleFlowSolver.hpp
+        lesCompressibleFlowSolver.cpp
         PUBLIC
         finiteVolumeSolver.hpp
         compressibleFlowFields.hpp
