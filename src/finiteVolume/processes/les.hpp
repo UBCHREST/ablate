@@ -45,7 +45,7 @@ PetscInt string;
 
 
    public:
-    explicit LES(  std::shared_ptr<eos::EOS> eos);
+    explicit LES(  std::string tke, std::shared_ptr<eos::EOS> eos);
 
     /**
      * public function to link this process with the flow
