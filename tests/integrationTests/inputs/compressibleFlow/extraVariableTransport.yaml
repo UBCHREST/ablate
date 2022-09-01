@@ -36,7 +36,7 @@ timestepper:
     fields:
       # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
       # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
-      - !ablate::finiteVolume::LesCompressibleFlowFields
+      - !ablate::finiteVolume::CompressibleFlowFields
         eos: !ablate::eos::PerfectGas &eos
           parameters:
             gamma: 1.4
