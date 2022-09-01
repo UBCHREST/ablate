@@ -22,13 +22,13 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
         const auto& densityEv = flow.GetSubDomain().GetField("densityEv");
         const auto& extraVariableList = densityEv.components;
 
-        diffusionData.tke_ev = -1;
+        string = -1;
         for (std::size_t ev = 0; ev < extraVariableList.size(); ev++) {
             if (extraVariableList[ev] == tke) {
-                diffusionData.tke_ev = ev;
+               string = ev;
             }
         }
-        if ( diffusionData.tke_ev < 0) {
+        if ( string < 0) {
             throw std::invalid_argument("The LES solver cannot find the " +tke+" tke");
         }
 
