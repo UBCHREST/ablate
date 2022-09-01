@@ -90,13 +90,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
    # tke: tke
      eos: *eos
 
-    - !ablate::finiteVolume::processes::ArbitrarySource
-
-      densityEV:
-        !ablate::mathFunctions::geom::Sphere
-        radius: .1
-        center: [0.75, 0.75]
-        insideValues: "0.0, 100" # inside the sphere the ev1 gets no extra source while ev2 gets 100
+    
 
   # using constant boundary condition values on all sides with the specified values for euler and densityFlow based upon the previous boundary values
   boundaryConditions:
