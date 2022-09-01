@@ -22,7 +22,7 @@ class LES : public FlowProcess {
     inline const static PetscReal c_e = 1.048;
     inline const static PetscReal c_p = 1.040;
 
-    /PetscInt tke_ev;
+    //PetscInt tke_ev;
 
     /* store turbulent diffusion  data */
     struct DiffusionData {
