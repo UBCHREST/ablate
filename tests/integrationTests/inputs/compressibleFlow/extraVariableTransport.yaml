@@ -66,7 +66,7 @@ timestepper:
           insideValues:  1.5
 
 # this problem uses a single solver (!ablate::finiteVolume::LesCompressibleFlowSolver)
-solver: !ablate::finiteVolume::CompressibleFlowSolver
+solver: !ablate::finiteVolume::lesCompressibleFlowSolver
   id: evExample
   parameters:
     cfl: .5
