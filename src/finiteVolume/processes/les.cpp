@@ -8,8 +8,8 @@ ablate::finiteVolume::processes::LES::LES( std::shared_ptr<eos::EOS> eosIn) : eo
 }
 
 void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
-    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::DENSITY_EV_FIELD)) {
-        auto conservedForm = flow.GetSubDomain().GetField(CompressibleFlowFields::DENSITY_EV_FIELD);
+    if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::EV_FIELD)) {
+        auto conservedForm = flow.GetSubDomain().GetField(CompressibleFlowFields::EV_FIELD);
         diffusionData.numberEV = conservedForm.numberComponents;
 
         const auto& densityEv = flow.GetSubDomain().GetField("densityEv");
@@ -259,4 +259,4 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesViscosity(PetscInt dim, 
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::LES, "Creating LES sources for Navier-Stokes Eqs.",
- ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
+         ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
