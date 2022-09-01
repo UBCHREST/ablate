@@ -264,4 +264,4 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesViscosity(PetscInt dim, 
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::LES, "Creating LES sources for Navier-Stokes Eqs.",
-         ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
+         ARG(std::string, "tke", "the name of the conserved (density*ev) of the variable"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
