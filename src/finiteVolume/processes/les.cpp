@@ -15,13 +15,13 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
         const auto& densityEv = flow.GetSubDomain().GetField("densityEv");
         const auto& extraVariableList = densityEv.components;
 
-        tke_ev = -1;
+        diffusionData.tke_ev = -1;
         for (std::size_t ev = 0; ev < extraVariableList.size(); ev++) {
             if (extraVariableList[ev] == tke) {
                 diffusionData.tke_ev = ev;
             }
         }
-        if (tke_ev < 0) {
+        if ( diffusionData.tke_ev < 0) {
             throw std::invalid_argument("The IgnitionDelay monitor cannot find the " + tke + " tke");
         }
 
@@ -255,9 +255,9 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesViscosity(PetscInt dim, 
     // compute LES viscosity
     mut = c_k * sqrt(areaMag * k / density);
     PetscFunctionReturn(0);
-    }
+}
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::LES, "Creating LES sources for Navier-Stokes Eqs.",
-
-         ARG(std::string, "tke", "the name of the non-conserved (tke) of the variable"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
+         ARG(std::string, "tke", "the name of the turbulent Kinetic energy"),
+ ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
