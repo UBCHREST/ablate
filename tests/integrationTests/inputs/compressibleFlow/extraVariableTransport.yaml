@@ -88,7 +88,7 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     # the ArbitrarySource process was added to define a region of additional ev source
    - !ablate::finiteVolume::processes::LES
     tke: tke
-     eos: *eos
+    # eos: *eos
 
     - !ablate::finiteVolume::processes::ArbitrarySource
 
