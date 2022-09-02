@@ -685,6 +685,58 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
     }
 }
 
+std::map<std::string, double> ablate::eos::TChem::GetElementInformation() const {
+    auto eNamesHost = kineticsModel.eNames_.view_host();
+    auto eMassHost = kineticsModel.eMass_.view_host();
+
+    // Create the map
+    std::map<std::string, double> elementInfo;
+
+    for (ordinal_type i = 0; i < kineticsModel.nElem_; i++) {
+        std::string elementName(&eNamesHost(i, 0));
+        elementInfo[elementName] = eMassHost(i);
+    }
+
+    return elementInfo;
+}
+
+std::map<std::string, std::map<std::string, int>> ablate::eos::TChem::GetSpeciesElementalInformation() const {
+    // build the element names
+    auto eNamesHost = kineticsModel.eNames_.view_host();
+    std::vector<std::string> elementNames;
+    for (ordinal_type i = 0; i < kineticsModel.nElem_; ++i) {
+        elementNames.push_back(std::string(&eNamesHost(i, 0)));
+    }
+
+    std::map<std::string, std::map<std::string, int>> speciesElementInfo;
+
+    // get the element info
+    auto elemCountHost = kineticsModel.elemCount_.view_host();
+
+    // march over each species
+    for (std::size_t sp = 0; sp < species.size(); ++sp) {
+        auto &speciesMap = speciesElementInfo[species[sp]];
+
+        for (ordinal_type e = 0; e < kineticsModel.nElem_; ++e) {
+            speciesMap[elementNames[e]] = elemCountHost(sp, e);
+        }
+    }
+
+    return speciesElementInfo;
+}
+
+std::map<std::string, double> ablate::eos::TChem::GetSpeciesMolecularMass() const {
+    // march over each species
+    auto sMass = kineticsModel.sMass_.view_host();
+
+    std::map<std::string, double> mw;
+    for (std::size_t sp = 0; sp < species.size(); ++sp) {
+        mw[species[sp]] = sMass((ordinal_type)sp);
+    }
+
+    return mw;
+}
+
 #include "registrar.hpp"
 REGISTER(ablate::eos::EOS, ablate::eos::TChem, "[TChemV2](https://github.com/sandialabs/TChem) ideal gas eos", ARG(std::filesystem::path, "mechFile", "the mech file (CHEMKIN Format or Cantera Yaml)"),
          OPT(std::filesystem::path, "thermoFile", "the thermo file (CHEMKIN Format if mech file is CHEMKIN)"));
