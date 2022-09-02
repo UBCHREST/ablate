@@ -10,7 +10,7 @@ using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
-                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool disablePressure)
+                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool disablePressure, std::shared_ptr<ablate::radiation::Radiation> radiationIn)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -19,7 +19,8 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       massFractionsFunction(massFractions ? massFractions->GetFieldFunction()->GetPetscFunction() : nullptr),
       massFractionsContext(massFractions ? massFractions->GetFieldFunction()->GetContext() : nullptr),
       disablePressure(disablePressure),
-      pressureGradientScaling(std::move(pressureGradientScaling)) {}
+      pressureGradientScaling(std::move(pressureGradientScaling),
+      radiation(std::move(radiationIn))) {}
 
 void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
@@ -84,26 +85,12 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
     //    }
 
     //!< Create a radiation solver and radiation properties model for the sublimation solver to use
-    radiationModel = ablate::eos::radiationProperties::Zimmer(eos);
-    radiation = ablate::radiation::Radiation("radiation", ablate::domain::Region::ENTIREDOMAIN, bSolver.GetFieldBoundary(), 5, radiationModel, nullptr);
+    //    radiationModel = ablate::eos::radiationProperties::Zimmer(eos);
+    //    radiation = ablate::radiation::Radiation("radiation", ablate::domain::Region::ENTIREDOMAIN, bSolver.GetFieldBoundary(), 5, radiationModel, nullptr);
 
     //!< Initialize the radiation solver
     radiation.Setup();
     radiation.Initialize(faceRange);
-}
-
-PetscErrorCode ablate::boundarySolver::physics::Sublimation::RadiationPreStep(TS ts) {
-    PetscFunctionBegin;
-
-    /** Only update the radiation solution if the sufficient interval has passed */
-    //    PetscInt step;
-    //    PetscReal time;
-    //    TSGetStepNumber(ts, &step) >> checkError;
-    //    TSGetTime(ts, &time) >> checkError;
-    //    if (interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
-    radiation.origin = radiation.Solve(subDomain->GetSolutionVector());
-    //    }
-    PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
@@ -133,6 +120,9 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     if (sublimation->effectiveConductivity.function) {
         PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
     }
+
+    // Perform the radiation solve at every time step because there is no interval on the sublimation solver at the moment
+    sublimation->radiation.origin = sublimation->radiation.Solve(subDomain->GetSolutionVector());
 
     // compute the heat flux. Add the radiation heat flux for this face intensity
     PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity + sublimation->radiation.GetIntensity(fg->faceId);
@@ -369,4 +359,5 @@ REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physic
          OPT(ablate::mathFunctions::FieldFunction, "massFractions", "the species to deposit the off gas mass to (required if solving species)"),
          OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"),
          OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
-         OPT(bool, "disablePressure", "disables the pressure contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"));
+         OPT(bool, "disablePressure", "disables the pressure contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"),
+         OPT(ablate::radiation::Radiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"));
