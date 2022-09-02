@@ -19,8 +19,8 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       massFractionsFunction(massFractions ? massFractions->GetFieldFunction()->GetPetscFunction() : nullptr),
       massFractionsContext(massFractions ? massFractions->GetFieldFunction()->GetContext() : nullptr),
       disablePressure(disablePressure),
-      pressureGradientScaling(std::move(pressureGradientScaling),
-      radiation(std::move(radiationIn))) {}
+      pressureGradientScaling(std::move(pressureGradientScaling)),
+      radiation(std::move(radiationIn)) {}
 
 void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
