@@ -86,9 +86,16 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
 
   additionalProcesses:
     # the ArbitrarySource process was added to define a region of additional ev source
-   - !ablate::finiteVolume::processes::LES
-  ttke: tke
-     eos: *eos
+    - !ablate::finiteVolume::processes::LES
+      ttke: tke
+      eos: *eos
+    # the ArbitrarySource process was added to define a region of additional ev source
+    - !ablate::finiteVolume::processes::ArbitrarySource
+      densityEV:
+        !ablate::mathFunctions::geom::Sphere
+        radius: .1
+        center: [0.75, 0.75]
+        insideValues: "0.0, 100" # inside the sphere the ev1 gets no extra source while ev2 gets 100
 
     
 
