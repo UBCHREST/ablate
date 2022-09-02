@@ -34,9 +34,6 @@ PetscInt string;
 
         PetscInt tke_ev;
 
-
-
-
     };
     DiffusionData diffusionData;
     PetscInt numberSpecies;
