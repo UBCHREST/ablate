@@ -33,6 +33,8 @@ class Sublimation : public BoundaryProcess {
     // the pgs is needed for the pressure calculation
     const std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling;
 
+    std::shared_ptr<ablate::radiation::Radiation> radiation;
+
     // store the effectiveConductivity function
     eos::ThermodynamicTemperatureFunction effectiveConductivity;
 
@@ -48,8 +50,6 @@ class Sublimation : public BoundaryProcess {
     // compute the pressure needed for the momentum equation
     eos::ThermodynamicTemperatureFunction computePressure;
 
-    ablate::eos::radiationProperties::Zimmer radiationModel;
-    ablate::radiation::Radiation radiation;
 
     /**
      * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
@@ -59,7 +59,8 @@ class Sublimation : public BoundaryProcess {
    public:
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
-                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool disablePressure = false);
+                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool disablePressure = false,
+                         std::shared_ptr<ablate::radiation::Radiation> radiationIn = {});
 
     void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
 

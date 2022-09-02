@@ -231,10 +231,10 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      */
     inline const std::vector<BoundarySourceFunctionDescription>& GetOutputFunctions() { return boundaryOutputFunctions; }
 
-    /**
-     * Get access to the field boundary for the boundary solver
-     */
-     inline const std::shared_ptr<domain::Region> GetFieldBoundary() {return fieldBoundary;}
+//    /**
+//     * Get access to the field boundary for the boundary solver
+//     */
+//     inline const std::shared_ptr<domain::Region> GetFieldBoundary() {return fieldBoundary;}
 };
 
 /**
