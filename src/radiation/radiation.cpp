@@ -24,11 +24,9 @@ ablate::radiation::Radiation::~Radiation() {
 void ablate::radiation::Radiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
 
 /** allows initialization after the subdomain and dm is established */
-void ablate::radiation::Radiation::Setup() {
+void ablate::radiation::Radiation::Setup(const solver::Range& cellRange) {
     dim = subDomain->GetDimensions();  //!< Number of dimensions already defined in the setup
-}
 
-void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
     /** Begins radiation properties model
      * Runs the ray initialization, finding cell indices
      * Initialize the log if provided
@@ -50,17 +48,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
     if (log) StartEvent("Radiation Initialization");
     if (log) PetscPrintf(subDomain->GetComm(), "Starting Initialize\n");
 
-    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
-    Vec cellGeomVec = nullptr;
-    DM faceDM;
-    const PetscScalar* faceGeomArray;
-    PetscFVFaceGeom* faceGeom;
-
-    DMPlexGetMinRadius(subDomain->GetDM(), &minCellRadius) >> checkError;                    //!< The minimum cell radius is used to scale the face stepping procedures
-    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
-    VecGetDM(faceGeomVec, &faceDM) >> checkError;
-    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
-
     /** do a simple sanity check for labels */
     PetscMPIInt rank;
     MPI_Comm_rank(subDomain->GetComm(), &rank);      //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
@@ -72,7 +59,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
 
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
     PetscInt npoints = (cellRange.end - cellRange.start) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
-    PetscInt nsolvepoints = 0;                                                   //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
 
     /** Create the DMSwarm */
     DMCreate(subDomain->GetComm(), &radsearch) >> checkError;
@@ -105,11 +91,9 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
     DMSwarmSetLocalSizes(radsolve, 0, 0) >> checkError;         //!< Set the number of initial particles to the number of rays in the subdomain. Set the buffer size to zero.
 
     /** Declare some information associated with the field declarations */
-    PetscReal* coord;                    //!< Pointer to the coordinate field information
-    struct Virtualcoord* virtualcoord;   //!< Pointer to the primary (virtual) coordinate field information
-    struct Identifier* identifier;       //!< Pointer to the ray identifier information
-    struct Carrier* carrier;             //!< Pointer to the ray carrier information
-    struct Identifier* solveidentifier;  //!< Pointer to the ray identifier information
+    PetscReal* coord;                   //!< Pointer to the coordinate field information
+    struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
+    struct Identifier* identifier;      //!< Pointer to the ray identifier information
 
     /** Get the fields associated with the particle swarm so that they can be modified */
     DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
@@ -141,7 +125,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
                 virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
                 virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
                 virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
-                //                virtualcoord[ipart].current = iCell;  //!< Set this to a null value so that it can't get confused about where it starts.
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord);
@@ -167,8 +150,66 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
     DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
     if (log) {
-        PetscPrintf(subDomain->GetComm(), "Particles Initialized\n");
+        PetscPrintf(subDomain->GetComm(), "Particles Setup\n");
     }
+}
+
+void ablate::radiation::Radiation::InitializationConvertSurface() {
+    /** Declare some information associated with the field declarations */
+    PetscReal* coord;                   //!< Pointer to the coordinate field information
+    struct Virtualcoord* virtualcoord;  //!< Pointer to the primary (virtual) coordinate field information
+    struct Identifier* identifier;      //!< Pointer to the ray identifier information
+
+    /** Get the fields associated with the particle swarm so that they can be modified */
+    DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+    DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+    DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+
+    PetscInt npoints = 0;
+    DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;  //!< Recalculate the number of particles that are in the domain
+    PetscInt rank;
+    MPI_Comm_rank(subDomain->GetComm(), &rank);
+
+    /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+        // TODO: If the particles that were just created are sitting in front of the boundary face, delete them (if ldotn is negative, delete the particles)
+        if (1 == 1) {
+            DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+            DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+            DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+
+            DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
+
+            DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+            DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+            DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+            ipart--;  //!< Check the point replacing the one that was deleted
+        }
+    }
+
+    /** Restore the fields associated with the particles */
+    DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+    DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+    DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+}
+
+void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
+    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    Vec cellGeomVec = nullptr;
+    DM faceDM;
+    const PetscScalar* faceGeomArray;
+    PetscFVFaceGeom* faceGeom;
+
+    DMPlexComputeGeometryFVM(subDomain->GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
+    VecGetDM(faceGeomVec, &faceDM) >> checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+
+    /** Declare some information associated with the field declarations */
+    PetscReal* coord;                    //!< Pointer to the coordinate field information
+    struct Virtualcoord* virtualcoord;   //!< Pointer to the primary (virtual) coordinate field information
+    struct Identifier* identifier;       //!< Pointer to the ray identifier information
+    struct Carrier* carrier;             //!< Pointer to the ray carrier information
+    struct Identifier* solveidentifier;  //!< Pointer to the ray identifier information
 
     /** ***********************************************************************************************************************************************
      * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
@@ -176,6 +217,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
      * */
 
     PetscInt nglobalpoints = 0;
+    PetscInt npoints = 0;
+    PetscInt nsolvepoints = 0;                               //!< Counts the solve points in the current domain. This will be adjusted over the course of the loop.
     DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetSize(radsearch, &nglobalpoints) >> checkError;
     PetscInt stepcount = 0;       //!< Count the number of steps that the particles have taken
@@ -619,6 +662,29 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
         VecDestroy(&faceGeomVec) >> checkError;
     }
     return origin;
+}
+
+void ablate::radiation::Radiation::SolveConvertSurface() {
+    PetscInt rank = 0;
+    MPI_Comm_rank(subDomain->GetComm(), &rank);
+
+    // TODO: Multiply the ray intensity by (face normal) dot (ray direction)
+    for (auto& [iCell, o] : origin) {
+        for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
+            for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
+                DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom) >> checkError;
+
+                /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
+                 * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
+                Identifier loopid = {.origin = rank, .iCell = iCell, .ntheta = ntheta, .nphi = nphi, .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
+
+                /** Update the direction vector of the search particle */
+                PetscReal theta = ((double)ntheta / (double)nTheta) * ablate::utilities::Constants::pi;
+                PetscReal phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;
+                PetscReal ldotn = ((sin(theta) * cos(phi)) * faceGeom->normal[0]) + ((sin(theta) * sin(phi)) * faceGeom->normal[1]) + (cos(theta) * faceGeom->normal[2]);
+            }
+        }
+    }
 }
 
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */

@@ -48,16 +48,30 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     std::map<PetscInt, Origin> origin;
 
-    /** Returns the black body intensity for a given temperature and emissivity*/
+    /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
+    /**
+     * In the case that the radiation solver is being used for surface flux calculations,
+     * the particles that are not travelling outward from the face must be deleted.
+     * Only a hemisphere of rays is required.
+     * */
+    void InitializationConvertSurface();
+
+    /**
+     * The solve results must be adjusted so that the effect of incidence angle on surface radiation
+     * is accounted for. The ray intensities of each ray must be adjusted and summed.
+     * */
+     void SolveConvertSurface();
+
     /** SubDomain Register and Setup **/
-    void Setup();
+    void Setup(const solver::Range& cellRange);
 
     /**
      * @param cellRange The range of cells for which rays are initialized
      */
     void Initialize(const solver::Range &cellRange);
+
     /** Get the subdomain */
     void Register(std::shared_ptr<ablate::domain::SubDomain>);
     inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
