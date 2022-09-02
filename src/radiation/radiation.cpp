@@ -170,9 +170,13 @@ void ablate::radiation::Radiation::InitializationConvertSurface() {
     PetscInt rank;
     MPI_Comm_rank(subDomain->GetComm(), &rank);
 
+    PetscInt numberNeighborCells;
+    const PetscInt* neighborCells;
+
     /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        // TODO: If the particles that were just created are sitting in front of the boundary face, delete them (if ldotn is negative, delete the particles)
+
+        //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
         if (1 == 1) {
             DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
             DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
@@ -668,7 +672,14 @@ void ablate::radiation::Radiation::SolveConvertSurface() {
     PetscInt rank = 0;
     MPI_Comm_rank(subDomain->GetComm(), &rank);
 
-    // TODO: Multiply the ray intensity by (face normal) dot (ray direction)
+    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    DM faceDM;
+    const PetscScalar* faceGeomArray;
+    PetscFVFaceGeom* faceGeom;
+    VecGetDM(faceGeomVec, &faceDM) >> checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+
+    // TODO: Multiply the ray intensity by the absolute value of (face normal) dot (ray direction)
     for (auto& [iCell, o] : origin) {
         for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
@@ -676,12 +687,15 @@ void ablate::radiation::Radiation::SolveConvertSurface() {
 
                 /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
                  * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
-                Identifier loopid = {.origin = rank, .iCell = iCell, .ntheta = ntheta, .nphi = nphi, .nsegment = 1};  //!< Instantiate an identifier associated with this loop location.
-
+                PetscReal faceNormNormalized = sqrt((faceGeom->normal[0] * faceGeom->normal[0]) + (faceGeom->normal[1] * faceGeom->normal[1]) + (faceGeom->normal[2] * faceGeom->normal[2]));
+                PetscReal faceNormx = faceGeom->normal[0] / faceNormNormalized;  //!< Get the normalized face normal (not area scaled)
+                PetscReal faceNormy = faceGeom->normal[1] / faceNormNormalized;
+                PetscReal faceNormz = faceGeom->normal[2] / faceNormNormalized;
                 /** Update the direction vector of the search particle */
                 PetscReal theta = ((double)ntheta / (double)nTheta) * ablate::utilities::Constants::pi;
                 PetscReal phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;
-                PetscReal ldotn = ((sin(theta) * cos(phi)) * faceGeom->normal[0]) + ((sin(theta) * sin(phi)) * faceGeom->normal[1]) + (cos(theta) * faceGeom->normal[2]);
+                PetscReal ldotn = ((sin(theta) * cos(phi)) * faceNormx) + ((sin(theta) * sin(phi)) * faceNormy) + (cos(theta) * faceNormz);
+                origin[iCell].intensity *= ldotn;
             }
         }
     }
