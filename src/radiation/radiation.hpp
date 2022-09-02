@@ -66,12 +66,12 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     std::shared_ptr<ablate::domain::SubDomain> subDomain;  //!< use the subDomain to setup the problem
 
+    /// Class Methods
+    const std::map<PetscInt, Origin>& Solve(Vec solVec);
+
    protected:
     DM radsolve{};   //!< DM associated with the radiation particles
     DM radsearch{};  //!< DM which the search particles occupy
-
-    /// Class Methods
-    const std::map<PetscInt, Origin>& Solve(Vec solVec);
 
     /// Structs to hold information
 
