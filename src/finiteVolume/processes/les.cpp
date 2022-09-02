@@ -18,10 +18,10 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
             throw std::invalid_argument("The ablate::finiteVolume::processes::EVTransport process expects the conserved (" + CompressibleFlowFields::DENSITY_EV_FIELD + ") and non-conserved (" + CompressibleFlowFields::EV_FIELD +
                                         ") extra variables to be in the flow.");
         }
-
+/*
         const auto& densityEv = flow.GetSubDomain().GetField("densityEv");
         const auto& extraVariableList = densityEv.components;
-/*
+
         string = -1;
         for (std::size_t ev = 0; ev < extraVariableList.size(); ev++) {
             if (extraVariableList[ev] == ttke) {
