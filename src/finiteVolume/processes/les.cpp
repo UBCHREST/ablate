@@ -4,7 +4,7 @@
 #include "utilities/petscError.hpp"
 
 ablate::finiteVolume::processes::LES::LES( std::string tke, std::shared_ptr<eos::EOS> eosIn) : tke(std::move(tke)), eos(std::move(eosIn)) {
-    //diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
+    diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
     
 }
 
@@ -43,6 +43,9 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
                                  {CompressibleFlowFields::TEMPERATURE_FIELD, CompressibleFlowFields::VELOCITY_FIELD, CompressibleFlowFields::EV_FIELD});
         // Register the Species LESdiffusion source term
         if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::DENSITY_YI_FIELD)) {
+           
+            diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
+            
             flow.RegisterRHSFunction(LesSpeciesFlux,
                                      &diffusionData,
                                      CompressibleFlowFields::DENSITY_YI_FIELD,
@@ -247,7 +250,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesViscosity(PetscInt dim, 
     const int euler = 0;
     const int EV_FIELD = 0;
 
-    auto flowParameters = (DiffusionData*)ctx;
+    DiffusionData* flowParameters = (DiffusionData*)ctx;
 
 
     const PetscReal areaMag = utilities::MathUtilities::MagVector(dim, fg->normal);
