@@ -21,7 +21,7 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
 
         const auto& densityEv = flow.GetSubDomain().GetField("densityEv");
         const auto& extraVariableList = densityEv.components;
-
+/*
         string = -1;
         for (std::size_t ev = 0; ev < extraVariableList.size(); ev++) {
             if (extraVariableList[ev] == ttke) {
@@ -31,7 +31,7 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
         if ( string < 0) {
             throw std::invalid_argument("The LES solver cannot find the " +ttke+" tke");
         }
-
+*/
 
         flow.RegisterRHSFunction(
             LesMomentumFlux, &diffusionData, CompressibleFlowFields::EULER_FIELD, {CompressibleFlowFields::EULER_FIELD}, {CompressibleFlowFields::VELOCITY_FIELD, CompressibleFlowFields::EV_FIELD});
@@ -264,4 +264,4 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesViscosity(PetscInt dim, 
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::LES, "Creating LES sources for Navier-Stokes Eqs.",
-         ARG(std::string, "ttke", "the name of the conserved (density*ev) of the variable"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
+         ARG(std::string, "tke", "the name of the conserved (density*ev) of the variable"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
