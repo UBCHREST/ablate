@@ -69,8 +69,6 @@ class Sublimation : public BoundaryProcess {
      */
     void Setup(PetscInt numberSpecies);
 
-    PetscErrorCode RadiationPreStep(TS ts);
-
     /**
      * Support function to compute and insert source terms for this boundary condition
      * @param dim
