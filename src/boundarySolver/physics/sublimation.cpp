@@ -1,6 +1,9 @@
 #include "sublimation.hpp"
 #include <utility>
+#include "eos/radiationProperties/zimmer.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "radiation/radiation.hpp"
+#include "solver/dynamicRange.hpp"
 #include "utilities/mathUtilities.hpp"
 
 using fp = ablate::finiteVolume::CompressibleFlowFields;
@@ -73,6 +76,34 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
             throw std::invalid_argument("The massFractions must be specified for ablate::boundarySolver::physics::Sublimation when DENSITY_YI_FIELD is active.");
         }
     }
+
+    //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
+    solver::Range faceRange;
+    //    for () {
+    //        faceRange.Add();
+    //    }
+
+    //!< Create a radiation solver and radiation properties model for the sublimation solver to use
+    radiationModel = ablate::eos::radiationProperties::Zimmer(eos);
+    radiation = ablate::radiation::Radiation("radiation", ablate::domain::Region::ENTIREDOMAIN, bSolver.GetFieldBoundary(), 5, radiationModel, nullptr);
+
+    //!< Initialize the radiation solver
+    radiation.Setup();
+    radiation.Initialize(faceRange);
+}
+
+PetscErrorCode ablate::boundarySolver::physics::Sublimation::RadiationPreStep(TS ts) {
+    PetscFunctionBegin;
+
+    /** Only update the radiation solution if the sufficient interval has passed */
+    //    PetscInt step;
+    //    PetscReal time;
+    //    TSGetStepNumber(ts, &step) >> checkError;
+    //    TSGetTime(ts, &time) >> checkError;
+    //    if (interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+    radiation.origin = radiation.Solve(subDomain->GetSolutionVector());
+    //    }
+    PetscFunctionReturn(0);
 }
 
 PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
@@ -103,8 +134,8 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
         PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
     }
 
-    // compute the heat flux
-    PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity;
+    // compute the heat flux. Add the radiation heat flux for this face intensity
+    PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity + sublimation->radiation.GetIntensity(fg->faceId);
     PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid);  // note that q = -dTdn as dTdN faces into the solid
     // If there is an additional heat flux compute and add value
     if (sublimation->additionalHeatFlux) {

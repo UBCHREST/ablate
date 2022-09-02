@@ -2,9 +2,11 @@
 #define ABLATELIBRARY_SUBLIMATION_HPP
 
 #include "boundarySolver/boundaryProcess.hpp"
+#include "eos/radiationProperties/zimmer.hpp"
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
+#include "radiation/radiation.hpp"
 namespace ablate::boundarySolver::physics {
 
 /**
@@ -46,6 +48,9 @@ class Sublimation : public BoundaryProcess {
     // compute the pressure needed for the momentum equation
     eos::ThermodynamicTemperatureFunction computePressure;
 
+    ablate::eos::radiationProperties::Zimmer radiationModel;
+    ablate::radiation::Radiation radiation;
+
     /**
      * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
      */
@@ -63,6 +68,8 @@ class Sublimation : public BoundaryProcess {
      * @param numberSpecies
      */
     void Setup(PetscInt numberSpecies);
+
+    PetscErrorCode RadiationPreStep(TS ts);
 
     /**
      * Support function to compute and insert source terms for this boundary condition
