@@ -3,7 +3,7 @@
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::finiteVolume::processes::LES::LES( std::string ttke, std::shared_ptr<eos::EOS> eosIn) : ttke(std::move(ttke)), eos(std::move(eosIn)) {
+ablate::finiteVolume::processes::LES::LES( std::string tke, std::shared_ptr<eos::EOS> eosIn) : tke(std::move(tke)), eos(std::move(eosIn)) {
     //diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
     
 }
@@ -22,14 +22,14 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
         // const auto& densityEv = flow.GetSubDomain().GetField("densityEv");
         const auto& extraVariableList = conservedForm.components;
 
-        string = -1;
+        diffusionData.tke_ev = -1;
         for (std::size_t ev = 0; ev < extraVariableList.size(); ev++) {
-            if (extraVariableList[ev] == ttke) {
-               string = ev;
+            if (extraVariableList[ev] == tke) {
+                diffusionData.tke_ev = ev;
             }
         }
-        if ( string < 0) {
-            throw std::invalid_argument("The LES solver cannot find the " +ttke+" tke");
+        if ( diffusionData.tke_ev < 0) {
+            throw std::invalid_argument("The LES solver cannot find the " +tke+" tke");
         }
 
 
