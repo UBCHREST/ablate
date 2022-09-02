@@ -79,18 +79,14 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
     }
 
     //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
-    solver::Range faceRange;
-    //    for () {
-    //        faceRange.Add();
-    //    }
-
-    //!< Create a radiation solver and radiation properties model for the sublimation solver to use
-    //    radiationModel = ablate::eos::radiationProperties::Zimmer(eos);
-    //    radiation = ablate::radiation::Radiation("radiation", ablate::domain::Region::ENTIREDOMAIN, bSolver.GetFieldBoundary(), 5, radiationModel, nullptr);
+    solver::DynamicRange faceRange;
+    for (PetscInt i = 0; i < static_cast<int>(bSolver.GetBoundaryGeometry().size()); i++) {
+        faceRange.Add(bSolver.GetBoundaryGeometry()[0].geometry.faceId); //!< Add each ID to the range that the radiation solver will use
+    }
 
     //!< Initialize the radiation solver
-    radiation.Setup();
-    radiation.Initialize(faceRange);
+    radiation->Setup();
+    radiation->Initialize(faceRange.GetRange()); //!< Pass the non-dynamic range into the radiation solver
 }
 
 PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
@@ -121,11 +117,11 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
         PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
     }
 
-    // Perform the radiation solve at every time step because there is no interval on the sublimation solver at the moment
-    sublimation->radiation.origin = sublimation->radiation.Solve(subDomain->GetSolutionVector());
+    // Perform the radiation solve at every time step because there is no interval on the sublimation solver at the moment. Use the solution vector from the radiation.
+    sublimation->radiation->origin = sublimation->radiation->Solve(sublimation->radiation->subDomain->GetSolutionVector());
 
     // compute the heat flux. Add the radiation heat flux for this face intensity
-    PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity + sublimation->radiation.GetIntensity(fg->faceId);
+    PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity + sublimation->radiation->GetIntensity(fg->faceId);
     PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid);  // note that q = -dTdn as dTdN faces into the solid
     // If there is an additional heat flux compute and add value
     if (sublimation->additionalHeatFlux) {

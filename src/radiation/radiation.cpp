@@ -28,7 +28,7 @@ void ablate::radiation::Radiation::Setup() {
     dim = subDomain->GetDimensions();  //!< Number of dimensions already defined in the setup
 }
 
-void ablate::radiation::Radiation::Initialize(const solver::Range &cellRange) {
+void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
     /** Begins radiation properties model
      * Runs the ray initialization, finding cell indices
      * Initialize the log if provided
@@ -496,7 +496,7 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
     /** ********************************************************************************************************************************
      * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
 
-    for (auto &[iCell, o] : origin) { //!< Iterate through the cells that are stored in the origin
+    for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
 
         origin[iCell].intensity = 0;  //!< Make sure to zero the intensity of every cell before beginning to calculate the intensity for this time step.
 
@@ -597,7 +597,7 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
         printf("x           y           z           G\n");  //!< Line labelling the log outputs for readability
     }
 
-    for (auto &[iCell, o] : origin) { //!< Iterate through the cells that are stored in the origin
+    for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalFieldRead(subDomain->GetAuxDM(), iCell, temperatureField.id, auxArray, &temperature);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
@@ -653,8 +653,7 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::solver::Solver, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
+REGISTER(ablate::radiation::Radiation, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "boundary of the radiation region"),
-         ARG(int, "rays", "number of rays used by the solver"),
-         OPT(ablate::parameters::Parameters, "options", "the options passed to PETSC for the flow"),
-         ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"), OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
+         ARG(int, "rays", "number of rays used by the solver"), ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
+         OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
