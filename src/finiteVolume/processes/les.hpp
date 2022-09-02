@@ -11,7 +11,7 @@ class LES : public FlowProcess {
    private:
     // store the conserved and non conserved form of the ev.
 
-    const std::string ttke;
+    const std::string tke;
     //const std::string ;
 
     const std::shared_ptr<eos::EOS> eos;
