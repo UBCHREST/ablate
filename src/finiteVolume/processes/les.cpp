@@ -3,7 +3,7 @@
 #include "utilities/mathUtilities.hpp"
 #include "utilities/petscError.hpp"
 
-ablate::finiteVolume::processes::LES::LES( std::string tke, std::shared_ptr<eos::EOS> eosIn) : tke(tke), eos(std::move(eosIn)) {
+ablate::finiteVolume::processes::LES::LES( std::string ttke, std::shared_ptr<eos::EOS> eosIn) : ttke(std::move(ttke)), eos(std::move(eosIn)) {
     //diffusionData.numberSpecies = (PetscInt)eos->GetSpecies().size();
     
 }
@@ -24,12 +24,12 @@ void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVol
 
         string = -1;
         for (std::size_t ev = 0; ev < extraVariableList.size(); ev++) {
-            if (extraVariableList[ev] == tke) {
+            if (extraVariableList[ev] == ttke) {
                string = ev;
             }
         }
         if ( string < 0) {
-            throw std::invalid_argument("The LES solver cannot find the " +tke+" tke");
+            throw std::invalid_argument("The LES solver cannot find the " +ttke+" tke");
         }
 
 
@@ -264,4 +264,4 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesViscosity(PetscInt dim, 
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::LES, "Creating LES sources for Navier-Stokes Eqs.",
-         ARG(std::string, "tke", "the name of the conserved (density*ev) of the variable"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
+         ARG(std::string, "ttke", "the name of the conserved (density*ev) of the variable"), ARG(ablate::eos::EOS, "eos", "the equation of state used to describe the flow"));
