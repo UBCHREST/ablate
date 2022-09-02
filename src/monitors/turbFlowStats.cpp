@@ -105,7 +105,7 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                         turbPt[monitor->CatOffset.densitySqr + p] += fieldPt[p] * fieldPt[p] * densLoc;
                         turbPt[monitor->CatOffset.sum + p] += fieldPt[p];
                         turbPt[monitor->CatOffset.sumSqr + p] += fieldPt[p] * fieldPt[p];
-                        turbPt[monitor->CatOffset.favreAvg + p] += turbPt[monitor->CatOffset.densityDtMult + p] / (turbPt[monitor->CatOffset.densityDtSum] + Constant::tiny);
+                        turbPt[monitor->CatOffset.favreAvg + p] = turbPt[monitor->CatOffset.densityDtMult + p] / (turbPt[monitor->CatOffset.densityDtSum] + Constant::tiny);
                         turbPt[monitor->CatOffset.rms + p] =
                             PetscSqrtReal(turbPt[monitor->CatOffset.sumSqr + p] / (step + Constant::tiny) - PetscPowReal(turbPt[monitor->CatOffset.sum + p] / (step + Constant::tiny), 2));
                         turbPt[monitor->CatOffset.mRms + p] = PetscSqrtReal(turbPt[monitor->CatOffset.densitySqr + p] / (turbPt[monitor->CatOffset.densitySum] + Constant::tiny) -
