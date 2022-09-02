@@ -11,7 +11,7 @@ class LES : public FlowProcess {
    private:
     // store the conserved and non conserved form of the ev.
 
-    const std::string tke;
+    const std::string ttke;
     //const std::string ;
 
     const std::shared_ptr<eos::EOS> eos;
@@ -45,7 +45,7 @@ PetscInt string;
 
 
    public:
-    explicit LES(  std::string tke, std::shared_ptr<eos::EOS> eos);
+    explicit LES(  std::string ttke, std::shared_ptr<eos::EOS> eos);
 
     /**
      * public function to link this process with the flow
