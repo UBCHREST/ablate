@@ -9,40 +9,31 @@ namespace ablate::finiteVolume::processes {
 
 class LES : public FlowProcess {
    private:
-    // store the conserved and non conserved form of the ev.
 
     const std::string tke;
-    //const std::string ;
-
     const std::shared_ptr<eos::EOS> eos;
 
-// PetscInt string;
+    // PetscInt string;
     // constant values
     inline const static PetscReal c_k = 0.094;
     inline const static PetscReal c_e = 1.048;
     inline const static PetscReal c_p = 1.040;
 
-    //PetscInt tke_ev;
 
     /* store turbulent diffusion  data */
     struct DiffusionData {
 
         eos::ThermodynamicFunction computeTemperatureFunction;
-
         PetscInt numberSpecies;
-        PetscInt numberEV;
-
         PetscInt tke_ev;
 
     };
     DiffusionData diffusionData;
-    PetscInt numberSpecies;
-    PetscInt numberEV;
 
 
 
    public:
-    explicit LES(  std::string ttke, std::shared_ptr<eos::EOS> eos);
+    explicit LES( std::string tke, std::shared_ptr<eos::EOS> eos);
 
     /**
      * public function to link this process with the flow
