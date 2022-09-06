@@ -85,7 +85,7 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
     }
 
     //!< Initialize the radiation solver
-    radiation->Setup();
+    radiation->Setup(faceRange.GetRange(), true);
     radiation->Initialize(faceRange.GetRange()); //!< Pass the non-dynamic range into the radiation solver
 }
 
