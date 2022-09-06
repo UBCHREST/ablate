@@ -24,7 +24,8 @@ ablate::radiation::Radiation::~Radiation() {
 void ablate::radiation::Radiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
 
 /** allows initialization after the subdomain and dm is established */
-void ablate::radiation::Radiation::Setup(const solver::Range& cellRange) {
+void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, bool surfaceIn) {
+    surface = surfaceIn;
     dim = subDomain->GetDimensions();  //!< Number of dimensions already defined in the setup
 
     /** Begins radiation properties model
@@ -152,6 +153,8 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange) {
     if (log) {
         PetscPrintf(subDomain->GetComm(), "Particles Setup\n");
     }
+
+    if (surface) InitializationConvertSurface(); //!< Convert to surface if this is a surface
 }
 
 void ablate::radiation::Radiation::InitializationConvertSurface() {
@@ -648,7 +651,30 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
                 }
 
                 theta = ((double)ntheta / (double)nTheta) * ablate::utilities::Constants::pi;  //!< This is a fine method of determining theta because it is in the original domain
-                origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi;  //!< Final ray calculation
+                PetscReal ldotn = 1; //!< If the perpendicular component is not being computed then including this will have no effect.
+
+                //!< If computing surface flux, get the perpendicular component here and multiply the result by it
+                if (surface) { //!< Add the option to the initialization call and make sure that it is stored as a class variable
+                    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+                    DM faceDM;
+                    const PetscScalar* faceGeomArray;
+                    PetscFVFaceGeom* faceGeom;
+                    VecGetDM(faceGeomVec, &faceDM) >> checkError;
+                    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+                    DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom) >> checkError;
+
+                    /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
+                     * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
+                    PetscReal faceNormNormalized = sqrt((faceGeom->normal[0] * faceGeom->normal[0]) + (faceGeom->normal[1] * faceGeom->normal[1]) + (faceGeom->normal[2] * faceGeom->normal[2]));
+                    PetscReal faceNormx = faceGeom->normal[0] / faceNormNormalized;  //!< Get the normalized face normal (not area scaled)
+                    PetscReal faceNormy = faceGeom->normal[1] / faceNormNormalized;
+                    PetscReal faceNormz = faceGeom->normal[2] / faceNormNormalized;
+                    /** Update the direction vector of the search particle */
+                    PetscReal phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;
+                    ldotn = ((sin(theta) * cos(phi)) * faceNormx) + ((sin(theta) * sin(phi)) * faceNormy) + (cos(theta) * faceNormz);
+                }
+
+                origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi * ldotn;  //!< Final ray calculation
             }
         }
     }
@@ -695,6 +721,7 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
         /** Gets the temperature from the cell index specified */
         DMPlexPointLocalFieldRead(subDomain->GetAuxDM(), iCell, temperatureField.id, auxArray, &temperature);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
+        if (surface) losses /= 2; //!< If this is a surface then losses will only leave the hemisphere
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
             printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], o.intensity);
@@ -713,39 +740,6 @@ const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiatio
         VecDestroy(&faceGeomVec) >> checkError;
     }
     return origin;
-}
-
-void ablate::radiation::Radiation::SolveConvertSurface() {
-    PetscInt rank = 0;
-    MPI_Comm_rank(subDomain->GetComm(), &rank);
-
-    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
-    DM faceDM;
-    const PetscScalar* faceGeomArray;
-    PetscFVFaceGeom* faceGeom;
-    VecGetDM(faceGeomVec, &faceDM) >> checkError;
-    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
-
-    // TODO: Multiply the ray intensity by the absolute value of (face normal) dot (ray direction)
-    for (auto& [iCell, o] : origin) {
-        for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
-            for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
-                DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom) >> checkError;
-
-                /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
-                 * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
-                PetscReal faceNormNormalized = sqrt((faceGeom->normal[0] * faceGeom->normal[0]) + (faceGeom->normal[1] * faceGeom->normal[1]) + (faceGeom->normal[2] * faceGeom->normal[2]));
-                PetscReal faceNormx = faceGeom->normal[0] / faceNormNormalized;  //!< Get the normalized face normal (not area scaled)
-                PetscReal faceNormy = faceGeom->normal[1] / faceNormNormalized;
-                PetscReal faceNormz = faceGeom->normal[2] / faceNormNormalized;
-                /** Update the direction vector of the search particle */
-                PetscReal theta = ((double)ntheta / (double)nTheta) * ablate::utilities::Constants::pi;
-                PetscReal phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;
-                PetscReal ldotn = ((sin(theta) * cos(phi)) * faceNormx) + ((sin(theta) * sin(phi)) * faceNormy) + (cos(theta) * faceNormz);
-                origin[iCell].intensity *= ldotn;
-            }
-        }
-    }
 }
 
 PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double temperature) { /** Gets the flame intensity based on temperature and emissivity (black body intensity) */

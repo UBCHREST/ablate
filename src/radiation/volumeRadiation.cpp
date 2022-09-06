@@ -11,8 +11,11 @@ ablate::radiation::VolumeRadiation::VolumeRadiation(const std::string& solverId1
 ablate::radiation::VolumeRadiation::~VolumeRadiation() {}
 
 void ablate::radiation::VolumeRadiation::Setup() {
+    solver::Range cellRange;
+    GetCellRange(cellRange);  //!< Gets the cell range that should be applied to the radiation solver
+
     ablate::solver::CellSolver::Setup();
-    ablate::radiation::Radiation::Setup();
+    ablate::radiation::Radiation::Setup(cellRange, false); //!< Insert the cell range of the solver here
     auto radiationPreStep = [this](auto&& PH1, auto&& PH2) { RadiationPreStep(std::forward<decltype(PH1)>(PH1)); };
     RegisterPreStep(radiationPreStep);
 }
