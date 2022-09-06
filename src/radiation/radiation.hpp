@@ -51,21 +51,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     /** Returns the black body intensity for a given temperature and emissivity */
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
-    /**
-     * In the case that the radiation solver is being used for surface flux calculations,
-     * the particles that are not travelling outward from the face must be deleted.
-     * Only a hemisphere of rays is required.
-     * */
-    void InitializationConvertSurface();
-
-    /**
-     * The solve results must be adjusted so that the effect of incidence angle on surface radiation
-     * is accounted for. The ray intensities of each ray must be adjusted and summed.
-     * */
-     void SolveConvertSurface();
-
     /** SubDomain Register and Setup **/
-    void Setup(const solver::Range& cellRange);
+    void Setup(const solver::Range& cellRange, bool surfaceIn);
 
     /**
      * @param cellRange The range of cells for which rays are initialized
@@ -127,6 +114,13 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      */
     PetscReal FaceIntersect(PetscInt ip, Virtualcoord* virtualcoord, PetscFVFaceGeom* face) const;  //!< Returns the distance away from a virtual coordinate at which its path intersects a line.
 
+    /**
+     * In the case that the radiation solver is being used for surface flux calculations,
+     * the particles that are not travelling outward from the face must be deleted.
+     * Only a hemisphere of rays is required.
+     * */
+    void InitializationConvertSurface();
+
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates
      * This function must be run on every updated particle before swarm migrate is used */
@@ -146,6 +140,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     eos::ThermodynamicTemperatureFunction absorptivityFunction;
 
     PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
+
+    bool surface = false; //!< Determines whether or not the radiation solver will be treated as a surface or volume solver
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
