@@ -172,22 +172,69 @@ void ablate::radiation::Radiation::InitializationConvertSurface() {
 
     PetscInt numberNeighborCells;
     const PetscInt* neighborCells;
+    DMLabel boundaryLabel;
+    PetscInt boundaryValue = fieldBoundary->GetValue();
+    DMGetLabel(subDomain->GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
 
     /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+        DMPlexGetSupportSize(subDomain->GetDM(), identifier[ipart].iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
+        DMPlexGetSupport(subDomain->GetDM(), identifier[ipart].iCell, &neighborCells) >> ablate::checkError;
+        PetscInt cellValue;   //!< The value of the boundary label for this cell
+        PetscInt index = -1;  //!< Index value to compare the Locate Points result against.
+        for (PetscInt n = 0; n < numberNeighborCells; n++) {
+            PetscInt cell = neighborCells[n];                                //!< Contains the cell indexes of the neighbor cells
+            DMLabelGetValue(boundaryLabel, cell, &cellValue) >> checkError;  //!< Store the cell index associated with the boundary cell for this face
+            if (cellValue == boundaryValue) {
+                index = cell;
+            }
+        }
+        if (index != -1) {  //!< If there was no boundary cell adjacent to this particle's initial face, then this check is not worth doing in the first place
+            //!< Locate the points so that the cell index of the particle can be compare with the boundary cell to see whether the particle should be deleted
+            Vec intersect;
+            VecCreate(PETSC_COMM_SELF, &intersect) >> checkError;  //!< Instantiates the vector
+            VecSetBlockSize(intersect, dim) >> checkError;
+            VecSetSizes(intersect, PETSC_DECIDE, npoints * dim) >> checkError;  //!< Set size
+            VecSetFromOptions(intersect) >> checkError;
+            PetscInt i[3] = {0, 1, 2};  //!< Establish the vector here so that it can be iterated.
+            /** Get the particle coordinates here and put them into the intersect */
+            PetscReal position[3] = {(coord[dim * ipart + 0]),   //!< x component conversion from spherical coordinates, adding the position of the current cell
+                                     (coord[dim * ipart + 1]),   //!< y component conversion from spherical coordinates, adding the position of the current cell
+                                     (coord[dim * ipart + 2])};  //!< z component conversion from spherical coordinates, adding the position of the current cell
 
-        //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
-        if (1 == 1) {
-            DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
-            DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-            DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+            /** This block creates the vector pointing to the cell whose index will be stored during the current loop */
+            VecSetValues(intersect, dim, i, position, INSERT_VALUES);  //!< Actually input the values of the vector (There are 'dim' values to input)
+            i[0] += dim;                                               //!< Iterate the index by the number of dimensions so that the DMLocatePoints function can be called collectively.
+            i[1] += dim;
+            i[2] += dim;
 
-            DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
+            /** Loop through points to try to get the cell that is sitting on that point*/
+            PetscSF cellSF = nullptr;  //!< PETSc object for setting up and managing the communication of certain entries of arrays and Vecs between MPI processes.
+            DMLocatePoints(subDomain->GetDM(), intersect, DM_POINTLOCATION_NONE, &cellSF) >> checkError;  //!< Call DMLocatePoints here, all of the processes have to call it at once.
 
-            DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
-            DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
-            DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
-            ipart--;  //!< Check the point replacing the one that was deleted
+            /** An array that maps each point to its containing cell can be obtained with the below
+             * We want to get a PetscInt index out of the DMLocatePoints function (cell[n].index)
+             * */
+            PetscInt nFound;
+            const PetscInt* point = nullptr;
+            const PetscSFNode* cell = nullptr;
+            PetscSFGetGraph(cellSF, nullptr, &nFound, &point, &cell) >> checkError;  //!< Using this to get the petsc int cell number from the struct (SF)
+
+            //!< If the particles that were just created are sitting in the boundary cell of the face that they belong to, delete them
+            if (index == cell[0].index) {  //!< If the particle location index and boundary cell index are the same, then they should be deleted
+                DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+                DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+                DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+
+                DMSwarmRemovePointAtIndex(radsolve, ipart);  //!< Delete the particle!
+
+                DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
+                DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
+                DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
+                ipart--;  //!< Check the point replacing the one that was deleted
+            }
+            VecDestroy(&intersect) >> checkError;   //!< Return the vector to PETSc
+            PetscSFDestroy(&cellSF) >> checkError;  //!< Return the stuff to PETSc
         }
     }
 
