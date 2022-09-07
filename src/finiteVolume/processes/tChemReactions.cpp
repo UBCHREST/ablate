@@ -5,7 +5,7 @@
 #include "utilities/petscError.hpp"
 #include "utilities/vectorUtilities.hpp"
 
-ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<eos::EOS> eosIn, std::shared_ptr<ablate::parameters::Parameters> options)
+ablate::finiteVolume::processes::TChemReactions::TChemReactions(const std::shared_ptr<eos::EOS>& eosIn, const std::shared_ptr<ablate::parameters::Parameters>& options)
     : eos(std::dynamic_pointer_cast<eos::TChem>(eosIn)), numberSpecies(eosIn->GetSpecies().size()) {
     // make sure that the eos is set
     if (!std::dynamic_pointer_cast<eos::TChem>(eosIn)) {
@@ -28,7 +28,7 @@ ablate::finiteVolume::processes::TChemReactions::TChemReactions(std::shared_ptr<
         maxAttempts = options->Get("maxAttempts", maxAttempts);
     }
 }
-ablate::finiteVolume::processes::TChemReactions::~TChemReactions() {}
+ablate::finiteVolume::processes::TChemReactions::~TChemReactions() = default;
 
 void ablate::finiteVolume::processes::TChemReactions::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     // Before each step, compute the source term over the entire dt
@@ -368,6 +368,10 @@ PetscErrorCode ablate::finiteVolume::processes::TChemReactions::AddChemistrySour
     PetscCall(VecRestoreArray(locFVec, &fArray));
 
     PetscFunctionReturn(0);
+}
+
+void ablate::finiteVolume::processes::TChemReactions::AddChemistrySourceToFlow(const FiniteVolumeSolver& solver, Vec locFVec) {
+    AddChemistrySourceToFlow(solver, solver.GetSubDomain().GetDM(), NAN, nullptr, locFVec, this) >> checkError;
 }
 
 #include "registrar.hpp"

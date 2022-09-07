@@ -70,13 +70,35 @@ ablate::chemistry::MixtureFractionCalculator::MixtureFractionCalculator(const st
     }
 }
 
-ablate::chemistry::MixtureFractionCalculator::MixtureFractionCalculator(const std::shared_ptr<ablate::eos::EOS>& eos, const std::shared_ptr<ablate::parameters::Parameters>& massFractionsFuel,
-                                                                        const std::shared_ptr<ablate::parameters::Parameters>& massFractionsOxidizer, const std::vector<std::string>& trackingElements)
-    : MixtureFractionCalculator(eos, massFractionsFuel->ToMap<double>(), massFractionsOxidizer->ToMap<double>(), trackingElements) {}
+ablate::chemistry::MixtureFractionCalculator::MixtureFractionCalculator(const std::shared_ptr<ablate::eos::EOS>& eos, const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractionsFuel,
+                                                                        const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractionsOxidizer,
+                                                                        const std::vector<std::string>& trackingElements)
+    : MixtureFractionCalculator(eos, ToMassFractionMap(eos, massFractionsFuel), ToMassFractionMap(eos, massFractionsOxidizer), trackingElements) {}
+
+std::map<std::string, double> ablate::chemistry::MixtureFractionCalculator::ToMassFractionMap(const std::shared_ptr<ablate::eos::EOS>& eos,
+                                                                                              const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractions) {
+    // set up the memory
+    const auto& species = eos->GetSpecies();
+    std::vector<double> yiValues(species.size(), 0);
+
+    // evaluate
+    massFractions->GetSolutionField().Eval(0, 0, 0, 0, yiValues);
+
+    // march over each possible species
+    std::map<std::string, double> yiMap;
+    for (std::size_t s = 0; s < species.size(); s++) {
+        if (yiValues[s] > 0) {
+            yiMap[species[s]] = yiValues[s];
+        }
+    }
+
+    return yiMap;
+}
 
 #include "registrar.hpp"
-REGISTER(ablate::chemistry::MixtureFractionCalculator, ablate::chemistry::MixtureFractionCalculator,
-         "Calculate mixture fraction given a list of species using elemental species based on Bilger's (1980) definition of mixture fraction",
-         ARG(ablate::eos::EOS, "eos", "The eos with the list of species"), ARG(ablate::parameters::Parameters, "massFractionsFuel", "The initial mass fractions of fuel"),
-         ARG(ablate::parameters::Parameters, "massFractionsOxidizer", "The initial mass fractions of oxidizer"),
-         OPT(std::vector<std::string>, "trackingElements", "the elements used to element list of the elements you want to track that are in the fuel (defaults to C/H)"));
+REGISTER_DEFAULT(ablate::chemistry::MixtureFractionCalculator, ablate::chemistry::MixtureFractionCalculator,
+                 "Calculate mixture fraction given a list of species using elemental species based on Bilger's (1980) definition of mixture fraction",
+                 ARG(ablate::eos::EOS, "eos", "The eos with the list of species"),
+                 ARG(ablate::mathFunctions::FieldFunction, "massFractionsFuel", "The initial mass fractions of fuel.  Formulas are evaluated at [0, 0, 0] & t =0"),
+                 ARG(ablate::mathFunctions::FieldFunction, "massFractionsOxidizer", "The initial mass fractions of oxidizer.  Formulas are evaluated at [0, 0, 0] & t =0"),
+                 OPT(std::vector<std::string>, "trackingElements", "the elements used to element list of the elements you want to track that are in the fuel (defaults to C/H)"));

@@ -18,7 +18,7 @@ class ConstantValue : public MathFunction {
 
     explicit ConstantValue(std::vector<double> values);
 
-    double Eval(const double& x, const double& y, const double& z, const double& t) const override;
+    [[nodiscard]] double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 
     double Eval(const double* xyz, const int& ndims, const double& t) const override;
 

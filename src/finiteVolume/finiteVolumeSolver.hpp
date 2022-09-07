@@ -11,6 +11,7 @@
 #include "solver/cellSolver.hpp"
 #include "solver/solver.hpp"
 #include "solver/timeStepper.hpp"
+#include "utilities/vectorUtilities.hpp"
 
 namespace ablate::finiteVolume {
 
@@ -174,6 +175,16 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @param points
      */
     void GetCellRangeWithoutGhost(solver::Range& faceRange) const;
+
+    /**
+     * Returns first instance of process of type specifed
+     * @tparam T
+     * @return
+     */
+    template <class T>
+    std::shared_ptr<T> FindProcess(){
+        return utilities::VectorUtilities::Find<T>(processes);
+    }
 };
 }  // namespace ablate::finiteVolume
 

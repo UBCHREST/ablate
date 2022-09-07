@@ -842,9 +842,19 @@ bool ablate::domain::SubDomain::CheckSolution() {
     return (bool)globalFailedPoints;
 }
 
-void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM) {
-    if (GetLabel()) {
-        DMPlexFilter(GetDM(), GetLabel(), 1, inDM);
+void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM, std::shared_ptr<domain::Region> region) {
+    DMLabel subDmLabel = nullptr;
+    PetscInt subDmValue;
+    if(region) {
+        // Get the region info from the provided region
+        domain::Region::GetLabel(region, GetDM(), subDmLabel, subDmValue);
+    }else{
+        // Grab it from the domain itself
+        subDmLabel = GetLabel();
+        subDmValue = labelValue;
+    }
+    if (subDmLabel) {
+        DMPlexFilter(GetDM(), subDmLabel, subDmValue, inDM);
     } else {
         DMClone(GetDM(), inDM);
     }

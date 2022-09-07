@@ -4,7 +4,9 @@
 #include "eos/tChem.hpp"
 #include "gtest/gtest.h"
 #include "localPath.hpp"
+#include "mathFunctions/constantValue.hpp"
 #include "parameters/mapParameters.hpp"
+#include "utilities/vectorUtilities.hpp"
 
 struct MixtureFractionCalculatorParameters {
     // inputs
@@ -23,6 +25,36 @@ TEST_P(MixtureFractionCalculatorFixture, ShouldComputeMixtureFraction) {
     // arrange
     auto eos = GetParam().createEOS();
     ablate::chemistry::MixtureFractionCalculator mixtureFractionCalculator(eos, GetParam().massFractionsFuel, GetParam().massFractionsOxidizer, GetParam().trackingElements);
+
+    // test each case
+    for (const auto& [inputMassFractions, expectedValue] : GetParam().parameters) {
+        // build a mixture fraction vector
+        std::vector<double> mixtureFraction(eos->GetSpecies().size());
+        for (const auto& [species, yi] : inputMassFractions) {
+            auto location = std::find(eos->GetSpecies().begin(), eos->GetSpecies().end(), species);
+            if (location != eos->GetSpecies().end()) {
+                auto i = std::distance(eos->GetSpecies().begin(), location);
+                mixtureFraction[i] = yi;
+            }
+        }
+        // act
+        auto zMix = mixtureFractionCalculator.Calculate(mixtureFraction.data());
+
+        // assert
+        ASSERT_NEAR(expectedValue, zMix, 1E-6);
+    }
+}
+
+TEST_P(MixtureFractionCalculatorFixture, ShouldComputeMixtureFractionUsingFieldFunction) {
+    // arrange
+    auto eos = GetParam().createEOS();
+    ablate::chemistry::MixtureFractionCalculator mixtureFractionCalculator(
+        eos,
+        std::make_shared<ablate::mathFunctions::FieldFunction>(
+            "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsFuel))),
+        std::make_shared<ablate::mathFunctions::FieldFunction>(
+            "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsOxidizer))),
+        GetParam().trackingElements);
 
     // test each case
     for (const auto& [inputMassFractions, expectedValue] : GetParam().parameters) {
@@ -82,9 +114,23 @@ TEST_P(MixtureFractionCalculatorExceptionFixture, ShouldThrowExceptionWithInvali
                  , std::invalid_argument);
 }
 
+TEST_P(MixtureFractionCalculatorExceptionFixture, ShouldThrowExceptionWithInvalidInputsUsingFieldFunction) {
+    // arrange
+    auto eos = GetParam().createEOS();
+    ASSERT_THROW(ablate::chemistry::MixtureFractionCalculator mixtureFractionCalculator(
+                     eos,
+                     std::make_shared<ablate::mathFunctions::FieldFunction>(
+                         "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsFuel))),
+                     std::make_shared<ablate::mathFunctions::FieldFunction>(
+                         "yi", std::make_shared<ablate::mathFunctions::ConstantValue>(ablate::utilities::VectorUtilities::Fill(eos->GetSpecies(), GetParam().massFractionsOxidizer))),
+                     GetParam().trackingElements);
+                 , std::invalid_argument);
+}
+
 INSTANTIATE_TEST_SUITE_P(MixtureFractionCalculatorTests, MixtureFractionCalculatorExceptionFixture,
                          testing::Values((MixtureFractionCalculatorExceptionParameters){.name = "invalid EOS",
-                                                                                        .createEOS = []() { return std::make_shared<ablate::eos::PerfectGas>(ablate::parameters::MapParameters::Create({})); },
+                                                                                        .createEOS =
+                                                                                            []() { return std::make_shared<ablate::eos::PerfectGas>(ablate::parameters::MapParameters::Create({})); },
                                                                                         .massFractionsFuel = {{"CH4", 1.0}},
                                                                                         .massFractionsOxidizer = {{"O2", 1.0}}},
                                          (MixtureFractionCalculatorExceptionParameters){.name = "invalid massFractionsFuel",

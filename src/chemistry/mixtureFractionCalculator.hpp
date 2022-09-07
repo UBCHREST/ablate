@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 #include "eos/tChem.hpp"
-#include "parameters/parameters.hpp"
+#include "mathFunctions/fieldFunction.hpp"
 
 namespace ablate::chemistry {
 
@@ -29,6 +29,14 @@ class MixtureFractionCalculator {
     //! the mixture fraction coefficients for each of the species in the equation of state
     std::vector<double> zMixCoefficients;
 
+    /**
+     * static function to help convert from FieldFunction to map
+     * @param eos
+     * @param massFractionsFuel
+     * @return
+     */
+    static std::map<std::string, double> ToMassFractionMap(const std::shared_ptr<ablate::eos::EOS>& eos,  const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractions);
+
    public:
     /**
      * Create the MixtureFractionCalculator to compute the zMixFuel, zMixOxidizer, and trackingElements
@@ -41,14 +49,15 @@ class MixtureFractionCalculator {
                               const std::vector<std::string>& trackingElements = {});
 
     /**
-     * Create the MixtureFractionCalculator to compute the zMixFuel, zMixOxidizer, and trackingElements using parameters
+     * Create the MixtureFractionCalculator to compute the zMixFuel, zMixOxidizer, and trackingElements using field functions.  The point is evaluated at [0, 0, 0] with t = 0;
+     * This is used to allow reuse of field function setup in input files
      * @param eos The equation of state must be tChem
      * @param massFractionsFuel
      * @param massFractionsOxidizer
      * @param trackingElements defaults to C & H
      */
-    MixtureFractionCalculator(const std::shared_ptr<ablate::eos::EOS>& eos, const std::shared_ptr<ablate::parameters::Parameters>& massFractionsFuel,
-                              const std::shared_ptr<ablate::parameters::Parameters>& massFractionsOxidizer, const std::vector<std::string>& trackingElements = {});
+    MixtureFractionCalculator(const std::shared_ptr<ablate::eos::EOS>& eos, const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractionsFuel,
+                              const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractionsOxidizer, const std::vector<std::string>& trackingElements = {});
     /**
      * Computes the mixture fraction for a give set of Yi's
      * @tparam T
@@ -63,6 +72,12 @@ class MixtureFractionCalculator {
         }
         return (zMix - zMixOxidizer) / (zMixFuel - zMixOxidizer);
     }
+
+    /**
+     * Return accesses the base eos
+     * @return
+     */
+    std::shared_ptr<ablate::eos::TChem> GetEos() { return eos; }
 };
 
 }  // namespace ablate::chemistry

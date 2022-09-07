@@ -38,7 +38,7 @@ class TChemReactions : public Process {
 
     // the time advance information
     time_advance_type_1d_view timeAdvanceDevice;
-    time_advance_type timeAdvanceDefault;
+    time_advance_type timeAdvanceDefault{};
 
     // store host/device memory for computing state
     real_type_1d_view internalEnergyRefDevice;
@@ -74,7 +74,7 @@ class TChemReactions : public Process {
     static PetscErrorCode AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
-    explicit TChemReactions(std::shared_ptr<eos::EOS> eos, std::shared_ptr<ablate::parameters::Parameters> options = {});
+    explicit TChemReactions(const std::shared_ptr<eos::EOS>& eos, const std::shared_ptr<ablate::parameters::Parameters>& options = {});
     ~TChemReactions() override;
     /**
      * public function to link this process with the flow
@@ -87,6 +87,13 @@ class TChemReactions : public Process {
      * @param flow
      */
     void Initialize(ablate::finiteVolume::FiniteVolumeSolver &flow) override;
+
+    /**
+     * public function to copy the source terms to a locFVec
+     * @param solver
+     * @param fVec
+     */
+    void AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, Vec locFVec);
 };
 }  // namespace ablate::finiteVolume::processes
 #endif
