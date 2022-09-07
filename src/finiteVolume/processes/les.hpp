@@ -27,6 +27,8 @@ class LES : public FlowProcess {
         PetscInt numberSpecies;
         PetscInt tke_ev;
 
+
+
     };
     DiffusionData diffusionData;
 
@@ -60,6 +62,7 @@ class LES : public FlowProcess {
      * ctx = lesDiffusionData
      * @return
      */
+
     static PetscErrorCode LesEnergyFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
                                         const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
     /**
@@ -70,16 +73,7 @@ class LES : public FlowProcess {
      * ctx = lesDiffusionData
      * @return
      */
-    static PetscErrorCode LesSpeciesFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
-                                         const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
-    /**
-     * This computes the EV transfer for SGS model for densityEV
-     * f = "euler"
-     * u = {"euler", "densityEV"}
-     * a = {"ev"}
-     * ctx = lesDiffusionData
-     * @return
-     */
+
     static PetscErrorCode LesEvFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[], const PetscInt aOff[],
                                     const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
 
@@ -90,8 +84,19 @@ class LES : public FlowProcess {
      * @param tau
      * @return
      */
-    static PetscErrorCode CompressibleFlowComputeLesStressTensor(PetscInt dim, const PetscFVFaceGeom* fg, const PetscReal* gradVel, const PetscInt uOff[], const PetscScalar field[], void* ctx,
-                                                                 PetscReal* turbTau);
+
+    static PetscErrorCode LesSpeciesFlux(PetscInt dim, const PetscFVFaceGeom* fg, const PetscInt uOff[], const PetscInt uOff_x[], const PetscScalar field[], const PetscScalar grad[],
+                                         const PetscInt aOff[], const PetscInt aOff_x[], const PetscScalar aux[], const PetscScalar gradAux[], PetscScalar flux[], void* ctx);
+    /**
+     * This computes the EV transfer for SGS model for densityEV
+     * f = "euler"
+     * u = {"euler", "densityEV"}
+     * a = {"ev"}
+     * ctx = lesDiffusionData
+     * @return
+     */
+    static PetscErrorCode CompressibleFlowComputeLesStressTensor(PetscInt dim,     void* ctx,
+                                                                 const PetscFVFaceGeom* fg, const PetscScalar* densityField, const PetscScalar* getTke, const PetscReal* gradVel,  PetscReal* lestau);
 
     /**
      * static support function to compute the turbulent viscosity
@@ -102,7 +107,8 @@ class LES : public FlowProcess {
      * @param mut
      * @return
      */
-    static PetscErrorCode LesViscosity(PetscInt dim, void * ctx, const PetscFVFaceGeom* fg, const PetscScalar field[], const PetscInt uOff[], PetscReal& mut);
+    static PetscErrorCode LesViscosity(PetscInt dim,     void* ctx,
+                                       const PetscFVFaceGeom* fg, const PetscScalar* densityField, const PetscScalar* getTke, PetscReal& mut);
 };
 
 }  // namespace ablate::finiteVolume::processes
