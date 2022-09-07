@@ -469,6 +469,16 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange) {
 
     if (log) EndEvent();
 }
+
+//void ablate::radiation::Radiation::Initialize1D(const solver::Range& cellRange) {}
+
+//const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiation::Radiation::Solve1D(Vec solVec) {
+//    // TODO: For nTheta
+//    // TODO: Get theta, bottom wall intensity
+//    // TODO: For cells between the top and bottom points
+//        // TODO: Compute and store the intensity at each point in the ray
+//}
+
 const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiation::Radiation::Solve(Vec solVec) {
     if (log) StartEvent("Radiation Solve");
 
@@ -774,7 +784,7 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
 }
 
 #include "registrar.hpp"
-REGISTER(ablate::radiation::Radiation, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
+REGISTER_DEFAULT(ablate::radiation::Radiation, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
          ARG(ablate::domain::Region, "region", "the region to apply this solver."), ARG(ablate::domain::Region, "fieldBoundary", "boundary of the radiation region"),
          ARG(int, "rays", "number of rays used by the solver"), ARG(ablate::eos::radiationProperties::RadiationModel, "properties", "the radiation properties model"),
          OPT(ablate::monitors::logs::Log, "log", "where to record log (default is stdout)"));
