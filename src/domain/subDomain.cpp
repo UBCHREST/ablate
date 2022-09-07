@@ -845,10 +845,10 @@ bool ablate::domain::SubDomain::CheckSolution() {
 void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM, std::shared_ptr<domain::Region> region) {
     DMLabel subDmLabel = nullptr;
     PetscInt subDmValue;
-    if(region) {
+    if (region) {
         // Get the region info from the provided region
         domain::Region::GetLabel(region, GetDM(), subDmLabel, subDmValue);
-    }else{
+    } else {
         // Grab it from the domain itself
         subDmLabel = GetLabel();
         subDmValue = labelValue;

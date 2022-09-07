@@ -26,7 +26,7 @@ class SubDomain;
 class Domain {
    protected:
     Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
-           const std::shared_ptr<parameters::Parameters>& options = {});
+           const std::shared_ptr<parameters::Parameters>& options = {}, bool setFromOptions = true);
     virtual ~Domain();
 
     // The primary dm

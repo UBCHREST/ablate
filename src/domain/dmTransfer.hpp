@@ -9,7 +9,7 @@ namespace ablate::domain {
 class DMTransfer : public ablate::domain::Domain {
    public:
     explicit DMTransfer(DM dm, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptors, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers = {},
-                       std::shared_ptr<parameters::Parameters> options = {});
+                        std::shared_ptr<parameters::Parameters> options = {});
     ~DMTransfer() override;
 };
 }  // namespace ablate::domain

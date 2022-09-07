@@ -44,6 +44,6 @@ class MixtureFractionMonitor : public FieldMonitor {
     void Register(std::shared_ptr<solver::Solver> solverIn) override;
 };
 
-}
+}  // namespace ablate::monitors
 
 #endif  // ABLATELIBRARY_MIXTUREFRACTIONMONITOR_HPP

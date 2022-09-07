@@ -6,14 +6,13 @@ void ablate::monitors::FieldMonitor::Register(std::string id, std::shared_ptr<so
     ablate::monitors::Monitor::Register(solverIn);
 
     // make sure that each of the fields is for the entire domain
-    for(const auto& fieldDescriptor: fieldDescriptors){
-        for(const auto& field: fieldDescriptor->GetFields()){
-            if(field->region != domain::Region::ENTIREDOMAIN){
+    for (const auto& fieldDescriptor : fieldDescriptors) {
+        for (const auto& field : fieldDescriptor->GetFields()) {
+            if (field->region != domain::Region::ENTIREDOMAIN) {
                 throw std::invalid_argument("The ablate::monitors::FieldMonito requires all fields to be defined over the entire domain");
             }
         }
     }
-
 
     // Create a subDomain only over this solver region
     DM subDm;

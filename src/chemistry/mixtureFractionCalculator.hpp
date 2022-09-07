@@ -35,7 +35,7 @@ class MixtureFractionCalculator {
      * @param massFractionsFuel
      * @return
      */
-    static std::map<std::string, double> ToMassFractionMap(const std::shared_ptr<ablate::eos::EOS>& eos,  const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractions);
+    static std::map<std::string, double> ToMassFractionMap(const std::shared_ptr<ablate::eos::EOS>& eos, const std::shared_ptr<ablate::mathFunctions::FieldFunction>& massFractions);
 
    public:
     /**

@@ -74,7 +74,7 @@ class TChemReactions : public Process {
     static PetscErrorCode AddChemistrySourceToFlow(const FiniteVolumeSolver &solver, DM dm, PetscReal time, Vec locX, Vec fVec, void *ctx);
 
    public:
-    explicit TChemReactions(const std::shared_ptr<eos::EOS>& eos, const std::shared_ptr<ablate::parameters::Parameters>& options = {});
+    explicit TChemReactions(const std::shared_ptr<eos::EOS> &eos, const std::shared_ptr<ablate::parameters::Parameters> &options = {});
     ~TChemReactions() override;
     /**
      * public function to link this process with the flow

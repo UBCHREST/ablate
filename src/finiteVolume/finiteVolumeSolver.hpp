@@ -182,7 +182,7 @@ class FiniteVolumeSolver : public solver::CellSolver, public solver::RHSFunction
      * @return
      */
     template <class T>
-    std::shared_ptr<T> FindProcess(){
+    std::shared_ptr<T> FindProcess() {
         return utilities::VectorUtilities::Find<T>(processes);
     }
 };
