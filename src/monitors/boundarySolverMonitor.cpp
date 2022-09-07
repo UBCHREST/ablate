@@ -115,10 +115,6 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     DMGetGlobalVector(faceDm, &globalFaceVec) >> checkError;
     PetscObjectSetName((PetscObject)globalFaceVec, GetId().c_str()) >> checkError;
 
-    // map to the local face ids in the faceDm
-    IS subPointIs;
-    DMPlexGetSubpointIS(faceDm, &subPointIs) >> checkError;
-
     // Get the raw data for the global vectors
     const PetscScalar* localBoundaryArray;
     VecGetArrayRead(localBoundaryVec, &localBoundaryArray) >> checkError;
