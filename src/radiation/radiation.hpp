@@ -57,7 +57,9 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     /**
      * @param cellRange The range of cells for which rays are initialized
      */
-    void Initialize(const solver::Range &cellRange);
+    void Initialize(const solver::Range& cellRange);
+
+    //    void Initialize1D(const solver::Range &cellRange);
 
     /** Get the subdomain */
     void Register(std::shared_ptr<ablate::domain::SubDomain>);
@@ -69,6 +71,8 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     /// Class Methods
     const std::map<PetscInt, Origin>& Solve(Vec solVec);
+
+    //    const std::map<PetscInt, Origin>& Solve1D(Vec solVec);
 
    protected:
     DM radsolve{};   //!< DM associated with the radiation particles
@@ -141,7 +145,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 
     PetscMPIInt numRanks = 0;  //!< The number of the ranks that the simulation contains. This will be used to support global indexing.
 
-    bool surface = false; //!< Determines whether or not the radiation solver will be treated as a surface or volume solver
+    bool surface = false;  //!< Determines whether or not the radiation solver will be treated as a surface or volume solver
 
     /// Class inputs and Variables
     PetscInt dim = 0;  //!< Number of dimensions that the domain exists within
