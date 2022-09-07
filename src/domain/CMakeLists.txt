@@ -12,6 +12,7 @@ target_sources(ablateLibrary
         fieldDescription.cpp
         boxMeshBoundaryCells.cpp
         cadFile.cpp
+        dmTransfer.cpp
 
         PUBLIC
         domain.hpp
@@ -27,6 +28,7 @@ target_sources(ablateLibrary
         fieldDescriptor.hpp
         boxMeshBoundaryCells.hpp
         cadFile.hpp
+        dmTransfer.hpp
         )
 
 add_subdirectory(modifiers)

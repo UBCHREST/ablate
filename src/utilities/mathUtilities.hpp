@@ -30,6 +30,11 @@ class MathUtilities {
         return true;
     }
 
+    template <class R, class T>
+    static inline bool Equals(R test, T equal, T tolerance = 1.0E-8) {
+        return test > (equal - tolerance) && test < (equal + tolerance);
+    }
+
     template <class I, class T>
     static inline void NormVector(I dim, const T* in, T* out) {
         T mag = 0.0;

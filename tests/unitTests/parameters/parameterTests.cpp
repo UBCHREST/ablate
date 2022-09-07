@@ -651,4 +651,21 @@ INSTANTIATE_TEST_SUITE_P(ParameterTests, ParameterTestFixtureDoubleArray,
                                            std::make_tuple("", std::array<double, 4>{0, 0, 0, 0}), std::make_tuple("11.1 22.2 33.3 44.4", std::array<double, 4>{11.1, 22.2, 33.3, 44.4}),
                                            std::make_tuple("11.1 22.2 33.3 44.4 55.5", std::array<double, 4>{11.1, 22.2, 33.3, 44.4})));
 
+// map tests
+TEST(ParameterTests, ShouldConvertKeysToMap) {
+    // arrange
+    MockParameters mockParameters;
+    EXPECT_CALL(mockParameters, GetKeys()).Times(::testing::Exactly(1)).WillOnce(::testing::Return(std::unordered_set<std::string>{"a", "b", "c"}));
+    EXPECT_CALL(mockParameters, GetString("a")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("1"));
+    EXPECT_CALL(mockParameters, GetString("b")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("2"));
+    EXPECT_CALL(mockParameters, GetString("c")).Times(::testing::Exactly(1)).WillOnce(::testing::Return("3"));
+
+    // act
+    auto actualValue = mockParameters.ToMap<int>();
+
+    // assert
+    std::map<std::string, int> expected{{"a", 1}, {"b", 2}, {"c", 3}};
+    EXPECT_EQ(actualValue, expected);
+}
+
 }  // namespace ablateTesting::parameters
