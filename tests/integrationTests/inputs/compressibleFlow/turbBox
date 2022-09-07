@@ -1,0 +1,138 @@
+# This test shows how to easily transport extra variables using the finite volume solver.  Extra variables are conserved scalars that are transported with the flow.  Examples include zMix and other progresses variables.
+
+---
+# metadata for the simulation
+environment:
+  title: _turbBox
+  tagDirectory: false
+arguments:
+  dm_plex_separate_marker: ""
+# set up the time stepper responsible for marching in time
+timestepper:
+  # use io to save results to a file allowing visualization and restart
+  io:
+    interval: 0
+  name: theMainTimeStepper
+  # time stepper specific input arguments
+  arguments:
+    ts_type: rk
+    ts_adapt_type: none
+    ts_max_steps: 1
+  # the domain/mesh must be specified at the start of a simulation
+  domain: !ablate::domain::BoxMesh
+    name: simpleBoxField
+    faces: [ 4, 4, 4 ]
+    lower: [ 0, 0, 0]
+    upper: [ 1, 1, 1]
+    boundary: [ "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC"]
+    simplex: false
+
+
+    # specify any modifications to be performed to the mesh/domain
+    modifiers:
+      # if using mpi, this modifier distributes cells
+      - !ablate::domain::modifiers::GhostBoundaryCells
+      # if using a FVM ghost boundary cells must be added
+      - !ablate::domain::modifiers::DistributeWithGhostCells
+    fields:
+      # all fields must be defined before solvers.  The ablate::finiteVolume::CompressibleFlowFields is a helper
+      # class that creates the required fields for the compressible flow solver (rho, rhoE, rhoU, ...)
+      - !ablate::finiteVolume::CompressibleFlowFields
+        eos: !ablate::eos::PerfectGas &eos
+          parameters:
+            gamma: 1.4
+            Rgas: 287
+        # the CompressibleFlowFields class can take extraVariable arguments.  This defines the conserved and non-conserved field for each component
+        extraVariables: ["ev1"]
+  initialization:
+    # the ablate::finiteVolume::fieldFunctions::Euler helper can define the "euler" field (rho, rhoE, rhoU, rhoV) from more common inputs
+    - !ablate::finiteVolume::fieldFunctions::Euler
+      state: &flowFieldState
+        eos: *eos
+        temperature: "300"
+        pressure: "101325.0"
+        velocity:
+          !ablate::mathFunctions::ParsedSeries
+          upperBound: 5000
+          lowerBound: 0
+          formula: 2 * sqrt(alpha * exp(-2 * (i / kappa_eta) ^ 2) * (uPrime^2 / kappa_e) * (i / kappa_e) ^ 4 / (kappa_e * (1 + (i / kappa_e) )^ (17/6))) * cos ( (kappa_o + (kappa_max - kappa_o) * (i - 1)  / n) * sin(acos(LO + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI-LO))))) * cos(LO1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI1-LO1)))) * x + (LO2 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(HI2-LO2)))))
+          constants:
+            m: 0
+            n: 5000
+            alpha: 1.453
+            kappa_eta: ((0.25^3 *(40 * sqrt(5 / 12))/0.746834)^.25)*.00001^(-3/4)
+            uPrime: 0.25
+            kappa_e: 40 * sqrt(5 / 12)
+            kappa_o: 2* pi/9*2*pi/100
+            kappa_max: pi*64*100/9*2*pi
+            HI: 1
+            LO: -1
+            HI1: 2*pi
+            LO1: 0
+            HI2: pi/2
+            LO2: -pi/2
+
+
+
+    # the density*ev field must be specified. The DensityExtraVariables class helps by computing density and each ev value using the specified list functions
+    - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
+      &densityEVFlowFieldState
+      state: *flowFieldState
+      # a list of functions used to describe the extra variable initialization
+      functions:
+        - .25 # ev1 is set to a constant value of 0.25
+
+
+# this problem uses a single solver (!ablate::finiteVolume::LesCompressibleFlowSolver)
+solver: !ablate::finiteVolume::CompressibleFlowSolver
+  id: evExample
+  parameters:
+    cfl: .5
+  # a flux calculator must be specified to so solver for advection
+  fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
+    mInf: .3
+  computePhysicsTimeStep: true
+
+  # the default transport object assumes constant values for k, mu, diff
+  transport:
+    diff: 1E-5
+    k: 1E-4
+    mu: 0.02925
+
+  # share the existing eos with the compressible flow solver
+  eos: *eos
+
+  additionalProcesses:
+    # the ArbitrarySource process was added to define a region of additional ev source
+    - !ablate::finiteVolume::processes::LES
+      tke: ev1
+      eos: *eos
+
+
+
+
+  monitors:
+    # output the time and dt at each time step
+    - !ablate::monitors::TimeStepMonitor
+
+    # define a list of probes to record high frequency information
+    - !ablate::monitors::Probes
+      probes:
+        - name: a
+          location: [.25, .25, 0.25]
+        - name: b
+          location: [.75, .25, 0.25]
+        - name: c
+          location: [ .25, .75 , 0.75]
+      bufferSize: 10
+      variables:  [velocity, densityEV, ev, euler ] # these fields will be saved to a text file at the specified locations
+
+    # define a probe using a rake, which uses a start/end location and a number of probes to compute initial probe locations
+    - !ablate::monitors::Probes
+      probes: !ablate::monitors::probes::Rake
+        name: rakeProbe
+        start: [.75, .5, 0.5]
+        end: [.25, 0.5, 0.5]
+        number: 3
+      bufferSize: 10
+      variables: [ velocity, densityEV, ev, euler ]  # these fields will be saved to a text file at the specified locations
