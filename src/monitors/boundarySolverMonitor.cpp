@@ -102,6 +102,7 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     // create a local vector on the boundary solver
     Vec localBoundaryVec;
     DMGetLocalVector(boundaryDm, &localBoundaryVec) >> checkError;
+    VecZeroEntries(localBoundaryVec) >> checkError;
 
     // finish with the locXVec
     DMGlobalToLocalEnd(GetSolver()->GetSubDomain().GetDM(), GetSolver()->GetSubDomain().GetSolutionVector(), INSERT_VALUES, locXVec) >> checkError;
@@ -110,20 +111,19 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     boundarySolver->ComputeRHSFunction(time, locXVec, localBoundaryVec, boundarySolver->GetOutputFunctions()) >> checkError;
 
     // Create a local vector for just the monitor
-    // create a local vector on the boundary solver
-    Vec globalFaceVec;
-    DMGetGlobalVector(faceDm, &globalFaceVec) >> checkError;
-    PetscObjectSetName((PetscObject)globalFaceVec, GetId().c_str()) >> checkError;
+    Vec localFaceVec;
+    DMGetLocalVector(faceDm, &localFaceVec) >> checkError;
+    VecZeroEntries(localFaceVec) >> checkError;
 
     // Get the raw data for the global vectors
     const PetscScalar* localBoundaryArray;
     VecGetArrayRead(localBoundaryVec, &localBoundaryArray) >> checkError;
-    PetscScalar* globalFaceArray;
-    VecGetArray(globalFaceVec, &globalFaceArray) >> checkError;
+    PetscScalar* localFaceArray;
+    VecGetArray(localFaceVec, &localFaceArray) >> checkError;
 
     // Determine the size of data
     PetscInt dataSize;
-    VecGetBlockSize(globalFaceVec, &dataSize) >> checkError;
+    VecGetBlockSize(localFaceVec, &dataSize) >> checkError;
 
     // March over each cell in the face dm
     PetscInt cStart, cEnd;
@@ -143,7 +143,7 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
         PetscScalar* globalFaceData;
 
         DMPlexPointLocalRead(boundaryDm, boundaryPt, localBoundaryArray, &localBoundaryData) >> checkError;
-        DMPlexPointGlobalRef(faceDm, facePt, globalFaceArray, &globalFaceData) >> checkError;
+        DMPlexPointLocalRef(faceDm, facePt, localFaceArray, &globalFaceData) >> checkError;
         if (globalFaceData && localBoundaryData) {
             PetscArraycpy(globalFaceData, localBoundaryData, dataSize) >> checkError;
         }
@@ -153,13 +153,21 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     ISRestoreIndices(faceIs, &faceToBoundary) >> checkError;
 
     VecRestoreArrayRead(localBoundaryVec, &localBoundaryArray) >> checkError;
-    VecRestoreArray(globalFaceVec, &globalFaceArray) >> checkError;
+    VecRestoreArray(localFaceVec, &localFaceArray) >> checkError;
+
+    // Map to a global array with add values
+    Vec globalFaceVec;
+    DMGetGlobalVector(faceDm, &globalFaceVec) >> checkError;
+    PetscObjectSetName((PetscObject)localFaceVec, GetId().c_str()) >> checkError;
+    VecZeroEntries(globalFaceVec);
+    DMLocalToGlobal(faceDm, localFaceVec, ADD_VALUES, globalFaceVec) >> checkError;
 
     // write to the output file
     VecView(globalFaceVec, viewer) >> checkError;
+    DMRestoreGlobalVector(faceDm, &globalFaceVec) >> checkError;
 
     // cleanup
-    DMRestoreGlobalVector(faceDm, &globalFaceVec) >> checkError;
+    DMRestoreLocalVector(faceDm, &localFaceVec) >> checkError;
     DMRestoreLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec) >> checkError;
     DMRestoreLocalVector(boundaryDm, &localBoundaryVec) >> checkError;
 }
