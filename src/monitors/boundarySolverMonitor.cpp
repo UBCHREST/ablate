@@ -158,7 +158,7 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     // Map to a global array with add values
     Vec globalFaceVec;
     DMGetGlobalVector(faceDm, &globalFaceVec) >> checkError;
-    PetscObjectSetName((PetscObject)localFaceVec, GetId().c_str()) >> checkError;
+    PetscObjectSetName((PetscObject)globalFaceVec, GetId().c_str()) >> checkError;
     VecZeroEntries(globalFaceVec);
     DMLocalToGlobal(faceDm, localFaceVec, ADD_VALUES, globalFaceVec) >> checkError;
 
