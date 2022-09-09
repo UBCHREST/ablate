@@ -161,6 +161,7 @@ void ablate::finiteVolume::processes::PressureGradientScaling::Setup(ablate::fin
 }
 
 void ablate::finiteVolume::processes::PressureGradientScaling::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
     // Use time stepping.
     PetscMPIInt rank;
     MPI_Comm_rank(PetscObjectComm((PetscObject)viewer), &rank) >> checkMpiError;
@@ -177,6 +178,7 @@ void ablate::finiteVolume::processes::PressureGradientScaling::Save(PetscViewer 
     VecAssemblyEnd(pgsAlphaVec) >> checkError;
     VecView(pgsAlphaVec, viewer);
     VecDestroy(&pgsAlphaVec) >> checkError;
+    PetscFunctionReturnVoid();
 }
 
 void ablate::finiteVolume::processes::PressureGradientScaling::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {

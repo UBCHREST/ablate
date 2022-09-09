@@ -86,6 +86,7 @@ void ablate::monitors::BoundarySolverMonitor::Register(std::shared_ptr<solver::S
 }
 
 void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
     // If this is the first output, store a copy of the faceDm
     if (sequenceNumber == 0) {
         DMView(faceDm, viewer) >> checkError;
@@ -170,6 +171,7 @@ void ablate::monitors::BoundarySolverMonitor::Save(PetscViewer viewer, PetscInt 
     DMRestoreLocalVector(faceDm, &localFaceVec) >> checkError;
     DMRestoreLocalVector(GetSolver()->GetSubDomain().GetDM(), &locXVec) >> checkError;
     DMRestoreLocalVector(boundaryDm, &localBoundaryVec) >> checkError;
+    PetscFunctionReturnVoid();
 }
 
 #include "registrar.hpp"
