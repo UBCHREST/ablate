@@ -67,7 +67,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
         return origin[iCell].intensity;
     }
 
-    std::shared_ptr<ablate::domain::SubDomain> subDomain;  //!< use the subDomain to setup the problem
+//    std::shared_ptr<ablate::domain::SubDomain> subDomain;  //!< use the subDomain to setup the problem
 
     /// Class Methods
     const std::map<PetscInt, Origin>& Solve(Vec solVec);
