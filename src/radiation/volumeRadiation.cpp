@@ -15,14 +15,14 @@ void ablate::radiation::VolumeRadiation::Setup() {
     GetCellRange(cellRange);  //!< Gets the cell range that should be applied to the radiation solver
 
     ablate::solver::CellSolver::Setup();
-    ablate::radiation::Radiation::Setup(cellRange, GetSubDomain(), false); //!< Insert the cell range of the solver here
+    ablate::radiation::Radiation::Setup(cellRange, GetSubDomain(), false);  //!< Insert the cell range of the solver here
     auto radiationPreStep = [this](auto&& PH1, auto&& PH2) { RadiationPreStep(std::forward<decltype(PH1)>(PH1)); };
     RegisterPreStep(radiationPreStep);
 }
 
 void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     ablate::solver::Solver::Register(subDomain);
-//    ablate::radiation::Radiation::Register(subDomain);
+    //    ablate::radiation::Radiation::Register(subDomain);
 }
 
 void ablate::radiation::VolumeRadiation::Initialize() {
@@ -43,7 +43,7 @@ PetscErrorCode ablate::radiation::VolumeRadiation::RadiationPreStep(TS ts) {
     TSGetStepNumber(ts, &step) >> checkError;
     TSGetTime(ts, &time) >> checkError;
     if (interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
-        ablate::radiation::Radiation::Solve(GetSubDomain());
+        ablate::radiation::Radiation::Solve(subDomain->GetSolutionVector(), subDomain->GetField("temperature"), subDomain->GetAuxVector());
     }
     PetscFunctionReturn(0);
 }

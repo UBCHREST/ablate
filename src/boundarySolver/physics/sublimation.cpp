@@ -85,9 +85,13 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
         for (PetscInt i = 0; i < static_cast<int>(bSolver.GetBoundaryGeometry().size()); i++) {
             faceRange.Add(bSolver.GetBoundaryGeometry()[i].geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
         }
-//        radiation->Register(reinterpret_cast<std::shared_ptr<ablate::domain::SubDomain> &>(bSolver.GetSubDomain()));
+        //        radiation->Register(reinterpret_cast<std::shared_ptr<ablate::domain::SubDomain> &>(bSolver.GetSubDomain()));
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain(), true);
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
+
+        //        if (!boundaryUpdateFunctions.empty()) {
+        //            RegisterPreStep([this](auto ts, auto& solver) { UpdateVariablesPreStep(ts, solver); }); TODO: This
+        //        }
     }
 }
 
@@ -122,7 +126,6 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     // Perform the radiation solve at every time step because there is no interval on the sublimation solver at the moment. Use the solution vector from the radiation.
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        sublimation->radiation->origin = sublimation->radiation->Solve(solVec, temperatureField, auxVec);
         radIntensity = sublimation->radiation->GetIntensity(fg->faceId);
     }
 
@@ -282,6 +285,12 @@ void ablate::boundarySolver::physics::Sublimation::Setup(PetscInt numberSpeciesI
     viscosityFunction = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Viscosity, {});
     computeSensibleEnthalpy = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::SensibleEnthalpy, {});
     computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, {});
+}
+
+PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreStep(TS ts, ablate::solver::Solver &solver) {
+    PetscFunctionBegin;
+    if (radiation) radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
+    PetscFunctionReturn(0);
 }
 
 void ablate::boundarySolver::physics::Sublimation::UpdateSpecies(TS ts, ablate::solver::Solver &solver) {
