@@ -21,7 +21,7 @@ ablate::radiation::Radiation::~Radiation() {
     if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
 }
 
-//void ablate::radiation::Radiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
+// void ablate::radiation::Radiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
 
 /** allows initialization after the subdomain and dm is established */
 void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain, bool surfaceIn) {
@@ -348,7 +348,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                  * */
                 if (rays.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
                     identifier[ipart].nsegment++;                //!< The particle has passed through another domain!
-                    DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
+                    DMSwarmAddPoint(radsolve) >> checkError;     //!< Another solve particle is added here because the search particle has entered a new domain
 
                     DMSwarmGetLocalSize(radsolve,
                                         &nsolvepoints) >>
@@ -408,7 +408,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                     if (path > 0) {
                         virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? (path * 1.1) : virtualcoord[ipart].hhere;  //!< Dumb check to ensure that the path length is always updated
                         if (virtualcoord[ipart].hhere > path) {
-                            virtualcoord[ipart].hhere = path;  //!> Get the shortest path length of all of the faces. The point must be in the direction that the ray is travelling in order to be valid.
+                            virtualcoord[ipart].hhere =
+                                path;  //!> Get the shortest path length of all of the faces. The point must be in the direction that the ray is travelling in order to be valid.
                         }
                     }
                 }
@@ -447,11 +448,11 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                  * this will be the same procedure.
                  * */
                 switch (dim) {
-                    case 2:                                                                                  //!< If there are only two dimensions in this simulation
+                    case 2:                                                                                           //!< If there are only two dimensions in this simulation
                         coord[2 * ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Update the two physical coordinates
                         coord[(2 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
                         break;
-                    case 3:                                                                                  //!< If there are three dimensions in this simulation
+                    case 3:                                                                                           //!< If there are three dimensions in this simulation
                         coord[3 * ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Update the three physical coordinates
                         coord[(3 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
                         coord[(3 * ipart) + 2] = virtualcoord[ipart].z + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
@@ -491,23 +492,31 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     if (log) EndEvent();
 }
 
-void ablate::radiation::Radiation::Solve(ablate::domain::SubDomain& subDomain) { // TODO: Pass in const auto for temperature and Vec for aux , const (type here) temperatureField, Vec aux
+// void ablate::radiation::Radiation::Initialize1D(const solver::Range& cellRange) {}
+
+// const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiation::Radiation::Solve1D(Vec solVec) {
+//     // TODO: For nTheta
+//     // TODO: Get theta, bottom wall intensity
+//     // TODO: For cells between the top and bottom points
+//         // TODO: Compute and store the intensity at each point in the ray
+// }
+
+void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec) {  //!< Pass in const auto for temperature and Vec for aux
     if (log) StartEvent("Radiation Solve");
 
     /** Get the array of the solution vector. */
-
     const PetscScalar* solArray;
-    VecGetArrayRead(subDomain.GetSolutionVector(), &solArray);
+    VecGetArrayRead(solVec, &solArray);
 
     /** Get the array of the aux vector. */
-    const auto auxVec = subDomain.GetAuxVector();
+    //    const auto auxVec = subDomain.GetAuxVector();
     const PetscScalar* auxArray;
     VecGetArrayRead(auxVec, &auxArray);
 
     /** Get the temperature field.
      * For ABLATE implementation, get temperature based on this function.
      */
-    const auto& temperatureField = subDomain.GetField("temperature");
+    //    temperatureField = subDomain.GetField("temperature");
 
     /** Declare the basic information*/
     PetscReal* sol;          //!< The solution value at any given location
@@ -753,7 +762,7 @@ void ablate::radiation::Radiation::Solve(ablate::domain::SubDomain& subDomain) {
     }
 
     /** Cleanup */
-//    VecRestoreArrayRead(subDomain.Restore, &solArray);
+    VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
 
     if (log) {

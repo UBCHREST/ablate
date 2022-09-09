@@ -70,7 +70,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 //    std::shared_ptr<ablate::domain::SubDomain> subDomain;  //!< use the subDomain to setup the problem
 
     /// Class Methods
-    void Solve(ablate::domain::SubDomain& subDomain);
+    void Solve(Vec solVec, ablate::domain::Field temperatureField, Vec aux);
 
     //    const std::map<PetscInt, Origin>& Solve1D(Vec solVec);
 
