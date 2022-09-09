@@ -52,17 +52,17 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     static PetscReal FlameIntensity(PetscReal epsilon, PetscReal temperature);
 
     /** SubDomain Register and Setup **/
-    void Setup(const solver::Range& cellRange, bool surfaceIn);
+    void Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain, bool surfaceIn);
 
     /**
      * @param cellRange The range of cells for which rays are initialized
      */
-    void Initialize(const solver::Range& cellRange);
+    void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     //    void Initialize1D(const solver::Range &cellRange);
 
     /** Get the subdomain */
-    void Register(std::shared_ptr<ablate::domain::SubDomain>);
+    //    void Register(std::shared_ptr<ablate::domain::SubDomain>);
     inline PetscReal GetIntensity(PetscInt iCell) {  //!< Function to give other classes access to the intensity
         return origin[iCell].intensity;
     }
@@ -70,7 +70,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
 //    std::shared_ptr<ablate::domain::SubDomain> subDomain;  //!< use the subDomain to setup the problem
 
     /// Class Methods
-    const std::map<PetscInt, Origin>& Solve(Vec solVec);
+    void Solve(ablate::domain::SubDomain& subDomain);
 
     //    const std::map<PetscInt, Origin>& Solve1D(Vec solVec);
 
@@ -123,7 +123,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
      * the particles that are not travelling outward from the face must be deleted.
      * Only a hemisphere of rays is required.
      * */
-    void InitializationConvertSurface();
+    void InitializationConvertSurface(ablate::domain::SubDomain& subDomain);
 
     /** Update the coordinates of the particle using the virtual coordinates
      * Moves the particle in physical space instead of only updating the virtual coordinates

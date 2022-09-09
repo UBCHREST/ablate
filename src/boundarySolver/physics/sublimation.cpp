@@ -85,9 +85,9 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
         for (PetscInt i = 0; i < static_cast<int>(bSolver.GetBoundaryGeometry().size()); i++) {
             faceRange.Add(bSolver.GetBoundaryGeometry()[i].geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
         }
-        radiation->Register(reinterpret_cast<std::shared_ptr<ablate::domain::SubDomain> &>(bSolver.GetSubDomain()));
-        radiation->Setup(faceRange.GetRange(), true);
-        radiation->Initialize(faceRange.GetRange());  //!< Pass the non-dynamic range into the radiation solver
+//        radiation->Register(reinterpret_cast<std::shared_ptr<ablate::domain::SubDomain> &>(bSolver.GetSubDomain()));
+        radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain(), true);
+        radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
     }
 }
 
@@ -122,7 +122,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     // Perform the radiation solve at every time step because there is no interval on the sublimation solver at the moment. Use the solution vector from the radiation.
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        sublimation->radiation->origin = sublimation->radiation->Solve(sublimation->radiation->subDomain->GetSolutionVector());
+        sublimation->radiation->origin = sublimation->radiation->Solve(bSolver.GetSubDomain());
         radIntensity = sublimation->radiation->GetIntensity(fg->faceId);
     }
 
