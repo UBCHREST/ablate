@@ -85,6 +85,24 @@ class TChem : public EOS {
     [[nodiscard]] const std::vector<std::string>& GetSpecies() const override { return species; }
 
     /**
+     * Returns all elements tracked in this mechanism and their molecular mass
+     * @return
+     */
+    [[nodiscard]] std::map<std::string, double> GetElementInformation() const;
+
+    /**
+     * no. of atoms of each element in each species
+     * @return
+     */
+    [[nodiscard]] std::map<std::string, std::map<std::string, int>> GetSpeciesElementalInformation() const;
+
+    /**
+     * the MW of each species
+     * @return
+     */
+    [[nodiscard]] std::map<std::string, double> GetSpeciesMolecularMass() const;
+
+    /**
      * Print the details of this eos
      * @param stream
      */

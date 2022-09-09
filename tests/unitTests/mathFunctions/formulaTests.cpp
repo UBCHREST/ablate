@@ -1,5 +1,6 @@
 #include <map>
 #include <memory>
+#include <set>
 #include "gtest/gtest.h"
 #include "mathFunctions/formula.hpp"
 #include "mathFunctions/functionFactory.hpp"
@@ -160,5 +161,56 @@ INSTANTIATE_TEST_SUITE_P(FormulaTests, FormulaTestsVectorFixture,
                                                                         .expectedResult = {3, 23, 1.9}},
                                          (FormulaTestsVectorParameters){
                                              .formula = "0+CC, y+CC, t+AA", .constants = ablate::parameters::MapParameters::Create({{"CC", "3"}, {"AA", "1.5"}}), .expectedResult = {3, 5, 5.5}}));
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+TEST(FormulaTests, ShouldProduceDeterministicPsueduRandomNumber) {
+    // arrange
+    auto functionA = ablate::mathFunctions::Formula(std::string("x*pRand(0, 100)"));
+    auto functionB = ablate::mathFunctions::Formula(std::string("y*pRand(0, 100)"));
+
+    std::vector<double> resultsA;
+    std::vector<double> resultsB;
+
+    // act
+    for (std::size_t i = 0; i < 25; ++i) {
+        resultsA.push_back(functionA.Eval(5, 0, 0, 0));
+    }
+    for (std::size_t i = 0; i < 25; ++i) {
+        resultsB.push_back(functionB.Eval(0, 5, 0, 0));
+    }
+
+    std::vector<double> expectedResults{229.32506601160992, 109.47959310623946, 339.43235837034274, 467.34644811336943, 259.70818601137375, 17.28605523242372,  264.85009657052859,
+                                        3.8490930307995894, 33.421118631283775, 343.38635620452266, 465.21824748484642, 263.46438887995305, 326.95948109026131, 350.59529724958838,
+                                        381.09901999931708, 23.732256693155975, 164.11711308000383, 378.20524306629301, 182.66933544578842, 491.27514316051713, 376.67791760279147,
+                                        36.342941410115536, 442.35356440792077, 218.20570275781975, 238.86588255920407};
+
+    // assert
+    ASSERT_EQ(resultsA, resultsB);
+    for (std::size_t i = 0; i < 25; ++i) {
+        ASSERT_NEAR(resultsA[i], expectedResults[i], 1E-6) << " the " << i << " pseduo random number is expected to be predictable";
+    }
+}
+
+TEST(FormulaTests, ShouldProduceRandomNumber) {
+    // arrange
+    auto functionA = ablate::mathFunctions::Formula(std::string("x*rand(-1, 1)"));
+    auto functionB = ablate::mathFunctions::Formula(std::string("y*rand(-1, 1)"));
+
+    std::set<double> resultsA;
+    std::set<double> resultsB;
+
+    // act
+    for (std::size_t i = 0; i < 25; ++i) {
+        resultsA.insert(functionA.Eval(5, 0, 0, 0));
+    }
+    for (std::size_t i = 0; i < 25; ++i) {
+        resultsB.insert(functionB.Eval(0, 5, 0, 0));
+    }
+
+    // assert
+    ASSERT_EQ(resultsA.size(), 25) << " duplicate random numbers detected";
+    ASSERT_EQ(resultsB.size(), 25) << " duplicate random numbers detected";
+    ASSERT_NE(resultsA, resultsB);
+}
 
 }  // namespace ablateTesting::mathFunctions

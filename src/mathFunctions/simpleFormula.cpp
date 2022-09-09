@@ -3,25 +3,12 @@
 #include <algorithm>
 #include <exception>
 
-static mu::value_type powerFunction(mu::value_type a, mu::value_type b) { return PetscPowReal(a, b); }
-
-ablate::mathFunctions::SimpleFormula::SimpleFormula(std::string functionString) : formula(functionString) {
-    // define the x,y,z and t variables
-    parser.DefineVar("x", &coordinate[0]);
-    parser.DefineVar("y", &coordinate[1]);
-    parser.DefineVar("z", &coordinate[2]);
-    parser.DefineVar("t", &time);
-
-    // define any additional helper functions
-    DefineAdditionalFunctions(parser);
-
-    parser.SetExpr(formula);
-
+ablate::mathFunctions::SimpleFormula::SimpleFormula(std::string functionString) : FormulaBase(functionString, {}) {
     // Test the function
     try {
         parser.Eval();
     } catch (mu::Parser::exception_type& exception) {
-        throw ablate::mathFunctions::SimpleFormula::ConvertToException(exception);
+        throw ablate::mathFunctions::FormulaBase::ConvertToException(exception);
     }
 }
 double ablate::mathFunctions::SimpleFormula::Eval(const double& x, const double& y, const double& z, const double& t) const {
@@ -121,15 +108,8 @@ PetscErrorCode ablate::mathFunctions::SimpleFormula::ParsedPetscFunction(PetscIn
     PetscFunctionReturn(0);
 }
 
-void ablate::mathFunctions::SimpleFormula::DefineAdditionalFunctions(mu::Parser& parser) {
-    // define some helper functions
-    parser.DefineFun("Power", powerFunction, true);
-}
-
-std::invalid_argument ablate::mathFunctions::SimpleFormula::ConvertToException(mu::Parser::exception_type& exception) {
-    return std::invalid_argument("Unable to parser (" + exception.GetExpr() + "). " + exception.GetMsg());
-}
-
 #include "registrar.hpp"
 REGISTER_DEFAULT_PASS_THROUGH(ablate::mathFunctions::MathFunction, ablate::mathFunctions::SimpleFormula,
-                              "a string based function to be parsed with [muparser](https://beltoforion.de/en/muparser/). The (string) formula that may accept x, y, z, t as variables", std::string);
+                              "a string based function to be parsed with [muparser](https://beltoforion.de/en/muparser/). The (string) formula that may accept x, y, z, t as variables. ABLATE custom "
+                              "functions include Power(a, b), rand(lowerBound, upperBound), and pRand(lowerBound, upperBound).",
+                              std::string);

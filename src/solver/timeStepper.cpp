@@ -172,7 +172,9 @@ void ablate::solver::TimeStepper::Register(std::shared_ptr<ablate::solver::Solve
         monitors[solver->GetSolverId()].push_back(monitor);
 
         // register the monitor with the ts
-        TSMonitorSet(ts, monitor->GetPetscFunction(), monitor->GetContext(), NULL) >> checkError;
+        if (auto monitorFunction = monitor->GetPetscFunction()) {
+            TSMonitorSet(ts, monitorFunction, monitor->GetContext(), NULL) >> checkError;
+        }
     }
 
     // check to see if the solver implements a solver function

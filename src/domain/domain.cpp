@@ -10,7 +10,7 @@
 #include "utilities/petscOptions.hpp"
 
 ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::shared_ptr<FieldDescriptor>> fieldDescriptorsIn, std::vector<std::shared_ptr<modifiers::Modifier>> modifiersIn,
-                               const std::shared_ptr<parameters::Parameters>& options)
+                               const std::shared_ptr<parameters::Parameters>& options, bool setFromOptions)
     : dm(dmIn), name(std::move(name)), comm(PetscObjectComm((PetscObject)dm)), fieldDescriptors(std::move(fieldDescriptorsIn)), solGlobalField(nullptr), modifiers(std::move(modifiersIn)) {
     // if provided, convert options to a petscOptions
     if (options) {
@@ -20,8 +20,9 @@ ablate::domain::Domain::Domain(DM dmIn, std::string name, std::vector<std::share
 
     // Apply petsc options to the domain
     PetscObjectSetOptions((PetscObject)dm, petscOptions) >> checkError;
-    DMSetFromOptions(dm) >> checkError;
-
+    if (setFromOptions) {
+        DMSetFromOptions(dm) >> checkError;
+    }
     // update the dm with the modifiers
     for (auto& modifier : modifiers) {
         modifier->Modify(dm);
