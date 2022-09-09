@@ -10,7 +10,8 @@ using fp = ablate::finiteVolume::CompressibleFlowFields;
 
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
-                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool disablePressure, std::shared_ptr<ablate::radiation::Radiation> radiationIn)
+                                                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool disablePressure,
+                                                          std::shared_ptr<ablate::radiation::Radiation> radiationIn)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -77,17 +78,16 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
             throw std::invalid_argument("The massFractions must be specified for ablate::boundarySolver::physics::Sublimation when DENSITY_YI_FIELD is active.");
         }
     }
-
-    //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
-    solver::DynamicRange faceRange;
-    for (PetscInt i = 0; i < static_cast<int>(bSolver.GetBoundaryGeometry().size()); i++) {
-        faceRange.Add(bSolver.GetBoundaryGeometry()[0].geometry.faceId); //!< Add each ID to the range that the radiation solver will use
-    }
-
     //!< Initialize the radiation solver
     if (radiation) {
+        //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
+        solver::DynamicRange faceRange;
+        for (PetscInt i = 0; i < static_cast<int>(bSolver.GetBoundaryGeometry().size()); i++) {
+            faceRange.Add(bSolver.GetBoundaryGeometry()[i].geometry.faceId);  //!< Add each ID to the range that the radiation solver will use
+        }
+        radiation->Register(reinterpret_cast<std::shared_ptr<ablate::domain::SubDomain> &>(bSolver.GetSubDomain()));
         radiation->Setup(faceRange.GetRange(), true);
-        radiation->Initialize(faceRange.GetRange()); //!< Pass the non-dynamic range into the radiation solver
+        radiation->Initialize(faceRange.GetRange());  //!< Pass the non-dynamic range into the radiation solver
     }
 }
 
