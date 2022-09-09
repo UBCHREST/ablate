@@ -79,6 +79,7 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
         }
     }
     //!< Initialize the radiation solver
+    printf("%i %i\n",static_cast<int>(bSolver.GetBoundaryGeometry().size()), bSolver.GetBoundaryGeometry()[0].geometry.faceId);
     if (radiation) {
         //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
         solver::DynamicRange faceRange;
@@ -89,9 +90,7 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain(), true);
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
 
-        //        if (!boundaryUpdateFunctions.empty()) {
-        //            RegisterPreStep([this](auto ts, auto& solver) { UpdateVariablesPreStep(ts, solver); }); TODO: This
-        //        }
+        bSolver.RegisterPreStep([this](auto ts, auto& solver) { SublimationPreStep(ts, solver); });
     }
 }
 

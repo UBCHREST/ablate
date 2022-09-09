@@ -18,31 +18,6 @@ void ablate::boundarySolver::lodi::IsothermalWall::Setup(ablate::boundarySolver:
         bSolver.RegisterFunction(
             MirrorSpecies, this, {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD}, {finiteVolume::CompressibleFlowFields::YI_FIELD});
     }
-
-    // Register a pre function step to update velocity over this solver if specified
-    //    if (radiation) {
-    //        //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
-    //        solver::DynamicRange faceRange;
-    //        for (PetscInt i = 0; i < static_cast<int>(bSolver.GetBoundaryGeometry().size()); i++) {
-    //            faceRange.Add(bSolver.GetBoundaryGeometry()[0].geometry.faceId); //!< Add each ID to the range that the radiation solver will use
-    //        }
-    //
-    //        //!< Initialize the radiation solver
-    //        radiation->Setup(faceRange.GetRange(), true);
-    //        radiation->Initialize(faceRange.GetRange()); //!< Pass the non-dynamic range into the radiation solver
-    //
-    //        // define an update field function
-    //        auto updateFieldFunction =
-    //            std::make_shared<mathFunctions::FieldFunction>(finiteVolume::CompressibleFlowFields::EULER_FIELD, ablate::mathFunctions::Create(UpdateVelocityFunction, prescribedVelocity.get()));
-    //
-    //        bSolver.RegisterPreStep([&bSolver, updateFieldFunction](auto ts, auto &solver) {
-    //            // Get the current time
-    //            PetscReal time;
-    //            TSGetTime(ts, &time) >> checkError;
-    //
-    //            bSolver.InsertFieldFunctions({updateFieldFunction}, time);
-    //        });
-    //    }
 }
 
 PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::IsothermalWallFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,

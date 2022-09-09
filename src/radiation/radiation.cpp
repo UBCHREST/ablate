@@ -495,15 +495,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     if (log) EndEvent();
 }
 
-// void ablate::radiation::Radiation::Initialize1D(const solver::Range& cellRange) {}
-
-// const std::map<PetscInt, ablate::radiation::Radiation::Origin>& ablate::radiation::Radiation::Solve1D(Vec solVec) {
-//     // TODO: For nTheta
-//     // TODO: Get theta, bottom wall intensity
-//     // TODO: For cells between the top and bottom points
-//         // TODO: Compute and store the intensity at each point in the ray
-// }
-
 void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field temperatureField, Vec auxVec) {  //!< Pass in const auto for temperature and Vec for aux
     if (log) StartEvent("Radiation Solve");
 
