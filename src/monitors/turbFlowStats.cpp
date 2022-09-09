@@ -97,7 +97,7 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                 ierr = DMPlexPointGlobalRef(monitor->turbDM, turbCell, turbDat, &turbPt);
                 CHKERRQ(ierr);
 
-                if(turbPt) {
+                if (turbPt) {
                     // Get the density data from solution point data
                     PetscReal densLoc;
                     monitor->densityFunc.function(solPt, &densLoc, monitor->densityFunc.context.get());
