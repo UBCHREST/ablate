@@ -147,6 +147,17 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesEvFlux(PetscInt dim, con
     CHKERRQ(ierr);
     ierr = CompressibleFlowComputeLesStressTensor(dim, ctx, fg, field + uOff[euler], aux + aOff[EV_FIELD], gradAux + aOff_x[VEL], lestau);
     CHKERRQ(ierr);
+    
+        for (PetscInt ev = 0; ev < flowParameters->numberSpecies; ++ev) {
+        flux[sp] = 0;
+
+        for (PetscInt d = 0; d < dim; ++d) {
+            // LESspeciesFlux(-rho mut dYi/dx - mut dYi/dy - rho mut dYi//dz) . n A
+            const int offset = aOff_x[EV_FIELD] + (ev * dim) + d;
+            PetscReal lesSpeciesFlux = -fg->normal[d] * mut * gradAux[offset];
+            flux[sp] += lesSpeciesFlux;
+        }
+    }
     flux[flowParameters->tke_ev] = 0;
         const PetscReal areaMag = utilities::MathUtilities::MagVector(dim, fg->normal);
     // energy equation
