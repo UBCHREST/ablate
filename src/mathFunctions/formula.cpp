@@ -1,23 +1,13 @@
 #include "formula.hpp"
+
+#include <utility>
 #include "simpleFormula.hpp"
 
-ablate::mathFunctions::Formula::Formula(std::string functionString, std::map<std::string, std::shared_ptr<MathFunction>> nestedFunctionsIn, std::shared_ptr<ablate::parameters::Parameters> constants)
-    : formula(functionString) {
-    // define the x,y,z and t variables
-    parser.DefineVar("x", &coordinate[0]);
-    parser.DefineVar("y", &coordinate[1]);
-    parser.DefineVar("z", &coordinate[2]);
-    parser.DefineVar("t", &time);
-
-    // Add in any provided constants
-    if (constants) {
-        for (const auto& key : constants->GetKeys()) {
-            parser.DefineConst(key, constants->GetExpect<double>(key));
-        }
-    }
-
+ablate::mathFunctions::Formula::Formula(std::string functionString, const std::map<std::string, std::shared_ptr<MathFunction>>& nestedFunctionsIn,
+                                        std::shared_ptr<ablate::parameters::Parameters> constants)
+    : FormulaBase(std::move(functionString), std::move(constants)) {
     // for every nestedFunction passed in , use it
-    for (auto nestedFunction : nestedFunctionsIn) {
+    for (const auto& nestedFunction : nestedFunctionsIn) {
         // store the function
         nestedFunctions.push_back(nestedFunction.second);
 
@@ -27,10 +17,6 @@ ablate::mathFunctions::Formula::Formula(std::string functionString, std::map<std
         // register this with the parser
         parser.DefineVar(nestedFunction.first, nestedValues.back().get());
     }
-
-    // define any additional helper functions
-    ablate::mathFunctions::SimpleFormula::DefineAdditionalFunctions(parser);
-    parser.SetExpr(formula);
 
     // Test the function
     try {
@@ -167,6 +153,6 @@ PetscErrorCode ablate::mathFunctions::Formula::ParsedPetscNested(PetscInt dim, P
 #include "registrar.hpp"
 REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::Formula,
          " computes string function with variables x, y, z, and t where additional variables can be specified using other functions",
-         ARG(std::string, "formula", "see ParsedFunction for details on the string formatting."),
+         ARG(std::string, "formula", "see SimpleFormula for details on the string formatting."),
          OPT(std::map<std::string TMP_COMMA ablate::mathFunctions::MathFunction>, "nested", "a map of nested MathFunctions.  These functions are assumed to compute a single scalar value"),
          OPT(ablate::parameters::Parameters, "constants", "constants that can be used in the formula"));
