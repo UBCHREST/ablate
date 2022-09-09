@@ -122,7 +122,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     // Perform the radiation solve at every time step because there is no interval on the sublimation solver at the moment. Use the solution vector from the radiation.
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
-        sublimation->radiation->origin = sublimation->radiation->Solve(bSolver.GetSubDomain());
+        sublimation->radiation->origin = sublimation->radiation->Solve(solVec, temperatureField, auxVec);
         radIntensity = sublimation->radiation->GetIntensity(fg->faceId);
     }
 
