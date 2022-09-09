@@ -28,11 +28,11 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
     if (monitor->interval->Check(PetscObjectComm((PetscObject)ts), step, crtime)) {
         std::vector<Vec> vec(monitor->fieldNames.size(), nullptr);
         std::vector<IS> vecIS(monitor->fieldNames.size(), nullptr);
-        std::vector<DM> subDM(monitor->fieldNames.size(), nullptr);
+        std::vector<DM> fieldDM(monitor->fieldNames.size(), nullptr);
         for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
             const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
 
-            ierr = monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIS[f], &vec[f], &subDM[f]);
+            ierr = monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]);
             CHKERRQ(ierr);
         }
 
@@ -42,9 +42,15 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
         solDM = monitor->GetSolver()->GetSubDomain().GetDM();
 
         //! Get relevant data
-        // Get cell range (just keep data in this struct and read out as necessary).
-        Range cellRange;
-        monitor->GetSolver()->GetCellRange(cellRange);
+        // Get the local cell range
+        PetscInt cStart, cEnd;
+        DMPlexGetHeightStratum(monitor->turbDM, 0, &cStart, &cEnd);
+
+        // Get the local to global cell mapping
+        IS subpointIS;
+        const PetscInt* subpointIndices;
+        DMPlexGetSubpointIS(monitor->turbDM, &subpointIS);
+        ISGetIndices(subpointIS, &subpointIndices);
 
         // Extract the solution global array
         const PetscScalar* solDat;
@@ -72,24 +78,26 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
             CHKERRQ(ierr);
 
             //! Compute measures
-            for (PetscInt c = cellRange.start; c < cellRange.end; c++) {
+            for (PetscInt c = cStart; c < cEnd; c++) {
+                PetscInt turbCell = c;
+                PetscInt masterCell = subpointIndices[turbCell];
                 const PetscScalar* fieldPt;
                 const PetscScalar* solPt;
                 PetscScalar* turbPt;
 
                 // Get field point data
-                ierr = DMPlexPointLocalRead(subDM[f], cellRange.points[c], fieldDat, &fieldPt);
+                ierr = DMPlexPointLocalRead(fieldDM[f], masterCell, fieldDat, &fieldPt);
                 CHKERRQ(ierr);
 
                 // Get solution point data
-                ierr = DMPlexPointLocalRead(solDM, cellRange.points[c], solDat, &solPt);
+                ierr = DMPlexPointLocalRead(solDM, masterCell, solDat, &solPt);
                 CHKERRQ(ierr);
 
                 // Get read/write access to point in turbulent flow array
-                ierr = DMPlexPointGlobalRef(monitor->turbDM, cellRange.points[c], turbDat, &turbPt);
+                ierr = DMPlexPointGlobalRef(monitor->turbDM, turbCell, turbDat, &turbPt);
                 CHKERRQ(ierr);
 
-                if (turbPt) {
+                if(turbPt) {
                     // Get the density data from solution point data
                     PetscReal densLoc;
                     monitor->densityFunc.function(solPt, &densLoc, monitor->densityFunc.context.get());
@@ -113,8 +121,14 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                     }
                 }
             }
+            ierr = VecRestoreArrayRead(vec[f], &fieldDat);
+            CHKERRQ(ierr);
         }
-        // Free the turbulent flow array
+        // Cleanup
+        ierr = ISRestoreIndices(subpointIS, &subpointIndices);
+        CHKERRQ(ierr);
+        ierr = VecRestoreArrayRead(solVec, &solDat);
+        CHKERRQ(ierr);
         ierr = VecRestoreArray(monitor->turbVec, &turbDat);
         CHKERRQ(ierr);
     }
