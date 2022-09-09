@@ -448,6 +448,9 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                  * this will be the same procedure.
                  * */
                 switch (dim) {
+                    case 1:
+                        coord[ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);
+                        break;
                     case 2:                                                                                           //!< If there are only two dimensions in this simulation
                         coord[2 * ipart] = virtualcoord[ipart].x + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Update the two physical coordinates
                         coord[(2 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
@@ -506,11 +509,15 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
 
     /** Get the array of the solution vector. */
     const PetscScalar* solArray;
+    DM solDm;
+    VecGetDM(solVec, &solDm);
     VecGetArrayRead(solVec, &solArray);
 
     /** Get the array of the aux vector. */
     //    const auto auxVec = subDomain.GetAuxVector();
     const PetscScalar* auxArray;
+    DM auxDm;
+    VecGetDM(auxVec, &auxDm);
     VecGetArrayRead(auxVec, &auxArray);
 
     /** Get the temperature field.
@@ -575,8 +582,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                     Get the array that lives inside the vector
                     Gets the temperature from the cell index specified
                 */
-                DMPlexPointLocalFieldRead(subDomain.GetAuxDM(), rays[Key(&identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
-                DMPlexPointLocalRead(subDomain.GetDM(), rays[Key(&identifier[ipart])].cells[n], solArray, &sol);
+                DMPlexPointLocalFieldRead(auxDm, rays[Key(&identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
+                DMPlexPointLocalRead(solDm, rays[Key(&identifier[ipart])].cells[n], solArray, &sol);
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 
@@ -743,7 +750,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     PetscFVCellGeom* cellGeom;
 
     if (log) {
-        DMPlexComputeGeometryFVM(subDomain.GetDM(), &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
+        DMPlexComputeGeometryFVM(solDm, &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
         VecGetDM(cellGeomVec, &cellDM) >> checkError;
         VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
         printf("x           y           z           G\n");  //!< Line labelling the log outputs for readability
@@ -751,7 +758,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
 
     for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
         /** Gets the temperature from the cell index specified */
-        DMPlexPointLocalFieldRead(subDomain.GetAuxDM(), iCell, temperatureField.id, auxArray, &temperature);
+        DMPlexPointLocalFieldRead(auxDm, iCell, temperatureField.id, auxArray, &temperature);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
         if (surface) losses /= 2;  //!< If this is a surface then losses will only leave the hemisphere
         if (log) {
