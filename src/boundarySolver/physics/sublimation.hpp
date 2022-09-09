@@ -70,6 +70,8 @@ class Sublimation : public BoundaryProcess {
      */
     void Setup(PetscInt numberSpecies);
 
+    PetscErrorCode SublimationPreStep(TS ts, ablate::solver::Solver &solver);
+
     /**
      * Support function to compute and insert source terms for this boundary condition
      * @param dim
