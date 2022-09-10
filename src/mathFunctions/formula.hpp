@@ -3,18 +3,12 @@
 #include <muParser.h>
 #include <memory>
 #include <vector>
-#include "mathFunction.hpp"
+#include "formulaBase.hpp"
 #include "parameters/parameters.hpp"
 
 namespace ablate::mathFunctions {
-class Formula : public MathFunction {
+class Formula : public FormulaBase {
    private:
-    mutable double coordinate[3] = {0, 0, 0};
-    mutable double time = 0.0;
-
-    mu::Parser parser;
-    const std::string formula;
-
     // store the scratch variables
     std::vector<std::unique_ptr<double>> nestedValues;
     std::vector<std::shared_ptr<MathFunction>> nestedFunctions;
@@ -26,7 +20,7 @@ class Formula : public MathFunction {
     Formula(const Formula&) = delete;
     void operator=(const Formula&) = delete;
 
-    explicit Formula(std::string functionString, std::map<std::string, std::shared_ptr<MathFunction>>, std::shared_ptr<ablate::parameters::Parameters> constants = {});
+    explicit Formula(std::string functionString, const std::map<std::string, std::shared_ptr<MathFunction>>& = {}, std::shared_ptr<ablate::parameters::Parameters> constants = {});
 
     double Eval(const double& x, const double& y, const double& z, const double& t) const override;
 

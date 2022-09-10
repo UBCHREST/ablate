@@ -26,7 +26,7 @@ class SubDomain;
 class Domain {
    protected:
     Domain(DM dm, std::string name, std::vector<std::shared_ptr<FieldDescriptor>>, std::vector<std::shared_ptr<modifiers::Modifier>> modifiers,
-           const std::shared_ptr<parameters::Parameters>& options = {});
+           const std::shared_ptr<parameters::Parameters>& options = {}, bool setFromOptions = true);
     virtual ~Domain();
 
     // The primary dm
@@ -60,7 +60,7 @@ class Domain {
     PetscOptions petscOptions = nullptr;
 
    public:
-    [[nodiscard]] std::string GetName() const { return name; }
+    [[nodiscard]] const std::string& GetName() const { return name; }
 
     inline DM& GetDM() noexcept { return dm; }
 
@@ -78,7 +78,12 @@ class Domain {
 
     [[nodiscard]] PetscInt GetDimensions() const noexcept;
 
-    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations,
+    /**
+     * Setup the local data storage
+     * @param solvers
+     * @param initializations
+     */
+    void InitializeSubDomains(const std::vector<std::shared_ptr<solver::Solver>>& solvers = {}, const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& initializations = {},
                               const std::vector<std::shared_ptr<mathFunctions::FieldFunction>>& = {});
 
     /**

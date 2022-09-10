@@ -44,6 +44,23 @@ class VectorUtilities {
         return result;
     }
 
+    /**
+     * Fills an array based upon a key vector and map
+     * @tparam T
+     * @param list
+     * @return
+     */
+    template <class K, class T>
+    static inline std::vector<T> Fill(const std::vector<K>& keys, const std::map<K, T>& values, T defaultValue = {}) {
+        std::vector<T> result(keys.size(), defaultValue);
+        for (std::size_t i = 0; i < keys.size(); i++) {
+            if (values.count(keys[i])) {
+                result[i] = values.at(keys[i]);
+            }
+        }
+        return result;
+    }
+
    private:
     /**
      * helper function for Concatenate to string

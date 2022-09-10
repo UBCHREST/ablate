@@ -2,20 +2,13 @@
 #include <petscsys.h>
 #include <algorithm>
 #include <exception>
+#include <utility>
 #include "simpleFormula.hpp"
 
-ablate::mathFunctions::ParsedSeries::ParsedSeries(std::string functionString, int lowerBound, int upperBound) : formula(functionString), lowerBound(lowerBound), upperBound(upperBound) {
+ablate::mathFunctions::ParsedSeries::ParsedSeries(std::string functionString, int lowerBound, int upperBound, const std::shared_ptr<ablate::parameters::Parameters>& constants)
+    : FormulaBase(std::move(functionString), constants), lowerBound(lowerBound), upperBound(upperBound) {
     // define the x,y,z and t variables
-    parser.DefineVar("x", &coordinate[0]);
-    parser.DefineVar("y", &coordinate[1]);
-    parser.DefineVar("z", &coordinate[2]);
-    parser.DefineVar("t", &time);
     parser.DefineVar("i", &i);
-
-    // define any additional helper functions
-    ablate::mathFunctions::SimpleFormula::DefineAdditionalFunctions(parser);
-
-    parser.SetExpr(formula);
 
     // Test the function
     try {
@@ -156,5 +149,5 @@ PetscErrorCode ablate::mathFunctions::ParsedSeries::ParsedPetscSeries(PetscInt d
 #include "registrar.hpp"
 REGISTER(ablate::mathFunctions::MathFunction, ablate::mathFunctions::ParsedSeries,
          " computes a series result from a string function with variables x, y, z, t, and i where i index of summation. $$\\sum_{i = m}^n formula(x, y, z, t, n)$$",
-         ARG(std::string, "formula", "see ParsedFunction for details on the string formatting."), ARG(int, "lowerBound", "the inclusive lower bound of summation (m)"),
-         ARG(int, "upperBound", "the inclusive upper bound of summation (n)"));
+         ARG(std::string, "formula", "see SimpleFormula for details on the string formatting."), ARG(int, "lowerBound", "the inclusive lower bound of summation (m)"),
+         ARG(int, "upperBound", "the inclusive upper bound of summation (n)"), OPT(ablate::parameters::Parameters, "constants", "constants that can be used in the formula"));
