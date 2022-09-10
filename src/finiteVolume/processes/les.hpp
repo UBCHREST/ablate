@@ -4,6 +4,7 @@
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/fluxCalculator/fluxCalculator.hpp"
 #include "flowProcess.hpp"
+#include "navierStokesTransport.hpp"
 
 namespace ablate::finiteVolume::processes {
 
@@ -18,24 +19,27 @@ class LES : public FlowProcess {
     inline const static PetscReal c_k = 0.094;
     inline const static PetscReal c_e = 1.048;
     inline const static PetscReal c_p = 1.040;
+    inline const static PetscReal prT = 1.0;  // based on Reynolds Analogy
 
+    inline const static PetscReal scT = 1.0;    // based on Reynolds Analogy
 
     /* store turbulent diffusion  data */
     struct DiffusionData {
-
-        eos::ThermodynamicFunction computeTemperatureFunction;
+        std::shared_ptr<ablate::finiteVolume::processes::NavierStokesTransport>  computeTau
+            ;
         PetscInt numberSpecies;
         PetscInt tke_ev;
 
+        PetscInt numberEV;
 
 
     };
     DiffusionData diffusionData;
+    PetscInt numberSpecies ;
 
 
-
-   public:
-    explicit LES( std::string tke, std::shared_ptr<eos::EOS> eos);
+        public:
+    explicit LES( std::string tke);
 
     /**
      * public function to link this process with the flow
@@ -95,8 +99,6 @@ class LES : public FlowProcess {
      * ctx = lesDiffusionData
      * @return
      */
-    static PetscErrorCode CompressibleFlowComputeLesStressTensor(PetscInt dim,     void* ctx,
-                                                                 const PetscFVFaceGeom* fg, const PetscScalar* densityField, const PetscScalar* getTke, const PetscReal* gradVel,  PetscReal* lestau);
 
     /**
      * static support function to compute the turbulent viscosity
@@ -107,8 +109,7 @@ class LES : public FlowProcess {
      * @param mut
      * @return
      */
-    static PetscErrorCode LesViscosity(PetscInt dim,     void* ctx,
-                                       const PetscFVFaceGeom* fg, const PetscScalar* densityField, const PetscScalar* getTke, PetscReal& mut);
+    static PetscErrorCode LesViscosity(PetscInt dim,  const PetscFVFaceGeom* fg, const PetscScalar* densityField, const PetscReal turbulence, PetscReal& mut);
 };
 
 }  // namespace ablate::finiteVolume::processes
