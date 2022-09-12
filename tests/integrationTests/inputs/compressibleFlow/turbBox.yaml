@@ -17,16 +17,15 @@ timestepper:
   arguments:
     ts_type: rk
     ts_adapt_type: none
-    ts_max_steps: 1
+    ts_max_steps: 50000
   # the domain/mesh must be specified at the start of a simulation
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
-    faces: [ 4, 4, 4 ]
-    lower: [ 0, 0, 0]
-    upper: [ 1, 1, 1]
-    boundary: [ "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC"]
+    faces: [ 8, 8]
+    lower: [ 0, 0]
+    upper: [ 0.565, 0.565]
+    boundary: [ "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC"]
     simplex: false
-
 
     # specify any modifications to be performed to the mesh/domain
     modifiers:
@@ -47,14 +46,31 @@ timestepper:
   initialization:
     # the ablate::finiteVolume::fieldFunctions::Euler helper can define the "euler" field (rho, rhoE, rhoU, rhoV) from more common inputs
     - !ablate::finiteVolume::fieldFunctions::Euler
+      &eulerFlowFieldState
       state: &flowFieldState
         eos: *eos
         temperature: "300"
-        pressure: "101325.0"
-        velocity: 0, 0, 0
+        pressure: "95325.0"
+        velocity: !ablate::mathFunctions::ParsedSeries
+          upperBound: 20000
+          lowerBound: 1
+          formula: 2 * sqrt(1.453 * exp(-2 * (((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) / 4819) ^ 2) * (.25^2 / 25.82) * (((100/9)+ (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000)/ 25.82) ^ 4 / (1* (1 + (((100/9) + (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000) / 25.82) )^ (17/6)))* cos( ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) * (2/(2*3.14*9/100/8))*sin(.5* ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000)* (2*3.14*9/100/8)*sin( acos(pRand(-1,1))) * cos(rand(0,2*3.14)) )* x + (rand(-3.14/2,3.14/2))),  2 * sqrt(1.453 * exp(-2 * (((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) / 4819) ^ 2) * (.25^2 / 25.82) * (((100/9)+ (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000)/ 25.82) ^ 4 / (1* (1 + (((100/9) + (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000) / 25.82) )^ (17/6)))* cos( ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) * (2/(2*3.14*9/100/8))*sin(.5* ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000)* (2*3.14*9/100/8)*sin( acos(pRand(-1,1))) * sin(rand(0,2*3.14)) )* y + (rand(-3.14/2,3.14/2)))
 
-
-
+          constants:
+            n: 5000
+            alpha: 1.453
+            delta: (2*3.14*9/100/8)
+            kappa_eta: 0.8573*5624
+            uPrime: 0.25
+            kappa_e: 25.82
+            kappa_o: (100/9)
+            kappa_max: 3.14/delta
+            HI: 1
+            LO: -1
+            HI1: 2*pi
+            LO1: 0
+            HI2: pi/2
+            LO2: -pi/2
 
     # the density*ev field must be specified. The DensityExtraVariables class helps by computing density and each ev value using the specified list functions
     - !ablate::finiteVolume::fieldFunctions::DensityExtraVariables
@@ -62,34 +78,27 @@ timestepper:
       state: *flowFieldState
       # a list of functions used to describe the extra variable initialization
       functions:
-        - .25 # ev1 is set to a constant value of 0.25
+        - .07 # ev1 is set to a constant value of 0.25
 
 
 # this problem uses a single solver (!ablate::finiteVolume::LesCompressibleFlowSolver)
 solver: !ablate::finiteVolume::CompressibleFlowSolver
   id: evExample
   parameters:
-    cfl: .5
+    cfl: .07
   # a flux calculator must be specified to so solver for advection
   fluxCalculator: !ablate::finiteVolume::fluxCalculator::AusmpUp
-    mInf: .3
+    mInf: .1
   computePhysicsTimeStep: true
 
   # the default transport object assumes constant values for k, mu, diff
   transport:
     diff: 1E-5
-    k: 1E-4
-    mu: 0.02925
+    k: 0.025
+    mu: 1E-5
 
   # share the existing eos with the compressible flow solver
   eos: *eos
-
-  additionalProcesses:
-    # the ArbitrarySource process was added to define a region of additional ev source
-    - !ablate::finiteVolume::processes::LES
-      tke: ev1
-      eos: *eos
-
 
 
 
@@ -101,20 +110,12 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
     - !ablate::monitors::Probes
       probes:
         - name: a
-          location: [.25, .25, 0.25]
+          location: [.25, .25]
         - name: b
-          location: [.75, .25, 0.25]
+          location: [.05, .05]
         - name: c
-          location: [ .25, .75 , 0.75]
+          location: [ .1, .1 ]
       bufferSize: 10
       variables:  [velocity, densityEV, ev, euler ] # these fields will be saved to a text file at the specified locations
 
-    # define a probe using a rake, which uses a start/end location and a number of probes to compute initial probe locations
-    - !ablate::monitors::Probes
-      probes: !ablate::monitors::probes::Rake
-        name: rakeProbe
-        start: [.75, .5, 0.5]
-        end: [.25, 0.5, 0.5]
-        number: 3
-      bufferSize: 10
-      variables: [ velocity, densityEV, ev, euler ]  # these fields will be saved to a text file at the specified locations
+
