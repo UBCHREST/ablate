@@ -12,8 +12,8 @@
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : solverId((std::basic_string<char> &&) solverId), region(region), radiationModel(std::move(radiationModelIn)), fieldBoundary(std::move(fieldBoundary)), log(std::move(log)) {
-    nTheta = raynumber;    //!< The number of angles to solve with, given by user input
-    nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
+    nTheta = raynumber;  //!< The number of angles to solve with, given by user input
+    nPhi = 2 * raynumber;                 //!< The number of angles to solve with, given by user input
 }
 
 ablate::radiation::Radiation::~Radiation() {
@@ -26,7 +26,7 @@ ablate::radiation::Radiation::~Radiation() {
 void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain, bool surfaceIn) {
     surface = surfaceIn;
     dim = subDomain.GetDimensions();  //!< Number of dimensions already defined in the setup
-                                      //    nTheta = (dim == 1) ? 2 : nTheta;
+    nTheta = (dim == 1) ? 2 : nTheta; //!< Reduce the number of rays if one dimensional symmetry can be taken advantage of
 
     /** Begins radiation properties model
      * Runs the ray initialization, finding cell indices
@@ -110,7 +110,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
         PetscReal centroid[3];
         DMPlexComputeCellGeometryFVM(subDomain.GetDM(), iCell, nullptr, centroid, nullptr) >> checkError;
 
-        // TODO: If this is a surface implementation, the temperature of the emission and the first cell will need to be set to the
+        // TODO: If this is a surface implementation, the temperature of the emission must be set to the boundary and the first cell will need to be set to the cell that the particle inhabits
 
         /** for every angle theta
          * for every angle phi
@@ -415,15 +415,15 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                         }
                     }
                 }
-//                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
+                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
                 rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
-            }                                                                          // else {
-                            virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
-            //            }
+            } else {
+                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
+            }
             /** Step 3.5: Condition for one dimensional domains to avoid infinite rays perpendicular to the x-axis
              * If the domain is 1D and the x-direction of the particle is zero then delete the particle here
              * */
-            if ((dim == 1) && (virtualcoord[ipart].xdir < 0.0000001)) {
+            if ((dim == 1) && (abs(virtualcoord[ipart].xdir) < 0.0000001)) {
                 DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
                 DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
                 DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
@@ -521,8 +521,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** Declare the basic information*/
     PetscReal* sol;          //!< The solution value at any given location
     PetscReal* temperature;  //!< The temperature at any given location
-    PetscReal dTheta = ablate::utilities::Constants::pi / nTheta;
-    PetscReal dPhi = (2 * ablate::utilities::Constants::pi) / nPhi;
+    PetscReal dTheta = (dim == 1) ? 1 : ablate::utilities::Constants::pi / (nTheta - 1);
+    PetscReal dPhi = (dim == 1) ? (4 * ablate::utilities::Constants::pi / nPhi) : (2 * ablate::utilities::Constants::pi) / (nPhi);
     double kappa = 1;  //!< Absorptivity coefficient, property of each cell
     double theta;
 
@@ -568,7 +568,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         PetscInt numPoints = static_cast<int>(rays[Key(&identifier[ipart])].cells.size());
 
         if (numPoints > 0) {
-            for (PetscInt n = (numPoints - 1); n >= 0; n--) {
+            for (PetscInt n = 0; n < numPoints; n++) {
                 /** Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
                     Define the absorptivity and temperature in this section
                     For ABLATE implementation, get temperature based on this function
@@ -755,9 +755,9 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (surface) losses /= 2;  //!< If this is a surface then losses will only leave the hemisphere
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], o.intensity, losses);
+            printf("%f %f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity, losses);
         }
-        o.intensity = -kappa * (losses - o.intensity);
+        origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
 
     /** Cleanup */
@@ -778,6 +778,9 @@ PetscReal ablate::radiation::Radiation::FlameIntensity(double epsilon, double te
 
 void ablate::radiation::Radiation::UpdateCoordinates(PetscInt ipart, Virtualcoord* virtualcoord, PetscReal* coord) const {
     switch (dim) {
+        case 1:
+            coord[ipart] = virtualcoord[ipart].x;
+            break;
         case 2:                                        //!< If there are only two dimensions in this simulation
             coord[2 * ipart] = virtualcoord[ipart].x;  //!< Update the two physical coordinates
             coord[(2 * ipart) + 1] = virtualcoord[ipart].y;
