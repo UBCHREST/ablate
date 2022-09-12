@@ -184,16 +184,17 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesEvFlux(PetscInt dim, con
 
         for (PetscInt d = 0; d < dim; ++d) {
             PetscReal lesEvFlux = 0.0;
-            for (PetscInt c = 0; c < dim; ++c) {
+            PetscReal evFlux;
+                for (PetscInt c = 0; c < dim; ++c) {
                 //
 
-                lesEvFlux += sqrt(areaMag) * density * tau[d * dim + c] * tau[d * dim + c] / mut;
+                lesEvFlux += sqrt(areaMag) * density * tau[d * dim + c] * tau[d * dim + c] / (mut+.00001);
             }
 
             //  LESevFlux( rho Di dEVi/dx + rho Di dEVi/dy + rho Di dEVi//dz) . n A +  LESevFlux(-rho ce EV^3/2 ) . n A
 
             const int offset = aOff_x[EV_FIELD] + (ev * dim) + d;
-            PetscReal evFlux = -fg->normal[d] * mut * gradAux[offset] / scT;
+            evFlux = -fg->normal[d] * mut * gradAux[offset] / scT;
             flux[ev] += evFlux;
 
             const int offset_tke = aOff_x[EV_FIELD] + (flowParameters->tke_ev * dim) + d;  // only counting tke here
