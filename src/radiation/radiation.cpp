@@ -8,13 +8,12 @@
 #include "finiteVolume/finiteVolumeSolver.hpp"
 #include "utilities/constants.hpp"
 #include "utilities/mathUtilities.hpp"
-#include "utilities/petscOptions.hpp"
 
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : solverId((std::basic_string<char> &&) solverId), region(region), radiationModel(std::move(radiationModelIn)), fieldBoundary(std::move(fieldBoundary)), log(std::move(log)) {
-    nTheta = (dim == 1) ? 2 : raynumber;  //!< The number of angles to solve with, given by user input
-    nPhi = 2 * raynumber;                 //!< The number of angles to solve with, given by user input
+    nTheta = raynumber;    //!< The number of angles to solve with, given by user input
+    nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
 
 ablate::radiation::Radiation::~Radiation() {
@@ -27,6 +26,7 @@ ablate::radiation::Radiation::~Radiation() {
 void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain, bool surfaceIn) {
     surface = surfaceIn;
     dim = subDomain.GetDimensions();  //!< Number of dimensions already defined in the setup
+                                      //    nTheta = (dim == 1) ? 2 : nTheta;
 
     /** Begins radiation properties model
      * Runs the ray initialization, finding cell indices
@@ -109,6 +109,8 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscReal centroid[3];
         DMPlexComputeCellGeometryFVM(subDomain.GetDM(), iCell, nullptr, centroid, nullptr) >> checkError;
+
+        // TODO: If this is a surface implementation, the temperature of the emission and the first cell will need to be set to the
 
         /** for every angle theta
          * for every angle phi
@@ -329,7 +331,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
 
         PetscInt ipart = -1;
         for (PetscInt ip = 0; ip < npoints; ip++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
-            ipart++;
+            ipart++;                                 //!< USE IP TO DEAL WITH DMLOCATE POINTS, USE IPART TO DEAL WITH PARTICLES
 
             /** IF THE CELL NUMBER IS RETURNED NEGATIVE, THEN WE HAVE REACHED THE BOUNDARY OF THE DOMAIN >> This exits the loop
              * This function returns multiple values if multiple points are input to it
@@ -340,7 +342,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
 
             /** make sure we are not working on a ghost cell */
             if ((nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) || stepcount == 0) {
-                index = (stepcount == 0) ? identifier[ip].iCell : cell[ip].index;
+                index = (stepcount == 0) ? identifier[ipart].iCell : cell[ip].index;
 
                 /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
                  * Hash the identifier into a key value that can be used in the map
@@ -358,8 +360,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                         checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
                     DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
 
-                    PetscInt newpoint = nsolvepoints - 1;        //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
-                    solveidentifier[newpoint] = identifier[ip];  //!< Give the particle an identifier which matches the particle it was created with
+                    PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
+                    solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
                     carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
 
                     DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >> checkError;  //!< The fields must be returned so that the swarm can be updated correctly?
@@ -413,15 +415,15 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                         }
                     }
                 }
-                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
+//                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
                 rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
-            } else {
-                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
-            }
+            }                                                                          // else {
+                            virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
+            //            }
             /** Step 3.5: Condition for one dimensional domains to avoid infinite rays perpendicular to the x-axis
              * If the domain is 1D and the x-direction of the particle is zero then delete the particle here
              * */
-            if (dim == 1 && virtualcoord[ipart].xdir == 0) {
+            if ((dim == 1) && (virtualcoord[ipart].xdir < 0.0000001)) {
                 DMSwarmRestoreField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
                 DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
                 DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
@@ -566,7 +568,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         PetscInt numPoints = static_cast<int>(rays[Key(&identifier[ipart])].cells.size());
 
         if (numPoints > 0) {
-            for (PetscInt n = 0; n < (numPoints); n++) {
+            for (PetscInt n = (numPoints - 1); n >= 0; n--) {
                 /** Go through every cell point that is stored within the ray >> FROM THE BOUNDARY TO THE SOURCE
                     Define the absorptivity and temperature in this section
                     For ABLATE implementation, get temperature based on this function
@@ -703,7 +705,6 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                     PetscReal phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;
                     ldotn = ((sin(theta) * cos(phi)) * faceNormx) + ((sin(theta) * sin(phi)) * faceNormy) + (cos(theta) * faceNormz);
                 }
-
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi * ldotn;  //!< Final ray calculation
             }
         }
@@ -744,7 +745,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         DMPlexComputeGeometryFVM(solDm, &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
         VecGetDM(cellGeomVec, &cellDM) >> checkError;
         VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-        printf("x           y           z           G\n");  //!< Line labelling the log outputs for readability
+        printf("x           y           z           G           L\n");  //!< Line labelling the log outputs for readability
     }
 
     for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
@@ -754,7 +755,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (surface) losses /= 2;  //!< If this is a surface then losses will only leave the hemisphere
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], o.intensity);
+            printf("%f %f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], o.intensity, losses);
         }
         o.intensity = -kappa * (losses - o.intensity);
     }
