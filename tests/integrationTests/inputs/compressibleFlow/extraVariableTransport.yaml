@@ -23,7 +23,7 @@ timestepper:
     name: simpleBoxField
     faces: [ 12, 12 ]
     lower: [ 0, 0 ]
-    upper: [ 1, 1 ]
+    upper: [ .5, .1 ]
     boundary: [ "NONE", "NONE" ]
     simplex: false
 
@@ -149,3 +149,23 @@ solver: !ablate::finiteVolume::CompressibleFlowSolver
       bufferSize: 10
       variables: [ velocity, densityEV, ev, euler ]  # these fields will be saved to a text file at the specified locations
 
+        velocity: !ablate::mathFunctions::ParsedSeries
+          upperBound: 5000
+          lowerBound: 1
+          formula: 2 * sqrt(alpha * exp(-2 * ((kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 / kappa_e) * ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) / kappa_e) )^ (17/6))) * cos( (kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n) * (2/delta)*sin(.5* (kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n)* delta*sin( acos(rand(-1,1))) * cos(rand(0,2*3.14)) )* x + (rand(-3.14/2,3.14/2))),  2 * sqrt(alpha * exp(-2 * ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 / kappa_e) * ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) / kappa_e) )^ (17/6))) * cos( (kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) * (2/delta)*sin(.5* (kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n)* delta*sin( acos(rand(-1,1))) * sin(rand(0,2*3.14)) )* y + (rand(-3.14/2,3.14/2))),  2 * sqrt(alpha * exp(-2 * ((kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) / kappa_eta) ^ 2) * (uPrime^2 / kappa_e) * ((kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n)/ kappa_e) ^ 4 / (1* (1 + ((kappa_o + (3.14/delta - kappa_o) * (i - 1)  / n) / kappa_e) )^ (17/6))) * cos( (kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n) * (2/delta)*sin(.5* (kappa_o + (3.14/delta- kappa_o) * (i - 1)  / n)* delta*cos( acos(rand(-1,1))) )* z + (rand(-3.14/2,3.14/2)))
+          constants:
+            n: 5000
+            alpha: 1.453
+            delta: 2*3.14*9/100/8
+            kappa_eta: 0.8573*5624
+            uPrime: 0.25
+            kappa_e: 40 * sqrt(5 / 12)
+            kappa_o: 100/9
+            kappa_max: 3.14/delta
+            HI: 1
+            LO: -1
+            HI1: 2*pi
+            LO1: 0
+            HI2: pi/2
+            LO2: -pi/2
+            formula: 2 * sqrt(1.453 * exp(-2 * (((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) / 4819) ^ 2) * (.25^2 / 25.82) * (((100/9)+ (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000)/ 25.82) ^ 4 / (1* (1 + (((100/9) + (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000) / 25.82) )^ (17/6)))* cos( ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) * (2/(2*3.14*9/100/8))*sin(.5* ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000)* (2*3.14*9/100/8)*sin( acos(pRand(-1,1))) * cos(rand(0,2*3.14)) )* x + (rand(-3.14/2,3.14/2))),  2 * sqrt(1.453 * exp(-2 * (((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) / 4819) ^ 2) * (.25^2 / 25.82) * (((100/9)+ (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000)/ 25.82) ^ 4 / (1* (1 + (((100/9) + (3.14/(2*3.14*9/100/8)- (100/9)) * (i - 1)  / 5000) / 25.82) )^ (17/6)))* cos( ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000) * (2/(2*3.14*9/100/8))*sin(.5* ((100/9) + (3.14/(2*3.14*9/100/8) - (100/9)) * (i - 1)  / 5000)* (2*3.14*9/100/8)*sin( acos(pRand(-1,1))) * sin(rand(0,2*3.14)) )* y + (rand(-3.14/2,3.14/2)))
