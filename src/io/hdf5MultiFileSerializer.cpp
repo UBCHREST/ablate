@@ -159,6 +159,7 @@ PetscErrorCode ablate::io::Hdf5MultiFileSerializer::Hdf5MultiFileSerializerSaveS
 }
 
 void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
+    PetscFunctionBeginUser;
     YAML::Emitter out;
     out << YAML::BeginMap;
     out << YAML::Key << "time";
@@ -180,6 +181,7 @@ void ablate::io::Hdf5MultiFileSerializer::SaveMetadata(TS ts) const {
         restartFile << out.c_str();
         restartFile.close();
     }
+    PetscFunctionReturnVoid();
 }
 
 void ablate::io::Hdf5MultiFileSerializer::RestoreTS(TS ts) {
