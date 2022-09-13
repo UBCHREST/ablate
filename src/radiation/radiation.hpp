@@ -60,6 +60,10 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     void Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain);
 
     //    void Initialize1D(const solver::Range &cellRange);
+    static PetscReal ReallySolveParallelPlates(PetscReal z);
+    static PetscReal EInteg(int order, double x);
+    static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double>& f);
+
 
     /** Get the subdomain */
     //    void Register(std::shared_ptr<ablate::domain::SubDomain>);
