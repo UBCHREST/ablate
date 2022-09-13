@@ -16,6 +16,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
      * Boundary information.
      */
     typedef struct {
+        PetscInt faceId;       /* local id for this face.  For merged faces this is the first face merged **/
         PetscReal normal[3];   /* normals (pointing into the boundary from the other region) */
         PetscReal areas[3];    /* Area-scaled normals */
         PetscReal centroid[3]; /* Location of centroid (quadrature point) */
@@ -37,7 +38,8 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     enum class BoundarySourceType {
         Point,       /** the source terms are added to boundary cell **/
         Distributed, /** the source terms are distributed to neighbor cells based upon the stencil (divided by cell volume) **/
-        Flux         /** the source term are added to only one neighbor cell. (divided by cell volume)**/
+        Flux,        /** the source term are added to only one neighbor cell. (divided by cell volume)**/
+        Face         /** the face location of the rhs array is directly passed to the function, this is only useful/called for io **/
     };
 
     /**
@@ -90,9 +92,9 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
         void* context;
         BoundarySourceType type;
 
-        std::vector<PetscInt> sourceFields;
-        std::vector<PetscInt> inputFields;
-        std::vector<PetscInt> auxFields;
+        std::vector<PetscInt> sourceFieldsOffset;
+        std::vector<PetscInt> inputFieldsOffset;
+        std::vector<PetscInt> auxFieldsOffset;
     };
 
     /**
@@ -111,6 +113,12 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
 
     // hold the update functions for flux and point sources
     std::vector<BoundarySourceFunctionDescription> boundarySourceFunctions;
+
+    // boundary output functions that can be used for
+    std::vector<BoundarySourceFunctionDescription> boundaryOutputFunctions;
+
+    // keep track of the output field components
+    std::vector<std::string> outputComponents;
 
     // hold the update functions for flux and point sources
     std::vector<BoundaryUpdateFunctionDescription> boundaryUpdateFunctions;
@@ -165,7 +173,7 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     void Initialize() override;
 
     /**
-     * Register an arbitrary function.  The user is responsible for all work
+     * Register an arbitrary function.  The user is responsible for all work.  When registering face based functions the each sourceField is assumed to be a separate components in a single field
      * @param function
      * @param context
      */
@@ -180,15 +188,23 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     void RegisterFunction(BoundaryUpdateFunction function, void* context, const std::vector<std::string>& inputFields, const std::vector<std::string>& auxFields);
 
     /**
-     * Function passed into PETSc to compute the FV RHS
-     * @param dm
+     * Function passed into PETSc to compute the FV RHS with all boundarySourceFunctions
      * @param time
      * @param locXVec
-     * @param globFVec
-     * @param ctx
+     * @param locFVec
      * @return
      */
     PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec) override;
+
+    /**
+     * Public function to allow arbitrary boundarySourceFunctions to be used for computation
+     * @param time
+     * @param locXVec
+     * @param locFVec
+     * @param boundarySourceFunctions
+     * @return
+     */
+    PetscErrorCode ComputeRHSFunction(PetscReal time, Vec locXVec, Vec locFVec, const std::vector<BoundarySourceFunctionDescription>& boundarySourceFunctions);
 
     /**
      * Helper function to project values to a cell boundary instead of the cell centroid
@@ -198,8 +214,31 @@ class BoundarySolver : public solver::CellSolver, public solver::RHSFunction {
     /**
      * Return a reference to the boundary geometry.  This is a slow call and should only be done for init/debugging/testing
      */
-    std::vector<GradientStencil> GetBoundaryGeometry(PetscInt cell) const;
+    [[nodiscard]] std::vector<GradientStencil> GetBoundaryGeometry(PetscInt cell) const;
+
+    /**
+     * Return a copy of all GradientStencil
+     */
+    const std::vector<GradientStencil>& GetBoundaryGeometry() const { return gradientStencils; }
+
+    /**
+     * Get access to the output fields
+     */
+    inline const std::vector<std::string>& GetOutputComponents() { return outputComponents; }
+
+    /**
+     * Get access to the output functions
+     */
+    inline const std::vector<BoundarySourceFunctionDescription>& GetOutputFunctions() { return boundaryOutputFunctions; }
 };
+
+/**
+ * Public function from stream to BoundarySourceType
+ * @param is
+ * @param v
+ * @return
+ */
+std::istream& operator>>(std::istream& is, BoundarySolver::BoundarySourceType& v);
 
 }  // namespace ablate::boundarySolver
 #endif  // ABLATELIBRARY_BOUNDARYSOLVER_HPP

@@ -65,6 +65,7 @@ PetscErrorCode ablate::io::Hdf5Serializer::Hdf5SerializerSaveStateFunction(TS ts
 }
 
 void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
+    PetscFunctionBeginUser;
     YAML::Emitter out;
     out << YAML::BeginMap;
     out << YAML::Key << "time";
@@ -86,6 +87,7 @@ void ablate::io::Hdf5Serializer::SaveMetadata(TS ts) {
         restartFile << out.c_str();
         restartFile.close();
     }
+    PetscFunctionReturnVoid();
 }
 
 void ablate::io::Hdf5Serializer::RestoreTS(TS ts) {
@@ -136,9 +138,11 @@ ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::~Hdf5ObjectSerializer() {
 }
 
 void ablate::io::Hdf5Serializer::Hdf5ObjectSerializer::Save(PetscInt sn, PetscReal t) {
+    PetscFunctionBeginUser;
     if (auto serializableObject = serializable.lock()) {
         serializableObject->Save(petscViewer, sn, t);
     }
+    PetscFunctionReturnVoid();
 }
 
 #include "registrar.hpp"

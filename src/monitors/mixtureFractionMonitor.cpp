@@ -36,6 +36,7 @@ void ablate::monitors::MixtureFractionMonitor::Register(std::shared_ptr<solver::
     FieldMonitor::Register(monitorName, solverIn, fields);
 }
 void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
     // get the required fields from the fieldDm and main dm
     const auto& zMixMonitorField = monitorSubDomain->GetField("zMix");
     const auto& yiMonitorField = monitorSubDomain->GetField(ablate::finiteVolume::CompressibleFlowFields::YI_FIELD);
@@ -126,6 +127,7 @@ void ablate::monitors::MixtureFractionMonitor::Save(PetscViewer viewer, PetscInt
 
     // Call the base Save function only after the subdomain global function is updated
     FieldMonitor::Save(viewer, sequenceNumber, time);
+    PetscFunctionReturnVoid();
 }
 
 #include "registrar.hpp"
