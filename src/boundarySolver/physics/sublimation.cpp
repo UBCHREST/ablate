@@ -78,8 +78,9 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
             throw std::invalid_argument("The massFractions must be specified for ablate::boundarySolver::physics::Sublimation when DENSITY_YI_FIELD is active.");
         }
     }
+    // TODO: The radiation solver will be initialized and set up during the sublimation initialization
     //!< Initialize the radiation solver
-    printf("%i %i\n",static_cast<int>(bSolver.GetBoundaryGeometry().size()), bSolver.GetBoundaryGeometry()[0].geometry.faceId);
+    //    printf("%i %i\n",static_cast<int>(bSolver.GetBoundaryGeometry().size()), bSolver.GetBoundaryGeometry()[0].geometry.faceId);
     if (radiation) {
         //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
         solver::DynamicRange faceRange;
@@ -90,7 +91,7 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
         radiation->Setup(faceRange.GetRange(), bSolver.GetSubDomain(), true);
         radiation->Initialize(faceRange.GetRange(), bSolver.GetSubDomain());  //!< Pass the non-dynamic range into the radiation solver
 
-        bSolver.RegisterPreStep([this](auto ts, auto& solver) { SublimationPreStep(ts, solver); });
+        bSolver.RegisterPreStep([this](auto ts, auto &solver) { SublimationPreStep(ts, solver); });
     }
 }
 
@@ -122,6 +123,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
         PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
     }
 
+    // TODO: This is where the radiation outputs will be read into the sublimation function
     // Perform the radiation solve at every time step because there is no interval on the sublimation solver at the moment. Use the solution vector from the radiation.
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
@@ -286,6 +288,7 @@ void ablate::boundarySolver::physics::Sublimation::Setup(PetscInt numberSpeciesI
     computePressure = eos->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, {});
 }
 
+// TODO: The pre step function of the radiation solver will be used to calculate the net radiation
 PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreStep(TS ts, ablate::solver::Solver &solver) {
     PetscFunctionBegin;
     if (radiation) radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
