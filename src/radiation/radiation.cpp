@@ -342,7 +342,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
 
             /** make sure we are not working on a ghost cell */
             if ((nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) || stepcount == 0) {
-                index = (stepcount == 0) ? identifier[ipart].iCell : cell[ip].index;
+                index = (stepcount == 0 && !surface) ? identifier[ipart].iCell : cell[ip].index; //!< If this is a surface implementation, then the search particle should never actually enter the boundary cell
 
                 /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
                  * Hash the identifier into a key value that can be used in the map
@@ -745,7 +745,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         DMPlexComputeGeometryFVM(solDm, &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
         VecGetDM(cellGeomVec, &cellDM) >> checkError;
         VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-        printf("x           y           z           G           L\n");  //!< Line labelling the log outputs for readability
+        printf("x           y           z           G           L           A           T\n");  //!< Line labelling the log outputs for readability
     }
 
     for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
@@ -755,7 +755,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (surface) losses /= 2;  //!< If this is a surface then losses will only leave the hemisphere
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity, losses);
+            printf("%f %f %f %f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity, losses, ReallySolveParallelPlates(cellGeom->centroid[0]),  *temperature);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
@@ -805,6 +805,129 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
         return 0;
     }
 }
+
+PetscReal ablate::radiation::Radiation::CSimp(PetscReal a, PetscReal b, std::vector<double>& f) {
+    /** b-a represents the size of the total domain that is being integrated over
+     * The number of elements in the vector that is being integrated over
+     * Initialize the sum of all middle elements
+     * Weight lightly on the borders
+     * Weight heavily in the center
+     * Add this value to the total every time
+     * Compute the total final integral
+     * */
+    PetscReal I;
+    int n = (int)f.size();  //!< The number of elements in the vector that is being integrated over
+    int margin = 0;
+    PetscReal f_sum = 0;  //!< Initialize the sum of all middle elements
+
+    if (a != b) {
+        /** Loop through every point except the first and last*/
+        for (int i = margin; i < (n - margin); i++) {
+            if (i % 2 == 0) {
+                f[i] = 2 * f[i];  //!< Weight lightly on the borders
+            } else {
+                f[i] = 4 * f[i];  //!< Weight heavily in the center
+            }
+            f_sum += f[i];  //!< Add this value to the total every time
+        }
+        I = ((b - a) / (3 * n)) * (f[0] + f_sum + f[n - 1]);  //!< Compute the total final integral
+    } else {
+        I = 0;
+    }
+    return I;
+}
+
+PetscReal ablate::radiation::Radiation::EInteg(int order, double x) {
+    if (x == 0 && order != 1) return 1.0 / (order - 1.0);  // Simple solution in this case, exit
+    std::vector<PetscReal> En;
+    int N = 10000;
+    for (int n = 1; n < N; n++) {
+        double mu = (double)n / N;
+        if (order == 1) {
+            En.push_back(exp(-x / mu) / mu);
+        }
+        if (order == 2) {
+            En.push_back(exp(-x / mu));
+        }
+    }
+    PetscReal final = CSimp(0, 1, En);
+    return final;
+}
+
+PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
+    /** Analytical solution of a special verification case.
+     * Define variables and basic information
+     * Intensity of rays originating from the top plate
+     * Set the initial ray intensity to the bottom wall intensity
+     * Intensity of rays originating from the bottom plate
+     * Kappa is not spatially dependant in this special case
+     * Prescribe the top and bottom heights for the domain
+     * */
+    PetscReal G;
+    PetscReal IT = ablate::radiation::Radiation::FlameIntensity(1, 700);   // Intensity of rays originating from the top plate
+    PetscReal IB = ablate::radiation::Radiation::FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
+    PetscReal kappa = 1;                                                   // Kappa is not spatially dependant in this special case
+    PetscReal zBottom = -0.0105;                                           // Prescribe the top and bottom heights for the domain
+    PetscReal zTop = 0.0105;
+
+    PetscReal temperature;
+    PetscReal Ibz;
+
+    PetscReal pi = 3.1415926535897932384626433832795028841971693993;
+    const PetscReal sbc = 5.6696e-8;
+    PetscInt nZp = 10000;
+
+    std::vector<PetscReal> Iplus;
+    std::vector<PetscReal> Iminus;
+
+    for (PetscInt nzp = 1; nzp < (nZp - 1); nzp++) {
+        /** Plus integral goes from bottom to Z
+         * Calculate the z height
+         * Get the temperature
+         * Two parabolas, is the z coordinate in one half of the domain or the other
+         * */
+        PetscReal zp = zBottom + ((PetscReal)nzp / nZp) * (z - zBottom);  // Calculate the z height
+        if (zp <= 0) {                                                    // Two parabolas, is the z coordinate in one half of the domain or the other
+            temperature = -6.349E6 * zp * zp + 2000.0;
+        } else {
+            temperature = -1.179E7 * zp * zp + 2000.0;
+        }
+        /** Get the black body intensity here*/
+        Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
+        Iplus.push_back(Ibz * EInteg(1, kappa * (z - zp)));
+    }
+    for (PetscInt nzp = 1; nzp < (nZp - 1); nzp++) {             /** Minus integral goes from z to top*/
+        PetscReal zp = z + ((PetscReal)nzp / nZp) * (zTop - z);  // Calculate the zp height
+        /** Get the temperature*/
+        if (zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
+            temperature = -6.349E6 * zp * zp + 2000.0;
+        } else {
+            temperature = -1.179E7 * zp * zp + 2000.0;
+        }
+        /** Get the black body intensity here*/
+        Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
+        Iminus.push_back(Ibz * EInteg(1, kappa * (zp - z)));
+    }
+
+    PetscReal term1 = IB * EInteg(2, kappa * (z - zBottom));
+    PetscReal term2 = IT * EInteg(2, kappa * (zTop - z));
+    PetscReal term3 = CSimp(zBottom, z, Iplus);
+    PetscReal term4 = CSimp(z, zTop, Iminus);
+
+    G = 2 * pi * (term1 + term2 + term3 + term4);
+
+    /**Now compute the losses at the given input point (this is in order to match the output that is given by the ComputeRHSFunction)*/
+    if (z <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
+        temperature = -6.349E6 * z * z + 2000.0;
+    } else {
+        temperature = -1.179E7 * z * z + 2000.0;
+    }
+    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
+    PetscReal radTotal = -kappa * (losses - G);
+
+    return G;
+}
+
 
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::radiation::Radiation, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
