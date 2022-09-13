@@ -12,8 +12,8 @@
 ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::shared_ptr<domain::Region>& region, std::shared_ptr<domain::Region> fieldBoundary, const PetscInt raynumber,
                                         std::shared_ptr<eos::radiationProperties::RadiationModel> radiationModelIn, std::shared_ptr<ablate::monitors::logs::Log> log)
     : solverId((std::basic_string<char> &&) solverId), region(region), radiationModel(std::move(radiationModelIn)), fieldBoundary(std::move(fieldBoundary)), log(std::move(log)) {
-    nTheta = raynumber;  //!< The number of angles to solve with, given by user input
-    nPhi = 2 * raynumber;                 //!< The number of angles to solve with, given by user input
+    nTheta = raynumber;    //!< The number of angles to solve with, given by user input
+    nPhi = 2 * raynumber;  //!< The number of angles to solve with, given by user input
 }
 
 ablate::radiation::Radiation::~Radiation() {
@@ -25,8 +25,8 @@ ablate::radiation::Radiation::~Radiation() {
 /** allows initialization after the subdomain and dm is established */
 void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain, bool surfaceIn) {
     surface = surfaceIn;
-    dim = subDomain.GetDimensions();  //!< Number of dimensions already defined in the setup
-    nTheta = (dim == 1) ? 2 : nTheta; //!< Reduce the number of rays if one dimensional symmetry can be taken advantage of
+    dim = subDomain.GetDimensions();   //!< Number of dimensions already defined in the setup
+    nTheta = (dim == 1) ? 2 : nTheta;  //!< Reduce the number of rays if one dimensional symmetry can be taken advantage of
 
     /** Begins radiation properties model
      * Runs the ray initialization, finding cell indices
@@ -109,8 +109,6 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
         const PetscInt iCell = cellRange.points ? cellRange.points[c] : c;  //!< Isolates the valid cells
         PetscReal centroid[3];
         DMPlexComputeCellGeometryFVM(subDomain.GetDM(), iCell, nullptr, centroid, nullptr) >> checkError;
-
-        // TODO: If this is a surface implementation, the temperature of the emission must be set to the boundary and the first cell will need to be set to the cell that the particle inhabits
 
         /** for every angle theta
          * for every angle phi
@@ -342,7 +340,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
 
             /** make sure we are not working on a ghost cell */
             if ((nFound > -1 && cell[ip].index >= 0 && subDomain.InRegion(cell[ip].index)) || stepcount == 0) {
-                index = (stepcount == 0 && !surface) ? identifier[ipart].iCell : cell[ip].index; //!< If this is a surface implementation, then the search particle should never actually enter the boundary cell
+                index = (stepcount == 0 && !surface) ? identifier[ipart].iCell
+                                                     : cell[ip].index;  //!< If this is a surface implementation, then the search particle should never actually enter the boundary cell
 
                 /** If this local rank has never seen this search particle before, then it needs to add a new ray segment to local memory
                  * Hash the identifier into a key value that can be used in the map
@@ -507,16 +506,10 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     VecGetArrayRead(solVec, &solArray);
 
     /** Get the array of the aux vector. */
-    //    const auto auxVec = subDomain.GetAuxVector();
     const PetscScalar* auxArray;
     DM auxDm;
     VecGetDM(auxVec, &auxDm);
     VecGetArrayRead(auxVec, &auxArray);
-
-    /** Get the temperature field.
-     * For ABLATE implementation, get temperature based on this function.
-     */
-    //    temperatureField = subDomain.GetField("temperature");
 
     /** Declare the basic information*/
     PetscReal* sol;          //!< The solution value at any given location
@@ -750,12 +743,44 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
 
     for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
         /** Gets the temperature from the cell index specified */
-        DMPlexPointLocalFieldRead(auxDm, iCell, temperatureField.id, auxArray, &temperature);
+        PetscInt index = -1;  //!< Index value for the losses temperature reading
+        /** In the case of a surface implementation, the temperature for the losses will be the temperature of the boundary cell that the face is attached to.
+         * In the case of a volume implementation, the temperature of the losses will be the temperature of the volumetric origin cell.
+         * This distinction must be made because the temperature of faces is undefined.
+         * */
+        if (surface) {
+            PetscInt numberNeighborCells;
+            const PetscInt* neighborCells;
+            DMLabel boundaryLabel;
+            PetscInt boundaryValue = fieldBoundary->GetValue();
+            DMGetLabel(solDm, fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
+
+            DMPlexGetSupportSize(solDm, iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
+            DMPlexGetSupport(solDm, iCell, &neighborCells) >> ablate::checkError;
+            PetscInt cellValue;  //!< The value of the boundary label for this cell
+            for (PetscInt n = 0; n < numberNeighborCells; n++) {
+                PetscInt cell = neighborCells[n];                                //!< Contains the cell indexes of the neighbor cells
+                DMLabelGetValue(boundaryLabel, cell, &cellValue) >> checkError;  //!< Store the cell index associated with the boundary cell for this face
+                if (cellValue == boundaryValue) {
+                    index = cell;
+                }
+            }
+        } else {
+            index = iCell;
+        }
+        DMPlexPointLocalFieldRead(auxDm, index, temperatureField.id, auxArray, &temperature);
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
         if (surface) losses /= 2;  //!< If this is a surface then losses will only leave the hemisphere
         if (log) {
             DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f %f %f\n", cellGeom->centroid[0], cellGeom->centroid[1], cellGeom->centroid[2], origin[iCell].intensity, losses, ReallySolveParallelPlates(cellGeom->centroid[0]),  *temperature);
+            printf("%f %f %f %f %f %f %f\n",
+                   cellGeom->centroid[0],
+                   cellGeom->centroid[1],
+                   cellGeom->centroid[2],
+                   origin[iCell].intensity,
+                   losses,
+                   ReallySolveParallelPlates(cellGeom->centroid[0]),
+                   *temperature);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
@@ -874,7 +899,7 @@ PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
     PetscReal Ibz;
 
     PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    const PetscReal sbc = 5.6696e-8;
+    //    const PetscReal sbc = 5.6696e-8;
     PetscInt nZp = 10000;
 
     std::vector<PetscReal> Iplus;
@@ -922,12 +947,11 @@ PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
     } else {
         temperature = -1.179E7 * z * z + 2000.0;
     }
-    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
-    PetscReal radTotal = -kappa * (losses - G);
+    //    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
+    //    PetscReal radTotal = -kappa * (losses - G);
 
     return G;
 }
-
 
 #include "registrar.hpp"
 REGISTER_DEFAULT(ablate::radiation::Radiation, ablate::radiation::Radiation, "A solver for radiative heat transfer in participating media", ARG(std::string, "id", "the name of the flow field"),
