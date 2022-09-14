@@ -75,7 +75,7 @@ void testingResources::MpiTestFixture::RunWithMPI() const {
     mpiCommand << InTestRunFlag << " ";
     mpiCommand << "--gtest_filter=" << TestName() << " ";
     mpiCommand << mpiTestParameter.arguments << " ";
-    mpiCommand << " > " << OutputFile();
+    mpiCommand << " > " << OutputFile() << " 2>&1";
 
     auto exitCode = std::system(mpiCommand.str().c_str());
     if (exitCode != 0) {

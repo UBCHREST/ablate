@@ -20,24 +20,24 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
 
 void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
+    std::vector<std::string> inputFields = {finiteVolume::CompressibleFlowFields::EULER_FIELD};
+    // check for density yi field
     if (bSolver.GetSubDomain().ContainsField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD)) {
-        bSolver.RegisterFunction(SublimationFunction,
-                                 this,
-                                 {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD},
-                                 {finiteVolume::CompressibleFlowFields::EULER_FIELD, finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD},
-                                 {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                 BoundarySolver::BoundarySourceType::Flux);
-
-        numberSpecies = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).numberComponents;
-
-    } else {
-        bSolver.RegisterFunction(SublimationFunction,
-                                 this,
-                                 {finiteVolume::CompressibleFlowFields::EULER_FIELD},
-                                 {finiteVolume::CompressibleFlowFields::EULER_FIELD},
-                                 {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
-                                 BoundarySolver::BoundarySourceType::Flux);
+        inputFields.push_back(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD);
     }
+
+    // register the required sublimantion function
+    bSolver.RegisterFunction(SublimationFunction, this, inputFields, inputFields, {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD}, BoundarySolver::BoundarySourceType::Flux);
+
+    // Register an optional output function
+    bSolver.RegisterFunction(SublimationOutputFunction,
+                             this,
+                             {"conduction", "extraRad", "regressionMassFlux"},
+                             inputFields,
+                             {finiteVolume::CompressibleFlowFields::TEMPERATURE_FIELD},
+                             BoundarySolver::BoundarySourceType::Face);
+
+    numberSpecies = bSolver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::DENSITY_YI_FIELD).numberComponents;
 
     // extract the effectiveConductivity and viscosity model
     if (transportModel) {
@@ -49,9 +49,7 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
     if (additionalHeatFlux || massFractions) {
         bSolver.RegisterPreStep([this](auto ts, auto &solver) {
             PetscFunctionBeginUser;
-            PetscErrorCode ierr = TSGetTime(ts, &(this->currentTime));
-            CHKERRQ(ierr);
-
+            PetscCall(TSGetTime(ts, &(this->currentTime)));
             PetscFunctionReturn(0);
         });
     }
@@ -204,6 +202,56 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 
     PetscFunctionReturn(0);
 }
+
+PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
+                                                                                       const PetscFVCellGeom *boundaryCell, const PetscInt *uOff, const PetscScalar *boundaryValues,
+                                                                                       const PetscScalar **stencilValues, const PetscInt *aOff, const PetscScalar *auxValues,
+                                                                                       const PetscScalar **stencilAuxValues, PetscInt stencilSize, const PetscInt *stencil,
+                                                                                       const PetscScalar *stencilWeights, const PetscInt *sOff, PetscScalar *source, void *ctx) {
+    PetscFunctionBeginUser;
+    // Mark the locations
+    const int TEMPERATURE_LOC = 0;
+    auto sublimation = (Sublimation *)ctx;
+
+    // Store indexes to the expected output variables
+    const int CONDUCTION_LOC = 0;
+    const int EXTRA_RAD_LOC = 1;
+    const int REGRESSION_MASS_FLUX_LOC = 2;
+
+    // extract the temperature
+    std::vector<PetscReal> stencilTemperature(stencilSize, 0);
+    for (PetscInt s = 0; s < stencilSize; s++) {
+        stencilTemperature[s] = stencilAuxValues[s][aOff[TEMPERATURE_LOC]];
+    }
+
+    // compute dTdn
+    PetscReal dTdn;
+    BoundarySolver::ComputeGradientAlongNormal(dim, fg, auxValues[aOff[TEMPERATURE_LOC]], stencilSize, stencilTemperature.data(), stencilWeights, dTdn);
+
+    // compute the effectiveConductivity
+    PetscReal effectiveConductivity = 0.0;
+    if (sublimation->effectiveConductivity.function) {
+        PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
+    }
+
+    // compute the heat flux
+    PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity;
+    source[sOff[CONDUCTION_LOC]] = heatFluxIntoSolid;
+    PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid);  // note that q = -dTdn as dTdN faces into the solid
+    // If there is an additional heat flux compute and add value
+    PetscReal additionalHeatFlux = 0.0;
+    if (sublimation->additionalHeatFlux) {
+        additionalHeatFlux = sublimation->additionalHeatFlux->Eval(fg->centroid, (int)dim, sublimation->currentTime);
+        sublimationHeatFlux += additionalHeatFlux;
+    }
+    source[sOff[EXTRA_RAD_LOC]] = additionalHeatFlux;
+
+    // Compute the massFlux (we can only remove mass)
+    source[sOff[REGRESSION_MASS_FLUX_LOC]] = sublimationHeatFlux / sublimation->latentHeatOfFusion;
+
+    PetscFunctionReturn(0);
+}
+
 void ablate::boundarySolver::physics::Sublimation::Initialize(PetscInt numberSpeciesIn) {
     numberSpecies = numberSpeciesIn;
     // for test code, extract the effectiveConductivity model without any fields

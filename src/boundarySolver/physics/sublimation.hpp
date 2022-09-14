@@ -64,10 +64,53 @@ class Sublimation : public BoundaryProcess {
      */
     void Initialize(PetscInt numberSpecies);
 
+    /**
+     * Support function to compute and insert source terms for this boundary condition
+     * @param dim
+     * @param fg
+     * @param boundaryCell
+     * @param uOff
+     * @param boundaryValues
+     * @param stencilValues
+     * @param aOff
+     * @param auxValues
+     * @param stencilAuxValues
+     * @param stencilSize
+     * @param stencil
+     * @param stencilWeights
+     * @param sOff
+     * @param source
+     * @param ctx
+     * @return
+     */
     static PetscErrorCode SublimationFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell, const PetscInt uOff[],
                                               const PetscScalar *boundaryValues, const PetscScalar *stencilValues[], const PetscInt aOff[], const PetscScalar *auxValues,
                                               const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[],
                                               PetscScalar source[], void *ctx);
+
+    /**
+     * Support function to compute output variables
+     * @param dim
+     * @param fg
+     * @param boundaryCell
+     * @param uOff
+     * @param boundaryValues
+     * @param stencilValues
+     * @param aOff
+     * @param auxValues
+     * @param stencilAuxValues
+     * @param stencilSize
+     * @param stencil
+     * @param stencilWeights
+     * @param sOff
+     * @param source
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode SublimationOutputFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell, const PetscInt uOff[],
+                                                    const PetscScalar *boundaryValues, const PetscScalar *stencilValues[], const PetscInt aOff[], const PetscScalar *auxValues,
+                                                    const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[],
+                                                    PetscScalar source[], void *ctx);
 };
 
 }  // namespace ablate::boundarySolver::physics

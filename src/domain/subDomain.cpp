@@ -644,6 +644,7 @@ void ablate::domain::SubDomain::SetsExactSolutions(const std::vector<std::shared
     }
 }
 void ablate::domain::SubDomain::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
     auto locSubDm = GetSubDM();
     auto locAuxDM = GetSubAuxDM();
     // If this is the first output, save the mesh
@@ -687,6 +688,7 @@ void ablate::domain::SubDomain::Save(PetscViewer viewer, PetscInt sequenceNumber
         VecView(exactVec, viewer) >> checkError;
         DMRestoreGlobalVector(GetSubDM(), &exactVec) >> checkError;
     }
+    PetscFunctionReturnVoid();
 }
 void ablate::domain::SubDomain::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     // The only item that needs to be explicitly restored is the flowField

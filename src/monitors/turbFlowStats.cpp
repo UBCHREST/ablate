@@ -271,6 +271,7 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
 }
 
 void ablate::monitors::TurbFlowStats::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
     if (sequenceNumber == 0) {
         DMView(turbDM, viewer) >> checkError;
     }
@@ -278,6 +279,7 @@ void ablate::monitors::TurbFlowStats::Save(PetscViewer viewer, PetscInt sequence
     DMSetOutputSequenceNumber(turbDM, sequenceNumber, time);
 
     VecView(turbVec, viewer) >> checkError;
+    PetscFunctionReturnVoid();
 }
 
 void ablate::monitors::TurbFlowStats::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
