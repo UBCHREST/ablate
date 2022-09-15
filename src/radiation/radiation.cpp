@@ -20,13 +20,11 @@ ablate::radiation::Radiation::~Radiation() {
     if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
 }
 
-// void ablate::radiation::Radiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomainIn) { subDomain = std::move(subDomainIn); }
-
 /** allows initialization after the subdomain and dm is established */
 void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain, bool surfaceIn) {
     surface = surfaceIn;
     dim = subDomain.GetDimensions();   //!< Number of dimensions already defined in the setup
-    nTheta = (dim == 1) ? 2 : nTheta;  //!< Reduce the number of rays if one dimensional symmetry can be taken advantage of
+    nTheta = (dim == 1) ? 1 : nTheta;  //!< Reduce the number of rays if one dimensional symmetry can be taken advantage of
 
     /** Begins radiation properties model
      * Runs the ray initialization, finding cell indices
@@ -61,7 +59,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     double phi;    //!< represents the actual current angle (rotation)
 
     /** Setup the particles and their associated fields including: origin domain/ ray identifier / # domains crossed, and coordinates. Instantiate ray particles for each local cell only. */
-    PetscInt npoints = (cellRange.end - cellRange.start) * (nTheta - 1) * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
+    PetscInt npoints = (cellRange.end - cellRange.start) * nTheta * nPhi;  //!< Number of points to insert into the particle field. One particle for each ray.
 
     /** Create the DMSwarm */
     DMCreate(subDomain.GetComm(), &radsearch) >> checkError;
@@ -113,11 +111,11 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
         /** for every angle theta
          * for every angle phi
          */
-        for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
+        for (PetscInt ntheta = 0; ntheta < nTheta; ntheta++) {
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Get the initial direction of the search particle from the angle number that it was initialized with */
-                theta = ((double)ntheta / (double)nTheta) * ablate::utilities::Constants::pi;  //!< Theta angle of the ray
-                phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;  //!<  Phi angle of the ray
+                theta = (((double)ntheta + 0.5) / (double)nTheta) * ablate::utilities::Constants::pi;  //!< Theta angle of the ray
+                phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;          //!<  Phi angle of the ray
 
                 /** Update the direction vector of the search particle */
                 virtualcoord[ipart].xdir = (sin(theta) * cos(phi));  //!< x component conversion from spherical coordinates, adding the position of the current cell
@@ -125,9 +123,9 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
                 virtualcoord[ipart].zdir = (cos(theta));             //!< z component conversion from spherical coordinates, adding the position of the current cell
 
                 /** Get the particle coordinate field and write the cellGeom->centroid[xyz] into it */
-                virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.1 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
-                virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
-                virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
+                virtualcoord[ipart].x = centroid[0] + (virtualcoord[ipart].xdir * 0.001 * minCellRadius);  //!< Offset from the centroid slightly so they sit in a cell if they are on its face.
+                virtualcoord[ipart].y = centroid[1] + (virtualcoord[ipart].ydir * 0.001 * minCellRadius);
+                virtualcoord[ipart].z = centroid[2] + (virtualcoord[ipart].zdir * 0.001 * minCellRadius);
 
                 /** Update the physical coordinate field so that the real particle location can be updated. */
                 UpdateCoordinates(ipart, virtualcoord, coord);
@@ -512,14 +510,12 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     VecGetArrayRead(auxVec, &auxArray);
 
     /** Declare the basic information*/
-    PetscReal* sol;          //!< The solution value at any given location
-    PetscReal* temperature;  //!< The temperature at any given location
-    PetscReal dTheta = (dim == 1) ? 1 : ablate::utilities::Constants::pi / (nTheta - 1);
-    PetscReal dPhi = (dim == 1) ? (4 * ablate::utilities::Constants::pi / nPhi) : (2 * ablate::utilities::Constants::pi) / (nPhi);
-    double kappa = 1;  //!< Absorptivity coefficient, property of each cell
+    PetscReal* sol;                                                    //!< The solution value at any given location
+    PetscReal* temperature;                                            //!< The temperature at any given location
+    PetscReal dTheta = ablate::utilities::Constants::pi / (nTheta);    //(dim == 1) ? 1 : ablate::utilities::Constants::pi / (nTheta);
+    PetscReal dPhi = (2 * ablate::utilities::Constants::pi) / (nPhi);  //(dim == 1) ? (4 * ablate::utilities::Constants::pi / nPhi) : (2 * ablate::utilities::Constants::pi) / (nPhi);
+    double kappa = 1;                                                  //!< Absorptivity coefficient, property of each cell
     double theta;
-
-    std::vector<std::vector<PetscReal>> locations;  //!< 2 Dimensional vector which stores the locations of the cell centers
 
     auto absorptivityFunctionContext = absorptivityFunction.context.get();  //!< Get access to the absorption function
 
@@ -625,7 +621,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         /** for every angle theta
          * for every angle phi
          */
-        for (PetscInt ntheta = 1; ntheta < nTheta; ntheta++) {
+        for (PetscInt ntheta = 0; ntheta < nTheta; ntheta++) {
             for (PetscInt nphi = 0; nphi < nPhi; nphi++) {
                 /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
                  * We will need to sort the rays in order of domain segment. We need to start at the end of the ray and go towards the beginning of the ray. */
@@ -675,8 +671,12 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                     loopid.nsegment--;                                                                      //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
 
-                theta = ((double)ntheta / (double)nTheta) * ablate::utilities::Constants::pi;  //!< This is a fine method of determining theta because it is in the original domain
-                PetscReal ldotn = 1;                                                           //!< If the perpendicular component is not being computed then including this will have no effect.
+                if (dim != 1) {
+                    theta = (((double)ntheta + 0.5) / (double)nTheta) * ablate::utilities::Constants::pi;  //!< This is a fine method of determining theta because it is in the original domain
+                } else {
+                    theta = (((double)nphi) / (double)nPhi) * 2 * ablate::utilities::Constants::pi;
+                }
+                PetscReal ldotn = 1;  //!< If the perpendicular component is not being computed then including this will have no effect.
 
                 //!< If computing surface flux, get the perpendicular component here and multiply the result by it
                 if (surface) {                  //!< Add the option to the initialization call and make sure that it is stored as a class variable
@@ -698,7 +698,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                     PetscReal phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;
                     ldotn = ((sin(theta) * cos(phi)) * faceNormx) + ((sin(theta) * sin(phi)) * faceNormy) + (cos(theta) * faceNormz);
                 }
-                origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * sin(theta) * dTheta * dPhi * ldotn;  //!< Final ray calculation
+                origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * abs(sin(theta)) * dTheta * dPhi * ldotn;  //!< Final ray calculation
             }
         }
     }
@@ -779,7 +779,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                    cellGeom->centroid[2],
                    origin[iCell].intensity,
                    losses,
-                   ReallySolveParallelPlates(cellGeom->centroid[0]),
+                   0.0,
+                   //                   ReallySolveParallelPlates(cellGeom->centroid[0]),
                    *temperature);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
@@ -865,7 +866,7 @@ PetscReal ablate::radiation::Radiation::CSimp(PetscReal a, PetscReal b, std::vec
 PetscReal ablate::radiation::Radiation::EInteg(int order, double x) {
     if (x == 0 && order != 1) return 1.0 / (order - 1.0);  // Simple solution in this case, exit
     std::vector<PetscReal> En;
-    int N = 10000;
+    int N = 1000;
     for (int n = 1; n < N; n++) {
         double mu = (double)n / N;
         if (order == 1) {
@@ -879,6 +880,15 @@ PetscReal ablate::radiation::Radiation::EInteg(int order, double x) {
     return final;
 }
 
+PetscReal ablate::radiation::Radiation::Temperature(PetscReal zp) {
+    //    if (zp <= 0) {                                                    // Two parabolas, is the z coordinate in one half of the domain or the other
+    //        return -7E6 * zp * zp + 2000.0;
+    //    } else {
+    //        return -13E6 * zp * zp + 2000.0;
+    //    }}
+    return (6000 - zp * (2000 / 5));
+}
+
 PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
     /** Analytical solution of a special verification case.
      * Define variables and basic information
@@ -889,18 +899,19 @@ PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
      * Prescribe the top and bottom heights for the domain
      * */
     PetscReal G;
-    PetscReal IT = ablate::radiation::Radiation::FlameIntensity(1, 700);   // Intensity of rays originating from the top plate
-    PetscReal IB = ablate::radiation::Radiation::FlameIntensity(1, 1300);  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
-    PetscReal kappa = 1;                                                   // Kappa is not spatially dependant in this special case
-    PetscReal zBottom = -0.0105;                                           // Prescribe the top and bottom heights for the domain
-    PetscReal zTop = 0.0105;
+    PetscReal kappa = 1;                                                                // Kappa is not spatially dependant in this special case
+    PetscReal zBottom = 5;                                                              //-0.01;                                             // Prescribe the top and bottom heights for the domain
+    PetscReal zTop = 10;                                                                // 0.01;
+    PetscReal IT = ablate::radiation::Radiation::FlameIntensity(1, Temperature(zTop));  // Intensity of rays originating from the top plate
+    PetscReal IB =
+        ablate::radiation::Radiation::FlameIntensity(1, Temperature(zBottom));  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
 
     PetscReal temperature;
     PetscReal Ibz;
 
     PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    //    const PetscReal sbc = 5.6696e-8;
-    PetscInt nZp = 10000;
+    const PetscReal sbc = 5.6696e-8;
+    PetscInt nZp = 1000;
 
     std::vector<PetscReal> Iplus;
     std::vector<PetscReal> Iminus;
@@ -913,9 +924,9 @@ PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
          * */
         PetscReal zp = zBottom + ((PetscReal)nzp / nZp) * (z - zBottom);  // Calculate the z height
         if (zp <= 0) {                                                    // Two parabolas, is the z coordinate in one half of the domain or the other
-            temperature = -6.349E6 * zp * zp + 2000.0;
+            temperature = Temperature(zp);                                //-7E6 * zp * zp + 2000.0;
         } else {
-            temperature = -1.179E7 * zp * zp + 2000.0;
+            temperature = Temperature(zp);  // temperature = -13E6 * zp * zp + 2000.0;
         }
         /** Get the black body intensity here*/
         Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
@@ -924,10 +935,10 @@ PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
     for (PetscInt nzp = 1; nzp < (nZp - 1); nzp++) {             /** Minus integral goes from z to top*/
         PetscReal zp = z + ((PetscReal)nzp / nZp) * (zTop - z);  // Calculate the zp height
         /** Get the temperature*/
-        if (zp <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
-            temperature = -6.349E6 * zp * zp + 2000.0;
+        if (zp <= 0) {                      // Two parabolas, is the z coordinate in one half of the domain or the other
+            temperature = Temperature(zp);  // temperature = -7E6 * zp * zp + 2000.0;
         } else {
-            temperature = -1.179E7 * zp * zp + 2000.0;
+            temperature = Temperature(zp);  // temperature = -13E6 * zp * zp + 2000.0;
         }
         /** Get the black body intensity here*/
         Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
@@ -942,15 +953,15 @@ PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
     G = 2 * pi * (term1 + term2 + term3 + term4);
 
     /**Now compute the losses at the given input point (this is in order to match the output that is given by the ComputeRHSFunction)*/
-    if (z <= 0) {  // Two parabolas, is the z coordinate in one half of the domain or the other
-        temperature = -6.349E6 * z * z + 2000.0;
+    if (z <= 0) {                      // Two parabolas, is the z coordinate in one half of the domain or the other
+        temperature = Temperature(z);  // temperature = -6.349E6 * z * z + 2000.0;
     } else {
-        temperature = -1.179E7 * z * z + 2000.0;
+        temperature = Temperature(z);  // temperature = -1.179E7 * z * z + 2000.0;
     }
-    //    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
-    //    PetscReal radTotal = -kappa * (losses - G);
+    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
+    PetscReal radTotal = -kappa * (losses - G);
 
-    return G;
+    return radTotal;
 }
 
 #include "registrar.hpp"

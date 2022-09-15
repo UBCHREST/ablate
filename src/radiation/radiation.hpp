@@ -63,7 +63,7 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     static PetscReal ReallySolveParallelPlates(PetscReal z);
     static PetscReal EInteg(int order, double x);
     static PetscReal CSimp(PetscReal a, PetscReal b, std::vector<double>& f);
-
+    static PetscReal Temperature(PetscReal x);
 
     /** Get the subdomain */
     //    void Register(std::shared_ptr<ablate::domain::SubDomain>);
