@@ -69,7 +69,7 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
 
     // march over process and link to the flow
     for (auto& process : boundaryProcesses) {
-        process->Initialize(*this);
+        process->Setup(*this);
     }
 
     // Set up the gradient calculator
@@ -310,6 +310,11 @@ void ablate::boundarySolver::BoundarySolver::Initialize() {
 
     if (!boundaryUpdateFunctions.empty()) {
         RegisterPreStep([this](auto ts, auto& solver) { UpdateVariablesPreStep(ts, solver); });
+    }
+
+    // march over process and link to the flow
+    for (auto& process : boundaryProcesses) {
+        process->Initialize(*this);
     }
 }
 void ablate::boundarySolver::BoundarySolver::RegisterFunction(ablate::boundarySolver::BoundarySolver::BoundarySourceFunction function, void* context, const std::vector<std::string>& sourceFields,

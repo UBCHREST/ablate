@@ -18,7 +18,7 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       disablePressure(disablePressure),
       pressureGradientScaling(std::move(pressureGradientScaling)) {}
 
-void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
+void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
     std::vector<std::string> inputFields = {finiteVolume::CompressibleFlowFields::EULER_FIELD};
     // check for density yi field
@@ -252,7 +252,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
     PetscFunctionReturn(0);
 }
 
-void ablate::boundarySolver::physics::Sublimation::Initialize(PetscInt numberSpeciesIn) {
+void ablate::boundarySolver::physics::Sublimation::Setup(PetscInt numberSpeciesIn) {
     numberSpecies = numberSpeciesIn;
     // for test code, extract the effectiveConductivity model without any fields
     effectiveConductivity = transportModel->GetTransportTemperatureFunction(eos::transport::TransportProperty::Conductivity, {});
