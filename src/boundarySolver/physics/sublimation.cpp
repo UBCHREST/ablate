@@ -80,7 +80,7 @@ void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver:
     }
 }
 
-void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver& bSolver) {
+void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
     /** Initialize the radiation solver with the face geometry of the boundary solver in order to solve for surface flux */
     if (radiation) {
         //!< Get the face range of the boundary cells to initialize the rays with this range. Add all of the faces to this range that belong to the boundary solver.
@@ -94,7 +94,6 @@ void ablate::boundarySolver::physics::Sublimation::Initialize(ablate::boundarySo
         bSolver.RegisterPreStep([this](auto ts, auto &solver) { SublimationPreStep(ts, solver); });
     }
 }
-
 
 PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg,
                                                                                  const PetscFVCellGeom *boundaryCell, const PetscInt *uOff, const PetscScalar *boundaryValues,
