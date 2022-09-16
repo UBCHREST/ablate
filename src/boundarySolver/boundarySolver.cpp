@@ -67,6 +67,11 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
     GetRegion()->CheckForLabel(subDomain->GetDM());
     fieldBoundary->CheckForLabel(subDomain->GetDM());
 
+    // march over process and link to the flow
+    for (auto& process : boundaryProcesses) {
+        process->Setup(*this);
+    }
+
     // Set up the gradient calculator
     PetscFVCreate(PETSC_COMM_SELF, &gradientCalculator) >> checkError;
     // Set least squares as the default type
@@ -281,12 +286,6 @@ void ablate::boundarySolver::BoundarySolver::Setup() {
             }
         }
     }
-
-    // march over process and link to the flow
-    for (auto& process : boundaryProcesses) {
-        process->Setup(*this);
-    }
-
     RestoreRange(cellRange);
 
     // clean up the geom
