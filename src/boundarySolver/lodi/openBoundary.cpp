@@ -11,8 +11,8 @@ ablate::boundarySolver::lodi::OpenBoundary::OpenBoundary(std::shared_ptr<eos::EO
       referencePressure((PetscReal)referencePressure),
       maxAcousticsLength((PetscReal)maxAcousticsLength) {}
 
-void ablate::boundarySolver::lodi::OpenBoundary::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
-    ablate::boundarySolver::lodi::LODIBoundary::Initialize(bSolver);
+void ablate::boundarySolver::lodi::OpenBoundary::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
+    ablate::boundarySolver::lodi::LODIBoundary::Setup(bSolver);
 
     bSolver.RegisterFunction(OpenBoundaryFunction, this, fieldNames, fieldNames, {});
 }

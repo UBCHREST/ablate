@@ -17,7 +17,7 @@ class OpenBoundary : public LODIBoundary {
     OpenBoundary(std::shared_ptr<eos::EOS> eos, double reflectFactor, double referencePressure, double maxAcousticsLength,
                  std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
 
-    void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
+    void Setup(ablate::boundarySolver::BoundarySolver& bSolver) override;
 
     static PetscErrorCode OpenBoundaryFunction(PetscInt dim, const boundarySolver::BoundarySolver::BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[],
                                                const PetscScalar* boundaryValues, const PetscScalar* stencilValues[], const PetscInt aOff[], const PetscScalar* auxValues,

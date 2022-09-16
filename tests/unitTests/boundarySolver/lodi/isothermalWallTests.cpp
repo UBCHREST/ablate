@@ -62,7 +62,7 @@ TEST_P(IsothermalWallTestFixture, ShouldComputeCorrectSourceTerm) {
         .WillOnce(::testing::Return(ablateTesting::eos::MockEOS::CreateMockThermodynamicFunction(params.computeStencilPressureFunction)));
     // create the boundary
     std::shared_ptr<ablate::boundarySolver::lodi::LODIBoundary> boundary = std::make_shared<ablate::boundarySolver::lodi::IsothermalWall>(mockEOS, params.getPgs());
-    boundary->Initialize(params.dim, params.nEqs, params.nSpecEqs, params.nEvEqs, params.fields);
+    boundary->Setup(params.dim, params.nEqs, params.nSpecEqs, params.nEvEqs, params.fields);
 
     PetscInt uOff[3] = {0, params.dim + 2, params.dim + 2 + params.nSpecEqs};
     PetscInt aOff[1] = {0};
