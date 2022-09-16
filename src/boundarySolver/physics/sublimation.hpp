@@ -50,7 +50,6 @@ class Sublimation : public BoundaryProcess {
     // compute the pressure needed for the momentum equation
     eos::ThermodynamicTemperatureFunction computePressure;
 
-
     /**
      * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
      */
