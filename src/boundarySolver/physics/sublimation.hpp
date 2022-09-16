@@ -63,6 +63,7 @@ class Sublimation : public BoundaryProcess {
                          std::shared_ptr<ablate::radiation::Radiation> radiationIn = {});
 
     void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
+    void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
 
     /**
      * manual Setup used for testing
