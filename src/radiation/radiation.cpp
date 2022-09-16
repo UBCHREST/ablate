@@ -18,6 +18,8 @@ ablate::radiation::Radiation::Radiation(const std::string& solverId, const std::
 
 ablate::radiation::Radiation::~Radiation() {
     if (radsolve) DMDestroy(&radsolve) >> checkError;  //!< Destroy the radiation particle swarm
+    VecDestroy(&faceGeomVec) >> checkError;
+    VecDestroy(&cellGeomVec) >> checkError;
 }
 
 /** allows initialization after the subdomain and dm is established */
@@ -175,20 +177,20 @@ void ablate::radiation::Radiation::InitializationConvertSurface(ablate::domain::
 
     PetscInt numberNeighborCells;
     const PetscInt* neighborCells;
-    DMLabel boundaryLabel;
-    PetscInt boundaryValue = fieldBoundary->GetValue();
-    DMGetLabel(subDomain.GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
+    //    DMLabel boundaryLabel;
+    //    PetscInt boundaryValue = fieldBoundary->GetValue();
+    //    DMGetLabel(subDomain.GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
 
     /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         DMPlexGetSupportSize(subDomain.GetDM(), identifier[ipart].iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
         DMPlexGetSupport(subDomain.GetDM(), identifier[ipart].iCell, &neighborCells) >> ablate::checkError;
-        PetscInt cellValue;   //!< The value of the boundary label for this cell
+        //        PetscInt cellValue;   //!< The value of the boundary label for this cell
         PetscInt index = -1;  //!< Index value to compare the Locate Points result against.
         for (PetscInt n = 0; n < numberNeighborCells; n++) {
-            PetscInt cell = neighborCells[n];                                //!< Contains the cell indexes of the neighbor cells
-            DMLabelGetValue(boundaryLabel, cell, &cellValue) >> checkError;  //!< Store the cell index associated with the boundary cell for this face
-            if (cellValue == boundaryValue) {
+            PetscInt cell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
+                                               //            DMLabelGetValue(boundaryLabel, cell, &cellValue) >> checkError;  //!< Store the cell index associated with the boundary cell for this face
+            if (fieldBoundary->InRegion(fieldBoundary, subDomain.GetDM(), cell)) {  // cellValue == boundaryValue) {
                 index = cell;
             }
         }
@@ -229,7 +231,8 @@ void ablate::radiation::Radiation::InitializationConvertSurface(ablate::domain::
                 DMSwarmRestoreField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
                 DMSwarmRestoreField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
-                DMSwarmRemovePointAtIndex(radsearch, ipart);  //!< Delete the particle!
+                DMSwarmRemovePointAtIndex(radsearch, ipart);             //!< Delete the particle!
+                DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;  //!< Recalculate the number of particles that are in the domain
 
                 DMSwarmGetField(radsearch, DMSwarmPICField_coor, nullptr, nullptr, (void**)&coord) >> checkError;
                 DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
@@ -248,8 +251,6 @@ void ablate::radiation::Radiation::InitializationConvertSurface(ablate::domain::
 }
 
 void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
-    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
-    Vec cellGeomVec = nullptr;
     DM faceDM;
     const PetscScalar* faceGeomArray;
     PetscFVFaceGeom* faceGeom;
@@ -488,8 +489,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     /** Cleanup */
     DMDestroy(&radsearch) >> checkError;
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
-    VecDestroy(&cellGeomVec) >> checkError;
-    VecDestroy(&faceGeomVec) >> checkError;
+    //    VecDestroy(&cellGeomVec) >> checkError;
+    //    VecDestroy(&faceGeomVec) >> checkError;
 
     if (log) EndEvent();
 }
@@ -614,6 +615,12 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** ********************************************************************************************************************************
      * Now iterate through all of the ray identifiers in order to compute the final ray intensities */
 
+    DM faceDM;
+    const PetscScalar* faceGeomArray;
+    PetscFVFaceGeom* faceGeom;
+    VecGetDM(faceGeomVec, &faceDM) >> checkError;
+    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+
     for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
 
         origin[iCell].intensity = 0;  //!< Make sure to zero the intensity of every cell before beginning to calculate the intensity for this time step.
@@ -679,13 +686,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                 PetscReal ldotn = 1;  //!< If the perpendicular component is not being computed then including this will have no effect.
 
                 //!< If computing surface flux, get the perpendicular component here and multiply the result by it
-                if (surface) {                  //!< Add the option to the initialization call and make sure that it is stored as a class variable
-                    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
-                    DM faceDM;
-                    const PetscScalar* faceGeomArray;
-                    PetscFVFaceGeom* faceGeom;
-                    VecGetDM(faceGeomVec, &faceDM) >> checkError;
-                    VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
+                if (surface) {  //!< Add the option to the initialization call and make sure that it is stored as a class variable
+                                //                    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm. This is constant and does not depend upon region.
                     DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom) >> checkError;
 
                     /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
@@ -696,7 +698,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                     PetscReal faceNormz = faceGeom->normal[2] / faceNormNormalized;
                     /** Update the direction vector of the search particle */
                     PetscReal phi = ((double)nphi / (double)nPhi) * 2.0 * ablate::utilities::Constants::pi;
-                    ldotn = ((sin(theta) * cos(phi)) * faceNormx) + ((sin(theta) * sin(phi)) * faceNormy) + (cos(theta) * faceNormz);
+                    PetscReal thetalocal = (((double)ntheta + 0.5) / (double)nTheta) * ablate::utilities::Constants::pi;
+                    ldotn = abs(((sin(thetalocal) * cos(phi)) * faceNormx) + ((sin(thetalocal) * sin(phi)) * faceNormy) + (cos(thetalocal) * faceNormz));
                 }
                 origin[iCell].intensity += ((origin[iCell].I0 * origin[iCell].Kradd) + origin[iCell].Isource) * abs(sin(theta)) * dTheta * dPhi * ldotn;  //!< Final ray calculation
             }
@@ -728,14 +731,14 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** ********************************************************************************************************************************
      * Loop through the cell range and compute the origin contributions. */
 
-    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
-    Vec cellGeomVec = nullptr;
+    //    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    //    Vec cellGeomVec = nullptr;
     DM cellDM;
     const PetscScalar* cellGeomArray;
-    PetscFVCellGeom* cellGeom;
+    //    PetscFVCellGeom* cellGeom;
 
     if (log) {
-        DMPlexComputeGeometryFVM(solDm, &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
+        //        DMPlexComputeGeometryFVM(solDm, &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
         VecGetDM(cellGeomVec, &cellDM) >> checkError;
         VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
         printf("x           y           z           G           L           A           T\n");  //!< Line labelling the log outputs for readability
@@ -751,17 +754,17 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (surface) {
             PetscInt numberNeighborCells;
             const PetscInt* neighborCells;
-            DMLabel boundaryLabel;
-            PetscInt boundaryValue = fieldBoundary->GetValue();
-            DMGetLabel(solDm, fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
+            //            DMLabel boundaryLabel;
+            //            PetscInt boundaryValue = fieldBoundary->GetValue();
+            //            DMGetLabel(solDm, fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
 
             DMPlexGetSupportSize(solDm, iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
             DMPlexGetSupport(solDm, iCell, &neighborCells) >> ablate::checkError;
-            PetscInt cellValue;  //!< The value of the boundary label for this cell
+            //            PetscInt cellValue;  //!< The value of the boundary label for this cell
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
-                PetscInt cell = neighborCells[n];                                //!< Contains the cell indexes of the neighbor cells
-                DMLabelGetValue(boundaryLabel, cell, &cellValue) >> checkError;  //!< Store the cell index associated with the boundary cell for this face
-                if (cellValue == boundaryValue) {
+                PetscInt cell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
+                //                DMLabelGetValue(boundaryLabel, cell, &cellValue) >> checkError;  //!< Store the cell index associated with the boundary cell for this face
+                if (fieldBoundary->InRegion(fieldBoundary, solDm, cell)) {  // cellValue == boundaryValue) {
                     index = cell;
                 }
             }
@@ -772,11 +775,12 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         PetscReal losses = 4 * ablate::utilities::Constants::sbc * *temperature * *temperature * *temperature * *temperature;
         if (surface) losses /= 2;  //!< If this is a surface then losses will only leave the hemisphere
         if (log) {
-            DMPlexPointLocalRead(cellDM, iCell, cellGeomArray, &cellGeom) >> checkError;  //!< Reads the cell location from the current cell
+            PetscReal centroid[3];
+            DMPlexComputeCellGeometryFVM(cellDM, iCell, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
             printf("%f %f %f %f %f %f %f\n",
-                   cellGeom->centroid[0],
-                   cellGeom->centroid[1],
-                   cellGeom->centroid[2],
+                   centroid[0],
+                   centroid[1],
+                   centroid[2],
                    origin[iCell].intensity,
                    losses,
                    0.0,
@@ -793,8 +797,6 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     if (log) {
         EndEvent();
         VecRestoreArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-        VecDestroy(&cellGeomVec) >> checkError;
-        VecDestroy(&faceGeomVec) >> checkError;
     }
 }
 

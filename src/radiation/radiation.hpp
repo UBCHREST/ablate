@@ -82,6 +82,9 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     DM radsolve{};   //!< DM associated with the radiation particles
     DM radsearch{};  //!< DM which the search particles occupy
 
+    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
+    Vec cellGeomVec = nullptr;
+
     /// Structs to hold information
 
     /** Segments belong to the local maps and hold all of the local information about the ray segments both during the search and the solve */
