@@ -31,10 +31,10 @@ class ArbitrarySource : public BoundaryProcess {
     explicit ArbitrarySource(std::map<std::string, std::shared_ptr<ablate::mathFunctions::MathFunction>> functions, BoundarySolver::BoundarySourceType boundarySourceType);
 
     /**
-     * Initialize the source function
+     * Setup the source function
      * @param bSolver
      */
-    void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
+    void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
 };
 
 }  // namespace ablate::boundarySolver::physics
