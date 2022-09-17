@@ -9,7 +9,7 @@ ablate::finiteVolume::processes::LES::LES(std::string tke) : tke(std::move(tke))
 
 void ablate::finiteVolume::processes::LES::Setup(ablate::finiteVolume::FiniteVolumeSolver& flow) {
     if (flow.GetSubDomain().ContainsField(CompressibleFlowFields::DENSITY_EV_FIELD)) {
-        if (!flow.GetSubDomain().ContainsField(CompressibleFlowFields::EV_FIELD)) {                 //Do I need to throw an error here?
+        if (!flow.GetSubDomain().ContainsField(CompressibleFlowFields::EV_FIELD)) {
             throw std::invalid_argument("The ablate::finiteVolume::processes::EVTransport process expects the conserved (" + CompressibleFlowFields::DENSITY_EV_FIELD + ") and non-conserved (" +
                                         CompressibleFlowFields::EV_FIELD + ") extra variables to be in the flow.");
         }
@@ -179,29 +179,33 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesEvFlux(PetscInt dim, con
     // energy equation
 
     for (PetscInt ev = 0; ev < flowParameters->numberEV; ++ev) {
-        flux[flowParameters->tke_ev] = 0;
         flux[ev] = 0;
 
         for (PetscInt d = 0; d < dim; ++d) {
             PetscReal lesEvFlux = 0.0;
             PetscReal evFlux;
-                for (PetscInt c = 0; c < dim; ++c) {
-                //
+            for (PetscInt c = 0; c < dim; ++c) {
 
-                lesEvFlux += sqrt(areaMag) * density * tau[d * dim + c] * tau[d * dim + c] / (mut+.00001);
+                lesEvFlux += 0.5 * sqrt(areaMag) * density * tau[d * dim + c] * tau[d * dim + c] / (mut + 0.00001);
             }
 
-            //  LESevFlux( rho Di dEVi/dx + rho Di dEVi/dy + rho Di dEVi//dz) . n A +  LESevFlux(-rho ce EV^3/2 ) . n A
+            //  LESevFlux( rho Di dEVi/dx +git check rho Di dEVi/dy + rho Di dEVi//dz) . n A +  LESevFlux(-rho ce EV^3/2 ) . n A
+            if (! (ev == flowParameters->tke_ev)) {
+                const int offset = aOff_x[EV_FIELD] + (ev * dim) + d;
+                evFlux = -fg->normal[d] * mut * gradAux[offset] / scT;
+                flux[ev] += evFlux;
+            }
 
-            const int offset = aOff_x[EV_FIELD] + (ev * dim) + d;
-            evFlux = -fg->normal[d] * mut * gradAux[offset] / scT;
-            flux[ev] += evFlux;
+            if (ev == flowParameters->tke_ev) {
+                const int offset_t = aOff_x[EV_FIELD] + (ev * dim) + d;
+                const int offset_tk = aOff[EV_FIELD] + (ev * dim) + d;
 
-            const int offset_tke = aOff_x[EV_FIELD] + (flowParameters->tke_ev * dim) + d;  // only counting tke here
-            lesEvFlux += density * mut * gradAux[offset_tke] - c_e * density * aux[aOff[EV_FIELD] + flowParameters->tke_ev] * sqrt(aux[aOff[EV_FIELD] + flowParameters->tke_ev]);
-            lesEvFlux *= -fg->normal[d];
+                // only counting tke here
+                lesEvFlux += density * mut * gradAux[offset_t] - c_e * density * aux[offset_tk] * sqrt(abs(aux[offset_tk]));
+                lesEvFlux *= -fg->normal[d];
 
-            flux[flowParameters->tke_ev] += lesEvFlux;
+                flux[ev] += lesEvFlux;
+            }
         }
     }
     PetscFunctionReturn(0);
@@ -250,7 +254,7 @@ PetscErrorCode ablate::finiteVolume::processes::LES::LesViscosity(PetscInt dim, 
     // get the current density from euler
     const PetscReal density = densityField[CompressibleFlowFields::RHO];
 
-    mut = c_k * density * sqrt(areaMag * turbulence);
+    mut = c_k * density * sqrt(abs(areaMag * turbulence));
 
     PetscFunctionReturn(0);
 }
