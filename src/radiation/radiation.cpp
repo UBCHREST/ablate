@@ -369,9 +369,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                 /** ********************************************
                  * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
                  * boundary conditions and the conditions at reflection can be accounted for. This will make the entire initialization much faster by only requiring a single step through each
-                 * cell. Additionally, the option for reflection is opened because the faces and their normals are now more easily accessed during the initialization. The boundary condition for
-                 * the search cells to disappear will be dependant upon whether they have intersected with a boundary face. For now, the particles can simply be deleted when they hit a boundary
-                 * face. In the future, the carrier particles may want to be endowed with some information that the boundary label carries when the search particle happens upon it.
+                 * cell. Additionally, the option for reflection is opened because the faces and their normals are now more easily accessed during the initialization. In the future, the carrier
+                 * particles may want to be given some information that the boundary label carries when the search particle happens upon it so that imperfect reflection can be implemented.
                  * */
 
                 /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
@@ -415,8 +414,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                 }
                 virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
                 rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
-            } else {
-                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
             }
             /** Step 3.5: Condition for one dimensional domains to avoid infinite rays perpendicular to the x-axis
              * If the domain is 1D and the x-direction of the particle is zero then delete the particle here
@@ -489,8 +486,6 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     /** Cleanup */
     DMDestroy(&radsearch) >> checkError;
     VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
-    //    VecDestroy(&cellGeomVec) >> checkError;
-    //    VecDestroy(&faceGeomVec) >> checkError;
 
     if (log) EndEvent();
 }
