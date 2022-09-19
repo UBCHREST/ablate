@@ -453,7 +453,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                         coord[(3 * ipart) + 2] = virtualcoord[ipart].z + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
                         break;
                 }  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
-                virtualcoord[ipart].hhere = 0;
+                virtualcoord[ipart].hhere = 0; //!< Reset the path length to zero
             }
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
