@@ -7,7 +7,7 @@ namespace ablate::boundarySolver::lodi {
 
 class IsothermalWall : public LODIBoundary {
    public:
-    explicit IsothermalWall(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, std::shared_ptr<ablate::radiation::Radiation> radiationIn = {});
+    explicit IsothermalWall(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
 
     void Setup(ablate::boundarySolver::BoundarySolver& bSolver) override;
 
@@ -19,8 +19,6 @@ class IsothermalWall : public LODIBoundary {
    private:
     static PetscErrorCode MirrorSpecies(PetscInt dim, const BoundarySolver::BoundaryFVFaceGeom* fg, const PetscFVCellGeom* boundaryCell, const PetscInt uOff[], PetscScalar* boundaryValues,
                                         const PetscScalar* stencilValues, const PetscInt aOff[], PetscScalar* auxValues, const PetscScalar* stencilAuxValues, void* ctx);
-
-    std::shared_ptr<ablate::radiation::Radiation> radiation;
 };
 
 }  // namespace ablate::boundarySolver::lodi
