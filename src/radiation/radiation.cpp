@@ -452,8 +452,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                         coord[(3 * ipart) + 1] = virtualcoord[ipart].y + (virtualcoord[ipart].ydir * 0.1 * minCellRadius);
                         coord[(3 * ipart) + 2] = virtualcoord[ipart].z + (virtualcoord[ipart].zdir * 0.1 * minCellRadius);
                         break;
-                }  //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
-                virtualcoord[ipart].hhere = 0; //!< Reset the path length to zero
+                }                               //!< Update the coordinates of the particle to move it to the center of the adjacent particle.
+                virtualcoord[ipart].hhere = 0;  //!< Reset the path length to zero
             }
         }
         /** Restore the fields associated with the particles after all of the particles have been stepped */
@@ -501,11 +501,11 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     VecGetArrayRead(auxVec, &auxArray);
 
     /** Declare the basic information*/
-    PetscReal* sol;                                                    //!< The solution value at any given location
-    PetscReal* temperature;                                            //!< The temperature at any given location
+    PetscReal* sol;          //!< The solution value at any given location
+    PetscReal* temperature;  //!< The temperature at any given location
     PetscReal dTheta = ablate::utilities::Constants::pi / (nTheta);
     PetscReal dPhi = (2 * ablate::utilities::Constants::pi) / (nPhi);
-    double kappa = 1;                                                  //!< Absorptivity coefficient, property of each cell
+    double kappa = 1;  //!< Absorptivity coefficient, property of each cell
     double theta;
 
     auto absorptivityFunctionContext = absorptivityFunction.context.get();  //!< Get access to the absorption function
