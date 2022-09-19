@@ -31,7 +31,6 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
         std::vector<DM> fieldDM(monitor->fieldNames.size(), nullptr);
         for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
             const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
-
             ierr = monitor->GetSolver()->GetSubDomain().GetFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]);
             CHKERRQ(ierr);
         }
@@ -131,6 +130,11 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
         CHKERRQ(ierr);
         ierr = VecRestoreArray(monitor->turbVec, &turbDat);
         CHKERRQ(ierr);
+        for (std::size_t f = 0; f < monitor->fieldNames.size(); f++) {
+            const auto& field = monitor->GetSolver()->GetSubDomain().GetField(monitor->fieldNames[f]);
+            ierr = monitor->GetSolver()->GetSubDomain().RestoreFieldGlobalVector(field, &vecIS[f], &vec[f], &fieldDM[f]);
+            CHKERRQ(ierr);
+        }
     }
     PetscFunctionReturn(0);
 }
