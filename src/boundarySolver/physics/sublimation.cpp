@@ -198,7 +198,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
 
     // And the mom flux for each dir by g
     for (PetscInt dir = 0; dir < dim; dir++) {
-        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir] - boundaryPressure * fg->areas[dir];
+        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir] - boundaryPressure * fg->areas[dir]; // TODO: This needs to be adjusted for the diffusion flame?
 
         // March over each direction for the viscus flux
         for (PetscInt d = 0; d < dim; ++d) {

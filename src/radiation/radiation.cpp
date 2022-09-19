@@ -177,20 +177,15 @@ void ablate::radiation::Radiation::InitializationConvertSurface(ablate::domain::
 
     PetscInt numberNeighborCells;
     const PetscInt* neighborCells;
-    //    DMLabel boundaryLabel;
-    //    PetscInt boundaryValue = fieldBoundary->GetValue();
-    //    DMGetLabel(subDomain.GetDM(), fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
 
     /** Delete all of the particles that were transported to their origin domains -> Delete if the particle has travelled to get here and isn't native */
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
         DMPlexGetSupportSize(subDomain.GetDM(), identifier[ipart].iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
         DMPlexGetSupport(subDomain.GetDM(), identifier[ipart].iCell, &neighborCells) >> ablate::checkError;
-        //        PetscInt cellValue;   //!< The value of the boundary label for this cell
         PetscInt index = -1;  //!< Index value to compare the Locate Points result against.
         for (PetscInt n = 0; n < numberNeighborCells; n++) {
             PetscInt cell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
-                                               //            DMLabelGetValue(boundaryLabel, cell, &cellValue) >> checkError;  //!< Store the cell index associated with the boundary cell for this face
-            if (fieldBoundary->InRegion(fieldBoundary, subDomain.GetDM(), cell)) {  // cellValue == boundaryValue) {
+            if (fieldBoundary->InRegion(fieldBoundary, subDomain.GetDM(), cell)) {
                 index = cell;
             }
         }
@@ -682,7 +677,6 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
 
                 //!< If computing surface flux, get the perpendicular component here and multiply the result by it
                 if (surface) {  //!< Add the option to the initialization call and make sure that it is stored as a class variable
-                                //                    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm. This is constant and does not depend upon region.
                     DMPlexPointLocalRead(faceDM, iCell, faceGeomArray, &faceGeom) >> checkError;
 
                     /** Now that we are iterating over every ray identifier in this local domain, we can get all of the particles that are associated with this ray.
@@ -726,17 +720,13 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** ********************************************************************************************************************************
      * Loop through the cell range and compute the origin contributions. */
 
-    //    Vec faceGeomVec = nullptr;  //!< Vector used to describe the entire face geom of the dm.  This is constant and does not depend upon region.
-    //    Vec cellGeomVec = nullptr;
     DM cellDM;
     const PetscScalar* cellGeomArray;
-    //    PetscFVCellGeom* cellGeom;
 
     if (log) {
-        //        DMPlexComputeGeometryFVM(solDm, &cellGeomVec, &faceGeomVec) >> checkError;  //!< Get the geometry vectors
         VecGetDM(cellGeomVec, &cellDM) >> checkError;
         VecGetArrayRead(cellGeomVec, &cellGeomArray) >> checkError;
-        printf("x           y           z           G           L           A           T\n");  //!< Line labelling the log outputs for readability
+        printf("x           y           z           G           L           T\n");  //!< Line labelling the log outputs for readability
     }
 
     for (auto& [iCell, o] : origin) {  //!< Iterate through the cells that are stored in the origin
@@ -749,17 +739,12 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (surface) {
             PetscInt numberNeighborCells;
             const PetscInt* neighborCells;
-            //            DMLabel boundaryLabel;
-            //            PetscInt boundaryValue = fieldBoundary->GetValue();
-            //            DMGetLabel(solDm, fieldBoundary->GetName().c_str(), &boundaryLabel) >> checkError;
 
             DMPlexGetSupportSize(solDm, iCell, &numberNeighborCells) >> ablate::checkError;  //!< Get the cells on each side of this face to check for boundary cells
             DMPlexGetSupport(solDm, iCell, &neighborCells) >> ablate::checkError;
-            //            PetscInt cellValue;  //!< The value of the boundary label for this cell
             for (PetscInt n = 0; n < numberNeighborCells; n++) {
                 PetscInt cell = neighborCells[n];  //!< Contains the cell indexes of the neighbor cells
-                //                DMLabelGetValue(boundaryLabel, cell, &cellValue) >> checkError;  //!< Store the cell index associated with the boundary cell for this face
-                if (fieldBoundary->InRegion(fieldBoundary, solDm, cell)) {  // cellValue == boundaryValue) {
+                if (fieldBoundary->InRegion(fieldBoundary, solDm, cell)) {
                     index = cell;
                 }
             }
@@ -772,15 +757,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (log) {
             PetscReal centroid[3];
             DMPlexComputeCellGeometryFVM(cellDM, iCell, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f %f %f\n",
-                   centroid[0],
-                   centroid[1],
-                   centroid[2],
-                   origin[iCell].intensity,
-                   losses,
-                   0.0,
-                   //                   ReallySolveParallelPlates(cellGeom->centroid[0]),
-                   *temperature);
+            printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
@@ -827,138 +804,6 @@ PetscReal ablate::radiation::Radiation::FaceIntersect(PetscInt ip, Virtualcoord*
     } else {
         return 0;
     }
-}
-
-PetscReal ablate::radiation::Radiation::CSimp(PetscReal a, PetscReal b, std::vector<double>& f) {
-    /** b-a represents the size of the total domain that is being integrated over
-     * The number of elements in the vector that is being integrated over
-     * Initialize the sum of all middle elements
-     * Weight lightly on the borders
-     * Weight heavily in the center
-     * Add this value to the total every time
-     * Compute the total final integral
-     * */
-    PetscReal I;
-    int n = (int)f.size();  //!< The number of elements in the vector that is being integrated over
-    int margin = 0;
-    PetscReal f_sum = 0;  //!< Initialize the sum of all middle elements
-
-    if (a != b) {
-        /** Loop through every point except the first and last*/
-        for (int i = margin; i < (n - margin); i++) {
-            if (i % 2 == 0) {
-                f[i] = 2 * f[i];  //!< Weight lightly on the borders
-            } else {
-                f[i] = 4 * f[i];  //!< Weight heavily in the center
-            }
-            f_sum += f[i];  //!< Add this value to the total every time
-        }
-        I = ((b - a) / (3 * n)) * (f[0] + f_sum + f[n - 1]);  //!< Compute the total final integral
-    } else {
-        I = 0;
-    }
-    return I;
-}
-
-PetscReal ablate::radiation::Radiation::EInteg(int order, double x) {
-    if (x == 0 && order != 1) return 1.0 / (order - 1.0);  // Simple solution in this case, exit
-    std::vector<PetscReal> En;
-    int N = 1000;
-    for (int n = 1; n < N; n++) {
-        double mu = (double)n / N;
-        if (order == 1) {
-            En.push_back(exp(-x / mu) / mu);
-        }
-        if (order == 2) {
-            En.push_back(exp(-x / mu));
-        }
-    }
-    PetscReal final = CSimp(0, 1, En);
-    return final;
-}
-
-PetscReal ablate::radiation::Radiation::Temperature(PetscReal zp) {
-    //    if (zp <= 0) {                                                    // Two parabolas, is the z coordinate in one half of the domain or the other
-    //        return -7E6 * zp * zp + 2000.0;
-    //    } else {
-    //        return -13E6 * zp * zp + 2000.0;
-    //    }}
-    return (6000 - zp * (2000 / 5));
-}
-
-PetscReal ablate::radiation::Radiation::ReallySolveParallelPlates(PetscReal z) {
-    /** Analytical solution of a special verification case.
-     * Define variables and basic information
-     * Intensity of rays originating from the top plate
-     * Set the initial ray intensity to the bottom wall intensity
-     * Intensity of rays originating from the bottom plate
-     * Kappa is not spatially dependant in this special case
-     * Prescribe the top and bottom heights for the domain
-     * */
-    PetscReal G;
-    PetscReal kappa = 1;                                                                // Kappa is not spatially dependant in this special case
-    PetscReal zBottom = 5;                                                              //-0.01;                                             // Prescribe the top and bottom heights for the domain
-    PetscReal zTop = 10;                                                                // 0.01;
-    PetscReal IT = ablate::radiation::Radiation::FlameIntensity(1, Temperature(zTop));  // Intensity of rays originating from the top plate
-    PetscReal IB =
-        ablate::radiation::Radiation::FlameIntensity(1, Temperature(zBottom));  // Set the initial ray intensity to the bottom wall intensity //Intensity of rays originating from the bottom plate
-
-    PetscReal temperature;
-    PetscReal Ibz;
-
-    PetscReal pi = 3.1415926535897932384626433832795028841971693993;
-    const PetscReal sbc = 5.6696e-8;
-    PetscInt nZp = 1000;
-
-    std::vector<PetscReal> Iplus;
-    std::vector<PetscReal> Iminus;
-
-    for (PetscInt nzp = 1; nzp < (nZp - 1); nzp++) {
-        /** Plus integral goes from bottom to Z
-         * Calculate the z height
-         * Get the temperature
-         * Two parabolas, is the z coordinate in one half of the domain or the other
-         * */
-        PetscReal zp = zBottom + ((PetscReal)nzp / nZp) * (z - zBottom);  // Calculate the z height
-        if (zp <= 0) {                                                    // Two parabolas, is the z coordinate in one half of the domain or the other
-            temperature = Temperature(zp);                                //-7E6 * zp * zp + 2000.0;
-        } else {
-            temperature = Temperature(zp);  // temperature = -13E6 * zp * zp + 2000.0;
-        }
-        /** Get the black body intensity here*/
-        Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
-        Iplus.push_back(Ibz * EInteg(1, kappa * (z - zp)));
-    }
-    for (PetscInt nzp = 1; nzp < (nZp - 1); nzp++) {             /** Minus integral goes from z to top*/
-        PetscReal zp = z + ((PetscReal)nzp / nZp) * (zTop - z);  // Calculate the zp height
-        /** Get the temperature*/
-        if (zp <= 0) {                      // Two parabolas, is the z coordinate in one half of the domain or the other
-            temperature = Temperature(zp);  // temperature = -7E6 * zp * zp + 2000.0;
-        } else {
-            temperature = Temperature(zp);  // temperature = -13E6 * zp * zp + 2000.0;
-        }
-        /** Get the black body intensity here*/
-        Ibz = ablate::radiation::Radiation::FlameIntensity(1, temperature);
-        Iminus.push_back(Ibz * EInteg(1, kappa * (zp - z)));
-    }
-
-    PetscReal term1 = IB * EInteg(2, kappa * (z - zBottom));
-    PetscReal term2 = IT * EInteg(2, kappa * (zTop - z));
-    PetscReal term3 = CSimp(zBottom, z, Iplus);
-    PetscReal term4 = CSimp(z, zTop, Iminus);
-
-    G = 2 * pi * (term1 + term2 + term3 + term4);
-
-    /**Now compute the losses at the given input point (this is in order to match the output that is given by the ComputeRHSFunction)*/
-    if (z <= 0) {                      // Two parabolas, is the z coordinate in one half of the domain or the other
-        temperature = Temperature(z);  // temperature = -6.349E6 * z * z + 2000.0;
-    } else {
-        temperature = Temperature(z);  // temperature = -1.179E7 * z * z + 2000.0;
-    }
-    PetscReal losses = 4 * sbc * temperature * temperature * temperature * temperature;
-    PetscReal radTotal = -kappa * (losses - G);
-
-    return radTotal;
 }
 
 #include "registrar.hpp"
