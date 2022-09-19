@@ -56,13 +56,13 @@ class Sublimation : public BoundaryProcess {
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool disablePressure = false);
 
-    void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
+    void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
 
     /**
-     * manual Initialize used for testing
+     * manual Setup used for testing
      * @param numberSpecies
      */
-    void Initialize(PetscInt numberSpecies);
+    void Setup(PetscInt numberSpecies);
 
     /**
      * Support function to compute and insert source terms for this boundary condition

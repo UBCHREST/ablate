@@ -48,7 +48,7 @@ class LODIBoundary : public BoundaryProcess {
    public:
     explicit LODIBoundary(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {});
 
-    void Initialize(ablate::boundarySolver::BoundarySolver& bSolver) override;
+    void Setup(ablate::boundarySolver::BoundarySolver& bSolver) override;
 
     /**
      * This function directly sets the known values and is useful for testing
@@ -57,7 +57,7 @@ class LODIBoundary : public BoundaryProcess {
      * @param nSpecEqs
      * @param nEvEqs
      */
-    void Initialize(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0, const std::vector<domain::Field>& fields = {});
+    void Setup(PetscInt dims, PetscInt nEqs, PetscInt nSpecEqs = 0, PetscInt nEvEqs = 0, const std::vector<domain::Field>& fields = {});
 
    private:
     eos::ThermodynamicTemperatureFunction computeTemperatureFunction;

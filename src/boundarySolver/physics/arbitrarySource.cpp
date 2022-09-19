@@ -7,7 +7,7 @@ ablate::boundarySolver::physics::ArbitrarySource::ArbitrarySource(std::map<std::
       functions(functions),
       boundarySourceType(boundarySourceType) {}
 
-void ablate::boundarySolver::physics::ArbitrarySource::Initialize(ablate::boundarySolver::BoundarySolver &bSolver) {
+void ablate::boundarySolver::physics::ArbitrarySource::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // Build the list of output components
     std::vector<std::string> sourceComponents;
     for (const auto &function : functions) {
