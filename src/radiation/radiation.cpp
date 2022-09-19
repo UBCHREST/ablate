@@ -503,8 +503,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** Declare the basic information*/
     PetscReal* sol;                                                    //!< The solution value at any given location
     PetscReal* temperature;                                            //!< The temperature at any given location
-    PetscReal dTheta = ablate::utilities::Constants::pi / (nTheta);    //(dim == 1) ? 1 : ablate::utilities::Constants::pi / (nTheta);
-    PetscReal dPhi = (2 * ablate::utilities::Constants::pi) / (nPhi);  //(dim == 1) ? (4 * ablate::utilities::Constants::pi / nPhi) : (2 * ablate::utilities::Constants::pi) / (nPhi);
+    PetscReal dTheta = ablate::utilities::Constants::pi / (nTheta);
+    PetscReal dPhi = (2 * ablate::utilities::Constants::pi) / (nPhi);
     double kappa = 1;                                                  //!< Absorptivity coefficient, property of each cell
     double theta;
 
@@ -651,7 +651,8 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                 oldsegment = loopid.nsegment;  //!< Set the old segment to be the head of the ray
                 origin[iCell].I0 = 0;          //!< For the last segment in the domain, take that as the black body intensity of the far field.
 
-                while (loopid.nsegment > 0) {  //!< Need to go through all of the ray segments until the origin of the ray is reached
+                loopid.nsegment = 0;
+                while (loopid.nsegment <= oldsegment) {  //!< Need to go through all of the ray segments until the origin of the ray is reached
 
                     origin[iCell].I0 = (oldsegment == loopid.nsegment) ? origin[iCell].handler[Key(&loopid)].I0 : origin[iCell].I0;  //!< Set I0 if it is the last segment in the ray
 
@@ -665,7 +666,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                      * Meaning that the variables required for the parallelizable analytical solution will be declared here */
                     origin[iCell].Isource += origin[iCell].handler[Key(&loopid)].Ij * origin[iCell].Kradd;  //!< Add the black body radiation transmitted through the domain to the source term
                     origin[iCell].Kradd *= origin[iCell].handler[Key(&loopid)].Krad;                        //!< Add the absorption for this domain to the total absorption of the ray
-                    loopid.nsegment--;                                                                      //!< Decrement the segment number to move to the next closer segment in the ray.
+                    loopid.nsegment++;                                                                      //!< Decrement the segment number to move to the next closer segment in the ray.
                 }
 
                 if (dim != 1) {
