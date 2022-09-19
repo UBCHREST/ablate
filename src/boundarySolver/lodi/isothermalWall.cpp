@@ -6,8 +6,7 @@
 
 using fp = ablate::finiteVolume::CompressibleFlowFields;
 
-ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling,
-                                                             std::shared_ptr<ablate::radiation::Radiation> radiationIn)
+ablate::boundarySolver::lodi::IsothermalWall::IsothermalWall(std::shared_ptr<eos::EOS> eos, std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling)
     : LODIBoundary(std::move(eos), std::move(pressureGradientScaling)) {}
 
 void ablate::boundarySolver::lodi::IsothermalWall::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
@@ -175,5 +174,4 @@ PetscErrorCode ablate::boundarySolver::lodi::IsothermalWall::MirrorSpecies(Petsc
 #include "registrar.hpp"
 REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::lodi::IsothermalWall, "Enforces a isothermal wall with fixed velocity/temperature",
          ARG(ablate::eos::EOS, "eos", "The EOS describing the flow field at the wall"),
-         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
-         OPT(ablate::radiation::Radiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"));
+         OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"));
