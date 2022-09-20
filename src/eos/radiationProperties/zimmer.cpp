@@ -16,49 +16,53 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerFunction(const Pe
     ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
-    /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
-    double kappaH2O = 0;
-    double kappaCO2 = 0;
-    double kappaCH4 = 0;
-    double kappaCO = 0;
-    double pCO2, pH2O, pCH4, pCO;
+    if (density == 0) {
+        *kappa = 0;
+    } else {
+        /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
+        double kappaH2O = 0;
+        double kappaCO2 = 0;
+        double kappaCH4 = 0;
+        double kappaCO = 0;
+        double pCO2, pH2O, pCH4, pCO;
 
-    /** Computing the Planck mean absorption coefficient for CO2 and H2O*/
-    for (int j = 0; j < 7; j++) {  // std::array use
-        kappaH2O += H2O_coeff.at(j) * pow(temperature / Tsurf, j);
-        kappaCO2 += CO2_coeff.at(j) * pow(temperature / Tsurf, j);
-    }
-    kappaH2O = kapparef * pow(10, kappaH2O);
-    kappaCO2 = kapparef * pow(10, kappaCO2);
-
-    /** Computing the Planck mean absorption coefficient for CH4 and CO
-     * The relationship is different with enough significance to use different models above or below 750 K.
-     * */
-    for (int j = 0; j < 5; j++) {
-        kappaCH4 += CH4_coeff.at(j) * pow(temperature, j);
-        if (temperature <= 750) {
-            kappaCO += CO_1_coeff.at(j) * pow(temperature, j);
-        } else {
-            kappaCO += CO_2_coeff.at(j) * pow(temperature, j);
+        /** Computing the Planck mean absorption coefficient for CO2 and H2O*/
+        for (int j = 0; j < 7; j++) {  // std::array use
+            kappaH2O += H2O_coeff.at(j) * pow(temperature / Tsurf, j);
+            kappaCO2 += CO2_coeff.at(j) * pow(temperature / Tsurf, j);
         }
+        kappaH2O = kapparef * pow(10, kappaH2O);
+        kappaCO2 = kapparef * pow(10, kappaCO2);
+
+        /** Computing the Planck mean absorption coefficient for CH4 and CO
+         * The relationship is different with enough significance to use different models above or below 750 K.
+         * */
+        for (int j = 0; j < 5; j++) {
+            kappaCH4 += CH4_coeff.at(j) * pow(temperature, j);
+            if (temperature <= 750) {
+                kappaCO += CO_1_coeff.at(j) * pow(temperature, j);
+            } else {
+                kappaCO += CO_2_coeff.at(j) * pow(temperature, j);
+            }
+        }
+
+        /** Get the density mass fractions of the relevant species in order to compute their partial pressures
+         * The conditional statement serves to set the mass fraction value to zero of the component does not exist in the field.
+         * */
+        PetscReal YinH2O = (functionContext->densityYiH2OOffset == -1) ? 0 : conserved[functionContext->densityYiH2OOffset] / density;
+        PetscReal YinCO2 = (functionContext->densityYiCO2Offset == -1) ? 0 : conserved[functionContext->densityYiCO2Offset] / density;
+        PetscReal YinCH4 = (functionContext->densityYiCH4Offset == -1) ? 0 : conserved[functionContext->densityYiCH4Offset] / density;
+        PetscReal YinCO = (functionContext->densityYiCOOffset == -1) ? 0 : conserved[functionContext->densityYiCOOffset] / density;
+
+        /** Computing the partial pressure of each species*/
+        pCO2 = (density * UGC * YinCO2 * temperature) / (MWCO2 * 101325.);
+        pH2O = (density * UGC * YinH2O * temperature) / (MWH2O * 101325.);
+        pCH4 = (density * UGC * YinCH4 * temperature) / (MWCH4 * 101325.);
+        pCO = (density * UGC * YinCO * temperature) / (MWCO * 101325.);
+
+        /** The resulting absorptivity is an average of species absorptivity weighted by partial pressure. */
+        *kappa = pCO2 * kappaCO2 + pH2O * kappaH2O + pCH4 * kappaCH4 + pCO * kappaCO;
     }
-
-    /** Get the density mass fractions of the relevant species in order to compute their partial pressures
-     * The conditional statement serves to set the mass fraction value to zero of the component does not exist in the field.
-     * */
-    PetscReal YinH2O = (functionContext->densityYiH2OOffset == -1) ? 0 : conserved[functionContext->densityYiH2OOffset] / density;
-    PetscReal YinCO2 = (functionContext->densityYiCO2Offset == -1) ? 0 : conserved[functionContext->densityYiCO2Offset] / density;
-    PetscReal YinCH4 = (functionContext->densityYiCH4Offset == -1) ? 0 : conserved[functionContext->densityYiCH4Offset] / density;
-    PetscReal YinCO = (functionContext->densityYiCOOffset == -1) ? 0 : conserved[functionContext->densityYiCOOffset] / density;
-
-    /** Computing the partial pressure of each species*/
-    pCO2 = (density * UGC * YinCO2 * temperature) / (MWCO2 * 101325.);
-    pH2O = (density * UGC * YinH2O * temperature) / (MWH2O * 101325.);
-    pCH4 = (density * UGC * YinCH4 * temperature) / (MWCH4 * 101325.);
-    pCO = (density * UGC * YinCO * temperature) / (MWCO * 101325.);
-
-    /** The resulting absorptivity is an average of species absorptivity weighted by partial pressure. */
-    *kappa = pCO2 * kappaCO2 + pH2O * kappaH2O + pCH4 * kappaCH4 + pCO * kappaCO;
     PetscFunctionReturn(0);
 }
 PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFunction(const PetscReal *conserved, PetscReal temperature, PetscReal *kappa, void *ctx) {
@@ -72,49 +76,53 @@ PetscErrorCode ablate::eos::radiationProperties::Zimmer::ZimmerTemperatureFuncti
     ierr = functionContext->densityFunction.function(conserved, &density, functionContext->densityFunction.context.get());  //!< Get the density value at this location
     CHKERRQ(ierr);
 
-    /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
-    double kappaH2O = 0;
-    double kappaCO2 = 0;
-    double kappaCH4 = 0;
-    double kappaCO = 0;
-    double pCO2, pH2O, pCH4, pCO;
+    if (density == 0) {
+        *kappa = 0;
+    } else {
+        /** The Zimmer model uses a fit approximation of the absorptivity. This depends on the presence of four species which are present in combustion and shown below. */
+        double kappaH2O = 0;
+        double kappaCO2 = 0;
+        double kappaCH4 = 0;
+        double kappaCO = 0;
+        double pCO2, pH2O, pCH4, pCO;
 
-    /** Computing the Planck mean absorption coefficient for CO2 and H2O*/
-    for (int j = 0; j < 7; j++) {  // std::array use
-        kappaH2O += H2O_coeff.at(j) * pow(temperature / Tsurf, j);
-        kappaCO2 += CO2_coeff.at(j) * pow(temperature / Tsurf, j);
-    }
-    kappaH2O = kapparef * pow(10, kappaH2O);
-    kappaCO2 = kapparef * pow(10, kappaCO2);
-
-    /** Computing the Planck mean absorption coefficient for CH4 and CO
-     * The relationship is different with enough significance to use different models above or below 750 K.
-     * */
-    for (int j = 0; j < 5; j++) {
-        kappaCH4 += CH4_coeff.at(j) * pow(temperature, j);
-        if (temperature <= 750) {
-            kappaCO += CO_1_coeff.at(j) * pow(temperature, j);
-        } else {
-            kappaCO += CO_2_coeff.at(j) * pow(temperature, j);
+        /** Computing the Planck mean absorption coefficient for CO2 and H2O*/
+        for (int j = 0; j < 7; j++) {  // std::array use
+            kappaH2O += H2O_coeff.at(j) * pow(temperature / Tsurf, j);
+            kappaCO2 += CO2_coeff.at(j) * pow(temperature / Tsurf, j);
         }
+        kappaH2O = kapparef * pow(10, kappaH2O);
+        kappaCO2 = kapparef * pow(10, kappaCO2);
+
+        /** Computing the Planck mean absorption coefficient for CH4 and CO
+         * The relationship is different with enough significance to use different models above or below 750 K.
+         * */
+        for (int j = 0; j < 5; j++) {
+            kappaCH4 += CH4_coeff.at(j) * pow(temperature, j);
+            if (temperature <= 750) {
+                kappaCO += CO_1_coeff.at(j) * pow(temperature, j);
+            } else {
+                kappaCO += CO_2_coeff.at(j) * pow(temperature, j);
+            }
+        }
+
+        /** Get the density mass fractions of the relevant species in order to compute their partial pressures
+         * The conditional statement serves to set the mass fraction value to zero of the component does not exist in the field.
+         * */
+        PetscReal YinH2O = (functionContext->densityYiH2OOffset == -1) ? 0 : conserved[functionContext->densityYiH2OOffset] / density;
+        PetscReal YinCO2 = (functionContext->densityYiCO2Offset == -1) ? 0 : conserved[functionContext->densityYiCO2Offset] / density;
+        PetscReal YinCH4 = (functionContext->densityYiCH4Offset == -1) ? 0 : conserved[functionContext->densityYiCH4Offset] / density;
+        PetscReal YinCO = (functionContext->densityYiCOOffset == -1) ? 0 : conserved[functionContext->densityYiCOOffset] / density;
+
+        /** Computing the partial pressure of each species*/
+        pCO2 = (density * UGC * YinCO2 * temperature) / (MWCO2 * 101325.);
+        pH2O = (density * UGC * YinH2O * temperature) / (MWH2O * 101325.);
+        pCH4 = (density * UGC * YinCH4 * temperature) / (MWCH4 * 101325.);
+        pCO = (density * UGC * YinCO * temperature) / (MWCO * 101325.);
+
+        /** The resulting absorptivity is an average of species absorptivity weighted by partial pressure. */
+        *kappa = pCO2 * kappaCO2 + pH2O * kappaH2O + pCH4 * kappaCH4 + pCO * kappaCO;
     }
-
-    /** Get the density mass fractions of the relevant species in order to compute their partial pressures
-     * The conditional statement serves to set the mass fraction value to zero of the component does not exist in the field.
-     * */
-    PetscReal YinH2O = (functionContext->densityYiH2OOffset == -1) ? 0 : conserved[functionContext->densityYiH2OOffset] / density;
-    PetscReal YinCO2 = (functionContext->densityYiCO2Offset == -1) ? 0 : conserved[functionContext->densityYiCO2Offset] / density;
-    PetscReal YinCH4 = (functionContext->densityYiCH4Offset == -1) ? 0 : conserved[functionContext->densityYiCH4Offset] / density;
-    PetscReal YinCO = (functionContext->densityYiCOOffset == -1) ? 0 : conserved[functionContext->densityYiCOOffset] / density;
-
-    /** Computing the partial pressure of each species*/
-    pCO2 = (density * UGC * YinCO2 * temperature) / (MWCO2 * 101325.);
-    pH2O = (density * UGC * YinH2O * temperature) / (MWH2O * 101325.);
-    pCH4 = (density * UGC * YinCH4 * temperature) / (MWCH4 * 101325.);
-    pCO = (density * UGC * YinCO * temperature) / (MWCO * 101325.);
-
-    /** The resulting absorptivity is an average of species absorptivity weighted by partial pressure. */
-    *kappa = pCO2 * kappaCO2 + pH2O * kappaH2O + pCH4 * kappaCH4 + pCO * kappaCO;
     PetscFunctionReturn(0);
 }
 
