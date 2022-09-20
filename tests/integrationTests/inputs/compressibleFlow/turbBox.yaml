@@ -18,11 +18,11 @@ timestepper:
   arguments:
     ts_type: rk
     ts_adapt_type: none
-    ts_max_steps: 43000
+    ts_max_steps: 100000
   # the domain/mesh must be specified at the start of a simulation
   domain: !ablate::domain::BoxMesh
     name: simpleBoxField
-    faces: [ 12, 12, 12]
+    faces: [ 32, 32, 32]
     lower: [ 0, 0, 0]
     upper: [ 0.565, 0.565, 0.565 ]
     boundary: [ "PERIODIC", "PERIODIC", "PERIODIC", "PERIODIC" ]
