@@ -22,7 +22,6 @@ void ablate::radiation::VolumeRadiation::Setup() {
 
 void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
     ablate::solver::Solver::Register(subDomain);
-    //    ablate::radiation::Radiation::Register(subDomain);
 }
 
 void ablate::radiation::VolumeRadiation::Initialize() {

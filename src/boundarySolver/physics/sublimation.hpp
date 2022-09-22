@@ -6,6 +6,7 @@
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
+#include "io/interval/interval.hpp"
 #include "radiation/radiation.hpp"
 namespace ablate::boundarySolver::physics {
 
@@ -59,7 +60,7 @@ class Sublimation : public BoundaryProcess {
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool disablePressure = false,
-                         std::shared_ptr<ablate::radiation::Radiation> radiationIn = {});
+                         std::shared_ptr<ablate::radiation::Radiation> radiationIn = {}, std::shared_ptr<io::interval::Interval> intervalIn = {});
 
     void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
     void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
@@ -119,6 +120,8 @@ class Sublimation : public BoundaryProcess {
                                                     const PetscScalar *boundaryValues, const PetscScalar *stencilValues[], const PetscInt aOff[], const PetscScalar *auxValues,
                                                     const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[],
                                                     PetscScalar source[], void *ctx);
+
+    const std::shared_ptr<io::interval::Interval> interval;
 };
 
 }  // namespace ablate::boundarySolver::physics
