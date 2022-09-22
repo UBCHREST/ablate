@@ -52,7 +52,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
     DMPlexGetMinRadius(subDomain.GetDM(), &minCellRadius) >> checkError;
 
     /** do a simple sanity check for labels */
-    PetscMPIInt rank;
+    PetscMPIInt rank = 0;
     MPI_Comm_rank(subDomain.GetComm(), &rank);      //!< Get the origin rank of the current process. The particle belongs to this rank. The rank only needs to be read once.
     MPI_Comm_size(subDomain.GetComm(), &numRanks);  //!< Get the number of ranks in the simulation.
 
@@ -766,6 +766,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** Cleanup */
     VecRestoreArrayRead(solVec, &solArray);
     VecRestoreArrayRead(auxVec, &auxArray);
+    VecRestoreArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
     if (log) {
         EndEvent();

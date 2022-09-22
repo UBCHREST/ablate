@@ -2,6 +2,7 @@
 #include <utility>
 #include "eos/radiationProperties/zimmer.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
+#include "io/interval/fixedInterval.hpp"
 #include "radiation/radiation.hpp"
 #include "solver/dynamicRange.hpp"
 #include "utilities/mathUtilities.hpp"
@@ -11,7 +12,7 @@ using fp = ablate::finiteVolume::CompressibleFlowFields;
 ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                                                           const std::shared_ptr<ablate::mathFunctions::FieldFunction> &massFractions, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux,
                                                           std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling, bool disablePressure,
-                                                          std::shared_ptr<ablate::radiation::Radiation> radiationIn)
+                                                          std::shared_ptr<ablate::radiation::Radiation> radiationIn, std::shared_ptr<io::interval::Interval> intervalIn)
     : latentHeatOfFusion(latentHeatOfFusion),
       transportModel(std::move(transportModel)),
       eos(std::move(eos)),
@@ -21,7 +22,8 @@ ablate::boundarySolver::physics::Sublimation::Sublimation(PetscReal latentHeatOf
       massFractionsContext(massFractions ? massFractions->GetFieldFunction()->GetContext() : nullptr),
       disablePressure(disablePressure),
       pressureGradientScaling(std::move(pressureGradientScaling)),
-      radiation(std::move(radiationIn)) {}
+      radiation(std::move(radiationIn)),
+      interval((intervalIn ? intervalIn : std::make_shared<io::interval::FixedInterval>())) {}
 
 void ablate::boundarySolver::physics::Sublimation::Setup(ablate::boundarySolver::BoundarySolver &bSolver) {
     // check for species
@@ -185,24 +187,25 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
     source[sOff[EULER_LOC] + fp::RHO] = massFlux * area;
 
     // Add each momentum flux
-    PetscReal momentumFlux = massFlux * massFlux / boundaryDensity;
+    PetscReal momentumFlux = 0.0;
 
     // compute the pressure on the face.  The first pressure in the stencil is always the node pressure on the face
     PetscReal boundaryPressure = 0.0;
     if (!sublimation->disablePressure) {
         PetscCall(sublimation->computePressure.function(stencilValues[0], stencilAuxValues[0][aOff[TEMPERATURE_LOC]], &boundaryPressure, sublimation->computePressure.context.get()));
+        momentumFlux = massFlux * massFlux / boundaryDensity;
         if (sublimation->pressureGradientScaling) {
             boundaryPressure /= PetscSqr(sublimation->pressureGradientScaling->GetAlpha());
         }
-    }
 
-    // And the mom flux for each dir by g
-    for (PetscInt dir = 0; dir < dim; dir++) {
-        source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir] - boundaryPressure * fg->areas[dir];
+        // And the mom flux for each dir by g
+        for (PetscInt dir = 0; dir < dim; dir++) {
+            source[sOff[EULER_LOC] + fp::RHOU + dir] = momentumFlux * -fg->areas[dir] - boundaryPressure * fg->areas[dir];
 
-        // March over each direction for the viscus flux
-        for (PetscInt d = 0; d < dim; ++d) {
-            source[sOff[EULER_LOC] + fp::RHOU + dir] += fg->areas[d] * tau[dir * dim + d];  // This is tau[c][d]
+            // March over each direction for the viscus flux
+            for (PetscInt d = 0; d < dim; ++d) {
+                source[sOff[EULER_LOC] + fp::RHOU + dir] += fg->areas[d] * tau[dir * dim + d];  // This is tau[c][d]
+            }
         }
     }
 
@@ -289,7 +292,13 @@ void ablate::boundarySolver::physics::Sublimation::Setup(PetscInt numberSpeciesI
 
 PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreStep(TS ts, ablate::solver::Solver &solver) {
     PetscFunctionBegin;
-    if (radiation) radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
+    PetscInt step;
+    PetscReal time;
+    TSGetStepNumber(ts, &step) >> checkError;
+    TSGetTime(ts, &time) >> checkError;
+    if (interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
+        if (radiation) radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
+    }
     PetscFunctionReturn(0);
 }
 
@@ -371,4 +380,5 @@ REGISTER(ablate::boundarySolver::BoundaryProcess, ablate::boundarySolver::physic
          OPT(ablate::mathFunctions::MathFunction, "additionalHeatFlux", "additional normal heat flux into the solid function"),
          OPT(ablate::finiteVolume::processes::PressureGradientScaling, "pgs", "Pressure gradient scaling is used to scale the acoustic propagation speed and increase time step for low speed flows"),
          OPT(bool, "disablePressure", "disables the pressure contribution to the momentum equation. Should be true when advection is not solved. (Default is false)"),
-         OPT(ablate::radiation::Radiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"));
+         OPT(ablate::radiation::Radiation, "radiation", "radiation instance for the sublimation solver to calculate heat flux"),
+         OPT(ablate::io::interval::Interval, "radiationInterval", "number of time steps between the radiation solves"));
