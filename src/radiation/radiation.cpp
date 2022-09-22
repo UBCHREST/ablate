@@ -170,9 +170,9 @@ void ablate::radiation::Radiation::InitializationConvertSurface(ablate::domain::
     DMSwarmGetField(radsearch, "identifier", nullptr, nullptr, (void**)&identifier) >> checkError;
     DMSwarmGetField(radsearch, "virtual coord", nullptr, nullptr, (void**)&virtualcoord) >> checkError;
 
-    PetscMPIInt npoints = 0;
+    PetscInt npoints = 0;
     DMSwarmGetLocalSize(radsearch, &npoints) >> checkError;  //!< Recalculate the number of particles that are in the domain
-    PetscMPIInt rank;
+    PetscMPIInt rank = 0;
     MPI_Comm_rank(subDomain.GetComm(), &rank);
 
     PetscInt numberNeighborCells;
