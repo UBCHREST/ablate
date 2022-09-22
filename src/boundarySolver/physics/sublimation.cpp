@@ -125,7 +125,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationFunction
         PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
     }
 
-    // Perform the radiation solve at every time step because there is no interval on the sublimation solver at the moment. Use the solution vector from the radiation.
+    // Use the solution from the radiation solve.
     PetscReal radIntensity = 0;
     if (sublimation->radiation) {
         radIntensity = sublimation->radiation->GetIntensity(fg->faceId);
@@ -246,6 +246,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
     const int CONDUCTION_LOC = 0;
     const int EXTRA_RAD_LOC = 1;
     const int REGRESSION_MASS_FLUX_LOC = 2;
+    const int RAD_LOC = 3;
 
     // extract the temperature
     std::vector<PetscReal> stencilTemperature(stencilSize, 0);
@@ -263,8 +264,14 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationOutputFu
         PetscCall(sublimation->effectiveConductivity.function(boundaryValues, auxValues[aOff[TEMPERATURE_LOC]], &effectiveConductivity, sublimation->effectiveConductivity.context.get()));
     }
 
+    PetscReal radIntensity = 0;
+    if (sublimation->radiation) {
+        radIntensity = sublimation->radiation->GetIntensity(fg->faceId);
+    }
+
     // compute the heat flux
     PetscReal heatFluxIntoSolid = -dTdn * effectiveConductivity;
+    source[sOff[RAD_LOC]] = radIntensity;
     source[sOff[CONDUCTION_LOC]] = heatFluxIntoSolid;
     PetscReal sublimationHeatFlux = PetscMax(0.0, heatFluxIntoSolid);  // note that q = -dTdn as dTdN faces into the solid
     // If there is an additional heat flux compute and add value
