@@ -22,34 +22,56 @@ class Sublimation : public BoundaryProcess {
     const std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux;
     PetscReal currentTime = 0.0;
 
-    // Store the mass fractions if provided
+    //!< Store the mass fractions if provided
     const std::shared_ptr<ablate::mathFunctions::FieldFunction> massFractions;
     const mathFunctions::PetscFunction massFractionsFunction;
     void *massFractionsContext;
     PetscInt numberSpecies = 0;
 
-    // toggle to disable any contribution of pressure in the momentum equation
+    /**
+     * toggle to disable any contribution of pressure in the momentum equation
+     */
     const bool disablePressure;
 
-    // the pgs is needed for the pressure calculation
+    /**
+     * the pgs is needed for the pressure calculation
+     */
     const std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling;
 
+    /**
+     * the radiation solver for surface heat flux calculation
+     */
     std::shared_ptr<ablate::radiation::Radiation> radiation;
 
-    // store the effectiveConductivity function
+    /**
+     * store the effectiveConductivity function
+     */
     eos::ThermodynamicTemperatureFunction effectiveConductivity;
 
-    // store the function to compute viscosity
+    /**
+     * store the function to compute viscosity
+     */
     eos::ThermodynamicTemperatureFunction viscosityFunction;
 
-    // reuse fv update temperature function
+    /**
+     * reuse fv update temperature function
+     */
     eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
 
-    // compute the sensible enthalpy for the blowing term
+    /**
+     * compute the sensible enthalpy for the blowing term
+     */
     eos::ThermodynamicTemperatureFunction computeSensibleEnthalpy;
 
-    // compute the pressure needed for the momentum equation
+    /**
+     * compute the pressure needed for the momentum equation
+     */
     eos::ThermodynamicTemperatureFunction computePressure;
+
+    /**
+     * interval between the radiation solves
+     */
+    const std::shared_ptr<io::interval::Interval> interval;
 
     /**
      * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
@@ -120,8 +142,6 @@ class Sublimation : public BoundaryProcess {
                                                     const PetscScalar *boundaryValues, const PetscScalar *stencilValues[], const PetscInt aOff[], const PetscScalar *auxValues,
                                                     const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[],
                                                     PetscScalar source[], void *ctx);
-
-    const std::shared_ptr<io::interval::Interval> interval;
 };
 
 }  // namespace ablate::boundarySolver::physics

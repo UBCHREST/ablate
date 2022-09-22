@@ -1,7 +1,5 @@
 #include "isothermalWall.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
-#include "mathFunctions/functionFactory.hpp"
-#include "solver/dynamicRange.hpp"
 #include "utilities/mathUtilities.hpp"
 
 using fp = ablate::finiteVolume::CompressibleFlowFields;
