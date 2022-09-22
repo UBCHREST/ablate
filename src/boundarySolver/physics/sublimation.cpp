@@ -1,6 +1,5 @@
 #include "sublimation.hpp"
 #include <utility>
-#include "eos/radiationProperties/zimmer.hpp"
 #include "finiteVolume/compressibleFlowFields.hpp"
 #include "io/interval/fixedInterval.hpp"
 #include "radiation/radiation.hpp"
@@ -304,7 +303,7 @@ PetscErrorCode ablate::boundarySolver::physics::Sublimation::SublimationPreStep(
     TSGetStepNumber(ts, &step) >> checkError;
     TSGetTime(ts, &time) >> checkError;
     if (interval->Check(PetscObjectComm((PetscObject)ts), step, time)) {
-        if (radiation) radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
+        radiation->Solve(solver.GetSubDomain().GetSolutionVector(), solver.GetSubDomain().GetField("temperature"), solver.GetSubDomain().GetAuxVector());
     }
     PetscFunctionReturn(0);
 }
