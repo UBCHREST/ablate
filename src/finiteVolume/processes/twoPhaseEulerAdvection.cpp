@@ -25,7 +25,7 @@ static inline PetscReal MagVector(PetscInt dim, const PetscReal *in) {
     return PetscSqrtReal(mag);
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunctionGas(SNES snes, Vec x, Vec F, void *ctx){
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunctionGas(SNES snes, Vec x, Vec F, void *ctx) {
     auto decodeDataStruct = (DecodeDataStructGas *)ctx;
     const PetscReal *ax;
     PetscReal *aF;
@@ -47,18 +47,17 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunc
     PetscReal p02 = decodeDataStruct->p0l;
 
     VecGetArray(F, &aF);
-    aF[0] = (gamma1 - 1)*eG*rhoG - (gamma2 - 1)*eL*rhoL + gamma2*p02; // pG - pL = 0, pressure equilibrium
-    aF[1] = eG*rhoL/cv1 - gamma2/cp2*(eL*rhoL - p02); // TG - TL = 0, temperature equilibrium
-    aF[2] = Y1*rho*rhoL + Y2*rho*rhoG - rhoG*rhoL;
-    aF[3] = Y1*eG + Y2*eL - e;
+    aF[0] = (gamma1 - 1) * eG * rhoG - (gamma2 - 1) * eL * rhoL + gamma2 * p02;  // pG - pL = 0, pressure equilibrium
+    aF[1] = eG * rhoL / cv1 - gamma2 / cp2 * (eL * rhoL - p02);                  // TG - TL = 0, temperature equilibrium
+    aF[2] = Y1 * rho * rhoL + Y2 * rho * rhoG - rhoG * rhoL;
+    aF[3] = Y1 * eG + Y2 * eL - e;
 
     VecRestoreArrayRead(x, &ax);
     VecRestoreArray(F, &aF);
     return 0;
-
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJacobianGas(SNES snes, Vec x, Mat J, Mat P, void *ctx){
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJacobianGas(SNES snes, Vec x, Mat J, Mat P, void *ctx) {
     auto decodeDataStruct = (DecodeDataStructGas *)ctx;
     const PetscReal *ax;
     PetscReal v[16];
@@ -75,28 +74,39 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJaco
     PetscReal Y1 = decodeDataStruct->Yg;
     PetscReal Y2 = decodeDataStruct->Yl;
     PetscReal rho = decodeDataStruct->rhotot;
-//    PetscReal e = decodeDataStruct->etot;
+    //    PetscReal e = decodeDataStruct->etot;
     PetscReal cv1 = decodeDataStruct->cvg;
     PetscReal cp2 = decodeDataStruct->cpl;
-//    PetscReal p02 = decodeDataStruct->p0l;
+    //    PetscReal p02 = decodeDataStruct->p0l;
 
-    v[0] = (gamma1-1)*eG; v[1] = -(gamma2-1)*eL; v[2] = (gamma1-1)*rhoG; v[3] = -(gamma2-1)*rhoL;
-    v[4] = 0.0; v[5] = eG/cv1 - gamma2*eG/cp2; v[6] = rhoL/cv1; v[7] = -gamma2*rhoL/cp2;
-    v[8] = Y2*rho-rhoL; v[9] = Y1*rho-rhoG; v[10] = 0.0; v[11] = 0.0;
-    v[12] = 0.0; v[13] = 0.0; v[14] = Y1; v[15] = Y2;
+    v[0] = (gamma1 - 1) * eG;
+    v[1] = -(gamma2 - 1) * eL;
+    v[2] = (gamma1 - 1) * rhoG;
+    v[3] = -(gamma2 - 1) * rhoL;
+    v[4] = 0.0;
+    v[5] = eG / cv1 - gamma2 * eG / cp2;
+    v[6] = rhoL / cv1;
+    v[7] = -gamma2 * rhoL / cp2;
+    v[8] = Y2 * rho - rhoL;
+    v[9] = Y1 * rho - rhoG;
+    v[10] = 0.0;
+    v[11] = 0.0;
+    v[12] = 0.0;
+    v[13] = 0.0;
+    v[14] = Y1;
+    v[15] = Y2;
     VecRestoreArrayRead(x, &ax);
-    MatSetValues(P,4,row,4,col,v,INSERT_VALUES);
-    MatAssemblyBegin(P,MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(P,MAT_FINAL_ASSEMBLY);
-    if (J!=P){
-        MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY);
-        MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY);
+    MatSetValues(P, 4, row, 4, col, v, INSERT_VALUES);
+    MatAssemblyBegin(P, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(P, MAT_FINAL_ASSEMBLY);
+    if (J != P) {
+        MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(J, MAT_FINAL_ASSEMBLY);
     }
     return 0;
-
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunctionStiff(SNES snes, Vec x, Vec F, void *ctx){
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunctionStiff(SNES snes, Vec x, Vec F, void *ctx) {
     auto decodeDataStruct = (DecodeDataStructStiff *)ctx;
     const PetscReal *ax;
     PetscReal *aF;
@@ -119,18 +129,17 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormFunc
     PetscReal p02 = decodeDataStruct->p0l;
 
     VecGetArray(F, &aF);
-    aF[0] = (gamma1 - 1)*eG*rhoG - gamma1*p01 - (gamma2 - 1)*eL*rhoL + gamma2*p02; // pG - pL = 0, pressure equilibrium
-    aF[1] = gamma1/cp1*rhoL*(eG*rhoG-p01) - gamma2/cp2*rhoG*(eL*rhoL - p02); // TG - TL = 0, temperature equilibrium
-    aF[2] = Y1*rho*rhoL + Y2*rho*rhoG - rhoG*rhoL;
-    aF[3] = Y1*eG + Y2*eL - e;
+    aF[0] = (gamma1 - 1) * eG * rhoG - gamma1 * p01 - (gamma2 - 1) * eL * rhoL + gamma2 * p02;  // pG - pL = 0, pressure equilibrium
+    aF[1] = gamma1 / cp1 * rhoL * (eG * rhoG - p01) - gamma2 / cp2 * rhoG * (eL * rhoL - p02);  // TG - TL = 0, temperature equilibrium
+    aF[2] = Y1 * rho * rhoL + Y2 * rho * rhoG - rhoG * rhoL;
+    aF[3] = Y1 * eG + Y2 * eL - e;
 
     VecRestoreArrayRead(x, &ax);
     VecRestoreArray(F, &aF);
     return 0;
-
 }
 
-PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJacobianStiff(SNES snes, Vec x, Mat J, Mat P, void *ctx){
+PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJacobianStiff(SNES snes, Vec x, Mat J, Mat P, void *ctx) {
     auto decodeDataStruct = (DecodeDataStructStiff *)ctx;
     const PetscReal *ax;
     PetscReal v[16];
@@ -147,27 +156,38 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::FormJaco
     PetscReal Y1 = decodeDataStruct->Yg;
     PetscReal Y2 = decodeDataStruct->Yl;
     PetscReal rho = decodeDataStruct->rhotot;
-//    PetscReal e = decodeDataStruct->etot;
+    //    PetscReal e = decodeDataStruct->etot;
     PetscReal cp1 = decodeDataStruct->cpg;
     PetscReal cp2 = decodeDataStruct->cpl;
     PetscReal p01 = decodeDataStruct->p0g;
     PetscReal p02 = decodeDataStruct->p0l;
 
     // need to check Jacobian, not getting correct solution
-    v[0] = (gamma1-1)*eG; v[1] = -(gamma2-1)*eL; v[2] = (gamma1-1)*rhoG; v[3] = -(gamma2-1)*rhoL;
-    v[4] = gamma1/cp1*eG*rhoL - gamma2/cp2*eL*rhoL + gamma2/cp2*p02; v[5] = gamma1/cp1*eG*rhoG - gamma1/cp1*p01 - gamma2/cp2*eL*rhoG; v[6] = gamma1/cp1*rhoG*rhoL; v[7] = -gamma2/cp2*rhoG*rhoL;
-    v[8] = Y2*rho-rhoL; v[9] = Y1*rho-rhoG; v[10] = 0.0; v[11] = 0.0;
-    v[12] = 0.0; v[13] = 0.0; v[14] = Y1; v[15] = Y2;
+    v[0] = (gamma1 - 1) * eG;
+    v[1] = -(gamma2 - 1) * eL;
+    v[2] = (gamma1 - 1) * rhoG;
+    v[3] = -(gamma2 - 1) * rhoL;
+    v[4] = gamma1 / cp1 * eG * rhoL - gamma2 / cp2 * eL * rhoL + gamma2 / cp2 * p02;
+    v[5] = gamma1 / cp1 * eG * rhoG - gamma1 / cp1 * p01 - gamma2 / cp2 * eL * rhoG;
+    v[6] = gamma1 / cp1 * rhoG * rhoL;
+    v[7] = -gamma2 / cp2 * rhoG * rhoL;
+    v[8] = Y2 * rho - rhoL;
+    v[9] = Y1 * rho - rhoG;
+    v[10] = 0.0;
+    v[11] = 0.0;
+    v[12] = 0.0;
+    v[13] = 0.0;
+    v[14] = Y1;
+    v[15] = Y2;
     VecRestoreArrayRead(x, &ax);
-    MatSetValues(P,4,row,4,col,v,INSERT_VALUES);
-    MatAssemblyBegin(P,MAT_FINAL_ASSEMBLY);
-    MatAssemblyEnd(P,MAT_FINAL_ASSEMBLY);
-    if (J!=P){
-        MatAssemblyBegin(J,MAT_FINAL_ASSEMBLY);
-        MatAssemblyEnd(J,MAT_FINAL_ASSEMBLY);
+    MatSetValues(P, 4, row, 4, col, v, INSERT_VALUES);
+    MatAssemblyBegin(P, MAT_FINAL_ASSEMBLY);
+    MatAssemblyEnd(P, MAT_FINAL_ASSEMBLY);
+    if (J != P) {
+        MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY);
+        MatAssemblyEnd(J, MAT_FINAL_ASSEMBLY);
     }
     return 0;
-
 }
 
 ablate::finiteVolume::processes::TwoPhaseEulerAdvection::TwoPhaseEulerAdvection(std::shared_ptr<eos::EOS> eosGas, std::shared_ptr<eos::EOS> eosLiquid,
@@ -216,10 +236,10 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     NormVector(dim, fg->normal, norm);
     const PetscReal areaMag = MagVector(dim, fg->normal);
     for (PetscInt n = 0; n < dim; n++) {
-        if (PetscAbs(fg->normal[n]) < 1e-12){
-            newnormal[n]=0.0;
-        } else{
-            newnormal[n]=round(fg->normal[n]*1e12)/1e12;
+        if (PetscAbs(fg->normal[n]) < 1e-12) {
+            newnormal[n] = 0.0;
+        } else {
+            newnormal[n] = round(fg->normal[n] * 1e12) / 1e12;
         }
     }
 
@@ -310,11 +330,11 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscReal alphaDif = PetscAbs(alphaL - alphaR);
     PetscReal alphaLiq;
     fluxCalculator::Direction directionL;
-        if ( (alphaMin+alphaDif) >= (1.0-1e-12) ){
+    if ((alphaMin + alphaDif) >= (1.0 - 1e-12)) {
         alphaLiq = 0.0;
         massFluxLL = 0.0;
         p12LL = p12GG;
-    } else{
+    } else {
         alphaLiq = 1 - alphaMin - alphaDif;
         directionL = twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorFunction()(
             twoPhaseEulerAdvection->fluxCalculatorLiquidLiquid->GetFluxCalculatorContext(), normalVelocityL, aL_L, densityL_L, pL, normalVelocityR, aL_R, densityL_R, pR, &massFluxLL, &p12LL);
@@ -846,9 +866,6 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     // mass fractions
     PetscReal Yg = densityVF / (*density);
     PetscReal Yl = ((*density) - densityVF) / (*density);
-//    if (Yg>1.0 || Yl>1.0){
-//        throw std::invalid_argument("alpha is too big");
-//    }
 
     PetscReal R1 = eosGas->GetGasConstant();
     PetscReal cp2 = eosLiquid->GetSpecificHeatCp();
@@ -856,57 +873,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     PetscReal gamma1 = eosGas->GetSpecificHeatRatio();
     PetscReal gamma2 = eosLiquid->GetSpecificHeatRatio();
     PetscReal cv1 = R1 / (gamma1 - 1);
-////    PetscReal cp1 = gamma1*cv1;
-//    if (Yl<=1e-12){
-//        PetscReal rhoG, rhoL, eG, eL;
-//        rhoG = (*density);
-//        eG = (*internalEnergy);
-//        PetscReal TG = eG/cv1;
-//        PetscReal pG = (gamma1-1.0)*rhoG*eG;
-//        rhoL = gamma2/(gamma2-1)*(pG+p02)/cp2/TG;
-//        eL = (pG+gamma2*p02)/(gamma2-1)/rhoL;
-//        PetscReal a1 = PetscSqrtReal(gamma1*pG/rhoG);
-//        PetscReal a2 = PetscSqrtReal(gamma2*(pG+p02)/rhoL);
-//
-//        // once state defined
-//        *T=TG;
-//        *densityG = rhoG;
-//        *densityL = rhoL;
-//        *internalEnergyG = eG;
-//        *internalEnergyL = eL;
-//        *alpha = densityVF / (*densityG);
-//        *p = pG;  // pressure equilibrium, pG = pL
-//        *aG = a1;
-//        *aL = a2;
-//        *MG = (*normalVelocity) / (*aG);
-//        *ML = (*normalVelocity) / (*aL);
-//    } else if ( Yl>=(1.0-1e-12) ){
-//        PetscReal rhoG, rhoL, eG, eL;
-//        rhoL = (*density);
-//        eL = (*internalEnergy);
-//        PetscReal TL = (eL-p02/rhoL)*gamma2/cp2;
-//        PetscReal pL = (gamma2-1.0)*rhoL*eL-gamma2*p02;
-//        rhoG = pL/TL/R1;
-//        eG = cv1*TL;
-//        PetscReal a1 = PetscSqrtReal(gamma1*pL/rhoG);
-//        PetscReal a2 = PetscSqrtReal(gamma2*(pL+p02)/rhoL);
-//
-//        // once state defined
-//        *T = TL;
-//        *densityG = rhoG;
-//        *densityL = rhoL;
-//        *internalEnergyG = eG;
-//        *internalEnergyL = eL;
-//        *alpha = densityVF / (*densityG);
-//        *p = pL;  // pressure equilibrium, pG = pL
-//        *aG = a1;
-//        *aL = a2;
-//        *MG = (*normalVelocity) / (*aG);
-//        *ML = (*normalVelocity) / (*aL);
-//    }
-//
-//
-//    else{
+
     PetscReal etot = (*internalEnergy);
     PetscReal A = cp2 / cv1 / gamma2;
     PetscReal B = Yg + Yl * A;
@@ -923,7 +890,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
             root1 = (-b + PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
             root2 = (-b - PetscSqrtReal(PetscSqr(b) - 4 * a * c)) / (2 * a);
             if (root1 > 1E-5 && root2 > 1E-5) {
-                eG = PetscMax(root1, root2); // used to be Min
+                eG = PetscMax(root1, root2);  // used to be Min
             } else {
                 eG = PetscMax(root1, root2);  // take positive root
                 if (eG < 0) {                 // negative internal energy not physical
@@ -963,8 +930,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     PetscReal etG = eG + ke;
     PetscReal etL = eL + ke;
     PetscReal ar = (gamma1 - 1) * eG;
-    PetscReal br = gamma2 * p02 - Yg*(*density)*eG*(gamma1 - 1) - Yl*(*density)*eL*(gamma2-1);
-    PetscReal cr = -Yg*(*density)*gamma2*p02;
+    PetscReal br = gamma2 * p02 - Yg * (*density) * eG * (gamma1 - 1) - Yl * (*density) * eL * (gamma2 - 1);
+    PetscReal cr = -Yg * (*density) * gamma2 * p02;
     PetscReal root1r = (-br + PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
     PetscReal root2r = (-br - PetscSqrtReal(PetscSqr(br) - 4 * ar * cr)) / (2 * ar);
     PetscReal rhoG;
@@ -984,72 +951,6 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     PetscReal pL;
     PetscReal a1 = 0;
     PetscReal a2 = 0;
-
-//    if ( PetscAbs(Yg/rhoG+Yl/rhoL-1/(*density)) > 1e-10){
-//        throw std::invalid_argument("rhoG and rhoL decoded do not conserve mass");
-//    }
-//    if ( PetscAbs(Yg*eG+Yl*eL-etot) > 1e-10) {
-//        throw std::invalid_argument("eG and eL decoded do not conserve energy");
-//    }
-//        SNES snes;
-//        Vec x, r;
-//        Mat J;
-//        VecCreate(PETSC_COMM_SELF, &x);
-//        VecSetSizes(x, PETSC_DECIDE, 4);
-//        VecSetFromOptions(x);
-//        VecSet(x, (*internalEnergy)); // set initial guess to conserved density, [rho1, rho2, e1, e2] = [rho, rho, rho, rho]
-//        VecSetValue(x, 0, 1.0, INSERT_VALUES);
-//        VecSetValue(x, 1, 1000.0, INSERT_VALUES);
-//        VecDuplicate(x, &r);
-//
-//        MatCreate(PETSC_COMM_SELF, &J);
-//        MatSetSizes(J, PETSC_DECIDE, PETSC_DECIDE, 4, 4);
-//        MatSetFromOptions(J);
-//        MatSetUp(J);
-//
-//        SNESCreate(PETSC_COMM_SELF, &snes);
-//        DecodeDataStructGas decodeDataStruct{.etot = (*internalEnergy),
-//            .rhotot = (*density),
-//            .Yg = densityVF / (*density),
-//            .Yl = ((*density) - densityVF) / (*density),
-//            .gam1 = gamma1,
-//            .gam2 = gamma2,
-//            .cvg = cv1,
-//            .cpl = cp2,
-//            .p0l = p02,
-//        };
-//        SNESSetFunction(snes, r, FormFunctionGas, &decodeDataStruct);
-//        SNESSetJacobian(snes, J, J, FormJacobianGas, &decodeDataStruct);
-//        // default Newton's method
-//        //      SNESSetType(snes, "newtontr");
-//        //      SNESSetTolerances(SNES snes, PetscReal atol, PetscReal rtol, PetscReal stol, PetscInt its, PetscInt fcts);
-//        //          default rtol = 10e-8
-//        // snes_fd: use FD Jacobian - SNESComputeJacobianDefault()
-//        // snes_monitor : view residuals for each iteration
-//    //    PetscOptionsSetValue(NULL, "-snes_monitor", NULL);
-//    //    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
-//        SNESSetFromOptions(snes);
-//        SNESSolve(snes, NULL, x);
-//    //    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
-//        const PetscScalar *ax;
-//        VecGetArrayRead(x, &ax);
-//        PetscReal rhoG = ax[0];
-//        PetscReal rhoL = ax[1];
-//        PetscReal eG = ax[2];
-//        PetscReal eL = ax[3];
-//
-//        SNESDestroy(&snes);
-//        VecDestroy(&x);
-//        VecDestroy(&r);
-//        MatDestroy(&J);
-//
-//        PetscReal etG = eG + ke;
-//        PetscReal etL = eL + ke;
-//
-//        PetscReal pG = 0;
-//        PetscReal pL;
-//        PetscReal a1 = 0;
-//        PetscReal a2 = 0;
 
     // Fill the scratch array for gas
     liquidEulerFieldScratch[CompressibleFlowFields::RHO] = rhoL;
@@ -1087,37 +988,26 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::PerfectGasStiffene
     *internalEnergyG = eG;
     *internalEnergyL = eL;
     *alpha = densityVF / (*densityG);
-//    if (*alpha > 1.0+1E-8){
-//        *alpha = 1.0;
-//        throw std::invalid_argument("alpha calculated is greater than 1");
-//    }
-//    if (PetscAbs((*density)-(*alpha)*rhoG-(1-(*alpha))*rhoL)>1e-10){
-//        throw std::invalid_argument("volume fraction not conserved");
-//    }
     *p = pG;  // pressure equilibrium, pG = pL
-//    if (PetscAbs(pG-pL)>1e-10){
-//        throw std::invalid_argument("pressure equilibrium not achieved");
-//    }
     *aG = a1;
     *aL = a2;
     *MG = (*normalVelocity) / (*aG);
     *ML = (*normalVelocity) / (*aL);
-//}
+    //}
     PetscReal a1t, a2t, ainv, amix, bmodt;
-    a1t = PetscSqrtReal((gamma1-1)*cv1*(*T));
-    a2t = PetscSqrtReal((gamma2-1)/gamma2*cp2*(*T));
-    ainv = Yg/(rhoG*rhoG*a1t*a1t) + Yl/(rhoL*rhoL*a2t*a2t);
-    amix = PetscSqrtReal(1/ainv)/(*density);
-    bmodt = (*density)*amix*amix;
-    if (bmodt < 0.0){
+    a1t = PetscSqrtReal((gamma1 - 1) * cv1 * (*T));
+    a2t = PetscSqrtReal((gamma2 - 1) / gamma2 * cp2 * (*T));
+    ainv = Yg / (rhoG * rhoG * a1t * a1t) + Yl / (rhoL * rhoL * a2t * a2t);
+    amix = PetscSqrtReal(1 / ainv) / (*density);
+    bmodt = (*density) * amix * amix;
+    if (bmodt < 0.0) {
         throw std::invalid_argument("isothermal bulk modulus of mixture negative");
     }
-
 }
 
 /**StiffenedGasStiffenedGasDecoder**************/
 ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffenedGasDecoder::StiffenedGasStiffenedGasDecoder(PetscInt dim, const std::shared_ptr<eos::StiffenedGas> &eosGas,
-                                                                                                                      const std::shared_ptr<eos::StiffenedGas> &eosLiquid)
+                                                                                                                          const std::shared_ptr<eos::StiffenedGas> &eosLiquid)
     : eosGas(eosGas), eosLiquid(eosLiquid) {
     // Create the fake euler field
     auto fakeEulerField = ablate::domain::Field{.name = CompressibleFlowFields::EULER_FIELD, .numberComponents = 2 + dim, .offset = 0};
@@ -1138,11 +1028,11 @@ ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffenedGa
     liquidComputePressure = eosLiquid->GetThermodynamicTemperatureFunction(eos::ThermodynamicProperty::Pressure, {fakeEulerField});
 }
 void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffenedGasDecoder::DecodeTwoPhaseEulerState(PetscInt dim, const PetscInt *uOff, const PetscReal *conservedValues,
-                                                                                                                      const PetscReal *normal, PetscReal *density, PetscReal *densityG,
-                                                                                                                      PetscReal *densityL, PetscReal *normalVelocity, PetscReal *velocity,
-                                                                                                                      PetscReal *internalEnergy, PetscReal *internalEnergyG, PetscReal *internalEnergyL,
-                                                                                                                      PetscReal *aG, PetscReal *aL, PetscReal *MG, PetscReal *ML, PetscReal *p,
-                                                                                                                      PetscReal *T, PetscReal *alpha) {
+                                                                                                                        const PetscReal *normal, PetscReal *density, PetscReal *densityG,
+                                                                                                                        PetscReal *densityL, PetscReal *normalVelocity, PetscReal *velocity,
+                                                                                                                        PetscReal *internalEnergy, PetscReal *internalEnergyG,
+                                                                                                                        PetscReal *internalEnergyL, PetscReal *aG, PetscReal *aL, PetscReal *MG,
+                                                                                                                        PetscReal *ML, PetscReal *p, PetscReal *T, PetscReal *alpha) {
     const int EULER_FIELD = 1;
     const int VF_FIELD = 0;
 
@@ -1162,10 +1052,6 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
     ke *= 0.5;
     (*internalEnergy) = (totalEnergy)-ke;
 
-//    // mass fractions
-//    PetscReal Yg = densityVF / (*density);
-//    PetscReal Yl = ((*density) - densityVF) / (*density);
-
     PetscReal cp1 = eosGas->GetSpecificHeatCp();
     PetscReal cp2 = eosLiquid->GetSpecificHeatCp();
     PetscReal p01 = eosGas->GetReferencePressure();
@@ -1179,7 +1065,7 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
     VecCreate(PETSC_COMM_SELF, &x);
     VecSetSizes(x, PETSC_DECIDE, 4);
     VecSetFromOptions(x);
-    VecSet(x, (*density)); // set initial guess to conserved density, [rho1, rho2, e1, e2] = [rho, rho, rho, rho]
+    VecSet(x, (*density));  // set initial guess to conserved density, [rho1, rho2, e1, e2] = [rho, rho, rho, rho]
     VecDuplicate(x, &r);
 
     MatCreate(PETSC_COMM_SELF, &J);
@@ -1188,7 +1074,8 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
     MatSetUp(J);
 
     SNESCreate(PETSC_COMM_SELF, &snes);
-    DecodeDataStructStiff decodeDataStruct{.etot = (*internalEnergy),
+    DecodeDataStructStiff decodeDataStruct{
+        .etot = (*internalEnergy),
         .rhotot = (*density),
         .Yg = densityVF / (*density),
         .Yl = ((*density) - densityVF) / (*density),
@@ -1201,17 +1088,9 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
     };
     SNESSetFunction(snes, r, FormFunctionStiff, &decodeDataStruct);
     SNESSetJacobian(snes, J, J, FormJacobianStiff, &decodeDataStruct);
-    // default Newton's method
-    //      SNESSetType(snes, "newtontr");
-    //      SNESSetTolerances(SNES snes, PetscReal atol, PetscReal rtol, PetscReal stol, PetscInt its, PetscInt fcts);
-    //          default rtol = 10e-8
-    // snes_fd: use FD Jacobian - SNESComputeJacobianDefault()
-    // snes_monitor : view residuals for each iteration
-//    PetscOptionsSetValue(NULL, "-snes_monitor", NULL);
-//    PetscOptionsSetValue(NULL, "-snes_converged_reason", NULL);
     SNESSetFromOptions(snes);
     SNESSolve(snes, NULL, x);
-//    VecView(x, PETSC_VIEWER_STDOUT_SELF); // output solution
+
     const PetscScalar *ax;
     VecGetArrayRead(x, &ax);
     PetscReal rhoG = ax[0];
@@ -1274,7 +1153,6 @@ void ablate::finiteVolume::processes::TwoPhaseEulerAdvection::StiffenedGasStiffe
     *MG = (*normalVelocity) / (*aG);
     *ML = (*normalVelocity) / (*aL);
 }
-
 
 #include "registrar.hpp"
 REGISTER(ablate::finiteVolume::processes::Process, ablate::finiteVolume::processes::TwoPhaseEulerAdvection, "", ARG(ablate::eos::EOS, "eosGas", ""), ARG(ablate::eos::EOS, "eosLiquid", ""),

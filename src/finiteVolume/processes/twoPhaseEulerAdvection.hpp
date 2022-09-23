@@ -34,10 +34,10 @@ class TwoPhaseEulerAdvection : public Process {
         PetscReal p0g;
         PetscReal p0l;
     };
-    static PetscErrorCode FormFunctionGas(SNES snes, Vec x, Vec F, void* ctx);
-    static PetscErrorCode FormJacobianGas(SNES snes, Vec x, Mat J, Mat P, void* ctx);
-    static PetscErrorCode FormFunctionStiff(SNES snes, Vec x, Vec F, void* ctx);
-    static PetscErrorCode FormJacobianStiff(SNES snes, Vec x, Mat J, Mat P, void* ctx);
+    static PetscErrorCode FormFunctionGas(SNES snes, Vec x, Vec F, void *ctx);
+    static PetscErrorCode FormJacobianGas(SNES snes, Vec x, Mat J, Mat P, void *ctx);
+    static PetscErrorCode FormFunctionStiff(SNES snes, Vec x, Vec F, void *ctx);
+    static PetscErrorCode FormJacobianStiff(SNES snes, Vec x, Mat J, Mat P, void *ctx);
 
     /**
      * General two phase decoder interface
