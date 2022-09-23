@@ -18,11 +18,10 @@ void ablate::radiation::VolumeRadiation::Setup() {
     ablate::radiation::Radiation::Setup(cellRange, GetSubDomain(), false);  //!< Insert the cell range of the solver here
     auto radiationPreStep = [this](auto&& PH1, auto&& PH2) { RadiationPreStep(std::forward<decltype(PH1)>(PH1)); };
     RegisterPreStep(radiationPreStep);
+    RestoreRange(cellRange);
 }
 
-void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) {
-    ablate::solver::Solver::Register(subDomain);
-}
+void ablate::radiation::VolumeRadiation::Register(std::shared_ptr<ablate::domain::SubDomain> subDomain) { ablate::solver::Solver::Register(subDomain); }
 
 void ablate::radiation::VolumeRadiation::Initialize() {
     solver::Range cellRange;
