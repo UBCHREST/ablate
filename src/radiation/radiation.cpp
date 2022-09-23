@@ -760,7 +760,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (log) {
             PetscReal centroid[3];
             DMPlexComputeCellGeometryFVM(cellDM, iCell, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, ReallySolveParallelPlates(centroid[0]), *temperature);
+            printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
