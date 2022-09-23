@@ -208,7 +208,7 @@ INSTANTIATE_TEST_SUITE_P(TwoPhaseEulerAdvectionTests, TwoPhaseEulerAdvectionTest
                                  .expectedNormalVelocity = 0.0,
                                  .expectedVelocity = {0.0, 0.0, 0.0},
                                  .expectedInternalEnergy = 2428423.4054611027,
-                                 .expectedInternalEnergyG = 215250.0000006027 ,
+                                 .expectedInternalEnergyG = 215250.0000006027,
                                  .expectedInternalEnergyL = 2428423.4054611027,
                                  .expectedSoundSpeedG = 347.18870949432886,
                                  .expectedSoundSpeedL = 1504.4548407978218,
