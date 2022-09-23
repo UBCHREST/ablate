@@ -409,6 +409,8 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                 }
                 virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
                 rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
+            } else {
+                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
             }
             /** Step 3.5: Condition for one dimensional domains to avoid infinite rays perpendicular to the x-axis
              * If the domain is 1D and the x-direction of the particle is zero then delete the particle here
@@ -758,7 +760,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (log) {
             PetscReal centroid[3];
             DMPlexComputeCellGeometryFVM(cellDM, iCell, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, *temperature);
+            printf("%f %f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, ReallySolveParallelPlates(centroid[0]), *temperature);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
