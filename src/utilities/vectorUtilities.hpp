@@ -1,5 +1,6 @@
 #ifndef ABLATELIBRARY_VECTORUTILITIES_HPP
 #define ABLATELIBRARY_VECTORUTILITIES_HPP
+#include <map>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -67,7 +68,17 @@ class VectorUtilities {
      * @param value
      * @return
      */
-    std::string toString(const std::string& value) { return value; }
+    static std::string toString(const std::string& value) { return value; }
+
+    /**
+     * helper function for Concatenate to string
+     * @param value
+     * @return
+     */
+    template <class T>
+    static std::string toString(const T& value) {
+        return std::to_string(value);
+    }
 
    public:
     /**
@@ -79,7 +90,7 @@ class VectorUtilities {
     template <class T>
     static inline std::string Concatenate(const std::vector<T>& vector, const std::string& delimiter = ", ") {
         using namespace std;
-        return std::accumulate(std::begin(vector), std::end(vector), std::string(), [&delimiter](std::string& ss, auto& s) { return ss.empty() ? to_string(s) : ss + delimiter + to_string(s); });
+        return std::accumulate(std::begin(vector), std::end(vector), std::string(), [&delimiter](std::string& ss, auto& s) { return ss.empty() ? toString(s) : ss + delimiter + toString(s); });
     }
 
     /**
@@ -90,15 +101,14 @@ class VectorUtilities {
      */
     template <class T, class S>
     static inline std::string Concatenate(const T* vector, S size, const std::string& delimiter = ", ") {
-        using namespace std;
         if (size <= 0) {
             return "";
         }
 
-        std::string result = to_string(vector[0]);
+        std::string result = toString(vector[0]);
 
         for (S i = 1; i < size; ++i) {
-            result += delimiter + to_string(vector[i]);
+            result += delimiter + toString(vector[i]);
         }
 
         return result;

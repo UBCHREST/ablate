@@ -423,7 +423,7 @@ void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(double densit
 
     auto ys = stateVector.MassFractions();
     real_type yiSum = 0.0;
-    for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
+    for (ordinal_type s = 0; s < stateVector.NumSpecies() - 1; s++) {
         ys[s] = PetscMax(0.0, densityYi[s] / density);
         ys[s] = PetscMin(1.0, ys[s]);
         yiSum += ys[s];
@@ -433,9 +433,9 @@ void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(double densit
             // Limit the bounds
             ys[s] /= yiSum;
         }
-        ys[stateVector.NumSpecies()] = 0.0;
+        ys[stateVector.NumSpecies() - 1] = 0.0;
     } else {
-        ys[stateVector.NumSpecies()] = 1.0 - yiSum;
+        ys[stateVector.NumSpecies() - 1] = 1.0 - yiSum;
     }
 }
 
