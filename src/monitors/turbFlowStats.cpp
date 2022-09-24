@@ -95,7 +95,7 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
                 CHKERRQ(ierr);
 
                 // Get read/write access to point in monitor array
-                ierr = DMPlexPointLocalRef(monitorDM, monitorCell, monitorDat, &monitorPt);
+                ierr = DMPlexPointGlobalRef(monitorDM, monitorCell, monitorDat, &monitorPt);
                 CHKERRQ(ierr);
 
                 if (monitorPt && solPt) {
