@@ -13,7 +13,7 @@ class TurbFlowStats : public FieldMonitor {
     using ttf = ablate::eos::ThermodynamicFunction;
 
     enum FieldPlacements { densitySum, densityDtSum, fieldsStart };
-    enum SectionLabels { densityMult, densityDtMult, densitySqr, sum, sumSqr, favreAvg, rms, mRms };
+    enum SectionLabels { densityMult, densityDtMult, densitySqr, sum, sumSqr, favreAvg, rms, mRms, END };
 
    private:
     const std::vector<std::string> fieldNames;

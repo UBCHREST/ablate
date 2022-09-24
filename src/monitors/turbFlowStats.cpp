@@ -112,7 +112,7 @@ PetscErrorCode ablate::monitors::TurbFlowStats::MonitorTurbFlowStats(TS ts, Pets
 
                     // March over each field component
                     for (int p = 0; p < monitorFields[f].numberComponents; p++) {
-                        offset += 8 * p;
+                        offset += SectionLabels::END * p;
                         monitorPt[offset + SectionLabels::densityMult] += fieldPt[p] * densLoc;
                         monitorPt[offset + SectionLabels::densityDtMult] += fieldPt[p] * densLoc * dt;
                         monitorPt[offset + SectionLabels::densitySqr] += fieldPt[p] * fieldPt[p] * densLoc;
@@ -160,17 +160,17 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
     std::vector<std::vector<std::string>> processedCompNames;
     for (std::size_t f = 0; f < fieldNames.size(); f++) {
         const auto& field = solverIn->GetSubDomain().GetField(fieldNames[f]);
-        std::vector<std::string> innerCompNames(8 * field.numberComponents);
+        std::vector<std::string> innerCompNames(SectionLabels::END * field.numberComponents);
         for (PetscInt c = 0; c < field.numberComponents; c++) {
             for (std::size_t p = 0; p < suffix.size(); p++) {
-                innerCompNames[8 * c + p] = field.name + suffix[p];
+                innerCompNames[SectionLabels::END * c + p] = field.name + suffix[p];
             }
         }
         processedCompNames.push_back(innerCompNames);
     }
 
     // Create all FieldDescription objects
-    std::vector<std::shared_ptr<domain::FieldDescriptor>> fields(fieldNames.size() + 2, nullptr);
+    std::vector<std::shared_ptr<domain::FieldDescriptor>> fields(fieldNames.size() + FieldPlacements::fieldsStart, nullptr);
     fields[FieldPlacements::densitySum] =
         std::make_shared<domain::FieldDescription>("densitySum", "densitySum", domain::FieldDescription::ONECOMPONENT, domain::FieldLocation::SOL, domain::FieldType::FVM);
     fields[FieldPlacements::densityDtSum] =
