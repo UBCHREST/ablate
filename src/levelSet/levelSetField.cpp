@@ -872,6 +872,8 @@ void LevelSetField::VOF(const PetscInt p, PetscReal *vof, PetscReal *area, Petsc
   // Get the cell type and call appropriate VOF function
   DMPlexGetCellType(dm, p, &ct) >> ablate::checkError;
   switch (ct) {
+    case DM_POLYTOPE_SEGMENT:
+      throw std::invalid_argument("No element geometry for cell " + std::to_string(p) + " with type " + DMPolytopeTypes[ct]);
     case DM_POLYTOPE_TRIANGLE:
       VOF_2D_Tri(coords, c, vof, area, vol);
       break;
@@ -915,7 +917,6 @@ void LevelSetField::Reinitialize(Vec VOF) {
 //Use DMPlexPointGlobalFieldRead to get field values
 //Stuff like const auto &eulerFieldInfo = solver.GetSubDomain().GetField(finiteVolume::CompressibleFlowFields::EULER_FIELD); will return the field info in the DM.
 //Make the level set a solution variable in the ablate solver
-
 
 
   DMPlexGetHeightStratum(dm, 0, &cStart, &cEnd) >> ablate::checkError;

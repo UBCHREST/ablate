@@ -9,15 +9,14 @@
 //#include "solver/cellSolver.hpp"
 #include "solver/solver.hpp"
 #include "levelSetField.hpp"
-//#include "solver/timeStepper.hpp"
+#include "solver/timeStepper.hpp"
 
-
-namespace ablate::levelSet {
+//ablate::solver::Solver::Solver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
 
 class LevelSetSolver {
   private:
     // The level set
-    std::shared_ptr<LevelSetField> lsField = nullptr;
+//    std::shared_ptr<LevelSetField> lsField = nullptr;
 
 //    LevelSetField lsField;
 //    auto lsField = std::make_shared<ablate::levelSet::LevelSetField>
@@ -25,18 +24,17 @@ class LevelSetSolver {
   public:
 //    LevelSetSolver(std::string solverId, std::shared_ptr<domain::Region>, std::shared_ptr<parameters::Parameters> options);
     // Constructor
-    LevelSetSolver(std::shared_ptr<LevelSetField> lsField = nullptr);
-//    LevelSetSolver(
-//      std::string solverId,
-//      std::shared_ptr<domain::Region>,
-//      std::shared_ptr<parameters::Parameters> options,
-//      std::vector<std::shared_ptr<boundaryConditions::BoundaryCondition>> boundaryConditions, bool computePhysicsTimeStep = false);
+//    LevelSetSolver(std::shared_ptr<LevelSetField> lsField = nullptr);
+    LevelSetSolver(
+      std::string solverId,
+      std::shared_ptr<ablate::domain::Region>,
+      std::shared_ptr<ablate::parameters::Parameters> options);
+
+
 //    /** SubDomain Register and Setup **/
 //    void Setup() override;
 //    void Initialize() override;
 
 };
-
-}  // namespace ablate::levelSet
 
 #endif  // ABLATELIBRARY_LEVELSETSOLVER_HPP

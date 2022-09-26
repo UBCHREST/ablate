@@ -9,8 +9,8 @@ using namespace ablate::levelSet;
 //ablate::levelSet::LevelSetSolver::LevelSetSolver(std::string solverId, std::shared_ptr<domain::Region> region, std::shared_ptr<parameters::Parameters> options)
 //    : Solver(std::move(solverId), std::move(region), std::move(options)) {}
 
-LevelSetSolver::LevelSetSolver(std::shared_ptr<ablate::levelSet::LevelSetField> lsField) {
-  LevelSetSolver::lsField = lsField;
+LevelSetSolver::LevelSetSolver(std::string solverId, std::shared_ptr<ablate::domain::Region>, std::shared_ptr<ablate::parameters::Parameters> options) {
+
 }
 
 //void ablate::levelSet::LevelSetSolver::Setup() {
