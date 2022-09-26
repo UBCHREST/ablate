@@ -355,6 +355,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
 
                     PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
                     solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
+                    // TODO: Create a new 'access identifier' and set it equal to the identifier of the current
                     carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
 
                     DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >> checkError;  //!< The fields must be returned so that the swarm can be updated correctly?
@@ -363,7 +364,9 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                 // TODO: If this ray is new in the domain and the step count is not equal to zero, bypass the normal stepping routine
                 // The search particle can obtain the ray identifier for the ray which it will gather information from.
                 // The carrier particles may need to carry two fields of identifiers, one for the identifier it belongs to and one for the identifier it is drawing information from.
-                //
+
+
+
                 // When the search particle finds a ray segment to draw from in the new domain, it will need to travel to the location of the last cell in this segment.
                 // The segment will likely not be complete yet, so the search particle will need to step without picking up cells until it reaches the end of this partition and reaches a new partition
                 // The particle should exit the domain in this fashion, leaving a carrier particle with access to the other local ray segment, and no unique segment to be identified to it.
