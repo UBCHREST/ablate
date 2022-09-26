@@ -31,7 +31,7 @@ class Sublimation : public BoundaryProcess {
     /**
      * toggle to disable any contribution of pressure in the momentum equation
      */
-    const bool disablePressure;
+    const bool diffusionFlame;
 
     /**
      * the pgs is needed for the pressure calculation
@@ -71,7 +71,7 @@ class Sublimation : public BoundaryProcess {
     /**
      * interval between the radiation solves
      */
-    const std::shared_ptr<io::interval::Interval> interval;
+    const std::shared_ptr<io::interval::Interval> radiationInterval;
 
     /**
      * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
@@ -81,7 +81,7 @@ class Sublimation : public BoundaryProcess {
    public:
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
-                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool disablePressure = false,
+                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool diffusionFlame = false,
                          std::shared_ptr<ablate::radiation::Radiation> radiationIn = {}, std::shared_ptr<io::interval::Interval> intervalIn = {});
 
     void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
