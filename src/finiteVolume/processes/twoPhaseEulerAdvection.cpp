@@ -232,16 +232,9 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
     PetscFunctionBeginUser;
     auto twoPhaseEulerAdvection = (TwoPhaseEulerAdvection *)ctx;
     // Compute the norm of cell face
-    PetscReal norm[3], newnormal[3];
+    PetscReal norm[3];
     NormVector(dim, fg->normal, norm);
     const PetscReal areaMag = MagVector(dim, fg->normal);
-    for (PetscInt n = 0; n < dim; n++) {
-        if (PetscAbs(fg->normal[n]) < 1e-12) {
-            newnormal[n] = 0.0;
-        } else {
-            newnormal[n] = round(fg->normal[n] * 1e12) / 1e12;
-        }
-    }
 
     // Decode left and right states
     PetscReal densityL;
@@ -365,14 +358,14 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         flux[CompressibleFlowFields::RHOE] = (HG_L * massFluxGG * areaMag * alphaMin);
 
         for (PetscInt n = 0; n < dim; n++) {
-            flux[CompressibleFlowFields::RHOU + n] = velocityL[n] * areaMag * (massFluxGG * alphaMin) + (p12GG * alphaMin) * newnormal[n];
+            flux[CompressibleFlowFields::RHOU + n] = velocityL[n] * areaMag * (massFluxGG * alphaMin) + (p12GG * alphaMin) * norm[n];
         }
     } else if (directionG == fluxCalculator::RIGHT) {
         PetscReal HG_R = internalEnergyG_R + velMagR * velMagR / 2.0 + p12GG / densityG_R;
         flux[CompressibleFlowFields::RHOE] = (HG_R * massFluxGG * areaMag * alphaMin);
 
         for (PetscInt n = 0; n < dim; n++) {
-            flux[CompressibleFlowFields::RHOU + n] = velocityR[n] * areaMag * (massFluxGG * alphaMin) + (p12GG * alphaMin) * newnormal[n];
+            flux[CompressibleFlowFields::RHOU + n] = velocityR[n] * areaMag * (massFluxGG * alphaMin) + (p12GG * alphaMin) * norm[n];
         }
     } else {
         PetscReal HG_L = internalEnergyG_L + velMagL * velMagL / 2.0 + p12GG / densityG_L;
@@ -380,7 +373,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
 
         flux[CompressibleFlowFields::RHOE] = (0.5 * (HG_L + HG_R) * massFluxGG * areaMag * alphaMin);
         for (PetscInt n = 0; n < dim; n++) {
-            flux[CompressibleFlowFields::RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGG * alphaMin) + (p12GG * alphaMin) * newnormal[n];
+            flux[CompressibleFlowFields::RHOU + n] = 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGG * alphaMin) + (p12GG * alphaMin) * norm[n];
         }
     }
     // add liquid interface
@@ -389,14 +382,14 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         flux[CompressibleFlowFields::RHOE] += (HL_L * massFluxLL * areaMag * alphaLiq);
 
         for (PetscInt n = 0; n < dim; n++) {
-            flux[CompressibleFlowFields::RHOU + n] += velocityL[n] * areaMag * (massFluxLL * alphaLiq) + (p12LL * alphaLiq) * newnormal[n];
+            flux[CompressibleFlowFields::RHOU + n] += velocityL[n] * areaMag * (massFluxLL * alphaLiq) + (p12LL * alphaLiq) * norm[n];
         }
     } else if (directionL == fluxCalculator::RIGHT) {
         PetscReal HL_R = internalEnergyL_R + velMagR * velMagR / 2.0 + p12LL / densityL_R;
         flux[CompressibleFlowFields::RHOE] += (HL_R * massFluxLL * areaMag * alphaLiq);
 
         for (PetscInt n = 0; n < dim; n++) {
-            flux[CompressibleFlowFields::RHOU + n] += velocityR[n] * areaMag * (massFluxLL * alphaLiq) + (p12LL * alphaLiq) * newnormal[n];
+            flux[CompressibleFlowFields::RHOU + n] += velocityR[n] * areaMag * (massFluxLL * alphaLiq) + (p12LL * alphaLiq) * norm[n];
         }
     } else {
         PetscReal HL_L = internalEnergyL_L + velMagL * velMagL / 2.0 + p12LL / densityL_L;
@@ -404,7 +397,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
 
         flux[CompressibleFlowFields::RHOE] += (0.5 * (HL_L + HL_R) * massFluxLL * areaMag * alphaLiq);
         for (PetscInt n = 0; n < dim; n++) {
-            flux[CompressibleFlowFields::RHOU + n] += 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxLL * alphaLiq) + (p12LL * alphaLiq) * newnormal[n];
+            flux[CompressibleFlowFields::RHOU + n] += 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxLL * alphaLiq) + (p12LL * alphaLiq) * norm[n];
         }
     }
     // add gas-liquid or liquid-gas interface
@@ -423,7 +416,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         flux[CompressibleFlowFields::RHOE] += (HGL_L * massFluxGL * areaMag * alphaDif);
 
         for (PetscInt n = 0; n < dim; n++) {
-            flux[CompressibleFlowFields::RHOU + n] += velocityL[n] * areaMag * (massFluxGL * alphaDif) + (p12GL * alphaDif) * newnormal[n];
+            flux[CompressibleFlowFields::RHOU + n] += velocityL[n] * areaMag * (massFluxGL * alphaDif) + (p12GL * alphaDif) * norm[n];
         }
     } else if (directionGL == fluxCalculator::RIGHT) {
         PetscReal HGL_R;
@@ -440,7 +433,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
         flux[CompressibleFlowFields::RHOE] += (HGL_R * massFluxGL * areaMag * alphaDif);
 
         for (PetscInt n = 0; n < dim; n++) {
-            flux[CompressibleFlowFields::RHOU + n] += velocityR[n] * areaMag * (massFluxGL * alphaDif) + (p12GL * alphaDif) * newnormal[n];
+            flux[CompressibleFlowFields::RHOU + n] += velocityR[n] * areaMag * (massFluxGL * alphaDif) + (p12GL * alphaDif) * norm[n];
         }
     } else {
         PetscReal HGL_L;
@@ -468,7 +461,7 @@ PetscErrorCode ablate::finiteVolume::processes::TwoPhaseEulerAdvection::Compress
 
         flux[CompressibleFlowFields::RHOE] += (0.5 * (HGL_L + HGL_R) * massFluxGL * areaMag * alphaDif);
         for (PetscInt n = 0; n < dim; n++) {
-            flux[CompressibleFlowFields::RHOU + n] += 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGL * alphaDif) + (p12GL * alphaDif) * newnormal[n];
+            flux[CompressibleFlowFields::RHOU + n] += 0.5 * (velocityL[n] + velocityR[n]) * areaMag * (massFluxGL * alphaDif) + (p12GL * alphaDif) * norm[n];
         }
     }
 

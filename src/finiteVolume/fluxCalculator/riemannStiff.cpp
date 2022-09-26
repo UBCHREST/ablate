@@ -89,7 +89,6 @@ ablate::finiteVolume::fluxCalculator::Direction ablate::finiteVolume::fluxCalcul
 
     // iteration starts
     while (PetscAbsReal(f_L_0 + f_R_0 + del_u) > err && i <= MAXIT)  // Newton's method
-                                                                     //    while (2* PetscAbs((pstar - pold)/(pstar + pold))> err && i <=MAXIT)
     {
         pold = pstar;
         pstar = pold - (f_L_0 + f_R_0 + del_u) / (f_L_1 + f_R_1);  // new guess
