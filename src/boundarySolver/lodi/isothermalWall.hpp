@@ -2,7 +2,6 @@
 #define ABLATELIBRARY_ISOTHERMALWALL_HPP
 
 #include "lodiBoundary.hpp"
-#include "radiation/radiation.hpp"
 namespace ablate::boundarySolver::lodi {
 
 class IsothermalWall : public LODIBoundary {
