@@ -315,6 +315,7 @@ bool ablate::finiteVolume::FiniteVolumeSolver::Serialize() const {
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
     for (auto& process : processes) {
         if (auto serializablePtr = std::dynamic_pointer_cast<ablate::io::Serializable>(process)) {
             if (serializablePtr->Serialize()) {
@@ -322,6 +323,7 @@ void ablate::finiteVolume::FiniteVolumeSolver::Save(PetscViewer viewer, PetscInt
             }
         }
     }
+    PetscFunctionReturnVoid();
 }
 
 void ablate::finiteVolume::FiniteVolumeSolver::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {

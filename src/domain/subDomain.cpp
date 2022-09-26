@@ -644,6 +644,7 @@ void ablate::domain::SubDomain::SetsExactSolutions(const std::vector<std::shared
     }
 }
 void ablate::domain::SubDomain::Save(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
+    PetscFunctionBeginUser;
     auto locSubDm = GetSubDM();
     auto locAuxDM = GetSubAuxDM();
     // If this is the first output, save the mesh
@@ -687,6 +688,7 @@ void ablate::domain::SubDomain::Save(PetscViewer viewer, PetscInt sequenceNumber
         VecView(exactVec, viewer) >> checkError;
         DMRestoreGlobalVector(GetSubDM(), &exactVec) >> checkError;
     }
+    PetscFunctionReturnVoid();
 }
 void ablate::domain::SubDomain::Restore(PetscViewer viewer, PetscInt sequenceNumber, PetscReal time) {
     // The only item that needs to be explicitly restored is the flowField
@@ -842,9 +844,19 @@ bool ablate::domain::SubDomain::CheckSolution() {
     return (bool)globalFailedPoints;
 }
 
-void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM) {
-    if (GetLabel()) {
-        DMPlexFilter(GetDM(), GetLabel(), 1, inDM);
+void ablate::domain::SubDomain::CreateEmptySubDM(DM* inDM, std::shared_ptr<domain::Region> region) {
+    DMLabel subDmLabel = nullptr;
+    PetscInt subDmValue;
+    if (region) {
+        // Get the region info from the provided region
+        domain::Region::GetLabel(region, GetDM(), subDmLabel, subDmValue);
+    } else {
+        // Grab it from the domain itself
+        subDmLabel = GetLabel();
+        subDmValue = labelValue;
+    }
+    if (subDmLabel) {
+        DMPlexFilter(GetDM(), subDmLabel, subDmValue, inDM);
     } else {
         DMClone(GetDM(), inDM);
     }

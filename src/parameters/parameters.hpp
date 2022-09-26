@@ -89,6 +89,21 @@ class Parameters {
         }
     }
 
+    /**
+     * tries to convert each item in this parameter to T and places in map
+     * @tparam T
+     * @param paramName
+     * @return
+     */
+    template <typename T>
+    std::map<std::string, T> ToMap() const {
+        std::map<std::string, T> map;
+        for (const auto& key : GetKeys()) {
+            map[key] = GetExpect<double>(key);
+        }
+        return map;
+    }
+
     void Fill(PetscOptions options) const;
 
     template <typename T>

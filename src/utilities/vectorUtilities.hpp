@@ -1,5 +1,6 @@
 #ifndef ABLATELIBRARY_VECTORUTILITIES_HPP
 #define ABLATELIBRARY_VECTORUTILITIES_HPP
+#include <map>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -44,13 +45,40 @@ class VectorUtilities {
         return result;
     }
 
+    /**
+     * Fills an array based upon a key vector and map
+     * @tparam T
+     * @param list
+     * @return
+     */
+    template <class K, class T>
+    static inline std::vector<T> Fill(const std::vector<K>& keys, const std::map<K, T>& values, T defaultValue = {}) {
+        std::vector<T> result(keys.size(), defaultValue);
+        for (std::size_t i = 0; i < keys.size(); i++) {
+            if (values.count(keys[i])) {
+                result[i] = values.at(keys[i]);
+            }
+        }
+        return result;
+    }
+
    private:
     /**
      * helper function for Concatenate to string
      * @param value
      * @return
      */
-    std::string toString(const std::string& value) { return value; }
+    static std::string toString(const std::string& value) { return value; }
+
+    /**
+     * helper function for Concatenate to string
+     * @param value
+     * @return
+     */
+    template <class T>
+    static std::string toString(const T& value) {
+        return std::to_string(value);
+    }
 
    public:
     /**
@@ -62,7 +90,7 @@ class VectorUtilities {
     template <class T>
     static inline std::string Concatenate(const std::vector<T>& vector, const std::string& delimiter = ", ") {
         using namespace std;
-        return std::accumulate(std::begin(vector), std::end(vector), std::string(), [&delimiter](std::string& ss, auto& s) { return ss.empty() ? to_string(s) : ss + delimiter + to_string(s); });
+        return std::accumulate(std::begin(vector), std::end(vector), std::string(), [&delimiter](std::string& ss, auto& s) { return ss.empty() ? toString(s) : ss + delimiter + toString(s); });
     }
 
     /**
@@ -73,15 +101,14 @@ class VectorUtilities {
      */
     template <class T, class S>
     static inline std::string Concatenate(const T* vector, S size, const std::string& delimiter = ", ") {
-        using namespace std;
         if (size <= 0) {
             return "";
         }
 
-        std::string result = to_string(vector[0]);
+        std::string result = toString(vector[0]);
 
         for (S i = 1; i < size; ++i) {
-            result += delimiter + to_string(vector[i]);
+            result += delimiter + toString(vector[i]);
         }
 
         return result;
@@ -102,6 +129,27 @@ class VectorUtilities {
             }
         }
         return {};
+    }
+
+    /**
+     * Finds the first item in list that is of type S
+     * @tparam L the vector or map
+     * @tparam S the type of item to transform into
+     * @tparam T the source list type
+     * @param list
+     * @param the transformation function
+     * @return the transformed list
+     */
+    template <class L, class S, class T>
+    static inline std::vector<S> Transform(const L& items, std::function<S(const T&)> function) {
+        std::vector<S> transformed;
+        transformed.reserve(items.size());
+
+        for (const auto& item : items) {
+            transformed.push_back(function(item));
+        }
+
+        return transformed;
     }
 
    private:

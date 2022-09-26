@@ -56,18 +56,61 @@ class Sublimation : public BoundaryProcess {
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
                          std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool disablePressure = false);
 
-    void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
+    void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
 
     /**
-     * manual Initialize used for testing
+     * manual Setup used for testing
      * @param numberSpecies
      */
-    void Initialize(PetscInt numberSpecies);
+    void Setup(PetscInt numberSpecies);
 
+    /**
+     * Support function to compute and insert source terms for this boundary condition
+     * @param dim
+     * @param fg
+     * @param boundaryCell
+     * @param uOff
+     * @param boundaryValues
+     * @param stencilValues
+     * @param aOff
+     * @param auxValues
+     * @param stencilAuxValues
+     * @param stencilSize
+     * @param stencil
+     * @param stencilWeights
+     * @param sOff
+     * @param source
+     * @param ctx
+     * @return
+     */
     static PetscErrorCode SublimationFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell, const PetscInt uOff[],
                                               const PetscScalar *boundaryValues, const PetscScalar *stencilValues[], const PetscInt aOff[], const PetscScalar *auxValues,
                                               const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[],
                                               PetscScalar source[], void *ctx);
+
+    /**
+     * Support function to compute output variables
+     * @param dim
+     * @param fg
+     * @param boundaryCell
+     * @param uOff
+     * @param boundaryValues
+     * @param stencilValues
+     * @param aOff
+     * @param auxValues
+     * @param stencilAuxValues
+     * @param stencilSize
+     * @param stencil
+     * @param stencilWeights
+     * @param sOff
+     * @param source
+     * @param ctx
+     * @return
+     */
+    static PetscErrorCode SublimationOutputFunction(PetscInt dim, const ablate::boundarySolver::BoundarySolver::BoundaryFVFaceGeom *fg, const PetscFVCellGeom *boundaryCell, const PetscInt uOff[],
+                                                    const PetscScalar *boundaryValues, const PetscScalar *stencilValues[], const PetscInt aOff[], const PetscScalar *auxValues,
+                                                    const PetscScalar *stencilAuxValues[], PetscInt stencilSize, const PetscInt stencil[], const PetscScalar stencilWeights[], const PetscInt sOff[],
+                                                    PetscScalar source[], void *ctx);
 };
 
 }  // namespace ablate::boundarySolver::physics

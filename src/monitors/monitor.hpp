@@ -14,9 +14,22 @@ class Monitor {
 
    public:
     virtual ~Monitor() = default;
-    virtual void* GetContext() { return this; }
+    /**
+     * Override this function to setup the monitor
+     * @param solverIn
+     */
     virtual void Register(std::shared_ptr<solver::Solver> solverIn) { solver = solverIn; }
-    virtual PetscMonitorFunction GetPetscFunction() = 0;
+
+    /**
+     * Return a function to be called after every time step.  By default null is returned so this is never called
+     * @return
+     */
+    virtual PetscMonitorFunction GetPetscFunction() { return nullptr; }
+
+    /**
+     * return context to be returned to the PetscMonitorFunction.  By default this is a pointer to this instance
+     */
+    virtual void* GetContext() { return this; }
 
    protected:
     std::shared_ptr<solver::Solver> GetSolver() { return solver; }

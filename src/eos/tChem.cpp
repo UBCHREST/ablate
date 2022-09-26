@@ -423,7 +423,7 @@ void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(double densit
 
     auto ys = stateVector.MassFractions();
     real_type yiSum = 0.0;
-    for (ordinal_type s = 0; s < stateVector.NumSpecies(); s++) {
+    for (ordinal_type s = 0; s < stateVector.NumSpecies() - 1; s++) {
         ys[s] = PetscMax(0.0, densityYi[s] / density);
         ys[s] = PetscMin(1.0, ys[s]);
         yiSum += ys[s];
@@ -433,9 +433,9 @@ void ablate::eos::TChem::FillWorkingVectorFromDensityMassFractions(double densit
             // Limit the bounds
             ys[s] /= yiSum;
         }
-        ys[stateVector.NumSpecies()] = 0.0;
+        ys[stateVector.NumSpecies() - 1] = 0.0;
     } else {
-        ys[stateVector.NumSpecies()] = 1.0 - yiSum;
+        ys[stateVector.NumSpecies() - 1] = 1.0 - yiSum;
     }
 }
 
@@ -683,6 +683,58 @@ ablate::eos::FieldFunction ablate::eos::TChem::GetFieldFunctionFunction(const st
     } else {
         throw std::invalid_argument("Unknown field type " + field + " for ablate::eos::PerfectGas.");
     }
+}
+
+std::map<std::string, double> ablate::eos::TChem::GetElementInformation() const {
+    auto eNamesHost = kineticsModel.eNames_.view_host();
+    auto eMassHost = kineticsModel.eMass_.view_host();
+
+    // Create the map
+    std::map<std::string, double> elementInfo;
+
+    for (ordinal_type i = 0; i < kineticsModel.nElem_; i++) {
+        std::string elementName(&eNamesHost(i, 0));
+        elementInfo[elementName] = eMassHost(i);
+    }
+
+    return elementInfo;
+}
+
+std::map<std::string, std::map<std::string, int>> ablate::eos::TChem::GetSpeciesElementalInformation() const {
+    // build the element names
+    auto eNamesHost = kineticsModel.eNames_.view_host();
+    std::vector<std::string> elementNames;
+    for (ordinal_type i = 0; i < kineticsModel.nElem_; ++i) {
+        elementNames.push_back(std::string(&eNamesHost(i, 0)));
+    }
+
+    std::map<std::string, std::map<std::string, int>> speciesElementInfo;
+
+    // get the element info
+    auto elemCountHost = kineticsModel.elemCount_.view_host();
+
+    // march over each species
+    for (std::size_t sp = 0; sp < species.size(); ++sp) {
+        auto &speciesMap = speciesElementInfo[species[sp]];
+
+        for (ordinal_type e = 0; e < kineticsModel.nElem_; ++e) {
+            speciesMap[elementNames[e]] = elemCountHost(sp, e);
+        }
+    }
+
+    return speciesElementInfo;
+}
+
+std::map<std::string, double> ablate::eos::TChem::GetSpeciesMolecularMass() const {
+    // march over each species
+    auto sMass = kineticsModel.sMass_.view_host();
+
+    std::map<std::string, double> mw;
+    for (std::size_t sp = 0; sp < species.size(); ++sp) {
+        mw[species[sp]] = sMass((ordinal_type)sp);
+    }
+
+    return mw;
 }
 
 #include "registrar.hpp"

@@ -1,6 +1,9 @@
 #ifndef ABLATELIBRARY_SERIALIZABLE_HPP
 #define ABLATELIBRARY_SERIALIZABLE_HPP
 
+#include <petsc.h>
+#include <string>
+
 namespace ablate::io {
 /**
  * This class gives the option to serialize/save restore.  A bool is used at startup to determine if it should be save/restored
@@ -12,13 +15,13 @@ class Serializable {
      * boolean used to determined if this object should be serialized at runtime
      * @return
      */
-    virtual bool Serialize() const { return true; }
+    [[nodiscard]] virtual bool Serialize() const { return true; }
 
     /**
      * only required function, returns the id of the object.  Should be unique for the simulation
      * @return
      */
-    virtual const std::string& GetId() const = 0;
+    [[nodiscard]] virtual const std::string& GetId() const = 0;
 
     /**
      * Save the state to the PetscViewer

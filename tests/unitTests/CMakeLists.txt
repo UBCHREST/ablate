@@ -21,6 +21,7 @@ add_subdirectory(io)
 add_subdirectory(boundarySolver)
 add_subdirectory(chemistry)
 add_subdirectory(radiation)
+add_subdirectory(solver)
 
 gtest_discover_tests(unitTests
         # set a working directory so your project root so that you can find test data via paths relative to the project root
