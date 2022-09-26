@@ -260,6 +260,7 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     struct Identifier* identifier;       //!< Pointer to the ray identifier information
     struct Carrier* carrier;             //!< Pointer to the ray carrier information
     struct Identifier* solveidentifier;  //!< Pointer to the ray identifier information
+    struct Identifier* access;  //!< Pointer to the ray identifier information
 
     /** ***********************************************************************************************************************************************
      * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
@@ -352,29 +353,24 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                     DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >>
                         checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
                     DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+                    DMSwarmGetField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
 
                     PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
                     solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
-                    // TODO: Create a new 'access identifier' and set it equal to the identifier of the current
+                    // TODO: Create a new 'access identifier' and set it equal to the identifier of the current cell which the search particle is occupying
+                    // The cell index and rank of the access identifier will be equal to the current, but the ray angle number will be equal to that of the identifier. Segment number == 1
+                    // All inputs of information will come from the ray segment of the access identifier
                     carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
 
                     DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >> checkError;  //!< The fields must be returned so that the swarm can be updated correctly?
                     DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier) >> checkError;
+                    DMSwarmRestoreField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
                 }
-                // TODO: If this ray is new in the domain and the step count is not equal to zero, bypass the normal stepping routine
-                // The search particle can obtain the ray identifier for the ray which it will gather information from.
-                // The carrier particles may need to carry two fields of identifiers, one for the identifier it belongs to and one for the identifier it is drawing information from.
 
-
-
-                // When the search particle finds a ray segment to draw from in the new domain, it will need to travel to the location of the last cell in this segment.
+                // TODO: When the search particle finds a ray segment to draw from in the new domain, it will need to travel to the location of the last cell in this segment.
                 // The segment will likely not be complete yet, so the search particle will need to step without picking up cells until it reaches the end of this partition and reaches a new partition
                 // The particle should exit the domain in this fashion, leaving a carrier particle with access to the other local ray segment, and no unique segment to be identified to it.
                 // The carrier particle will have an identifier to control its travel, and an identifier to control where it draws information from. These identifiers in effect point to the same ray.
-                //
-                // In the solve, the carrier particles will now pick up information from the access instead of the identifier. This will only change the solve implementation slightly.
-                // The travel of the carrier particles will still be controlled by the identifier which it was assigned with its origin cell. The identifier which it picks up in the new domain will
-                // control where it gets its information from.
 
                 /** ********************************************
                  * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
@@ -530,6 +526,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** Declare some information associated with the field declarations */
     struct Carrier* carrier;        //!< Pointer to the ray carrier information
     struct Identifier* identifier;  //!< Pointer to the ray identifier information
+    struct Identifier* access;  //!< Pointer to the ray identifier information
 
     /** Get the current rank associated with this process */
     PetscMPIInt rank;
@@ -541,6 +538,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     DMSwarmGetLocalSize(radsolve, &npoints);  //!< Recalculate the number of particles that are in the domain
     DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);
     DMSwarmGetField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier);
+    DMSwarmGetField(radsolve, "access", nullptr, nullptr, (void**)&access);
 
     /** ********************************************************************************************************************************
      * Iterate over the particles that are present in the domain
@@ -549,12 +547,17 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
      * First the particles should be zeroed in case they are carrying information from the last time step.
      * Then the entire solve sequence can be run through. This will require that the particles are iterated through twice.
      * */
+     // TODO: We can iterate through the map here instead of the particles. That will probably be faster.
+     // TODO: Only certain particles will have identifiers associated with the ray segments, so iterating through the particles will not work.
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate through the particles in the space to zero their information.
-        carrier[ipart].Ij = 0;                            //!< Zero the intensity of the segment
-        carrier[ipart].Krad = 1;                          //!< Zero the total absorption for this domain
-        carrier[ipart].I0 = 0;                            //!< Zero the initial intensity of the ray segment
+        rays[Key(&identifier[ipart])].Ij = 0;                            //!< Zero the intensity of the segment
+        rays[Key(&identifier[ipart])].Krad = 1;                          //!< Zero the total absorption for this domain
+        rays[Key(&identifier[ipart])].I0 = 0;                            //!< Zero the initial intensity of the ray segment
     }
     /** Now that the particle information has been zeroed, the solve can begin. */
+    // TODO: The ray segment map will need to be iterated though instead of the carrier particles. This is because the carrier particles will have redundant segments or no matching segments.
+    // TODO: We don't want to resolve any segments unnecessarily, so the map can be iterated through instead.
+    // TODO: Don't touch the carrier particles.
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
                                                           //!< particles then pass out of initialization.
         /** Each ray is born here. They begin at the far field temperature.
@@ -577,19 +580,29 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 
-                carrier[ipart].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(&identifier[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
-                carrier[ipart].Krad *= exp(-kappa * rays[Key(&identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
+                rays[Key(&identifier[ipart])].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(&identifier[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
+                rays[Key(&identifier[ipart])].Krad *= exp(-kappa * rays[Key(&identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
 
                 if (n == (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
-                    carrier[ipart].I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
+                    rays[Key(&identifier[ipart])].I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
                 }
             }
         }
     }
 
+    // TODO: In a second loop, get carrier particles and set their values equal to the values of the carriers of the access identifiers
+    // TODO: This avoids solving any redundant rays, and also avoids changing the logic too much.
+    // TODO: Here we actually want to iterate through all of the particles.
+    for (PetscInt ipart = 0; ipart < npoints; ipart++) {
+        carrier[ipart].Ij =  rays[Key(&access[ipart])].Ij;
+        carrier[ipart].Krad =  rays[Key(&access[ipart])].Krad;
+        carrier[ipart].I0 =  rays[Key(&access[ipart])].I0;
+    }
+
     /** Restore the fields associated with the particles after all of the particles have been stepped */
     DMSwarmRestoreField(radsolve, "identifier", nullptr, nullptr, (void**)&identifier);
     DMSwarmRestoreField(radsolve, "carrier", nullptr, nullptr, (void**)&carrier);
+    DMSwarmRestoreField(radsolve, "access", nullptr, nullptr, (void**)&access);
 
     /** ********************************************************************************************************************************
      * Now the carrier has all of the information from the rays that are needed to compute the final ray intensity. Therefore, we will perform the migration.

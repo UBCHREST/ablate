@@ -91,6 +91,9 @@ class Radiation : public utilities::Loggable<Radiation> {  //!< Cell solver prov
     struct Segment {
         std::vector<PetscInt> cells;  //!< Stores the cell indices of the segment locally.
         std::vector<PetscReal> h;     //!< Stores the space steps of the segment locally.
+        PetscReal Ij = 0;    //!< Black body source for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal Krad = 1;  //!< Absorption for the segment. Make sure that this is reset every solve after the value has been transported.
+        PetscReal I0 = 0;
     };
 
     /** Identifiers are carrying by both the search and solve particles in order to associate them with their origins and ray segments
