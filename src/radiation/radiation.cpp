@@ -87,6 +87,7 @@ void ablate::radiation::Radiation::Setup(const solver::Range& cellRange, ablate:
 
     DMSwarmRegisterUserStructField(radsolve, "identifier", sizeof(Identifier)) >> checkError;  //!< A field to store the ray identifier [origin][iCell][ntheta][nphi][ndomain]
     DMSwarmRegisterUserStructField(radsolve, "carrier", sizeof(Carrier)) >> checkError;        //!< A struct to carry information about the ray segment that the particle is communicating from
+    DMSwarmRegisterUserStructField(radsolve, "access", sizeof(Identifier)) >> checkError;      //!< A struct to carry information about the ray segment that the particle is communicating from
     DMSwarmFinalizeFieldRegister(radsolve) >> checkError;                                      //!< Initialize the fields that have been defined
 
     /** Set initial local sizes of the DMSwarm with a buffer length of zero */
@@ -254,13 +255,16 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
     VecGetDM(faceGeomVec, &faceDM) >> checkError;
     VecGetArrayRead(faceGeomVec, &faceGeomArray) >> checkError;
 
+    PetscMPIInt rank = 0;
+    MPI_Comm_rank(subDomain.GetComm(), &rank);
+
     /** Declare some information associated with the field declarations */
     PetscReal* coord;                    //!< Pointer to the coordinate field information
     struct Virtualcoord* virtualcoord;   //!< Pointer to the primary (virtual) coordinate field information
     struct Identifier* identifier;       //!< Pointer to the ray identifier information
     struct Carrier* carrier;             //!< Pointer to the ray carrier information
     struct Identifier* solveidentifier;  //!< Pointer to the ray identifier information
-    struct Identifier* access;  //!< Pointer to the ray identifier information
+    struct Identifier* access;           //!< Pointer to the ray identifier information
 
     /** ***********************************************************************************************************************************************
      * Now that the particles have been created, they can be iterated over and each marched one step in space. The global indices of the local
@@ -357,7 +361,12 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
 
                     PetscInt newpoint = nsolvepoints - 1;           //!< This must be replaced with the index of whatever particle there is. Maybe the last index?
                     solveidentifier[newpoint] = identifier[ipart];  //!< Give the particle an identifier which matches the particle it was created with
-                    // TODO: Create a new 'access identifier' and set it equal to the identifier of the current cell which the search particle is occupying
+                    /** Create a new 'access identifier' and set it equal to the identifier of the current cell which the search particle is occupying */
+                    access[newpoint].origin = rank;                      //!< The origin should be the current rank
+                    access[newpoint].iCell = index;                      //!< The index that the particle is currently occupying
+                    access[newpoint].ntheta = identifier[ipart].ntheta;  //!< The angle of the ray we want
+                    access[newpoint].nphi = identifier[ipart].nphi;      //!< The angle of the ray we want
+                    access[newpoint].nsegment = 1;                       //!< The access identifier should always point to a native rank (segment == 1)
                     // The cell index and rank of the access identifier will be equal to the current, but the ray angle number will be equal to that of the identifier. Segment number == 1
                     // All inputs of information will come from the ray segment of the access identifier
                     carrier[newpoint].Krad = 1;  //!< The new particle gets an empty carrier because it is holding no information yet (Krad must be initialized to 1 here: everything is init 0)
@@ -367,59 +376,61 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                     DMSwarmRestoreField(radsolve, "access", nullptr, nullptr, (void**)&access) >> checkError;
                 }
 
-                // TODO: When the search particle finds a ray segment to draw from in the new domain, it will need to travel to the location of the last cell in this segment.
-                // The segment will likely not be complete yet, so the search particle will need to step without picking up cells until it reaches the end of this partition and reaches a new partition
-                // The particle should exit the domain in this fashion, leaving a carrier particle with access to the other local ray segment, and no unique segment to be identified to it.
-                // The carrier particle will have an identifier to control its travel, and an identifier to control where it draws information from. These identifiers in effect point to the same ray.
-
-                /** ********************************************
-                 * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
-                 * boundary conditions and the conditions at reflection can be accounted for. This will make the entire initialization much faster by only requiring a single step through each
-                 * cell. Additionally, the option for reflection is opened because the faces and their normals are now more easily accessed during the initialization. In the future, the carrier
-                 * particles may want to be given some information that the boundary label carries when the search particle happens upon it so that imperfect reflection can be implemented.
-                 * */
-
-                /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
-                 * */
-                rays[Key(&identifier[ipart])].cells.push_back(index);
-
-                /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
-                 * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
-                 * Here we are figuring out what distance the ray spends inside the cell that it has just registered.
-                 * */
-                /** March over each face on this cell in order to check them for the one which intersects this ray next */
-                PetscInt numberFaces;
-                const PetscInt* cellFaces;
-                DMPlexGetConeSize(subDomain.GetDM(), index, &numberFaces) >> checkError;
-                DMPlexGetCone(subDomain.GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
-                PetscReal path;
-
-                /** Check every face for intersection with the segment.
-                 * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
-                 * */
-                for (PetscInt f = 0; f < numberFaces; f++) {
-                    PetscInt face = cellFaces[f];
-                    DMPlexPointLocalRead(faceDM, face, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
-
-                    /** Get the intersection of the direction vector with the cell face
-                     * Use the plane equation and ray segment equation in order to get the face intersection with the shortest path length
-                     * This will be the next position of the search particle
+                /** When the search particle finds a ray segment to draw from in the new domain, it will need to travel to the location of the last cell in this segment.
+                 * The segment will likely not be complete yet, so the search particle will need to step without picking up cells until it reaches the end of this partition and reaches a new partition
+                 * The particle should exit the domain in this fashion, leaving a carrier particle with access to the other local ray segment, and no unique segment to be identified to it.
+                 * The carrier particle will have an identifier to control its travel, and an identifier to control where it draws information from. These identifiers in effect point to the same ray.
+                 */
+                if (identifier[ipart].nsegment == 1) {  //!< If this particle is native to the domain then it is responsible for building a ray
+                    /** ********************************************
+                     * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
+                     * boundary conditions and the conditions at reflection can be accounted for. This will make the entire initialization much faster by only requiring a single step through each
+                     * cell. Additionally, the option for reflection is opened because the faces and their normals are now more easily accessed during the initialization. In the future, the carrier
+                     * particles may want to be given some information that the boundary label carries when the search particle happens upon it so that imperfect reflection can be implemented.
                      * */
-                    path = FaceIntersect(ipart, virtualcoord, faceGeom);  //!< Use plane intersection equation by getting the centroid and normal vector of the face
 
-                    /** Step 3: Take this path if it is shorter than the previous one, getting the shortest path.
-                     * The path should never be zero if the forwardIntersect check is functioning properly.
+                    /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
                      * */
-                    if (path > 0) {
-                        virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? (path * 1.1) : virtualcoord[ipart].hhere;  //!< Dumb check to ensure that the path length is always updated
-                        if (virtualcoord[ipart].hhere > path) {
-                            virtualcoord[ipart].hhere =
-                                path;  //!> Get the shortest path length of all of the faces. The point must be in the direction that the ray is travelling in order to be valid.
+                    rays[Key(&identifier[ipart])].cells.push_back(index);
+
+                    /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
+                     * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
+                     * Here we are figuring out what distance the ray spends inside the cell that it has just registered.
+                     * */
+                    /** March over each face on this cell in order to check them for the one which intersects this ray next */
+                    PetscInt numberFaces;
+                    const PetscInt* cellFaces;
+                    DMPlexGetConeSize(subDomain.GetDM(), index, &numberFaces) >> checkError;
+                    DMPlexGetCone(subDomain.GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
+                    PetscReal path;
+
+                    /** Check every face for intersection with the segment.
+                     * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
+                     * */
+                    for (PetscInt f = 0; f < numberFaces; f++) {
+                        PetscInt face = cellFaces[f];
+                        DMPlexPointLocalRead(faceDM, face, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
+
+                        /** Get the intersection of the direction vector with the cell face
+                         * Use the plane equation and ray segment equation in order to get the face intersection with the shortest path length
+                         * This will be the next position of the search particle
+                         * */
+                        path = FaceIntersect(ipart, virtualcoord, faceGeom);  //!< Use plane intersection equation by getting the centroid and normal vector of the face
+
+                        /** Step 3: Take this path if it is shorter than the previous one, getting the shortest path.
+                         * The path should never be zero if the forwardIntersect check is functioning properly.
+                         * */
+                        if (path > 0) {
+                            virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? (path * 1.1) : virtualcoord[ipart].hhere;  //!< Dumb check to ensure that the path length is always updated
+                            if (virtualcoord[ipart].hhere > path) {
+                                virtualcoord[ipart].hhere =
+                                    path;  //!> Get the shortest path length of all of the faces. The point must be in the direction that the ray is travelling in order to be valid.
+                            }
                         }
                     }
+                    virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
+                    rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
                 }
-                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
-                rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
             } else {
                 virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
             }
@@ -526,7 +537,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     /** Declare some information associated with the field declarations */
     struct Carrier* carrier;        //!< Pointer to the ray carrier information
     struct Identifier* identifier;  //!< Pointer to the ray identifier information
-    struct Identifier* access;  //!< Pointer to the ray identifier information
+    struct Identifier* access;      //!< Pointer to the ray identifier information
 
     /** Get the current rank associated with this process */
     PetscMPIInt rank;
@@ -546,26 +557,28 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
      * be destroyed.
      * First the particles should be zeroed in case they are carrying information from the last time step.
      * Then the entire solve sequence can be run through. This will require that the particles are iterated through twice.
-     * */
-     // TODO: We can iterate through the map here instead of the particles. That will probably be faster.
-     // TODO: Only certain particles will have identifiers associated with the ray segments, so iterating through the particles will not work.
-    for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate through the particles in the space to zero their information.
-        rays[Key(&identifier[ipart])].Ij = 0;                            //!< Zero the intensity of the segment
-        rays[Key(&identifier[ipart])].Krad = 1;                          //!< Zero the total absorption for this domain
-        rays[Key(&identifier[ipart])].I0 = 0;                            //!< Zero the initial intensity of the ray segment
+     *
+     * We can iterate through the map here instead of the particles. That will probably be faster.
+     * Only certain particles will have identifiers associated with the ray segments, so iterating through the particles will not work.
+     */
+    for (auto& [id, segment] : rays) {  //!< Iterate through the particles in the space to zero their information.
+        segment.Ij = 0;                 //!< Zero the intensity of the segment
+        segment.Krad = 1;               //!< Zero the total absorption for this domain
+        segment.I0 = 0;                 //!< Zero the initial intensity of the ray segment
     }
-    /** Now that the particle information has been zeroed, the solve can begin. */
-    // TODO: The ray segment map will need to be iterated though instead of the carrier particles. This is because the carrier particles will have redundant segments or no matching segments.
-    // TODO: We don't want to resolve any segments unnecessarily, so the map can be iterated through instead.
-    // TODO: Don't touch the carrier particles.
-    for (PetscInt ipart = 0; ipart < npoints; ipart++) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
-                                                          //!< particles then pass out of initialization.
+    /** Now that the particle information has been zeroed, the solve can begin.
+     * The ray segment map will need to be iterated though instead of the carrier particles. This is because the carrier particles will have redundant segments or no matching segments.
+     * We don't want to resolve any segments unnecessarily, so the map can be iterated through instead.
+     * Don't touch the carrier particles.
+     */
+    for (auto& [id, segment] : rays) {  //!< Iterate over the particles present in the domain. How to isolate the particles in this domain and iterate over them? If there are no
+                                        //!< particles then pass out of initialization.
         /** Each ray is born here. They begin at the far field temperature.
             Initial ray intensity should be set based on which boundary it is coming from.
             If the ray originates from the walls, then set the initial ray intensity to the wall temperature, etc.
          */
         /** For each domain in the ray (The rays vector will have an added index, splitting every x points) */
-        PetscInt numPoints = static_cast<int>(rays[Key(&identifier[ipart])].cells.size());
+        PetscInt numPoints = static_cast<int>(segment.cells.size());
 
         if (numPoints > 0) {
             for (PetscInt n = 0; n < numPoints; n++) {
@@ -575,16 +588,16 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
                     Get the array that lives inside the vector
                     Gets the temperature from the cell index specified
                 */
-                DMPlexPointLocalFieldRead(auxDm, rays[Key(&identifier[ipart])].cells[n], temperatureField.id, auxArray, &temperature);
-                DMPlexPointLocalRead(solDm, rays[Key(&identifier[ipart])].cells[n], solArray, &sol);
+                DMPlexPointLocalFieldRead(auxDm, segment.cells[n], temperatureField.id, auxArray, &temperature);
+                DMPlexPointLocalRead(solDm, segment.cells[n], solArray, &sol);
                 /** Input absorptivity (kappa) values from model here. */
                 absorptivityFunction.function(sol, *temperature, &kappa, absorptivityFunctionContext);
 
-                rays[Key(&identifier[ipart])].Ij += FlameIntensity(1 - exp(-kappa * rays[Key(&identifier[ipart])].h[n]), *temperature) * carrier[ipart].Krad;
-                rays[Key(&identifier[ipart])].Krad *= exp(-kappa * rays[Key(&identifier[ipart])].h[n]);  //!< Compute the total absorption for this domain
+                segment.Ij += FlameIntensity(1 - exp(-kappa * segment.h[n]), *temperature) * segment.Krad;
+                segment.Krad *= exp(-kappa * segment.h[n]);  //!< Compute the total absorption for this domain
 
                 if (n == (numPoints - 1)) { /** If this is the beginning of the ray, set this as the initial intensity. (The segment intensities will be filtered through during the origin run) */
-                    rays[Key(&identifier[ipart])].I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
+                    segment.I0 = FlameIntensity(1, *temperature);  //!< Set the initial intensity of the ray segment
                 }
             }
         }
@@ -594,9 +607,9 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
     // TODO: This avoids solving any redundant rays, and also avoids changing the logic too much.
     // TODO: Here we actually want to iterate through all of the particles.
     for (PetscInt ipart = 0; ipart < npoints; ipart++) {
-        carrier[ipart].Ij =  rays[Key(&access[ipart])].Ij;
-        carrier[ipart].Krad =  rays[Key(&access[ipart])].Krad;
-        carrier[ipart].I0 =  rays[Key(&access[ipart])].I0;
+        carrier[ipart].Ij = rays[Key(&access[ipart])].Ij;
+        carrier[ipart].Krad = rays[Key(&access[ipart])].Krad;
+        carrier[ipart].I0 = rays[Key(&access[ipart])].I0;
     }
 
     /** Restore the fields associated with the particles after all of the particles have been stepped */
@@ -788,7 +801,7 @@ void ablate::radiation::Radiation::Solve(Vec solVec, ablate::domain::Field tempe
         if (log) {
             PetscReal centroid[3];
             DMPlexComputeCellGeometryFVM(cellDM, iCell, nullptr, centroid, nullptr) >> checkError;  //!< Reads the cell location from the current cell
-            printf("%f %f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, ReallySolveParallelPlates(centroid[0]), *temperature);
+            printf("%f %f %f %f %f %f %f\n", centroid[0], centroid[1], centroid[2], origin[iCell].intensity, losses, 0.0, *temperature);
         }
         origin[iCell].intensity = -kappa * (losses - origin[iCell].intensity);
     }
