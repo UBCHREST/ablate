@@ -247,6 +247,8 @@ void ablate::radiation::Radiation::InitializationConvertSurface(ablate::domain::
 }
 
 void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ablate::domain::SubDomain& subDomain) {
+    std::map<std::string, bool> presence;
+
     DM faceDM;
     const PetscScalar* faceGeomArray;
     PetscFVFaceGeom* faceGeom;
@@ -346,13 +348,12 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                  * Hash the identifier into a key value that can be used in the map
                  * We should only iterate the identifier of the search particle (/ add a solver particle) if the point is valid in the domain and is being used
                  * */
-                if (rays.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
-                    identifier[ipart].nsegment++;                //!< The particle has passed through another domain!
-                    DMSwarmAddPoint(radsolve) >> checkError;     //!< Another solve particle is added here because the search particle has entered a new domain
+                if (presence.count(Key(&identifier[ipart])) == 0) {  //!< IF THIS RAYS VECTOR IS EMPTY FOR THIS DOMAIN, THEN THE PARTICLE HAS NEVER BEEN HERE BEFORE. THEREFORE, ITERATE THE NDOMAINS BY 1.
+                    identifier[ipart].nsegment++;             //!< The particle has passed through another domain!
+                    presence[Key(&identifier[ipart])] = true;
+                    DMSwarmAddPoint(radsolve) >> checkError;  //!< Another solve particle is added here because the search particle has entered a new domain
 
-                    DMSwarmGetLocalSize(radsolve,
-                                        &nsolvepoints) >>
-                        checkError;  //!< Recalculate the number of solve particles so that the last one in the list can be accessed. (I assume that the last one is newest)
+                    DMSwarmGetLocalSize(radsolve, &nsolvepoints) >> checkError;  //!< Recalculate the number of solve particles so that the last one in the list can be accessed.
 
                     DMSwarmGetField(radsolve, "identifier", nullptr, nullptr, (void**)&solveidentifier) >>
                         checkError;  //!< Get the fields from the radsolve swarm so the new point can be written to them
