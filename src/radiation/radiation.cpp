@@ -381,56 +381,54 @@ void ablate::radiation::Radiation::Initialize(const solver::Range& cellRange, ab
                  * The particle should exit the domain in this fashion, leaving a carrier particle with access to the other local ray segment, and no unique segment to be identified to it.
                  * The carrier particle will have an identifier to control its travel, and an identifier to control where it draws information from. These identifiers in effect point to the same ray.
                  */
-                if (identifier[ipart].nsegment == 1) {  //!< If this particle is native to the domain then it is responsible for building a ray
-                    /** ********************************************
-                     * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
-                     * boundary conditions and the conditions at reflection can be accounted for. This will make the entire initialization much faster by only requiring a single step through each
-                     * cell. Additionally, the option for reflection is opened because the faces and their normals are now more easily accessed during the initialization. In the future, the carrier
-                     * particles may want to be given some information that the boundary label carries when the search particle happens upon it so that imperfect reflection can be implemented.
+                /** ********************************************
+                 * The face stepping routine will give the precise path length of the mesh without any error. It will also allow the faces of the cells to be accounted for so that the
+                 * boundary conditions and the conditions at reflection can be accounted for. This will make the entire initialization much faster by only requiring a single step through each
+                 * cell. Additionally, the option for reflection is opened because the faces and their normals are now more easily accessed during the initialization. In the future, the carrier
+                 * particles may want to be given some information that the boundary label carries when the search particle happens upon it so that imperfect reflection can be implemented.
+                 * */
+
+                /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
+                 * */
+                if (identifier[ipart].nsegment == 1) rays[Key(&identifier[ipart])].cells.push_back(index);
+
+                /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
+                 * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
+                 * Here we are figuring out what distance the ray spends inside the cell that it has just registered.
+                 * */
+                /** March over each face on this cell in order to check them for the one which intersects this ray next */
+                PetscInt numberFaces;
+                const PetscInt* cellFaces;
+                DMPlexGetConeSize(subDomain.GetDM(), index, &numberFaces) >> checkError;
+                DMPlexGetCone(subDomain.GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
+                PetscReal path;
+
+                /** Check every face for intersection with the segment.
+                 * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
+                 * */
+                for (PetscInt f = 0; f < numberFaces; f++) {
+                    PetscInt face = cellFaces[f];
+                    DMPlexPointLocalRead(faceDM, face, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
+
+                    /** Get the intersection of the direction vector with the cell face
+                     * Use the plane equation and ray segment equation in order to get the face intersection with the shortest path length
+                     * This will be the next position of the search particle
                      * */
+                    path = FaceIntersect(ipart, virtualcoord, faceGeom);  //!< Use plane intersection equation by getting the centroid and normal vector of the face
 
-                    /** Step 1: Register the current cell index in the rays vector. The physical coordinates that have been set in the previous step / loop will be immediately registered.
+                    /** Step 3: Take this path if it is shorter than the previous one, getting the shortest path.
+                     * The path should never be zero if the forwardIntersect check is functioning properly.
                      * */
-                    rays[Key(&identifier[ipart])].cells.push_back(index);
-
-                    /** Step 2: Acquire the intersection of the particle search line with the segment or face. In the case if a two dimensional mesh, the virtual coordinate in the z direction will
-                     * need to be solved for because the three dimensional line will not have a literal intersection with the segment of the cell. The third coordinate can be solved for in this case.
-                     * Here we are figuring out what distance the ray spends inside the cell that it has just registered.
-                     * */
-                    /** March over each face on this cell in order to check them for the one which intersects this ray next */
-                    PetscInt numberFaces;
-                    const PetscInt* cellFaces;
-                    DMPlexGetConeSize(subDomain.GetDM(), index, &numberFaces) >> checkError;
-                    DMPlexGetCone(subDomain.GetDM(), index, &cellFaces) >> checkError;  //!< Get the face geometry associated with the current cell
-                    PetscReal path;
-
-                    /** Check every face for intersection with the segment.
-                     * The segment with the shortest path length for intersection will be the one that physically intercepts with the cell face and not with the nonphysical plane beyond the face.
-                     * */
-                    for (PetscInt f = 0; f < numberFaces; f++) {
-                        PetscInt face = cellFaces[f];
-                        DMPlexPointLocalRead(faceDM, face, faceGeomArray, &faceGeom) >> checkError;  //!< Reads the cell location from the current cell
-
-                        /** Get the intersection of the direction vector with the cell face
-                         * Use the plane equation and ray segment equation in order to get the face intersection with the shortest path length
-                         * This will be the next position of the search particle
-                         * */
-                        path = FaceIntersect(ipart, virtualcoord, faceGeom);  //!< Use plane intersection equation by getting the centroid and normal vector of the face
-
-                        /** Step 3: Take this path if it is shorter than the previous one, getting the shortest path.
-                         * The path should never be zero if the forwardIntersect check is functioning properly.
-                         * */
-                        if (path > 0) {
-                            virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? (path * 1.1) : virtualcoord[ipart].hhere;  //!< Dumb check to ensure that the path length is always updated
-                            if (virtualcoord[ipart].hhere > path) {
-                                virtualcoord[ipart].hhere =
-                                    path;  //!> Get the shortest path length of all of the faces. The point must be in the direction that the ray is travelling in order to be valid.
-                            }
+                    if (path > 0) {
+                        virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? (path * 1.1) : virtualcoord[ipart].hhere;  //!< Dumb check to ensure that the path length is always updated
+                        if (virtualcoord[ipart].hhere > path) {
+                            virtualcoord[ipart].hhere =
+                                path;  //!> Get the shortest path length of all of the faces. The point must be in the direction that the ray is travelling in order to be valid.
                         }
                     }
-                    virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
-                    rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
                 }
+                virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
+                if (identifier[ipart].nsegment == 1) rays[Key(&identifier[ipart])].h.push_back(virtualcoord[ipart].hhere);  //!< Add this space step if the current index is being added.
             } else {
                 virtualcoord[ipart].hhere = (virtualcoord[ipart].hhere == 0) ? minCellRadius : virtualcoord[ipart].hhere;
             }
