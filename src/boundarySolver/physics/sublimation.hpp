@@ -2,9 +2,12 @@
 #define ABLATELIBRARY_SUBLIMATION_HPP
 
 #include "boundarySolver/boundaryProcess.hpp"
+#include "eos/radiationProperties/zimmer.hpp"
 #include "eos/transport/transportModel.hpp"
 #include "finiteVolume/processes/navierStokesTransport.hpp"
 #include "finiteVolume/processes/pressureGradientScaling.hpp"
+#include "io/interval/interval.hpp"
+#include "radiation/radiation.hpp"
 namespace ablate::boundarySolver::physics {
 
 /**
@@ -19,32 +22,56 @@ class Sublimation : public BoundaryProcess {
     const std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux;
     PetscReal currentTime = 0.0;
 
-    // Store the mass fractions if provided
+    //!< Store the mass fractions if provided
     const std::shared_ptr<ablate::mathFunctions::FieldFunction> massFractions;
     const mathFunctions::PetscFunction massFractionsFunction;
     void *massFractionsContext;
     PetscInt numberSpecies = 0;
 
-    // toggle to disable any contribution of pressure in the momentum equation
-    const bool disablePressure;
+    /**
+     * toggle to disable any contribution of pressure in the momentum equation
+     */
+    const bool diffusionFlame;
 
-    // the pgs is needed for the pressure calculation
+    /**
+     * the pgs is needed for the pressure calculation
+     */
     const std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling;
 
-    // store the effectiveConductivity function
+    /**
+     * the radiation solver for surface heat flux calculation
+     */
+    std::shared_ptr<ablate::radiation::Radiation> radiation;
+
+    /**
+     * store the effectiveConductivity function
+     */
     eos::ThermodynamicTemperatureFunction effectiveConductivity;
 
-    // store the function to compute viscosity
+    /**
+     * store the function to compute viscosity
+     */
     eos::ThermodynamicTemperatureFunction viscosityFunction;
 
-    // reuse fv update temperature function
+    /**
+     * reuse fv update temperature function
+     */
     eos::ThermodynamicTemperatureFunction computeTemperatureFunction;
 
-    // compute the sensible enthalpy for the blowing term
+    /**
+     * compute the sensible enthalpy for the blowing term
+     */
     eos::ThermodynamicTemperatureFunction computeSensibleEnthalpy;
 
-    // compute the pressure needed for the momentum equation
+    /**
+     * compute the pressure needed for the momentum equation
+     */
     eos::ThermodynamicTemperatureFunction computePressure;
+
+    /**
+     * interval between the radiation solves
+     */
+    const std::shared_ptr<io::interval::Interval> radiationInterval;
 
     /**
      * Set the species densityYi based upon the blowing rate.  Update the energy if needed to maintain temperature
@@ -54,15 +81,19 @@ class Sublimation : public BoundaryProcess {
    public:
     explicit Sublimation(PetscReal latentHeatOfFusion, std::shared_ptr<ablate::eos::transport::TransportModel> transportModel, std::shared_ptr<ablate::eos::EOS> eos,
                          const std::shared_ptr<ablate::mathFunctions::FieldFunction> & = {}, std::shared_ptr<mathFunctions::MathFunction> additionalHeatFlux = {},
-                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool disablePressure = false);
+                         std::shared_ptr<finiteVolume::processes::PressureGradientScaling> pressureGradientScaling = {}, bool diffusionFlame = false,
+                         std::shared_ptr<ablate::radiation::Radiation> radiationIn = {}, std::shared_ptr<io::interval::Interval> intervalIn = {});
 
     void Setup(ablate::boundarySolver::BoundarySolver &bSolver) override;
+    void Initialize(ablate::boundarySolver::BoundarySolver &bSolver) override;
 
     /**
      * manual Setup used for testing
      * @param numberSpecies
      */
     void Setup(PetscInt numberSpecies);
+
+    PetscErrorCode SublimationPreStep(TS ts, ablate::solver::Solver &solver);
 
     /**
      * Support function to compute and insert source terms for this boundary condition
