@@ -163,7 +163,7 @@ void ablate::monitors::TurbFlowStats::Register(std::shared_ptr<ablate::solver::S
         std::vector<std::string> innerCompNames(SectionLabels::END * field.numberComponents);
         for (PetscInt c = 0; c < field.numberComponents; c++) {
             for (std::size_t p = 0; p < suffix.size(); p++) {
-                innerCompNames[SectionLabels::END * c + p] = field.name + field.components[c] + suffix[p];
+                innerCompNames[SectionLabels::END * c + p] = field.name + "_" + field.components[c] + suffix[p];
             }
         }
         processedCompNames.push_back(innerCompNames);
